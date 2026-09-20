@@ -11,10 +11,13 @@
 ![System Architecture Diagram](./system_architecture_diagram.png)
 
 > [!TIP]
-> **Available Formats & Viewers in this folder:**
-> - 🌐 **Interactive Inlined Viewer**: Open [`view_diagram.html`](./view_diagram.html) in your browser for infinite vector zoom.
-> - 📐 **Vector SVG (Infinite Resolution)**: [`system_architecture_diagram.svg`](./system_architecture_diagram.svg) (Zero blur at any zoom level, print-ready).
+> **Available Architecture Diagrams & Viewers in this folder:**
+> - 🌐 **Interactive System Architecture Viewer**: Open [`view_diagram.html`](./view_diagram.html) in your browser for infinite vector zoom.
+> - 🌲 **Interactive Data Hierarchy Explorer**: Open [`data_hierarchy_viewer.html`](./data_hierarchy_viewer.html) in your browser for tabbed entity trees and RBAC levels.
+> - 📐 **Vector SVG (System Architecture)**: [`system_architecture_diagram.svg`](./system_architecture_diagram.svg)
+> - 📐 **Vector SVG (Data Hierarchy)**: [`data_hierarchy_diagram.svg`](./data_hierarchy_diagram.svg)
 > - 🖼️ **High-Res Raster Image**: [`system_architecture_diagram.png`](./system_architecture_diagram.png) (1904 × 1516 pixels).
+> - 📄 **Data Hierarchy Technical Document**: [**`docs/database/DATA_HIERARCHY.md`**](../database/DATA_HIERARCHY.md)
 
 ---
 

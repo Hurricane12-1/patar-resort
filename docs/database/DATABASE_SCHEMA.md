@@ -98,3 +98,12 @@ returns boolean language sql stable security definer set search_path = public as
   );
 $$;
 ```
+
+---
+
+## 6. System Data Hierarchy
+
+For an in-depth breakdown of parent-child foreign key dependency trees, organizational operational domains, role-based authorization tiers (RBAC), and physical storage lifecycles, see:
+* 📄 [**System Data Hierarchy Specification (`DATA_HIERARCHY.md`)**](./DATA_HIERARCHY.md)
+* 🌲 [**Interactive Data Hierarchy Explorer (`data_hierarchy_viewer.html`)**](../architecture/data_hierarchy_viewer.html)
+* 📐 [**Data Hierarchy Vector Diagram (`data_hierarchy_diagram.svg`)**](../architecture/data_hierarchy_diagram.svg)

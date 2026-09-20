@@ -1,0 +1,181 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="1200" height="900" style="background:#0b132b; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+    <linearGradient id="rootCard" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <linearGradient id="tier1Card" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#064e3b" />
+      <stop offset="100%" stop-color="#022c22" />
+    </linearGradient>
+    <linearGradient id="tier2Card" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0c4a6e" />
+      <stop offset="100%" stop-color="#082f49" />
+    </linearGradient>
+    <linearGradient id="tier3Card" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#312e81" />
+      <stop offset="100%" stop-color="#1e1b4b" />
+    </linearGradient>
+    <linearGradient id="tier4Card" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#78350f" />
+      <stop offset="100%" stop-color="#451a03" />
+    </linearGradient>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000000" flood-opacity="0.4" />
+    </filter>
+  </defs>
+
+  <!-- Title Header -->
+  <g transform="translate(600, 50)" text-anchor="middle">
+    <rect x="-180" y="-30" width="360" height="26" rx="13" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5" />
+    <text y="-13" fill="#38bdf8" font-size="12" font-weight="700" letter-spacing="1.5">DATA HIERARCHY SPECIFICATION</text>
+    <text y="28" fill="#ffffff" font-size="26" font-weight="800">J &amp; D Beach House · Entity Dependency Tree</text>
+    <text y="52" fill="#94a3b8" font-size="14">Parent-Child Foreign Key Relationships &amp; Relational Isolation Layers</text>
+  </g>
+
+  <!-- CONNECTING LINES -->
+  <!-- Auth User to Profiles -->
+  <path d="M 600, 200 L 600, 250" stroke="#38bdf8" stroke-width="2.5" stroke-dasharray="6 4" />
+  <!-- Profiles to Children -->
+  <path d="M 600, 310 L 600, 350 L 180, 350 L 180, 390" stroke="#38bdf8" stroke-width="2" />
+  <path d="M 600, 350 L 460, 350 L 460, 390" stroke="#38bdf8" stroke-width="2" />
+  <path d="M 600, 350 L 740, 350 L 740, 390" stroke="#38bdf8" stroke-width="2" />
+  <path d="M 600, 350 L 1020, 350 L 1020, 390" stroke="#38bdf8" stroke-width="2" />
+
+  <!-- Rooms Catalog to Reservations -->
+  <path d="M 180, 200 L 180, 350" stroke="#10b981" stroke-width="2" stroke-dasharray="4 4" />
+  
+  <!-- Dept Enum to Tasks and Inventory -->
+  <path d="M 1020, 200 L 1020, 350" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4 4" />
+
+  <!-- Reservations to Reviews and Notifications -->
+  <path d="M 460, 470 L 460, 520 L 370, 520 L 370, 560" stroke="#818cf8" stroke-width="2" />
+  <path d="M 460, 520 L 550, 520 L 550, 560" stroke="#818cf8" stroke-width="2" />
+
+  <!-- Aggregations to Analytics -->
+  <path d="M 460, 470 L 460, 720 L 600, 720 L 600, 750" stroke="#fbbf24" stroke-width="2" stroke-dasharray="6 4" />
+
+  <!-- LEVEL 0: ROOT ENTITIES -->
+  <!-- Rooms (Accommodations) -->
+  <g transform="translate(70, 130)" filter="url(#shadow)">
+    <rect width="220" height="70" rx="10" fill="url(#rootCard)" stroke="#10b981" stroke-width="2" />
+    <rect x="12" y="10" width="70" height="18" rx="4" fill="#064e3b" />
+    <text x="47" y="23" fill="#34d399" font-size="10" font-weight="700" text-anchor="middle">ROOT ASSET</text>
+    <text x="12" y="46" fill="#ffffff" font-size="16" font-weight="700">rooms</text>
+    <text x="12" y="60" fill="#94a3b8" font-size="11">Accommodations Catalog (Units/Rates)</text>
+  </g>
+
+  <!-- auth.users (Supabase Root) -->
+  <g transform="translate(480, 130)" filter="url(#shadow)">
+    <rect width="240" height="70" rx="10" fill="url(#rootCard)" stroke="#38bdf8" stroke-width="2.5" />
+    <rect x="12" y="10" width="75" height="18" rx="4" fill="#0369a1" />
+    <text x="49" y="23" fill="#38bdf8" font-size="10" font-weight="700" text-anchor="middle">ROOT AUTH</text>
+    <text x="12" y="46" fill="#ffffff" font-size="16" font-weight="700">auth.users</text>
+    <text x="12" y="60" fill="#94a3b8" font-size="11">Supabase Managed Identity (UUID)</text>
+  </g>
+
+  <!-- dept_name (Enum Root) -->
+  <g transform="translate(910, 130)" filter="url(#shadow)">
+    <rect width="220" height="70" rx="10" fill="url(#rootCard)" stroke="#f59e0b" stroke-width="2" />
+    <rect x="12" y="10" width="75" height="18" rx="4" fill="#78350f" />
+    <text x="49" y="23" fill="#fbbf24" font-size="10" font-weight="700" text-anchor="middle">ROOT ENUM</text>
+    <text x="12" y="46" fill="#ffffff" font-size="16" font-weight="700">dept_name</text>
+    <text x="12" y="60" fill="#94a3b8" font-size="11">5 Operational Departments</text>
+  </g>
+
+  <!-- LEVEL 1: PROFILES -->
+  <g transform="translate(470, 250)" filter="url(#shadow)">
+    <rect width="260" height="70" rx="10" fill="url(#tier1Card)" stroke="#2dd4bf" stroke-width="2" />
+    <rect x="12" y="10" width="90" height="18" rx="4" fill="#065f46" />
+    <text x="57" y="23" fill="#6ee7b7" font-size="10" font-weight="700" text-anchor="middle">LEVEL 1 · 1:1 AUTH</text>
+    <text x="12" y="46" fill="#ffffff" font-size="16" font-weight="700">profiles</text>
+    <text x="12" y="60" fill="#a7f3d0" font-size="11">Full Name, Phone, Role (Guest / Staff)</text>
+  </g>
+
+  <!-- LEVEL 2: DIRECT OPERATIONAL ENTITIES -->
+  <!-- resort_orders -->
+  <g transform="translate(70, 390)" filter="url(#shadow)">
+    <rect width="220" height="80" rx="10" fill="url(#tier2Card)" stroke="#38bdf8" stroke-width="1.5" />
+    <rect x="12" y="10" width="80" height="18" rx="4" fill="#075985" />
+    <text x="52" y="23" fill="#7dd3fc" font-size="10" font-weight="700" text-anchor="middle">LEVEL 2 · 1:N</text>
+    <text x="12" y="46" fill="#ffffff" font-size="16" font-weight="700">resort_orders</text>
+    <text x="12" y="62" fill="#bae6fd" font-size="11">Dining, Tours, Amenities</text>
+    <text x="12" y="74" fill="#7dd3fc" font-size="10">FK: guest_id → profiles.id</text>
+  </g>
+
+  <!-- reservations -->
+  <g transform="translate(340, 390)" filter="url(#shadow)">
+    <rect width="240" height="80" rx="10" fill="url(#tier2Card)" stroke="#38bdf8" stroke-width="2.5" />
+    <rect x="12" y="10" width="100" height="18" rx="4" fill="#0369a1" />
+    <text x="62" y="23" fill="#38bdf8" font-size="10" font-weight="700" text-anchor="middle">LEVEL 2 · CORE STAY</text>
+    <text x="12" y="46" fill="#ffffff" font-size="16" font-weight="700">reservations</text>
+    <text x="12" y="62" fill="#bae6fd" font-size="11">Date-Range Stay Engine (GiST Guard)</text>
+    <text x="12" y="74" fill="#38bdf8" font-size="10">FK: guest_id &amp; room_id</text>
+  </g>
+
+  <!-- chat_messages -->
+  <g transform="translate(630, 390)" filter="url(#shadow)">
+    <rect width="220" height="80" rx="10" fill="url(#tier2Card)" stroke="#38bdf8" stroke-width="1.5" />
+    <rect x="12" y="10" width="80" height="18" rx="4" fill="#075985" />
+    <text x="52" y="23" fill="#7dd3fc" font-size="10" font-weight="700" text-anchor="middle">LEVEL 2 · 1:N</text>
+    <text x="12" y="46" fill="#ffffff" font-size="16" font-weight="700">chat_messages</text>
+    <text x="12" y="62" fill="#bae6fd" font-size="11">AI Receptionist Transcripts</text>
+    <text x="12" y="74" fill="#7dd3fc" font-size="10">FK: profile_id → profiles.id</text>
+  </g>
+
+  <!-- department_tasks -->
+  <g transform="translate(900, 390)" filter="url(#shadow)">
+    <rect width="240" height="80" rx="10" fill="url(#tier2Card)" stroke="#38bdf8" stroke-width="1.5" />
+    <rect x="12" y="10" width="80" height="18" rx="4" fill="#075985" />
+    <text x="52" y="23" fill="#7dd3fc" font-size="10" font-weight="700" text-anchor="middle">LEVEL 2 · 1:N</text>
+    <text x="12" y="46" fill="#ffffff" font-size="16" font-weight="700">department_tasks</text>
+    <text x="12" y="62" fill="#bae6fd" font-size="11">Housekeeping / Maintenance Queue</text>
+    <text x="12" y="74" fill="#7dd3fc" font-size="10">FK: created_by &amp; room_id</text>
+  </g>
+
+  <!-- LEVEL 3: GRANDCHILD TRANSACTIONS (REVIEWS & NOTIFICATIONS) -->
+  <!-- reviews -->
+  <g transform="translate(260, 560)" filter="url(#shadow)">
+    <rect width="220" height="75" rx="10" fill="url(#tier3Card)" stroke="#a5b4fc" stroke-width="1.5" />
+    <rect x="12" y="10" width="90" height="18" rx="4" fill="#3730a3" />
+    <text x="57" y="23" fill="#c7d2fe" font-size="10" font-weight="700" text-anchor="middle">LEVEL 3 · 1:1 STAY</text>
+    <text x="12" y="46" fill="#ffffff" font-size="16" font-weight="700">reviews</text>
+    <text x="12" y="62" fill="#e0e7ff" font-size="11">Verified Stay Rating (1-5 Stars)</text>
+  </g>
+
+  <!-- notifications -->
+  <g transform="translate(510, 560)" filter="url(#shadow)">
+    <rect width="220" height="75" rx="10" fill="url(#tier3Card)" stroke="#a5b4fc" stroke-width="1.5" />
+    <rect x="12" y="10" width="80" height="18" rx="4" fill="#3730a3" />
+    <text x="52" y="23" fill="#c7d2fe" font-size="10" font-weight="700" text-anchor="middle">LEVEL 3 · 1:N</text>
+    <text x="12" y="46" fill="#ffffff" font-size="16" font-weight="700">notifications</text>
+    <text x="12" y="62" fill="#e0e7ff" font-size="11">SMS Audit &amp; Digital Pass Sent</text>
+  </g>
+
+  <!-- resort_inventory (Department Linked) -->
+  <g transform="translate(900, 560)" filter="url(#shadow)">
+    <rect width="240" height="75" rx="10" fill="url(#tier3Card)" stroke="#a5b4fc" stroke-width="1.5" />
+    <rect x="12" y="10" width="80" height="18" rx="4" fill="#3730a3" />
+    <text x="52" y="23" fill="#c7d2fe" font-size="10" font-weight="700" text-anchor="middle">LEVEL 3 · 1:N</text>
+    <text x="12" y="46" fill="#ffffff" font-size="16" font-weight="700">resort_inventory</text>
+    <text x="12" y="62" fill="#e0e7ff" font-size="11">Stock Qty &amp; Reorder Triggers</text>
+  </g>
+
+  <!-- LEVEL 4: ANALYTICS & AGGREGATIONS -->
+  <g transform="translate(380, 750)" filter="url(#shadow)">
+    <rect width="440" height="75" rx="10" fill="url(#tier4Card)" stroke="#fbbf24" stroke-width="2" />
+    <rect x="14" y="10" width="130" height="18" rx="4" fill="#92400e" />
+    <text x="79" y="23" fill="#fde68a" font-size="10" font-weight="700" text-anchor="middle">LEVEL 4 · AGGREGATION</text>
+    <text x="14" y="46" fill="#ffffff" font-size="16" font-weight="700">analytics_overview &amp; analytics_daily</text>
+    <text x="14" y="62" fill="#fef3c7" font-size="11">Live Occupancy %, Weekly Revenue (PHP), RevPAR, SMS Deliverability</text>
+  </g>
+
+  <!-- Footer Legend -->
+  <g transform="translate(600, 870)" text-anchor="middle" font-size="12" fill="#64748b">
+    <text>Solid Lines = Relational Foreign Keys · Dashed Lines = Asset Links / Aggregations · Colors indicate Level 0 to Level 4 Hierarchy</text>
+  </g>
+</svg>

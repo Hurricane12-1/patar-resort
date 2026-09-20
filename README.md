@@ -24,9 +24,9 @@ Capstone 1 sided/
 │   │       └── modules/        <-- Extracted TypeScript styles (*.styles.ts, theme.ts)
 │   └── dist/                   <-- Compiled static production build
 ├── docs/                       <-- Dedicated System Documentation Hub
-│   ├── architecture/           <-- High-res system diagrams (PNG, SVG, HTML viewer)
+│   ├── architecture/           <-- System & Data Hierarchy diagrams (PNG, SVG, HTML viewer)
 │   ├── api/                    <-- Complete REST API & WebSocket specifications
-│   ├── database/               <-- PostgreSQL schema, RLS policies, triggers, views
+│   ├── database/               <-- PostgreSQL schema, DATA_HIERARCHY.md, RLS policies
 │   ├── guides/                 <-- Deployment, developer setup & disaster recovery
 │   ├── roadmap/                <-- Phased feature roadmap & future milestones
 │   └── README.md               <-- Master documentation directory index

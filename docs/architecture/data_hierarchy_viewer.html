@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Hierarchy Explorer — J & D Beach House</title>
+  <style>
+    :root {
+      --bg: #0b132b;
+      --card-bg: #1c2541;
+      --card-border: #3a506b;
+      --accent: #38bdf8;
+      --accent-green: #10b981;
+      --accent-purple: #818cf8;
+      --accent-amber: #f59e0b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 30px 20px;
+      line-height: 1.5;
+    }
+    .container {
+      max-width: 1300px;
+      margin: 0 auto;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+    h1 {
+      font-size: 2.2rem;
+      color: #ffffff;
+      margin-bottom: 8px;
+    }
+    p.subtitle {
+      color: var(--text-muted);
+      font-size: 1rem;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    .nav-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: all 0.2s ease;
+    }
+    .tab-btn:hover {
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+    .tab-btn.active {
+      background: var(--accent);
+      color: #0b132b;
+      border-color: var(--accent);
+      box-shadow: 0 4px 14px rgba(56, 189, 248, 0.4);
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    /* Hierarchy Tree Layout */
+    .tree-container {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 30px;
+      overflow-x: auto;
+    }
+    .tree-node {
+      margin-left: 28px;
+      position: relative;
+      padding-left: 18px;
+      border-left: 2px dashed rgba(148, 163, 184, 0.25);
+      margin-top: 14px;
+    }
+    .tree-node:before {
+      content: "";
+      position: absolute;
+      top: 18px;
+      left: 0;
+      width: 16px;
+      height: 2px;
+      background: rgba(148, 163, 184, 0.25);
+    }
+    .node-card {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: #111d38;
+      border: 1px solid var(--card-border);
+      padding: 10px 18px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      transition: all 0.2s;
+    }
+    .node-card:hover {
+      border-color: var(--accent);
+      transform: translateX(4px);
+    }
+    .node-level {
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .lvl-0 { background: #334155; color: #94a3b8; }
+    .lvl-1 { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .lvl-2 { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); }
+    .lvl-3 { background: rgba(129, 140, 248, 0.2); color: #a5b4fc; border: 1px solid rgba(129, 140, 248, 0.4); }
+    .lvl-4 { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+
+    .node-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #ffffff;
+    }
+    .node-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .node-card.root-card {
+      background: #0f172a;
+      border: 2px solid var(--accent);
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 24px;
+    }
+    .card h3 {
+      font-size: 1.2rem;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .table-spec {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14px;
+      font-size: 0.88rem;
+    }
+    .table-spec th, .table-spec td {
+      padding: 8px 12px;
+      text-align: left;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+    }
+    .table-spec th {
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .table-spec code {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      color: #38bdf8;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div class="badge">Architecture & Database Engineering</div>
+      <h1>J & D Beach House · Data Hierarchy</h1>
+      <p class="subtitle">Interactive exploration of organizational domains, relational parent-child entities, role authorization tiers, and data retention lifecycles.</p>
+    </header>
+
+    <div class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('tab-relational')">Relational Entity Tree</button>
+      <button class="tab-btn" onclick="switchTab('tab-rbac')">RBAC Privilege Hierarchy</button>
+      <button class="tab-btn" onclick="switchTab('tab-domains')">Organizational Domains</button>
+      <button class="tab-btn" onclick="switchTab('tab-lifecycle')">Storage Lifecycle Tiers</button>
+    </div>
+
+    <!-- TAB 1: RELATIONAL ENTITY TREE -->
+    <div id="tab-relational" class="tab-content active">
+      <div class="tree-container">
+        <!-- ROOT ENTITY -->
+        <div class="node-card root-card">
+          <span class="node-level lvl-0">ROOT AUTH</span>
+          <span class="node-title">auth.users</span>
+          <span class="node-desc">Supabase Managed Authentication & Identity Provider</span>
+        </div>
+
+        <!-- LEVEL 1: PROFILES -->
+        <div class="tree-node">
+          <div class="node-card">
+            <span class="node-level lvl-1">LEVEL 1 · 1:1</span>
+            <span class="node-title">profiles</span>
+            <span class="node-desc">Extended Guest/Staff Identity (Full Name, Phone, Role, Emergency Contact)</span>
+          </div>
+
+          <!-- LEVEL 2: CHILD TRANSACTIONS -->
+          <div class="tree-node">
+            <div class="node-card">
+              <span class="node-level lvl-2">LEVEL 2 · 1:N</span>
+              <span class="node-title">reservations</span>
+              <span class="node-desc">Bookings, Check-in/out, Mathematical GiST Exclusion Constraint</span>
+            </div>
+
+            <!-- LEVEL 3: GRANDCHILD REVIEWS & NOTIFICATIONS -->
+            <div class="tree-node">
+              <div class="node-card">
+                <span class="node-level lvl-3">LEVEL 3 · 1:1</span>
+                <span class="node-title">reviews</span>
+                <span class="node-desc">Verified Guest Feedback & 1-5 Star Ratings</span>
+              </div>
+            </div>
+            <div class="tree-node">
+              <div class="node-card">
+                <span class="node-level lvl-3">LEVEL 3 · 1:N</span>
+                <span class="node-title">notifications</span>
+                <span class="node-desc">Outbound SMS Confirmation & Digital Pass Audit Log</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- LEVEL 2: IN-ROOM ORDERS -->
+          <div class="tree-node">
+            <div class="node-card">
+              <span class="node-level lvl-2">LEVEL 2 · 1:N</span>
+              <span class="node-title">resort_orders</span>
+              <span class="node-desc">In-Room Dining, Tour Bookings, and Amenity Requests</span>
+            </div>
+          </div>
+
+          <!-- LEVEL 2: CHAT MESSAGES -->
+          <div class="tree-node">
+            <div class="node-card">
+              <span class="node-level lvl-2">LEVEL 2 · 1:N</span>
+              <span class="node-title">chat_messages</span>
+              <span class="node-desc">Realtime AI Receptionist & Guest Service Inquiries</span>
+            </div>
+          </div>
+
+          <!-- LEVEL 2: DEPARTMENT TASKS -->
+          <div class="tree-node">
+            <div class="node-card">
+              <span class="node-level lvl-2">LEVEL 2 · 1:N</span>
+              <span class="node-title">department_tasks</span>
+              <span class="node-desc">Housekeeping, Maintenance, Front Desk, Kitchen & Tours Task Queue</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ACCOMMODATION CATALOG ROOT -->
+        <div style="margin-top: 30px;">
+          <div class="node-card root-card">
+            <span class="node-level lvl-0">ROOT ASSET</span>
+            <span class="node-title">rooms</span>
+            <span class="node-desc">Accommodations Catalog (Cottages, Suites, Villas, Units & Amenities)</span>
+          </div>
+          <div class="tree-node">
+            <div class="node-card">
+              <span class="node-level lvl-2">CO-PARENT</span>
+              <span class="node-title">reservations (room_id)</span>
+              <span class="node-desc">Physical Unit Date Allocation & GiST Overbooking Protection</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- DEPARTMENT ENUM ROOT -->
+        <div style="margin-top: 30px;">
+          <div class="node-card root-card">
+            <span class="node-level lvl-0">ROOT ENUM</span>
+            <span class="node-title">dept_name</span>
+            <span class="node-desc">front_desk · housekeeping · kitchen · tours · maintenance</span>
+          </div>
+          <div class="tree-node">
+            <div class="node-card">
+              <span class="node-level lvl-2">LEVEL 2 · 1:N</span>
+              <span class="node-title">resort_inventory</span>
+              <span class="node-desc">Stock Quantity, Unit Thresholds, and Reorder Point Alerts</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TAB 2: RBAC HIERARCHY -->
+    <div id="tab-rbac" class="tab-content">
+      <div class="grid-2">
+        <div class="card" style="border-top: 4px solid var(--accent-amber);">
+          <h3><span class="node-level lvl-4">LEVEL 4</span> Administrator</h3>
+          <p style="color: var(--text-muted); margin-bottom: 12px;">Executive Management & Technical Governance</p>
+          <ul style="padding-left: 20px; font-size: 0.9rem; color: #cbd5e1;">
+            <li>Full read/write access across all system tables and operations</li>
+            <li>Staff account creation and role assignment (staff, receptionist, accounting)</li>
+            <li>One-click database backups and schema migration management</li>
+            <li>Global CSV financial reports and executive revenue analytics</li>
+          </ul>
+        </div>
+
+        <div class="card" style="border-top: 4px solid var(--accent-purple);">
+          <h3><span class="node-level lvl-3">LEVEL 3A</span> Accounting</h3>
+          <p style="color: var(--text-muted); margin-bottom: 12px;">Financial Ledger & Billing Operations</p>
+          <ul style="padding-left: 20px; font-size: 0.9rem; color: #cbd5e1;">
+            <li>Read & adjust booking financial totals and nightly rates</li>
+            <li>Weekly and monthly revenue time-series aggregation</li>
+            <li>Audit guest in-room dining and service order charges</li>
+            <li>Export accounting journals and room occupancy financial records</li>
+          </ul>
+        </div>
+
+        <div class="card" style="border-top: 4px solid var(--accent);">
+          <h3><span class="node-level lvl-2">LEVEL 3B</span> Receptionist</h3>
+          <p style="color: var(--text-muted); margin-bottom: 12px;">Front Desk Operations & Guest Processing</p>
+          <ul style="padding-left: 20px; font-size: 0.9rem; color: #cbd5e1;">
+            <li>Live guest check-in and check-out status transitions</li>
+            <li>Walk-in reservation creation and room assignment</li>
+            <li>Real-time room availability calendar queries</li>
+            <li>Outbound SMS notification dispatch and digital pass distribution</li>
+          </ul>
+        </div>
+
+        <div class="card" style="border-top: 4px solid var(--accent-green);">
+          <h3><span class="node-level lvl-1">LEVEL 2</span> Department Staff</h3>
+          <p style="color: var(--text-muted); margin-bottom: 12px;">Housekeeping, Maintenance, Kitchen & Tours</p>
+          <ul style="padding-left: 20px; font-size: 0.9rem; color: #cbd5e1;">
+            <li>View and execute assigned department operational tasks</li>
+            <li>Update task status (Pending -> In Progress -> Completed)</li>
+            <li>Track resort inventory stock consumption and trigger reorder alerts</li>
+            <li>Fulfill guest in-room dining orders and excursion requests</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: ORGANIZATIONAL DOMAINS -->
+    <div id="tab-domains" class="tab-content">
+      <div class="grid-2">
+        <div class="card">
+          <h3>🏨 Accommodations Domain</h3>
+          <p style="color: var(--text-muted); margin-bottom: 12px;">Physical resort inventory and capacity</p>
+          <table class="table-spec">
+            <tr><th>Entity</th><th>Scope</th></tr>
+            <tr><td><code>rooms</code></td><td>Suites, Villas, Cottages, Dorms</td></tr>
+            <tr><td><code>amenities</code></td><td>Wi-Fi, AC, Pool View, Balcony</td></tr>
+            <tr><td><code>pricing</code></td><td>Nightly rates (PHP) & capacity</td></tr>
+          </table>
+        </div>
+
+        <div class="card">
+          <h3>📅 Reservations Domain</h3>
+          <p style="color: var(--text-muted); margin-bottom: 12px;">Stay lifecycle and overbooking prevention</p>
+          <table class="table-spec">
+            <tr><th>Entity</th><th>Scope</th></tr>
+            <tr><td><code>reservations</code></td><td>Check-in/out dates, guest count</td></tr>
+            <tr><td><code>GiST Guard</code></td><td>Mathematical zero-overbooking rule</td></tr>
+            <tr><td><code>stay_status</code></td><td>Pending -> Confirmed -> Checked In</td></tr>
+          </table>
+        </div>
+
+        <div class="card">
+          <h3>🛎️ Guest Experience Domain</h3>
+          <p style="color: var(--text-muted); margin-bottom: 12px;">In-stay dining, support and feedback</p>
+          <table class="table-spec">
+            <tr><th>Entity</th><th>Scope</th></tr>
+            <tr><td><code>resort_orders</code></td><td>Food, beverages, island tours</td></tr>
+            <tr><td><code>chat_messages</code></td><td>24/7 AI chatbot assistance</td></tr>
+            <tr><td><code>reviews</code></td><td>1-5 star ratings and reviews</td></tr>
+          </table>
+        </div>
+
+        <div class="card">
+          <h3>📊 Operations & Analytics Domain</h3>
+          <p style="color: var(--text-muted); margin-bottom: 12px;">Staff workflows and business intelligence</p>
+          <table class="table-spec">
+            <tr><th>Entity</th><th>Scope</th></tr>
+            <tr><td><code>department_tasks</code></td><td>Housekeeping & maintenance queue</td></tr>
+            <tr><td><code>resort_inventory</code></td><td>Stock counts & reorder points</td></tr>
+            <tr><td><code>analytics_*</code></td><td>Occupancy, RevPAR, weekly revenue</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: STORAGE LIFECYCLE TIERS -->
+    <div id="tab-lifecycle" class="tab-content">
+      <div class="card">
+        <h3>Physical Storage & Lifecycle Tiering</h3>
+        <table class="table-spec" style="font-size: 0.95rem;">
+          <thead>
+            <tr>
+              <th>Tier</th>
+              <th>Medium</th>
+              <th>Latency</th>
+              <th>Mutability</th>
+              <th>Entities / Content</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="node-level lvl-2">Tier 1: Hot Realtime</span></td>
+              <td>In-Memory, WebSockets, LocalStorage</td>
+              <td>&lt; 15ms</td>
+              <td>Ephemeral / Active</td>
+              <td>Socket.io events, typing indicators, <code>jd_session</code> tokens</td>
+            </tr>
+            <tr>
+              <td><span class="node-level lvl-1">Tier 2: Operational OLTP</span></td>
+              <td>PostgreSQL 15+ (Supabase)</td>
+              <td>&lt; 50ms</td>
+              <td>Transactional Read/Write</td>
+              <td><code>profiles</code>, <code>reservations</code>, <code>department_tasks</code>, <code>orders</code></td>
+            </tr>
+            <tr>
+              <td><span class="node-level lvl-3">Tier 3: Audit & Historical</span></td>
+              <td>Indexed Database Tables</td>
+              <td>&lt; 100ms</td>
+              <td>Append-Only / Immutable</td>
+              <td><code>notifications</code> (SMS logs), <code>reviews</code>, completed stay receipts</td>
+            </tr>
+            <tr>
+              <td><span class="node-level lvl-4">Tier 4: Cold Disaster Recovery</span></td>
+              <td>File System & Git Releases</td>
+              <td>Offline</td>
+              <td>Read-Only Versioned Snapshots</td>
+              <td><code>backups/database/*.sql</code>, system configs, git tag <code>v1.0.0-stable</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      document.querySelector(`button[onclick="switchTab('${tabId}')"]`).classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+    }
+  </script>
+</body>
+</html>
