@@ -110,6 +110,9 @@ graph TD
     Reservations -.->|"Timeseries"| AnalyticsDaily
 ```
 
+> [!TIP]
+> For the complete multi-tier flowchart and Entity-Relationship diagram, see [**`DATA_HIERARCHY_DIAGRAM.md`**](./DATA_HIERARCHY_DIAGRAM.md).
+
 ### Entity Hierarchy Breakdown:
 
 | Level | Table / Entity | Parent Entity | Cardinality | Deletion Behavior |
