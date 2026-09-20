@@ -29,7 +29,7 @@ export function getCertificateStatus() {
   return {
     ssl_enabled: credentials.isSecure,
     protocol: credentials.isSecure ? 'HTTPS (TLS v1.3)' : 'HTTP (Reverse Proxy SSL)',
-    issuer: credentials.isSecure ? 'Alon Resort Authority' : 'Self-Signed / External Proxy',
+    issuer: credentials.isSecure ? 'J & D Beach House Authority' : 'Self-Signed / External Proxy',
     valid_until: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
     status: credentials.isSecure ? 'Active & Valid' : 'Active via Upstream Proxy',
   };

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { toast } from './Toasts.jsx';
-import { DefaultUserAvatar } from './AdminIcons.jsx';
+import { toast } from './Toasts.tsx';
+import { DefaultUserAvatar } from './AdminIcons.tsx';
 
 function getMessages(g) {
   if (!g) return [];
@@ -16,13 +16,13 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode }) 
       name: 'John Smith',
       avatar: '👨‍💼',
       channel: 'Messenger',
-      resort: 'Alon Hotels & Resorts',
+      resort: 'J & D Beach House',
       villa: 'Deluxe Seafront Villa #104',
       status: 'Active',
       timeAgo: '1 day ago',
       messages: [
         { id: 1, sender: 'guest', senderName: 'John Smith', text: "Hi! We'd like to ask if early check-in at 11:00 AM is available for our Deluxe Seafront Villa booking tomorrow?", time: 'Yesterday 10:14 AM' },
-        { id: 2, sender: 'bot', senderName: 'Alon AI Assistant', text: "Hello John! Early check-in is subject to room availability upon arrival. Our executive manager has been notified!", time: 'Yesterday 10:15 AM' },
+        { id: 2, sender: 'bot', senderName: 'J & D AI Assistant', text: "Hello John! Early check-in is subject to room availability upon arrival. Our executive manager has been notified!", time: 'Yesterday 10:15 AM' },
         { id: 3, sender: 'guest', senderName: 'John Smith', text: "Great! Can we also reserve a private beachfront candlelight dinner for 2 guests at 7:00 PM?", time: 'Yesterday 10:18 AM' },
       ],
     },
@@ -31,13 +31,13 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode }) 
       name: 'Steve Doe',
       avatar: '👨‍💻',
       channel: 'Webchat',
-      resort: 'Alon Hotels & Resorts',
+      resort: 'J & D Beach House',
       villa: 'Executive Ocean View Suite #202',
       status: 'Active',
       timeAgo: '2 days ago',
       messages: [
         { id: 1, sender: 'guest', senderName: 'Steve Doe', text: "Good day! Do you provide complimentary airport van pickup from Clark/Manila airport?", time: '2 days ago 2:30 PM' },
-        { id: 2, sender: 'bot', senderName: 'Alon AI Assistant', text: "Hi Steve! We provide private executive van transfers upon request.", time: '2 days ago 2:31 PM' },
+        { id: 2, sender: 'bot', senderName: 'J & D AI Assistant', text: "Hi Steve! We provide private executive van transfers upon request.", time: '2 days ago 2:31 PM' },
       ],
     },
     {
@@ -45,13 +45,13 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode }) 
       name: 'Joanna Silva',
       avatar: '👩‍💼',
       channel: 'Whatsapp',
-      resort: 'Alon Hotels & Resorts',
+      resort: 'J & D Beach House',
       villa: 'Garden View Family Room #108',
       status: 'Active',
       timeAgo: '1 week ago',
       messages: [
         { id: 1, sender: 'guest', senderName: 'Joanna Silva', text: "Hello, I need to modify my reservation dates from Nov 24-26 to Nov 27-29. Is there any extra charge?", time: '1 week ago 4:10 PM' },
-        { id: 2, sender: 'bot', senderName: 'Alon AI Assistant', text: "Hello Joanna! Our reservations team is checking room availability for your new dates.", time: '1 week ago 4:12 PM' },
+        { id: 2, sender: 'bot', senderName: 'J & D AI Assistant', text: "Hello Joanna! Our reservations team is checking room availability for your new dates.", time: '1 week ago 4:12 PM' },
       ],
     },
   ];

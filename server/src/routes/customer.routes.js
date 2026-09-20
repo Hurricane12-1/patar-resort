@@ -51,12 +51,12 @@ r.post('/customer/orders', authenticate,
         .select().single();
       if (error) throw error;
       pingSMS({ profileId: req.user.id, toPhone: req.user.phone,
-        body: `Resort: Order received ✦ ${item_name} (${price_php ? `₱${price_php}` : 'Complimentary'}). Staff will deliver shortly.` }).catch(() => {});
+        body: `J & D Beach House: Order received ✦ ${item_name} (${price_php ? `₱${price_php}` : 'Complimentary'}). Staff will deliver shortly.` }).catch(() => {});
       return res.status(201).json(data);
     } catch {
       const order = { id: `ord-${Date.now()}`, item_name, category, price_php, notes, status: 'placed', created_at: new Date().toISOString() };
       pingSMS({ profileId: req.user.id, toPhone: req.user.phone,
-        body: `Resort: Order received ✦ ${item_name} (${price_php ? `₱${price_php}` : 'Complimentary'}). Staff will deliver shortly.` }).catch(() => {});
+        body: `J & D Beach House: Order received ✦ ${item_name} (${price_php ? `₱${price_php}` : 'Complimentary'}). Staff will deliver shortly.` }).catch(() => {});
       return res.status(201).json(order);
     }
   }));
@@ -71,7 +71,7 @@ r.get('/customer/digital-pass', authenticate, asyncH(async (req, res) => {
     return res.json({ active: false });
   }
 
-  const passCode = `ALON-${stay.id.slice(0, 4).toUpperCase()}-${stay.check_in.replace(/-/g, '')}`;
+  const passCode = `JD-${stay.id.slice(0, 4).toUpperCase()}-${stay.check_in.replace(/-/g, '')}`;
   return res.json({
     active: true,
     reservation_id: stay.id,

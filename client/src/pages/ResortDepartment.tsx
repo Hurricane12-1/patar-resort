@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from '../context/AuthContext.jsx';
+import { useAuth } from '../context/AuthContext.tsx';
 import '../styles/resort-department.css';
-import { api } from '../lib/api.js';
-import { fmtTime } from '../lib/format.js';
-import { toast } from '../components/Toasts.jsx';
-import { useReveal } from '../hooks/useReveal.js';
+import { api } from '../lib/api.ts';
+import { fmtTime } from '../lib/format.ts';
+import { toast } from '../components/Toasts.tsx';
+import { useReveal } from '../hooks/useReveal.ts';
 
 const DEPTS = [
   { id: 'all', label: 'All Operations' },

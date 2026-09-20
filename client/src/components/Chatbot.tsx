@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { useAuth } from '../context/AuthContext.jsx';
-import { getSocket } from '../lib/socket.js';
+import { useAuth } from '../context/AuthContext.tsx';
+import { getSocket } from '../lib/socket.ts';
 
 export default function Chatbot() {
   const { session } = useAuth();
@@ -46,7 +46,7 @@ export default function Chatbot() {
         <div className="chat-panel">
           <div className="chat-head">
             <span className="live-dot" />
-            <div><b>Alon Bot</b><br /><small style={{ opacity: .8 }}>Instant answers · WebSocket live</small></div>
+            <div><b>J & D Bot</b><br /><small style={{ opacity: .8 }}>Instant answers · WebSocket live</small></div>
             <button style={{ marginLeft: 'auto', color: '#fff', fontSize: '1.2rem' }}
               aria-label="Close chat" onClick={() => setOpen(false)}>×</button>
           </div>

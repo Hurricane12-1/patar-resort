@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { startOceanSound, stopOceanSound, isOceanPlaying } from '../lib/oceanSynth.js';
-import { toast } from './Toasts.jsx';
+import { startOceanSound, stopOceanSound, isOceanPlaying } from '../lib/oceanSynth.ts';
+import { toast } from './Toasts.tsx';
 
 export default function HomeMenuDashboard({ isOpen, onClose, currentScene = 0, onSelectScene }) {
   const navigate = useNavigate();

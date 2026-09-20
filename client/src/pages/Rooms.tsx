@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import '../styles/rooms.css';
-import { api } from '../lib/api.js';
-import { money } from '../lib/format.js';
-import { roomImg, roomGallery } from '../lib/images.js';
-import Stars from '../components/Stars.jsx';
-import { useReveal } from '../hooks/useReveal.js';
+import { api } from '../lib/api.ts';
+import { money } from '../lib/format.ts';
+import { roomImg, roomGallery } from '../lib/images.ts';
+import Stars from '../components/Stars.tsx';
+import { useReveal } from '../hooks/useReveal.ts';
 
 const CATS = ['All', 'Cottage', 'Garden', 'Suite', 'Villa', 'Dorm'];
 

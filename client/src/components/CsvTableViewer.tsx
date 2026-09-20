@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
-import { parseCSV, jsonToCSV } from '../lib/csvParser.js';
-import { toast } from './Toasts.jsx';
-import { IconCsv, IconDownload, IconSearch } from './AdminIcons.jsx';
+import { parseCSV, jsonToCSV } from '../lib/csvParser.ts';
+import { toast } from './Toasts.tsx';
+import { IconCsv, IconDownload, IconSearch } from './AdminIcons.tsx';
 
 export default function CsvTableViewer({ initialCsvText = '', title = 'CSV Data Explorer', defaultFilename = 'resort_data.csv', isLightMode = false }) {
   const [csvText, setCsvText] = useState(initialCsvText);

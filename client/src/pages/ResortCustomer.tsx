@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from '../context/AuthContext.jsx';
+import { useAuth } from '../context/AuthContext.tsx';
 import '../styles/resort-customer.css';
-import { api } from '../lib/api.js';
-import { money, fmtDate, fmtTime } from '../lib/format.js';
-import { toast } from '../components/Toasts.jsx';
-import { useReveal } from '../hooks/useReveal.js';
-import { useAutoDraft } from '../hooks/useAutoDraft.js';
+import { api } from '../lib/api.ts';
+import { money, fmtDate, fmtTime } from '../lib/format.ts';
+import { toast } from '../components/Toasts.tsx';
+import { useReveal } from '../hooks/useReveal.ts';
+import { useAutoDraft } from '../hooks/useAutoDraft.ts';
 
 export default function ResortCustomer() {
   const { session, profile, setAuthOpen, updateProfile } = useAuth();
@@ -122,7 +122,7 @@ export default function ResortCustomer() {
             </h2>
           </div>
           <button className="btn btn-ghost btn-sm" onClick={() => window.dispatchEvent(new Event('app:open-chat'))}>
-            Ask Resort Bot 💬
+            Ask J & D Bot 💬
           </button>
         </div>
 

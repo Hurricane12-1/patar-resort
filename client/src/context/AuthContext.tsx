@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '../lib/supabaseClient.js';
-import { api } from '../lib/api.js';
-import { toast } from '../components/Toasts.jsx';
+import { supabase } from '../lib/supabaseClient.ts';
+import { api } from '../lib/api.ts';
+import { toast } from '../components/Toasts.tsx';
 
 const Ctx = createContext(null);
 
@@ -21,7 +21,7 @@ const MOCK_ACCOUNTS = {
     middle_name: 'Von',
     last_name: 'Shicksal',
     full_name: 'Johannes Von Shicksal',
-    email: 'administrator@alonresort.ph',
+    email: 'administrator@jdbeachhouse.ph',
     phone: '+63 900 555 0123',
     address: 'Tambak Beach Road',
     city: 'Bolinao',
@@ -33,7 +33,7 @@ const MOCK_ACCOUNTS = {
     middle_name: 'Santos',
     last_name: 'Ramos',
     full_name: 'Elena Santos Ramos',
-    email: 'receptionist@alonresort.ph',
+    email: 'receptionist@jdbeachhouse.ph',
     phone: '+63 900 555 0101',
     address: 'Front Desk Office',
     city: 'Bolinao',
@@ -45,7 +45,7 @@ const MOCK_ACCOUNTS = {
     middle_name: 'Mendoza',
     last_name: 'Ledger',
     full_name: 'Carlos Mendoza Ledger',
-    email: 'accounting@alonresort.ph',
+    email: 'accounting@jdbeachhouse.ph',
     phone: '+63 900 555 0102',
     address: 'Finance Office',
     city: 'Bolinao',
@@ -68,14 +68,14 @@ const MOCK_ACCOUNTS = {
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(() => {
     try {
-      const saved = localStorage.getItem('alon_session');
+      const saved = localStorage.getItem('jd_session') || localStorage.getItem('alon_session');
       return saved ? JSON.parse(saved) : null;
     } catch { return null; }
   });
   
   const [profile, setProfile] = useState(() => {
     try {
-      const saved = localStorage.getItem('alon_profile');
+      const saved = localStorage.getItem('jd_profile') || localStorage.getItem('alon_profile');
       return saved ? JSON.parse(saved) : null;
     } catch { return null; }
   });
@@ -85,16 +85,18 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     if (session) {
-      localStorage.setItem('alon_session', JSON.stringify(session));
+      localStorage.setItem('jd_session', JSON.stringify(session));
     } else {
+      localStorage.removeItem('jd_session');
       localStorage.removeItem('alon_session');
     }
   }, [session]);
 
   useEffect(() => {
     if (profile) {
-      localStorage.setItem('alon_profile', JSON.stringify(profile));
+      localStorage.setItem('jd_profile', JSON.stringify(profile));
     } else {
+      localStorage.removeItem('jd_profile');
       localStorage.removeItem('alon_profile');
     }
   }, [profile]);
@@ -134,6 +136,8 @@ export function AuthProvider({ children }) {
       timeoutId = setTimeout(() => {
         setSession(null);
         setProfile(null);
+        localStorage.removeItem('jd_session');
+        localStorage.removeItem('jd_profile');
         localStorage.removeItem('alon_session');
         localStorage.removeItem('alon_profile');
         supabase.auth.signOut().catch(() => {});
@@ -175,8 +179,8 @@ export function AuthProvider({ children }) {
     };
     setSession(mockSession);
     setProfile(mockProfile);
-    localStorage.setItem('alon_session', JSON.stringify(mockSession));
-    localStorage.setItem('alon_profile', JSON.stringify(mockProfile));
+    localStorage.setItem('jd_session', JSON.stringify(mockSession));
+    localStorage.setItem('jd_profile', JSON.stringify(mockProfile));
     return { data: mockSession, error: null };
   };
 
@@ -185,8 +189,8 @@ export function AuthProvider({ children }) {
     const s = { access_token: `mock-token-${roleKey}`, user: { id: p.id, email: p.email, is_mock: true, profile: p } };
     setSession(s);
     setProfile(p);
-    localStorage.setItem('alon_session', JSON.stringify(s));
-    localStorage.setItem('alon_profile', JSON.stringify(p));
+    localStorage.setItem('jd_session', JSON.stringify(s));
+    localStorage.setItem('jd_profile', JSON.stringify(p));
     toast(`Switched active portal role to ${p.role.toUpperCase()} ✦`);
   };
 
@@ -210,24 +214,26 @@ export function AuthProvider({ children }) {
       if (session?.user?.is_mock) {
         const updated = { ...profile, ...updatedFields };
         setProfile(updated);
-        localStorage.setItem('alon_profile', JSON.stringify(updated));
+        localStorage.setItem('jd_profile', JSON.stringify(updated));
         return updated;
       }
       try {
         const updated = await api.updateMe(updatedFields);
         setProfile(updated);
-        localStorage.setItem('alon_profile', JSON.stringify(updated));
+        localStorage.setItem('jd_profile', JSON.stringify(updated));
         return updated;
       } catch {
         const updated = { ...profile, ...updatedFields };
         setProfile(updated);
-        localStorage.setItem('alon_profile', JSON.stringify(updated));
+        localStorage.setItem('jd_profile', JSON.stringify(updated));
         return updated;
       }
     },
     signOut: async () => {
       setSession(null);
       setProfile(null);
+      localStorage.removeItem('jd_session');
+      localStorage.removeItem('jd_profile');
       localStorage.removeItem('alon_session');
       localStorage.removeItem('alon_profile');
       await supabase.auth.signOut().catch(() => {});

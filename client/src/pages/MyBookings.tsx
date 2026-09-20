@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from '../context/AuthContext.jsx';
+import { useAuth } from '../context/AuthContext.tsx';
 import '../styles/my-bookings.css';
-import Stars from '../components/Stars.jsx';
-import { api } from '../lib/api.js';
-import { supabase } from '../lib/supabaseClient.js';
-import { money, fmtDate } from '../lib/format.js';
-import { toast } from '../components/Toasts.jsx';
+import Stars from '../components/Stars.tsx';
+import { api } from '../lib/api.ts';
+import { supabase } from '../lib/supabaseClient.ts';
+import { money, fmtDate } from '../lib/format.ts';
+import { toast } from '../components/Toasts.tsx';
 
 export default function MyBookings() {
   const { session, setAuthOpen } = useAuth();

@@ -131,7 +131,7 @@ r.get('/analytics/export', authenticate, asyncH(async (req, res) => {
   ].join('\n');
 
   res.setHeader('Content-Type', 'text/csv');
-  res.setHeader('Content-Disposition', 'attachment; filename="alon_resort_analytics_report.csv"');
+  res.setHeader('Content-Disposition', 'attachment; filename="jd_beach_house_analytics_report.csv"');
   res.send(csvContent);
 }));
 

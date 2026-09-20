@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from '../context/AuthContext.jsx';
+import { useAuth } from '../context/AuthContext.tsx';
 import '../styles/accounting.css';
-import CsvTableViewer from '../components/CsvTableViewer.jsx';
-import { api } from '../lib/api.js';
-import { money, fmtDate } from '../lib/format.js';
-import { toast } from '../components/Toasts.jsx';
+import CsvTableViewer from '../components/CsvTableViewer.tsx';
+import { api } from '../lib/api.ts';
+import { money, fmtDate } from '../lib/format.ts';
+import { toast } from '../components/Toasts.tsx';
 
 export default function Accounting() {
   const { profile, signIn } = useAuth();
@@ -57,7 +57,7 @@ export default function Accounting() {
                 type="email"
                 required
                 value={email}
-                placeholder="accounting@alonresort.ph"
+                placeholder="accounting@jdbeachhouse.ph"
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
@@ -172,7 +172,7 @@ export default function Accounting() {
       <div style={{ marginTop: 28 }}>
         <CsvTableViewer
           title="Financial Audit & Transaction Ledger CSV Reader"
-          defaultFilename="alon_financial_audit.csv"
+          defaultFilename="jd_financial_audit.csv"
           initialCsvText={`Transaction ID,Date,Guest Name,Category,Amount (PHP),Payment Method,Status
 TXN-901,2026-08-01,Juan Dela Cruz,Room Booking,14750,Credit Card,Reconciled
 TXN-902,2026-08-02,Maria Clara Santos,Room Booking,7200,GCash,Reconciled

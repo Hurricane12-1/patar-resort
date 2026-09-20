@@ -1,5 +1,5 @@
 -- ============================================================
--- Alon Resort · Bolinao · Full Schema with Rooms, Stays,
+-- J & D Beach House · Bolinao · Full Schema with Rooms, Stays,
 -- Department Tasks, Customer Orders, Analytics, RLS & Multi-Role Staff
 -- ============================================================
 create extension if not exists "pgcrypto";

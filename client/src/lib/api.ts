@@ -89,7 +89,7 @@ const FALLBACK_PASS = {
   room_name: 'Habagat Sea-View Suite',
   check_in: '2026-08-04',
   check_out: '2026-08-07',
-  pass_code: 'ALON-8842-KEY',
+  pass_code: 'JD-8842-KEY',
   rfid_key: 'RFID-SEA-04'
 };
 
@@ -150,7 +150,7 @@ async function req(path, { method = 'GET', body, fallback } = {}) {
     return res.status === 204 ? null : res.json();
   } catch (err) {
     if (fallback !== undefined) {
-      console.warn(`[Alon Resort API Fallback] Serving mock data for /api${path}:`, err.message);
+      console.warn(`[J & D Beach House API Fallback] Serving mock data for /api${path}:`, err.message);
       return fallback;
     }
     throw err;
@@ -171,7 +171,7 @@ export const api = {
   setReservationStatus: (id, status) => req(`/reservations/${id}/status`, { method: 'PATCH', body: { status }, fallback: { id, status } }),
   recentReviews: () => req('/reviews/recent', { fallback: FALLBACK_REVIEWS }),
   addReview: (b) => req('/reviews', { method: 'POST', body: b }),
-  myNotifications: () => req('/notifications/mine', { fallback: [{ id: 'nt-1', status: 'sent', body: 'Welcome to Alon Resort! Check-in keycode sent to your phone.', created_at: new Date().toISOString() }] }),
+  myNotifications: () => req('/notifications/mine', { fallback: [{ id: 'nt-1', status: 'sent', body: 'Welcome to J & D Beach House! Check-in keycode sent to your phone.', created_at: new Date().toISOString() }] }),
   analyticsOverview: () => req('/analytics/overview', { fallback: FALLBACK_ANALYTICS }),
   fullDiveAnalytics: (range = '30d') => req(`/analytics/full-dive?range=${range}`, { fallback: FALLBACK_ANALYTICS }),
   exportAnalyticsCSV: () => window.open('/api/analytics/export', '_blank'),

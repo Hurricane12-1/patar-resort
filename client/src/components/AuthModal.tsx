@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useAuth, generateAccountEmail } from '../context/AuthContext.jsx';
-import { toast } from './Toasts.jsx';
+import { useAuth, generateAccountEmail } from '../context/AuthContext.tsx';
+import { toast } from './Toasts.tsx';
 
 export default function AuthModal() {
   const {

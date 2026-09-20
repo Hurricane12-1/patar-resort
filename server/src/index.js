@@ -84,4 +84,4 @@ const server = tlsCreds.isSecure
 
 attachChatbot(server);
 server.listen(env.port, () =>
-  console.log(`✦ Resort API running on :${env.port} (${tlsCreds.isSecure ? 'HTTPS/TLS' : 'HTTP/NGWF'})`));
+  console.log(`✦ J & D Beach House API running on :${env.port} (${tlsCreds.isSecure ? 'HTTPS/TLS' : 'HTTP/NGWF'})`));

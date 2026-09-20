@@ -1,5 +1,5 @@
 {
-  "name": "alon-resort-server",
+  "name": "jd-beach-house-server",
   "type": "module",
   "scripts": {
     "dev": "node --watch src/index.js",

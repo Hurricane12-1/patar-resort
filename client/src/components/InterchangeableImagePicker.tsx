@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { toast } from './Toasts.jsx';
-import { IconCrown, IconBriefcase, IconTelemetry, IconShield, IconBuilding } from './AdminIcons.jsx';
+import { toast } from './Toasts.tsx';
+import { IconCrown, IconBriefcase, IconTelemetry, IconShield, IconBuilding } from './AdminIcons.tsx';
 
 export function InterchangeableImagePicker({ currentImageUrl, onImageSelect, isLightMode = false }) {
   const [customUrlInput, setCustomUrlInput] = useState('');

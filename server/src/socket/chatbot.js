@@ -23,7 +23,7 @@ export function attachChatbot(httpServer) {
 
   io.on('connection', (socket) => {
     socket.emit('bot:message', {
-      text: "Mabuhay! I'm Alon Bot 🌊 Ask me about room rates, availability, amenities, or getting to Bolinao.",
+      text: "Mabuhay! I'm J & D Bot 🌊 Ask me about room rates, availability, amenities, or getting to Bolinao.",
       chips: CHIPS,
     });
     socket.on('chat:message', async ({ text }) => {

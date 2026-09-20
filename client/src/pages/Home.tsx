@@ -1,13 +1,13 @@
 import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import '../styles/home.css';
-import BookingFlow from '../components/BookingFlow.jsx';
-import Stars from '../components/Stars.jsx';
-import { api } from '../lib/api.js';
-import { money, initials } from '../lib/format.js';
-import { IMG, roomImg } from '../lib/images.js';
-import { useReveal } from '../hooks/useReveal.js';
-import { toggleOceanSound, isOceanPlaying } from '../lib/oceanSynth.js';
+import BookingFlow from '../components/BookingFlow.tsx';
+import Stars from '../components/Stars.tsx';
+import { api } from '../lib/api.ts';
+import { money, initials } from '../lib/format.ts';
+import { IMG, roomImg } from '../lib/images.ts';
+import { useReveal } from '../hooks/useReveal.ts';
+import { toggleOceanSound, isOceanPlaying } from '../lib/oceanSynth.ts';
 
 function Counter({ to, decimals = 0, suffix = '' }) {
   const [v, setV] = useState(0);
@@ -126,7 +126,7 @@ export default function Home() {
         </button>
 
         <div className="container cine-inner">
-          <span className="label light fade-in">Resort · Bolinao, Pangasinan, Philippines</span>
+          <span className="label light fade-in">J & D Beach House · Bolinao, Pangasinan, Philippines</span>
           <h1 className="cine-h1">
             <span className="mask"><span>Where days slow</span></span>
             <span className="mask d2"><span><em>to the tide.</em></span></span>
@@ -249,7 +249,7 @@ export default function Home() {
           ))}
           <button className="btn btn-line" style={{ marginTop: 32 }}
             onClick={() => window.dispatchEvent(new Event('app:open-chat'))}>
-            Ask Resort Bot to plan your day 💬
+            Ask J & D Bot to plan your day 💬
           </button>
         </div>
       </section>

@@ -52,7 +52,7 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
 
   pingSMS({
     profileId: req.user.id, reservationId: stay.id, toPhone: finalPhone,
-    body: `Mabuhay! Alon Resort ✦ Confirmed: ${stay.rooms?.name || roomName}, ${check_in} → ${check_out} (${nights} night${nights > 1 ? 's' : ''}), ₱${total_php.toLocaleString()}. Check-in 2:00 PM.`,
+    body: `Mabuhay! J & D Beach House ✦ Confirmed: ${stay.rooms?.name || roomName}, ${check_in} → ${check_out} (${nights} night${nights > 1 ? 's' : ''}), ₱${total_php.toLocaleString()}. Check-in 2:00 PM.`,
   }).catch(() => {});
 
   return res.status(201).json(stay);
@@ -76,7 +76,7 @@ r.patch('/reservations/:id/cancel', authenticate, asyncH(async (req, res) => {
     .select('*, rooms(name)').single();
   if (error) throw new ApiError(500, error.message);
   pingSMS({ profileId: req.user.id, reservationId: b.id, toPhone: req.user.phone,
-    body: 'Alon Resort: your reservation was cancelled. The beach will miss you — rebook anytime.' }).catch(() => {});
+    body: 'J & D Beach House: your reservation was cancelled. The beach will miss you — rebook anytime.' }).catch(() => {});
   return res.json(data);
 }));
 
@@ -98,9 +98,9 @@ r.patch('/reservations/:id/status', authenticate, requireAdmin,
       .select('*, profiles(id, phone, full_name), rooms(name)').single();
     if (error || !data) throw new ApiError(404, 'Reservation not found');
     const msg =
-      status === 'checked_in'  ? `Alon Resort: welcome! 🌊 Checked in to ${data.rooms?.name || 'your room'}. Enjoy Bolinao!` :
-      status === 'checked_out' ? `Alon Resort: safe travels ✦ Salamat for staying with us. Rate your stay in My Bookings!` :
-      status === 'cancelled'   ? 'Alon Resort: your reservation was cancelled by our team. Rebook anytime.' : null;
+      status === 'checked_in'  ? `J & D Beach House: welcome! 🌊 Checked in to ${data.rooms?.name || 'your room'}. Enjoy Bolinao!` :
+      status === 'checked_out' ? `J & D Beach House: safe travels ✦ Salamat for staying with us. Rate your stay in My Bookings!` :
+      status === 'cancelled'   ? 'J & D Beach House: your reservation was cancelled by our team. Rebook anytime.' : null;
     if (msg && data.profiles) pingSMS({ profileId: data.profiles.id, reservationId: data.id,
       toPhone: data.profiles.phone, body: msg }).catch(() => {});
     return res.json(data);

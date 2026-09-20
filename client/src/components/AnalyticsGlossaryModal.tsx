@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { IconTelemetry, IconTrendingUp, IconCreditCard, IconWallet, IconBuilding, IconLedger, IconStar } from './AdminIcons.jsx';
+import { IconTelemetry, IconTrendingUp, IconCreditCard, IconWallet, IconBuilding, IconLedger, IconStar } from './AdminIcons.tsx';
 
 export function AnalyticsGlossaryModal({ isLightMode = false, onClose }) {
   const [activeTab, setActiveTab] = useState('all');

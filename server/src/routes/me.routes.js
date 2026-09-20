@@ -42,7 +42,7 @@ r.patch('/me/password', authenticate,
     try {
       const { data, error } = await admin.auth.admin.updateUserById(req.user.id, { password });
       if (error) throw error;
-      pingSMS({ profileId: req.user.id, toPhone: req.user.phone, body: 'Resort: Your account password was updated successfully.' }).catch(() => {});
+      pingSMS({ profileId: req.user.id, toPhone: req.user.phone, body: 'J & D Beach House: Your account password was updated successfully.' }).catch(() => {});
       return res.json({ success: true, message: 'Password updated successfully' });
     } catch (err) {
       throw new ApiError(500, err.message);

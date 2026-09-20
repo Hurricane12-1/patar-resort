@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from '../context/AuthContext.jsx';
+import { useAuth } from '../context/AuthContext.tsx';
 import '../styles/receptionist.css';
-import { api } from '../lib/api.js';
-import { fmtDate } from '../lib/format.js';
-import { toast } from '../components/Toasts.jsx';
+import { api } from '../lib/api.ts';
+import { fmtDate } from '../lib/format.ts';
+import { toast } from '../components/Toasts.tsx';
 
 export default function Receptionist() {
   const { profile, signIn } = useAuth();
@@ -67,7 +67,7 @@ export default function Receptionist() {
                 type="email"
                 required
                 value={email}
-                placeholder="receptionist@alonresort.ph"
+                placeholder="receptionist@jdbeachhouse.ph"
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>

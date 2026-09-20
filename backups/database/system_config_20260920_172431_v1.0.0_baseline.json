@@ -1,0 +1,14 @@
+{
+  "system": "J & D Beach House",
+  "backup_timestamp": "2026-09-20T09:24:31.394Z",
+  "backup_type": "v1.0.0_baseline",
+  "version": "1.0.0",
+  "status": "healthy",
+  "modules": [
+    "Public Guest Portal",
+    "Multi-Role Desks (Receptionist, Accounting, Department, Admin)",
+    "Real-time WebSocket Chatbot",
+    "Twilio SMS Notifications",
+    "PostgreSQL Database & GiST Overbooking Guard"
+  ]
+}

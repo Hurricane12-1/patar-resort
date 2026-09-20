@@ -3,7 +3,7 @@ import 'dotenv/config';
 const getEnv = (k, fallback = '') => {
   const v = process.env[k];
   if (!v) {
-    console.warn(`[Alon Resort Env Warning] ${k} is not set. Using fallback/mock value.`);
+    console.warn(`[J & D Beach House Env Warning] ${k} is not set. Using fallback/mock value.`);
     return fallback;
   }
   return v;

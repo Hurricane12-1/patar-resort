@@ -15,7 +15,7 @@ usr-5,Maria,Clara,Santos,Maria Clara Santos,maria.santos@gmail.com,customer,Conf
 // GET /api/csv/sample - Returns sample resort CSV data
 r.get('/csv/sample', authenticate, (_req, res) => {
   res.setHeader('Content-Type', 'text/csv');
-  res.setHeader('Content-Disposition', 'inline; filename="alon_resort_sample.csv"');
+  res.setHeader('Content-Disposition', 'inline; filename="jd_beach_house_sample.csv"');
   res.send(SAMPLE_RESORT_CSV);
 });
 

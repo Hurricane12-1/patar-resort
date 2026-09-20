@@ -1,20 +1,20 @@
 import { Routes, Route, useLocation } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext.jsx';
-import Navbar from './components/Navbar.jsx';
-import Footer from './components/Footer.jsx';
-import Chatbot from './components/Chatbot.jsx';
-import AuthModal from './components/AuthModal.jsx';
-import Toasts from './components/Toasts.jsx';
-import TelemetryTracker from './components/TelemetryTracker.jsx';
-import ProtectedRoute from './components/ProtectedRoute.jsx';
-import Home from './pages/Home.jsx';
-import Rooms from './pages/Rooms.jsx';
-import MyBookings from './pages/MyBookings.jsx';
-import Admin from './pages/Admin.jsx';
-import Accounting from './pages/Accounting.jsx';
-import Receptionist from './pages/Receptionist.jsx';
-import ResortDepartment from './pages/ResortDepartment.jsx';
-import ResortCustomer from './pages/ResortCustomer.jsx';
+import { AuthProvider } from './context/AuthContext.tsx';
+import Navbar from './components/Navbar.tsx';
+import Footer from './components/Footer.tsx';
+import Chatbot from './components/Chatbot.tsx';
+import AuthModal from './components/AuthModal.tsx';
+import Toasts from './components/Toasts.tsx';
+import TelemetryTracker from './components/TelemetryTracker.tsx';
+import ProtectedRoute from './components/ProtectedRoute.tsx';
+import Home from './pages/Home.tsx';
+import Rooms from './pages/Rooms.tsx';
+import MyBookings from './pages/MyBookings.tsx';
+import Admin from './pages/Admin.tsx';
+import Accounting from './pages/Accounting.tsx';
+import Receptionist from './pages/Receptionist.tsx';
+import ResortDepartment from './pages/ResortDepartment.tsx';
+import ResortCustomer from './pages/ResortCustomer.tsx';
 
 function MainAppShell() {
   const location = useLocation();

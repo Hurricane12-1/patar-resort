@@ -1,0 +1,277 @@
+================================================================================
+           J & D BEACH HOUSE — AUDIT OF UNFINISHED & PLACEHOLDER FEATURES
+================================================================================
+Generated: September 20, 2026
+Platform: J & D Beach House (Bolinao, Pangasinan)
+Architecture: React 18 + Express.js + Supabase (PostgreSQL) + Socket.io
+
+--------------------------------------------------------------------------------
+TABLE OF CONTENTS
+--------------------------------------------------------------------------------
+1. Payment Gateway & Real Checkout Processing
+2. Admin Live Guest Chat Persistence & WebSocket Sync
+3. AI Chatbot Intelligence (LLM API Integration)
+4. Cloudinary Cloud CDN & Remote Image Upload
+5. Department Operations: Inventory Mutations & Room Housekeeping Tracking
+6. Physical Room Unit & Specific Room Number Assignment
+7. Accounting, Official Invoicing (OR), Tax (VAT/SC), & Real Ledger
+8. Receptionist Front Desk: Walk-in Booking & Room Transfers
+9. Authentication & Security: Self-Service Password Reset & 2FA
+10. Database Backup Restore / Import Functionality
+11. Email Service & Transactional Email Receipts
+12. Telemetry & Analytics: Replacing Hardcoded Numbers with Real Data
+13. Guest Review Moderation & Admin Reply System
+14. Digital Pass: Apple/Google Wallet (.pkpass) & Physical Lock Integration
+
+================================================================================
+1. PAYMENT GATEWAY & REAL CHECKOUT PROCESSING
+================================================================================
+• Current State:
+  - In client/src/components/BookingFlow.tsx, clicking "Check Availability" and
+    "Confirm" directly creates a reservation in the database with status 'pending'
+    or 'confirmed'.
+  - No payment gateway is integrated. Guests do not input GCash, Maya, PayPal,
+    credit/debit card, or bank transfer deposit slips.
+  - In client/src/pages/Accounting.tsx, transaction logs are static mock CSV data
+    (TXN-901, TXN-902).
+• Missing Components:
+  - Integration with Philippine payment gateways (PayMongo, Maya, Xendit, or Stripe).
+  - Webhook listener endpoint (/api/webhooks/payment) to automatically confirm
+    reservations upon successful payment or flag down-payments.
+  - A database table 'payments' or 'transactions' linking transaction reference,
+    amount, payment method, payment status, and reservation_id.
+• Affected Files:
+  - client/src/components/BookingFlow.tsx
+  - server/src/routes/reservations.routes.js
+  - server/src/routes/webhooks.routes.js
+  - supabase/schema.sql
+
+================================================================================
+2. ADMIN LIVE GUEST CHAT PERSISTENCE & WEBSOCKET SYNC
+================================================================================
+• Current State:
+  - client/src/components/ExecutiveGuestChatModal.tsx and
+    client/src/components/ExecutiveGuestConversationsPanel.tsx show a live chat UI
+    with guest conversations (Joanna Silva, Carlos Mendoza, etc.).
+  - When the admin types and sends a message, it is only appended to local React
+    state via setMessages().
+  - Reloading the page resets all admin replies back to the initial mock state.
+• Missing Components:
+  - Socket.io channel event for two-way operator-to-guest messaging (e.g. 'admin:message',
+    'guest:message').
+  - Persisting chat messages to the 'chat_messages' table in Supabase so conversation
+    history is permanently stored and visible to both the guest and the staff.
+• Affected Files:
+  - client/src/components/ExecutiveGuestChatModal.tsx
+  - client/src/components/ExecutiveGuestConversationsPanel.tsx
+  - server/src/socket/chatbot.js
+  - supabase/schema.sql
+
+================================================================================
+3. AI CHATBOT INTELLIGENCE (LLM API INTEGRATION)
+================================================================================
+• Current State:
+  - The website advertises a smart "J & D Bot AI Concierge".
+  - In server/src/socket/chatbot.js, the chatbot logic uses static regular
+    expressions (/rate|price|cost/, /available|availability/, /amenities/).
+  - If a user asks questions that do not match these specific keyword regexes,
+    it falls back to a generic default text response.
+• Missing Components:
+  - Integration with an actual Generative AI LLM (Google Gemini API / OpenAI API).
+  - Contextual awareness with resort system prompts (room amenities, local Bolinao
+    tours, weather alerts, restaurant menu, and check-in/out policies).
+  - Function calling / Tool use so the AI can look up live room availability
+    and calculate dynamic date-range pricing.
+• Affected Files:
+  - server/src/socket/chatbot.js
+  - server/src/config/env.js
+  - client/src/components/Chatbot.tsx
+
+================================================================================
+4. CLOUDINARY CLOUD CDN & REMOTE IMAGE UPLOAD
+================================================================================
+• Current State:
+  - client/src/components/CloudinarySettingsCard.tsx provides an interface to configure
+    Cloud Name, Upload Preset, and API Key.
+  - The "Test Connection" button only executes a 600ms dummy setTimeout() delay
+    and displays a success toast without actually testing network connectivity.
+  - The backend route server/src/routes/upload.routes.js only writes images to the
+    local server filesystem (server/uploads/).
+• Missing Components:
+  - Server-side Cloudinary SDK integration or direct unsigned client upload to
+    Cloudinary CDN.
+  - Storing uploaded image URLs directly in the Supabase 'rooms' or 'profiles' table.
+• Affected Files:
+  - client/src/components/CloudinarySettingsCard.tsx
+  - server/src/routes/upload.routes.js
+  - server/src/config/env.js
+
+================================================================================
+5. DEPARTMENT OPERATIONS: INVENTORY MUTATIONS & ROOM HOUSEKEEPING
+================================================================================
+• Current State:
+  - In server/src/routes/department.routes.js, the route GET /department/inventory
+    returns inventory items, but there are no endpoints to ADD, UPDATE stock, or
+    DELETE inventory.
+  - In GET /department/room-status, the housekeeping status is synthetically generated
+    on the fly using an alternating index check (i % 2 === 0 ? 'clean_ready' : 'turn_down')
+    and occupied units is calculated using Math.floor(r.units * 0.7).
+• Missing Components:
+  - Real database tracking for individual room unit cleanliness (Dirty, Cleaning in
+    Progress, Inspected, Clean & Ready).
+  - Full CRUD endpoints (POST, PATCH, DELETE) for department inventory restocking,
+    usage logging, and low-stock alerts.
+• Affected Files:
+  - server/src/routes/department.routes.js
+  - client/src/pages/ResortDepartment.tsx
+  - supabase/schema.sql
+
+================================================================================
+6. PHYSICAL ROOM UNIT & SPECIFIC ROOM NUMBER ASSIGNMENT
+================================================================================
+• Current State:
+  - The 'rooms' table stores room categories with total units (e.g. Habagat Suite has 4 units,
+    Nipa Cottage has 6 units).
+  - When a guest books, the reservation only points to the general room category ID.
+  - There is no assignment of an actual physical room number (e.g. Room 101, Villa 2, Cottage #4).
+• Missing Components:
+  - A 'room_units' table (id, room_category_id, unit_number, floor, status).
+  - Assigning a specific physical unit upon check-in or booking confirmation.
+• Affected Files:
+  - supabase/schema.sql
+  - server/src/routes/reservations.routes.js
+  - client/src/pages/Receptionist.tsx
+
+================================================================================
+7. ACCOUNTING, OFFICIAL INVOICING (OR), TAX (VAT/SC), & REAL LEDGER
+================================================================================
+• Current State:
+  - client/src/pages/Accounting.tsx shows summary revenue cards, but KPI fallbacks
+    are hardcoded (ov.total_revenue_php || 245800, adr_php || 2250, revpar_php || 1530).
+  - The transaction ledger relies on static CSV text inside CsvTableViewer.
+  - There is no tax calculation engine.
+• Missing Components:
+  - Philippine tax computation: 12% VAT, 10% Service Charge, Local Government tax,
+    and Senior Citizen / PWD 20% discount deductions.
+  - Printable / downloadable PDF Official Receipt (OR) / Guest Folio generator.
+  - Dedicated 'invoices' and 'ledger_entries' tables tracking debit/credit accounts.
+• Affected Files:
+  - client/src/pages/Accounting.tsx
+  - server/src/routes/analytics.routes.js
+  - supabase/schema.sql
+
+================================================================================
+8. RECEPTIONIST FRONT DESK: WALK-IN BOOKING & ROOM TRANSFERS
+================================================================================
+• Current State:
+  - client/src/pages/Receptionist.tsx only provides buttons to mark a reservation
+    as "Checked-in" or "Checked-out".
+• Missing Components:
+  - Front Desk Walk-In Booking modal allowing staff to book a walk-in guest on the spot.
+  - Room Transfer / Room Switch feature if a guest requests another room or if maintenance
+    issues arise.
+  - Keycard replacement / re-issuance logging.
+  - Early check-in / late check-out fee surcharge calculator.
+• Affected Files:
+  - client/src/pages/Receptionist.tsx
+  - server/src/routes/reservations.routes.js
+
+================================================================================
+9. AUTHENTICATION & SECURITY: SELF-SERVICE PASSWORD RESET & 2FA
+================================================================================
+• Current State:
+  - client/src/components/AuthModal.tsx only has Sign In, Sign Up, and Google Sign-In.
+  - There is no "Forgot Password?" flow for unauthenticated users to receive a reset
+    email or SMS OTP.
+  - In client/src/pages/Admin.tsx, there is a "Two-Factor Auth" toggle in Settings,
+    but toggling it only sets local React state without any backend TOTP or SMS OTP.
+• Missing Components:
+  - Supabase Auth password recovery / reset link flow via email.
+  - TOTP authenticator app verification (QR code scanning) or Twilio Verify SMS 2FA.
+• Affected Files:
+  - client/src/components/AuthModal.tsx
+  - client/src/pages/Admin.tsx
+  - server/src/middleware/auth.js
+
+================================================================================
+10. DATABASE BACKUP RESTORE / IMPORT FUNCTIONALITY
+================================================================================
+• Current State:
+  - In client/src/pages/Admin.tsx, there is an "Export System Backup (JSON)" button
+    that serializes and downloads current client state and records into a JSON file.
+• Missing Components:
+  - There is no "Import / Restore Backup" button or file uploader.
+  - If the database is wiped or migrated, there is no UI mechanism to upload the JSON
+    backup to restore the system state.
+• Affected Files:
+  - client/src/pages/Admin.tsx
+  - server/src/routes/me.routes.js
+
+================================================================================
+11. EMAIL SERVICE & TRANSACTIONAL EMAIL RECEIPTS
+================================================================================
+• Current State:
+  - The system exclusively handles outbound notifications via Twilio SMS (or console dev log).
+  - No email service is configured.
+• Missing Components:
+  - Integration with an email provider (Resend, SendGrid, Mailgun, or Nodemailer/SMTP).
+  - HTML email templates for:
+    * Booking confirmation with date details and resort directions.
+    * Payment receipt and downloadable PDF invoice.
+    * Check-in instructions and Wi-Fi access pass.
+• Affected Files:
+  - server/src/lib/sms.js (needs companion server/src/lib/email.js)
+  - server/src/config/env.js
+  - server/src/routes/reservations.routes.js
+
+================================================================================
+12. TELEMETRY & ANALYTICS: REPLACING HARDCODED NUMBERS WITH REAL DATA
+================================================================================
+• Current State:
+  - In server/src/routes/telemetry.routes.js, live visitor tracking uses an in-memory
+    Node.js Map which loses all data on server reboot.
+  - In GET /telemetry/stats, values like unique_visitors_today (184), checked_in_guests (28),
+    and peak_visitor_hour ('2:00 PM') are hardcoded constants.
+  - In GET /telemetry/predictions, 7-day projections use a fixed formula with a
+    hardcoded confidence score of 94%.
+• Missing Components:
+  - Persistent telemetry logging in PostgreSQL or Redis.
+  - Querying actual database records for checked-in guests (reservations where status = 'checked_in').
+  - Calculating actual peak booking hours from historical reservation timestamps.
+• Affected Files:
+  - server/src/routes/telemetry.routes.js
+  - server/src/routes/analytics.routes.js
+  - client/src/components/Charts.tsx
+
+================================================================================
+13. GUEST REVIEW MODERATION & ADMIN REPLY SYSTEM
+================================================================================
+• Current State:
+  - Guests can post star ratings and comments on client/src/pages/MyBookings.tsx via
+    POST /api/reviews.
+  - Reviews immediately appear publicly on the homepage.
+• Missing Components:
+  - Admin Review Moderation panel in Admin.tsx to approve, reject, or flag inappropriate reviews.
+  - Ability for management to post official public replies to guest reviews.
+• Affected Files:
+  - client/src/pages/Admin.tsx
+  - server/src/routes/reviews.routes.js
+  - supabase/schema.sql
+
+================================================================================
+14. DIGITAL PASS: APPLE/GOOGLE WALLET (.pkpass) & PHYSICAL LOCKS
+================================================================================
+• Current State:
+  - client/src/pages/ResortCustomer.tsx provides a "Digital Keycode Pass" tab displaying
+    a pass code (JD-xxxx-KEY), an RFID key number, and a visual QR mock.
+• Missing Components:
+  - Generation of Apple Wallet (.pkpass) and Google Wallet passes for mobile devices.
+  - API webhook integration with physical electronic keycard or smart door lock systems
+    (e.g. Tuya, TTlock, Salto).
+• Affected Files:
+  - client/src/pages/ResortCustomer.tsx
+  - server/src/routes/customer.routes.js
+
+================================================================================
+                             END OF AUDIT REPORT
+================================================================================

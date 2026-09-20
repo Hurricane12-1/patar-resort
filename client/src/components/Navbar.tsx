@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext.jsx';
-import { api } from '../lib/api.js';
-import { fmtTime } from '../lib/format.js';
+import { useAuth } from '../context/AuthContext.tsx';
+import { api } from '../lib/api.ts';
+import { fmtTime } from '../lib/format.ts';
 
 export default function Navbar() {
   const { session, profile, signOut, setAuthOpen } = useAuth();
@@ -37,7 +37,7 @@ export default function Navbar() {
 
       <header className="navbar">
         <div className="container">
-          <Link to="/" className="logo">
+          <Link to="/" className="logo" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
             <span className="logo-mark" style={{ background: 'linear-gradient(135deg, rgba(56,189,248,.25), rgba(14,165,233,.4))', border: '1px solid rgba(255,255,255,.35)' }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                 <circle cx="12" cy="7" r="3" fill="#F59E0B" />
@@ -45,9 +45,9 @@ export default function Navbar() {
                 <path d="M2 12c3-2 6-2 9 0s6 2 9 0" stroke="#38BDF8" strokeWidth="1.5" strokeLinecap="round" />
               </svg>
             </span>
-            <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
-              <span className="serif" style={{ fontSize: '1.25rem', letterSpacing: '.04em', fontWeight: 600, color: '#fff' }}>ALON</span>
-              <span style={{ fontSize: '.58rem', letterSpacing: '.3em', color: '#9CD2F5', fontWeight: 700, textTransform: 'uppercase' }}>RESORT</span>
+            <span style={{ display: 'flex', flexDirection: 'column', gap: 4, justifyContent: 'center' }}>
+              <span className="serif" style={{ fontSize: '1.32rem', lineHeight: 1.15, letterSpacing: '.06em', fontWeight: 600, color: '#FFFFFF' }}>J & D</span>
+              <span style={{ fontSize: '.62rem', lineHeight: 1, letterSpacing: '.22em', color: '#7DD3FC', fontWeight: 700, textTransform: 'uppercase' }}>BEACH HOUSE</span>
             </span>
           </Link>
 

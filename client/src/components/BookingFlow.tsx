@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { useAuth } from '../context/AuthContext.jsx';
-import { api } from '../lib/api.js';
-import { money, fmtDate, addDaysISO } from '../lib/format.js';
-import { roomImg } from '../lib/images.js';
-import { toast } from './Toasts.jsx';
+import { useAuth } from '../context/AuthContext.tsx';
+import { api } from '../lib/api.ts';
+import { money, fmtDate, addDaysISO } from '../lib/format.ts';
+import { roomImg } from '../lib/images.ts';
+import { toast } from './Toasts.tsx';
 
 export default function BookingFlow({ initialSlug }) {
   const { session, profile, setAuthOpen } = useAuth();

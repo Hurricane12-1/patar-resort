@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext.jsx';
-import { toast } from './Toasts.jsx';
+import { useAuth } from '../context/AuthContext.tsx';
+import { toast } from './Toasts.tsx';
 
 /* ── tiny animated particle field ── */
 function Particles({ count = 30, color = 'rgba(56,189,248,0.15)' }) {
@@ -68,9 +68,9 @@ export default function ProtectedRoute({ children, allowedRoles = [], portalTitl
     setLoading(true);
     try {
       const defaultEmail = isCustomer ? 'user@gmail.com'
-        : isAdmin ? 'administrator@alonresort.ph'
-        : allowedRoles.includes('receptionist') ? 'receptionist@alonresort.ph'
-        : allowedRoles.includes('accounting') ? 'accounting@alonresort.ph'
+        : isAdmin ? 'administrator@jdbeachhouse.ph'
+        : allowedRoles.includes('receptionist') ? 'receptionist@jdbeachhouse.ph'
+        : allowedRoles.includes('accounting') ? 'accounting@jdbeachhouse.ph'
         : 'user@gmail.com';
       const targetEmail = email.trim() || defaultEmail;
       const res = await signIn(targetEmail, password || '1234');
@@ -135,7 +135,7 @@ export default function ProtectedRoute({ children, allowedRoles = [], portalTitl
             </svg>
           </div>
           <h1 className="serif" style={{ fontSize: 'clamp(1.6rem,3vw,2rem)', color: '#FFF', margin: 0, letterSpacing: '.06em' }}>
-            ALON RESORT
+            J & D BEACH HOUSE
           </h1>
           <span style={{
             display: 'inline-block', fontSize: '.65rem', letterSpacing: '.28em', color: accent,
@@ -195,7 +195,7 @@ export default function ProtectedRoute({ children, allowedRoles = [], portalTitl
                 <input
                   type="email"
                   value={email}
-                  placeholder={isCustomer ? 'user@gmail.com' : isAdmin ? 'administrator@alonresort.ph' : 'staff@alonresort.ph'}
+                  placeholder={isCustomer ? 'user@gmail.com' : isAdmin ? 'administrator@jdbeachhouse.ph' : 'staff@jdbeachhouse.ph'}
                   onChange={(e) => setEmail(e.target.value)}
                   style={{
                     width: '100%', padding: '13px 14px 13px 40px', boxSizing: 'border-box',

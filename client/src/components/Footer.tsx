@@ -5,7 +5,7 @@ export default function Footer() {
     <footer>
       <div className="container">
         <div>
-          <h4 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem' }}>ALON RESORT</h4>
+          <h4 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem' }}>J & D BEACH HOUSE</h4>
           <p style={{ fontSize: '.88rem', maxWidth: '30ch', marginTop: 8, color: '#94A3B8' }}>
             Beachfront stays in Bolinao, Pangasinan — cottages, suites and villas with instant SMS pings on every reservation.
           </p>
@@ -23,11 +23,11 @@ export default function Footer() {
         </div>
         <div>
           <h4>Find us</h4>
-          <p style={{ fontSize: '.88rem', color: '#94A3B8' }}>Tambak Beach Road<br />Bolinao, Pangasinan 2406<br />+63 900 555 0123 · hello@alonresort.ph</p>
+          <p style={{ fontSize: '.88rem', color: '#94A3B8' }}>Tambak Beach Road<br />Bolinao, Pangasinan 2406<br />+63 900 555 0123 · hello@jdbeachhouse.ph</p>
         </div>
       </div>
       <div className="foot-bottom">
-        © {new Date().getFullYear()} Alon Resort · Bolinao, Pangasinan · All rights reserved.
+        © {new Date().getFullYear()} J & D Beach House · Bolinao, Pangasinan · All rights reserved.
       </div>
     </footer>
   );

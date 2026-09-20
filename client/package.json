@@ -1,5 +1,5 @@
 {
-  "name": "alon-resort-client",
+  "name": "jd-beach-house-client",
   "type": "module",
   "scripts": {
     "dev": "vite",

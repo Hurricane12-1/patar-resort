@@ -1,23 +1,24 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { useAuth, generateAccountEmail } from '../context/AuthContext.jsx';
+import { useAuth, generateAccountEmail } from '../context/AuthContext.tsx';
 import '../styles/admin.css';
-import { BarChart, AreaLineChart, MultiBarChart, DualLineChart, Sparkline, ReferrerCategoryBarChart, DonutChart, DualSplineWaveChart } from '../components/Charts.jsx';
-import CsvTableViewer from '../components/CsvTableViewer.jsx';
+import { getThemePalette, getAdminStyles } from '../styles/modules/index.ts';
+import { BarChart, AreaLineChart, MultiBarChart, DualLineChart, Sparkline, ReferrerCategoryBarChart, DonutChart, DualSplineWaveChart } from '../components/Charts.tsx';
+import CsvTableViewer from '../components/CsvTableViewer.tsx';
 import {
   IconDashboard, IconDining, IconUsers, IconTelemetry, IconLedger,
   IconCsv, IconSettings, IconSignOut, IconSearch, IconBell,
   IconSun, IconMoon, IconCrown, IconTrendingUp, IconCreditCard,
   IconWallet, IconBuilding, IconShield, IconBriefcase, DefaultUserAvatar
-} from '../components/AdminIcons.jsx';
-import { api, FALLBACK_ANALYTICS } from '../lib/api.js';
-import { supabase } from '../lib/supabaseClient.js';
-import { InterchangeableImagePicker } from '../components/InterchangeableImagePicker.jsx';
-import CloudinarySettingsCard from '../components/CloudinarySettingsCard.jsx';
-import { ExecutiveGuestChatModal } from '../components/ExecutiveGuestChatModal.jsx';
-import { ExecutiveGuestConversationsPanel } from '../components/ExecutiveGuestConversationsPanel.jsx';
-import { AnalyticsGlossaryModal } from '../components/AnalyticsGlossaryModal.jsx';
-import { money, fmtDate, fmtTime } from '../lib/format.js';
-import { toast } from '../components/Toasts.jsx';
+} from '../components/AdminIcons.tsx';
+import { api, FALLBACK_ANALYTICS } from '../lib/api.ts';
+import { supabase } from '../lib/supabaseClient.ts';
+import { InterchangeableImagePicker } from '../components/InterchangeableImagePicker.tsx';
+import CloudinarySettingsCard from '../components/CloudinarySettingsCard.tsx';
+import { ExecutiveGuestChatModal } from '../components/ExecutiveGuestChatModal.tsx';
+import { ExecutiveGuestConversationsPanel } from '../components/ExecutiveGuestConversationsPanel.tsx';
+import { AnalyticsGlossaryModal } from '../components/AnalyticsGlossaryModal.tsx';
+import { money, fmtDate, fmtTime } from '../lib/format.ts';
+import { toast } from '../components/Toasts.tsx';
 
 export default function Admin() {
   const { profile, signIn, signOut } = useAuth();
@@ -52,11 +53,11 @@ export default function Admin() {
     title: 'General Manager & Executive Director',
     avatarKey: 'crown',
     customAvatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300',
-    email: profile?.email || 'administrator@alonresort.ph',
+    email: profile?.email || 'administrator@jdbeachhouse.ph',
     phone: profile?.phone || '+63 900 555 0123',
     department: 'Executive General Management',
-    statusBio: 'Managing Alon Resort Patar Beach Executive Operations 🌴',
-    location: 'Alon Resort - Patar Beach, Bolinao, Pangasinan',
+    statusBio: 'Managing J & D Beach House Patar Beach Executive Operations 🌴',
+    location: 'J & D Beach House - Patar Beach, Bolinao, Pangasinan',
     refreshRate: '5',
     smsNotifications: true,
     telemetryStream: true,
@@ -133,11 +134,11 @@ export default function Admin() {
       name: 'Joanna Silva',
       avatar: '👩‍💼',
       channel: 'Whatsapp',
-      resort: 'Alon Hotels & Resorts',
+      resort: 'J & D Beach House',
       timeAgo: '1 week ago',
       initialMessages: [
         { id: 1, sender: 'guest', senderName: 'Joanna Silva', text: "Hello, I need to modify my reservation dates from Nov 24-26 to Nov 27-29. Is there any extra charge?", time: '1 week ago 4:10 PM' },
-        { id: 2, sender: 'bot', senderName: 'Alon AI Assistant', text: "Hello Joanna! Our reservations team is checking room availability for your new dates.", time: '1 week ago 4:12 PM' },
+        { id: 2, sender: 'bot', senderName: 'J & D AI Assistant', text: "Hello Joanna! Our reservations team is checking room availability for your new dates.", time: '1 week ago 4:12 PM' },
       ],
     },
     {
@@ -145,11 +146,11 @@ export default function Admin() {
       name: 'Steve Doe',
       avatar: '👨‍💻',
       channel: 'Webchat',
-      resort: 'Alon Hotels & Resorts',
+      resort: 'J & D Beach House',
       timeAgo: '2 days ago',
       initialMessages: [
         { id: 1, sender: 'guest', senderName: 'Steve Doe', text: "Good day! Do you provide complimentary airport van pickup from Clark/Manila airport?", time: '2 days ago 2:30 PM' },
-        { id: 2, sender: 'bot', senderName: 'Alon AI Assistant', text: "Hi Steve! We provide private executive van transfers upon request.", time: '2 days ago 2:31 PM' },
+        { id: 2, sender: 'bot', senderName: 'J & D AI Assistant', text: "Hi Steve! We provide private executive van transfers upon request.", time: '2 days ago 2:31 PM' },
       ],
     },
     {
@@ -157,11 +158,11 @@ export default function Admin() {
       name: 'John Smith',
       avatar: '👨‍💼',
       channel: 'Messenger',
-      resort: 'Alon Hotels & Resorts',
+      resort: 'J & D Beach House',
       timeAgo: '1 day ago',
       initialMessages: [
         { id: 1, sender: 'guest', senderName: 'John Smith', text: "Hi! We'd like to ask if early check-in at 11:00 AM is available for our Deluxe Seafront Villa booking tomorrow?", time: 'Yesterday 10:14 AM' },
-        { id: 2, sender: 'bot', senderName: 'Alon AI Assistant', text: "Hello John! Early check-in is subject to room availability upon arrival. Our executive manager has been notified!", time: 'Yesterday 10:15 AM' },
+        { id: 2, sender: 'bot', senderName: 'J & D AI Assistant', text: "Hello John! Early check-in is subject to room availability upon arrival. Our executive manager has been notified!", time: 'Yesterday 10:15 AM' },
         { id: 3, sender: 'guest', senderName: 'John Smith', text: "Great! Can we also reserve a private beachfront candlelight dinner for 2 guests at 7:00 PM?", time: 'Yesterday 10:18 AM' },
       ],
     },
@@ -170,7 +171,7 @@ export default function Admin() {
       name: 'Maria Santos',
       avatar: '👩‍💻',
       channel: 'Messenger',
-      resort: 'Alon Hotels & Resorts',
+      resort: 'J & D Beach House',
       timeAgo: '5h ago',
       initialMessages: [
         { id: 1, sender: 'guest', senderName: 'Maria Santos', text: "Hello! Is late check-out till 3:00 PM possible?", time: 'Today 1:15 PM' },
@@ -181,7 +182,7 @@ export default function Admin() {
       name: 'Alex Rivera',
       avatar: '👨‍🔬',
       channel: 'Booking',
-      resort: 'Alon Hotels & Resorts',
+      resort: 'J & D Beach House',
       timeAgo: '3h ago',
       initialMessages: [
         { id: 1, sender: 'guest', senderName: 'Alex Rivera', text: "Hi! Can I request an extra bed in our Executive Ocean View Suite?", time: 'Today 3:00 PM' },
@@ -192,7 +193,7 @@ export default function Admin() {
       name: 'David Chen',
       avatar: '🧔',
       channel: 'Telegram',
-      resort: 'Alon Hotels & Resorts',
+      resort: 'J & D Beach House',
       timeAgo: '12h ago',
       initialMessages: [
         { id: 1, sender: 'guest', senderName: 'David Chen', text: "Good morning! Can we order breakfast in bed for tomorrow at 8 AM?", time: 'Today 6:40 AM' },
@@ -203,7 +204,7 @@ export default function Admin() {
       name: 'Sarah Connor',
       avatar: '👩‍✈️',
       channel: 'Webchat',
-      resort: 'Alon Hotels & Resorts',
+      resort: 'J & D Beach House',
       timeAgo: '1 day ago',
       initialMessages: [
         { id: 1, sender: 'guest', senderName: 'Sarah Connor', text: "Hi, do you offer scuba diving tours in Hundred Islands?", time: 'Yesterday 5:00 PM' },
@@ -214,7 +215,7 @@ export default function Admin() {
       name: 'Michael Scott',
       avatar: '👨‍💼',
       channel: 'Line',
-      resort: 'Alon Hotels & Resorts',
+      resort: 'J & D Beach House',
       timeAgo: '3 days ●',
       initialMessages: [
         { id: 1, sender: 'guest', senderName: 'Michael Scott', text: "Hello! We are hosting a corporate team retreat for 15 guests.", time: '3 days ago' },
@@ -225,7 +226,7 @@ export default function Admin() {
       name: 'Jessica Alba',
       avatar: '👩‍🎨',
       channel: 'Instagram',
-      resort: 'Alon Hotels & Resorts',
+      resort: 'J & D Beach House',
       timeAgo: '4 days ●',
       initialMessages: [
         { id: 1, sender: 'guest', senderName: 'Jessica Alba', text: "Hi! What time is sunset cocktail hour at the infinity pool bar?", time: '4 days ago' },
@@ -372,7 +373,7 @@ export default function Admin() {
     e.preventDefault();
     setAuthenticating(true);
     try {
-      const res = await signIn(adminEmail || 'administrator@alonresort.ph', adminPass || '1234');
+      const res = await signIn(adminEmail || 'administrator@jdbeachhouse.ph', adminPass || '1234');
       if (res?.error) throw res.error;
       toast('Administrator Portal Authenticated ✦');
     } catch (err) {
@@ -405,7 +406,7 @@ export default function Admin() {
                 type="email"
                 required
                 value={adminEmail}
-                placeholder="administrator@alonresort.ph"
+                placeholder="administrator@jdbeachhouse.ph"
                 onChange={(e) => setAdminEmail(e.target.value)}
               />
             </div>
@@ -563,7 +564,7 @@ export default function Admin() {
             {!sidebarCollapsed && (
               <div>
                 <b style={{ fontSize: '1.05rem', color: themeText, display: 'block', fontFamily: "'Plus Jakarta Sans', sans-serif", lineHeight: 1 }}>
-                  ALON SAAS
+                  J & D SAAS
                 </b>
                 <span style={{ fontSize: '.62rem', color: '#6366F1', fontWeight: 800, letterSpacing: '.08em' }}>EXECUTIVE HUB</span>
               </div>
@@ -1090,7 +1091,7 @@ export default function Admin() {
                           const salesInsightsMap = {
                             'Nov 15': 'Baseline weekend booking revenue from 14 Nipa Cove cottage stays.',
                             'Nov 16': 'Inbound demand surge for Habagat Sea-View Suite weekend getaways.',
-                            'Nov 17': 'Mid-week lull; steady dining revenue from Alon Beach Bar.',
+                            'Nov 17': 'Mid-week lull; steady dining revenue from J & D Beach Bar.',
                             'Nov 18': 'Corporate retreat booking deposit for 15 guests.',
                             'Nov 19': 'Private outrigger boat tour bookings & sunset cocktail packages.',
                             'Nov 20': 'MONTHLY HIGH: ₱92,000 revenue! Driven by Patar Beach Festival weekend villa reservations.',
@@ -1461,7 +1462,7 @@ export default function Admin() {
                   </span>
                   <button
                     type="button"
-                    onClick={() => toast('📷 Cover photo updated to Alon Oceanfront Vista')}
+                    onClick={() => toast('📷 Cover photo updated to J & D Oceanfront Vista')}
                     style={{ fontSize: '.74rem', background: '#3B82F6', color: '#FFF', border: 'none', padding: '6px 14px', borderRadius: 18, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(59,130,246,0.4)' }}
                   >
                     📷 Edit Cover Photo
@@ -1757,7 +1758,7 @@ export default function Admin() {
                           const url = URL.createObjectURL(blob);
                           const a = document.createElement('a');
                           a.href = url;
-                          a.download = 'alon_resort_system_backup.json';
+                          a.download = 'jd_beach_house_system_backup.json';
                           a.click();
                           toast('💾 Operational system backup exported cleanly');
                         }}
@@ -1769,6 +1770,7 @@ export default function Admin() {
                       <button
                         type="button"
                         onClick={() => {
+                          localStorage.removeItem('jd_beach_house_cache');
                           localStorage.removeItem('alon_resort_cache');
                           toast('🧹 Local storage cache reset successfully');
                         }}
@@ -2195,7 +2197,7 @@ export default function Admin() {
             <div style={{ marginTop: 10 }}>
               <CsvTableViewer
                 title="Resort Operational & Account Data Explorer"
-                defaultFilename="alon_resort_accounts.csv"
+                defaultFilename="jd_beach_house_accounts.csv"
                 initialCsvText={`Account ID,First Name,Middle Name,Last Name,Full Name,Email,Role,Status,Total Spent (PHP)
 usr-1,Johannes,Von,Shicksal,Johannes Von Shicksal,jvs001@resortmanagement.ph,administrator,Active,0
 usr-2,Elena,Santos,Ramos,Elena Santos Ramos,esr002@resortmanagement.ph,receptionist,Active,0

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getThemePalette, getCardStyles } from '../styles/modules/index.ts';
 
 export default function CloudinarySettingsCard({
   cloudinaryConfig = {},
@@ -6,19 +7,17 @@ export default function CloudinarySettingsCard({
   isLightMode = false,
   toast = () => {},
 }) {
-  const [cloudName, setCloudName] = useState(cloudinaryConfig.cloudName || 'alon-resort-cloud');
-  const [uploadPreset, setUploadPreset] = useState(cloudinaryConfig.uploadPreset || 'alon_resort_avatars');
+  const [cloudName, setCloudName] = useState(cloudinaryConfig.cloudName || 'jd-beach-house-cloud');
+  const [uploadPreset, setUploadPreset] = useState(cloudinaryConfig.uploadPreset || 'jd_beach_house_avatars');
   const [apiKey, setApiKey] = useState(cloudinaryConfig.apiKey || '849201938501832');
   const [imageUrl, setImageUrl] = useState(
     cloudinaryConfig.imageUrl || 'https://res.cloudinary.com/demo/image/upload/v1614000000/sample.jpg'
   );
   const [testing, setTesting] = useState(false);
 
-  const themeBg = isLightMode ? '#F8FAFC' : 'rgba(2, 6, 23, 0.6)';
-  const themeBorder = isLightMode ? '#E2E8F0' : 'rgba(255, 255, 255, 0.12)';
-  const themeText = isLightMode ? '#0F172A' : '#F8FAFC';
-  const themeMuted = isLightMode ? '#64748B' : '#94A3B8';
-  const inputBg = isLightMode ? '#FFFFFF' : '#0F172A';
+  const t = getThemePalette(isLightMode);
+  const cs = getCardStyles(t);
+  const { themeBg, themeBorder, themeText, themeMuted, inputBg } = t;
 
   const applyTransformation = (transformStr) => {
     try {
@@ -101,7 +100,7 @@ export default function CloudinarySettingsCard({
               setCloudName(e.target.value);
               onConfigChange({ cloudName: e.target.value, uploadPreset, apiKey, imageUrl });
             }}
-            placeholder="e.g. alon-resort-cloud"
+            placeholder="e.g. jd-beach-house-cloud"
             style={{ background: inputBg, color: themeText, border: `1px solid ${themeBorder}` }}
           />
         </div>
@@ -115,7 +114,7 @@ export default function CloudinarySettingsCard({
               setUploadPreset(e.target.value);
               onConfigChange({ cloudName, uploadPreset: e.target.value, apiKey, imageUrl });
             }}
-            placeholder="e.g. alon_resort_avatars"
+            placeholder="e.g. jd_beach_house_avatars"
             style={{ background: inputBg, color: themeText, border: `1px solid ${themeBorder}` }}
           />
         </div>

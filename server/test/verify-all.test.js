@@ -14,7 +14,7 @@ function generateAccountEmail(firstName, middleName, lastName, seq = 1, isStaff 
 }
 
 console.log('\n=============================================================');
-console.log(' 🟢 ALON RESORT SYSTEM VERIFICATION & GREEN SUITE RUNNER 🟢');
+console.log(' 🟢 J & D BEACH HOUSE SYSTEM VERIFICATION & GREEN SUITE RUNNER 🟢');
 console.log('=============================================================\n');
 
 let passedTests = 0;

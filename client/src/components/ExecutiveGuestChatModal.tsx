@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { toast } from './Toasts.jsx';
-import { DefaultUserAvatar } from './AdminIcons.jsx';
+import { toast } from './Toasts.tsx';
+import { DefaultUserAvatar } from './AdminIcons.tsx';
+import { getThemePalette, getModalStyles } from '../styles/modules/index.ts';
 
 export function ExecutiveGuestChatModal({ guest, onClose, isLightMode }) {
   if (!guest) return null;
@@ -47,56 +48,15 @@ export function ExecutiveGuestChatModal({ guest, onClose, isLightMode }) {
     toast(`✔️ Ticket #${guest.id || '1042'} resolved & CSAT 100% recorded!`);
   };
 
-  const themeBg = isLightMode ? '#FFFFFF' : '#0F172A';
-  const themeCardBg = isLightMode ? '#F8FAFC' : '#1E293B';
-  const themeText = isLightMode ? '#0F172A' : '#F8FAFC';
-  const themeMuted = isLightMode ? '#64748B' : '#94A3B8';
-  const themeBorder = isLightMode ? '#E2E8F0' : 'rgba(255, 255, 255, 0.12)';
+  const t = getThemePalette(isLightMode);
+  const ms = getModalStyles(t);
+  const { themeBg, themeCardBg, themeText, themeMuted, themeBorder } = t;
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: 'rgba(2, 6, 23, 0.75)',
-        backdropFilter: 'blur(8px)',
-        zIndex: 1000,
-        display: 'flex',
-        alignItems: 'center',
-        justify: 'center',
-        padding: 20,
-      }}
-      onClick={onClose}
-    >
-      <div
-        style={{
-          width: '100%',
-          maxWidth: 680,
-          background: themeBg,
-          borderRadius: 20,
-          border: `1px solid ${themeBorder}`,
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-          maxHeight: '85vh',
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div style={ms.backdrop} onClick={onClose}>
+      <div style={ms.dialog(680)} onClick={(e) => e.stopPropagation()}>
         {/* CHAT MODAL HEADER */}
-        <div
-          style={{
-            padding: '16px 22px',
-            background: isLightMode ? 'linear-gradient(135deg, #EEF2FF, #E0E7FF)' : 'linear-gradient(135deg, #1E1B4B, #312E81)',
-            borderBottom: `1px solid ${themeBorder}`,
-            display: 'flex',
-            alignItems: 'center',
-            justify: 'space-between',
-          }}
-        >
+        <div style={ms.header}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <DefaultUserAvatar size={42} bg={isLightMode ? '#CBD5E1' : 'rgba(255, 255, 255, 0.18)'} iconColor={isLightMode ? '#475569' : '#FFFFFF'} />
             <div>
@@ -118,7 +78,7 @@ export function ExecutiveGuestChatModal({ guest, onClose, isLightMode }) {
                 </span>
               </div>
               <span style={{ fontSize: '.76rem', color: themeMuted }}>
-                Channel: <b>{guest.channel || 'Messenger'}</b> · {guest.resort || 'Alon Hotels & Resorts'}
+                Channel: <b>{guest.channel || 'Messenger'}</b> · {guest.resort || 'J & D Beach House'}
               </span>
             </div>
           </div>
