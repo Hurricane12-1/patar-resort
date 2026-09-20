@@ -1,21 +1,42 @@
-# 📊 Data Hierarchy Diagram — J & D Beach House
+# 📊 Data Hierarchy & Entity-Relationship Diagrams — J & D Beach House
 
-This dedicated folder contains the official **Data Hierarchy Diagrams** for **J & D Beach House** (Bolinao, Pangasinan).
+This dedicated folder contains the official, normalized **Data Hierarchy** and **Entity-Relationship (ER) Diagrams** for **J & D Beach House** (Bolinao, Pangasinan).
 
-## 1. Vector XML Data Hierarchy Diagram (SVG & Draw.io XML)
+---
+
+## 📐 1. Normalized Entity-Relationship (ER) Diagram (Exact 11 Entities)
+
+The complete relational schema topology with crow's foot cardinality notation (1:1, 1:N, 0..1:N), primary keys, unique constraints, and foreign key references.
+
+![Entity Relationship Diagram](./entity_relationship_diagram.svg)
+
+> [!TIP]
+> **Available Normalized Formats for Diagram 1 (ER Model):**
+> - 📐 **Vector SVG XML (Infinite Zoom)**: [`entity_relationship_diagram.svg`](./entity_relationship_diagram.svg) (Crisp, pixel-perfect vector diagram).
+> - 📄 **Draw.io / diagrams.net XML**: [`entity_relationship_diagram.xml`](./entity_relationship_diagram.xml) (Open/edit in draw.io or diagrams.net).
+> - 📄 **Draw.io Native File**: [`entity_relationship_diagram.drawio`](./entity_relationship_diagram.drawio) (Direct draw.io format).
+> - 🖼️ **Rendered 4K PNG**: [`entity_relationship_diagram.png`](./entity_relationship_diagram.png) (338 KB high-resolution raster).
+> - 🌐 **Interactive Browser Viewer**: Open [`view_er_diagram.html`](./view_er_diagram.html) or [`view_data_hierarchy.html`](./view_data_hierarchy.html).
+
+---
+
+## 🏛️ 2. Multi-Tier Data Hierarchy Flowchart (Tier 0 to Tier 5)
+
+The multi-tier system isolation tree illustrating dependency flows from database root down to analytical aggregation views.
 
 ![J & D Beach House Data Hierarchy Diagram](./data_hierarchy_diagram.svg)
 
 > [!TIP]
-> **Available XML & Vector Formats in this folder:**
+> **Available Normalized Formats for Diagram 2 (Tier Flowchart):**
 > - 📐 **Vector SVG XML (Infinite Zoom)**: [`data_hierarchy_diagram.svg`](./data_hierarchy_diagram.svg) (Crisp, zero-loss vector diagram).
 > - 📄 **Draw.io / diagrams.net XML**: [`data_hierarchy_diagram.xml`](./data_hierarchy_diagram.xml) (Open/edit in draw.io or diagrams.net).
 > - 📄 **Draw.io Native File**: [`data_hierarchy_diagram.drawio`](./data_hierarchy_diagram.drawio) (Direct draw.io format).
+> - 🖼️ **Rendered 4K PNG**: [`data_hierarchy_diagram.png`](./data_hierarchy_diagram.png) (532 KB high-resolution raster).
 > - 🌐 **Interactive Inlined Browser Viewer**: Open [`view_data_hierarchy.html`](./view_data_hierarchy.html) in your browser.
 
 ---
 
-## 2. System Data Hierarchy Diagram (Flowchart TD)
+## 3. System Data Hierarchy Diagram (Flowchart TD)
 
 ```mermaid
 flowchart TD
@@ -215,7 +236,11 @@ erDiagram
 
 ---
 
-## 3. Data Hierarchy Breakdown & Foreign Keys
+## 4. Entity-Relationship (ER) Data Hierarchy Diagram
+
+---
+
+## 5. Data Hierarchy Breakdown & Foreign Keys
 
 | Tier | Entity / Table | Type | Foreign Key Parent | Cardinality | Purpose |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -236,6 +261,7 @@ erDiagram
 
 ---
 
-## 4. Quick Links
-* 🌐 **[View in Browser (HTML Interactive Viewer)](./view_data_hierarchy.html)**: Click to open in your browser.
+## 6. Quick Links
+* 🌐 **[View Both in Browser (HTML Interactive Dual Viewer)](./view_data_hierarchy.html)**: Interactive viewer for ER model and tier hierarchy.
+* 🌐 **[View ER Diagram Standalone (HTML Viewer)](./view_er_diagram.html)**: Clean dedicated viewer for the ER data model.
 * 📄 **[Technical Specification Document](../database/DATA_HIERARCHY.md)**: Full field dictionary and SQL queries.

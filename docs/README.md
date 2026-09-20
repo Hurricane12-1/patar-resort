@@ -13,9 +13,18 @@ docs/
 │   ├── system_architecture_diagram.png  <-- 1904x1516 high-res raster diagram
 │   ├── system_architecture_diagram.svg  <-- Infinite vector zoom diagram
 │   └── view_diagram.html           <-- Browser viewer for architecture diagram
-├── data-hierarchy/                 <-- 📊 Dedicated Data Hierarchy Diagrams Hub
-│   ├── README.md                   <-- Native Mermaid flowchart & ER diagram
-│   └── view_data_hierarchy.html    <-- Browser viewer for live interactive diagrams
+├── data-hierarchy/                 <-- 📊 Dedicated Data Hierarchy & ER Diagrams Hub
+│   ├── README.md                   <-- Full diagrams documentation & specifications
+│   ├── entity_relationship_diagram.svg  <-- Normalized ER diagram (Infinite zoom vector)
+│   ├── entity_relationship_diagram.png  <-- Rendered 4K PNG ER diagram
+│   ├── entity_relationship_diagram.drawio <-- Draw.io native format
+│   ├── entity_relationship_diagram.xml  <-- XML diagram format
+│   ├── view_er_diagram.html        <-- Dedicated browser viewer for ER diagram
+│   ├── data_hierarchy_diagram.svg  <-- Tier 0-5 flowchart (Infinite zoom vector)
+│   ├── data_hierarchy_diagram.png  <-- Rendered 4K PNG flowchart
+│   ├── data_hierarchy_diagram.drawio <-- Draw.io native format
+│   ├── data_hierarchy_diagram.xml  <-- XML diagram format
+│   └── view_data_hierarchy.html    <-- Interactive dual diagram browser viewer
 ├── api/                            <-- REST API & WebSocket Specifications
 │   └── API_REFERENCE.md            <-- All endpoints, request schemas & socket events
 ├── database/                       <-- PostgreSQL Schemas & BaaS Specifications
@@ -24,7 +33,8 @@ docs/
 │   └── DATA_HIERARCHY_DIAGRAM.md   <-- Raw Mermaid diagram code specifications
 ├── guides/                         <-- Setup, Deployment & Disaster Recovery
 │   ├── DEPLOYMENT_AND_SETUP.md     <-- Installation, dev setup & production deployment
-│   └── BACKUP_AND_RESTORE.md       <-- Backup procedures, snapshots & emergency rollback
+│   ├── BACKUP_AND_RESTORE.md       <-- Backup procedures, snapshots & emergency rollback
+│   └── MCP_SERVER_GUIDE.md         <-- Command Prompt & Project MCP Server guide
 ├── roadmap/                        <-- Feature Milestones & Future Updates
 │   └── FEATURE_ROADMAP.md          <-- Phased implementation checklist (from UNFINISHED_FEATURES.txt)
 └── README.md                       <-- This root document
@@ -45,6 +55,7 @@ docs/
 | **Database Design** | [Database Schema](./database/DATABASE_SCHEMA.md) | Supabase PostgreSQL tables, RLS security, and GiST guard. |
 | **Setup & Deploy** | [Deployment Guide](./guides/DEPLOYMENT_AND_SETUP.md) | Environment configuration, running locally and production. |
 | **Disaster Recovery** | [Backup & Restore Guide](./guides/BACKUP_AND_RESTORE.md) | How to execute one-click backups and restore previous states. |
+| **MCP Server Tools** | [MCP Server Guide](./guides/MCP_SERVER_GUIDE.md) | Windows Command Prompt MCP server setup, tool schemas & testing. |
 | **Upcoming Features** | [Feature Roadmap](./roadmap/FEATURE_ROADMAP.md) | Prioritized phases for payments, AI, and smart door locks. |
 
 ---

@@ -1,0 +1,16 @@
+{
+  "name": "jd-beach-house",
+  "version": "1.0.0",
+  "private": true,
+  "description": "J & D Beach House - Full-Stack Resort Management Platform",
+  "scripts": {
+    "diagram:build": "node scripts/generate_professional_diagrams.js",
+    "client:dev": "npm run dev --prefix client",
+    "client:build": "npm run build --prefix client",
+    "server:dev": "npm run dev --prefix server",
+    "server:start": "npm run start --prefix server",
+    "server:test": "npm run test --prefix server",
+    "verify": "node scripts/verify.js",
+    "backup": "node scripts/backup.js"
+  }
+}

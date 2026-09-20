@@ -14,9 +14,11 @@
 > **Available Architecture Diagrams & Viewers in this folder:**
 > - 🌐 **Interactive System Architecture Viewer**: Open [`view_diagram.html`](./view_diagram.html) in your browser for infinite vector zoom.
 > - 🌲 **Interactive Data Hierarchy Explorer**: Open [`data_hierarchy_viewer.html`](./data_hierarchy_viewer.html) in your browser for tabbed entity trees and RBAC levels.
-> - 📐 **Vector SVG (System Architecture)**: [`system_architecture_diagram.svg`](./system_architecture_diagram.svg)
+> - 📐 **Vector SVG (System Architecture)**: [`system_architecture_diagram.svg`](./system_architecture_diagram.svg) (Crisp, infinite zoom vector).
+> - ✏️ **Draw.io Editable Diagram**: [`system_architecture_diagram.drawio`](./system_architecture_diagram.drawio) (Native draw.io / diagrams.net format).
+> - 🖼️ **High-Res Raster Image**: [`system_architecture_diagram.png`](./system_architecture_diagram.png) (3200 × 3900 @ 2x crisp 4K raster image).
 > - 📐 **Vector SVG (Data Hierarchy)**: [`data_hierarchy_diagram.svg`](./data_hierarchy_diagram.svg)
-> - 🖼️ **High-Res Raster Image**: [`system_architecture_diagram.png`](./system_architecture_diagram.png) (1904 × 1516 pixels).
+> - ✏️ **Draw.io Editable (Data Hierarchy)**: [`data_hierarchy_diagram.drawio`](./data_hierarchy_diagram.drawio)
 > - 📄 **Data Hierarchy Technical Document**: [**`docs/database/DATA_HIERARCHY.md`**](../database/DATA_HIERARCHY.md)
 
 ---

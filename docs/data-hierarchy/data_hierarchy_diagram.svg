@@ -1,283 +1,224 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1200" width="1600" height="1200" style="background:#0f172a; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1200" width="1600" height="1200" style="background:#ffffff; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
   <defs>
-    <!-- Card Gradients -->
-    <linearGradient id="dbGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#1e293b" />
-      <stop offset="100%" stop-color="#0f172a" />
-    </linearGradient>
-    <linearGradient id="tier1Grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0284c7" stop-opacity="0.25" />
-      <stop offset="100%" stop-color="#0369a1" stop-opacity="0.1" />
-    </linearGradient>
-    <linearGradient id="tier2Grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0d9488" stop-opacity="0.25" />
-      <stop offset="100%" stop-color="#0f766e" stop-opacity="0.1" />
-    </linearGradient>
-    <linearGradient id="tier3Grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#2563eb" stop-opacity="0.25" />
-      <stop offset="100%" stop-color="#1d4ed8" stop-opacity="0.1" />
-    </linearGradient>
-    <linearGradient id="tier4Grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.25" />
-      <stop offset="100%" stop-color="#6d28d9" stop-opacity="0.1" />
-    </linearGradient>
-    <linearGradient id="tier5Grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#d97706" stop-opacity="0.25" />
-      <stop offset="100%" stop-color="#b45309" stop-opacity="0.1" />
-    </linearGradient>
-
-    <!-- Arrow Markers -->
-    <marker id="arrowCyan" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-      <path d="M 0 1 L 8 5 L 0 9 z" fill="#38bdf8" />
-    </marker>
-    <marker id="arrowTeal" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-      <path d="M 0 1 L 8 5 L 0 9 z" fill="#2dd4bf" />
-    </marker>
-    <marker id="arrowBlue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-      <path d="M 0 1 L 8 5 L 0 9 z" fill="#60a5fa" />
-    </marker>
-    <marker id="arrowPurple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-      <path d="M 0 1 L 8 5 L 0 9 z" fill="#a78bfa" />
-    </marker>
-    <marker id="arrowAmber" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-      <path d="M 0 1 L 8 5 L 0 9 z" fill="#fbbf24" />
-    </marker>
-
-    <!-- Shadows -->
-    <filter id="cardShadow" x="-10%" y="-10%" width="120%" height="125%">
-      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.5" />
+    <filter id="cardShadow" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f172a" flood-opacity="0.07" />
     </filter>
+    <marker id="arrowBlue" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#2563eb" />
+    </marker>
+    <marker id="arrowGray" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#64748b" />
+    </marker>
   </defs>
 
-  <!-- ============================================================= -->
-  <!-- HEADER & TITLE -->
-  <!-- ============================================================= -->
-  <g transform="translate(800, 45)" text-anchor="middle">
-    <rect x="-170" y="-22" width="340" height="24" rx="12" fill="#1e293b" stroke="#38bdf8" stroke-width="1.2" />
-    <text y="-6" fill="#38bdf8" font-size="11" font-weight="700" letter-spacing="1.5">DATA HIERARCHY ARCHITECTURE</text>
-    <text y="28" fill="#ffffff" font-size="24" font-weight="800" letter-spacing="0.5">J &amp; D Beach House · Relational Data Hierarchy</text>
-    <text y="50" fill="#94a3b8" font-size="13">Database Entity Dependency Tree, Foreign Key Constraints &amp; Multi-Tier Isolation</text>
+  <style>
+    .tier-box { fill: #f8fafc; stroke: #64748b; stroke-width: 1.5; rx: 8px; }
+    .tier-title { font-size: 13px; font-weight: 700; fill: #1e293b; }
+    .card-box { fill: #ffffff; stroke: #475569; stroke-width: 1.2; rx: 6px; }
+    .card-box-accent { fill: #ffffff; stroke: #2563eb; stroke-width: 1.6; rx: 6px; }
+    .node-title { font-size: 14px; font-weight: 700; fill: #0f172a; text-anchor: middle; }
+    .node-sub { font-size: 11px; font-weight: 400; fill: #475569; text-anchor: middle; }
+    .node-sub-blue { font-size: 11px; font-weight: 600; fill: #2563eb; text-anchor: middle; }
+    .edge-label-bg { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1; rx: 4px; }
+    .edge-text { font-size: 10px; font-weight: 600; fill: #334155; text-anchor: middle; }
+    .conn-blue { stroke: #2563eb; stroke-width: 1.5; fill: none; }
+    .conn-dashed { stroke: #64748b; stroke-width: 1.5; stroke-dasharray: 5 4; fill: none; }
+  </style>
+
+  <!-- Title Header -->
+  <g transform="translate(800, 35)" text-anchor="middle">
+    <text y="0" font-size="22" font-weight="800" fill="#0f172a">J &amp; D Beach House · Relational Data Hierarchy</text>
+    <text y="22" font-size="12" font-weight="500" fill="#64748b">Multi-Tier Foreign Key Dependencies, PostgreSQL 15+ Schema Isolation &amp; Supabase Identity Roots</text>
   </g>
 
-  <!-- ============================================================= -->
-  <!-- TIER CONTAINERS (BACKGROUND BANDS) -->
-  <!-- ============================================================= -->
-  <!-- Tier 0 Band -->
-  <rect x="50" y="115" width="1500" height="100" rx="12" fill="#111c35" stroke="#1e293b" stroke-width="1.5" />
-  <text x="75" y="145" fill="#64748b" font-size="11" font-weight="800" letter-spacing="1">TIER 0 · DATABASE &amp; BAAS PLATFORM ROOT</text>
+  <!-- TIER 0: DATABASE ROOT -->
+  <g transform="translate(80, 75)">
+    <rect width="1440" height="95" class="tier-box" />
+    <text x="20" y="24" class="tier-title">Tier 0: Database &amp; Schema Root (PostgreSQL 15+ Supabase)</text>
 
-  <!-- Tier 1 Band -->
-  <rect x="50" y="235" width="1500" height="135" rx="12" fill="#111c35" stroke="#1e293b" stroke-width="1.5" />
-  <text x="75" y="265" fill="#38bdf8" font-size="11" font-weight="800" letter-spacing="1">TIER 1 · MASTER ROOTS (IDENTITY, CATALOG &amp; ORG TYPES)</text>
-
-  <!-- Tier 2 Band -->
-  <rect x="50" y="390" width="1500" height="130" rx="12" fill="#111c35" stroke="#1e293b" stroke-width="1.5" />
-  <text x="75" y="420" fill="#2dd4bf" font-size="11" font-weight="800" letter-spacing="1">TIER 2 · USER PROFILES &amp; RBAC ROLE HIERARCHY (1:1 MAPPING)</text>
-
-  <!-- Tier 3 Band -->
-  <rect x="50" y="540" width="1500" height="185" rx="12" fill="#111c35" stroke="#1e293b" stroke-width="1.5" />
-  <text x="75" y="570" fill="#60a5fa" font-size="11" font-weight="800" letter-spacing="1">TIER 3 · CORE TRANSACTIONAL &amp; OPERATIONAL ENGINE</text>
-
-  <!-- Tier 4 Band -->
-  <rect x="50" y="745" width="1500" height="145" rx="12" fill="#111c35" stroke="#1e293b" stroke-width="1.5" />
-  <text x="75" y="775" fill="#a78bfa" font-size="11" font-weight="800" letter-spacing="1">TIER 4 · LEAF TRANSACTIONS &amp; AUDIT TRAILS</text>
-
-  <!-- Tier 5 Band -->
-  <rect x="50" y="910" width="1500" height="145" rx="12" fill="#111c35" stroke="#1e293b" stroke-width="1.5" />
-  <text x="75" y="940" fill="#fbbf24" font-size="11" font-weight="800" letter-spacing="1">TIER 5 · BUSINESS INTELLIGENCE &amp; ANALYTICS AGGREGATIONS</text>
-
-  <!-- ============================================================= -->
-  <!-- CONNECTING ARROWS & RELATIONSHIPS -->
-  <!-- ============================================================= -->
-  <!-- DBRoot to AuthUsers, Rooms, Dept -->
-  <path d="M 800, 195 L 800, 215 L 290, 215 L 290, 280" fill="none" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arrowCyan)" />
-  <path d="M 800, 195 L 800, 280" fill="none" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arrowCyan)" />
-  <path d="M 800, 195 L 800, 215 L 1310, 215 L 1310, 280" fill="none" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arrowCyan)" />
-
-  <!-- AuthUsers to Profiles (1:1 CASCADE) -->
-  <path d="M 290, 350 L 290, 435 L 500, 435" fill="none" stroke="#2dd4bf" stroke-width="2.5" marker-end="url(#arrowTeal)" />
-
-  <!-- Profiles to Reservations -->
-  <path d="M 720, 500 L 720, 525 L 220, 525 L 220, 595" fill="none" stroke="#60a5fa" stroke-width="2" marker-end="url(#arrowBlue)" />
-
-  <!-- Rooms to Reservations -->
-  <path d="M 800, 350 L 800, 375 L 360, 375 L 360, 595" fill="none" stroke="#38bdf8" stroke-width="2" stroke-dasharray="6 3" marker-end="url(#arrowCyan)" />
-
-  <!-- Profiles to Resort Orders -->
-  <path d="M 770, 500 L 770, 540 L 510, 540 L 510, 595" fill="none" stroke="#60a5fa" stroke-width="2" marker-end="url(#arrowBlue)" />
-
-  <!-- Profiles to Chat Messages -->
-  <path d="M 800, 500 L 800, 595" fill="none" stroke="#60a5fa" stroke-width="2" marker-end="url(#arrowBlue)" />
-
-  <!-- Profiles / Dept to Department Tasks -->
-  <path d="M 830, 500 L 830, 540 L 1090, 540 L 1090, 595" fill="none" stroke="#60a5fa" stroke-width="2" marker-end="url(#arrowBlue)" />
-  <path d="M 1250, 350 L 1250, 525 L 1150, 525 L 1150, 595" fill="none" stroke="#fbbf24" stroke-width="1.8" stroke-dasharray="4 3" marker-end="url(#arrowAmber)" />
-
-  <!-- Dept to Resort Inventory -->
-  <path d="M 1370, 350 L 1370, 595" fill="none" stroke="#fbbf24" stroke-width="2" marker-end="url(#arrowAmber)" />
-
-  <!-- Reservations to Reviews (1:1) -->
-  <path d="M 220, 705 L 220, 735 L 530, 735 L 530, 785" fill="none" stroke="#a78bfa" stroke-width="2.5" marker-end="url(#arrowPurple)" />
-
-  <!-- Reservations to Notifications (1:N) -->
-  <path d="M 280, 705 L 280, 745 L 940, 745 L 940, 785" fill="none" stroke="#a78bfa" stroke-width="2" marker-end="url(#arrowPurple)" />
-
-  <!-- Reservations, Rooms, Reviews to Analytics -->
-  <path d="M 180, 705 L 180, 930 L 460, 930 L 460, 960" fill="none" stroke="#fbbf24" stroke-width="2" stroke-dasharray="5 3" marker-end="url(#arrowAmber)" />
-  <path d="M 640, 860 L 640, 915 L 640, 960" fill="none" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrowAmber)" />
-  <path d="M 290, 705 L 290, 920 L 1120, 920 L 1120, 960" fill="none" stroke="#fbbf24" stroke-width="2" stroke-dasharray="5 3" marker-end="url(#arrowAmber)" />
-
-  <!-- ============================================================= -->
-  <!-- ENTITY NODES / CARDS -->
-  <!-- ============================================================= -->
-
-  <!-- TIER 0 NODE: DBRoot -->
-  <g transform="translate(600, 135)" filter="url(#cardShadow)">
-    <rect width="400" height="60" rx="8" fill="url(#dbGrad)" stroke="#38bdf8" stroke-width="1.8" />
-    <text x="20" y="26" fill="#38bdf8" font-size="14" font-weight="700">🐘 PostgreSQL 15+ Core Database (Supabase BaaS)</text>
-    <text x="20" y="46" fill="#94a3b8" font-size="11">Extensions: pgcrypto (UUIDs) · btree_gist (GiST Mathematical Constraints)</text>
+    <g transform="translate(470, 35)" filter="url(#cardShadow)">
+      <rect width="500" height="48" class="card-box" />
+      <text x="250" y="20" class="node-title">Database: J &amp; D Beach House Core DB</text>
+      <text x="250" y="38" class="node-sub">(Public Schema · pgcrypto · btree_gist extensions)</text>
+    </g>
   </g>
 
-  <!-- TIER 1 NODES: auth.users, rooms, dept_name -->
-  <!-- auth.users -->
-  <g transform="translate(130, 280)" filter="url(#cardShadow)">
-    <rect width="320" height="70" rx="8" fill="url(#tier1Grad)" stroke="#38bdf8" stroke-width="2" />
-    <rect x="14" y="10" width="76" height="16" rx="4" fill="#0369a1" />
-    <text x="52" y="22" fill="#e0f2fe" font-size="9" font-weight="700" text-anchor="middle">ROOT AUTH</text>
-    <text x="14" y="44" fill="#ffffff" font-size="16" font-weight="700">auth.users</text>
-    <text x="14" y="58" fill="#94a3b8" font-size="11">Supabase Cryptographic Identity (id UUID, Email, Auth Metadata)</text>
+  <!-- TIER 1: MASTER ROOTS -->
+  <g transform="translate(80, 205)">
+    <rect width="1440" height="120" class="tier-box" />
+    <text x="20" y="24" class="tier-title">Tier 1: Master Roots (Identity &amp; Catalog Assets)</text>
+
+    <!-- auth.users -->
+    <g transform="translate(100, 42)" filter="url(#cardShadow)">
+      <rect width="360" height="60" class="card-box-accent" />
+      <text x="180" y="24" class="node-title">auth.users</text>
+      <text x="180" y="44" class="node-sub-blue">(Supabase Cryptographic Identity Root · UUID)</text>
+    </g>
+
+    <!-- rooms catalog -->
+    <g transform="translate(540, 42)" filter="url(#cardShadow)">
+      <rect width="360" height="60" class="card-box" />
+      <text x="180" y="24" class="node-title">rooms</text>
+      <text x="180" y="44" class="node-sub">(Accommodation Master Catalog &amp; Unit Inventory)</text>
+    </g>
+
+    <!-- dept_name enum -->
+    <g transform="translate(980, 42)" filter="url(#cardShadow)">
+      <rect width="360" height="60" class="card-box" />
+      <text x="180" y="24" class="node-title">dept_name (ENUM)</text>
+      <text x="180" y="44" class="node-sub">(front_desk · housekeeping · kitchen · tours · maintenance)</text>
+    </g>
   </g>
 
-  <!-- rooms -->
-  <g transform="translate(640, 280)" filter="url(#cardShadow)">
-    <rect width="320" height="70" rx="8" fill="url(#tier1Grad)" stroke="#38bdf8" stroke-width="2" />
-    <rect x="14" y="10" width="80" height="16" rx="4" fill="#0369a1" />
-    <text x="54" y="22" fill="#e0f2fe" font-size="9" font-weight="700" text-anchor="middle">ROOT ASSET</text>
-    <text x="14" y="44" fill="#ffffff" font-size="16" font-weight="700">rooms</text>
-    <text x="14" y="58" fill="#94a3b8" font-size="11">Accommodations Catalog (Units, Rates PHP, Capacity, Amenities)</text>
+  <!-- TIER 2: IDENTITY PROFILES -->
+  <g transform="translate(80, 360)">
+    <rect width="1440" height="110" class="tier-box" />
+    <text x="20" y="24" class="tier-title">Tier 2: User Profiles (1:1 Cryptographic Identity Mapping)</text>
+
+    <g transform="translate(420, 35)" filter="url(#cardShadow)">
+      <rect width="600" height="60" class="card-box-accent" />
+      <text x="300" y="24" class="node-title">profiles</text>
+      <text x="300" y="44" class="node-sub-blue">Full Name · Phone · Address · Role: customer | staff | receptionist | accounting | admin</text>
+    </g>
   </g>
 
-  <!-- dept_name -->
-  <g transform="translate(1150, 280)" filter="url(#cardShadow)">
-    <rect width="320" height="70" rx="8" fill="url(#tier1Grad)" stroke="#f59e0b" stroke-width="2" />
-    <rect x="14" y="10" width="76" height="16" rx="4" fill="#78350f" />
-    <text x="52" y="22" fill="#fef3c7" font-size="9" font-weight="700" text-anchor="middle">ROOT ENUM</text>
-    <text x="14" y="44" fill="#ffffff" font-size="16" font-weight="700">dept_name</text>
-    <text x="14" y="58" fill="#94a3b8" font-size="11">front_desk · housekeeping · kitchen · tours · maintenance</text>
+  <!-- Connectors: Tier 0 -> Tier 1 -->
+  <path d="M 720, 170 L 720, 205" class="conn-blue" marker-end="url(#arrowBlue)" />
+
+  <!-- Connectors: Tier 1 Auth -> Tier 2 Profiles -->
+  <path d="M 360, 307 L 360, 335 L 600, 335 L 600, 395" class="conn-blue" marker-end="url(#arrowBlue)" />
+  <g transform="translate(480, 335)">
+    <rect x="-95" y="-8" width="190" height="16" class="edge-label-bg" />
+    <text y="4" class="edge-text">1:1 On Delete Cascade (id = id)</text>
   </g>
 
-  <!-- TIER 2 NODE: profiles -->
-  <g transform="translate(500, 430)" filter="url(#cardShadow)">
-    <rect width="600" height="70" rx="8" fill="url(#tier2Grad)" stroke="#2dd4bf" stroke-width="2.5" />
-    <rect x="16" y="10" width="105" height="18" rx="4" fill="#0f766e" />
-    <text x="68" y="23" fill="#ccfbf1" font-size="10" font-weight="700" text-anchor="middle">1:1 CASCADE AUTH</text>
-    <text x="135" y="24" fill="#5eead4" font-size="12" font-weight="600">FK: profiles.id ➔ auth.users.id (ON DELETE CASCADE)</text>
-    <text x="16" y="46" fill="#ffffff" font-size="17" font-weight="700">profiles</text>
-    <text x="16" y="60" fill="#cbd5e1" font-size="11">Guest &amp; Staff Directory · Attributes: full_name, phone, emergency_contact · Role Hierarchy: customer ➔ staff ➔ receptionist ➔ accounting ➔ administrator</text>
+  <!-- TIER 3: CORE TRANSACTIONAL & OPERATIONAL ENGINE -->
+  <g transform="translate(80, 505)">
+    <rect width="1440" height="145" class="tier-box" />
+    <text x="20" y="24" class="tier-title">Tier 3: Core Transactional &amp; Operational Entities</text>
+
+    <!-- reservations -->
+    <g transform="translate(40, 42)" filter="url(#cardShadow)">
+      <rect width="280" height="85" class="card-box-accent" />
+      <text x="140" y="24" class="node-title">reservations</text>
+      <text x="140" y="42" class="node-sub-blue">[GiST Exclusion Hard Guard]</text>
+      <text x="140" y="58" class="node-sub">Check-In, Check-Out, Nights, Total PHP</text>
+      <text x="140" y="74" class="node-sub">FK: guest_id &amp; room_id</text>
+    </g>
+
+    <!-- resort_orders -->
+    <g transform="translate(340, 42)" filter="url(#cardShadow)">
+      <rect width="250" height="85" class="card-box" />
+      <text x="125" y="24" class="node-title">resort_orders</text>
+      <text x="125" y="44" class="node-sub">Dining, Tour Bookings, Amenities</text>
+      <text x="125" y="62" class="node-sub">Status: pending / confirmed</text>
+      <text x="125" y="76" class="node-sub">FK: guest_id → profiles.id</text>
+    </g>
+
+    <!-- chat_messages -->
+    <g transform="translate(610, 42)" filter="url(#cardShadow)">
+      <rect width="250" height="85" class="card-box" />
+      <text x="125" y="24" class="node-title">chat_messages</text>
+      <text x="125" y="44" class="node-sub">AI Receptionist Dialogues</text>
+      <text x="125" y="62" class="node-sub">Guest Inquiries &amp; Transcripts</text>
+      <text x="125" y="76" class="node-sub">FK: profile_id → profiles.id</text>
+    </g>
+
+    <!-- department_tasks -->
+    <g transform="translate(880, 42)" filter="url(#cardShadow)">
+      <rect width="260" height="85" class="card-box" />
+      <text x="130" y="24" class="node-title">department_tasks</text>
+      <text x="130" y="44" class="node-sub">Housekeeping &amp; Maint Queue</text>
+      <text x="130" y="62" class="node-sub">Task Priority, Status, Assignee</text>
+      <text x="130" y="76" class="node-sub">FK: room_id, dept_name</text>
+    </g>
+
+    <!-- resort_inventory -->
+    <g transform="translate(1160, 42)" filter="url(#cardShadow)">
+      <rect width="240" height="85" class="card-box" />
+      <text x="120" y="24" class="node-title">resort_inventory</text>
+      <text x="120" y="44" class="node-sub">Stock Item Name, Unit Qty</text>
+      <text x="120" y="62" class="node-sub">Reorder Thresholds</text>
+      <text x="120" y="76" class="node-sub">Category: dept_name ENUM</text>
+    </g>
   </g>
 
-  <!-- TIER 3 NODES: reservations, resort_orders, chat_messages, department_tasks, resort_inventory -->
-  <!-- reservations -->
-  <g transform="translate(80, 595)" filter="url(#cardShadow)">
-    <rect width="280" height="110" rx="8" fill="url(#tier3Grad)" stroke="#60a5fa" stroke-width="2.5" />
-    <rect x="12" y="10" width="125" height="18" rx="4" fill="#1d4ed8" />
-    <text x="74" y="23" fill="#dbeafe" font-size="9" font-weight="700" text-anchor="middle">STAY CORE ENGINE</text>
-    <text x="12" y="48" fill="#ffffff" font-size="17" font-weight="700">reservations</text>
-    <text x="12" y="66" fill="#93c5fd" font-size="11">check_in, check_out, nights, total_php, status</text>
-    <text x="12" y="80" fill="#e2e8f0" font-size="10">FK: guest_id ➔ profiles · room_id ➔ rooms</text>
-    <!-- GiST Badge -->
-    <rect x="12" y="87" width="235" height="16" rx="4" fill="#0f172a" stroke="#38bdf8" stroke-width="1" />
-    <text x="129" y="99" fill="#38bdf8" font-size="9" font-weight="700" text-anchor="middle">🛡️ GiST Exclusion: 0 Overbooking Guard</text>
+  <!-- Connectors: Tier 2 Profiles -> Tier 3 Entities -->
+  <path d="M 600, 455 L 600, 485 L 260, 485 L 260, 545" class="conn-blue" marker-end="url(#arrowBlue)" />
+  <path d="M 600, 455 L 600, 485 L 545, 485 L 545, 545" class="conn-blue" marker-end="url(#arrowBlue)" />
+  <path d="M 720, 455 L 720, 485 L 815, 485 L 815, 545" class="conn-blue" marker-end="url(#arrowBlue)" />
+  <path d="M 800, 455 L 800, 485 L 1090, 485 L 1090, 545" class="conn-blue" marker-end="url(#arrowBlue)" />
+
+  <!-- Connectors: Rooms Catalog -> Reservations -->
+  <path d="M 800, 325 L 800, 345 L 220, 345 L 220, 545" class="conn-dashed" marker-end="url(#arrowGray)" />
+
+  <!-- TIER 4: LEAF TRANSACTIONS & AUDIT TRAILS -->
+  <g transform="translate(80, 690)">
+    <rect width="1440" height="130" class="tier-box" />
+    <text x="20" y="24" class="tier-title">Tier 4: Leaf Transactions &amp; Audit Trails</text>
+
+    <!-- reviews -->
+    <g transform="translate(200, 38)" filter="url(#cardShadow)">
+      <rect width="460" height="70" class="card-box" />
+      <text x="230" y="26" class="node-title">reviews</text>
+      <text x="230" y="44" class="node-sub">(1 to 5 Star Rating · Verified Stay Comments · 1:1 per Stay)</text>
+      <text x="230" y="58" class="node-sub">FK: reservation_id → reservations.id</text>
+    </g>
+
+    <!-- notifications -->
+    <g transform="translate(780, 38)" filter="url(#cardShadow)">
+      <rect width="460" height="70" class="card-box" />
+      <text x="230" y="26" class="node-title">notifications</text>
+      <text x="230" y="44" class="node-sub">(Twilio Outbound SMS · Digital Key Delivery · Audit Log)</text>
+      <text x="230" y="58" class="node-sub">FK: reservation_id &amp; profile_id</text>
+    </g>
   </g>
 
-  <!-- resort_orders -->
-  <g transform="translate(380, 595)" filter="url(#cardShadow)">
-    <rect width="260" height="110" rx="8" fill="url(#tier3Grad)" stroke="#60a5fa" stroke-width="1.8" />
-    <rect x="12" y="10" width="95" height="18" rx="4" fill="#1e40af" />
-    <text x="59" y="23" fill="#dbeafe" font-size="9" font-weight="700" text-anchor="middle">1:N GUEST ORDER</text>
-    <text x="12" y="48" fill="#ffffff" font-size="17" font-weight="700">resort_orders</text>
-    <text x="12" y="66" fill="#93c5fd" font-size="11">item_name, category, price_php, status</text>
-    <text x="12" y="80" fill="#e2e8f0" font-size="10">FK: guest_id ➔ profiles(id)</text>
-    <text x="12" y="97" fill="#64748b" font-size="10">Dining, Island Tours, Amenity Orders</text>
+  <!-- Connectors: Reservations -> Tier 4 -->
+  <path d="M 260, 632 L 260, 665 L 510, 665 L 510, 728" class="conn-blue" marker-end="url(#arrowBlue)" />
+  <g transform="translate(380, 665)">
+    <rect x="-60" y="-8" width="120" height="16" class="edge-label-bg" />
+    <text y="4" class="edge-text">1:1 Verified Stay</text>
   </g>
 
-  <!-- chat_messages -->
-  <g transform="translate(660, 595)" filter="url(#cardShadow)">
-    <rect width="260" height="110" rx="8" fill="url(#tier3Grad)" stroke="#60a5fa" stroke-width="1.8" />
-    <rect x="12" y="10" width="100" height="18" rx="4" fill="#1e40af" />
-    <text x="62" y="23" fill="#dbeafe" font-size="9" font-weight="700" text-anchor="middle">1:N CHAT TRANSCRIPT</text>
-    <text x="12" y="48" fill="#ffffff" font-size="17" font-weight="700">chat_messages</text>
-    <text x="12" y="66" fill="#93c5fd" font-size="11">profile_id, role (user/bot), content</text>
-    <text x="12" y="80" fill="#e2e8f0" font-size="10">FK: profile_id ➔ profiles(id)</text>
-    <text x="12" y="97" fill="#64748b" font-size="10">AI Concierge &amp; In-Stay Guest Messages</text>
+  <path d="M 260, 632 L 260, 675 L 1090, 675 L 1090, 728" class="conn-blue" marker-end="url(#arrowBlue)" />
+  <g transform="translate(720, 675)">
+    <rect x="-60" y="-8" width="120" height="16" class="edge-label-bg" />
+    <text y="4" class="edge-text">1:N Delivery Audit</text>
   </g>
 
-  <!-- department_tasks -->
-  <g transform="translate(940, 595)" filter="url(#cardShadow)">
-    <rect width="280" height="110" rx="8" fill="url(#tier3Grad)" stroke="#60a5fa" stroke-width="1.8" />
-    <rect x="12" y="10" width="115" height="18" rx="4" fill="#1e40af" />
-    <text x="69" y="23" fill="#dbeafe" font-size="9" font-weight="700" text-anchor="middle">1:N OPS DISPATCH</text>
-    <text x="12" y="48" fill="#ffffff" font-size="17" font-weight="700">department_tasks</text>
-    <text x="12" y="66" fill="#93c5fd" font-size="11">department, title, room_id, priority, status</text>
-    <text x="12" y="80" fill="#e2e8f0" font-size="10">FK: department ➔ dept_name · created_by ➔ profiles</text>
-    <text x="12" y="97" fill="#64748b" font-size="10">Housekeeping, Maintenance, Front Desk Queue</text>
+  <!-- TIER 5: ANALYTICAL AGGREGATION VIEWS -->
+  <g transform="translate(80, 860)">
+    <rect width="1440" height="130" class="tier-box" />
+    <text x="20" y="24" class="tier-title">Tier 5: Business Intelligence &amp; Analytics Aggregation Views</text>
+
+    <!-- analytics_overview -->
+    <g transform="translate(100, 38)" filter="url(#cardShadow)">
+      <rect width="600" height="70" class="card-box-accent" />
+      <text x="300" y="26" class="node-title">analytics_overview (SQL View)</text>
+      <text x="300" y="44" class="node-sub-blue">Real-Time Occupancy Rate % · Weekly Revenue (PHP) · Arrivals / Departures</text>
+      <text x="300" y="58" class="node-sub">Aggregates reservations, rooms catalog, reviews, notifications</text>
+    </g>
+
+    <!-- analytics_daily -->
+    <g transform="translate(740, 38)" filter="url(#cardShadow)">
+      <rect width="600" height="70" class="card-box-accent" />
+      <text x="300" y="26" class="node-title">analytics_daily (SQL View)</text>
+      <text x="300" y="44" class="node-sub-blue">Timeseries Nights Sold · Revenue Projections · 7-Day Forecast Flags</text>
+      <text x="300" y="58" class="node-sub">Aggregates daily reservation pacing &amp; room rate calendar</text>
+    </g>
   </g>
 
-  <!-- resort_inventory -->
-  <g transform="translate(1240, 595)" filter="url(#cardShadow)">
-    <rect width="280" height="110" rx="8" fill="url(#tier3Grad)" stroke="#fbbf24" stroke-width="2" />
-    <rect x="12" y="10" width="115" height="18" rx="4" fill="#78350f" />
-    <text x="69" y="23" fill="#fef3c7" font-size="9" font-weight="700" text-anchor="middle">STOCK TRACKING</text>
-    <text x="12" y="48" fill="#ffffff" font-size="17" font-weight="700">resort_inventory</text>
-    <text x="12" y="66" fill="#fde68a" font-size="11">item_name (Unique), category, stock_qty, unit</text>
-    <text x="12" y="80" fill="#e2e8f0" font-size="10">FK: category ➔ dept_name</text>
-    <text x="12" y="97" fill="#64748b" font-size="10">Automated Reorder Threshold Alerts</text>
+  <!-- Connectors: Tier 3/4 -> Tier 5 -->
+  <path d="M 180, 632 L 180, 898" class="conn-dashed" marker-end="url(#arrowGray)" />
+  <g transform="translate(180, 840)">
+    <rect x="-85" y="-8" width="170" height="16" class="edge-label-bg" />
+    <text y="4" class="edge-text">Aggregates Stays &amp; Nightly Rev</text>
   </g>
 
-  <!-- TIER 4 NODES: reviews & notifications -->
-  <!-- reviews -->
-  <g transform="translate(380, 785)" filter="url(#cardShadow)">
-    <rect width="380" height="75" rx="8" fill="url(#tier4Grad)" stroke="#a78bfa" stroke-width="2.2" />
-    <rect x="14" y="10" width="110" height="18" rx="4" fill="#4c1d95" />
-    <text x="69" y="23" fill="#ede9fe" font-size="9" font-weight="700" text-anchor="middle">1:1 VERIFIED STAY</text>
-    <text x="14" y="46" fill="#ffffff" font-size="17" font-weight="700">reviews</text>
-    <text x="14" y="62" fill="#ddd6fe" font-size="11">rating (1-5), comment · FK: reservation_id (Unique) · room_id · guest_id</text>
-  </g>
-
-  <!-- notifications -->
-  <g transform="translate(840, 785)" filter="url(#cardShadow)">
-    <rect width="380" height="75" rx="8" fill="url(#tier4Grad)" stroke="#a78bfa" stroke-width="2.2" />
-    <rect x="14" y="10" width="105" height="18" rx="4" fill="#4c1d95" />
-    <text x="66" y="23" fill="#ede9fe" font-size="9" font-weight="700" text-anchor="middle">1:N AUDIT TRAIL</text>
-    <text x="14" y="46" fill="#ffffff" font-size="17" font-weight="700">notifications</text>
-    <text x="14" y="62" fill="#ddd6fe" font-size="11">channel, to_phone, body, status (queued/sent/delivered) · Twilio Outbound Logs</text>
-  </g>
-
-  <!-- TIER 5 NODES: analytics_overview & analytics_daily -->
-  <!-- analytics_overview -->
-  <g transform="translate(260, 960)" filter="url(#cardShadow)">
-    <rect width="480" height="70" rx="8" fill="url(#tier5Grad)" stroke="#fbbf24" stroke-width="2" />
-    <rect x="14" y="10" width="125" height="18" rx="4" fill="#78350f" />
-    <text x="76" y="23" fill="#fef3c7" font-size="9" font-weight="700" text-anchor="middle">MATERIALIZED VIEW</text>
-    <text x="14" y="44" fill="#ffffff" font-size="16" font-weight="700">analytics_overview</text>
-    <text x="14" y="58" fill="#fde68a" font-size="11">Aggregates: arrivals_today, departures_today, occupancy_pct, revenue_week_php, avg_rating</text>
-  </g>
-
-  <!-- analytics_daily -->
-  <g transform="translate(860, 960)" filter="url(#cardShadow)">
-    <rect width="480" height="70" rx="8" fill="url(#tier5Grad)" stroke="#fbbf24" stroke-width="2" />
-    <rect x="14" y="10" width="120" height="18" rx="4" fill="#78350f" />
-    <text x="74" y="23" fill="#fef3c7" font-size="9" font-weight="700" text-anchor="middle">TIMESERIES VIEW</text>
-    <text x="14" y="44" fill="#ffffff" font-size="16" font-weight="700">analytics_daily</text>
-    <text x="14" y="58" fill="#fde68a" font-size="11">Aggregates: day, is_forecast flag, nights_sold count, revenue_php pacing projection</text>
-  </g>
-
-  <!-- ============================================================= -->
-  <!-- FOOTER LEGEND -->
-  <!-- ============================================================= -->
-  <g transform="translate(800, 1140)" text-anchor="middle" font-size="12" fill="#64748b">
-    <text>Solid Lines = Relational Foreign Keys (1:1, 1:N) · Dashed Lines = Master Asset Dependencies &amp; Materialized Aggregations</text>
-    <text y="20">PostgreSQL 15+ &amp; Supabase BaaS · Built for J &amp; D Beach House Capstone Defense</text>
+  <!-- Footer Specification Info -->
+  <g transform="translate(800, 1160)" text-anchor="middle">
+    <text y="0" font-size="12" font-weight="600" fill="#64748b">J &amp; D Beach House · Data Hierarchy &amp; Schema Isolation Specification</text>
+    <text y="18" font-size="11" fill="#94a3b8">Solid Blue = Foreign Key Hierarchy · Dashed Gray = Cross-Tier Dependency &amp; SQL Aggregations · White Cards = Entity Tables &amp; Views</text>
   </g>
 </svg>

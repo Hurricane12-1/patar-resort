@@ -28,9 +28,14 @@ Capstone 1 sided/
 │   ├── data-hierarchy/         <-- 📊 Data Hierarchy diagrams (Mermaid flowchart & ER)
 │   ├── api/                    <-- Complete REST API & WebSocket specifications
 │   ├── database/               <-- PostgreSQL schema, DATA_HIERARCHY.md, RLS policies
-│   ├── guides/                 <-- Deployment, developer setup & disaster recovery
+│   ├── guides/                 <-- Deployment, developer setup, MCP server & backups
 │   ├── roadmap/                <-- Phased feature roadmap & future milestones
 │   └── README.md               <-- Master documentation directory index
+├── mcp-server/                 <-- 🔌 Model Context Protocol (MCP) Server for CLI Tools
+│   ├── index.js                <-- Command Prompt & Project tools MCP server
+│   ├── test.js                 <-- Automated stdio JSON-RPC test suite
+│   ├── start-mcp.bat           <-- One-click batch runner
+│   └── README.md               <-- Setup & protocol specification
 ├── scripts/                    <-- Automation & Utility Tooling
 │   ├── backup.js / backup.bat  <-- One-click automated backup script
 │   └── verify.js / verify.bat  <-- One-click system verification test runner
@@ -69,7 +74,14 @@ node scripts/backup.js [optional_label]
 # Or double-click scripts\backup.bat
 ```
 
-### 3. Local Development Servers
+### 3. Start Command Prompt MCP Server
+To enable direct AI tool integration and terminal execution:
+```bash
+cd mcp-server && node index.js
+# Or double-click mcp-server\start-mcp.bat
+```
+
+### 4. Local Development Servers
 - **Backend**: `cd server && npm start` (Running on `http://localhost:5000`)
 - **Frontend**: `cd client && npm run dev` (Running on `http://localhost:5173`)
 
@@ -83,6 +95,7 @@ All technical manuals, architecture diagrams, and API specifications are housed 
 - 🗄️ [**Database Schema & Security Policies**](./docs/database/DATABASE_SCHEMA.md)
 - 🚀 [**Deployment & Setup Guide**](./docs/guides/DEPLOYMENT_AND_SETUP.md)
 - 🛡️ [**Disaster Recovery & Rollback Guide**](./docs/guides/BACKUP_AND_RESTORE.md)
+- 💻 [**Command Prompt MCP Server Guide**](./docs/guides/MCP_SERVER_GUIDE.md)
 - 🗺️ [**Development Roadmap & Upcoming Releases**](./docs/roadmap/FEATURE_ROADMAP.md)
 
 ---

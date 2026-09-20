@@ -1,1 +1,375 @@
-<svg id="mermaid-svg" width="3138.640625" xmlns="http://www.w3.org/2000/svg" class="flowchart" height="2499.426513671875" viewBox="0 0 3138.640625 2499.426513671875" role="graphics-document document" aria-roledescription="flowchart-v2" xmlns:xlink="http://www.w3.org/1999/xlink"><style xmlns="http://www.w3.org/1999/xhtml">@import url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css");</style><style>#mermaid-svg{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;fill:#333;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#mermaid-svg .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#mermaid-svg .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#mermaid-svg .error-icon{fill:#552222;}#mermaid-svg .error-text{fill:#552222;stroke:#552222;}#mermaid-svg .edge-thickness-normal{stroke-width:1px;}#mermaid-svg .edge-thickness-thick{stroke-width:3.5px;}#mermaid-svg .edge-pattern-solid{stroke-dasharray:0;}#mermaid-svg .edge-thickness-invisible{stroke-width:0;fill:none;}#mermaid-svg .edge-pattern-dashed{stroke-dasharray:3;}#mermaid-svg .edge-pattern-dotted{stroke-dasharray:2;}#mermaid-svg .marker{fill:#333333;stroke:#333333;}#mermaid-svg .marker.cross{stroke:#333333;}#mermaid-svg svg{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;}#mermaid-svg p{margin:0;}#mermaid-svg .label{font-family:"trebuchet ms",verdana,arial,sans-serif;color:#333;}#mermaid-svg .cluster-label text{fill:#333;}#mermaid-svg .cluster-label span{color:#333;}#mermaid-svg .cluster-label span p{background-color:transparent;}#mermaid-svg .label text,#mermaid-svg span{fill:#333;color:#333;}#mermaid-svg .node rect,#mermaid-svg .node circle,#mermaid-svg .node ellipse,#mermaid-svg .node polygon,#mermaid-svg .node path{fill:#ECECFF;stroke:#9370DB;stroke-width:1px;}#mermaid-svg .rough-node .label text,#mermaid-svg .node .label text,#mermaid-svg .image-shape .label,#mermaid-svg .icon-shape .label{text-anchor:middle;}#mermaid-svg .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#mermaid-svg .rough-node .label,#mermaid-svg .node .label,#mermaid-svg .image-shape .label,#mermaid-svg .icon-shape .label{text-align:center;}#mermaid-svg .node.clickable{cursor:pointer;}#mermaid-svg .root .anchor path{fill:#333333!important;stroke-width:0;stroke:#333333;}#mermaid-svg .arrowheadPath{fill:#333333;}#mermaid-svg .edgePath .path{stroke:#333333;stroke-width:1px;}#mermaid-svg .flowchart-link{stroke:#333333;fill:none;}#mermaid-svg .edgeLabel{background-color:rgba(232,232,232, 0.8);text-align:center;}#mermaid-svg .edgeLabel p{background-color:rgba(232,232,232, 0.8);}#mermaid-svg .edgeLabel rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#mermaid-svg .labelBkg{background-color:rgba(232, 232, 232, 0.5);}#mermaid-svg .cluster rect{fill:#ffffde;stroke:#aaaa33;stroke-width:1px;}#mermaid-svg .cluster text{fill:#333;}#mermaid-svg .cluster span{color:#333;}#mermaid-svg div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:12px;background:hsl(80, 100%, 96.2745098039%);border:1px solid #aaaa33;border-radius:2px;pointer-events:none;z-index:100;}#mermaid-svg .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#333;}#mermaid-svg rect.text{fill:none;stroke-width:0;}#mermaid-svg .icon-shape,#mermaid-svg .image-shape{background-color:rgba(232,232,232, 0.8);text-align:center;}#mermaid-svg .icon-shape p,#mermaid-svg .image-shape p{background-color:rgba(232,232,232, 0.8);padding:2px;}#mermaid-svg .icon-shape .label rect,#mermaid-svg .image-shape .label rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#mermaid-svg .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#mermaid-svg .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#mermaid-svg .node .neo-node{stroke:#9370DB;}#mermaid-svg [data-look="neo"].node rect,#mermaid-svg [data-look="neo"].cluster rect,#mermaid-svg [data-look="neo"].node polygon{stroke:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#mermaid-svg [data-look="neo"].swimlane.cluster rect{filter:none;}#mermaid-svg [data-look="neo"].node path{stroke:#9370DB;stroke-width:1px;}#mermaid-svg [data-look="neo"].node .outer-path{filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#mermaid-svg [data-look="neo"].node .neo-line path{stroke:#9370DB;filter:none;}#mermaid-svg [data-look="neo"].node circle{stroke:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#mermaid-svg [data-look="neo"].node circle .state-start{fill:#000000;}#mermaid-svg [data-look="neo"].icon-shape .icon{fill:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#mermaid-svg [data-look="neo"].icon-shape .icon-neo path{stroke:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#mermaid-svg :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker id="mermaid-svg_flowchart-v2-pointEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="mermaid-svg_flowchart-v2-pointStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="mermaid-svg_flowchart-v2-pointEnd-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="11.5" refY="7" markerUnits="userSpaceOnUse" markerWidth="10.5" markerHeight="14" orient="auto"><path d="M 0 0 L 11.5 7 L 0 14 z" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="mermaid-svg_flowchart-v2-pointStart-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="1" refY="7" markerUnits="userSpaceOnUse" markerWidth="11.5" markerHeight="14" orient="auto"><polygon points="0,7 11.5,14 11.5,0" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="mermaid-svg_flowchart-v2-circleEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="mermaid-svg_flowchart-v2-circleStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="mermaid-svg_flowchart-v2-circleEnd-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refY="5" refX="12.25" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="mermaid-svg_flowchart-v2-circleStart-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-2" refY="5" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="mermaid-svg_flowchart-v2-crossEnd" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"/></marker><marker id="mermaid-svg_flowchart-v2-crossStart" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"/></marker><marker id="mermaid-svg_flowchart-v2-crossEnd-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="17.7" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5;"/></marker><marker id="mermaid-svg_flowchart-v2-crossStart-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="-3.5" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5; stroke-dasharray: 1, 0;"/></marker><g class="root"><g class="clusters"><g class="cluster " id="mermaid-svg-ExternalServices" data-look="classic"><rect style="" x="978" y="1309" width="752.5" height="176"/><g class="cluster-label " transform="translate(1248.8515625, 1309)"><foreignObject width="210.796875" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5;"><span class="nodeLabel "><p>5. External Cloud Integrations</p></span></div></foreignObject></g></g><g class="cluster " id="mermaid-svg-DatabaseTier" data-look="classic"><rect style="" x="8" y="1309" width="950" height="681.4264831542969"/><g class="cluster-label " transform="translate(305.625, 1309)"><foreignObject width="354.75" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5;"><span class="nodeLabel "><p>4. Supabase Database &amp; BaaS (PostgreSQL 15+)</p></span></div></foreignObject></g></g><g class="cluster " id="mermaid-svg-BackendTier" data-look="classic"><rect style="" x="70.5" y="810" width="1660" height="377"/><g class="cluster-label " transform="translate(760.890625, 810)"><foreignObject width="279.21875" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5;"><span class="nodeLabel "><p>3. Express.js Backend Server (Node.js)</p></span></div></foreignObject></g></g><g class="cluster " id="mermaid-svg-SecurityTier" data-look="classic"><rect style="" x="1750.5" y="233" width="422.5" height="729"/><g class="cluster-label " transform="translate(1849.71875, 233)"><foreignObject width="224.0625" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5;"><span class="nodeLabel "><p>2. Security &amp; Firewall Perimeter</p></span></div></foreignObject></g></g><g class="cluster " id="mermaid-svg-ClientTier" data-look="classic"><rect style="" x="2193" y="8" width="937.640625" height="2483.426483154297"/><g class="cluster-label " transform="translate(2494.46875, 8)"><foreignObject width="334.703125" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5;"><span class="nodeLabel "><p>1. Frontend Client Layer (React 18 + Vite + TS)</p></span></div></foreignObject></g></g></g><g class="edgePaths"><path d="M2358,135L2358,143.167C2358,151.333,2358,167.667,2358,184C2358,200.333,2358,216.667,2320.319,232.788C2282.638,248.91,2207.276,264.82,2169.595,272.774L2131.914,280.729" id="mermaid-svg-L_GuestPortal_RateLimit_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_GuestPortal_RateLimit_0" data-points="W3sieCI6MjM1OCwieSI6MTM1fSx7IngiOjIzNTgsInkiOjE4NH0seyJ4IjoyMzU4LCJ5IjoyMzN9LHsieCI6MjEyOCwieSI6MjgxLjU1NTU1NTU1NTU1NTU0fV0=" data-look="classic" marker-end="url(#mermaid-svg_flowchart-v2-pointEnd)"/><path d="M2668,135L2668,143.167C2668,151.333,2668,167.667,2668,184C2668,200.333,2668,216.667,2578.662,234.967C2489.325,253.268,2310.65,273.535,2221.312,283.669L2131.975,293.803" id="mermaid-svg-L_CustomerHub_RateLimit_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_CustomerHub_RateLimit_0" data-points="W3sieCI6MjY2OCwieSI6MTM1fSx7IngiOjI2NjgsInkiOjE4NH0seyJ4IjoyNjY4LCJ5IjoyMzN9LHsieCI6MjEyOCwieSI6Mjk0LjI1MzczMTM0MzI4MzU2fV0=" data-look="classic" marker-end="url(#mermaid-svg_flowchart-v2-pointEnd)"/><path d="M2735.359,2340.426L2740.411,2334.26C2745.464,2328.093,2755.568,2315.76,2760.62,2296.926C2765.672,2278.093,2765.672,2252.76,2765.672,2229.426C2765.672,2206.093,2765.672,2184.76,2765.672,2169.926C2765.672,2155.093,2765.672,2146.76,2765.672,2134.426C2765.672,2122.093,2765.672,2105.76,2765.672,2089.426C2765.672,2073.093,2765.672,2056.76,2765.672,2044.426C2765.672,2032.093,2765.672,2023.76,2765.672,2015.426C2765.672,2007.093,2765.672,1998.76,2765.672,1979.926C2765.672,1961.093,2765.672,1931.76,2765.672,1898.426C2765.672,1865.093,2765.672,1827.76,2765.672,1787.724C2765.672,1747.689,2765.672,1704.951,2765.672,1662.213C2765.672,1619.475,2765.672,1576.738,2765.672,1547.202C2765.672,1517.667,2765.672,1501.333,2765.672,1478.5C2765.672,1455.667,2765.672,1426.333,2765.672,1397C2765.672,1367.667,2765.672,1338.333,2765.672,1313.5C2765.672,1288.667,2765.672,1268.333,2765.672,1248C2765.672,1227.667,2765.672,1207.333,2765.672,1182.5C2765.672,1157.667,2765.672,1128.333,2765.672,1097C2765.672,1065.667,2765.672,1032.333,2651.477,1009.5C2537.281,986.667,2308.891,974.333,2194.695,955.5C2080.5,936.667,2080.5,911.333,2080.5,886C2080.5,860.667,2080.5,835.333,2080.5,816.5C2080.5,797.667,2080.5,785.333,2080.5,764.5C2080.5,743.667,2080.5,714.333,2080.5,685C2080.5,655.667,2080.5,626.333,2080.5,595C2080.5,563.667,2080.5,530.333,2080.5,497C2080.5,463.667,2080.5,430.333,2075.175,407.986C2069.849,385.639,2059.199,374.279,2053.874,368.598L2048.548,362.918" id="mermaid-svg-L_StaffPortals_RateLimit_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_StaffPortals_RateLimit_0" data-points="W3sieCI6MjczNS4zNTkzMzU5Mzc1LCJ5IjoyMzQwLjQyNjQ4MzE1NDI5N30seyJ4IjoyNzY1LjY3MTg3NSwieSI6MjMwMy40MjY0ODMxNTQyOTd9LHsieCI6Mjc2NS42NzE4NzUsInkiOjIyMjcuNDI2NDgzMTU0Mjk3fSx7IngiOjI3NjUuNjcxODc1LCJ5IjoyMTYzLjQyNjQ4MzE1NDI5N30seyJ4IjoyNzY1LjY3MTg3NSwieSI6MjEzOC40MjY0ODMxNTQyOTd9LHsieCI6Mjc2NS42NzE4NzUsInkiOjIwODkuNDI2NDgzMTU0Mjk3fSx7IngiOjI3NjUuNjcxODc1LCJ5IjoyMDQwLjQyNjQ4MzE1NDI5Njl9LHsieCI6Mjc2NS42NzE4NzUsInkiOjIwMTUuNDI2NDgzMTU0Mjk2OX0seyJ4IjoyNzY1LjY3MTg3NSwieSI6MTk5MC40MjY0ODMxNTQyOTY5fSx7IngiOjI3NjUuNjcxODc1LCJ5IjoxOTAyLjQyNjQ4MzE1NDI5Njl9LHsieCI6Mjc2NS42NzE4NzUsInkiOjE3OTAuNDI2NDgzMTU0Mjk2OX0seyJ4IjoyNzY1LjY3MTg3NSwieSI6MTY2Mi4yMTMyNDE1NzcxNDg0fSx7IngiOjI3NjUuNjcxODc1LCJ5IjoxNTM0fSx7IngiOjI3NjUuNjcxODc1LCJ5IjoxNDg1fSx7IngiOjI3NjUuNjcxODc1LCJ5IjoxMzk3fSx7IngiOjI3NjUuNjcxODc1LCJ5IjoxMzA5fSx7IngiOjI3NjUuNjcxODc1LCJ5IjoxMjQ4fSx7IngiOjI3NjUuNjcxODc1LCJ5IjoxMTg3fSx7IngiOjI3NjUuNjcxODc1LCJ5IjoxMDk5fSx7IngiOjI3NjUuNjcxODc1LCJ5Ijo5OTl9LHsieCI6MjA4MC41LCJ5Ijo5NjJ9LHsieCI6MjA4MC41LCJ5Ijo4ODZ9LHsieCI6MjA4MC41LCJ5Ijo4MTB9LHsieCI6MjA4MC41LCJ5Ijo3NzN9LHsieCI6MjA4MC41LCJ5Ijo2ODV9LHsieCI6MjA4MC41LCJ5Ijo1OTd9LHsieCI6MjA4MC41LCJ5Ijo0OTd9LHsieCI6MjA4MC41LCJ5IjozOTd9LHsieCI6MjA0NS44MTI1LCJ5IjozNjB9XQ==" data-look="classic" marker-end="url(#mermaid-svg_flowchart-v2-pointEnd)"/><path d="M1950.188,360L1944.406,366.167C1938.625,372.333,1927.063,384.667,1921.281,396.333C1915.5,408,1915.5,419,1915.5,424.5L1915.5,430" id="mermaid-svg-L_RateLimit_NGWF_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_RateLimit_NGWF_0" data-points="W3sieCI6MTk1MC4xODc1LCJ5IjozNjB9LHsieCI6MTkxNS41LCJ5IjozOTd9LHsieCI6MTkxNS41LCJ5Ijo0MzR9XQ==" data-look="classic" marker-end="url(#mermaid-svg_flowchart-v2-pointEnd)"/><path d="M1915.5,560L1915.5,566.167C1915.5,572.333,1915.5,584.667,1915.5,596.333C1915.5,608,1915.5,619,1915.5,624.5L1915.5,630" id="mermaid-svg-L_NGWF_AntiXSS_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_NGWF_AntiXSS_0" data-points="W3sieCI6MTkxNS41LCJ5Ijo1NjB9LHsieCI6MTkxNS41LCJ5Ijo1OTd9LHsieCI6MTkxNS41LCJ5Ijo2MzR9XQ==" data-look="classic" marker-end="url(#mermaid-svg_flowchart-v2-pointEnd)"/><path d="M1915.5,736L1915.5,742.167C1915.5,748.333,1915.5,760.667,1915.5,773C1915.5,785.333,1915.5,797.667,1915.5,807.333C1915.5,817,1915.5,824,1915.5,827.5L1915.5,831" id="mermaid-svg-L_AntiXSS_CSRF_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_AntiXSS_CSRF_0" data-points="W3sieCI6MTkxNS41LCJ5Ijo3MzZ9LHsieCI6MTkxNS41LCJ5Ijo3NzN9LHsieCI6MTkxNS41LCJ5Ijo4MTB9LHsieCI6MTkxNS41LCJ5Ijo4MzV9XQ==" data-look="classic" marker-end="url(#mermaid-svg_flowchart-v2-pointEnd)"/><path d="M1915.5,937L1915.5,941.167C1915.5,945.333,1915.5,953.667,1812.618,964C1709.737,974.333,1503.974,986.667,1339.211,1005.082C1174.449,1023.497,1050.686,1047.994,988.805,1060.243L926.924,1072.491" id="mermaid-svg-L_CSRF_RESTApi_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_CSRF_RESTApi_0" data-points="W3sieCI6MTkxNS41LCJ5Ijo5Mzd9LHsieCI6MTkxNS41LCJ5Ijo5NjJ9LHsieCI6MTI5OC4yMTA5Mzc1LCJ5Ijo5OTl9LHsieCI6OTIzLCJ5IjoxMDczLjI2ODE3Mzg3NTM5MjR9XQ==" data-look="classic" marker-end="url(#mermaid-svg_flowchart-v2-pointEnd)"/><path d="M2971.82,127L2971.82,136.5C2971.82,146,2971.82,165,2971.82,182.667C2971.82,200.333,2971.82,216.667,2971.82,237.5C2971.82,258.333,2971.82,283.667,2971.82,311C2971.82,338.333,2971.82,367.667,2971.82,399C2971.82,430.333,2971.82,463.667,2971.82,497C2971.82,530.333,2971.82,563.667,2971.82,595C2971.82,626.333,2971.82,655.667,2971.82,685C2971.82,714.333,2971.82,743.667,2971.82,764.5C2971.82,785.333,2971.82,797.667,2538.1,815.88C2104.38,834.093,1236.939,858.186,803.219,870.232L369.498,882.278" id="mermaid-svg-L_SocketClient_SocketServer_0" class=" edge-thickness-thick edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_SocketClient_SocketServer_0" data-points="W3sieCI6Mjk3MS44MjAzMTI1LCJ5IjoxMjN9LHsieCI6Mjk3MS44MjAzMTI1LCJ5IjoxODR9LHsieCI6Mjk3MS44MjAzMTI1LCJ5IjoyMzN9LHsieCI6Mjk3MS44MjAzMTI1LCJ5IjozMDl9LHsieCI6Mjk3MS44MjAzMTI1LCJ5IjozOTd9LHsieCI6Mjk3MS44MjAzMTI1LCJ5Ijo0OTd9LHsieCI6Mjk3MS44MjAzMTI1LCJ5Ijo1OTd9LHsieCI6Mjk3MS44MjAzMTI1LCJ5Ijo2ODV9LHsieCI6Mjk3MS44MjAzMTI1LCJ5Ijo3NzN9LHsieCI6Mjk3MS44MjAzMTI1LCJ5Ijo4MTB9LHsieCI6MzY1LjUsInkiOjg4Mi4zODkzMTE2MDQwMzAyfV0=" data-look="classic" marker-start="url(#mermaid-svg_flowchart-v2-pointStart)" marker-end="url(#mermaid-svg_flowchart-v2-pointEnd)"/><path d="M235.5,937L235.5,941.167C235.5,945.333,235.5,953.667,235.5,964C235.5,974.333,235.5,986.667,306.094,1005.496C376.688,1024.325,517.875,1049.65,588.469,1062.313L659.063,1074.975" id="mermaid-svg-L_SocketServer_RESTApi_0" class=" edge-thickness-normal edge-pattern-dotted edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_SocketServer_RESTApi_0" data-points="W3sieCI6MjM1LjUsInkiOjkzN30seyJ4IjoyMzUuNSwieSI6OTYyfSx7IngiOjIzNS41LCJ5Ijo5OTl9LHsieCI6NjYzLCJ5IjoxMDc1LjY4MTYxNDM0OTc3NTh9XQ==" data-look="classic" marker-end="url(#mermaid-svg_flowchart-v2-pointEnd)"/><path d="M663,1117.452L581.333,1129.043C499.667,1140.634,336.333,1163.817,254.667,1185.575C173,1207.333,173,1227.667,173,1248C173,1268.333,173,1288.667,173,1304.333C173,1320,173,1331,173,1336.5L173,1342" id="mermaid-svg-L_RESTApi_RLS_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_RESTApi_RLS_0" data-points="W3sieCI6NjYzLCJ5IjoxMTE3LjQ1MTYxMjkwMzIyNTl9LHsieCI6MTczLCJ5IjoxMTg3fSx7IngiOjE3MywieSI6MTI0OH0seyJ4IjoxNzMsInkiOjEzMDl9LHsieCI6MTczLCJ5IjoxMzQ2fV0=" data-look="classic" marker-end="url(#mermaid-svg_flowchart-v2-pointEnd)"/><path d="M173,1448L173,1454.167C173,1460.333,173,1472.667,173,1487C173,1501.333,173,1517.667,189.554,1538.493C206.108,1559.32,239.215,1584.639,255.769,1597.299L272.323,1609.959" id="mermaid-svg-L_RLS_Tables_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_RLS_Tables_0" data-points="W3sieCI6MTczLCJ5IjoxNDQ4fSx7IngiOjE3MywieSI6MTQ4NX0seyJ4IjoxNzMsInkiOjE1MzR9LHsieCI6Mjc1LjUsInkiOjE2MTIuMzg5MDk2MjAzOTcyM31d" data-look="classic" marker-end="url(#mermaid-svg_flowchart-v2-pointEnd)"/><path d="M663,1135.903L633,1144.419C603,1152.935,543,1169.968,513,1188.651C483,1207.333,483,1227.667,483,1248C483,1268.333,483,1288.667,483,1302.333C483,1316,483,1323,483,1326.5L483,1330" id="mermaid-svg-L_RESTApi_RPC_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_RESTApi_RPC_0" data-points="W3sieCI6NjYzLCJ5IjoxMTM1LjkwMzIyNTgwNjQ1MTd9LHsieCI6NDgzLCJ5IjoxMTg3fSx7IngiOjQ4MywieSI6MTI0OH0seyJ4Ijo0ODMsInkiOjEzMDl9LHsieCI6NDgzLCJ5IjoxMzM0fV0=" data-look="classic" marker-end="url(#mermaid-svg_flowchart-v2-pointEnd)"/><path d="M483,1460L483,1464.167C483,1468.333,483,1476.667,483,1489C483,1501.333,483,1517.667,477.026,1533.942C471.052,1550.217,459.103,1566.434,453.129,1574.543L447.155,1582.651" id="mermaid-svg-L_RPC_Tables_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_RPC_Tables_0" data-points="W3sieCI6NDgzLCJ5IjoxNDYwfSx7IngiOjQ4MywieSI6MTQ4NX0seyJ4Ijo0ODMsInkiOjE1MzR9LHsieCI6NDQ0Ljc4MjQxODU3Mjk1NTQ2LCJ5IjoxNTg1Ljg3MTY3Mjc4OTE5ODN9XQ==" data-look="classic" marker-end="url(#mermaid-svg_flowchart-v2-pointEnd)"/><path d="M793,1150L793,1156.167C793,1162.333,793,1174.667,793,1191C793,1207.333,793,1227.667,793,1248C793,1268.333,793,1288.667,793,1304.333C793,1320,793,1331,793,1336.5L793,1342" id="mermaid-svg-L_RESTApi_GiSTGuard_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_RESTApi_GiSTGuard_0" data-points="W3sieCI6NzkzLCJ5IjoxMTUwfSx7IngiOjc5MywieSI6MTE4N30seyJ4Ijo3OTMsInkiOjEyNDh9LHsieCI6NzkzLCJ5IjoxMzA5fSx7IngiOjc5MywieSI6MTM0Nn1d" data-look="classic" marker-end="url(#mermaid-svg_flowchart-v2-pointEnd)"/><path d="M793,1448L793,1454.167C793,1460.333,793,1472.667,793,1487C793,1501.333,793,1517.667,743.22,1541.4C693.439,1565.134,593.878,1596.268,544.098,1611.835L494.318,1627.403" id="mermaid-svg-L_GiSTGuard_Tables_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_GiSTGuard_Tables_0" data-points="W3sieCI6NzkzLCJ5IjoxNDQ4fSx7IngiOjc5MywieSI6MTQ4NX0seyJ4Ijo3OTMsInkiOjE1MzR9LHsieCI6NDkwLjUsInkiOjE2MjguNTk2MzU1MDY2MDY2N31d" data-look="classic" marker-end="url(#mermaid-svg_flowchart-v2-pointEnd)"/><path d="M275.5,1712.037L258.417,1725.102C241.333,1738.167,207.167,1764.297,190.083,1784.862C173,1805.426,173,1820.426,173,1827.926L173,1835.426" id="mermaid-svg-L_Tables_Triggers_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_Tables_Triggers_0" data-points="W3sieCI6Mjc1LjUsInkiOjE3MTIuMDM3Mzg2OTUwMzI0Nn0seyJ4IjoxNzMsInkiOjE3OTAuNDI2NDgzMTU0Mjk2OX0seyJ4IjoxNzMsInkiOjE4MzkuNDI2NDgzMTU0Mjk2OX1d" data-look="classic" marker-end="url(#mermaid-svg_flowchart-v2-pointEnd)"/><path d="M490.5,1695.83L540.917,1711.596C591.333,1727.362,692.167,1758.894,742.583,1784.16C793,1809.426,793,1828.426,793,1837.926L793,1847.426" id="mermaid-svg-L_Tables_RealtimePub_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_Tables_RealtimePub_0" data-points="W3sieCI6NDkwLjUsInkiOjE2OTUuODMwMTI4MDg4MjMwMX0seyJ4Ijo3OTMsInkiOjE3OTAuNDI2NDgzMTU0Mjk2OX0seyJ4Ijo3OTMsInkiOjE4NTEuNDI2NDgzMTU0Mjk2OX1d" data-look="classic" marker-end="url(#mermaid-svg_flowchart-v2-pointEnd)"/><path d="M793,1953.426L793,1959.593C793,1965.76,793,1978.093,1094.47,1988.426C1395.94,1998.76,1998.88,2007.093,2300.35,2015.426C2601.82,2023.76,2601.82,2032.093,2601.82,2044.426C2601.82,2056.76,2601.82,2073.093,2601.82,2089.426C2601.82,2105.76,2601.82,2122.093,2601.82,2134.426C2601.82,2146.76,2601.82,2155.093,2601.82,2162.76C2601.82,2170.426,2601.82,2177.426,2601.82,2180.926L2601.82,2184.426" id="mermaid-svg-L_RealtimePub_RealtimeClient_0" class=" edge-thickness-thick edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_RealtimePub_RealtimeClient_0" data-points="W3sieCI6NzkzLCJ5IjoxOTUzLjQyNjQ4MzE1NDI5Njl9LHsieCI6NzkzLCJ5IjoxOTkwLjQyNjQ4MzE1NDI5Njl9LHsieCI6MjYwMS44MjAzMTI1LCJ5IjoyMDE1LjQyNjQ4MzE1NDI5Njl9LHsieCI6MjYwMS44MjAzMTI1LCJ5IjoyMDQwLjQyNjQ4MzE1NDI5Njl9LHsieCI6MjYwMS44MjAzMTI1LCJ5IjoyMDg5LjQyNjQ4MzE1NDI5N30seyJ4IjoyNjAxLjgyMDMxMjUsInkiOjIxMzguNDI2NDgzMTU0Mjk3fSx7IngiOjI2MDEuODIwMzEyNSwieSI6MjE2My40MjY0ODMxNTQyOTd9LHsieCI6MjYwMS44MjAzMTI1LCJ5IjoyMTg4LjQyNjQ4MzE1NDI5N31d" data-look="classic" marker-end="url(#mermaid-svg_flowchart-v2-pointEnd)"/><path d="M2601.82,2266.426L2601.82,2272.593C2601.82,2278.76,2601.82,2291.093,2606.45,2302.911C2611.08,2314.728,2620.339,2326.03,2624.968,2331.681L2629.598,2337.332" id="mermaid-svg-L_RealtimeClient_StaffPortals_0" class=" edge-thickness-normal edge-pattern-dotted edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_RealtimeClient_StaffPortals_0" data-points="W3sieCI6MjYwMS44MjAzMTI1LCJ5IjoyMjY2LjQyNjQ4MzE1NDI5N30seyJ4IjoyNjAxLjgyMDMxMjUsInkiOjIzMDMuNDI2NDgzMTU0Mjk3fSx7IngiOjI2MzIuMTMyODUxNTYyNSwieSI6MjM0MC40MjY0ODMxNTQyOTd9XQ==" data-look="classic" marker-end="url(#mermaid-svg_flowchart-v2-pointEnd)"/><path d="M923,1138.791L949.25,1146.826C975.5,1154.861,1028,1170.93,1054.25,1189.132C1080.5,1207.333,1080.5,1227.667,1080.5,1248C1080.5,1268.333,1080.5,1288.667,1087.688,1304.584C1094.876,1320.5,1109.251,1332.001,1116.439,1337.751L1123.627,1343.501" id="mermaid-svg-L_RESTApi_Twilio_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_RESTApi_Twilio_0" data-points="W3sieCI6OTIzLCJ5IjoxMTM4Ljc5MTMwNDM0NzgyNn0seyJ4IjoxMDgwLjUsInkiOjExODd9LHsieCI6MTA4MC41LCJ5IjoxMjQ4fSx7IngiOjEwODAuNSwieSI6MTMwOX0seyJ4IjoxMTI2Ljc1LCJ5IjoxMzQ2fV0=" data-look="classic" marker-end="url(#mermaid-svg_flowchart-v2-pointEnd)"/><path d="M1254.25,1346L1261.958,1339.833C1269.667,1333.667,1285.083,1321.333,1292.792,1305C1300.5,1288.667,1300.5,1268.333,1300.5,1248C1300.5,1227.667,1300.5,1207.333,1238.24,1186.371C1175.98,1165.408,1051.461,1143.817,989.201,1133.021L926.941,1122.225" id="mermaid-svg-L_Twilio_RESTApi_0" class=" edge-thickness-normal edge-pattern-dotted edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_Twilio_RESTApi_0" data-points="W3sieCI6MTI1NC4yNSwieSI6MTM0Nn0seyJ4IjoxMzAwLjUsInkiOjEzMDl9LHsieCI6MTMwMC41LCJ5IjoxMjQ4fSx7IngiOjEzMDAuNSwieSI6MTE4N30seyJ4Ijo5MjMsInkiOjExMjEuNTQxODcxOTIxMTgyM31d" data-look="classic" marker-end="url(#mermaid-svg_flowchart-v2-pointEnd)"/><path d="M1565.5,1162L1565.5,1166.167C1565.5,1170.333,1565.5,1178.667,1565.5,1193C1565.5,1207.333,1565.5,1227.667,1565.5,1248C1565.5,1268.333,1565.5,1288.667,1565.5,1304.333C1565.5,1320,1565.5,1331,1565.5,1336.5L1565.5,1342" id="mermaid-svg-L_UploadEngine_Cloudinary_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_UploadEngine_Cloudinary_0" data-points="W3sieCI6MTU2NS41LCJ5IjoxMTYyfSx7IngiOjE1NjUuNSwieSI6MTE4N30seyJ4IjoxNTY1LjUsInkiOjEyNDh9LHsieCI6MTU2NS41LCJ5IjoxMzA5fSx7IngiOjE1NjUuNSwieSI6MTM0Nn1d" data-look="classic" marker-end="url(#mermaid-svg_flowchart-v2-pointEnd)"/></g><g class="edgeLabels"><g class="edgeLabel" transform="translate(2358, 184)"><g class="label" data-id="L_GuestPortal_RateLimit_0" transform="translate(-100, -24)"><foreignObject width="200" height="48"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="edgeLabel "><p>1. HTTPS REST (Browse &amp; Reserve)</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(2668, 184)"><g class="label" data-id="L_CustomerHub_RateLimit_0" transform="translate(-100, -24)"><foreignObject width="200" height="48"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="edgeLabel "><p>1. HTTPS REST (Orders &amp; Digital Key)</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(2765.671875, 1534)"><g class="label" data-id="L_StaffPortals_RateLimit_0" transform="translate(-100, -24)"><foreignObject width="200" height="48"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="edgeLabel "><p>1. HTTPS REST (Task Dispatch &amp; Reports)</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(1915.5, 397)"><g class="label" data-id="L_RateLimit_NGWF_0" transform="translate(-87.1640625, -12)"><foreignObject width="174.328125" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "><p>2. Rate-Passed Request</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(1915.5, 597)"><g class="label" data-id="L_NGWF_AntiXSS_0" transform="translate(-68.7890625, -12)"><foreignObject width="137.578125" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "><p>3. Threat Inspected</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(1915.5, 773)"><g class="label" data-id="L_AntiXSS_CSRF_0" transform="translate(-72.9375, -12)"><foreignObject width="145.875" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "><p>4. Payload Sanitized</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(1428.43043, 991.19471)"><g class="label" data-id="L_CSRF_RESTApi_0" transform="translate(-59.578125, -12)"><foreignObject width="119.15625" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "><p>5. CSRF Verified</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(2971.8203125, 497)"><g class="label" data-id="L_SocketClient_SocketServer_0" transform="translate(-100, -24)"><foreignObject width="200" height="48"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="edgeLabel "><p>WSS Duplex (Instant Chat &amp; Typing Events)</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(235.5, 999)"><g class="label" data-id="L_SocketServer_RESTApi_0" transform="translate(-91.59375, -12)"><foreignObject width="183.1875" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "><p>Query Room Rates &amp; Info</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(173, 1248)"><g class="label" data-id="L_RESTApi_RLS_0" transform="translate(-100, -24)"><foreignObject width="200" height="48"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="edgeLabel "><p>6. Service-Role SQL Operations</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(173, 1534)"><g class="label" data-id="L_RLS_Tables_0" transform="translate(-68.484375, -12)"><foreignObject width="136.96875" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "><p>7. Evaluated Query</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(483, 1248)"><g class="label" data-id="L_RESTApi_RPC_0" transform="translate(-71, -12)"><foreignObject width="142" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "><p>8. Availability Check</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(483, 1534)"><g class="label" data-id="L_RPC_Tables_0" transform="translate(-94.7265625, -12)"><foreignObject width="189.453125" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "><p>9. Scan Active Date Spans</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(793, 1248)"><g class="label" data-id="L_RESTApi_GiSTGuard_0" transform="translate(-79.59375, -12)"><foreignObject width="159.1875" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "><p>10. Insert Stay Record</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(793, 1534)"><g class="label" data-id="L_GiSTGuard_Tables_0" transform="translate(-95.1640625, -12)"><foreignObject width="190.328125" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "><p>11. Overlap Check Passed</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(173, 1790.4264831542969)"><g class="label" data-id="L_Tables_Triggers_0" transform="translate(-100, -24)"><foreignObject width="200" height="48"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="edgeLabel "><p>12. On Insert / Update / Delete</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(793, 1790.4264831542969)"><g class="label" data-id="L_Tables_RealtimePub_0" transform="translate(-79.90625, -12)"><foreignObject width="159.8125" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "><p>13. WAL Log Changes</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(2601.8203125, 2089.426483154297)"><g class="label" data-id="L_RealtimePub_RealtimeClient_0" transform="translate(-100, -24)"><foreignObject width="200" height="48"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="edgeLabel "><p>14. Realtime WSS Push (Live Table Sync)</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(2601.8203125, 2303.426483154297)"><g class="label" data-id="L_RealtimeClient_StaffPortals_0" transform="translate(-95.609375, -12)"><foreignObject width="191.21875" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "><p>15. Reactive State Refresh</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(1080.5, 1248)"><g class="label" data-id="L_RESTApi_Twilio_0" transform="translate(-100, -24)"><foreignObject width="200" height="48"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="edgeLabel "><p>16. Outbound SMS Ping (Confirmation / Pass)</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(1300.5, 1248)"><g class="label" data-id="L_Twilio_RESTApi_0" transform="translate(-100, -36)"><foreignObject width="200" height="72"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="edgeLabel "><p>17. Inbound Status Webhook (/webhooks/sms/status)</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(1565.5, 1248)"><g class="label" data-id="L_UploadEngine_Cloudinary_0" transform="translate(-100, -24)"><foreignObject width="200" height="48"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="edgeLabel "><p>18. Validated Photo Uploads</p></span></div></foreignObject></g></g></g><g class="nodes"><g class="node default  " id="mermaid-svg-flowchart-GuestPortal-0" data-look="classic" transform="translate(2358, 84)"><rect class="basic label-container" style="" x="-130" y="-51" width="260" height="102"/><g class="label" style="" transform="translate(-100, -36)"><rect/><foreignObject width="200" height="72"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel "><p>Public Guest Portal<br />(Booking Flow, Room Gallery, Ocean Synth)</p></span></div></foreignObject></g></g><g class="node default  " id="mermaid-svg-flowchart-CustomerHub-1" data-look="classic" transform="translate(2668, 84)"><rect class="basic label-container" style="" x="-130" y="-51" width="260" height="102"/><g class="label" style="" transform="translate(-100, -36)"><rect/><foreignObject width="200" height="72"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel "><p>Guest Experience Hub<br />(In-Room Orders, Digital RFID Pass)</p></span></div></foreignObject></g></g><g class="node default  " id="mermaid-svg-flowchart-StaffPortals-2" data-look="classic" transform="translate(2683.74609375, 2403.426483154297)"><rect class="basic label-container" style="" x="-130" y="-63" width="260" height="126"/><g class="label" style="" transform="translate(-100, -48)"><rect/><foreignObject width="200" height="96"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel "><p>Multi-Role Operations Desks<br />(Reception, Accounting, Depts, Executive Admin)</p></span></div></foreignObject></g></g><g class="node default  " id="mermaid-svg-flowchart-SocketClient-3" data-look="classic" transform="translate(2971.8203125, 84)"><rect class="basic label-container" style="" x="-123.8203125" y="-39" width="247.640625" height="78"/><g class="label" style="" transform="translate(-93.8203125, -24)"><rect/><foreignObject width="187.640625" height="48"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel "><p>Socket.io Client<br />(Realtime Chatbot Socket)</p></span></div></foreignObject></g></g><g class="node default  " id="mermaid-svg-flowchart-RealtimeClient-4" data-look="classic" transform="translate(2601.8203125, 2227.426483154297)"><rect class="basic label-container" style="" x="-128.8515625" y="-39" width="257.703125" height="78"/><g class="label" style="" transform="translate(-98.8515625, -24)"><rect/><foreignObject width="197.703125" height="48"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel "><p>Supabase Realtime Client<br />(PostgreSQL CDC Listener)</p></span></div></foreignObject></g></g><g class="node default  " id="mermaid-svg-flowchart-RateLimit-5" data-look="classic" transform="translate(1998, 309)"><rect class="basic label-container" style="" x="-130" y="-51" width="260" height="102"/><g class="label" style="" transform="translate(-100, -36)"><rect/><foreignObject width="200" height="72"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel "><p>Rate Limiter<br />(Global 300 req / 15m · Booking 5 req / m)</p></span></div></foreignObject></g></g><g class="node default  " id="mermaid-svg-flowchart-NGWF-6" data-look="classic" transform="translate(1915.5, 497)"><rect class="basic label-container" style="" x="-130" y="-63" width="260" height="126"/><g class="label" style="" transform="translate(-100, -48)"><rect/><foreignObject width="200" height="96"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel "><p>Next-Gen Web App Firewall (NGWF)<br />(Deep Payload SQLi / XSS / Traversal Filter)</p></span></div></foreignObject></g></g><g class="node default  " id="mermaid-svg-flowchart-AntiXSS-7" data-look="classic" transform="translate(1915.5, 685)"><rect class="basic label-container" style="" x="-130" y="-51" width="260" height="102"/><g class="label" style="" transform="translate(-100, -36)"><rect/><foreignObject width="200" height="72"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel "><p>Anti-XSS Sanitizer<br />(Recursive JSON &amp; Query Scrubber)</p></span></div></foreignObject></g></g><g class="node default  " id="mermaid-svg-flowchart-CSRF-8" data-look="classic" transform="translate(1915.5, 886)"><rect class="basic label-container" style="" x="-130" y="-51" width="260" height="102"/><g class="label" style="" transform="translate(-100, -36)"><rect/><foreignObject width="200" height="72"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel "><p>Cookie Tokenizer<br />(Double-Submit CSRF Protection)</p></span></div></foreignObject></g></g><g class="node default  " id="mermaid-svg-flowchart-RESTApi-9" data-look="classic" transform="translate(793, 1099)"><rect class="basic label-container" style="" x="-130" y="-51" width="260" height="102"/><g class="label" style="" transform="translate(-100, -36)"><rect/><foreignObject width="200" height="72"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel "><p>Modular REST Endpoints<br />(/rooms, /reservations, /department, /analytics)</p></span></div></foreignObject></g></g><g class="node default  " id="mermaid-svg-flowchart-SocketServer-10" data-look="classic" transform="translate(235.5, 886)"><rect class="basic label-container" style="" x="-130" y="-51" width="260" height="102"/><g class="label" style="" transform="translate(-100, -36)"><rect/><foreignObject width="200" height="72"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel "><p>Socket.io Engine<br />(Alon / J &amp; D Bot AI Concierge)</p></span></div></foreignObject></g></g><g class="node default  " id="mermaid-svg-flowchart-TelemetryService-11" data-look="classic" transform="translate(1255.5, 1099)"><rect class="basic label-container" style="" x="-130" y="-63" width="260" height="126"/><g class="label" style="" transform="translate(-100, -48)"><rect/><foreignObject width="200" height="96"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel "><p>Telemetry &amp; Forecasting Engine<br />(Live Visitor Heartbeat &amp; Surge Predictor)</p></span></div></foreignObject></g></g><g class="node default  " id="mermaid-svg-flowchart-UploadEngine-12" data-look="classic" transform="translate(1565.5, 1099)"><rect class="basic label-container" style="" x="-130" y="-63" width="260" height="126"/><g class="label" style="" transform="translate(-100, -48)"><rect/><foreignObject width="200" height="96"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel "><p>Secure Media Upload Engine<br />(MIME Type Whitelist &amp; UUID Filenames)</p></span></div></foreignObject></g></g><g class="node default  " id="mermaid-svg-flowchart-Tables-13" data-look="classic" transform="translate(383, 1662.2132415771484)"><path d="M0,15.808823529411764 a107.5,15.808823529411764 0,0,0 215,0 a107.5,15.808823529411764 0,0,0 -215,0 l0,126.80882352941177 a107.5,15.808823529411764 0,0,0 215,0 l0,-126.80882352941177" class="basic label-container outer-path" style="" label-offset-y="15.808823529411764" transform="translate(-107.5, -79.21323529411765)"/><g class="label" style="" transform="translate(-100, -38)"><rect/><foreignObject width="200" height="96"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel "><p>PostgreSQL Relational Tables<br />profiles, rooms, reservations, orders, tasks</p></span></div></foreignObject></g></g><g class="node default  " id="mermaid-svg-flowchart-GiSTGuard-14" data-look="classic" transform="translate(793, 1397)"><rect class="basic label-container" style="" x="-130" y="-51" width="260" height="102"/><g class="label" style="" transform="translate(-100, -36)"><rect/><foreignObject width="200" height="72"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel "><p>GiST Exclusion Constraint<br />(Hard Overbooking Guard: 0 Double Bookings)</p></span></div></foreignObject></g></g><g class="node default  " id="mermaid-svg-flowchart-RPC-15" data-look="classic" transform="translate(483, 1397)"><rect class="basic label-container" style="" x="-130" y="-63" width="260" height="126"/><g class="label" style="" transform="translate(-100, -48)"><rect/><foreignObject width="200" height="96"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel "><p>Stored Procedure: available_rooms()<br />(Dynamic Date-Range Availability Matrix)</p></span></div></foreignObject></g></g><g class="node default  " id="mermaid-svg-flowchart-Triggers-16" data-look="classic" transform="translate(173, 1902.4264831542969)"><rect class="basic label-container" style="" x="-130" y="-63" width="260" height="126"/><g class="label" style="" transform="translate(-100, -48)"><rect/><foreignObject width="200" height="96"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel "><p>Database Triggers<br />(sync_room_rating, handle_new_user, touch_updated_at)</p></span></div></foreignObject></g></g><g class="node default  " id="mermaid-svg-flowchart-RLS-17" data-look="classic" transform="translate(173, 1397)"><rect class="basic label-container" style="" x="-130" y="-51" width="260" height="102"/><g class="label" style="" transform="translate(-100, -36)"><rect/><foreignObject width="200" height="72"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel "><p>Row-Level Security (RLS)<br />(Self-Data Isolation &amp; is_admin_or_staff Checks)</p></span></div></foreignObject></g></g><g class="node default  " id="mermaid-svg-flowchart-RealtimePub-18" data-look="classic" transform="translate(793, 1902.4264831542969)"><rect class="basic label-container" style="" x="-130" y="-51" width="260" height="102"/><g class="label" style="" transform="translate(-100, -36)"><rect/><foreignObject width="200" height="72"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel "><p>Supabase Realtime Engine<br />(PostgreSQL WAL Change Data Capture)</p></span></div></foreignObject></g></g><g class="node default  " id="mermaid-svg-flowchart-Twilio-19" data-look="classic" transform="translate(1190.5, 1397)"><rect class="basic label-container" style="" x="-130" y="-51" width="260" height="102"/><g class="label" style="" transform="translate(-100, -36)"><rect/><foreignObject width="200" height="72"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel "><p>Twilio SMS Gateway<br />(Transactional Pings &amp; Verification)</p></span></div></foreignObject></g></g><g class="node default  " id="mermaid-svg-flowchart-Cloudinary-20" data-look="classic" transform="translate(1565.5, 1397)"><rect class="basic label-container" style="" x="-130" y="-51" width="260" height="102"/><g class="label" style="" transform="translate(-100, -36)"><rect/><foreignObject width="200" height="72"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel "><p>Cloudinary CDN<br />(Optimized Image Asset Storage)</p></span></div></foreignObject></g></g></g></g></g><defs><filter id="mermaid-svg-drop-shadow" height="130%" width="130%"><feDropShadow dx="4" dy="4" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"/></filter></defs><defs><filter id="mermaid-svg-drop-shadow-small" height="150%" width="150%"><feDropShadow dx="2" dy="2" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"/></filter></defs></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1950" width="1600" height="1950" style="background:#ffffff; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <filter id="cardShadow" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f172a" flood-opacity="0.07" />
+    </filter>
+
+    <marker id="arrowBlue" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#2563eb" />
+    </marker>
+    <marker id="arrowGray" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#64748b" />
+    </marker>
+    <marker id="arrowDark" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#0f172a" />
+    </marker>
+  </defs>
+
+  <style>
+    .layer-box { fill: #f8fafc; stroke: #64748b; stroke-width: 1.5; rx: 8px; }
+    .layer-title { font-size: 13px; font-weight: 700; fill: #1e293b; }
+    .card-box { fill: #ffffff; stroke: #475569; stroke-width: 1.2; rx: 6px; }
+    .card-box-accent { fill: #ffffff; stroke: #2563eb; stroke-width: 1.6; rx: 6px; }
+    .node-title { font-size: 13px; font-weight: 700; fill: #0f172a; text-anchor: middle; }
+    .node-sub { font-size: 11px; font-weight: 400; fill: #475569; text-anchor: middle; }
+    .node-sub-blue { font-size: 11px; font-weight: 600; fill: #2563eb; text-anchor: middle; }
+    .edge-label-bg { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1; rx: 4px; }
+    .edge-text { font-size: 10px; font-weight: 600; fill: #334155; text-anchor: middle; }
+    .conn-blue { stroke: #2563eb; stroke-width: 1.5; fill: none; }
+    .conn-dashed { stroke: #64748b; stroke-width: 1.5; stroke-dasharray: 5 4; fill: none; }
+    .conn-dark { stroke: #0f172a; stroke-width: 1.6; fill: none; }
+  </style>
+
+  <!-- Title Header -->
+  <g transform="translate(800, 30)" text-anchor="middle">
+    <text y="0" font-size="20" font-weight="800" fill="#0f172a">J &amp; D Beach House · Full System Architecture</text>
+    <text y="20" font-size="12" font-weight="500" fill="#64748b">Complete Multi-Layer Security Perimeter, Node.js Engine &amp; PostgreSQL 15+ Supabase Infrastructure</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- 1. FRONTEND CLIENT LAYER -->
+  <!-- ================================================================= -->
+  <g transform="translate(100, 70)">
+    <rect width="1400" height="250" class="layer-box" />
+    <text x="20" y="24" class="layer-title">1. Frontend Client Layer (React 18 + Vite + TS)</text>
+
+    <!-- Socket.io Client -->
+    <g transform="translate(40, 45)" filter="url(#cardShadow)">
+      <rect width="260" height="60" class="card-box" />
+      <text x="130" y="26" class="node-title">Socket.io Client</text>
+      <text x="130" y="44" class="node-sub">(Realtime Chatbot Socket)</text>
+    </g>
+
+    <!-- Supabase Realtime Client -->
+    <g transform="translate(340, 45)" filter="url(#cardShadow)">
+      <rect width="260" height="60" class="card-box" />
+      <text x="130" y="26" class="node-title">Supabase Realtime Client</text>
+      <text x="130" y="44" class="node-sub">(PostgreSQL CDC Listener)</text>
+    </g>
+
+    <!-- Multi-Role Operations Desks -->
+    <g transform="translate(180, 155)" filter="url(#cardShadow)">
+      <rect width="320" height="70" class="card-box" />
+      <text x="160" y="28" class="node-title">Multi-Role Operations Desks</text>
+      <text x="160" y="48" class="node-sub">(Reception, Accounting, Depts, Executive Admin)</text>
+    </g>
+
+    <!-- Public Guest Portal -->
+    <g transform="translate(540, 155)" filter="url(#cardShadow)">
+      <rect width="320" height="70" class="card-box" />
+      <text x="160" y="28" class="node-title">Public Guest Portal</text>
+      <text x="160" y="48" class="node-sub">(Booking Flow, Room Gallery, Ocean Synth)</text>
+    </g>
+
+    <!-- Guest Experience Hub -->
+    <g transform="translate(900, 155)" filter="url(#cardShadow)">
+      <rect width="320" height="70" class="card-box" />
+      <text x="160" y="28" class="node-title">Guest Experience Hub</text>
+      <text x="160" y="48" class="node-sub">(In-Room Orders, Digital RFID Pass)</text>
+    </g>
+
+    <!-- Reactive Refresh Link: Realtime Client -> Operations Desks -->
+    <path d="M 470, 105 L 470, 155" class="conn-dashed" marker-end="url(#arrowGray)" />
+    <g transform="translate(470, 130)">
+      <rect x="-65" y="-8" width="130" height="16" class="edge-label-bg" />
+      <text y="4" class="edge-text">15. Reactive State Refresh</text>
+    </g>
+  </g>
+
+  <!-- Connectors: L1 -> L2 Rate Limiter -->
+  <path d="M 440, 295 L 440, 360 L 700, 360 L 700, 435" class="conn-blue" marker-end="url(#arrowBlue)" />
+  <g transform="translate(490, 350)">
+    <rect x="-95" y="-9" width="190" height="18" class="edge-label-bg" />
+    <text y="4" class="edge-text">1. HTTPS REST (Task Dispatch &amp; Reports)</text>
+  </g>
+
+  <path d="M 800, 295 L 800, 435" class="conn-blue" marker-end="url(#arrowBlue)" />
+  <g transform="translate(800, 350)">
+    <rect x="-85" y="-9" width="170" height="18" class="edge-label-bg" />
+    <text y="4" class="edge-text">1. HTTPS REST (Browse &amp; Reserve)</text>
+  </g>
+
+  <path d="M 1160, 295 L 1160, 360 L 900, 360 L 900, 435" class="conn-blue" marker-end="url(#arrowBlue)" />
+  <g transform="translate(1110, 350)">
+    <rect x="-90" y="-9" width="180" height="18" class="edge-label-bg" />
+    <text y="4" class="edge-text">1. HTTPS REST (Orders &amp; Digital Key)</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- 2. SECURITY & FIREWALL PERIMETER -->
+  <!-- ================================================================= -->
+  <g transform="translate(520, 390)">
+    <rect width="560" height="420" class="layer-box" />
+    <text x="20" y="24" class="layer-title">2. Security &amp; Firewall Perimeter</text>
+
+    <!-- Rate Limiter -->
+    <g transform="translate(50, 45)" filter="url(#cardShadow)">
+      <rect width="460" height="55" class="card-box" />
+      <text x="230" y="24" class="node-title">Rate Limiter</text>
+      <text x="230" y="41" class="node-sub">(Global 300 req / 15m · Booking 5 req / m)</text>
+    </g>
+
+    <!-- NGWF -->
+    <g transform="translate(50, 140)" filter="url(#cardShadow)">
+      <rect width="460" height="55" class="card-box" />
+      <text x="230" y="24" class="node-title">Next-Gen Web App Firewall (NGWF)</text>
+      <text x="230" y="41" class="node-sub">(Deep Payload SQLi / XSS / Traversal Filter)</text>
+    </g>
+
+    <!-- Anti-XSS -->
+    <g transform="translate(50, 235)" filter="url(#cardShadow)">
+      <rect width="460" height="55" class="card-box" />
+      <text x="230" y="24" class="node-title">Anti-XSS Sanitizer</text>
+      <text x="230" y="41" class="node-sub">(Recursive JSON &amp; Query Scrubber)</text>
+    </g>
+
+    <!-- Cookie Tokenizer -->
+    <g transform="translate(50, 330)" filter="url(#cardShadow)">
+      <rect width="460" height="55" class="card-box" />
+      <text x="230" y="24" class="node-title">Cookie Tokenizer</text>
+      <text x="230" y="41" class="node-sub">(Double-Submit CSRF Protection)</text>
+    </g>
+
+    <!-- Internal lines -->
+    <path d="M 280, 100 L 280, 140" class="conn-blue" marker-end="url(#arrowBlue)" />
+    <g transform="translate(280, 120)">
+      <rect x="-60" y="-8" width="120" height="16" class="edge-label-bg" />
+      <text y="4" class="edge-text">2. Rate-Passed Request</text>
+    </g>
+
+    <path d="M 280, 195 L 280, 235" class="conn-blue" marker-end="url(#arrowBlue)" />
+    <g transform="translate(280, 215)">
+      <rect x="-55" y="-8" width="110" height="16" class="edge-label-bg" />
+      <text y="4" class="edge-text">3. Threat Inspected</text>
+    </g>
+
+    <path d="M 280, 290 L 280, 330" class="conn-blue" marker-end="url(#arrowBlue)" />
+    <g transform="translate(280, 310)">
+      <rect x="-55" y="-8" width="110" height="16" class="edge-label-bg" />
+      <text y="4" class="edge-text">4. Payload Sanitized</text>
+    </g>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- 3. EXPRESS.JS BACKEND SERVER -->
+  <!-- ================================================================= -->
+  <g transform="translate(100, 880)">
+    <rect width="1400" height="260" class="layer-box" />
+    <text x="20" y="24" class="layer-title">3. Express.js Backend Server (Node.js)</text>
+
+    <!-- Telemetry & Forecasting Engine -->
+    <g transform="translate(40, 45)" filter="url(#cardShadow)">
+      <rect width="320" height="60" class="card-box" />
+      <text x="160" y="26" class="node-title">Telemetry &amp; Forecasting Engine</text>
+      <text x="160" y="44" class="node-sub">(Live Visitor Heartbeat &amp; Surge Predictor)</text>
+    </g>
+
+    <!-- Socket.io Engine -->
+    <g transform="translate(400, 45)" filter="url(#cardShadow)">
+      <rect width="340" height="60" class="card-box" />
+      <text x="170" y="26" class="node-title">Socket.io Engine</text>
+      <text x="170" y="44" class="node-sub">(Alan / J &amp; D Bot AI Concierge)</text>
+    </g>
+
+    <!-- Modular REST Endpoints -->
+    <g transform="translate(400, 160)" filter="url(#cardShadow)">
+      <rect width="440" height="65" class="card-box-accent" />
+      <text x="220" y="28" class="node-title">Modular REST Endpoints</text>
+      <text x="220" y="48" class="node-sub-blue">(/rooms, /reservations, /department, /analytics)</text>
+    </g>
+
+    <!-- Secure Media Upload Engine -->
+    <g transform="translate(980, 45)" filter="url(#cardShadow)">
+      <rect width="380" height="60" class="card-box" />
+      <text x="190" y="26" class="node-title">Secure Media Upload Engine</text>
+      <text x="190" y="44" class="node-sub">(MIME Type Whitelist &amp; UUID Filenames)</text>
+    </g>
+
+    <!-- Query Room Rates Link: Socket -> REST -->
+    <path d="M 570, 105 L 570, 160" class="conn-dashed" marker-end="url(#arrowGray)" />
+    <g transform="translate(570, 133)">
+      <rect x="-65" y="-8" width="130" height="16" class="edge-label-bg" />
+      <text y="4" class="edge-text">Query Room Rates &amp; Info</text>
+    </g>
+  </g>
+
+  <!-- L2 Cookie Tokenizer -> L3 Modular REST Link -->
+  <path d="M 800, 775 L 800, 845 L 720, 845 L 720, 1040" class="conn-blue" marker-end="url(#arrowBlue)" />
+  <g transform="translate(760, 845)">
+    <rect x="-50" y="-9" width="100" height="18" class="edge-label-bg" />
+    <text y="4" class="edge-text">5. CSRF Verified</text>
+  </g>
+
+  <!-- Duplex Socket Link: Client -> Server -->
+  <path d="M 230, 115 L 140, 115 L 140, 820 L 500, 820 L 500, 925" class="conn-dark" marker-end="url(#arrowDark)" />
+  <g transform="translate(140, 520)">
+    <rect x="-95" y="-9" width="190" height="18" class="edge-label-bg" />
+    <text y="4" class="edge-text">WSS Duplex (Chat &amp; Typing Events)</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- 4. SUPABASE DATABASE & BAAS (POSTGRESQL 15+) -->
+  <!-- ================================================================= -->
+  <g transform="translate(100, 1200)">
+    <rect width="980" height="530" class="layer-box" />
+    <text x="20" y="24" class="layer-title">4. Supabase Database &amp; BaaS (PostgreSQL 15+)</text>
+
+    <!-- Row-Level Security (RLS) -->
+    <g transform="translate(40, 50)" filter="url(#cardShadow)">
+      <rect width="280" height="65" class="card-box" />
+      <text x="140" y="26" class="node-title">Row-Level Security (RLS)</text>
+      <text x="140" y="44" class="node-sub">(Self-Data Isolation &amp; is_admin_or_staff)</text>
+    </g>
+
+    <!-- Stored Procedure: available_rooms() -->
+    <g transform="translate(350, 50)" filter="url(#cardShadow)">
+      <rect width="290" height="65" class="card-box" />
+      <text x="145" y="26" class="node-title">Stored Procedure: available_rooms()</text>
+      <text x="145" y="44" class="node-sub">(Dynamic Date-Range Availability Matrix)</text>
+    </g>
+
+    <!-- GiST Exclusion Constraint -->
+    <g transform="translate(670, 50)" filter="url(#cardShadow)">
+      <rect width="270" height="65" class="card-box" />
+      <text x="135" y="26" class="node-title">GiST Exclusion Constraint</text>
+      <text x="135" y="44" class="node-sub">(Hard Overbooking Guard: 0 Double Bookings)</text>
+    </g>
+
+    <!-- PostgreSQL Relational Tables -->
+    <g transform="translate(290, 205)" filter="url(#cardShadow)">
+      <rect width="400" height="65" class="card-box-accent" />
+      <text x="200" y="26" class="node-title">PostgreSQL Relational Tables</text>
+      <text x="200" y="44" class="node-sub-blue">profiles, rooms, reservations, orders, tasks, inventory</text>
+    </g>
+
+    <!-- Database Triggers -->
+    <g transform="translate(60, 360)" filter="url(#cardShadow)">
+      <rect width="380" height="70" class="card-box" />
+      <text x="190" y="26" class="node-title">Database Triggers</text>
+      <text x="190" y="44" class="node-sub">(sync_room_rating, handle_new_user, touch_updated_at)</text>
+    </g>
+
+    <!-- Supabase Realtime Engine -->
+    <g transform="translate(540, 360)" filter="url(#cardShadow)">
+      <rect width="380" height="70" class="card-box" />
+      <text x="190" y="26" class="node-title">Supabase Realtime Engine</text>
+      <text x="190" y="44" class="node-sub">(PostgreSQL WAL Change Data Capture)</text>
+    </g>
+
+    <!-- Internal L4 Lines -->
+    <path d="M 180, 115 L 180, 165 L 380, 165 L 380, 205" class="conn-blue" marker-end="url(#arrowBlue)" />
+    <g transform="translate(240, 155)">
+      <rect x="-45" y="-8" width="90" height="16" class="edge-label-bg" />
+      <text y="4" class="edge-text">7. Evaluated Query</text>
+    </g>
+
+    <path d="M 495, 115 L 495, 205" class="conn-blue" marker-end="url(#arrowBlue)" />
+    <g transform="translate(495, 160)">
+      <rect x="-65" y="-8" width="130" height="16" class="edge-label-bg" />
+      <text y="4" class="edge-text">9. Scan Active Date Spans</text>
+    </g>
+
+    <path d="M 805, 115 L 805, 165 L 610, 165 L 610, 205" class="conn-blue" marker-end="url(#arrowBlue)" />
+    <g transform="translate(730, 155)">
+      <rect x="-60" y="-8" width="120" height="16" class="edge-label-bg" />
+      <text y="4" class="edge-text">11. Overlap Check Passed</text>
+    </g>
+
+    <path d="M 390, 270 L 390, 320 L 250, 320 L 250, 360" class="conn-blue" marker-end="url(#arrowBlue)" />
+    <g transform="translate(280, 310)">
+      <rect x="-65" y="-8" width="130" height="16" class="edge-label-bg" />
+      <text y="4" class="edge-text">12. On Insert / Update / Delete</text>
+    </g>
+
+    <path d="M 590, 270 L 590, 320 L 730, 320 L 730, 360" class="conn-blue" marker-end="url(#arrowBlue)" />
+    <g transform="translate(700, 310)">
+      <rect x="-55" y="-8" width="110" height="16" class="edge-label-bg" />
+      <text y="4" class="edge-text">13. WAL Log Changes</text>
+    </g>
+  </g>
+
+  <!-- Connectors: L3 Modular REST -> L4 DB -->
+  <path d="M 540, 1105 L 540, 1160 L 280, 1160 L 280, 1250" class="conn-blue" marker-end="url(#arrowBlue)" />
+  <g transform="translate(360, 1150)">
+    <rect x="-70" y="-8" width="140" height="16" class="edge-label-bg" />
+    <text y="4" class="edge-text">6. Service-Role SQL Operations</text>
+  </g>
+
+  <path d="M 640, 1105 L 640, 1170 L 595, 1170 L 595, 1250" class="conn-blue" marker-end="url(#arrowBlue)" />
+  <g transform="translate(640, 1175)">
+    <rect x="-50" y="-8" width="100" height="16" class="edge-label-bg" />
+    <text y="4" class="edge-text">8. Availability Check</text>
+  </g>
+
+  <path d="M 740, 1105 L 740, 1160 L 905, 1160 L 905, 1250" class="conn-blue" marker-end="url(#arrowBlue)" />
+  <g transform="translate(840, 1150)">
+    <rect x="-55" y="-8" width="110" height="16" class="edge-label-bg" />
+    <text y="4" class="edge-text">10. Insert Stay Record</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- 5. EXTERNAL CLOUD INTEGRATIONS -->
+  <!-- ================================================================= -->
+  <g transform="translate(1120, 1200)">
+    <rect width="380" height="530" class="layer-box" />
+    <text x="20" y="24" class="layer-title">5. External Cloud Integrations</text>
+
+    <!-- Twilio SMS Gateway -->
+    <g transform="translate(40, 80)" filter="url(#cardShadow)">
+      <rect width="300" height="80" class="card-box" />
+      <text x="150" y="32" class="node-title">Twilio SMS Gateway</text>
+      <text x="150" y="54" class="node-sub">(Transactional Pings &amp; Verification)</text>
+    </g>
+
+    <!-- Cloudinary CDN -->
+    <g transform="translate(40, 280)" filter="url(#cardShadow)">
+      <rect width="300" height="80" class="card-box" />
+      <text x="150" y="32" class="node-title">Cloudinary CDN</text>
+      <text x="150" y="54" class="node-sub">(Optimized Image Asset Storage)</text>
+    </g>
+  </g>
+
+  <!-- Connector: Modular REST -> Twilio -->
+  <path d="M 840, 1070 L 1160, 1070 L 1160, 1280" class="conn-blue" marker-end="url(#arrowBlue)" />
+  <g transform="translate(1000, 1060)">
+    <rect x="-95" y="-8" width="190" height="16" class="edge-label-bg" />
+    <text y="4" class="edge-text">16. Outbound SMS Ping (Confirmation / Pass)</text>
+  </g>
+
+  <!-- Connector: Twilio -> REST Webhook -->
+  <path d="M 1200, 1280 L 1200, 1090 L 840, 1090" class="conn-dashed" marker-end="url(#arrowGray)" />
+  <g transform="translate(1020, 1095)">
+    <rect x="-95" y="-8" width="190" height="16" class="edge-label-bg" />
+    <text y="4" class="edge-text">17. Inbound Status Webhook (/webhooks/sms/status)</text>
+  </g>
+
+  <!-- Connector: Upload Engine -> Cloudinary CDN -->
+  <path d="M 1270, 985 L 1380, 985 L 1380, 1480" class="conn-blue" marker-end="url(#arrowBlue)" />
+  <g transform="translate(1380, 1140)">
+    <rect x="-70" y="-8" width="140" height="16" class="edge-label-bg" />
+    <text y="4" class="edge-text">18. Validated Photo Uploads</text>
+  </g>
+
+  <!-- Realtime WSS Push: L4 Realtime Engine -> L1 Realtime Client -->
+  <path d="M 740, 1630 L 60, 1630 L 60, 145 L 470, 145 L 470, 105" class="conn-dashed" marker-end="url(#arrowGray)" />
+  <g transform="translate(60, 880)">
+    <rect x="-85" y="-8" width="170" height="16" class="edge-label-bg" />
+    <text y="4" class="edge-text">14. Realtime WSS Push (Live Table Sync)</text>
+  </g>
+
+  <!-- Footer Specification Info -->
+  <g transform="translate(800, 1915)" text-anchor="middle">
+    <text y="0" font-size="12" font-weight="600" fill="#64748b">J &amp; D Beach House · Official System Architecture Diagram · High-Definition Vector Specification</text>
+    <text y="18" font-size="11" fill="#94a3b8">Solid Blue = Primary HTTPS &amp; SQL Query Flow · Dashed Gray = Realtime WebSockets &amp; Webhooks · Dark Border = Layer Boundaries</text>
+  </g>
+</svg>

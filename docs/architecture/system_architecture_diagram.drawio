@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-09-20T09:53:21.927Z" agent="Antigravity Professional Diagram Tool" version="24.0.0" type="device">
+  <diagram id="sys-arch" name="J &amp; D Beach House - System Architecture">
+    <mxGraphModel dx="1600" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1950" background="#ffffff" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ================= LAYER 1: CLIENT LAYER ================= -->
+        <mxCell id="L1_Container" value="1. Frontend Client Layer (React 18 + Vite + TS)" style="swimlane;whiteSpace=wrap;html=1;startSize=28;fillColor=#f8fafc;strokeColor=#64748b;strokeWidth=1.5;fontStyle=1;fontSize=13;fontColor=#1e293b;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="100" y="70" width="1400" height="250" as="geometry" />
+        </mxCell>
+        <mxCell id="L1_SocketClient" value="&lt;b&gt;Socket.io Client&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;(Realtime Chatbot Socket)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#475569;strokeWidth=1.2;fontColor=#0f172a;fontSize=12;" vertex="1" parent="L1_Container">
+          <mxGeometry x="40" y="45" width="260" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="L1_RealtimeClient" value="&lt;b&gt;Supabase Realtime Client&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;(PostgreSQL CDC Listener)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#475569;strokeWidth=1.2;fontColor=#0f172a;fontSize=12;" vertex="1" parent="L1_Container">
+          <mxGeometry x="340" y="45" width="260" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="L1_StaffPortals" value="&lt;b&gt;Multi-Role Operations Desks&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;(Reception, Accounting, Depts, Executive Admin)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#475569;strokeWidth=1.2;fontColor=#0f172a;fontSize=12;" vertex="1" parent="L1_Container">
+          <mxGeometry x="180" y="155" width="320" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="L1_GuestPortal" value="&lt;b&gt;Public Guest Portal&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;(Booking Flow, Room Gallery, Ocean Synth)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#475569;strokeWidth=1.2;fontColor=#0f172a;fontSize=12;" vertex="1" parent="L1_Container">
+          <mxGeometry x="540" y="155" width="320" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="L1_CustomerHub" value="&lt;b&gt;Guest Experience Hub&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;(In-Room Orders, Digital RFID Pass)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#475569;strokeWidth=1.2;fontColor=#0f172a;fontSize=12;" vertex="1" parent="L1_Container">
+          <mxGeometry x="900" y="155" width="320" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Edge 15: Realtime -> Desks -->
+        <mxCell id="E15" value="15. Reactive State Refresh" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;dashed=1;fontColor=#475569;fontSize=10;" edge="1" parent="L1_Container" source="L1_RealtimeClient" target="L1_StaffPortals">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ================= LAYER 2: SECURITY PERIMETER ================= -->
+        <mxCell id="L2_Container" value="2. Security &amp;amp; Firewall Perimeter" style="swimlane;whiteSpace=wrap;html=1;startSize=28;fillColor=#f8fafc;strokeColor=#64748b;strokeWidth=1.5;fontStyle=1;fontSize=13;fontColor=#1e293b;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="520" y="390" width="560" height="420" as="geometry" />
+        </mxCell>
+        <mxCell id="L2_RateLimit" value="&lt;b&gt;Rate Limiter&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;(Global 300 req / 15m · Booking 5 req / m)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#475569;strokeWidth=1.2;fontColor=#0f172a;fontSize=12;" vertex="1" parent="L2_Container">
+          <mxGeometry x="50" y="45" width="460" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="L2_NGWF" value="&lt;b&gt;Next-Gen Web App Firewall (NGWF)&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;(Deep Payload SQLi / XSS / Traversal Filter)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#475569;strokeWidth=1.2;fontColor=#0f172a;fontSize=12;" vertex="1" parent="L2_Container">
+          <mxGeometry x="50" y="140" width="460" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="L2_AntiXSS" value="&lt;b&gt;Anti-XSS Sanitizer&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;(Recursive JSON &amp;amp; Query Scrubber)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#475569;strokeWidth=1.2;fontColor=#0f172a;fontSize=12;" vertex="1" parent="L2_Container">
+          <mxGeometry x="50" y="235" width="460" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="L2_CSRF" value="&lt;b&gt;Cookie Tokenizer&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;(Double-Submit CSRF Protection)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#475569;strokeWidth=1.2;fontColor=#0f172a;fontSize=12;" vertex="1" parent="L2_Container">
+          <mxGeometry x="50" y="330" width="460" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- Internal L2 edges -->
+        <mxCell id="E2" value="2. Rate-Passed Request" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2563eb;strokeWidth=1.5;fontColor=#475569;fontSize=10;" edge="1" parent="L2_Container" source="L2_RateLimit" target="L2_NGWF">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="E3" value="3. Threat Inspected" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2563eb;strokeWidth=1.5;fontColor=#475569;fontSize=10;" edge="1" parent="L2_Container" source="L2_NGWF" target="L2_AntiXSS">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="E4" value="4. Payload Sanitized" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2563eb;strokeWidth=1.5;fontColor=#475569;fontSize=10;" edge="1" parent="L2_Container" source="L2_AntiXSS" target="L2_CSRF">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- L1 to L2 Connections -->
+        <mxCell id="E1_Staff" value="1. HTTPS REST (Task Dispatch &amp;amp; Reports)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2563eb;strokeWidth=1.5;fontColor=#475569;fontSize=10;" edge="1" parent="1" source="L1_StaffPortals" target="L2_RateLimit">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="E1_Guest" value="1. HTTPS REST (Browse &amp;amp; Reserve)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2563eb;strokeWidth=1.5;fontColor=#475569;fontSize=10;" edge="1" parent="1" source="L1_GuestPortal" target="L2_RateLimit">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="E1_Hub" value="1. HTTPS REST (Orders &amp;amp; Digital Key)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2563eb;strokeWidth=1.5;fontColor=#475569;fontSize=10;" edge="1" parent="1" source="L1_CustomerHub" target="L2_RateLimit">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ================= LAYER 3: EXPRESS.JS BACKEND ================= -->
+        <mxCell id="L3_Container" value="3. Express.js Backend Server (Node.js)" style="swimlane;whiteSpace=wrap;html=1;startSize=28;fillColor=#f8fafc;strokeColor=#64748b;strokeWidth=1.5;fontStyle=1;fontSize=13;fontColor=#1e293b;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="100" y="880" width="1400" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="L3_Telemetry" value="&lt;b&gt;Telemetry &amp;amp; Forecasting Engine&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;(Live Visitor Heartbeat &amp;amp; Surge Predictor)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#475569;strokeWidth=1.2;fontColor=#0f172a;fontSize=12;" vertex="1" parent="L3_Container">
+          <mxGeometry x="40" y="45" width="320" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="L3_SocketServer" value="&lt;b&gt;Socket.io Engine&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;(Alan / J &amp;amp; D Bot AI Concierge)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#475569;strokeWidth=1.2;fontColor=#0f172a;fontSize=12;" vertex="1" parent="L3_Container">
+          <mxGeometry x="400" y="45" width="340" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="L3_RESTApi" value="&lt;b&gt;Modular REST Endpoints&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#2563eb&quot;&gt;&lt;b&gt;(/rooms, /reservations, /department, /analytics)&lt;/b&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2563eb;strokeWidth=1.6;fontColor=#0f172a;fontSize=12;" vertex="1" parent="L3_Container">
+          <mxGeometry x="400" y="160" width="440" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="L3_UploadEngine" value="&lt;b&gt;Secure Media Upload Engine&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;(MIME Type Whitelist &amp;amp; UUID Filenames)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#475569;strokeWidth=1.2;fontColor=#0f172a;fontSize=12;" vertex="1" parent="L3_Container">
+          <mxGeometry x="980" y="45" width="380" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- L3 Internal Socket to REST -->
+        <mxCell id="E_SocketQuery" value="Query Room Rates &amp;amp; Info" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;dashed=1;fontColor=#475569;fontSize=10;" edge="1" parent="L3_Container" source="L3_SocketServer" target="L3_RESTApi">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- L2 to L3 Link -->
+        <mxCell id="E5" value="5. CSRF Verified" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2563eb;strokeWidth=1.5;fontColor=#475569;fontSize=10;" edge="1" parent="1" source="L2_CSRF" target="L3_RESTApi">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Socket Duplex Link (Client to Engine) -->
+        <mxCell id="E_SocketDuplex" value="WSS Duplex (Instant Chat &amp;amp; Typing Events)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0f172a;strokeWidth=1.8;fontColor=#0f172a;fontSize=10;" edge="1" parent="1" source="L1_SocketClient" target="L3_SocketServer">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="140" y="115" />
+              <mxPoint x="140" y="820" />
+              <mxPoint x="570" y="820" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ================= LAYER 4: SUPABASE DATABASE ================= -->
+        <mxCell id="L4_Container" value="4. Supabase Database &amp;amp; BaaS (PostgreSQL 15+)" style="swimlane;whiteSpace=wrap;html=1;startSize=28;fillColor=#f8fafc;strokeColor=#64748b;strokeWidth=1.5;fontStyle=1;fontSize=13;fontColor=#1e293b;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="100" y="1200" width="980" height="530" as="geometry" />
+        </mxCell>
+        <mxCell id="L4_RLS" value="&lt;b&gt;Row-Level Security (RLS)&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;(Self-Data Isolation &amp;amp; is_admin_or_staff Checks)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#475569;strokeWidth=1.2;fontColor=#0f172a;fontSize=12;" vertex="1" parent="L4_Container">
+          <mxGeometry x="40" y="50" width="280" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="L4_RPC" value="&lt;b&gt;Stored Procedure: available_rooms()&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;(Dynamic Date-Range Availability Matrix)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#475569;strokeWidth=1.2;fontColor=#0f172a;fontSize=12;" vertex="1" parent="L4_Container">
+          <mxGeometry x="350" y="50" width="290" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="L4_GiST" value="&lt;b&gt;GiST Exclusion Constraint&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;(Hard Overbooking Guard: 0 Double Bookings)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#475569;strokeWidth=1.2;fontColor=#0f172a;fontSize=12;" vertex="1" parent="L4_Container">
+          <mxGeometry x="670" y="50" width="270" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="L4_Tables" value="&lt;b&gt;PostgreSQL Relational Tables&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#2563eb&quot;&gt;&lt;b&gt;profiles, rooms, reservations, orders, tasks, inventory&lt;/b&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2563eb;strokeWidth=1.6;fontColor=#0f172a;fontSize=12;" vertex="1" parent="L4_Container">
+          <mxGeometry x="290" y="205" width="400" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="L4_Triggers" value="&lt;b&gt;Database Triggers&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;(sync_room_rating, handle_new_user, touch_updated_at)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#475569;strokeWidth=1.2;fontColor=#0f172a;fontSize=12;" vertex="1" parent="L4_Container">
+          <mxGeometry x="60" y="360" width="380" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="L4_RealtimeEngine" value="&lt;b&gt;Supabase Realtime Engine&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;(PostgreSQL WAL Change Data Capture)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#475569;strokeWidth=1.2;fontColor=#0f172a;fontSize=12;" vertex="1" parent="L4_Container">
+          <mxGeometry x="540" y="360" width="380" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- L4 Internal Connections -->
+        <mxCell id="E7" value="7. Evaluated Query" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2563eb;strokeWidth=1.5;fontColor=#475569;fontSize=10;" edge="1" parent="L4_Container" source="L4_RLS" target="L4_Tables">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="E9" value="9. Scan Active Date Spans" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2563eb;strokeWidth=1.5;fontColor=#475569;fontSize=10;" edge="1" parent="L4_Container" source="L4_RPC" target="L4_Tables">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="E11" value="11. Overlap Check Passed" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2563eb;strokeWidth=1.5;fontColor=#475569;fontSize=10;" edge="1" parent="L4_Container" source="L4_GiST" target="L4_Tables">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="E12" value="12. On Insert / Update / Delete" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2563eb;strokeWidth=1.5;fontColor=#475569;fontSize=10;" edge="1" parent="L4_Container" source="L4_Tables" target="L4_Triggers">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="E13" value="13. WAL Log Changes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2563eb;strokeWidth=1.5;fontColor=#475569;fontSize=10;" edge="1" parent="L4_Container" source="L4_Tables" target="L4_RealtimeEngine">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- L3 to L4 Connections -->
+        <mxCell id="E6" value="6. Service-Role SQL Operations" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2563eb;strokeWidth=1.5;fontColor=#475569;fontSize=10;" edge="1" parent="1" source="L3_RESTApi" target="L4_RLS">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="E8" value="8. Availability Check" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2563eb;strokeWidth=1.5;fontColor=#475569;fontSize=10;" edge="1" parent="1" source="L3_RESTApi" target="L4_RPC">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="E10" value="10. Insert Stay Record" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2563eb;strokeWidth=1.5;fontColor=#475569;fontSize=10;" edge="1" parent="1" source="L3_RESTApi" target="L4_GiST">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ================= LAYER 5: EXTERNAL CLOUD ================= -->
+        <mxCell id="L5_Container" value="5. External Cloud Integrations" style="swimlane;whiteSpace=wrap;html=1;startSize=28;fillColor=#f8fafc;strokeColor=#64748b;strokeWidth=1.5;fontStyle=1;fontSize=13;fontColor=#1e293b;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="1200" width="380" height="530" as="geometry" />
+        </mxCell>
+        <mxCell id="L5_Twilio" value="&lt;b&gt;Twilio SMS Gateway&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;(Transactional Pings &amp;amp; Verification)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#475569;strokeWidth=1.2;fontColor=#0f172a;fontSize=12;" vertex="1" parent="L5_Container">
+          <mxGeometry x="40" y="80" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="L5_Cloudinary" value="&lt;b&gt;Cloudinary CDN&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;(Optimized Image Asset Storage)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#475569;strokeWidth=1.2;fontColor=#0f172a;fontSize=12;" vertex="1" parent="L5_Container">
+          <mxGeometry x="40" y="280" width="300" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Cross connections to L5 -->
+        <mxCell id="E16" value="16. Outbound SMS Ping (Confirmation / Pass)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2563eb;strokeWidth=1.5;fontColor=#475569;fontSize=10;" edge="1" parent="1" source="L3_RESTApi" target="L5_Twilio">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="840" y="1070" />
+              <mxPoint x="1270" y="1070" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="E17" value="17. Inbound Status Webhook (/webhooks/sms/status)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;dashed=1;fontColor=#475569;fontSize=10;" edge="1" parent="1" source="L5_Twilio" target="L3_RESTApi">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1310" y="1090" />
+              <mxPoint x="840" y="1090" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="E18" value="18. Validated Photo Uploads" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2563eb;strokeWidth=1.5;fontColor=#475569;fontSize=10;" edge="1" parent="1" source="L3_UploadEngine" target="L5_Cloudinary">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- L4 Realtime to L1 Client -->
+        <mxCell id="E14" value="14. Realtime WSS Push (Live Table Sync)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;dashed=1;fontColor=#475569;fontSize=10;" edge="1" parent="1" source="L4_RealtimeEngine" target="L1_RealtimeClient">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="60" y="1630" />
+              <mxPoint x="60" y="145" />
+              <mxPoint x="470" y="145" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

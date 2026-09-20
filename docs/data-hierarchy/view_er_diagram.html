@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Entity-Relationship Diagram — J & D Beach House</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+      max-width: 900px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 14px;
+      border-radius: 9999px;
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+    h1 {
+      font-size: 28px;
+      color: #ffffff;
+      margin-bottom: 8px;
+    }
+    p {
+      font-size: 15px;
+      color: #94a3b8;
+    }
+    .viewer-card {
+      width: 100%;
+      max-width: 1650px;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      padding: 20px;
+      margin-bottom: 30px;
+    }
+    .viewer-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 14px;
+      margin-bottom: 14px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .viewer-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .diagram-img {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 8px;
+    }
+    .format-links {
+      display: flex;
+      gap: 8px;
+    }
+    .format-link {
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 4px;
+      background: #f1f5f9;
+      color: #475569;
+      text-decoration: none;
+      border: 1px solid #cbd5e1;
+      transition: all 0.15s;
+    }
+    .format-link:hover {
+      background: #0284c7;
+      color: #ffffff;
+      border-color: #0284c7;
+    }
+    .legend {
+      margin-top: 15px;
+      padding: 12px 18px;
+      background: #f8fafc;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      color: #475569;
+      line-height: 1.5;
+      border-left: 4px solid #0284c7;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="badge">Relational Database Topology</div>
+    <h1>J & D Beach House · Entity-Relationship (ER) Diagram</h1>
+    <p>Exact crow's foot notation, foreign keys, and relational constraints in normalized vector format.</p>
+  </div>
+
+  <div class="viewer-card">
+    <div class="viewer-toolbar">
+      <span class="viewer-title">Normalized Entity Relationship Data Model</span>
+      <div class="format-links">
+        <a href="./entity_relationship_diagram.svg" target="_blank" class="format-link">📐 Vector SVG</a>
+        <a href="./entity_relationship_diagram.drawio" download class="format-link">📄 Draw.io</a>
+        <a href="./entity_relationship_diagram.xml" target="_blank" class="format-link">📝 XML</a>
+        <a href="./entity_relationship_diagram.png" target="_blank" class="format-link">🖼️ 4K PNG</a>
+        <a href="./view_data_hierarchy.html" class="format-link" style="background:#0284c7; color:#fff;">🏛️ Flowchart View</a>
+      </div>
+    </div>
+    <a href="./entity_relationship_diagram.svg" target="_blank" title="Click to view full-resolution infinite vector">
+      <img src="./entity_relationship_diagram.svg" alt="Entity Relationship Data Model" class="diagram-img" />
+    </a>
+    <div class="legend">
+      <strong>Entities & Constraints:</strong> 11 Normalized Tables (<code>AUTH USERS</code>, <code>PROFILES</code>, <code>ROOMS</code>, <code>DEPT NAME</code>, <code>RESORT_INVENTORY</code>, <code>DEPARTMENT_TASKS</code>, <code>RESERVATIONS</code>, <code>REVIEWS</code>, <code>NOTIFICATIONS</code>, <code>CHAT MESSAGES</code>, <code>RESORT ORDERS</code>) · 14 Crow's Foot Relationships (1:1, 1:N, 0..1:N).
+    </div>
+  </div>
+
+</body>
+</html>
