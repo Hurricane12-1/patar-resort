@@ -24,7 +24,8 @@ Capstone 1 sided/
 │   │       └── modules/        <-- Extracted TypeScript styles (*.styles.ts, theme.ts)
 │   └── dist/                   <-- Compiled static production build
 ├── docs/                       <-- Dedicated System Documentation Hub
-│   ├── architecture/           <-- System & Data Hierarchy diagrams (PNG, SVG, HTML viewer)
+│   ├── architecture/           <-- System Architecture diagrams (PNG, SVG, HTML viewer)
+│   ├── data-hierarchy/         <-- 📊 Data Hierarchy diagrams (Mermaid flowchart & ER)
 │   ├── api/                    <-- Complete REST API & WebSocket specifications
 │   ├── database/               <-- PostgreSQL schema, DATA_HIERARCHY.md, RLS policies
 │   ├── guides/                 <-- Deployment, developer setup & disaster recovery

@@ -12,14 +12,16 @@ docs/
 │   ├── README.md                   <-- High-level architecture specification
 │   ├── system_architecture_diagram.png  <-- 1904x1516 high-res raster diagram
 │   ├── system_architecture_diagram.svg  <-- Infinite vector zoom diagram
-│   ├── view_diagram.html           <-- Browser viewer for architecture diagram
-│   ├── data_hierarchy_diagram.svg  <-- Vector diagram for entity data hierarchy
-│   └── data_hierarchy_viewer.html  <-- Interactive tabbed data hierarchy explorer
+│   └── view_diagram.html           <-- Browser viewer for architecture diagram
+├── data-hierarchy/                 <-- 📊 Dedicated Data Hierarchy Diagrams Hub
+│   ├── README.md                   <-- Native Mermaid flowchart & ER diagram
+│   └── view_data_hierarchy.html    <-- Browser viewer for live interactive diagrams
 ├── api/                            <-- REST API & WebSocket Specifications
 │   └── API_REFERENCE.md            <-- All endpoints, request schemas & socket events
 ├── database/                       <-- PostgreSQL Schemas & BaaS Specifications
 │   ├── DATABASE_SCHEMA.md          <-- Tables, enums, triggers, RLS, & GiST constraints
-│   └── DATA_HIERARCHY.md           <-- Domains, entity trees, RBAC, & storage lifecycle
+│   ├── DATA_HIERARCHY.md           <-- Domains, entity trees, RBAC, & storage lifecycle
+│   └── DATA_HIERARCHY_DIAGRAM.md   <-- Raw Mermaid diagram code specifications
 ├── guides/                         <-- Setup, Deployment & Disaster Recovery
 │   ├── DEPLOYMENT_AND_SETUP.md     <-- Installation, dev setup & production deployment
 │   └── BACKUP_AND_RESTORE.md       <-- Backup procedures, snapshots & emergency rollback
@@ -34,10 +36,11 @@ docs/
 
 | Topic | Document Link | Description |
 | :--- | :--- | :--- |
+| **Data Hierarchy Hub** | [Data Hierarchy Diagrams](./data-hierarchy/README.md) | Dedicated folder with native Mermaid flowchart & ER diagrams. |
+| **Data Hierarchy Viewer** | [View Data Hierarchy (HTML)](./data-hierarchy/view_data_hierarchy.html) | Interactive browser viewer for live vector Mermaid diagrams. |
 | **System Architecture** | [Architecture Guide](./architecture/README.md) | High-res diagrams, system layers, and edge data flows. |
 | **Interactive Diagram** | [View Diagram (HTML)](./architecture/view_diagram.html) | Interactive vector visualizer for system components. |
-| **Data Hierarchy Doc** | [Data Hierarchy Spec](./database/DATA_HIERARCHY.md) | Domains, parent-child entity trees, RBAC tiers & retention. |
-| **Data Hierarchy Explorer** | [Data Explorer (HTML)](./architecture/data_hierarchy_viewer.html) | Interactive tabbed explorer for entities and permissions. |
+| **Data Hierarchy Spec** | [Data Hierarchy Spec](./database/DATA_HIERARCHY.md) | Domains, parent-child entity trees, RBAC tiers & retention. |
 | **API Endpoints** | [API Reference](./api/API_REFERENCE.md) | Full endpoint contracts, payloads, and WebSocket events. |
 | **Database Design** | [Database Schema](./database/DATABASE_SCHEMA.md) | Supabase PostgreSQL tables, RLS security, and GiST guard. |
 | **Setup & Deploy** | [Deployment Guide](./guides/DEPLOYMENT_AND_SETUP.md) | Environment configuration, running locally and production. |
