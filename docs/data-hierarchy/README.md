@@ -2,12 +2,16 @@
 
 This dedicated folder contains the official **Data Hierarchy Diagrams** for **J & D Beach House** (Bolinao, Pangasinan).
 
-## 1. Visual Data Hierarchy Diagram (Image)
+## 1. Vector XML Data Hierarchy Diagram (SVG & Draw.io XML)
 
-![J & D Beach House Data Hierarchy Diagram](./data_hierarchy_diagram.png)
+![J & D Beach House Data Hierarchy Diagram](./data_hierarchy_diagram.svg)
 
 > [!TIP]
-> This folder includes both high-definition raster images (`.png` / `.jpg`), live interactive browser views (`view_data_hierarchy.html`), and native Mermaid diagrams below.
+> **Available XML & Vector Formats in this folder:**
+> - 📐 **Vector SVG XML (Infinite Zoom)**: [`data_hierarchy_diagram.svg`](./data_hierarchy_diagram.svg) (Crisp, zero-loss vector diagram).
+> - 📄 **Draw.io / diagrams.net XML**: [`data_hierarchy_diagram.xml`](./data_hierarchy_diagram.xml) (Open/edit in draw.io or diagrams.net).
+> - 📄 **Draw.io Native File**: [`data_hierarchy_diagram.drawio`](./data_hierarchy_diagram.drawio) (Direct draw.io format).
+> - 🌐 **Interactive Inlined Browser Viewer**: Open [`view_data_hierarchy.html`](./view_data_hierarchy.html) in your browser.
 
 ---
 
