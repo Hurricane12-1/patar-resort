@@ -2,9 +2,16 @@
 
 This dedicated folder contains the official **Data Hierarchy Diagrams** for **J & D Beach House** (Bolinao, Pangasinan).
 
+## 1. Visual Data Hierarchy Diagram (Image)
+
+![J & D Beach House Data Hierarchy Diagram](./data_hierarchy_diagram.png)
+
+> [!TIP]
+> This folder includes both high-definition raster images (`.png` / `.jpg`), live interactive browser views (`view_data_hierarchy.html`), and native Mermaid diagrams below.
+
 ---
 
-## 1. System Data Hierarchy Diagram (Flowchart TD)
+## 2. System Data Hierarchy Diagram (Flowchart TD)
 
 ```mermaid
 flowchart TD
