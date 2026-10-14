@@ -149,12 +149,12 @@ export default function Chatbot() {
                     borderRadius: 999,
                   }}
                 >
-                  GEMINI AI
+                  Resort AI
                 </span>
               </b>
               <br />
               <small style={{ opacity: 0.9, color: '#BAE6FD', fontSize: '.72rem' }}>
-                Powered by Google Gemini · 24/7 Concierge
+                24/7 Concierge
               </small>
             </div>
             <button
@@ -233,7 +233,7 @@ export default function Chatbot() {
                       letterSpacing: '0.04em',
                     }}
                   >
-                    <span>✦ GEMINI AI</span>
+                    <span>✦ RESORT AI</span>
                   </div>
                 )}
 
