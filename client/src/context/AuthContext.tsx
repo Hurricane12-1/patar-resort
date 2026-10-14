@@ -5,78 +5,57 @@ import { toast } from '../components/Toasts.tsx';
 
 const Ctx = createContext(null);
 
-export function generateAccountEmail(firstName, middleName, lastName, seq = 1, isStaff = true) {
+export function to11Digits(val: string): string {
+  if (!val) return '';
+  let digits = val.replace(/\D/g, '');
+  if (digits.startsWith('63') && digits.length >= 12) {
+    digits = '0' + digits.slice(2);
+  }
+  return digits.slice(0, 11);
+}
+
+export function generateAccountEmail(firstName, middleName, lastName, seq = 1, isStaff = true, provider = 'gmail') {
   const f = (firstName || '').trim().charAt(0).toLowerCase() || 'x';
   const m = (middleName || '').trim().charAt(0).toLowerCase() || 'x';
   const l = (lastName || '').trim().charAt(0).toLowerCase() || 'x';
-  if (!isStaff) return `${f}${m}${l}@gmail.com`;
+  if (!isStaff) {
+    if (provider === 'facebook') return `${f}${m}${l}@facebook.com`;
+    return `${f}${m}${l}@gmail.com`;
+  }
   const paddedSeq = String(seq).padStart(3, '0');
   return `${f}${m}${l}${paddedSeq}@resortmanagement.ph`;
 }
 
-const MOCK_ACCOUNTS = {
-  admin: {
-    id: 'usr-admin-1234',
-    first_name: 'Johannes',
-    middle_name: 'Von',
-    last_name: 'Shicksal',
-    full_name: 'Johannes Von Shicksal',
-    email: 'administrator@jdbeachhouse.ph',
-    phone: '+63 900 555 0123',
-    address: 'Tambak Beach Road',
-    city: 'Bolinao',
-    role: 'administrator',
-  },
-  receptionist: {
-    id: 'usr-recep-1234',
-    first_name: 'Elena',
-    middle_name: 'Santos',
-    last_name: 'Ramos',
-    full_name: 'Elena Santos Ramos',
-    email: 'receptionist@jdbeachhouse.ph',
-    phone: '+63 900 555 0101',
-    address: 'Front Desk Office',
-    city: 'Bolinao',
-    role: 'receptionist',
-  },
-  accountant: {
-    id: 'usr-acct-1234',
-    first_name: 'Carlos',
-    middle_name: 'Mendoza',
-    last_name: 'Ledger',
-    full_name: 'Carlos Mendoza Ledger',
-    email: 'accounting@jdbeachhouse.ph',
-    phone: '+63 900 555 0102',
-    address: 'Finance Office',
-    city: 'Bolinao',
-    role: 'accounting',
-  },
-  customer: {
-    id: 'usr-cust-1234',
-    first_name: 'Juan',
-    middle_name: 'Dela',
-    last_name: 'Cruz',
-    full_name: 'Juan Dela Cruz',
-    email: 'user@gmail.com',
-    phone: '+63 917 555 0192',
-    address: '123 Sunset Drive',
-    city: 'Manila',
-    role: 'customer',
-  },
-};
-
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(() => {
     try {
-      const saved = localStorage.getItem('jd_session') || localStorage.getItem('alon_session');
-      return saved ? JSON.parse(saved) : null;
+      const saved = localStorage.getItem('jd_session');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Clear any old mock sessions from previous sessions
+        if (parsed?.user?.is_mock) {
+          localStorage.removeItem('jd_session');
+          localStorage.removeItem('jd_profile');
+          return null;
+        }
+        return parsed;
+      }
+      return null;
     } catch { return null; }
   });
   
   const [profile, setProfile] = useState(() => {
     try {
-      const saved = localStorage.getItem('jd_profile') || localStorage.getItem('alon_profile');
-      return saved ? JSON.parse(saved) : null;
+      const saved = localStorage.getItem('jd_profile');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.is_mock || parsed?.id?.startsWith('usr-admin-1234') || parsed?.id?.startsWith('usr-recep-') || parsed?.id?.startsWith('usr-acct-')) {
+          localStorage.removeItem('jd_profile');
+          return null;
+        }
+        return parsed;
+      }
+      return null;
     } catch { return null; }
   });
 
@@ -116,10 +95,37 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     if (session && !session.user?.is_mock) {
-      api.me().then((p) => {
+      api.me().then(async (p) => {
         if (p) {
+          // Automated user information collection from Google / OAuth metadata
+          const meta = session.user?.user_metadata || {};
+          const googleFirst = meta.given_name || meta.first_name || '';
+          const googleLast = meta.family_name || meta.last_name || '';
+          const googleFull = meta.full_name || meta.name || [googleFirst, googleLast].filter(Boolean).join(' ');
+
+          if (!p.full_name || !p.first_name) {
+            const firstName = p.first_name || googleFirst || 'Guest';
+            const lastName = p.last_name || googleLast || 'Resident';
+            const fullName = p.full_name || googleFull || `${firstName} ${lastName}`;
+            try {
+              const updated = await api.updateMe({
+                first_name: firstName.replace(/[^a-zA-Z\s\-]/g, ''),
+                last_name: lastName.replace(/[^a-zA-Z\s\-]/g, ''),
+                full_name: fullName,
+                phone: to11Digits(p.phone) || '09175558899',
+                address: p.address || 'Patar Beach',
+                city: (p.city || 'Bolinao').replace(/[^a-zA-Z\s\-]/g, ''),
+                emergency_contact: to11Digits(p.emergency_contact) || '09185550123',
+              });
+              setProfile(updated);
+              setNeedsProfileCompletion(false);
+              return;
+            } catch {}
+          }
+
           setProfile(p);
-          setNeedsProfileCompletion(!p.full_name || !p.phone || !p.address);
+          // Seamless login without redundant entry of account
+          setNeedsProfileCompletion(false);
         }
       }).catch(() => {});
     }
@@ -156,54 +162,55 @@ export function AuthProvider({ children }) {
   }, [session]);
 
   const signIn = async (emailOrUsername, password) => {
-    const u = String(emailOrUsername || '').trim().toLowerCase();
-
-    let key = 'customer';
-    if (u.includes('admin') || u.includes('jvs001')) key = 'admin';
-    else if (u.includes('recep') || u.includes('esr002')) key = 'receptionist';
-    else if (u.includes('acct') || u.includes('accounting') || u.includes('cml003')) key = 'accountant';
-
     try {
       const res = await supabase.auth.signInWithPassword({ email: emailOrUsername, password });
-      if (!res.error && res.data?.session) {
+      if (res.error) {
+        return { data: null, error: res.error };
+      }
+      if (res.data?.session) {
         setSession(res.data.session);
         return res;
       }
-    } catch {}
-
-    // Fallback mock session when backend server or Supabase is offline/unreachable
-    const mockProfile = MOCK_ACCOUNTS[key] || MOCK_ACCOUNTS.customer;
-    const mockSession = {
-      access_token: `mock-token-${key}`,
-      user: { id: mockProfile.id, email: mockProfile.email, is_mock: true, profile: mockProfile },
-    };
-    setSession(mockSession);
-    setProfile(mockProfile);
-    localStorage.setItem('jd_session', JSON.stringify(mockSession));
-    localStorage.setItem('jd_profile', JSON.stringify(mockProfile));
-    return { data: mockSession, error: null };
+      return { data: null, error: new Error('Authentication failed. Please verify your credentials.') };
+    } catch (err) {
+      return { data: null, error: err };
+    }
   };
 
-  const switchMockRole = (roleKey) => {
-    const p = MOCK_ACCOUNTS[roleKey] || MOCK_ACCOUNTS.customer;
-    const s = { access_token: `mock-token-${roleKey}`, user: { id: p.id, email: p.email, is_mock: true, profile: p } };
-    setSession(s);
-    setProfile(p);
-    localStorage.setItem('jd_session', JSON.stringify(s));
-    localStorage.setItem('jd_profile', JSON.stringify(p));
-    toast(`Switched active portal role to ${p.role.toUpperCase()} ✦`);
+  const switchActiveRole = (roleKey) => {
+    if (profile && ['administrator', 'staff', 'receptionist', 'accounting'].includes(profile.role)) {
+      const updated = { ...profile, activeViewRole: roleKey };
+      setProfile(updated);
+      localStorage.setItem('jd_profile', JSON.stringify(updated));
+      toast(`Switched portal view to ${roleKey.toUpperCase()} ✦`);
+    } else {
+      toast(`Sign in with administrative credentials to access staff views.`, true);
+    }
   };
 
   const value = {
     session, profile, authOpen, setAuthOpen,
     needsProfileCompletion, setNeedsProfileCompletion,
     signIn,
-    switchMockRole,
+    switchActiveRole,
+    switchMockRole: switchActiveRole,
     signUp: (email, password, meta) => supabase.auth.signUp({ email, password, options: { data: meta } }),
-    signInWithGoogle: () => supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.origin },
-    }),
+    signInWithGoogle: async () => {
+      const res = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin },
+      });
+      if (res.error) throw res.error;
+      return res.data;
+    },
+    signInWithFacebook: async () => {
+      const res = await supabase.auth.signInWithOAuth({
+        provider: 'facebook',
+        options: { redirectTo: window.location.origin },
+      });
+      if (res.error) throw res.error;
+      return res.data;
+    },
     updateProfile: async (fields) => {
       const first = fields.first_name !== undefined ? fields.first_name : (profile?.first_name || '');
       const middle = fields.middle_name !== undefined ? fields.middle_name : (profile?.middle_name || '');
@@ -211,23 +218,10 @@ export function AuthProvider({ children }) {
       const full_name = fields.full_name || [first, middle, last].filter(Boolean).join(' ') || profile?.full_name || '';
       const updatedFields = { ...fields, full_name };
 
-      if (session?.user?.is_mock) {
-        const updated = { ...profile, ...updatedFields };
-        setProfile(updated);
-        localStorage.setItem('jd_profile', JSON.stringify(updated));
-        return updated;
-      }
-      try {
-        const updated = await api.updateMe(updatedFields);
-        setProfile(updated);
-        localStorage.setItem('jd_profile', JSON.stringify(updated));
-        return updated;
-      } catch {
-        const updated = { ...profile, ...updatedFields };
-        setProfile(updated);
-        localStorage.setItem('jd_profile', JSON.stringify(updated));
-        return updated;
-      }
+      const updated = await api.updateMe(updatedFields);
+      setProfile(updated);
+      localStorage.setItem('jd_profile', JSON.stringify(updated));
+      return updated;
     },
     signOut: async () => {
       setSession(null);

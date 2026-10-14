@@ -242,7 +242,7 @@ export default function ResortDepartment() {
                 </div>
                 <div className="field">
                   <label>ASSIGN TO (optional)</label>
-                  <input value={newTask.assigned_to} placeholder="e.g. Maria (Staff)" onChange={(e) => setNewTask({ ...newTask, assigned_to: e.target.value })} />
+                  <input value={newTask.assigned_to} placeholder="e.g. Reception Staff or Maintenance Lead" onChange={(e) => setNewTask({ ...newTask, assigned_to: e.target.value })} />
                 </div>
                 <div className="field">
                   <label>PRIORITY</label>

@@ -1,0 +1,163 @@
+{
+  "system": "J & D Beach House Resort Management System",
+  "component": "Total Sales Trend (DualLineChart)",
+  "version": "RBAC Revisions 1 to 5 Full Remediation Suite",
+  "backup_type": "release",
+  "theme": "executive_pure_white",
+  "generated_at": "2026-09-22T07:35:57.822Z",
+  "currency": "PHP (₱)",
+  "summary": {
+    "annual_room_sales_php": 1480000,
+    "annual_dining_sales_php": 425000,
+    "annual_total_sales_php": 1905000,
+    "target_variance_percent": 18.4,
+    "room_sales_share_percent": 68,
+    "dining_sales_share_percent": 32,
+    "trend_status": "EXCEEDING_TARGET",
+    "palette": {
+      "background": "#FFFFFF",
+      "room_curve": "#2563EB",
+      "dining_curve": "#E11D48",
+      "target_positive": "#059669",
+      "border": "#E2E8F0",
+      "text": "#0F172A",
+      "muted": "#64748B"
+    }
+  },
+  "kpis": [
+    {
+      "key": "room_sales",
+      "title": "ROOM SALES",
+      "value": "₱1.48M",
+      "share": "68% share",
+      "color": "#2563EB",
+      "category": "Lodging & Luxury Villas"
+    },
+    {
+      "key": "dining_sales",
+      "title": "F&B DINING",
+      "value": "₱425K",
+      "share": "32% share",
+      "color": "#E11D48",
+      "category": "Kitchen, Bar & Beachfront Dining"
+    },
+    {
+      "key": "target_variance",
+      "title": "TARGET VARIANCE",
+      "value": "+18.4%",
+      "share": "Exceeding target",
+      "color": "#059669",
+      "category": "Annual Performance Goal"
+    }
+  ],
+  "monthly_datapoints": [
+    {
+      "month": "Jan",
+      "roomUnits": 40,
+      "diningUnits": 30,
+      "roomPhp": 88000,
+      "diningPhp": 33000,
+      "totalPhp": 121000,
+      "insight": "New Year holiday getaway surge; 92% room occupancy."
+    },
+    {
+      "month": "Feb",
+      "roomUnits": 35,
+      "diningUnits": 25,
+      "roomPhp": 77000,
+      "diningPhp": 27500,
+      "totalPhp": 104500,
+      "insight": "Valentine's beach dinner packages boosted dining revenue."
+    },
+    {
+      "month": "Mar",
+      "roomUnits": 55,
+      "diningUnits": 40,
+      "roomPhp": 121000,
+      "diningPhp": 44000,
+      "totalPhp": 165000,
+      "insight": "Early summer break arrivals from Metro Manila."
+    },
+    {
+      "month": "Apr",
+      "roomUnits": 75,
+      "diningUnits": 55,
+      "roomPhp": 165000,
+      "diningPhp": 60500,
+      "totalPhp": 225500,
+      "insight": "Holy Week peak season: 100% capacity in all beachfront villas."
+    },
+    {
+      "month": "May",
+      "roomUnits": 85,
+      "diningUnits": 65,
+      "roomPhp": 187000,
+      "diningPhp": 71500,
+      "totalPhp": 258500,
+      "insight": "Annual record high: Patar Beach Summer Fest weekend traffic."
+    },
+    {
+      "month": "Jun",
+      "roomUnits": 60,
+      "diningUnits": 45,
+      "roomPhp": 132000,
+      "diningPhp": 49500,
+      "totalPhp": 181500,
+      "insight": "School opening transition, compensated by team building retreats."
+    },
+    {
+      "month": "Jul",
+      "roomUnits": 50,
+      "diningUnits": 35,
+      "roomPhp": 110000,
+      "diningPhp": 38500,
+      "totalPhp": 148500,
+      "insight": "Rainy season promotions maintained solid weekday occupancies."
+    },
+    {
+      "month": "Aug",
+      "roomUnits": 45,
+      "diningUnits": 30,
+      "roomPhp": 99000,
+      "diningPhp": 33000,
+      "totalPhp": 132000,
+      "insight": "Long weekend holiday uplift; private pool bookings strong."
+    },
+    {
+      "month": "Sep",
+      "roomUnits": 65,
+      "diningUnits": 50,
+      "roomPhp": 143000,
+      "diningPhp": 55000,
+      "totalPhp": 198000,
+      "insight": "Corporate incentive travel and culinary weekend events."
+    },
+    {
+      "month": "Oct",
+      "roomUnits": 70,
+      "diningUnits": 48,
+      "roomPhp": 154000,
+      "diningPhp": 52800,
+      "totalPhp": 206800,
+      "insight": "Pre-holiday bridal showers and destination weddings."
+    },
+    {
+      "month": "Nov",
+      "roomUnits": 80,
+      "diningUnits": 60,
+      "roomPhp": 176000,
+      "diningPhp": 66000,
+      "totalPhp": 242000,
+      "insight": "Semestral break travel rush and holiday party bookings."
+    },
+    {
+      "month": "Dec",
+      "roomUnits": 95,
+      "diningUnits": 75,
+      "roomPhp": 209000,
+      "diningPhp": 82500,
+      "totalPhp": 291500,
+      "insight": "Christmas and Year-End gala celebrations; all-time peak dining."
+    }
+  ]
+}

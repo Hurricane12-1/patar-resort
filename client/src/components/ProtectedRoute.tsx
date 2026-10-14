@@ -67,13 +67,13 @@ export default function ProtectedRoute({ children, allowedRoles = [], portalTitl
     e.preventDefault();
     setLoading(true);
     try {
-      const defaultEmail = isCustomer ? 'user@gmail.com'
-        : isAdmin ? 'administrator@jdbeachhouse.ph'
-        : allowedRoles.includes('receptionist') ? 'receptionist@jdbeachhouse.ph'
-        : allowedRoles.includes('accounting') ? 'accounting@jdbeachhouse.ph'
-        : 'user@gmail.com';
-      const targetEmail = email.trim() || defaultEmail;
-      const res = await signIn(targetEmail, password || '1234');
+      if (!email.trim() || !password) {
+        toast('Please enter your email and password.', true);
+        setLoading(false);
+        return;
+      }
+      const targetEmail = email.trim();
+      const res = await signIn(targetEmail, password);
       if (res?.error) throw res.error;
       toast(`Welcome to ${portalTitle} ✦`);
     } catch (err) {
@@ -195,7 +195,7 @@ export default function ProtectedRoute({ children, allowedRoles = [], portalTitl
                 <input
                   type="email"
                   value={email}
-                  placeholder={isCustomer ? 'user@gmail.com' : isAdmin ? 'administrator@jdbeachhouse.ph' : 'staff@jdbeachhouse.ph'}
+                  placeholder={'your@email.com'}
                   onChange={(e) => setEmail(e.target.value)}
                   style={{
                     width: '100%', padding: '13px 14px 13px 40px', boxSizing: 'border-box',

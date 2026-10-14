@@ -1,0 +1,924 @@
+{
+  "test_run": {
+    "total_target": 100000,
+    "total_executed": 100000,
+    "circuit_breaker_tripped": false,
+    "trip_reason": "N/A",
+    "trip_details": "None",
+    "throughput_rps": 497,
+    "duration_seconds": 201.07,
+    "timestamp": "2026-09-21T15:19:43.862Z"
+  },
+  "latency_profile": {
+    "p50": 151.8322,
+    "p90": 315.5768,
+    "p95": 349.2699,
+    "p99": 402.7145,
+    "max": 7272.4632
+  },
+  "status_codes": {
+    "200": 100000
+  },
+  "sample_users_head": [
+    {
+      "userId": "usr-synth-1",
+      "name": "Maria Santos",
+      "email": "maria.santos.1@guest.jdbeach.ph",
+      "phone": "+63 917 100 1000",
+      "tier": "Bronze Member",
+      "device": "mobile-safari",
+      "sessionId": "sess-1-e0nvte"
+    },
+    {
+      "userId": "usr-synth-2",
+      "name": "Juan Santos",
+      "email": "juan.santos.2@guest.jdbeach.ph",
+      "phone": "+63 917 100 1001",
+      "tier": "Silver Explorer",
+      "device": "mobile-chrome",
+      "sessionId": "sess-2-s73n08"
+    },
+    {
+      "userId": "usr-synth-3",
+      "name": "Jose Santos",
+      "email": "jose.santos.3@guest.jdbeach.ph",
+      "phone": "+63 917 100 1002",
+      "tier": "Gold VIP",
+      "device": "desktop-chrome",
+      "sessionId": "sess-3-c1g6s8"
+    },
+    {
+      "userId": "usr-synth-4",
+      "name": "Mark Santos",
+      "email": "mark.santos.4@guest.jdbeach.ph",
+      "phone": "+63 917 100 1003",
+      "tier": "Platinum Elite",
+      "device": "desktop-edge",
+      "sessionId": "sess-4-um63q5"
+    },
+    {
+      "userId": "usr-synth-5",
+      "name": "Michael Santos",
+      "email": "michael.santos.5@guest.jdbeach.ph",
+      "phone": "+63 917 100 1004",
+      "tier": "Bronze Member",
+      "device": "mobile-safari",
+      "sessionId": "sess-5-z2d4q5"
+    },
+    {
+      "userId": "usr-synth-6",
+      "name": "Angelo Santos",
+      "email": "angelo.santos.6@guest.jdbeach.ph",
+      "phone": "+63 917 100 1005",
+      "tier": "Silver Explorer",
+      "device": "mobile-chrome",
+      "sessionId": "sess-6-daa8tk"
+    },
+    {
+      "userId": "usr-synth-7",
+      "name": "Grace Santos",
+      "email": "grace.santos.7@guest.jdbeach.ph",
+      "phone": "+63 917 100 1006",
+      "tier": "Gold VIP",
+      "device": "desktop-chrome",
+      "sessionId": "sess-7-gjhl7g"
+    },
+    {
+      "userId": "usr-synth-8",
+      "name": "Christine Santos",
+      "email": "christine.santos.8@guest.jdbeach.ph",
+      "phone": "+63 917 100 1007",
+      "tier": "Platinum Elite",
+      "device": "desktop-edge",
+      "sessionId": "sess-8-jcd7mj"
+    },
+    {
+      "userId": "usr-synth-9",
+      "name": "Jasmine Santos",
+      "email": "jasmine.santos.9@guest.jdbeach.ph",
+      "phone": "+63 917 100 1008",
+      "tier": "Bronze Member",
+      "device": "mobile-safari",
+      "sessionId": "sess-9-rop1jj"
+    },
+    {
+      "userId": "usr-synth-10",
+      "name": "Patricia Santos",
+      "email": "patricia.santos.10@guest.jdbeach.ph",
+      "phone": "+63 917 100 1009",
+      "tier": "Silver Explorer",
+      "device": "mobile-chrome",
+      "sessionId": "sess-10-iqgi14"
+    },
+    {
+      "userId": "usr-synth-11",
+      "name": "Daniel Santos",
+      "email": "daniel.santos.11@guest.jdbeach.ph",
+      "phone": "+63 917 100 1010",
+      "tier": "Gold VIP",
+      "device": "desktop-chrome",
+      "sessionId": "sess-11-2rf7sk"
+    },
+    {
+      "userId": "usr-synth-12",
+      "name": "Carlos Santos",
+      "email": "carlos.santos.12@guest.jdbeach.ph",
+      "phone": "+63 917 100 1011",
+      "tier": "Platinum Elite",
+      "device": "desktop-edge",
+      "sessionId": "sess-12-9iqjjz"
+    },
+    {
+      "userId": "usr-synth-13",
+      "name": "Katrina Santos",
+      "email": "katrina.santos.13@guest.jdbeach.ph",
+      "phone": "+63 917 100 1012",
+      "tier": "Bronze Member",
+      "device": "mobile-safari",
+      "sessionId": "sess-13-52vvf3"
+    },
+    {
+      "userId": "usr-synth-14",
+      "name": "Bea Santos",
+      "email": "bea.santos.14@guest.jdbeach.ph",
+      "phone": "+63 917 100 1013",
+      "tier": "Silver Explorer",
+      "device": "mobile-chrome",
+      "sessionId": "sess-14-dw512m"
+    },
+    {
+      "userId": "usr-synth-15",
+      "name": "Eduardo Santos",
+      "email": "eduardo.santos.15@guest.jdbeach.ph",
+      "phone": "+63 917 100 1014",
+      "tier": "Gold VIP",
+      "device": "desktop-chrome",
+      "sessionId": "sess-15-ix3ebp"
+    },
+    {
+      "userId": "usr-synth-16",
+      "name": "Sofia Santos",
+      "email": "sofia.santos.16@guest.jdbeach.ph",
+      "phone": "+63 917 100 1015",
+      "tier": "Platinum Elite",
+      "device": "desktop-edge",
+      "sessionId": "sess-16-254fpt"
+    },
+    {
+      "userId": "usr-synth-17",
+      "name": "Gabriel Santos",
+      "email": "gabriel.santos.17@guest.jdbeach.ph",
+      "phone": "+63 917 100 1016",
+      "tier": "Bronze Member",
+      "device": "mobile-safari",
+      "sessionId": "sess-17-5hkoc4"
+    },
+    {
+      "userId": "usr-synth-18",
+      "name": "Ramon Santos",
+      "email": "ramon.santos.18@guest.jdbeach.ph",
+      "phone": "+63 917 100 1017",
+      "tier": "Silver Explorer",
+      "device": "mobile-chrome",
+      "sessionId": "sess-18-k1jq1c"
+    },
+    {
+      "userId": "usr-synth-19",
+      "name": "Andrea Santos",
+      "email": "andrea.santos.19@guest.jdbeach.ph",
+      "phone": "+63 917 100 1018",
+      "tier": "Gold VIP",
+      "device": "desktop-chrome",
+      "sessionId": "sess-19-5x18p8"
+    },
+    {
+      "userId": "usr-synth-20",
+      "name": "Christian Santos",
+      "email": "christian.santos.20@guest.jdbeach.ph",
+      "phone": "+63 917 100 1019",
+      "tier": "Platinum Elite",
+      "device": "desktop-edge",
+      "sessionId": "sess-20-rpc7pr"
+    },
+    {
+      "userId": "usr-synth-21",
+      "name": "Paolo Santos",
+      "email": "paolo.santos.21@guest.jdbeach.ph",
+      "phone": "+63 917 100 1020",
+      "tier": "Bronze Member",
+      "device": "mobile-safari",
+      "sessionId": "sess-21-2rfxr7"
+    },
+    {
+      "userId": "usr-synth-22",
+      "name": "Clarisse Santos",
+      "email": "clarisse.santos.22@guest.jdbeach.ph",
+      "phone": "+63 917 100 1021",
+      "tier": "Silver Explorer",
+      "device": "mobile-chrome",
+      "sessionId": "sess-22-glt4rd"
+    },
+    {
+      "userId": "usr-synth-23",
+      "name": "Liam Santos",
+      "email": "liam.santos.23@guest.jdbeach.ph",
+      "phone": "+63 917 100 1022",
+      "tier": "Gold VIP",
+      "device": "desktop-chrome",
+      "sessionId": "sess-23-zzprpd"
+    },
+    {
+      "userId": "usr-synth-24",
+      "name": "Emma Santos",
+      "email": "emma.santos.24@guest.jdbeach.ph",
+      "phone": "+63 917 100 1023",
+      "tier": "Platinum Elite",
+      "device": "desktop-edge",
+      "sessionId": "sess-24-ymzggb"
+    },
+    {
+      "userId": "usr-synth-25",
+      "name": "Noah Santos",
+      "email": "noah.santos.25@guest.jdbeach.ph",
+      "phone": "+63 917 100 1024",
+      "tier": "Bronze Member",
+      "device": "mobile-safari",
+      "sessionId": "sess-25-be8s4u"
+    },
+    {
+      "userId": "usr-synth-26",
+      "name": "Olivia Santos",
+      "email": "olivia.santos.26@guest.jdbeach.ph",
+      "phone": "+63 917 100 1025",
+      "tier": "Silver Explorer",
+      "device": "mobile-chrome",
+      "sessionId": "sess-26-oyl9b9"
+    },
+    {
+      "userId": "usr-synth-27",
+      "name": "Ethan Santos",
+      "email": "ethan.santos.27@guest.jdbeach.ph",
+      "phone": "+63 917 100 1026",
+      "tier": "Gold VIP",
+      "device": "desktop-chrome",
+      "sessionId": "sess-27-mradtt"
+    },
+    {
+      "userId": "usr-synth-28",
+      "name": "Mia Santos",
+      "email": "mia.santos.28@guest.jdbeach.ph",
+      "phone": "+63 917 100 1027",
+      "tier": "Platinum Elite",
+      "device": "desktop-edge",
+      "sessionId": "sess-28-xxukdy"
+    },
+    {
+      "userId": "usr-synth-29",
+      "name": "Lucas Santos",
+      "email": "lucas.santos.29@guest.jdbeach.ph",
+      "phone": "+63 917 100 1028",
+      "tier": "Bronze Member",
+      "device": "mobile-safari",
+      "sessionId": "sess-29-dfqvbf"
+    },
+    {
+      "userId": "usr-synth-30",
+      "name": "Chloe Santos",
+      "email": "chloe.santos.30@guest.jdbeach.ph",
+      "phone": "+63 917 100 1029",
+      "tier": "Silver Explorer",
+      "device": "mobile-chrome",
+      "sessionId": "sess-30-9tcqw3"
+    },
+    {
+      "userId": "usr-synth-31",
+      "name": "Maria Reyes",
+      "email": "maria.reyes.31@guest.jdbeach.ph",
+      "phone": "+63 917 100 1030",
+      "tier": "Gold VIP",
+      "device": "desktop-chrome",
+      "sessionId": "sess-31-gwho9a"
+    },
+    {
+      "userId": "usr-synth-32",
+      "name": "Juan Reyes",
+      "email": "juan.reyes.32@guest.jdbeach.ph",
+      "phone": "+63 917 100 1031",
+      "tier": "Platinum Elite",
+      "device": "desktop-edge",
+      "sessionId": "sess-32-ija03j"
+    },
+    {
+      "userId": "usr-synth-33",
+      "name": "Jose Reyes",
+      "email": "jose.reyes.33@guest.jdbeach.ph",
+      "phone": "+63 917 100 1032",
+      "tier": "Bronze Member",
+      "device": "mobile-safari",
+      "sessionId": "sess-33-vsq7au"
+    },
+    {
+      "userId": "usr-synth-34",
+      "name": "Mark Reyes",
+      "email": "mark.reyes.34@guest.jdbeach.ph",
+      "phone": "+63 917 100 1033",
+      "tier": "Silver Explorer",
+      "device": "mobile-chrome",
+      "sessionId": "sess-34-xx6pk0"
+    },
+    {
+      "userId": "usr-synth-35",
+      "name": "Michael Reyes",
+      "email": "michael.reyes.35@guest.jdbeach.ph",
+      "phone": "+63 917 100 1034",
+      "tier": "Gold VIP",
+      "device": "desktop-chrome",
+      "sessionId": "sess-35-mwt3du"
+    },
+    {
+      "userId": "usr-synth-36",
+      "name": "Angelo Reyes",
+      "email": "angelo.reyes.36@guest.jdbeach.ph",
+      "phone": "+63 917 100 1035",
+      "tier": "Platinum Elite",
+      "device": "desktop-edge",
+      "sessionId": "sess-36-1z82l0"
+    },
+    {
+      "userId": "usr-synth-37",
+      "name": "Grace Reyes",
+      "email": "grace.reyes.37@guest.jdbeach.ph",
+      "phone": "+63 917 100 1036",
+      "tier": "Bronze Member",
+      "device": "mobile-safari",
+      "sessionId": "sess-37-5fzssr"
+    },
+    {
+      "userId": "usr-synth-38",
+      "name": "Christine Reyes",
+      "email": "christine.reyes.38@guest.jdbeach.ph",
+      "phone": "+63 917 100 1037",
+      "tier": "Silver Explorer",
+      "device": "mobile-chrome",
+      "sessionId": "sess-38-uvebcn"
+    },
+    {
+      "userId": "usr-synth-39",
+      "name": "Jasmine Reyes",
+      "email": "jasmine.reyes.39@guest.jdbeach.ph",
+      "phone": "+63 917 100 1038",
+      "tier": "Gold VIP",
+      "device": "desktop-chrome",
+      "sessionId": "sess-39-d6uqms"
+    },
+    {
+      "userId": "usr-synth-40",
+      "name": "Patricia Reyes",
+      "email": "patricia.reyes.40@guest.jdbeach.ph",
+      "phone": "+63 917 100 1039",
+      "tier": "Platinum Elite",
+      "device": "desktop-edge",
+      "sessionId": "sess-40-cb1ts7"
+    },
+    {
+      "userId": "usr-synth-41",
+      "name": "Daniel Reyes",
+      "email": "daniel.reyes.41@guest.jdbeach.ph",
+      "phone": "+63 917 100 1040",
+      "tier": "Bronze Member",
+      "device": "mobile-safari",
+      "sessionId": "sess-41-csy21h"
+    },
+    {
+      "userId": "usr-synth-42",
+      "name": "Carlos Reyes",
+      "email": "carlos.reyes.42@guest.jdbeach.ph",
+      "phone": "+63 917 100 1041",
+      "tier": "Silver Explorer",
+      "device": "mobile-chrome",
+      "sessionId": "sess-42-9puw96"
+    },
+    {
+      "userId": "usr-synth-43",
+      "name": "Katrina Reyes",
+      "email": "katrina.reyes.43@guest.jdbeach.ph",
+      "phone": "+63 917 100 1042",
+      "tier": "Gold VIP",
+      "device": "desktop-chrome",
+      "sessionId": "sess-43-6mtex9"
+    },
+    {
+      "userId": "usr-synth-44",
+      "name": "Bea Reyes",
+      "email": "bea.reyes.44@guest.jdbeach.ph",
+      "phone": "+63 917 100 1043",
+      "tier": "Platinum Elite",
+      "device": "desktop-edge",
+      "sessionId": "sess-44-c5orml"
+    },
+    {
+      "userId": "usr-synth-45",
+      "name": "Eduardo Reyes",
+      "email": "eduardo.reyes.45@guest.jdbeach.ph",
+      "phone": "+63 917 100 1044",
+      "tier": "Bronze Member",
+      "device": "mobile-safari",
+      "sessionId": "sess-45-97pcwm"
+    },
+    {
+      "userId": "usr-synth-46",
+      "name": "Sofia Reyes",
+      "email": "sofia.reyes.46@guest.jdbeach.ph",
+      "phone": "+63 917 100 1045",
+      "tier": "Silver Explorer",
+      "device": "mobile-chrome",
+      "sessionId": "sess-46-yx3lix"
+    },
+    {
+      "userId": "usr-synth-47",
+      "name": "Gabriel Reyes",
+      "email": "gabriel.reyes.47@guest.jdbeach.ph",
+      "phone": "+63 917 100 1046",
+      "tier": "Gold VIP",
+      "device": "desktop-chrome",
+      "sessionId": "sess-47-92yab6"
+    },
+    {
+      "userId": "usr-synth-48",
+      "name": "Ramon Reyes",
+      "email": "ramon.reyes.48@guest.jdbeach.ph",
+      "phone": "+63 917 100 1047",
+      "tier": "Platinum Elite",
+      "device": "desktop-edge",
+      "sessionId": "sess-48-kc5tuq"
+    },
+    {
+      "userId": "usr-synth-49",
+      "name": "Andrea Reyes",
+      "email": "andrea.reyes.49@guest.jdbeach.ph",
+      "phone": "+63 917 100 1048",
+      "tier": "Bronze Member",
+      "device": "mobile-safari",
+      "sessionId": "sess-49-h0ru1f"
+    },
+    {
+      "userId": "usr-synth-50",
+      "name": "Christian Reyes",
+      "email": "christian.reyes.50@guest.jdbeach.ph",
+      "phone": "+63 917 100 1049",
+      "tier": "Silver Explorer",
+      "device": "mobile-chrome",
+      "sessionId": "sess-50-u04nwi"
+    },
+    {
+      "userId": "usr-synth-51",
+      "name": "Paolo Reyes",
+      "email": "paolo.reyes.51@guest.jdbeach.ph",
+      "phone": "+63 917 100 1050",
+      "tier": "Gold VIP",
+      "device": "desktop-chrome",
+      "sessionId": "sess-51-em1ihm"
+    },
+    {
+      "userId": "usr-synth-52",
+      "name": "Clarisse Reyes",
+      "email": "clarisse.reyes.52@guest.jdbeach.ph",
+      "phone": "+63 917 100 1051",
+      "tier": "Platinum Elite",
+      "device": "desktop-edge",
+      "sessionId": "sess-52-t7ooz6"
+    },
+    {
+      "userId": "usr-synth-53",
+      "name": "Liam Reyes",
+      "email": "liam.reyes.53@guest.jdbeach.ph",
+      "phone": "+63 917 100 1052",
+      "tier": "Bronze Member",
+      "device": "mobile-safari",
+      "sessionId": "sess-53-5lx0nr"
+    },
+    {
+      "userId": "usr-synth-54",
+      "name": "Emma Reyes",
+      "email": "emma.reyes.54@guest.jdbeach.ph",
+      "phone": "+63 917 100 1053",
+      "tier": "Silver Explorer",
+      "device": "mobile-chrome",
+      "sessionId": "sess-54-0761nr"
+    },
+    {
+      "userId": "usr-synth-55",
+      "name": "Noah Reyes",
+      "email": "noah.reyes.55@guest.jdbeach.ph",
+      "phone": "+63 917 100 1054",
+      "tier": "Gold VIP",
+      "device": "desktop-chrome",
+      "sessionId": "sess-55-j41ugx"
+    },
+    {
+      "userId": "usr-synth-56",
+      "name": "Olivia Reyes",
+      "email": "olivia.reyes.56@guest.jdbeach.ph",
+      "phone": "+63 917 100 1055",
+      "tier": "Platinum Elite",
+      "device": "desktop-edge",
+      "sessionId": "sess-56-z7gql4"
+    },
+    {
+      "userId": "usr-synth-57",
+      "name": "Ethan Reyes",
+      "email": "ethan.reyes.57@guest.jdbeach.ph",
+      "phone": "+63 917 100 1056",
+      "tier": "Bronze Member",
+      "device": "mobile-safari",
+      "sessionId": "sess-57-edbw7u"
+    },
+    {
+      "userId": "usr-synth-58",
+      "name": "Mia Reyes",
+      "email": "mia.reyes.58@guest.jdbeach.ph",
+      "phone": "+63 917 100 1057",
+      "tier": "Silver Explorer",
+      "device": "mobile-chrome",
+      "sessionId": "sess-58-wtbyh7"
+    },
+    {
+      "userId": "usr-synth-59",
+      "name": "Lucas Reyes",
+      "email": "lucas.reyes.59@guest.jdbeach.ph",
+      "phone": "+63 917 100 1058",
+      "tier": "Gold VIP",
+      "device": "desktop-chrome",
+      "sessionId": "sess-59-5w2fwy"
+    },
+    {
+      "userId": "usr-synth-60",
+      "name": "Chloe Reyes",
+      "email": "chloe.reyes.60@guest.jdbeach.ph",
+      "phone": "+63 917 100 1059",
+      "tier": "Platinum Elite",
+      "device": "desktop-edge",
+      "sessionId": "sess-60-1hz294"
+    },
+    {
+      "userId": "usr-synth-61",
+      "name": "Maria Cruz",
+      "email": "maria.cruz.61@guest.jdbeach.ph",
+      "phone": "+63 917 100 1060",
+      "tier": "Bronze Member",
+      "device": "mobile-safari",
+      "sessionId": "sess-61-vvv8f7"
+    },
+    {
+      "userId": "usr-synth-62",
+      "name": "Juan Cruz",
+      "email": "juan.cruz.62@guest.jdbeach.ph",
+      "phone": "+63 917 100 1061",
+      "tier": "Silver Explorer",
+      "device": "mobile-chrome",
+      "sessionId": "sess-62-0kdt6g"
+    },
+    {
+      "userId": "usr-synth-63",
+      "name": "Jose Cruz",
+      "email": "jose.cruz.63@guest.jdbeach.ph",
+      "phone": "+63 917 100 1062",
+      "tier": "Gold VIP",
+      "device": "desktop-chrome",
+      "sessionId": "sess-63-4c87cu"
+    },
+    {
+      "userId": "usr-synth-64",
+      "name": "Mark Cruz",
+      "email": "mark.cruz.64@guest.jdbeach.ph",
+      "phone": "+63 917 100 1063",
+      "tier": "Platinum Elite",
+      "device": "desktop-edge",
+      "sessionId": "sess-64-nib987"
+    },
+    {
+      "userId": "usr-synth-65",
+      "name": "Michael Cruz",
+      "email": "michael.cruz.65@guest.jdbeach.ph",
+      "phone": "+63 917 100 1064",
+      "tier": "Bronze Member",
+      "device": "mobile-safari",
+      "sessionId": "sess-65-q0w32x"
+    },
+    {
+      "userId": "usr-synth-66",
+      "name": "Angelo Cruz",
+      "email": "angelo.cruz.66@guest.jdbeach.ph",
+      "phone": "+63 917 100 1065",
+      "tier": "Silver Explorer",
+      "device": "mobile-chrome",
+      "sessionId": "sess-66-ad939f"
+    },
+    {
+      "userId": "usr-synth-67",
+      "name": "Grace Cruz",
+      "email": "grace.cruz.67@guest.jdbeach.ph",
+      "phone": "+63 917 100 1066",
+      "tier": "Gold VIP",
+      "device": "desktop-chrome",
+      "sessionId": "sess-67-droh9g"
+    },
+    {
+      "userId": "usr-synth-68",
+      "name": "Christine Cruz",
+      "email": "christine.cruz.68@guest.jdbeach.ph",
+      "phone": "+63 917 100 1067",
+      "tier": "Platinum Elite",
+      "device": "desktop-edge",
+      "sessionId": "sess-68-2ktvxr"
+    },
+    {
+      "userId": "usr-synth-69",
+      "name": "Jasmine Cruz",
+      "email": "jasmine.cruz.69@guest.jdbeach.ph",
+      "phone": "+63 917 100 1068",
+      "tier": "Bronze Member",
+      "device": "mobile-safari",
+      "sessionId": "sess-69-5jkes1"
+    },
+    {
+      "userId": "usr-synth-70",
+      "name": "Patricia Cruz",
+      "email": "patricia.cruz.70@guest.jdbeach.ph",
+      "phone": "+63 917 100 1069",
+      "tier": "Silver Explorer",
+      "device": "mobile-chrome",
+      "sessionId": "sess-70-csps4l"
+    },
+    {
+      "userId": "usr-synth-71",
+      "name": "Daniel Cruz",
+      "email": "daniel.cruz.71@guest.jdbeach.ph",
+      "phone": "+63 917 100 1070",
+      "tier": "Gold VIP",
+      "device": "desktop-chrome",
+      "sessionId": "sess-71-xqapad"
+    },
+    {
+      "userId": "usr-synth-72",
+      "name": "Carlos Cruz",
+      "email": "carlos.cruz.72@guest.jdbeach.ph",
+      "phone": "+63 917 100 1071",
+      "tier": "Platinum Elite",
+      "device": "desktop-edge",
+      "sessionId": "sess-72-66cgj8"
+    },
+    {
+      "userId": "usr-synth-73",
+      "name": "Katrina Cruz",
+      "email": "katrina.cruz.73@guest.jdbeach.ph",
+      "phone": "+63 917 100 1072",
+      "tier": "Bronze Member",
+      "device": "mobile-safari",
+      "sessionId": "sess-73-0mhr89"
+    },
+    {
+      "userId": "usr-synth-74",
+      "name": "Bea Cruz",
+      "email": "bea.cruz.74@guest.jdbeach.ph",
+      "phone": "+63 917 100 1073",
+      "tier": "Silver Explorer",
+      "device": "mobile-chrome",
+      "sessionId": "sess-74-p9jf0r"
+    },
+    {
+      "userId": "usr-synth-75",
+      "name": "Eduardo Cruz",
+      "email": "eduardo.cruz.75@guest.jdbeach.ph",
+      "phone": "+63 917 100 1074",
+      "tier": "Gold VIP",
+      "device": "desktop-chrome",
+      "sessionId": "sess-75-46nqk0"
+    },
+    {
+      "userId": "usr-synth-76",
+      "name": "Sofia Cruz",
+      "email": "sofia.cruz.76@guest.jdbeach.ph",
+      "phone": "+63 917 100 1075",
+      "tier": "Platinum Elite",
+      "device": "desktop-edge",
+      "sessionId": "sess-76-llmjx7"
+    },
+    {
+      "userId": "usr-synth-77",
+      "name": "Gabriel Cruz",
+      "email": "gabriel.cruz.77@guest.jdbeach.ph",
+      "phone": "+63 917 100 1076",
+      "tier": "Bronze Member",
+      "device": "mobile-safari",
+      "sessionId": "sess-77-mpwwsq"
+    },
+    {
+      "userId": "usr-synth-78",
+      "name": "Ramon Cruz",
+      "email": "ramon.cruz.78@guest.jdbeach.ph",
+      "phone": "+63 917 100 1077",
+      "tier": "Silver Explorer",
+      "device": "mobile-chrome",
+      "sessionId": "sess-78-g575ta"
+    },
+    {
+      "userId": "usr-synth-79",
+      "name": "Andrea Cruz",
+      "email": "andrea.cruz.79@guest.jdbeach.ph",
+      "phone": "+63 917 100 1078",
+      "tier": "Gold VIP",
+      "device": "desktop-chrome",
+      "sessionId": "sess-79-24988k"
+    },
+    {
+      "userId": "usr-synth-80",
+      "name": "Christian Cruz",
+      "email": "christian.cruz.80@guest.jdbeach.ph",
+      "phone": "+63 917 100 1079",
+      "tier": "Platinum Elite",
+      "device": "desktop-edge",
+      "sessionId": "sess-80-h7dpkl"
+    },
+    {
+      "userId": "usr-synth-81",
+      "name": "Paolo Cruz",
+      "email": "paolo.cruz.81@guest.jdbeach.ph",
+      "phone": "+63 917 100 1080",
+      "tier": "Bronze Member",
+      "device": "mobile-safari",
+      "sessionId": "sess-81-fvvkbz"
+    },
+    {
+      "userId": "usr-synth-82",
+      "name": "Clarisse Cruz",
+      "email": "clarisse.cruz.82@guest.jdbeach.ph",
+      "phone": "+63 917 100 1081",
+      "tier": "Silver Explorer",
+      "device": "mobile-chrome",
+      "sessionId": "sess-82-w9gvje"
+    },
+    {
+      "userId": "usr-synth-83",
+      "name": "Liam Cruz",
+      "email": "liam.cruz.83@guest.jdbeach.ph",
+      "phone": "+63 917 100 1082",
+      "tier": "Gold VIP",
+      "device": "desktop-chrome",
+      "sessionId": "sess-83-cs46xd"
+    },
+    {
+      "userId": "usr-synth-84",
+      "name": "Emma Cruz",
+      "email": "emma.cruz.84@guest.jdbeach.ph",
+      "phone": "+63 917 100 1083",
+      "tier": "Platinum Elite",
+      "device": "desktop-edge",
+      "sessionId": "sess-84-im3srb"
+    },
+    {
+      "userId": "usr-synth-85",
+      "name": "Noah Cruz",
+      "email": "noah.cruz.85@guest.jdbeach.ph",
+      "phone": "+63 917 100 1084",
+      "tier": "Bronze Member",
+      "device": "mobile-safari",
+      "sessionId": "sess-85-m1mn4d"
+    },
+    {
+      "userId": "usr-synth-86",
+      "name": "Olivia Cruz",
+      "email": "olivia.cruz.86@guest.jdbeach.ph",
+      "phone": "+63 917 100 1085",
+      "tier": "Silver Explorer",
+      "device": "mobile-chrome",
+      "sessionId": "sess-86-tzmlol"
+    },
+    {
+      "userId": "usr-synth-87",
+      "name": "Ethan Cruz",
+      "email": "ethan.cruz.87@guest.jdbeach.ph",
+      "phone": "+63 917 100 1086",
+      "tier": "Gold VIP",
+      "device": "desktop-chrome",
+      "sessionId": "sess-87-5f1uec"
+    },
+    {
+      "userId": "usr-synth-88",
+      "name": "Mia Cruz",
+      "email": "mia.cruz.88@guest.jdbeach.ph",
+      "phone": "+63 917 100 1087",
+      "tier": "Platinum Elite",
+      "device": "desktop-edge",
+      "sessionId": "sess-88-61r32b"
+    },
+    {
+      "userId": "usr-synth-89",
+      "name": "Lucas Cruz",
+      "email": "lucas.cruz.89@guest.jdbeach.ph",
+      "phone": "+63 917 100 1088",
+      "tier": "Bronze Member",
+      "device": "mobile-safari",
+      "sessionId": "sess-89-cmbzdk"
+    },
+    {
+      "userId": "usr-synth-90",
+      "name": "Chloe Cruz",
+      "email": "chloe.cruz.90@guest.jdbeach.ph",
+      "phone": "+63 917 100 1089",
+      "tier": "Silver Explorer",
+      "device": "mobile-chrome",
+      "sessionId": "sess-90-yro2pc"
+    },
+    {
+      "userId": "usr-synth-91",
+      "name": "Maria Bautista",
+      "email": "maria.bautista.91@guest.jdbeach.ph",
+      "phone": "+63 917 100 1090",
+      "tier": "Gold VIP",
+      "device": "desktop-chrome",
+      "sessionId": "sess-91-12bmr0"
+    },
+    {
+      "userId": "usr-synth-92",
+      "name": "Juan Bautista",
+      "email": "juan.bautista.92@guest.jdbeach.ph",
+      "phone": "+63 917 100 1091",
+      "tier": "Platinum Elite",
+      "device": "desktop-edge",
+      "sessionId": "sess-92-sr6ot3"
+    },
+    {
+      "userId": "usr-synth-93",
+      "name": "Jose Bautista",
+      "email": "jose.bautista.93@guest.jdbeach.ph",
+      "phone": "+63 917 100 1092",
+      "tier": "Bronze Member",
+      "device": "mobile-safari",
+      "sessionId": "sess-93-8vvmrl"
+    },
+    {
+      "userId": "usr-synth-94",
+      "name": "Mark Bautista",
+      "email": "mark.bautista.94@guest.jdbeach.ph",
+      "phone": "+63 917 100 1093",
+      "tier": "Silver Explorer",
+      "device": "mobile-chrome",
+      "sessionId": "sess-94-me8vsq"
+    },
+    {
+      "userId": "usr-synth-95",
+      "name": "Michael Bautista",
+      "email": "michael.bautista.95@guest.jdbeach.ph",
+      "phone": "+63 917 100 1094",
+      "tier": "Gold VIP",
+      "device": "desktop-chrome",
+      "sessionId": "sess-95-3t9wo6"
+    },
+    {
+      "userId": "usr-synth-96",
+      "name": "Angelo Bautista",
+      "email": "angelo.bautista.96@guest.jdbeach.ph",
+      "phone": "+63 917 100 1095",
+      "tier": "Platinum Elite",
+      "device": "desktop-edge",
+      "sessionId": "sess-96-0yeot9"
+    },
+    {
+      "userId": "usr-synth-97",
+      "name": "Grace Bautista",
+      "email": "grace.bautista.97@guest.jdbeach.ph",
+      "phone": "+63 917 100 1096",
+      "tier": "Bronze Member",
+      "device": "mobile-safari",
+      "sessionId": "sess-97-pneep0"
+    },
+    {
+      "userId": "usr-synth-98",
+      "name": "Christine Bautista",
+      "email": "christine.bautista.98@guest.jdbeach.ph",
+      "phone": "+63 917 100 1097",
+      "tier": "Silver Explorer",
+      "device": "mobile-chrome",
+      "sessionId": "sess-98-rps8dq"
+    },
+    {
+      "userId": "usr-synth-99",
+      "name": "Jasmine Bautista",
+      "email": "jasmine.bautista.99@guest.jdbeach.ph",
+      "phone": "+63 917 100 1098",
+      "tier": "Gold VIP",
+      "device": "desktop-chrome",
+      "sessionId": "sess-99-chp4kj"
+    },
+    {
+      "userId": "usr-synth-100",
+      "name": "Patricia Bautista",
+      "email": "patricia.bautista.100@guest.jdbeach.ph",
+      "phone": "+63 917 100 1099",
+      "tier": "Platinum Elite",
+      "device": "desktop-edge",
+      "sessionId": "sess-100-0u39i4"
+    }
+  ]
+}

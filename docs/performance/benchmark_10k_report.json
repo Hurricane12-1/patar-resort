@@ -1,0 +1,72 @@
+{
+  "benchmark_name": "J & D Beach House 10,000 Concurrency Stress Test",
+  "timestamp": "2026-09-21T10:11:52.431Z",
+  "platform": "win32 (x64) Node v24.11.1",
+  "overview_test": {
+    "total_requests": 10000,
+    "concurrency": 200,
+    "target_route": "/api/analytics/overview",
+    "total_duration_ms": 3024,
+    "requests_per_second": 3307,
+    "success_count": 10000,
+    "success_rate_pct": 100,
+    "cache_hit_rate_pct": 100,
+    "cache_hits": 10000,
+    "cache_misses": 0,
+    "status_codes": {
+      "200": 10000
+    },
+    "latency_ms": {
+      "min": 40.46,
+      "avg": 58.83,
+      "median_p50": 52.18,
+      "p90": 69.38,
+      "p95": 77.44,
+      "p99": 273.54,
+      "max": 291.31
+    },
+    "memory_delta_mb": {
+      "heap_used_change": 13.68,
+      "rss_change": 54.62,
+      "final_heap_used_mb": 21,
+      "final_rss_mb": 117
+    }
+  },
+  "rooms_catalog_test": {
+    "total_requests": 1000,
+    "concurrency": 50,
+    "target_route": "/api/rooms",
+    "total_duration_ms": 326,
+    "requests_per_second": 3067,
+    "success_count": 1000,
+    "success_rate_pct": 100,
+    "cache_hit_rate_pct": 100,
+    "cache_hits": 1000,
+    "cache_misses": 0,
+    "status_codes": {
+      "200": 1000
+    },
+    "latency_ms": {
+      "min": 9.2,
+      "avg": 15.23,
+      "median_p50": 12.76,
+      "p90": 17.77,
+      "p95": 38.24,
+      "p99": 62.42,
+      "max": 66.89
+    },
+    "memory_delta_mb": {
+      "heap_used_change": -2.63,
+      "rss_change": 0.99,
+      "final_heap_used_mb": 21,
+      "final_rss_mb": 107
+    }
+  },
+  "summary": {
+    "total_requests_processed": 11000,
+    "peak_rps": 3307,
+    "cache_hit_efficiency": "100%",
+    "sub_millisecond_p50": false,
+    "zero_error_throughput": true
+  }
+}

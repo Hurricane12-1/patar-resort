@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-09-21T05:03:56.925Z" agent="Antigravity Draw.io MCP Server" version="24.0.0" type="device">
+  <diagram id="frontend-api-architecture" name="J &amp; D Beach House - Frontend API Architecture">
+    <mxGraphModel dx="1800" dy="1400" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1550" background="#ffffff" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title Header -->
+        <mxCell id="hdr_badge" value="&lt;font color=&quot;#1e293b&quot;&gt;&lt;b&gt;FRONTEND API ARCHITECTURE &amp;amp; DATA FLOW SPECIFICATION&lt;/b&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f1f5f9;strokeColor=#cbd5e1;strokeWidth=1.5;fontColor=#1e293b;arcSize=50;" vertex="1" parent="1">
+          <mxGeometry x="620" y="20" width="560" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="hdr_title" value="&lt;font color=&quot;#0f172a&quot; style=&quot;font-size: 24px;&quot;&gt;&lt;b&gt;J &amp;amp; D Beach House · Frontend API Architecture&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot; style=&quot;font-size: 13px;&quot;&gt;React UI Components ➔ State/Auth Context ➔ lib/api.ts Service Facade ➔ Protocol Gateway ➔ Express/Supabase Ingress&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="450" y="55" width="900" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- LAYER 1: UI PRESENTATION LAYER -->
+        <mxCell id="l1_box" value="LAYER 1 · USER INTERFACE &amp;amp; PRESENTATION LAYER (React 18 + Vite + TS)" style="swimlane;html=1;startSize=25;fillColor=#f8fafc;strokeColor=#94a3b8;fontColor=#0f172a;fontStyle=1;fontSize=11;rounded=1;strokeWidth=1.5;" vertex="1" parent="1">
+          <mxGeometry x="80" y="120" width="1640" height="195" as="geometry" />
+        </mxCell>
+        <mxCell id="ui_cust" value="&lt;b&gt;Customer Experience Desks&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot; color=&quot;#475569&quot;&gt;Home.tsx · Rooms.tsx&lt;br&gt;MyBookings.tsx · ResortCustomer.tsx&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0284c7;strokeWidth=1.5;fontColor=#0f172a;fontSize=12;" vertex="1" parent="l1_box">
+          <mxGeometry x="40" y="38" width="340" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="ui_ops" value="&lt;b&gt;Operations &amp;amp; Department Desks&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot; color=&quot;#475569&quot;&gt;Receptionist.tsx (Guest Arrivals/Keys)&lt;br&gt;ResortDepartment.tsx (Housekeeping/Kitchen)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0284c7;strokeWidth=1.5;fontColor=#0f172a;fontSize=12;" vertex="1" parent="l1_box">
+          <mxGeometry x="440" y="38" width="350" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="ui_exec" value="&lt;b&gt;Accounting &amp;amp; Executive Desks&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot; color=&quot;#475569&quot;&gt;Accounting.tsx (Financial Statements &amp;amp; CSV)&lt;br&gt;Admin.tsx (Staff Provisioning &amp;amp; RBAC Control)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0284c7;strokeWidth=1.5;fontColor=#0f172a;fontSize=12;" vertex="1" parent="l1_box">
+          <mxGeometry x="850" y="38" width="360" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="ui_widgets" value="&lt;b&gt;Interactive Component Widgets&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot; color=&quot;#475569&quot;&gt;BookingFlow.tsx · Chatbot.tsx&lt;br&gt;ExecutiveGuestChatModal · ImagePicker&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0284c7;strokeWidth=1.5;fontColor=#0f172a;fontSize=12;" vertex="1" parent="l1_box">
+          <mxGeometry x="1270" y="38" width="330" height="85" as="geometry" />
+        </mxCell>
+        <!-- UI Event Handlers -->
+        <mxCell id="hdlr_ui_events" value="&lt;b&gt;⚡ UI Component Event &amp;amp; Action Handlers:&lt;/b&gt; onSubmit={handleBookingSubmit} · onStatusChange={handleCheckInOut} · onAssign={handleTaskUpdate} · onSend={handleChatSubmit} · onOrderSubmit={handleOrderCreate} · onExport={handleCSVExport}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f1f5f9;strokeColor=#94a3b8;strokeWidth=1.2;fontColor=#1e293b;fontSize=11;strokeDasharray=4 3;" vertex="1" parent="l1_box">
+          <mxGeometry x="40" y="138" width="1560" height="42" as="geometry" />
+        </mxCell>
+
+        <!-- LAYER 2: STATE & CONTEXT LAYER -->
+        <mxCell id="l2_box" value="LAYER 2 · CLIENT STATE, CONTEXT &amp;amp; HOOK ORCHESTRATION" style="swimlane;html=1;startSize=25;fillColor=#f8fafc;strokeColor=#0d9488;fontColor=#0f172a;fontStyle=1;fontSize=11;rounded=1;strokeWidth=1.5;" vertex="1" parent="1">
+          <mxGeometry x="80" y="340" width="1640" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_auth" value="&lt;b&gt;AuthContext.tsx (Session &amp;amp; Identity State)&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot; color=&quot;#334155&quot;&gt;Supabase Session Listener · Bearer JWT Access Token Injection&lt;br&gt;Role Guards: customer | staff | receptionist | accounting | administrator&lt;br&gt;Offline/Mock Failover State · Auto-Credential Generator (@resortmanagement.ph)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0d9488;strokeWidth=2;fontColor=#0f172a;fontSize=12;" vertex="1" parent="l2_box">
+          <mxGeometry x="40" y="38" width="750" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_telemetry" value="&lt;b&gt;TelemetryTracker.tsx&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot; color=&quot;#334155&quot;&gt;Client Session Heartbeat&lt;br&gt;Live Density &amp;amp; Ping Dispatch&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0d9488;strokeWidth=1.5;fontColor=#0f172a;fontSize=12;" vertex="1" parent="l2_box">
+          <mxGeometry x="850" y="38" width="360" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_hooks" value="&lt;b&gt;Hooks &amp;amp; UI Notification Engine&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot; color=&quot;#334155&quot;&gt;useAutoDraft (LocalStorage Cache)&lt;br&gt;useReveal · Toasts.tsx (Feedback)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0d9488;strokeWidth=1.5;fontColor=#0f172a;fontSize=12;" vertex="1" parent="l2_box">
+          <mxGeometry x="1270" y="38" width="330" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- LAYER 3: LIB/API.TS SERVICE FACADE -->
+        <mxCell id="l3_box" value="LAYER 3 · FRONTEND API CLIENT &amp;amp; SERVICE ABSTRACTION FACADE (client/src/lib/api.ts)" style="swimlane;html=1;startSize=25;fillColor=#f8fafc;strokeColor=#2563eb;fontColor=#0f172a;fontStyle=1;fontSize=11;rounded=1;strokeWidth=1.5;" vertex="1" parent="1">
+          <mxGeometry x="80" y="505" width="1640" height="425" as="geometry" />
+        </mxCell>
+        <!-- Central Request Engine -->
+        <mxCell id="api_engine" value="&lt;b&gt;Central Request Engine: req(path, { method, body, fallback })&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot; color=&quot;#1e40af&quot;&gt;⚡ Bearer Token Injection (Authorization: Bearer &amp;lt;JWT&amp;gt;) · 🛡️ JSON Serialization &amp;amp; Content-Type · 🔄 Resilient Offline Mock Failover · ⚠️ Status &amp;amp; Error Interceptor&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eff6ff;strokeColor=#2563eb;strokeWidth=1.5;fontColor=#1e3a8a;fontSize=12;" vertex="1" parent="l3_box">
+          <mxGeometry x="40" y="35" width="1560" height="50" as="geometry" />
+        </mxCell>
+        <!-- Central Request & Error Handlers -->
+        <mxCell id="hdlr_client_pipeline" value="&lt;b&gt;🛠️ Central Client Request, Auth &amp;amp; Error Handlers:&lt;/b&gt; requestHandler(path, options) ➔ bearerTokenHandler(JWT) ➔ responseHandler(204/JSON) ➔ errorHandler(HTTP 4xx/5xx/CORS) ➔ mockFallbackHandler(Offline Failover)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0f9ff;strokeColor=#0284c7;strokeWidth=1.5;fontColor=#0369a1;fontSize=11;" vertex="1" parent="l3_box">
+          <mxGeometry x="40" y="95" width="1560" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- 8 API Modules -->
+        <mxCell id="mod_auth" value="&lt;b&gt;Auth &amp;amp; Profile API&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot; color=&quot;#475569&quot;&gt;api.me()&lt;br&gt;api.updateMe()&lt;br&gt;api.updatePassword()&lt;br&gt;&lt;font color=&quot;#2563eb&quot;&gt;/api/me&lt;/font&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=1.5;fontColor=#0f172a;fontSize=11;" vertex="1" parent="l3_box">
+          <mxGeometry x="40" y="145" width="180" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="mod_rooms" value="&lt;b&gt;Rooms &amp;amp; Catalog API&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot; color=&quot;#475569&quot;&gt;api.rooms()&lt;br&gt;api.availability()&lt;br&gt;available_rooms() RPC&lt;br&gt;&lt;font color=&quot;#2563eb&quot;&gt;/api/rooms&lt;/font&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=1.5;fontColor=#0f172a;fontSize=11;" vertex="1" parent="l3_box">
+          <mxGeometry x="240" y="145" width="180" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="mod_res" value="&lt;b&gt;Reservations Engine&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot; color=&quot;#475569&quot;&gt;api.createReservation()&lt;br&gt;api.myReservations()&lt;br&gt;api.setReservationStatus()&lt;br&gt;&lt;font color=&quot;#2563eb&quot;&gt;api.cancelReservation()&lt;/font&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=1.5;fontColor=#0f172a;fontSize=11;" vertex="1" parent="l3_box">
+          <mxGeometry x="440" y="145" width="180" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="mod_cust" value="&lt;b&gt;Customer Experience&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot; color=&quot;#475569&quot;&gt;api.customerServices()&lt;br&gt;api.customerOrders()&lt;br&gt;api.placeCustomerOrder()&lt;br&gt;&lt;font color=&quot;#2563eb&quot;&gt;api.digitalPass() / stats()&lt;/font&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=1.5;fontColor=#0f172a;fontSize=11;" vertex="1" parent="l3_box">
+          <mxGeometry x="640" y="145" width="180" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="mod_dept" value="&lt;b&gt;Department Operations&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot; color=&quot;#475569&quot;&gt;api.departmentTasks()&lt;br&gt;api.createDepartmentTask()&lt;br&gt;api.updateTaskStatus()&lt;br&gt;&lt;font color=&quot;#2563eb&quot;&gt;api.departmentRoomStatus()&lt;/font&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=1.5;fontColor=#0f172a;fontSize=11;" vertex="1" parent="l3_box">
+          <mxGeometry x="840" y="145" width="180" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="mod_analytics" value="&lt;b&gt;Analytics &amp;amp; BI Engine&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot; color=&quot;#475569&quot;&gt;api.analyticsOverview()&lt;br&gt;api.fullDiveAnalytics()&lt;br&gt;api.exportAnalyticsCSV()&lt;br&gt;&lt;font color=&quot;#2563eb&quot;&gt;Occupancy, ADR, RevPAR&lt;/font&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=1.5;fontColor=#0f172a;fontSize=11;" vertex="1" parent="l3_box">
+          <mxGeometry x="1040" y="145" width="180" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="mod_telemetry" value="&lt;b&gt;Telemetry &amp;amp; AI Forecast&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot; color=&quot;#475569&quot;&gt;api.telemetryStats()&lt;br&gt;api.telemetryPredictions()&lt;br&gt;7-Day Pacing Simulations&lt;br&gt;&lt;font color=&quot;#2563eb&quot;&gt;Endpoint: /api/telemetry&lt;/font&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=1.5;fontColor=#0f172a;fontSize=11;" vertex="1" parent="l3_box">
+          <mxGeometry x="1240" y="145" width="170" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="mod_admin" value="&lt;b&gt;Admin RBAC &amp;amp; Users&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot; color=&quot;#475569&quot;&gt;api.adminCustomers()&lt;br&gt;api.createStaffAccount()&lt;br&gt;api.updateUserRole()&lt;br&gt;&lt;font color=&quot;#2563eb&quot;&gt;api.resetUserPassword()&lt;/font&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=1.5;fontColor=#0f172a;fontSize=11;" vertex="1" parent="l3_box">
+          <mxGeometry x="1430" y="145" width="170" height="115" as="geometry" />
+        </mxCell>
+
+        <!-- Intelligent Mock Datasets Banner -->
+        <mxCell id="mock_banner" value="&lt;b&gt;Intelligent Mock Failover Datasets (Seamless Zero-Crash Degradation):&lt;/b&gt; FALLBACK_ROOMS · FALLBACK_ANALYTICS · FALLBACK_USERS · FALLBACK_PASS · FALLBACK_SERVICES · FALLBACK_ORDERS · FALLBACK_TASKS · FALLBACK_INVENTORY · FALLBACK_REVIEWS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffbeb;strokeColor=#f59e0b;strokeWidth=1.5;fontColor=#92400e;fontSize=11;" vertex="1" parent="l3_box">
+          <mxGeometry x="40" y="275" width="1560" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- LAYER 4: TRANSPORT CLIENTS -->
+        <mxCell id="l4_box" value="LAYER 4 · CLIENT COMMUNICATION &amp;amp; PROTOCOL GATEWAY ENGINES" style="swimlane;html=1;startSize=25;fillColor=#f8fafc;strokeColor=#7c3aed;fontColor=#0f172a;fontStyle=1;fontSize=11;rounded=1;strokeWidth=1.5;" vertex="1" parent="1">
+          <mxGeometry x="80" y="955" width="1640" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="client_http" value="&lt;b&gt;HTTP / REST Fetch Client&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot; color=&quot;#475569&quot;&gt;Native window.fetch API · Endpoint: /api/*&lt;br&gt;Headers: Authorization: Bearer &amp;lt;JWT&amp;gt;, Content-Type: application/json&lt;br&gt;REST Verbs: GET, POST, PATCH, DELETE · 204 No-Content Handler&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#7c3aed;strokeWidth=1.5;fontColor=#0f172a;fontSize=12;" vertex="1" parent="l4_box">
+          <mxGeometry x="40" y="38" width="600" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="client_socket" value="&lt;b&gt;Socket.io Client (lib/socket.ts)&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot; color=&quot;#475569&quot;&gt;Duplex WebSockets (ws://) with Long-Polling Fallback&lt;br&gt;Handshake Auth: { token: JWT }&lt;br&gt;Events: chat:message ➔ bot:message · bot:typing&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#7c3aed;strokeWidth=1.5;fontColor=#0f172a;fontSize=12;" vertex="1" parent="l4_box">
+          <mxGeometry x="680" y="38" width="450" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="client_supabase" value="&lt;b&gt;Supabase Client (lib/supabaseClient.ts)&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot; color=&quot;#475569&quot;&gt;@supabase/supabase-js Direct BaaS Client&lt;br&gt;Auth Credentials Storage &amp;amp; Session State&lt;br&gt;PostgreSQL CDC Realtime Broadcast Channels&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#7c3aed;strokeWidth=1.5;fontColor=#0f172a;fontSize=12;" vertex="1" parent="l4_box">
+          <mxGeometry x="1170" y="38" width="430" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- LAYER 5: BACKEND INGRESS & GATEWAY TARGET -->
+        <mxCell id="l5_box" value="LAYER 5 · NETWORK INGRESS, REVERSE PROXY &amp;amp; BACKEND SECURITY BOUNDARY" style="swimlane;html=1;startSize=25;fillColor=#f8fafc;strokeColor=#059669;fontColor=#0f172a;fontStyle=1;fontSize=11;rounded=1;strokeWidth=1.5;" vertex="1" parent="1">
+          <mxGeometry x="80" y="1115" width="1640" height="195" as="geometry" />
+        </mxCell>
+        <mxCell id="srv_proxy" value="&lt;b&gt;Vite Reverse Proxy &amp;amp; Ingress Gateway&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot; color=&quot;#475569&quot;&gt;Proxy Rule: /api ➔ http://localhost:5000/api&lt;br&gt;Express 4.x Application Engine&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#059669;strokeWidth=1.5;fontColor=#0f172a;fontSize=12;" vertex="1" parent="l5_box">
+          <mxGeometry x="40" y="38" width="450" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="srv_sec" value="&lt;b&gt;Security &amp;amp; Middleware Perimeter&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot; color=&quot;#475569&quot;&gt;🛡️ NGWF Layer 7 Firewall · 🧼 Anti-XSS Sanitizer&lt;br&gt;🔑 JWT Verification · 👮 Role Guards (Customer/Staff/Admin)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#059669;strokeWidth=1.5;fontColor=#0f172a;fontSize=12;" vertex="1" parent="l5_box">
+          <mxGeometry x="530" y="38" width="560" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="srv_downstream" value="&lt;b&gt;Downstream Persistence &amp;amp; External Services&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot; color=&quot;#475569&quot;&gt;🐘 Supabase Core PostgreSQL 15+ (GiST Guard &amp;amp; RLS)&lt;br&gt;📱 Twilio Cloud SMS · 🗄️ Media File Storage&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#059669;strokeWidth=1.5;fontColor=#0f172a;fontSize=12;" vertex="1" parent="l5_box">
+          <mxGeometry x="1130" y="38" width="470" height="85" as="geometry" />
+        </mxCell>
+        <!-- Express Route Handlers -->
+        <mxCell id="hdlr_express_routes" value="&lt;b&gt;🌐 Express Route Handlers &amp;amp; Controller Middleware:&lt;/b&gt; authRouteHandler · roomsRouteHandler · reservationsRouteHandler · tasksRouteHandler · ordersRouteHandler · analyticsRouteHandler · globalErrorHandlerMiddleware" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ecfdf5;strokeColor=#059669;strokeWidth=1.5;fontColor=#065f46;fontSize=11;" vertex="1" parent="l5_box">
+          <mxGeometry x="40" y="138" width="1560" height="42" as="geometry" />
+        </mxCell>
+
+        <!-- CONNECTORS -->
+        <mxCell id="e_ui_ctx" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;" edge="1" parent="1" source="l1_box" target="l2_box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ctx_api" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;" edge="1" parent="1" source="l2_box" target="l3_box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_api_trans" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;" edge="1" parent="1" source="l3_box" target="l4_box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_trans_srv" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;" edge="1" parent="1" source="l4_box" target="l5_box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

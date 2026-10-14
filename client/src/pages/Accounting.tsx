@@ -108,19 +108,19 @@ export default function Accounting() {
       <div className="stat-cards" style={{ marginBottom: 32 }}>
         <div className="stat-card">
           <small>Gross Resort Revenue</small>
-          <b>{money(ov.total_revenue_php || 245800)}</b>
+          <b>{money(ov.total_revenue_php || 0)}</b>
         </div>
         <div className="stat-card">
           <small>ADR (Avg Daily Rate)</small>
-          <b>{money(ov.adr_php || 2250)} / night</b>
+          <b>{money(ov.adr_php || 0)} / night</b>
         </div>
         <div className="stat-card">
           <small>RevPAR (Rev per Room)</small>
-          <b>{money(ov.revpar_php || 1530)}</b>
+          <b>{money(ov.revpar_php || 0)}</b>
         </div>
         <div className="stat-card">
           <small>Weekly Revenue Total</small>
-          <b>{money(ov.revenue_week_php || 148500)}</b>
+          <b>{money(ov.revenue_week_php || 0)}</b>
         </div>
       </div>
 
@@ -134,7 +134,7 @@ export default function Accounting() {
                 <h4>Room Accommodations</h4>
                 <p className="muted small">Suite, Villa & Cottage Night Stays</p>
               </div>
-              <b className="serif" style={{ fontSize: '1.2rem', color: 'var(--blue)' }}>{money(ov.room_revenue_php || 198000)}</b>
+              <b className="serif" style={{ fontSize: '1.2rem', color: 'var(--blue)' }}>{money(ov.room_revenue_php || 0)}</b>
             </div>
 
             <div className="bk-row">
@@ -142,7 +142,7 @@ export default function Accounting() {
                 <h4>In-Room Dining & Kitchen</h4>
                 <p className="muted small">Fresh Bangus & Seafood Orders</p>
               </div>
-              <b className="serif" style={{ fontSize: '1.2rem', color: 'var(--blue)' }}>{money(ov.dining_revenue_php || 32500)}</b>
+              <b className="serif" style={{ fontSize: '1.2rem', color: 'var(--blue)' }}>{money(ov.dining_revenue_php || 0)}</b>
             </div>
 
             <div className="bk-row">
@@ -150,7 +150,7 @@ export default function Accounting() {
                 <h4>Island Outrigger Tours</h4>
                 <p className="muted small">Patar Excursions & Shuttles</p>
               </div>
-              <b className="serif" style={{ fontSize: '1.2rem', color: 'var(--blue)' }}>{money(ov.tour_revenue_php || 15300)}</b>
+              <b className="serif" style={{ fontSize: '1.2rem', color: 'var(--blue)' }}>{money(ov.tour_revenue_php || 0)}</b>
             </div>
           </div>
         </div>
@@ -173,11 +173,6 @@ export default function Accounting() {
         <CsvTableViewer
           title="Financial Audit & Transaction Ledger CSV Reader"
           defaultFilename="jd_financial_audit.csv"
-          initialCsvText={`Transaction ID,Date,Guest Name,Category,Amount (PHP),Payment Method,Status
-TXN-901,2026-08-01,Juan Dela Cruz,Room Booking,14750,Credit Card,Reconciled
-TXN-902,2026-08-02,Maria Clara Santos,Room Booking,7200,GCash,Reconciled
-TXN-903,2026-08-03,Carlos Ledger,Dining Order,1850,Cash,Reconciled
-TXN-904,2026-08-04,Elena Ramos,Tour Service,3500,Bank Transfer,Reconciled`}
         />
       </div>
     </div>

@@ -1,0 +1,328 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 1480" width="1800" height="1480" style="background:#ffffff; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <!-- Card Shadow -->
+    <filter id="fShadow" x="-2%" y="-2%" width="104%" height="106%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f172a" flood-opacity="0.06" />
+    </filter>
+
+    <!-- Arrow Markers -->
+    <marker id="arrSlate" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
+    </marker>
+    <marker id="arrTeal" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#0d9488" />
+    </marker>
+    <marker id="arrBlue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#2563eb" />
+    </marker>
+    <marker id="arrPurple" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#7c3aed" />
+    </marker>
+    <marker id="arrGreen" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#059669" />
+    </marker>
+  </defs>
+
+  <!-- Title Header -->
+  <g transform="translate(900, 48)" text-anchor="middle">
+    <rect x="-260" y="-30" width="520" height="28" rx="14" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5" />
+    <text y="-11" fill="#1e293b" font-size="12" font-weight="700" letter-spacing="1.5">FRONTEND API ARCHITECTURE &amp; DATA PIPELINE</text>
+    <text y="28" fill="#0f172a" font-size="28" font-weight="800">J &amp; D Beach House · Frontend API Architecture</text>
+    <text y="54" fill="#64748b" font-size="14">React UI Layer ➔ State/Auth Context ➔ lib/api.ts Service Facade ➔ Protocol Gateway ➔ Express/Supabase Ingress</text>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- LAYER 1: UI PRESENTATION LAYER -->
+  <!-- ========================================================================= -->
+  <g transform="translate(60, 115)" filter="url(#fShadow)">
+    <rect width="1680" height="205" rx="12" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5" />
+    <rect x="20" y="12" width="560" height="24" rx="6" fill="#e2e8f0" />
+    <text x="30" y="28" fill="#1e293b" font-size="11" font-weight="800">LAYER 1 · USER INTERFACE &amp; PRESENTATION LAYER (React 18 + Vite + TS)</text>
+
+    <!-- Box 1: Customer Desks -->
+    <g transform="translate(30, 48)">
+      <rect width="370" height="85" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5" />
+      <text x="16" y="26" fill="#0f172a" font-size="14" font-weight="700">Customer Experience Desks</text>
+      <text x="16" y="46" fill="#475569" font-size="12">Home.tsx · Rooms.tsx</text>
+      <text x="16" y="66" fill="#0284c7" font-size="11">MyBookings.tsx · ResortCustomer.tsx</text>
+    </g>
+
+    <!-- Box 2: Operations Desks -->
+    <g transform="translate(440, 48)">
+      <rect width="370" height="85" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5" />
+      <text x="16" y="26" fill="#0f172a" font-size="14" font-weight="700">Operations &amp; Department Desks</text>
+      <text x="16" y="46" fill="#475569" font-size="12">Receptionist.tsx (Arrivals, Passcodes, Keys)</text>
+      <text x="16" y="66" fill="#0284c7" font-size="11">ResortDepartment.tsx (Housekeeping/Kitchen)</text>
+    </g>
+
+    <!-- Box 3: Accounting & Admin -->
+    <g transform="translate(850, 48)">
+      <rect width="390" height="85" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5" />
+      <text x="16" y="26" fill="#0f172a" font-size="14" font-weight="700">Accounting &amp; Executive Desks</text>
+      <text x="16" y="46" fill="#475569" font-size="12">Accounting.tsx (P&amp;L, RevPAR, CSV Export)</text>
+      <text x="16" y="66" fill="#0284c7" font-size="11">Admin.tsx (Staff Provisioning &amp; Role Control)</text>
+    </g>
+
+    <!-- Box 4: Interactive Widgets -->
+    <g transform="translate(1280, 48)">
+      <rect width="370" height="85" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5" />
+      <text x="16" y="26" fill="#0f172a" font-size="14" font-weight="700">Interactive Component Widgets</text>
+      <text x="16" y="46" fill="#475569" font-size="12">BookingFlow.tsx · Chatbot.tsx</text>
+      <text x="16" y="66" fill="#0284c7" font-size="11">ExecutiveGuestChatModal · ImagePicker</text>
+    </g>
+
+    <!-- UI Component Event & Action Handlers -->
+    <g transform="translate(30, 145)">
+      <rect width="1620" height="46" rx="8" fill="#f1f5f9" stroke="#94a3b8" stroke-dasharray="4 3" stroke-width="1.2" />
+      <rect x="12" y="10" width="180" height="26" rx="4" fill="#e2e8f0" />
+      <text x="102" y="27" fill="#334155" font-size="10" font-weight="800" text-anchor="middle">UI EVENT HANDLERS</text>
+      <text x="205" y="28" fill="#0f172a" font-size="11" font-weight="600">onSubmit={handleBookingSubmit} · onStatusChange={handleCheckInOut} · onAssign={handleTaskUpdate} · onSend={handleChatSubmit} · onOrderSubmit={handleOrderCreate} · onExport={handleCSVExport}</text>
+    </g>
+  </g>
+
+  <!-- Connector L1 -> L2 -->
+  <path d="M 900, 320 L 900, 350" stroke="#64748b" stroke-width="2" marker-end="url(#arrTeal)" />
+
+  <!-- ========================================================================= -->
+  <!-- LAYER 2: STATE & CONTEXT LAYER -->
+  <!-- ========================================================================= -->
+  <g transform="translate(60, 350)" filter="url(#fShadow)">
+    <rect width="1680" height="135" rx="12" fill="#f8fafc" stroke="#0d9488" stroke-width="1.5" />
+    <rect x="20" y="12" width="560" height="24" rx="6" fill="#ccfbf1" />
+    <text x="30" y="28" fill="#0f766e" font-size="11" font-weight="800">LAYER 2 · CLIENT STATE, CONTEXT &amp; HOOK ORCHESTRATION</text>
+
+    <!-- Box 1: AuthContext -->
+    <g transform="translate(30, 42)">
+      <rect width="780" height="78" rx="8" fill="#ffffff" stroke="#0d9488" stroke-width="1.5" />
+      <text x="18" y="24" fill="#0f172a" font-size="15" font-weight="700">AuthContext.tsx (Session &amp; Cryptographic Identity)</text>
+      <text x="18" y="44" fill="#334155" font-size="11">Supabase Session Listener · Bearer JWT Access Token Storage &amp; Automatic Refresh</text>
+      <text x="18" y="62" fill="#0f766e" font-size="11">Multi-Role RBAC: customer | staff | receptionist | accounting | administrator · Offline Fallback State</text>
+    </g>
+
+    <!-- Box 2: Telemetry -->
+    <g transform="translate(850, 42)">
+      <rect width="390" height="78" rx="8" fill="#ffffff" stroke="#0d9488" stroke-width="1.5" />
+      <text x="18" y="24" fill="#0f172a" font-size="15" font-weight="700">TelemetryTracker.tsx</text>
+      <text x="18" y="44" fill="#334155" font-size="11">Visitor Heartbeat Dispatcher</text>
+      <text x="18" y="62" fill="#0f766e" font-size="11">Live Visitor Density &amp; Heartbeat Pings</text>
+    </g>
+
+    <!-- Box 3: Hooks & Feedback -->
+    <g transform="translate(1280, 42)">
+      <rect width="370" height="78" rx="8" fill="#ffffff" stroke="#0d9488" stroke-width="1.5" />
+      <text x="18" y="24" fill="#0f172a" font-size="15" font-weight="700">Hooks &amp; UI Feedback</text>
+      <text x="18" y="44" fill="#334155" font-size="11">useAutoDraft (LocalStorage Cache)</text>
+      <text x="18" y="62" fill="#0f766e" font-size="11">useReveal · Toasts.tsx Notification System</text>
+    </g>
+  </g>
+
+  <!-- Connector L2 -> L3 -->
+  <path d="M 900, 485 L 900, 515" stroke="#64748b" stroke-width="2" marker-end="url(#arrBlue)" />
+
+  <!-- ========================================================================= -->
+  <!-- LAYER 3: LIB/API.TS SERVICE FACADE -->
+  <!-- ========================================================================= -->
+  <g transform="translate(60, 515)" filter="url(#fShadow)">
+    <rect width="1680" height="430" rx="12" fill="#f8fafc" stroke="#2563eb" stroke-width="1.5" />
+    <rect x="20" y="12" width="620" height="24" rx="6" fill="#dbeafe" />
+    <text x="30" y="28" fill="#1e40af" font-size="11" font-weight="800">LAYER 3 · FRONTEND API CLIENT &amp; SERVICE ABSTRACTION FACADE (client/src/lib/api.ts)</text>
+
+    <!-- Central Request Engine Banner -->
+    <g transform="translate(30, 42)">
+      <rect width="1620" height="50" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5" />
+      <text x="24" y="23" fill="#1e3a8a" font-size="14" font-weight="800">Central Request Wrapper: req(path, { method = 'GET', body, fallback })</text>
+      <text x="24" y="40" fill="#1d4ed8" font-size="11">⚡ Bearer Token Injection (Authorization: Bearer &lt;JWT&gt;) · 🛡️ JSON Serialization · 🔄 Resilient Offline Mock Failover · ⚠️ Status &amp; Error Interceptor</text>
+    </g>
+
+    <!-- Central Client Request, Auth & Error Handlers -->
+    <g transform="translate(30, 100)">
+      <rect width="1620" height="46" rx="8" fill="#f0f9ff" stroke="#0284c7" stroke-width="1.5" />
+      <rect x="12" y="10" width="190" height="26" rx="4" fill="#e0f2fe" />
+      <text x="107" y="27" fill="#0369a1" font-size="10" font-weight="800" text-anchor="middle">CLIENT HANDLER PIPELINE</text>
+      <text x="215" y="28" fill="#0c4a6e" font-size="12" font-weight="600">requestHandler() ➔ bearerTokenHandler(JWT) ➔ responseHandler(204/JSON) ➔ errorHandler(HTTP 4xx/5xx/CORS) ➔ mockFallbackHandler(Offline Failover)</text>
+    </g>
+
+    <!-- 8 Specialized API Domain Modules -->
+    <g transform="translate(30, 158)">
+      <!-- 1. Auth -->
+      <g transform="translate(0, 0)">
+        <rect width="185" height="115" rx="8" fill="#ffffff" stroke="#93c5fd" stroke-width="1.5" />
+        <text x="12" y="22" fill="#0f172a" font-size="12" font-weight="700">Auth &amp; Profile API</text>
+        <text x="12" y="42" fill="#334155" font-size="10" font-family="monospace">api.me()</text>
+        <text x="12" y="60" fill="#334155" font-size="10" font-family="monospace">api.updateMe()</text>
+        <text x="12" y="78" fill="#334155" font-size="10" font-family="monospace">api.updatePassword()</text>
+        <text x="12" y="98" fill="#2563eb" font-size="10">/api/me</text>
+      </g>
+
+      <!-- 2. Rooms -->
+      <g transform="translate(205, 0)">
+        <rect width="185" height="115" rx="8" fill="#ffffff" stroke="#93c5fd" stroke-width="1.5" />
+        <text x="12" y="22" fill="#0f172a" font-size="12" font-weight="700">Rooms &amp; Catalog API</text>
+        <text x="12" y="42" fill="#334155" font-size="10" font-family="monospace">api.rooms()</text>
+        <text x="12" y="60" fill="#334155" font-size="10" font-family="monospace">api.availability()</text>
+        <text x="12" y="78" fill="#334155" font-size="10">RPC Date Engine</text>
+        <text x="12" y="98" fill="#2563eb" font-size="10">/api/rooms</text>
+      </g>
+
+      <!-- 3. Reservations -->
+      <g transform="translate(410, 0)">
+        <rect width="185" height="115" rx="8" fill="#ffffff" stroke="#2563eb" stroke-width="2" />
+        <text x="12" y="22" fill="#0f172a" font-size="12" font-weight="700">Reservations Engine</text>
+        <text x="12" y="40" fill="#334155" font-size="10" font-family="monospace">createReservation()</text>
+        <text x="12" y="56" fill="#334155" font-size="10" font-family="monospace">myReservations()</text>
+        <text x="12" y="72" fill="#334155" font-size="10" font-family="monospace">setReservationStatus()</text>
+        <text x="12" y="88" fill="#334155" font-size="10" font-family="monospace">cancelReservation()</text>
+        <text x="12" y="104" fill="#0284c7" font-size="9">GiST Hard Guard</text>
+      </g>
+
+      <!-- 4. Customer Experience -->
+      <g transform="translate(615, 0)">
+        <rect width="185" height="115" rx="8" fill="#ffffff" stroke="#93c5fd" stroke-width="1.5" />
+        <text x="12" y="22" fill="#0f172a" font-size="12" font-weight="700">Customer Experience</text>
+        <text x="12" y="40" fill="#334155" font-size="10" font-family="monospace">customerServices()</text>
+        <text x="12" y="56" fill="#334155" font-size="10" font-family="monospace">customerOrders()</text>
+        <text x="12" y="72" fill="#334155" font-size="10" font-family="monospace">placeCustomerOrder()</text>
+        <text x="12" y="88" fill="#334155" font-size="10" font-family="monospace">digitalPass() · stats()</text>
+        <text x="12" y="104" fill="#2563eb" font-size="9">Dining, Tours &amp; Pass</text>
+      </g>
+
+      <!-- 5. Operations -->
+      <g transform="translate(820, 0)">
+        <rect width="185" height="115" rx="8" fill="#ffffff" stroke="#93c5fd" stroke-width="1.5" />
+        <text x="12" y="22" fill="#0f172a" font-size="12" font-weight="700">Department Operations</text>
+        <text x="12" y="40" fill="#334155" font-size="10" font-family="monospace">departmentTasks()</text>
+        <text x="12" y="56" fill="#334155" font-size="10" font-family="monospace">createDepartmentTask()</text>
+        <text x="12" y="72" fill="#334155" font-size="10" font-family="monospace">updateTaskStatus()</text>
+        <text x="12" y="88" fill="#334155" font-size="10" font-family="monospace">departmentRoomStatus()</text>
+        <text x="12" y="104" fill="#2563eb" font-size="9">Housekeeping/Inventory</text>
+      </g>
+
+      <!-- 6. Analytics -->
+      <g transform="translate(1025, 0)">
+        <rect width="185" height="115" rx="8" fill="#ffffff" stroke="#93c5fd" stroke-width="1.5" />
+        <text x="12" y="22" fill="#0f172a" font-size="12" font-weight="700">Analytics &amp; BI Engine</text>
+        <text x="12" y="40" fill="#334155" font-size="10" font-family="monospace">analyticsOverview()</text>
+        <text x="12" y="56" fill="#334155" font-size="10" font-family="monospace">fullDiveAnalytics()</text>
+        <text x="12" y="72" fill="#334155" font-size="10" font-family="monospace">exportAnalyticsCSV()</text>
+        <text x="12" y="88" fill="#334155" font-size="10">Occupancy %, RevPAR</text>
+        <text x="12" y="104" fill="#2563eb" font-size="9">Financial Intelligence</text>
+      </g>
+
+      <!-- 7. Telemetry -->
+      <g transform="translate(1230, 0)">
+        <rect width="185" height="115" rx="8" fill="#ffffff" stroke="#93c5fd" stroke-width="1.5" />
+        <text x="12" y="22" fill="#0f172a" font-size="12" font-weight="700">Telemetry &amp; Forecast</text>
+        <text x="12" y="42" fill="#334155" font-size="10" font-family="monospace">telemetryStats()</text>
+        <text x="12" y="60" fill="#334155" font-size="10" font-family="monospace">telemetryPredictions()</text>
+        <text x="12" y="78" fill="#334155" font-size="10">7-Day Scenario Models</text>
+        <text x="12" y="98" fill="#2563eb" font-size="10">/api/telemetry</text>
+      </g>
+
+      <!-- 8. Admin RBAC -->
+      <g transform="translate(1435, 0)">
+        <rect width="185" height="115" rx="8" fill="#ffffff" stroke="#93c5fd" stroke-width="1.5" />
+        <text x="12" y="22" fill="#0f172a" font-size="12" font-weight="700">Admin RBAC &amp; Users</text>
+        <text x="12" y="40" fill="#334155" font-size="10" font-family="monospace">adminCustomers()</text>
+        <text x="12" y="56" fill="#334155" font-size="10" font-family="monospace">createStaffAccount()</text>
+        <text x="12" y="72" fill="#334155" font-size="10" font-family="monospace">updateUserRole()</text>
+        <text x="12" y="88" fill="#334155" font-size="10" font-family="monospace">resetUserPassword()</text>
+        <text x="12" y="104" fill="#2563eb" font-size="9">Role Provisioning</text>
+      </g>
+    </g>
+
+    <!-- Resilient Mock Datasets Fallback Bar -->
+    <g transform="translate(30, 285)">
+      <rect width="1620" height="85" rx="8" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.5" />
+      <rect x="14" y="10" width="220" height="20" rx="4" fill="#fef3c7" />
+      <text x="24" y="24" fill="#92400e" font-size="10" font-weight="700">SEAMLESS OFFLINE MOCK DATASETS</text>
+      <text x="14" y="46" fill="#0f172a" font-size="13" font-weight="700">Intelligent Fallback Layer: Guarantees 0-Crash Operation During Network Outage or Backend Cold Start</text>
+      <text x="14" y="68" fill="#92400e" font-size="11">FALLBACK_ROOMS · FALLBACK_ANALYTICS · FALLBACK_USERS · FALLBACK_PASS · FALLBACK_SERVICES · FALLBACK_ORDERS · FALLBACK_TASKS · FALLBACK_INVENTORY · FALLBACK_REVIEWS</text>
+    </g>
+  </g>
+
+  <!-- Connector L3 -> L4 -->
+  <path d="M 900, 945 L 900, 975" stroke="#64748b" stroke-width="2" marker-end="url(#arrPurple)" />
+
+  <!-- ========================================================================= -->
+  <!-- LAYER 4: TRANSPORT CLIENTS -->
+  <!-- ========================================================================= -->
+  <g transform="translate(60, 975)" filter="url(#fShadow)">
+    <rect width="1680" height="135" rx="12" fill="#f8fafc" stroke="#7c3aed" stroke-width="1.5" />
+    <rect x="20" y="12" width="600" height="24" rx="6" fill="#f3e8ff" />
+    <text x="30" y="28" fill="#6b21a8" font-size="11" font-weight="800">LAYER 4 · CLIENT COMMUNICATION &amp; PROTOCOL GATEWAY ENGINES</text>
+
+    <!-- Client 1: HTTP REST -->
+    <g transform="translate(30, 42)">
+      <rect width="580" height="78" rx="8" fill="#ffffff" stroke="#7c3aed" stroke-width="1.5" />
+      <text x="18" y="24" fill="#0f172a" font-size="15" font-weight="700">HTTP / REST Fetch Client (fetch API)</text>
+      <text x="18" y="44" fill="#475569" font-size="11">JSON over HTTP/1.1 &amp; HTTPS (TLS 1.3) · Target: /api/*</text>
+      <text x="18" y="62" fill="#6b21a8" font-size="11">Headers: Authorization: Bearer &lt;JWT&gt;, Content-Type: application/json · 204 No-Content Guard</text>
+    </g>
+
+    <!-- Client 2: Socket.io -->
+    <g transform="translate(650, 42)">
+      <rect width="470" height="78" rx="8" fill="#ffffff" stroke="#7c3aed" stroke-width="1.5" />
+      <text x="18" y="24" fill="#0f172a" font-size="15" font-weight="700">Socket.io Client (lib/socket.ts)</text>
+      <text x="18" y="44" fill="#475569" font-size="11">Duplex WebSockets (ws://) with Long-Polling Fallback</text>
+      <text x="18" y="62" fill="#6b21a8" font-size="11">Handshake: { auth: { token } } · chat:message ➔ bot:message</text>
+    </g>
+
+    <!-- Client 3: Supabase JS -->
+    <g transform="translate(1160, 42)">
+      <rect width="490" height="78" rx="8" fill="#ffffff" stroke="#7c3aed" stroke-width="1.5" />
+      <text x="18" y="24" fill="#0f172a" font-size="15" font-weight="700">Supabase JS Client (lib/supabaseClient.ts)</text>
+      <text x="18" y="44" fill="#475569" font-size="11">@supabase/supabase-js Direct SDK Gateway</text>
+      <text x="18" y="62" fill="#6b21a8" font-size="11">Session Auth Storage · PostgreSQL CDC Realtime Change Channels</text>
+    </g>
+  </g>
+
+  <!-- Connector L4 -> L5 -->
+  <path d="M 900, 1110 L 900, 1140" stroke="#64748b" stroke-width="2" marker-end="url(#arrGreen)" />
+
+  <!-- ========================================================================= -->
+  <!-- LAYER 5: BACKEND INGRESS & GATEWAY TARGET -->
+  <!-- ========================================================================= -->
+  <g transform="translate(60, 1140)" filter="url(#fShadow)">
+    <rect width="1680" height="205" rx="12" fill="#f8fafc" stroke="#059669" stroke-width="1.5" />
+    <rect x="20" y="12" width="620" height="24" rx="6" fill="#d1fae5" />
+    <text x="30" y="28" fill="#065f46" font-size="11" font-weight="800">LAYER 5 · NETWORK INGRESS, REVERSE PROXY &amp; BACKEND SECURITY BOUNDARY</text>
+
+    <!-- Target 1: Ingress Proxy -->
+    <g transform="translate(30, 44)">
+      <rect width="460" height="85" rx="8" fill="#ffffff" stroke="#059669" stroke-width="1.5" />
+      <text x="18" y="26" fill="#0f172a" font-size="15" font-weight="700">Vite Proxy &amp; Express Ingress</text>
+      <text x="18" y="46" fill="#475569" font-size="12">Dev Proxy: /api ➔ http://localhost:5000/api</text>
+      <text x="18" y="66" fill="#059669" font-size="11">Express 4.x Modular Route Mounts</text>
+    </g>
+
+    <!-- Target 2: Security Perimeter -->
+    <g transform="translate(520, 44)">
+      <rect width="580" height="85" rx="8" fill="#ffffff" stroke="#059669" stroke-width="1.5" />
+      <text x="18" y="26" fill="#0f172a" font-size="15" font-weight="700">Security Middleware Perimeter</text>
+      <text x="18" y="46" fill="#475569" font-size="12">🛡️ NGWF Layer 7 Firewall · 🧼 Anti-XSS Payload Sanitizer</text>
+      <text x="18" y="66" fill="#059669" font-size="11">🔑 JWT Bearer Auth Verification · 👮 RBAC Role Validation</text>
+    </g>
+
+    <!-- Target 3: Downstream Services -->
+    <g transform="translate(1130, 44)">
+      <rect width="520" height="85" rx="8" fill="#ffffff" stroke="#059669" stroke-width="1.5" />
+      <text x="18" y="26" fill="#0f172a" font-size="15" font-weight="700">Downstream Enterprise Services</text>
+      <text x="18" y="46" fill="#475569" font-size="12">🐘 Supabase PostgreSQL 15+ Core DB (GiST Guard &amp; RLS)</text>
+      <text x="18" y="66" fill="#059669" font-size="11">📱 Twilio SMS Dispatcher · 🗄️ Media Cloud Storage</text>
+    </g>
+
+    <!-- Express Route Handlers & Controller Middleware -->
+    <g transform="translate(30, 140)">
+      <rect width="1620" height="48" rx="8" fill="#ecfdf5" stroke="#059669" stroke-width="1.5" />
+      <rect x="12" y="11" width="200" height="26" rx="4" fill="#d1fae5" />
+      <text x="112" y="28" fill="#065f46" font-size="10" font-weight="800" text-anchor="middle">EXPRESS ROUTE HANDLERS</text>
+      <text x="225" y="29" fill="#064e3b" font-size="12" font-weight="600">authRouteHandler · roomsRouteHandler · reservationsRouteHandler · tasksRouteHandler · ordersRouteHandler · analyticsRouteHandler · globalErrorHandlerMiddleware</text>
+    </g>
+  </g>
+
+  <!-- Footer Legend -->
+  <g transform="translate(900, 1390)" text-anchor="middle" font-size="13" fill="#64748b">
+    <rect x="-470" y="-20" width="940" height="40" rx="8" fill="#f8fafc" stroke="#e2e8f0" />
+    <text y="5" fill="#475569">Solid Arrows = Synchronous JSON/REST &amp; State Pipelines · Flow denotes Layer 1 (UI) down to Layer 5 (Backend Gateway)</text>
+  </g>
+</svg>

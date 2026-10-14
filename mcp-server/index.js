@@ -68,10 +68,20 @@ const TOOLS = [
   },
   {
     name: "run_backup",
-    description: "Trigger the automated J & D Beach House database schema and configuration backup.",
+    description: "Trigger automated backups: creates version patch snapshots (code, manifests, certs, checksums) and/or database schema backups.",
     inputSchema: {
       type: "object",
       properties: {
+        type: {
+          type: "string",
+          enum: ["patch", "database", "all"],
+          default: "patch",
+          description: "Type of backup to generate: 'patch' (version snapshot with SHA-256 manifest), 'database' (schema SQL), or 'all'.",
+        },
+        version: {
+          type: "string",
+          description: "Target release version for patch snapshot (e.g. '1.1.0'). Defaults to current version.",
+        },
         label: {
           type: "string",
           description: "Optional label for the backup snapshot (e.g., 'pre_release').",
@@ -120,6 +130,106 @@ const TOOLS = [
           description: "Directory path relative to project root or absolute. Defaults to project root.",
         },
       },
+    },
+  },
+  {
+    name: "diagram_handler",
+    description: "Generate, normalize, and render architectural diagram suites (Frontend API, Data Hierarchy, ER Diagram) into Draw.io XML, SVG, and 4K PNG.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        target: {
+          type: "string",
+          enum: ["all", "api", "data-hierarchy", "er"],
+          default: "all",
+          description: "Specific diagram suite to build ('all', 'api', 'data-hierarchy', 'er').",
+        },
+      },
+    },
+  },
+  {
+    name: "run_gatekeeper",
+    description: "Run the J & D Beach House Version 1.0 Release Gatekeeper (checks semantic versions, TLS certs, CSP/headers, backend green suite, and Vite client build).",
+    inputSchema: {
+      type: "object",
+      properties: {},
+    },
+  },
+  {
+    name: "run_performance_benchmark",
+    description: "Execute high-throughput 10,000 users concurrency benchmark (HTTP keep-alive stress test on analytics and catalog) plus Playwright browser DOM performance audit.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        total: {
+          type: "number",
+          default: 10000,
+          description: "Total number of simulated user requests (default: 10000).",
+        },
+        concurrency: {
+          type: "number",
+          default: 200,
+          description: "Number of concurrent parallel worker sockets (default: 200).",
+        },
+        endpoint: {
+          type: "string",
+          default: "/api/analytics/overview",
+          description: "Target API route to benchmark (e.g., '/api/analytics/overview', '/api/rooms', '/api/system/health').",
+        },
+        includePlaywright: {
+          type: "boolean",
+          default: true,
+          description: "Whether to execute Playwright Chromium DOM/Web Vitals audit alongside load test.",
+        },
+      },
+    },
+  },
+  {
+    name: "inspect_data_analytics",
+    description: "Inspect resort analytics engine: measures Redis cache hit/miss ratio, active TTLs, query execution latency, memory footprint, and table stats.",
+    inputSchema: {
+      type: "object",
+      properties: {},
+    },
+  },
+  {
+    name: "optimize_analytics",
+    description: "Execute performance optimizations on data analytics: purges stale keys, pre-warms /api/analytics/overview and /api/rooms in Redis, checks database indexes, and ensures sub-millisecond response.",
+    inputSchema: {
+      type: "object",
+      properties: {},
+    },
+  },
+  {
+    name: "deploy_1m_fake_users",
+    description: "Deploy and stress test against 1,000,000 synthetic fake users with automated circuit breakers (auto-stops if memory, latency, lag, or errors exceed safety thresholds).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        total: {
+          type: "number",
+          default: 1000000,
+          description: "Total fake users target (default: 1000000).",
+        },
+        concurrency: {
+          type: "number",
+          default: 250,
+          description: "Number of concurrent parallel worker sockets (default: 250).",
+        },
+        endpoint: {
+          type: "string",
+          default: "/api/analytics/overview",
+          description: "Target API route to test.",
+        },
+      },
+    },
+  },
+  {
+    name: "test_load_balancer_and_limiter",
+    description: "Run the full Load Balancer Gateway and Adaptive Rate Limiter test suite (verifies 429 rate limiting, token refill, in-flight concurrency tracking, and multi-node upstream traffic distribution).",
+    inputSchema: {
+      type: "object",
+      properties: {},
     },
   },
 ];
@@ -183,11 +293,28 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "run_backup": {
+        const backupType = args?.type || "patch";
         const label = args?.label ? `"${args.label}"` : "";
-        const result = await runCommand(`node scripts/backup.js ${label}`, "cmd", PROJECT_ROOT, 30000);
+        const version = args?.version ? `"${args.version}"` : "";
+        const outputs = [];
+        let isError = false;
+
+        if (backupType === "patch" || backupType === "all") {
+          const patchCmd = version ? `node scripts/backup_patch.js ${version} ${label}` : `node scripts/backup_patch.js ${label}`;
+          const res = await runCommand(patchCmd, "cmd", PROJECT_ROOT, 30000);
+          outputs.push(res.stdout || res.stderr);
+          if (res.exitCode !== 0) isError = true;
+        }
+
+        if (backupType === "database" || backupType === "all") {
+          const dbRes = await runCommand(`node scripts/backup.js ${label}`, "cmd", PROJECT_ROOT, 30000);
+          outputs.push(dbRes.stdout || dbRes.stderr);
+          if (dbRes.exitCode !== 0) isError = true;
+        }
+
         return {
-          content: [{ type: "text", text: result.stdout || result.stderr }],
-          isError: result.exitCode !== 0,
+          content: [{ type: "text", text: outputs.join("\n\n") }],
+          isError,
         };
       }
 
@@ -268,6 +395,85 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return {
           content: [{ type: "text", text: `Directory: ${targetDir}\n\n${listOutput}` }],
           isError: false,
+        };
+      }
+
+      case "diagram_handler": {
+        const target = args?.target || "all";
+        const result = await runCommand(`node scripts/diagram-tool.js --target=${target}`, "cmd", PROJECT_ROOT, 60000);
+        return {
+          content: [{ type: "text", text: result.stdout || result.stderr }],
+          isError: result.exitCode !== 0,
+        };
+      }
+
+      case "run_gatekeeper": {
+        const result = await runCommand("node scripts/gatekeeper.js", "cmd", PROJECT_ROOT, 60000);
+        return {
+          content: [{ type: "text", text: result.stdout || result.stderr }],
+          isError: result.exitCode !== 0,
+        };
+      }
+
+      case "run_performance_benchmark": {
+        const total = args?.total || 10000;
+        const concurrency = args?.concurrency || 200;
+        const endpoint = args?.endpoint || "/api/analytics/overview";
+        const includePlaywright = args?.includePlaywright !== false;
+
+        const benchmarkCmd = `node scripts/benchmark_10k_users.js --total=${total} --concurrency=${concurrency} --endpoint=${endpoint}`;
+        const loadResult = await runCommand(benchmarkCmd, "cmd", PROJECT_ROOT, 120000);
+
+        let playwrightOutput = "";
+        if (includePlaywright) {
+          const pwResult = await runCommand("node scripts/playwright_audit.js", "cmd", PROJECT_ROOT, 120000);
+          playwrightOutput = `\n\n--- PLAYWRIGHT DOM AUDIT ---\n${pwResult.stdout || pwResult.stderr}`;
+        }
+
+        const fullOutput = [
+          loadResult.stdout || loadResult.stderr,
+          playwrightOutput,
+        ].filter(Boolean).join("\n");
+
+        return {
+          content: [{ type: "text", text: fullOutput }],
+          isError: loadResult.exitCode !== 0,
+        };
+      }
+
+      case "inspect_data_analytics": {
+        const result = await runCommand("node scripts/inspect_analytics.js", "cmd", PROJECT_ROOT, 30000);
+        return {
+          content: [{ type: "text", text: result.stdout || result.stderr }],
+          isError: result.exitCode !== 0,
+        };
+      }
+
+      case "optimize_analytics": {
+        const result = await runCommand("node scripts/optimize_analytics.js", "cmd", PROJECT_ROOT, 30000);
+        return {
+          content: [{ type: "text", text: result.stdout || result.stderr }],
+          isError: result.exitCode !== 0,
+        };
+      }
+
+      case "deploy_1m_fake_users": {
+        const total = args?.total || 1000000;
+        const concurrency = args?.concurrency || 250;
+        const endpoint = args?.endpoint || "/api/analytics/overview";
+        const cmd = `node scripts/deploy_1m_fake_users.js --total=${total} --concurrency=${concurrency} --endpoint=${endpoint}`;
+        const result = await runCommand(cmd, "cmd", PROJECT_ROOT, 300000);
+        return {
+          content: [{ type: "text", text: result.stdout || result.stderr }],
+          isError: result.exitCode !== 0,
+        };
+      }
+
+      case "test_load_balancer_and_limiter": {
+        const result = await runCommand("node scripts/test_load_balancer_and_limiter.js", "cmd", PROJECT_ROOT, 60000);
+        return {
+          content: [{ type: "text", text: result.stdout || result.stderr }],
+          isError: result.exitCode !== 0,
         };
       }
 

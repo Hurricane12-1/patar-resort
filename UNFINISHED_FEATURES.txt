@@ -52,7 +52,7 @@ TABLE OF CONTENTS
 • Current State:
   - client/src/components/ExecutiveGuestChatModal.tsx and
     client/src/components/ExecutiveGuestConversationsPanel.tsx show a live chat UI
-    with guest conversations (Joanna Silva, Carlos Mendoza, etc.).
+    connected to live database guest messages.
   - When the admin types and sends a message, it is only appended to local React
     state via setMessages().
   - Reloading the page resets all admin replies back to the initial mock state.

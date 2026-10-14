@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1440" height="1200" viewBox="0 0 1440 1200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>02 - Rooms & Rates Catalog (TEV, CAT, GEL, CATH)</title>
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Playfair+Display:ital,wght@0,600;0,700;1,600&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap');
+      .font-sans { font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+      .font-serif { font-family: 'Playfair Display', Georgia, serif; }
+      .font-mono { font-family: 'JetBrains Mono', Consolas, monospace; }
+    </style>
+    <linearGradient id="grad-sky" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284C7" />
+      <stop offset="100%" stop-color="#0EA5E9" />
+    </linearGradient>
+    <linearGradient id="grad-dark" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+    <linearGradient id="grad-card" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E293B" />
+      <stop offset="100%" stop-color="#0F172A" />
+    </linearGradient>
+    <filter id="shadow-soft" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.3" />
+    </filter>
+    <filter id="shadow-modal" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="24" stdDeviation="32" flood-color="#000000" flood-opacity="0.6" />
+    </filter>
+  </defs>
+  
+  <rect width="1440" height="1200" fill="#0A0F1D" />
+
+  <!-- Navbar Clone -->
+  <g transform="translate(0, 0)">
+    <rect width="1440" height="74" fill="#0A0F1D" />
+    <line x1="0" y1="74" x2="1440" y2="74" stroke="#1E293B" stroke-width="1" />
+    <g transform="translate(80, 20)">
+      <circle cx="17" cy="17" r="17" fill="url(#grad-sky)" />
+      <text x="17" y="23" fill="#FFFFFF" class="font-sans" font-size="16" font-weight="800" text-anchor="middle">J</text>
+      <text x="46" y="24" fill="#F8FAFC" class="font-sans" font-size="17" font-weight="800">J &amp; D RESERVE</text>
+    </g>
+    <g transform="translate(560, 28)">
+      <text x="0" y="16" fill="#94A3B8" class="font-sans" font-size="14">Home</text>
+      <text x="75" y="16" fill="#38BDF8" class="font-sans" font-size="14" font-weight="700">Accommodations</text>
+      <text x="215" y="16" fill="#94A3B8" class="font-sans" font-size="14">Dining</text>
+      <text x="295" y="16" fill="#94A3B8" class="font-sans" font-size="14">Resort Map</text>
+    </g>
+  </g>
+
+  <!-- Page Header -->
+  <g transform="translate(80, 110)">
+    <text x="0" y="24" fill="#38BDF8" class="font-sans" font-size="12" font-weight="700" letter-spacing="2">AUTHENTIC RESORT ROSTER</text>
+    <text x="0" y="64" fill="#F8FAFC" class="font-serif" font-size="36" font-weight="700">Official Rooms &amp; Rates Catalog</text>
+    
+    <g transform="translate(940, 18)">
+      <rect width="340" height="44" rx="10" fill="#0F172A" stroke="#334155" stroke-width="1.2" />
+      <text x="20" y="27" fill="#64748B" class="font-sans" font-size="13">Filter by unit code: TEV, CAT, GEL, CATH…</text>
+    </g>
+  </g>
+
+  <!-- Filter Chips Row (Only TEV, CAT, GEL, CATH) -->
+  <g transform="translate(80, 210)">
+    <rect width="68" height="34" rx="17" fill="url(#grad-sky)" />
+    <text x="34" y="22" fill="#FFFFFF" class="font-sans" font-size="12" font-weight="700" text-anchor="middle">All (4)</text>
+
+    <rect x="80" width="110" height="34" rx="17" fill="#1E293B" stroke="#334155" stroke-width="1" />
+    <text x="135" y="22" fill="#E2E8F0" class="font-sans" font-size="12" font-weight="600" text-anchor="middle">Unit TEV</text>
+
+    <rect x="202" width="110" height="34" rx="17" fill="#1E293B" stroke="#334155" stroke-width="1" />
+    <text x="257" y="22" fill="#E2E8F0" class="font-sans" font-size="12" font-weight="600" text-anchor="middle">Unit CAT</text>
+
+    <rect x="324" width="110" height="34" rx="17" fill="#1E293B" stroke="#334155" stroke-width="1" />
+    <text x="379" y="22" fill="#E2E8F0" class="font-sans" font-size="12" font-weight="600" text-anchor="middle">Unit GEL</text>
+
+    <rect x="446" width="110" height="34" rx="17" fill="#1E293B" stroke="#334155" stroke-width="1" />
+    <text x="501" y="22" fill="#E2E8F0" class="font-sans" font-size="12" font-weight="600" text-anchor="middle">Unit CATH</text>
+  </g>
+
+  <!-- 2x2 Clean Catalog Grid (Exact 4 Units) -->
+  <!-- 1. Unit TEV -->
+  <g transform="translate(80, 280)">
+    <rect width="620" height="410" rx="18" fill="#0F172A" stroke="#0284C7" stroke-width="1.5" />
+    <rect width="620" height="220" rx="18" fill="#1E293B" />
+    <path d="M 0 0 L 620 220 M 620 0 L 0 220" stroke="#334155" stroke-width="0.75" />
+    
+    <g transform="translate(28, 244)">
+      <text x="0" y="20" fill="#38BDF8" class="font-sans" font-size="11" font-weight="700">CANONICAL UNIT: TEV · GRAND VILLA</text>
+      <text x="500" y="20" fill="#F59E0B" class="font-sans" font-size="12" font-weight="700">★ 5.0 (48 reviews)</text>
+      
+      <text x="0" y="50" fill="#F8FAFC" class="font-sans" font-size="22" font-weight="700">Unit TEV Grand Beachfront Villa</text>
+      <text x="0" y="74" fill="#94A3B8" class="font-sans" font-size="13">Expansive beachfront property with private dining pavilion. Ideal for large groups and retreats.</text>
+
+      <g transform="translate(0, 110)">
+        <text x="0" y="24" fill="#F8FAFC" class="font-sans" font-size="24" font-weight="800">₱18,000</text>
+        <text x="110" y="24" fill="#64748B" class="font-sans" font-size="12">/night · Capacity: 60 guests</text>
+        
+        <rect x="420" y="0" width="144" height="42" rx="10" fill="url(#grad-sky)" />
+        <text x="492" y="26" fill="#FFFFFF" class="font-sans" font-size="13" font-weight="700" text-anchor="middle">Reserve TEV</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- 2. Unit CAT -->
+  <g transform="translate(740, 280)">
+    <rect width="620" height="410" rx="18" fill="#0F172A" stroke="#F59E0B" stroke-width="1.5" />
+    <rect width="620" height="220" rx="18" fill="#1E293B" />
+    <path d="M 0 0 L 620 220 M 620 0 L 0 220" stroke="#334155" stroke-width="0.75" />
+    
+    <g transform="translate(28, 244)">
+      <text x="0" y="20" fill="#F59E0B" class="font-sans" font-size="11" font-weight="700">CANONICAL UNIT: CAT · ALIAS UNIT PAPANG</text>
+      <text x="500" y="20" fill="#F59E0B" class="font-sans" font-size="12" font-weight="700">★ 4.9 (32 reviews)</text>
+      
+      <text x="0" y="50" fill="#F8FAFC" class="font-sans" font-size="22" font-weight="700">Unit CAT Beachfront Cottage</text>
+      <text x="0" y="74" fill="#94A3B8" class="font-sans" font-size="13">Traditional Bolinao beachfront cottage featuring native bamboo veranda and sea breeze airflow.</text>
+
+      <g transform="translate(0, 110)">
+        <text x="0" y="24" fill="#F8FAFC" class="font-sans" font-size="24" font-weight="800">₱6,000</text>
+        <text x="100" y="24" fill="#64748B" class="font-sans" font-size="12">/night · Capacity: 10 guests</text>
+        
+        <rect x="420" y="0" width="144" height="42" rx="10" fill="url(#grad-sky)" />
+        <text x="492" y="26" fill="#FFFFFF" class="font-sans" font-size="13" font-weight="700" text-anchor="middle">Reserve CAT</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- 3. Unit GEL -->
+  <g transform="translate(80, 720)">
+    <rect width="620" height="410" rx="18" fill="#0F172A" stroke="#10B981" stroke-width="1.5" />
+    <rect width="620" height="220" rx="18" fill="#1E293B" />
+    <path d="M 0 0 L 620 220 M 620 0 L 0 220" stroke="#334155" stroke-width="0.75" />
+    
+    <g transform="translate(28, 244)">
+      <text x="0" y="20" fill="#10B981" class="font-sans" font-size="11" font-weight="700">CANONICAL UNIT: GEL · PREMIER SUITE</text>
+      <text x="500" y="20" fill="#F59E0B" class="font-sans" font-size="12" font-weight="700">★ 4.9 (29 reviews)</text>
+      
+      <text x="0" y="50" fill="#F8FAFC" class="font-sans" font-size="22" font-weight="700">Unit GEL Premier Coastal Suite</text>
+      <text x="0" y="74" fill="#94A3B8" class="font-sans" font-size="13">Modern multi-room suite with connected private veranda and family dining setup.</text>
+
+      <g transform="translate(0, 110)">
+        <text x="0" y="24" fill="#F8FAFC" class="font-sans" font-size="24" font-weight="800">₱12,000</text>
+        <text x="110" y="24" fill="#64748B" class="font-sans" font-size="12">/night · Capacity: 25 guests</text>
+        
+        <rect x="420" y="0" width="144" height="42" rx="10" fill="url(#grad-sky)" />
+        <text x="492" y="26" fill="#FFFFFF" class="font-sans" font-size="13" font-weight="700" text-anchor="middle">Reserve GEL</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- 4. Unit CATH -->
+  <g transform="translate(740, 720)">
+    <rect width="620" height="410" rx="18" fill="#0F172A" stroke="#A855F7" stroke-width="1.5" />
+    <rect width="620" height="220" rx="18" fill="#1E293B" />
+    <path d="M 0 0 L 620 220 M 620 0 L 0 220" stroke="#334155" stroke-width="0.75" />
+    
+    <g transform="translate(28, 244)">
+      <text x="0" y="20" fill="#C084FC" class="font-sans" font-size="11" font-weight="700">CANONICAL UNIT: CATH · VERANDA VILLA</text>
+      <text x="500" y="20" fill="#F59E0B" class="font-sans" font-size="12" font-weight="700">★ 4.8 (21 reviews)</text>
+      
+      <text x="0" y="50" fill="#F8FAFC" class="font-sans" font-size="22" font-weight="700">Unit CATH Executive Veranda</text>
+      <text x="0" y="74" fill="#94A3B8" class="font-sans" font-size="13">Sunset-facing private villa with dedicated patio and outdoor dining amenities.</text>
+
+      <g transform="translate(0, 110)">
+        <text x="0" y="24" fill="#F8FAFC" class="font-sans" font-size="24" font-weight="800">₱8,500</text>
+        <text x="100" y="24" fill="#64748B" class="font-sans" font-size="12">/night · Capacity: 15 guests</text>
+        
+        <rect x="420" y="0" width="144" height="42" rx="10" fill="url(#grad-sky)" />
+        <text x="492" y="26" fill="#FFFFFF" class="font-sans" font-size="13" font-weight="700" text-anchor="middle">Reserve CATH</text>
+      </g>
+    </g>
+  </g>
+
+</svg>

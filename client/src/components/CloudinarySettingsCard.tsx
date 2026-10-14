@@ -7,12 +7,10 @@ export default function CloudinarySettingsCard({
   isLightMode = false,
   toast = () => {},
 }) {
-  const [cloudName, setCloudName] = useState(cloudinaryConfig.cloudName || 'jd-beach-house-cloud');
-  const [uploadPreset, setUploadPreset] = useState(cloudinaryConfig.uploadPreset || 'jd_beach_house_avatars');
-  const [apiKey, setApiKey] = useState(cloudinaryConfig.apiKey || '849201938501832');
-  const [imageUrl, setImageUrl] = useState(
-    cloudinaryConfig.imageUrl || 'https://res.cloudinary.com/demo/image/upload/v1614000000/sample.jpg'
-  );
+  const [cloudName, setCloudName] = useState(cloudinaryConfig.cloudName || '');
+  const [uploadPreset, setUploadPreset] = useState(cloudinaryConfig.uploadPreset || '');
+  const [apiKey, setApiKey] = useState(cloudinaryConfig.apiKey || '');
+  const [imageUrl, setImageUrl] = useState(cloudinaryConfig.imageUrl || '');
   const [testing, setTesting] = useState(false);
 
   const t = getThemePalette(isLightMode);
@@ -152,7 +150,7 @@ export default function CloudinarySettingsCard({
       <div style={{ display: 'flex', gap: 16, alignItems: 'center', background: isLightMode ? '#FFF' : '#0F172A', border: `1px solid ${themeBorder}`, borderRadius: 12, padding: 14 }}>
         <div style={{ position: 'relative' }}>
           <img
-            src={imageUrl || 'https://res.cloudinary.com/demo/image/upload/v1614000000/sample.jpg'}
+            src={imageUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
             alt="Cloudinary Avatar"
             onError={(e) => {
               e.target.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150';

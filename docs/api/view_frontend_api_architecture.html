@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Frontend API Architecture — J & D Beach House</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --card-border: #e2e8f0;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --accent-green: #059669;
+      --accent-purple: #7c3aed;
+      --accent-amber: #d97706;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border-subtle: #f1f5f9;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 30px 20px;
+      line-height: 1.5;
+    }
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 14px;
+      border-radius: 9999px;
+      background: #eff6ff;
+      color: var(--accent);
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      border: 1px solid #bfdbfe;
+    }
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    p.subtitle {
+      color: var(--text-muted);
+      font-size: 1rem;
+      max-width: 850px;
+      margin: 0 auto;
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin: 20px 0;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: var(--text);
+    }
+    .btn:hover {
+      border-color: #94a3b8;
+      background: #f1f5f9;
+      transform: translateY(-1px);
+    }
+    .btn.active {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+    }
+    .btn-drawio {
+      background: #ea580c;
+      color: #ffffff;
+      border-color: #ea580c;
+    }
+    .btn-drawio:hover {
+      background: #c2410c;
+      border-color: #c2410c;
+      color: #ffffff;
+    }
+    .viewer-container {
+      background: #ffffff;
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+      margin-bottom: 30px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .viewer-frame {
+      width: 100%;
+      max-height: 80vh;
+      overflow: auto;
+      border-radius: 8px;
+      background: #ffffff;
+      border: 1px solid #f1f5f9;
+      display: flex;
+      justify-content: center;
+      padding: 10px;
+    }
+    .viewer-frame img {
+      width: 100%;
+      max-width: 1700px;
+      height: auto;
+      display: block;
+      border-radius: 6px;
+    }
+    .zoom-controls {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      align-items: center;
+    }
+    .zoom-btn {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: var(--text);
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .zoom-btn:hover {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    /* Tabs for Layer Details */
+    .nav-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: var(--text-muted);
+      padding: 10px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+    }
+    .tab-btn:hover {
+      border-color: #94a3b8;
+      color: var(--text);
+      background: #f1f5f9;
+    }
+    .tab-btn.active {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.25s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .grid-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: #ffffff;
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 22px;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+    }
+    .card h3 {
+      font-size: 1.15rem;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text);
+    }
+    .card p {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+    .spec-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      margin-top: 10px;
+    }
+    .spec-table th, .spec-table td {
+      padding: 8px 10px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .spec-table th {
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .spec-table code {
+      background: #f1f5f9;
+      color: #0369a1;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.82rem;
+    }
+    .pill {
+      display: inline-block;
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .pill-cyan { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+    .pill-green { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+    .pill-purple { background: #faf5ff; color: #7e22ce; border: 1px solid #e9d5ff; }
+    .pill-amber { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      padding: 20px 0;
+      border-top: 1px solid #e2e8f0;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div class="badge">Enterprise Frontend Architecture</div>
+      <h1>Frontend API Architecture · J &amp; D Beach House</h1>
+      <p class="subtitle">5-Layer Reactive Communication Stack: Role Desks · Auth &amp; State · lib/api.ts Facade · Protocol Gateways · Ingress &amp; Security Boundary</p>
+    </header>
+
+    <div class="toolbar">
+      <button class="btn active" id="btnSvg" onclick="switchFormat('svg')">📐 Vector SVG (Infinite Zoom)</button>
+      <button class="btn" id="btnPng" onclick="switchFormat('png')">🖼️ High-Res PNG (4K UHD)</button>
+      <a class="btn btn-drawio" href="./frontend_api_architecture.drawio" download="frontend_api_architecture.drawio">
+        ✏️ Download .drawio File
+      </a>
+      <a class="btn" href="./frontend_api_architecture.xml" download="frontend_api_architecture.xml">
+        📄 Download Universal XML
+      </a>
+      <a class="btn" href="./frontend_api_architecture.svg" download="frontend_api_architecture.svg">
+        📥 Download SVG
+      </a>
+      <a class="btn" href="./frontend_api_architecture.png" download="frontend_api_architecture.png">
+        📥 Download PNG (4K)
+      </a>
+      <a class="btn" href="https://app.diagrams.net/" target="_blank" rel="noopener">
+        🌐 Open in Diagrams.net
+      </a>
+    </div>
+
+    <!-- Interactive Diagram Display Frame -->
+    <div class="viewer-container">
+      <div class="viewer-frame" id="viewerFrame">
+        <img id="diagramImg" src="./frontend_api_architecture.svg" alt="J & D Beach House Frontend API Architecture Diagram" />
+      </div>
+      <div class="zoom-controls">
+        <button class="zoom-btn" onclick="zoom(-15)">−</button>
+        <span id="zoomLevel" style="font-size: 13px; color: var(--text-muted); min-width: 50px; text-align: center;">100%</span>
+        <button class="zoom-btn" onclick="zoom(15)">+</button>
+        <button class="zoom-btn" onclick="resetZoom()" style="font-size: 12px; font-weight: normal; margin-left: 6px;">Reset</button>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs for Architectural Layer Details -->
+    <div class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('tab-layers')">🏛️ 5-Layer Stack Overview</button>
+      <button class="tab-btn" onclick="switchTab('tab-api-facade')">📦 lib/api.ts Module Breakdown</button>
+      <button class="tab-btn" onclick="switchTab('tab-failover')">🛡️ Intelligent Failover &amp; Mock Data</button>
+      <button class="tab-btn" onclick="switchTab('tab-protocols')">⚡ Multi-Protocol Transports</button>
+      <button class="tab-btn" onclick="switchTab('tab-handlers')">⚡ Handlers Architecture</button>
+    </div>
+
+    <!-- TAB 1: 5 LAYERS -->
+    <div id="tab-layers" class="tab-content active">
+      <div class="grid-cards">
+        <div class="card" style="border-top: 4px solid #2563eb;">
+          <h3><span class="pill pill-cyan">Layer 1</span> UI Presentation &amp; Role Desks</h3>
+          <p>Role-partitioned dashboards and modular interactive components.</p>
+          <table class="spec-table">
+            <tr><th>Component</th><th>Role Scope / Functionality</th></tr>
+            <tr><td><code>CustomerPortal</code></td><td>Guest booking, order placement, stay status</td></tr>
+            <tr><td><code>ReceptionDesk</code></td><td>Check-in/out, room keys, walk-in reservations</td></tr>
+            <tr><td><code>OperationsDesk</code></td><td>Housekeeping &amp; maintenance task queues</td></tr>
+            <tr><td><code>AccountingDesk</code></td><td>Revenue, ADR, RevPAR, cashier audits</td></tr>
+            <tr><td><code>AdminConsole</code></td><td>Full RBAC user manager, staff provisioning</td></tr>
+            <tr><td><code>ChatbotWidget</code></td><td>24/7 AI guest concierge &amp; dialog manager</td></tr>
+          </table>
+        </div>
+
+        <div class="card" style="border-top: 4px solid #0d9488;">
+          <h3><span class="pill pill-green">Layer 2</span> Client State &amp; Context Providers</h3>
+          <p>Reactive authentication, session persistence, and telemetry providers.</p>
+          <table class="spec-table">
+            <tr><th>Module</th><th>Purpose &amp; Mechanisms</th></tr>
+            <tr><td><code>AuthContext.tsx</code></td><td>JWT token lifecycle, login/logout, RBAC roles</td></tr>
+            <tr><td><code>TelemetryTracker</code></td><td>Real-time user heartbeat pings &amp; UI analytics</td></tr>
+            <tr><td><code>useAutoDraft</code></td><td>Debounced draft form persistence (LocalStorage)</td></tr>
+            <tr><td><code>Toasts.tsx</code></td><td>Global error/success notification dispatcher</td></tr>
+          </table>
+        </div>
+
+        <div class="card" style="border-top: 4px solid #0284c7;">
+          <h3><span class="pill pill-cyan">Layer 3</span> Central API Facade (lib/api.ts)</h3>
+          <p>Unified request dispatcher with Bearer JWT injection &amp; graceful degradation.</p>
+          <table class="spec-table">
+            <tr><th>Feature</th><th>Implementation Details</th></tr>
+            <tr><td><code>req(path, opts)</code></td><td>Native fetch wrapper, auto JSON serialize/parse</td></tr>
+            <tr><td><code>Auth Header</code></td><td><code>Authorization: Bearer &lt;token&gt;</code> automatically added</td></tr>
+            <tr><td><code>8 Domain Modules</code></td><td>me, rooms, reservations, customer, dept, analytics...</td></tr>
+            <tr><td><code>Mock Failover</code></td><td>Instant fallback to mock data on network errors</td></tr>
+          </table>
+        </div>
+
+        <div class="card" style="border-top: 4px solid #7c3aed;">
+          <h3><span class="pill pill-purple">Layer 4</span> Client Transport Gateways</h3>
+          <p>Tri-protocol network clients for REST, WebSockets, and BaaS realtime sync.</p>
+          <table class="spec-table">
+            <tr><th>Protocol</th><th>Library &amp; Usage</th></tr>
+            <tr><td><code>HTTP/REST</code></td><td>Native <code>window.fetch</code> for CRUD operations</td></tr>
+            <tr><td><code>Socket.io (ws://)</code></td><td><code>lib/socket.ts</code> for duplex AI chat &amp; live typing</td></tr>
+            <tr><td><code>Supabase Client</code></td><td><code>@supabase/supabase-js</code> for auth &amp; CDC channels</td></tr>
+          </table>
+        </div>
+
+        <div class="card" style="border-top: 4px solid #059669;">
+          <h3><span class="pill pill-green">Layer 5</span> Ingress &amp; Security Boundary</h3>
+          <p>Development proxy, Express application server, and security filters.</p>
+          <table class="spec-table">
+            <tr><th>Layer</th><th>Responsibility</th></tr>
+            <tr><td><code>Vite Reverse Proxy</code></td><td>Route <code>/api/*</code> to Express backend on port 5000</td></tr>
+            <tr><td><code>Security Middleware</code></td><td>NGWF L7 firewall, anti-XSS, JWT auth guard</td></tr>
+            <tr><td><code>Database Core</code></td><td>Supabase PostgreSQL 15+ (GiST mathematical guard)</td></tr>
+            <tr><td><code>Cloud Services</code></td><td>Twilio SMS Gateway, file storage buckets</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: API FACADE BREAKDOWN -->
+    <div id="tab-api-facade" class="tab-content">
+      <div class="grid-cards">
+        <div class="card">
+          <h3>👤 api.me &amp; Authentication</h3>
+          <table class="spec-table">
+            <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+            <tr><td><code>api.me()</code></td><td><code>GET /api/me</code></td><td>Fetch authenticated profile &amp; role</td></tr>
+            <tr><td><code>api.login(data)</code></td><td><code>POST /api/auth/login</code></td><td>Authenticate via email &amp; password</td></tr>
+            <tr><td><code>api.signup(data)</code></td><td><code>POST /api/auth/signup</code></td><td>Register new customer account</td></tr>
+          </table>
+        </div>
+
+        <div class="card">
+          <h3>🏨 api.rooms &amp; Catalog</h3>
+          <table class="spec-table">
+            <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+            <tr><td><code>api.rooms()</code></td><td><code>GET /api/rooms</code></td><td>List all room categories &amp; rates</td></tr>
+            <tr><td><code>api.availability()</code></td><td><code>POST /api/availability</code></td><td>Query live vacancies by date-range</td></tr>
+          </table>
+        </div>
+
+        <div class="card">
+          <h3>📅 api.reservations Engine</h3>
+          <table class="spec-table">
+            <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+            <tr><td><code>createReservation()</code></td><td><code>POST /api/reservations</code></td><td>Create stay with GiST guard</td></tr>
+            <tr><td><code>myReservations()</code></td><td><code>GET /api/my-reservations</code></td><td>Fetch guest booking history</td></tr>
+            <tr><td><code>setReservationStatus()</code></td><td><code>PATCH /api/reservations/:id</code></td><td>Check-in / Check-out status</td></tr>
+          </table>
+        </div>
+
+        <div class="card">
+          <h3>🛎️ api.customer Services</h3>
+          <table class="spec-table">
+            <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+            <tr><td><code>customerServices()</code></td><td><code>GET /api/services</code></td><td>Catalog of food, drinks &amp; tours</td></tr>
+            <tr><td><code>placeCustomerOrder()</code></td><td><code>POST /api/orders</code></td><td>Place in-room dining or tour request</td></tr>
+            <tr><td><code>digitalPass()</code></td><td><code>GET /api/digital-pass/:id</code></td><td>QR pass &amp; verification card</td></tr>
+          </table>
+        </div>
+
+        <div class="card">
+          <h3>📋 api.department Tasks</h3>
+          <table class="spec-table">
+            <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+            <tr><td><code>departmentTasks()</code></td><td><code>GET /api/tasks</code></td><td>Filtered housekeeping &amp; maint queue</td></tr>
+            <tr><td><code>createDepartmentTask()</code></td><td><code>POST /api/tasks</code></td><td>Dispatch cleaning or repair request</td></tr>
+            <tr><td><code>updateTaskStatus()</code></td><td><code>PATCH /api/tasks/:id</code></td><td>Pending ➔ In Progress ➔ Completed</td></tr>
+          </table>
+        </div>
+
+        <div class="card">
+          <h3>📈 api.analytics &amp; Telemetry</h3>
+          <table class="spec-table">
+            <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+            <tr><td><code>analyticsOverview()</code></td><td><code>GET /api/analytics/overview</code></td><td>Occupancy rate, ADR, RevPAR, revenue</td></tr>
+            <tr><td><code>telemetryStats()</code></td><td><code>GET /api/telemetry/stats</code></td><td>Active user heartbeats &amp; latency</td></tr>
+            <tr><td><code>telemetryPredictions()</code></td><td><code>GET /api/telemetry/predictions</code></td><td>7-day AI predictive forecasting</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: FAILOVER & MOCK DATA -->
+    <div id="tab-failover" class="tab-content">
+      <div class="card" style="margin-bottom: 20px;">
+        <h3>🛡️ Zero-Crash Offline Fallback Architecture</h3>
+        <p>When backend network connectivity is unavailable, the frontend API layer seamlessly degrades to cached memory datasets without throwing unhandled exceptions to UI views.</p>
+      </div>
+      <div class="grid-cards">
+        <div class="card">
+          <h3><code>FALLBACK_ROOMS</code></h3>
+          <p>8 pre-configured rooms covering Beachfront Villas, Luxury Suites, and Deluxe Cottages with base PHP pricing and amenities.</p>
+        </div>
+        <div class="card">
+          <h3><code>FALLBACK_ANALYTICS</code></h3>
+          <p>Synthetic resort metrics including 78% occupancy, weekly revenue curve, and historical department task breakdowns.</p>
+        </div>
+        <div class="card">
+          <h3><code>FALLBACK_SERVICES</code></h3>
+          <p>Full catalog of resort dining options, massage services, snorkeling gear, and island boat tour packages.</p>
+        </div>
+        <div class="card">
+          <h3><code>FALLBACK_ORDERS</code></h3>
+          <p>Representative in-room dining orders with delivery statuses (Preparing, Delivered, Billed).</p>
+        </div>
+        <div class="card">
+          <h3><code>FALLBACK_TASKS</code></h3>
+          <p>Housekeeping and maintenance task queue with department tagging and priority levels.</p>
+        </div>
+        <div class="card">
+          <h3><code>FALLBACK_USERS</code></h3>
+          <p>Mock role-based user profiles across customer, staff, receptionist, accounting, and admin roles.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: PROTOCOLS -->
+    <div id="tab-protocols" class="tab-content">
+      <div class="grid-cards">
+        <div class="card" style="border-left: 4px solid #2563eb;">
+          <h3>🌐 HTTP / REST (Fetch API)</h3>
+          <p>Used for synchronous, transactional queries and mutations.</p>
+          <ul style="padding-left: 20px; font-size: 0.88rem; color: var(--text-muted); line-height: 1.8;">
+            <li>Standardized JSON serialization and Content-Type negotiation.</li>
+            <li>Automatic injection of <code>Bearer &lt;JWT&gt;</code> token into every request.</li>
+            <li>Graceful HTTP 204 (No Content) resolution.</li>
+            <li>Network timeout handling and automatic fallback delegation.</li>
+          </ul>
+        </div>
+
+        <div class="card" style="border-left: 4px solid #7c3aed;">
+          <h3>⚡ WebSockets (Socket.io Client)</h3>
+          <p>Used for bi-directional, real-time AI guest chat and operator interactions.</p>
+          <ul style="padding-left: 20px; font-size: 0.88rem; color: var(--text-muted); line-height: 1.8;">
+            <li>Located in <code>client/src/lib/socket.ts</code>.</li>
+            <li>Full duplex ws:// transport with automatic HTTP long-polling fallback.</li>
+            <li>Handshake authentication pass-through (<code>auth: { token }</code>).</li>
+            <li>Events: <code>chat:message</code>, <code>bot:message</code>, <code>bot:typing</code>.</li>
+          </ul>
+        </div>
+
+        <div class="card" style="border-left: 4px solid #059669;">
+          <h3>🐘 Supabase BaaS Client</h3>
+          <p>Used for direct database integration and change-data-capture channels.</p>
+          <ul style="padding-left: 20px; font-size: 0.88rem; color: var(--text-muted); line-height: 1.8;">
+            <li>Located in <code>client/src/lib/supabaseClient.ts</code>.</li>
+            <li>Encapsulates anonymous/authenticated Supabase credentials.</li>
+            <li>Direct Auth session listening and token refreshes.</li>
+            <li>PostgreSQL CDC Realtime Broadcast subscriptions for live updates.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: HANDLERS ARCHITECTURE -->
+    <div id="tab-handlers" class="tab-content">
+      <div class="card" style="margin-bottom: 20px; border-left: 4px solid #f59e0b;">
+        <h3>⚡ Tri-Tier Handler Pipeline (UI Events ➔ Client Facade ➔ Express Routes)</h3>
+        <p>The system decouples user interactions, network protocol dispatch, error recovery, and backend business logic into three distinct handler tiers, guaranteeing zero-crash resilience and clean separation of concerns.</p>
+      </div>
+      <div class="grid-cards">
+        <div class="card" style="border-top: 4px solid #2563eb;">
+          <h3><span class="pill pill-cyan">Tier 1</span> UI Event Handlers (Presentation)</h3>
+          <p>Component-level asynchronous user action handlers that bind form submissions, button clicks, and realtime user input to the client API facade.</p>
+          <table class="spec-table">
+            <tr><th>Handler Function</th><th>Component / Trigger</th><th>Action &amp; Target</th></tr>
+            <tr><td><code>handleBookingSubmit(e)</code></td><td>CustomerPortal (Booking Form)</td><td>Validates date ranges, calls <code>api.createReservation()</code></td></tr>
+            <tr><td><code>handleCheckInOut(id, status)</code></td><td>ReceptionDesk (Room Table)</td><td>Dispatches check-in/out via <code>api.setReservationStatus()</code></td></tr>
+            <tr><td><code>handleTaskUpdate(id, status)</code></td><td>OperationsDesk (Task Queue)</td><td>Transitions task status via <code>api.updateTaskStatus()</code></td></tr>
+            <tr><td><code>handleChatSubmit(msg)</code></td><td>ChatbotWidget (Chat Input)</td><td>Emits <code>chat:message</code> via Socket.io handler</td></tr>
+            <tr><td><code>handleLoginSubmit(creds)</code></td><td>AuthModal / Login (Form)</td><td>Dispatches credentials to <code>AuthContext.login()</code></td></tr>
+            <tr><td><code>handleOrderSubmit(items)</code></td><td>CustomerPortal (Dining/Tours)</td><td>Submits room service cart via <code>api.placeCustomerOrder()</code></td></tr>
+          </table>
+        </div>
+
+        <div class="card" style="border-top: 4px solid #0284c7;">
+          <h3><span class="pill pill-cyan">Tier 2</span> Client Interceptor &amp; Error Handlers</h3>
+          <p>Centralized client middleware inside <code>lib/api.ts</code> managing HTTP request dispatching, authentication token injection, and offline fallback.</p>
+          <table class="spec-table">
+            <tr><th>Pipeline Handler</th><th>Scope / Pipeline Step</th><th>Resilience Mechanism</th></tr>
+            <tr><td><code>req(path, options)</code></td><td>Master Request Handler</td><td>Encapsulates native <code>fetch</code>, handles JSON parsing &amp; query params</td></tr>
+            <tr><td><code>bearerTokenHandler()</code></td><td>Authentication Injection</td><td>Retrieves JWT from LocalStorage, attaches <code>Authorization: Bearer</code></td></tr>
+            <tr><td><code>responseHandler(res)</code></td><td>HTTP Status Evaluation</td><td>Parses HTTP 200/201/204 payloads, raises typed <code>ApiError</code> on 4xx/5xx</td></tr>
+            <tr><td><code>mockFallbackHandler(err)</code></td><td>Intelligent Error Recovery</td><td>Catches connection refused / 500 errors, serves cached mock datasets</td></tr>
+            <tr><td><code>wsEventHandler(event)</code></td><td>Duplex Socket Interceptor</td><td>Manages reconnects, packet ack callbacks, and typing indicators</td></tr>
+          </table>
+        </div>
+
+        <div class="card" style="border-top: 4px solid #059669;">
+          <h3><span class="pill pill-green">Tier 3</span> Express Backend Route Handlers</h3>
+          <p>Controller methods and middleware on the Express server processing HTTP requests, executing database transactions, and returning standardized responses.</p>
+          <table class="spec-table">
+            <tr><th>Route Controller</th><th>Mounted Endpoint</th><th>Security &amp; Processing</th></tr>
+            <tr><td><code>authRouteHandler</code></td><td><code>/api/auth/*</code>, <code>/api/me</code></td><td>JWT token issuance, password bcrypt validation, profile retrieval</td></tr>
+            <tr><td><code>roomsRouteHandler</code></td><td><code>/api/rooms</code>, <code>/api/availability</code></td><td>Catalog retrieval, date-range GiST overlap queries</td></tr>
+            <tr><td><code>reservationsHandler</code></td><td><code>/api/reservations/*</code></td><td>ACID booking transactions, state change audits, SMS notifications</td></tr>
+            <tr><td><code>customerOrdersHandler</code></td><td><code>/api/orders</code>, <code>/api/services</code></td><td>Order validation, billing association, kitchen task dispatch</td></tr>
+            <tr><td><code>departmentTasksHandler</code></td><td><code>/api/tasks/*</code></td><td>Staff role verification, task lifecycle mutation, status broadcast</td></tr>
+            <tr><td><code>globalErrorHandler</code></td><td>Express Error Middleware</td><td>Standardized JSON error envelope (<code>{ error, message, statusCode }</code>)</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p>J &amp; D Beach House · Full Frontend API Architecture Documentation</p>
+      <p style="margin-top: 4px;">Universal Diagram Suite · Draw.io XML · Vector SVG · 4K PNG · Interactive HTML</p>
+    </footer>
+  </div>
+
+  <script>
+    let currentZoom = 100;
+
+    function switchFormat(fmt) {
+      const img = document.getElementById('diagramImg');
+      const btnSvg = document.getElementById('btnSvg');
+      const btnPng = document.getElementById('btnPng');
+
+      if (fmt === 'svg') {
+        img.src = './frontend_api_architecture.svg';
+        btnSvg.classList.add('active');
+        btnPng.classList.remove('active');
+      } else {
+        img.src = './frontend_api_architecture.png';
+        btnPng.classList.add('active');
+        btnSvg.classList.remove('active');
+      }
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(tabId));
+      if (activeBtn) activeBtn.classList.add('active');
+      const targetContent = document.getElementById(tabId);
+      if (targetContent) targetContent.classList.add('active');
+    }
+
+    function zoom(delta) {
+      currentZoom = Math.min(250, Math.max(50, currentZoom + delta));
+      const img = document.getElementById('diagramImg');
+      img.style.width = currentZoom + '%';
+      document.getElementById('zoomLevel').innerText = currentZoom + '%';
+    }
+
+    function resetZoom() {
+      currentZoom = 100;
+      const img = document.getElementById('diagramImg');
+      img.style.width = '100%';
+      document.getElementById('zoomLevel').innerText = '100%';
+    }
+  </script>
+</body>
+</html>

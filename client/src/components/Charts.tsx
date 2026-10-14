@@ -757,6 +757,9 @@ export function DualLineChart({ data = [], height = 170, isLightMode = false, on
   const themeText = isLightMode ? '#0F172A' : '#F8FAFC';
   const themeMuted = isLightMode ? '#64748B' : '#94A3B8';
   const themeBorder = isLightMode ? '#E2E8F0' : 'rgba(255, 255, 255, 0.12)';
+  const colorRoom = isLightMode ? '#2563EB' : '#38BDF8';
+  const colorDining = isLightMode ? '#E11D48' : '#F43F5E';
+  const colorCrosshair = isLightMode ? '#64748B' : '#818CF8';
 
   return (
     <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -806,20 +809,20 @@ export function DualLineChart({ data = [], height = 170, isLightMode = false, on
       <div style={{ display: 'flex', gap: 16, fontSize: '.74rem', fontWeight: 600 }}>
         <span
           onClick={() => setShowRoom(!showRoom)}
-          style={{ color: showRoom ? '#38BDF8' : themeMuted, cursor: 'pointer', opacity: showRoom ? 1 : 0.4, display: 'flex', alignItems: 'center', gap: 5, userSelect: 'none' }}
+          style={{ color: showRoom ? colorRoom : themeMuted, cursor: 'pointer', opacity: showRoom ? 1 : 0.4, display: 'flex', alignItems: 'center', gap: 6, userSelect: 'none' }}
           title="Toggle Room & Villa Sales curve"
         >
-          <span style={{ width: 10, height: 3, background: '#38BDF8', borderRadius: 2, display: 'inline-block' }} />
-          🩵 Room & Villa Sales
+          <span style={{ width: 10, height: 3, background: colorRoom, borderRadius: 2, display: 'inline-block' }} />
+          Room & Villa Sales
         </span>
 
         <span
           onClick={() => setShowDining(!showDining)}
-          style={{ color: showDining ? '#F43F5E' : themeMuted, cursor: 'pointer', opacity: showDining ? 1 : 0.4, display: 'flex', alignItems: 'center', gap: 5, userSelect: 'none' }}
+          style={{ color: showDining ? colorDining : themeMuted, cursor: 'pointer', opacity: showDining ? 1 : 0.4, display: 'flex', alignItems: 'center', gap: 6, userSelect: 'none' }}
           title="Toggle Kitchen & Dining Sales curve"
         >
-          <span style={{ width: 10, height: 3, background: '#F43F5E', borderRadius: 2, display: 'inline-block' }} />
-          🔴 Kitchen & Dining Sales
+          <span style={{ width: 10, height: 3, background: colorDining, borderRadius: 2, display: 'inline-block' }} />
+          Kitchen & Dining Sales
         </span>
       </div>
 
@@ -839,14 +842,14 @@ export function DualLineChart({ data = [], height = 170, isLightMode = false, on
               y1={height - 35 - ratio * (height - 55)}
               x2={w - 20}
               y2={height - 35 - ratio * (height - 55)}
-              stroke={isLightMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.05)'}
+              stroke={isLightMode ? 'rgba(15,23,42,0.06)' : 'rgba(255,255,255,0.05)'}
               strokeDasharray="4 4"
             />
           ))}
 
           {/* Lines */}
-          {showRoom && <path d={buildSpline(ptsA)} fill="none" stroke="#38BDF8" strokeWidth="2.8" strokeLinecap="round" />}
-          {showDining && <path d={buildSpline(ptsB)} fill="none" stroke="#F43F5E" strokeWidth="2.8" strokeLinecap="round" strokeDasharray="4 4" />}
+          {showRoom && <path d={buildSpline(ptsA)} fill="none" stroke={colorRoom} strokeWidth="2.8" strokeLinecap="round" />}
+          {showDining && <path d={buildSpline(ptsB)} fill="none" stroke={colorDining} strokeWidth="2.5" strokeLinecap="round" strokeDasharray="4 4" />}
 
           {/* Hover Crosshair */}
           {hoveredIdx !== null && ptsA[hoveredIdx] && (
@@ -855,7 +858,7 @@ export function DualLineChart({ data = [], height = 170, isLightMode = false, on
               y1={15}
               x2={ptsA[hoveredIdx].x}
               y2={height - 25}
-              stroke="#818CF8"
+              stroke={colorCrosshair}
               strokeWidth="1.5"
               strokeDasharray="3 3"
               style={{ pointerEvents: 'none' }}
@@ -872,8 +875,8 @@ export function DualLineChart({ data = [], height = 170, isLightMode = false, on
                 cx={p.x}
                 cy={p.y}
                 r={isSel ? 6.5 : isHover ? 5.5 : 3.5}
-                fill={isSel ? '#38BDF8' : '#0F172A'}
-                stroke="#38BDF8"
+                fill={isSel ? colorRoom : isLightMode ? '#FFFFFF' : '#0F172A'}
+                stroke={colorRoom}
                 strokeWidth={isSel ? 3 : 2}
                 style={{ cursor: 'pointer', transition: 'all 0.15s ease' }}
                 onMouseEnter={() => setHoveredIdx(i)}
@@ -892,8 +895,8 @@ export function DualLineChart({ data = [], height = 170, isLightMode = false, on
                 cx={p.x}
                 cy={p.y}
                 r={isSel ? 6.5 : isHover ? 5.5 : 3.5}
-                fill={isSel ? '#F43F5E' : '#0F172A'}
-                stroke="#F43F5E"
+                fill={isSel ? colorDining : isLightMode ? '#FFFFFF' : '#0F172A'}
+                stroke={colorDining}
                 strokeWidth={isSel ? 3 : 2}
                 style={{ cursor: 'pointer', transition: 'all 0.15s ease' }}
                 onMouseEnter={() => setHoveredIdx(i)}
@@ -918,21 +921,21 @@ export function DualLineChart({ data = [], height = 170, isLightMode = false, on
               left: `${(ptsA[hoveredIdx].x / w) * 100}%`,
               top: 0,
               transform: 'translateX(-50%)',
-              background: 'rgba(15, 23, 42, 0.95)',
-              border: '1px solid rgba(129, 140, 248, 0.4)',
+              background: '#0F172A',
+              border: '1px solid #334155',
               borderRadius: 8,
               padding: '6px 10px',
               color: '#FFF',
               fontSize: '.74rem',
-              boxShadow: '0 6px 16px rgba(0,0,0,0.4)',
+              boxShadow: '0 6px 16px rgba(0,0,0,0.3)',
               pointerEvents: 'none',
               zIndex: 20,
               whiteSpace: 'nowrap',
             }}
           >
-            <b style={{ color: '#818CF8', display: 'block', marginBottom: 2 }}>📅 {chartData[hoveredIdx].month} Sales</b>
-            {showRoom && <div style={{ color: '#38BDF8', fontWeight: 600 }}>🩵 Rooms: ₱{((chartData[hoveredIdx].lineA || 40) * 2200).toLocaleString()}</div>}
-            {showDining && <div style={{ color: '#F43F5E', fontWeight: 600 }}>🔴 Dining: ₱{((chartData[hoveredIdx].lineB || 30) * 1100).toLocaleString()}</div>}
+            <b style={{ color: '#93C5FD', display: 'block', marginBottom: 2 }}>📅 {chartData[hoveredIdx].month} Performance</b>
+            {showRoom && <div style={{ color: '#60A5FA', fontWeight: 600 }}>● Rooms: ₱{((chartData[hoveredIdx].lineA || 40) * 2200).toLocaleString()}</div>}
+            {showDining && <div style={{ color: '#FDA4AF', fontWeight: 600 }}>● Dining: ₱{((chartData[hoveredIdx].lineB || 30) * 1100).toLocaleString()}</div>}
             <div style={{ fontSize: '.68rem', color: '#94A3B8', marginTop: 2 }}>💡 Click point for full driver insight</div>
           </div>
         )}
@@ -943,18 +946,18 @@ export function DualLineChart({ data = [], height = 170, isLightMode = false, on
         <div style={{
           padding: 12, borderRadius: 12,
           background: isLightMode ? '#F8FAFC' : 'rgba(15,23,42,0.85)',
-          border: '1px solid rgba(129, 140, 248, 0.35)',
+          border: `1px solid ${themeBorder}`,
           transition: 'all 0.2s ease',
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <b style={{ fontSize: '.84rem', color: '#818CF8' }}>📊 {selectedPoint.month} Sales Analytical Meaning</b>
+            <b style={{ fontSize: '.84rem', color: isLightMode ? '#1E293B' : '#818CF8' }}>📊 {selectedPoint.month} Sales Analytical Breakdown</b>
             <button onClick={() => setSelectedPoint(null)} style={{ background: 'none', border: 'none', color: themeMuted, cursor: 'pointer', fontSize: '.74rem', fontWeight: 700 }}>✕ Close</button>
           </div>
 
           <div style={{ display: 'flex', gap: 14, fontSize: '.78rem', marginBottom: 6, flexWrap: 'wrap' }}>
-            <span>Rooms: <b style={{ color: '#38BDF8' }}>₱{selectedPoint.roomPhp.toLocaleString()}</b></span>
-            <span>Dining: <b style={{ color: '#F43F5E' }}>₱{selectedPoint.diningPhp.toLocaleString()}</b></span>
-            <span>Total: <b style={{ color: '#10B981' }}>₱{selectedPoint.totalPhp.toLocaleString()}</b></span>
+            <span>Rooms: <b style={{ color: colorRoom }}>₱{selectedPoint.roomPhp.toLocaleString()}</b></span>
+            <span>Dining: <b style={{ color: colorDining }}>₱{selectedPoint.diningPhp.toLocaleString()}</b></span>
+            <span>Total: <b style={{ color: '#059669' }}>₱{selectedPoint.totalPhp.toLocaleString()}</b></span>
           </div>
 
           <p style={{ margin: 0, fontSize: '.76rem', color: themeText, lineHeight: 1.4 }}>
@@ -964,18 +967,21 @@ export function DualLineChart({ data = [], height = 170, isLightMode = false, on
       )}
 
       {/* EVENLY FILLING BOTTOM SUMMARY GRID */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 4 }}>
-        <div style={{ background: isLightMode ? '#F1F5F9' : 'rgba(56,189,248,0.1)', padding: '8px 10px', borderRadius: 10, border: '1px solid rgba(56,189,248,0.25)' }}>
-          <span style={{ fontSize: '.66rem', color: '#38BDF8', fontWeight: 800, letterSpacing: '.06em' }}>ROOM SALES</span>
-          <b style={{ fontSize: '.95rem', color: '#38BDF8', display: 'block', marginTop: 1 }}>₱1.48M</b>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(85px, 1fr))', gap: 8, marginTop: 6, width: '100%' }}>
+        <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(37,99,235,0.08)', padding: '8px 10px', borderRadius: 10, border: `1px solid ${isLightMode ? '#E2E8F0' : 'rgba(37,99,235,0.2)'}`, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={{ fontSize: '.64rem', color: isLightMode ? '#475569' : '#38BDF8', fontWeight: 800, letterSpacing: '.06em', whiteSpace: 'nowrap' }}>ROOM SALES</span>
+          <b style={{ fontSize: '1rem', color: isLightMode ? '#0F172A' : '#38BDF8', lineHeight: 1.1 }}>₱1.48M</b>
+          <span style={{ fontSize: '.65rem', color: isLightMode ? '#2563EB' : '#38BDF8', fontWeight: 700, whiteSpace: 'nowrap' }}>● 68% share</span>
         </div>
-        <div style={{ background: isLightMode ? '#F1F5F9' : 'rgba(244,63,94,0.1)', padding: '8px 10px', borderRadius: 10, border: '1px solid rgba(244,63,94,0.25)' }}>
-          <span style={{ fontSize: '.66rem', color: '#F43F5E', fontWeight: 800, letterSpacing: '.06em' }}>F&B DINING</span>
-          <b style={{ fontSize: '.95rem', color: '#F43F5E', display: 'block', marginTop: 1 }}>₱425K</b>
+        <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(225,29,72,0.08)', padding: '8px 10px', borderRadius: 10, border: `1px solid ${isLightMode ? '#E2E8F0' : 'rgba(225,29,72,0.2)'}`, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={{ fontSize: '.64rem', color: isLightMode ? '#475569' : '#F43F5E', fontWeight: 800, letterSpacing: '.06em', whiteSpace: 'nowrap' }}>F&B DINING</span>
+          <b style={{ fontSize: '1rem', color: isLightMode ? '#0F172A' : '#F43F5E', lineHeight: 1.1 }}>₱425K</b>
+          <span style={{ fontSize: '.65rem', color: isLightMode ? '#E11D48' : '#F43F5E', fontWeight: 700, whiteSpace: 'nowrap' }}>● 32% share</span>
         </div>
-        <div style={{ background: isLightMode ? '#F1F5F9' : 'rgba(16,185,129,0.1)', padding: '8px 10px', borderRadius: 10, border: '1px solid rgba(16,185,129,0.25)' }}>
-          <span style={{ fontSize: '.66rem', color: '#10B981', fontWeight: 800, letterSpacing: '.06em' }}>TARGET VARIANCE</span>
-          <b style={{ fontSize: '.95rem', color: '#10B981', display: 'block', marginTop: 1 }}>+18.4%</b>
+        <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(16,185,129,0.08)', padding: '8px 10px', borderRadius: 10, border: `1px solid ${isLightMode ? '#E2E8F0' : 'rgba(16,185,129,0.2)'}`, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={{ fontSize: '.64rem', color: isLightMode ? '#475569' : '#10B981', fontWeight: 800, letterSpacing: '.06em', whiteSpace: 'nowrap' }}>TARGET VARIANCE</span>
+          <b style={{ fontSize: '1rem', color: isLightMode ? '#0F172A' : '#10B981', lineHeight: 1.1 }}>+18.4%</b>
+          <span style={{ fontSize: '.65rem', color: isLightMode ? '#059669' : '#10B981', fontWeight: 700, whiteSpace: 'nowrap' }}>▲ Exceeding goal</span>
         </div>
       </div>
     </div>
@@ -983,23 +989,24 @@ export function DualLineChart({ data = [], height = 170, isLightMode = false, on
 }
 
 // Referrer Category Bar Chart Component (Clean & Non-Overflowing for "Total Amount")
-export function ReferrerCategoryBarChart() {
+export function ReferrerCategoryBarChart({ isLightMode = true, totalAmount = 0 }) {
+  const tot = typeof totalAmount === 'number' && totalAmount >= 0 ? totalAmount : 0;
   const categories = [
-    { label: 'Direct Booking', pct: 45, amount: '₱110,610', color: '#0EA5E9' },
-    { label: 'Agoda & OTAs', pct: 28, amount: '₱68,824', color: '#10B981' },
-    { label: 'Booking.com', pct: 15, amount: '₱36,870', color: '#F43F5E' },
-    { label: 'Google Search', pct: 12, amount: '₱29,496', color: '#F59E0B' },
+    { label: 'Direct Booking', pct: 45, amount: `₱${Math.round(tot * 0.45).toLocaleString()}`, color: '#0EA5E9' },
+    { label: 'Agoda & OTAs', pct: 28, amount: `₱${Math.round(tot * 0.28).toLocaleString()}`, color: '#10B981' },
+    { label: 'Booking.com', pct: 15, amount: `₱${Math.round(tot * 0.15).toLocaleString()}`, color: '#F43F5E' },
+    { label: 'Google Search', pct: 12, amount: `₱${Math.round(tot * 0.12).toLocaleString()}`, color: '#F59E0B' },
   ];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 6 }}>
       {categories.map((cat, i) => (
-        <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.76rem', fontWeight: 600 }}>
+        <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.76rem', fontWeight: 600, color: isLightMode ? '#0F172A' : '#F8FAFC' }}>
             <span>{cat.label}</span>
-            <span style={{ color: cat.color }}>{cat.amount} ({cat.pct}%)</span>
+            <span style={{ color: cat.color, fontWeight: 700 }}>{cat.amount} ({cat.pct}%)</span>
           </div>
-          <div style={{ height: 8, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
+          <div style={{ height: 8, background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
             <div style={{ width: `${cat.pct}%`, height: '100%', background: cat.color, borderRadius: 4, transition: 'width 0.4s ease' }} />
           </div>
         </div>

@@ -1,0 +1,68 @@
+<mxfile host="Electron" modified="2026-09-22T06:31:40.044Z" agent="Mozilla/5.0" version="21.6.8" type="device">
+  <diagram id="SchemaCollectionArchitecture" name="J &amp; D Reserve Schema Architecture">
+    <mxGraphModel dx="1600" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="2200" background="#ffffff">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="TitleBox" value="&lt;b style=&quot;font-size: 20px;&quot;&gt;J &amp;amp; D Reserve · Schema Collection Architecture&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;PostgreSQL Relational Schema · Application DTOs · GraphQL Contracts · Redis State Namespaces&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="350" y="30" width="1000" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Tier 1: Validation Schema -->
+        <mxCell id="T1_Box" value="Tier 1: Validation Schema &amp;amp; DTO Collection (Joi &amp;amp; Zod Middleware)" style="swimlane;whiteSpace=wrap;html=1;startSize=26;fillColor=#f8fafc;strokeColor=#94a3b8;strokeWidth=1.5;fontStyle=1;fontSize=13;fontColor=#0f172a;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="60" y="110" width="1580" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="T1_Auth" value="&lt;b&gt;AuthValidationSchema (Joi)&lt;/b&gt;&lt;hr&gt;email: string().email().required()&lt;br&gt;password: string().min(8).required()&lt;br&gt;phone: string().pattern(/^\+63/)&lt;br&gt;role: enum('customer','staff'...)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#7c3aed;strokeWidth=1.6;align=left;spacingLeft=10;fontSize=11;" vertex="1" parent="T1_Box">
+          <mxGeometry x="30" y="45" width="360" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="T1_Res" value="&lt;b&gt;ReservationSchema (Joi)&lt;/b&gt;&lt;hr&gt;room_id: string().uuid().required()&lt;br&gt;check_in: date().iso().min('now')&lt;br&gt;check_out: date().greater(check_in)&lt;br&gt;guests: number().integer().min(1)&lt;br&gt;notes: string().max(500)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0284c7;strokeWidth=1.6;align=left;spacingLeft=10;fontSize=11;" vertex="1" parent="T1_Box">
+          <mxGeometry x="420" y="45" width="360" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="T1_Recovery" value="&lt;b&gt;AccountRecoverySchema (Joi)&lt;/b&gt;&lt;hr&gt;phone: string().e164().required()&lt;br&gt;otp_code: string().length(6)&lt;br&gt;new_password: string().min(8)&lt;br&gt;session_token: string().uuid()&lt;br&gt;channel: enum('sms','whatsapp')" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d97706;strokeWidth=1.6;align=left;spacingLeft=10;fontSize=11;" vertex="1" parent="T1_Box">
+          <mxGeometry x="810" y="45" width="360" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="T1_Ops" value="&lt;b&gt;DepartmentOperationsSchema&lt;/b&gt;&lt;hr&gt;department: enum(DeptName)&lt;br&gt;priority: enum(TaskPriority)&lt;br&gt;room_id: string().uuid().optional()&lt;br&gt;item_name: string().trim()&lt;br&gt;price_php: number().min(0)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#059669;strokeWidth=1.6;align=left;spacingLeft=10;fontSize=11;" vertex="1" parent="T1_Box">
+          <mxGeometry x="1200" y="45" width="350" height="180" as="geometry" />
+        </mxCell>
+
+        <!-- Tier 2: API Contract Schema -->
+        <mxCell id="T2_Box" value="Tier 2: API Contract Schema Collection (GraphQL SDL &amp;amp; REST Envelopes)" style="swimlane;whiteSpace=wrap;html=1;startSize=26;fillColor=#f8fafc;strokeColor=#94a3b8;strokeWidth=1.5;fontStyle=1;fontSize=13;fontColor=#0f172a;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="60" y="390" width="1580" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="T2_GqlRoom" value="&lt;b&gt;GraphQL Room Schema&lt;/b&gt;&lt;hr&gt;Query.rooms(category, min_rate): [Room!]!&lt;br&gt;Query.availableRooms(checkIn, checkOut): [Room!]!&lt;br&gt;Subscription.roomAvailabilityChanged" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#64748b;strokeWidth=1.2;align=left;spacingLeft=10;fontSize=11;" vertex="1" parent="T2_Box">
+          <mxGeometry x="30" y="40" width="480" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="T2_GqlRes" value="&lt;b&gt;GraphQL Reservation Schema&lt;/b&gt;&lt;hr&gt;Mutation.createReservation(input): Result!&lt;br&gt;Mutation.cancelReservation(id, reason): CancelResponse!&lt;br&gt;Subscription.reservationStatusUpdated(id)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#64748b;strokeWidth=1.2;align=left;spacingLeft=10;fontSize=11;" vertex="1" parent="T2_Box">
+          <mxGeometry x="540" y="40" width="500" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="T2_GqlAnalytics" value="&lt;b&gt;GraphQL &amp;amp; REST Contract Schemas&lt;/b&gt;&lt;hr&gt;Query.analyticsOverview: AnalyticsOverview!&lt;br&gt;REST Standard Envelope: { status, data, message, error }&lt;br&gt;RFC 6585 Headers: X-RateLimit-Limit, Remaining, Reset" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#64748b;strokeWidth=1.2;align=left;spacingLeft=10;fontSize=11;" vertex="1" parent="T2_Box">
+          <mxGeometry x="1070" y="40" width="480" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- Tier 3: PostgreSQL Database Schema -->
+        <mxCell id="T3_Box" value="Tier 3: Relational Database Schema Collection (Supabase PostgreSQL 15+)" style="swimlane;whiteSpace=wrap;html=1;startSize=26;fillColor=#f8fafc;strokeColor=#94a3b8;strokeWidth=1.5;fontStyle=1;fontSize=13;fontColor=#0f172a;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="60" y="590" width="1580" height="1020" as="geometry" />
+        </mxCell>
+        <mxCell id="T3_Profiles" value="&lt;b&gt;profiles&lt;/b&gt;&lt;hr&gt;PK id: uuid (auth.users)&lt;br&gt;first_name: text&lt;br&gt;last_name: text&lt;br&gt;phone: text&lt;br&gt;role: user_role&lt;br&gt;created_at: timestamptz" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0284c7;strokeWidth=1.6;align=left;spacingLeft=10;fontSize=11;" vertex="1" parent="T3_Box">
+          <mxGeometry x="30" y="50" width="360" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="T3_Rooms" value="&lt;b&gt;rooms&lt;/b&gt;&lt;hr&gt;PK id: uuid&lt;br&gt;name: text&lt;br&gt;slug: text UNIQUE&lt;br&gt;category: text&lt;br&gt;capacity: int&lt;br&gt;units: int&lt;br&gt;rate_php: int&lt;br&gt;rating_avg: numeric(3,2)&lt;br&gt;is_active: boolean" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0284c7;strokeWidth=1.6;align=left;spacingLeft=10;fontSize=11;" vertex="1" parent="T3_Box">
+          <mxGeometry x="610" y="50" width="370" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="T3_Reservations" value="&lt;b&gt;reservations&lt;/b&gt;&lt;hr&gt;PK id: uuid&lt;br&gt;FK guest_id: uuid -&amp;gt; profiles(id)&lt;br&gt;FK room_id: uuid -&amp;gt; rooms(id)&lt;br&gt;check_in: date&lt;br&gt;check_out: date&lt;br&gt;nights: int STORED&lt;br&gt;guests: int&lt;br&gt;status: stay_status&lt;br&gt;total_php: int&lt;br&gt;&lt;b style=&quot;color:#dc2626;&quot;&gt;🛡️ GiST CONSTRAINT no_overbooking&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0284c7;strokeWidth=2;align=left;spacingLeft=10;fontSize=11;" vertex="1" parent="T3_Box">
+          <mxGeometry x="300" y="360" width="440" height="280" as="geometry" />
+        </mxCell>
+
+        <!-- Connections -->
+        <mxCell id="Edge_Prof_Res" value="1:N Stays" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#0284c7;strokeWidth=1.5;fontColor=#0f172a;fontSize=10;" edge="1" parent="T3_Box" source="T3_Profiles" target="T3_Reservations">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Edge_Rooms_Res" value="1:N Bookings" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#0284c7;strokeWidth=1.5;fontColor=#0f172a;fontSize=10;" edge="1" parent="T3_Box" source="T3_Rooms" target="T3_Reservations">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

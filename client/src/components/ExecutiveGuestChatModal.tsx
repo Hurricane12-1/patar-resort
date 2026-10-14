@@ -2,9 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import { toast } from './Toasts.tsx';
 import { DefaultUserAvatar } from './AdminIcons.tsx';
 import { getThemePalette, getModalStyles } from '../styles/modules/index.ts';
+import { animateTypewriterPrompt } from '../lib/wordPrompt.ts';
+import { useAuth } from '../context/AuthContext.tsx';
 
 export function ExecutiveGuestChatModal({ guest, onClose, isLightMode }) {
   if (!guest) return null;
+
+  const { profile } = useAuth();
+  const adminDisplayName = profile?.full_name ? `${profile.full_name} (Executive Staff)` : 'Resort Staff';
 
   const [messages, setMessages] = useState(guest.messages || guest.initialMessages || []);
   const [inputText, setInputText] = useState('');
@@ -29,7 +34,7 @@ export function ExecutiveGuestChatModal({ guest, onClose, isLightMode }) {
     const newMsg = {
       id: Date.now(),
       sender: 'admin',
-      senderName: 'Johannes (Executive Admin)',
+      senderName: adminDisplayName,
       text: content,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
@@ -40,12 +45,16 @@ export function ExecutiveGuestChatModal({ guest, onClose, isLightMode }) {
   };
 
   const handleCannedReply = (quickText) => {
-    handleSendMessage(quickText);
+    // Type prompt smoothly into the input field so admin can review, customize, or send
+    animateTypewriterPrompt(quickText, (slice) => setInputText(slice), () => {
+      toast(`✍️ Prompt typed into composer: "${quickText.slice(0, 30)}…"`);
+    });
   };
 
   const handleResolve = () => {
     setIsResolved(true);
-    toast(`✔️ Ticket #${guest.id || '1042'} resolved & CSAT 100% recorded!`);
+    const ticketRef = guest.id ? `#${guest.id.slice(0, 6)}` : 'Inquiry';
+    toast(`✔️ ${ticketRef} marked as resolved!`);
   };
 
   const t = getThemePalette(isLightMode);

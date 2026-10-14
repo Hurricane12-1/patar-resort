@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1440" height="1520" viewBox="0 0 1440 1520" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>01 - Guest Landing Page (TEV, CAT, GEL, CATH)</title>
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Playfair+Display:ital,wght@0,600;0,700;1,600&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap');
+      .font-sans { font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+      .font-serif { font-family: 'Playfair Display', Georgia, serif; }
+      .font-mono { font-family: 'JetBrains Mono', Consolas, monospace; }
+    </style>
+    <linearGradient id="grad-sky" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284C7" />
+      <stop offset="100%" stop-color="#0EA5E9" />
+    </linearGradient>
+    <linearGradient id="grad-dark" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+    <linearGradient id="grad-card" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E293B" />
+      <stop offset="100%" stop-color="#0F172A" />
+    </linearGradient>
+    <filter id="shadow-soft" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.3" />
+    </filter>
+    <filter id="shadow-modal" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="24" stdDeviation="32" flood-color="#000000" flood-opacity="0.6" />
+    </filter>
+  </defs>
+  
+  <rect width="1440" height="1520" fill="#0A0F1D" />
+
+  <!-- TOP NAVBAR -->
+  <g transform="translate(0, 0)">
+    <rect width="1440" height="74" fill="#0A0F1D" fill-opacity="0.95" />
+    <line x1="0" y1="74" x2="1440" y2="74" stroke="#1E293B" stroke-width="1" />
+    
+    <g transform="translate(80, 20)">
+      <circle cx="17" cy="17" r="17" fill="url(#grad-sky)" />
+      <text x="17" y="23" fill="#FFFFFF" class="font-sans" font-size="16" font-weight="800" text-anchor="middle">J</text>
+      <text x="46" y="24" fill="#F8FAFC" class="font-sans" font-size="17" font-weight="800" letter-spacing="-0.5">J &amp; D RESERVE</text>
+      <text x="182" y="24" fill="#38BDF8" class="font-mono" font-size="11" font-weight="700">· PATAR BEACH</text>
+    </g>
+
+    <g transform="translate(560, 28)">
+      <text x="0" y="16" fill="#38BDF8" class="font-sans" font-size="14" font-weight="600">Home</text>
+      <text x="75" y="16" fill="#94A3B8" class="font-sans" font-size="14" font-weight="500">Accommodations</text>
+      <text x="215" y="16" fill="#94A3B8" class="font-sans" font-size="14" font-weight="500">Dining</text>
+      <text x="295" y="16" fill="#94A3B8" class="font-sans" font-size="14" font-weight="500">Resort Map</text>
+      <text x="405" y="16" fill="#94A3B8" class="font-sans" font-size="14" font-weight="500">Experiences</text>
+    </g>
+
+    <g transform="translate(1080, 18)">
+      <rect width="130" height="38" rx="8" fill="#1E293B" stroke="#334155" stroke-width="1" />
+      <circle cx="16" cy="19" r="4" fill="#10B981" />
+      <text x="28" y="24" fill="#E2E8F0" class="font-mono" font-size="11">11:45 AM PST</text>
+
+      <rect x="146" width="134" height="38" rx="8" fill="url(#grad-sky)" />
+      <text x="213" y="24" fill="#FFFFFF" class="font-sans" font-size="13" font-weight="700" text-anchor="middle">Sign In / Register</text>
+    </g>
+  </g>
+
+  <!-- HERO SECTION -->
+  <g transform="translate(80, 110)">
+    <rect width="1280" height="480" rx="24" fill="url(#grad-dark)" stroke="#1E293B" stroke-width="1.5" />
+    <circle cx="980" cy="240" r="220" fill="#0284C7" fill-opacity="0.12" filter="blur(60px)" />
+    <circle cx="1140" cy="180" r="140" fill="#F59E0B" fill-opacity="0.08" filter="blur(40px)" />
+
+    <!-- Scene Switcher Overlay -->
+    <g transform="translate(48, 48)">
+      <rect width="420" height="36" rx="8" fill="#090D16" fill-opacity="0.8" stroke="#334155" stroke-width="1" />
+      <text x="20" y="23" fill="#38BDF8" class="font-mono" font-size="11" font-weight="700">01 · SUNSET CAPE</text>
+      <text x="140" y="23" fill="#64748B" class="font-mono" font-size="11">02 · SEA BALCONY</text>
+      <text x="270" y="23" fill="#64748B" class="font-mono" font-size="11">03 · NIPA COVE</text>
+    </g>
+
+    <!-- Headline & Body -->
+    <g transform="translate(48, 125)">
+      <text x="0" y="32" fill="#38BDF8" class="font-sans" font-size="13" font-weight="700" letter-spacing="2">BOLINAO, PANGASINAN · WHITE SAND HIDEAWAY</text>
+      <text x="0" y="90" fill="#FFFFFF" class="font-serif" font-size="52" font-weight="700">Where sunrise paints</text>
+      <text x="0" y="150" fill="#38BDF8" class="font-serif" font-size="52" font-weight="700" font-style="italic">the pristine cape.</text>
+      <text x="0" y="200" fill="#94A3B8" class="font-sans" font-size="16" font-weight="400">Experience raw coastal serenity just minutes away from Cape Bolinao Lighthouse</text>
+      <text x="0" y="226" fill="#94A3B8" class="font-sans" font-size="16" font-weight="400">and Patar's iconic golden-sand reef.</text>
+    </g>
+
+    <!-- Ocean Sound Synthesizer CTA -->
+    <g transform="translate(48, 400)">
+      <rect width="190" height="42" rx="10" fill="#1E293B" stroke="#0284C7" stroke-width="1.2" />
+      <text x="20" y="26" fill="#38BDF8" class="font-sans" font-size="13" font-weight="700">🌊 Ocean Sound: Active</text>
+    </g>
+
+    <!-- HERO SEARCH BAR DOCK (Floating) -->
+    <g transform="translate(300, 375)" filter="url(#shadow-soft)">
+      <rect width="932" height="74" rx="16" fill="#0F172A" stroke="#334155" stroke-width="1.5" />
+      
+      <g transform="translate(24, 18)">
+        <text x="0" y="12" fill="#94A3B8" class="font-sans" font-size="10" font-weight="700" letter-spacing="1">CHECK-IN</text>
+        <text x="0" y="32" fill="#F8FAFC" class="font-sans" font-size="14" font-weight="600">Oct 12, 2026</text>
+      </g>
+      <line x1="210" y1="16" x2="210" y2="58" stroke="#1E293B" stroke-width="1" />
+
+      <g transform="translate(230, 18)">
+        <text x="0" y="12" fill="#94A3B8" class="font-sans" font-size="10" font-weight="700" letter-spacing="1">CHECK-OUT</text>
+        <text x="0" y="32" fill="#F8FAFC" class="font-sans" font-size="14" font-weight="600">Oct 14, 2026</text>
+      </g>
+      <line x1="420" y1="16" x2="420" y2="58" stroke="#1E293B" stroke-width="1" />
+
+      <g transform="translate(440, 18)">
+        <text x="0" y="12" fill="#94A3B8" class="font-sans" font-size="10" font-weight="700" letter-spacing="1">GUESTS</text>
+        <text x="0" y="32" fill="#F8FAFC" class="font-sans" font-size="14" font-weight="600">4 Guests</text>
+      </g>
+      <line x1="630" y1="16" x2="630" y2="58" stroke="#1E293B" stroke-width="1" />
+
+      <g transform="translate(650, 18)">
+        <text x="0" y="12" fill="#94A3B8" class="font-sans" font-size="10" font-weight="700" letter-spacing="1">UNIT ROSTER</text>
+        <text x="0" y="32" fill="#F8FAFC" class="font-sans" font-size="14" font-weight="600">Unit TEV / CAT / GEL / CATH</text>
+      </g>
+
+      <g transform="translate(790, 14)">
+        <rect width="124" height="46" rx="10" fill="url(#grad-sky)" />
+        <text x="62" y="28" fill="#FFFFFF" class="font-sans" font-size="13" font-weight="700" text-anchor="middle">Search Units</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- STATS ROW -->
+  <g transform="translate(80, 630)">
+    <rect width="1280" height="96" rx="16" fill="#0F172A" stroke="#1E293B" stroke-width="1" />
+    
+    <g transform="translate(60, 28)">
+      <text x="0" y="28" fill="#F8FAFC" class="font-sans" font-size="28" font-weight="800">4.9 ★</text>
+      <text x="0" y="48" fill="#94A3B8" class="font-sans" font-size="12">Average Guest Rating (280+ Verified Reviews)</text>
+    </g>
+    <line x1="360" y1="20" x2="360" y2="76" stroke="#1E293B" stroke-width="1" />
+
+    <g transform="translate(420, 28)">
+      <text x="0" y="28" fill="#F8FAFC" class="font-sans" font-size="28" font-weight="800">100%</text>
+      <text x="0" y="48" fill="#94A3B8" class="font-sans" font-size="12">Direct Beachfront Access to Patar White Sand</text>
+    </g>
+    <line x1="720" y1="20" x2="720" y2="76" stroke="#1E293B" stroke-width="1" />
+
+    <g transform="translate(780, 28)">
+      <text x="0" y="28" fill="#F8FAFC" class="font-sans" font-size="28" font-weight="800">4 Units</text>
+      <text x="0" y="48" fill="#94A3B8" class="font-sans" font-size="12">Private Accommodations: TEV, CAT, GEL, CATH</text>
+    </g>
+    <line x1="1020" y1="20" x2="1020" y2="76" stroke="#1E293B" stroke-width="1" />
+
+    <g transform="translate(1080, 28)">
+      <text x="0" y="28" fill="#38BDF8" class="font-sans" font-size="28" font-weight="800">24/7</text>
+      <text x="0" y="48" fill="#94A3B8" class="font-sans" font-size="12">Smart AI Concierge &amp; Reception Desk</text>
+    </g>
+  </g>
+
+  <!-- FEATURED ACCOMMODATIONS (EXACT CANONICAL ROSTER: TEV, CAT, GEL, CATH) -->
+  <g transform="translate(80, 770)">
+    <text x="0" y="24" fill="#38BDF8" class="font-sans" font-size="12" font-weight="700" letter-spacing="2">AUTHENTIC RESORT ROSTER</text>
+    <text x="0" y="56" fill="#F8FAFC" class="font-serif" font-size="32" font-weight="700">Official Project Accommodations</text>
+
+    <!-- Card 1: Unit TEV -->
+    <g transform="translate(0, 80)">
+      <rect width="300" height="440" rx="16" fill="#0F172A" stroke="#0284C7" stroke-width="1.5" />
+      <rect width="300" height="190" rx="16" fill="#1E293B" />
+      <path d="M 0 0 L 300 190 M 300 0 L 0 190" stroke="#334155" stroke-width="0.75" />
+      <rect x="16" y="16" width="70" height="24" rx="5" fill="#0284C7" />
+      <text x="51" y="32" fill="#FFFFFF" class="font-sans" font-size="11" font-weight="700" text-anchor="middle">TEV</text>
+
+      <g transform="translate(20, 214)">
+        <text x="0" y="20" fill="#F8FAFC" class="font-sans" font-size="18" font-weight="700">Unit TEV Grand Villa</text>
+        <text x="0" y="42" fill="#94A3B8" class="font-sans" font-size="12">Beachfront grand villa with expansive ocean views and private veranda.</text>
+        <text x="0" y="74" fill="#38BDF8" class="font-sans" font-size="11" font-weight="600">Capacity: Up to 60 Guests</text>
+
+        <g transform="translate(0, 110)">
+          <text x="0" y="24" fill="#F8FAFC" class="font-sans" font-size="22" font-weight="800">₱18,000</text>
+          <text x="96" y="24" fill="#64748B" class="font-sans" font-size="12">/night</text>
+          <rect y="38" width="260" height="38" rx="8" fill="url(#grad-sky)" />
+          <text x="130" y="62" fill="#FFFFFF" class="font-sans" font-size="12" font-weight="700" text-anchor="middle">Reserve Unit TEV</text>
+        </g>
+      </g>
+    </g>
+
+    <!-- Card 2: Unit CAT -->
+    <g transform="translate(326, 80)">
+      <rect width="300" height="440" rx="16" fill="#0F172A" stroke="#F59E0B" stroke-width="1.5" />
+      <rect width="300" height="190" rx="16" fill="#1E293B" />
+      <path d="M 0 0 L 300 190 M 300 0 L 0 190" stroke="#334155" stroke-width="0.75" />
+      <rect x="16" y="16" width="70" height="24" rx="5" fill="#F59E0B" />
+      <text x="51" y="32" fill="#FFFFFF" class="font-sans" font-size="11" font-weight="700" text-anchor="middle">CAT</text>
+
+      <g transform="translate(20, 214)">
+        <text x="0" y="20" fill="#F8FAFC" class="font-sans" font-size="18" font-weight="700">Unit CAT Cottage</text>
+        <text x="0" y="42" fill="#94A3B8" class="font-sans" font-size="12">Authentic beach cottage (Unit Papang) with cool sea breeze flow.</text>
+        <text x="0" y="74" fill="#FBBF24" class="font-sans" font-size="11" font-weight="600">Capacity: Up to 10 Guests</text>
+
+        <g transform="translate(0, 110)">
+          <text x="0" y="24" fill="#F8FAFC" class="font-sans" font-size="22" font-weight="800">₱6,000</text>
+          <text x="80" y="24" fill="#64748B" class="font-sans" font-size="12">/night</text>
+          <rect y="38" width="260" height="38" rx="8" fill="url(#grad-sky)" />
+          <text x="130" y="62" fill="#FFFFFF" class="font-sans" font-size="12" font-weight="700" text-anchor="middle">Reserve Unit CAT</text>
+        </g>
+      </g>
+    </g>
+
+    <!-- Card 3: Unit GEL -->
+    <g transform="translate(652, 80)">
+      <rect width="300" height="440" rx="16" fill="#0F172A" stroke="#10B981" stroke-width="1.5" />
+      <rect width="300" height="190" rx="16" fill="#1E293B" />
+      <path d="M 0 0 L 300 190 M 300 0 L 0 190" stroke="#334155" stroke-width="0.75" />
+      <rect x="16" y="16" width="70" height="24" rx="5" fill="#10B981" />
+      <text x="51" y="32" fill="#FFFFFF" class="font-sans" font-size="11" font-weight="700" text-anchor="middle">GEL</text>
+
+      <g transform="translate(20, 214)">
+        <text x="0" y="20" fill="#F8FAFC" class="font-sans" font-size="18" font-weight="700">Unit GEL Premier</text>
+        <text x="0" y="42" fill="#94A3B8" class="font-sans" font-size="12">Modern premier suite with connected family lounge and kitchen facilities.</text>
+        <text x="0" y="74" fill="#34D399" class="font-sans" font-size="11" font-weight="600">Capacity: Up to 25 Guests</text>
+
+        <g transform="translate(0, 110)">
+          <text x="0" y="24" fill="#F8FAFC" class="font-sans" font-size="22" font-weight="800">₱12,000</text>
+          <text x="96" y="24" fill="#64748B" class="font-sans" font-size="12">/night</text>
+          <rect y="38" width="260" height="38" rx="8" fill="url(#grad-sky)" />
+          <text x="130" y="62" fill="#FFFFFF" class="font-sans" font-size="12" font-weight="700" text-anchor="middle">Reserve Unit GEL</text>
+        </g>
+      </g>
+    </g>
+
+    <!-- Card 4: Unit CATH -->
+    <g transform="translate(978, 80)">
+      <rect width="300" height="440" rx="16" fill="#0F172A" stroke="#A855F7" stroke-width="1.5" />
+      <rect width="300" height="190" rx="16" fill="#1E293B" />
+      <path d="M 0 0 L 300 190 M 300 0 L 0 190" stroke="#334155" stroke-width="0.75" />
+      <rect x="16" y="16" width="70" height="24" rx="5" fill="#A855F7" />
+      <text x="51" y="32" fill="#FFFFFF" class="font-sans" font-size="11" font-weight="700" text-anchor="middle">CATH</text>
+
+      <g transform="translate(20, 214)">
+        <text x="0" y="20" fill="#F8FAFC" class="font-sans" font-size="18" font-weight="700">Unit CATH Veranda</text>
+        <text x="0" y="42" fill="#94A3B8" class="font-sans" font-size="12">Panoramic sunset veranda villa tailored for family gatherings.</text>
+        <text x="0" y="74" fill="#C084FC" class="font-sans" font-size="11" font-weight="600">Capacity: Up to 15 Guests</text>
+
+        <g transform="translate(0, 110)">
+          <text x="0" y="24" fill="#F8FAFC" class="font-sans" font-size="22" font-weight="800">₱8,500</text>
+          <text x="88" y="24" fill="#64748B" class="font-sans" font-size="12">/night</text>
+          <rect y="38" width="260" height="38" rx="8" fill="url(#grad-sky)" />
+          <text x="130" y="62" fill="#FFFFFF" class="font-sans" font-size="12" font-weight="700" text-anchor="middle">Reserve Unit CATH</text>
+        </g>
+      </g>
+    </g>
+  </g>
+
+  <!-- RESORT MAP & EXPERIENCES STRIP -->
+  <g transform="translate(80, 1330)">
+    <rect width="1280" height="130" rx="16" fill="#0F172A" stroke="#1E293B" stroke-width="1.5" />
+    <g transform="translate(36, 32)">
+      <text x="0" y="22" fill="#F8FAFC" class="font-sans" font-size="18" font-weight="700">Explore Bolinao &amp; Patar Wonders</text>
+      <text x="0" y="44" fill="#94A3B8" class="font-sans" font-size="13">Convenient proximity to Bolinao's most famous natural destinations</text>
+    </g>
+    <g transform="translate(480, 36)">
+      <rect width="180" height="54" rx="10" fill="#1E293B" />
+      <text x="16" y="24" fill="#F8FAFC" class="font-sans" font-size="12" font-weight="700">Cape Bolinao Light</text>
+      <text x="16" y="42" fill="#38BDF8" class="font-mono" font-size="11">⏱️ 10 min away</text>
+
+      <rect x="196" width="180" height="54" rx="10" fill="#1E293B" />
+      <text x="212" y="24" fill="#F8FAFC" class="font-sans" font-size="12" font-weight="700">Bolinao Falls</text>
+      <text x="212" y="42" fill="#38BDF8" class="font-mono" font-size="11">⏱️ 15 min away</text>
+
+      <rect x="392" width="180" height="54" rx="10" fill="#1E293B" />
+      <text x="408" y="24" fill="#F8FAFC" class="font-sans" font-size="12" font-weight="700">Enchanted Cave</text>
+      <text x="408" y="42" fill="#38BDF8" class="font-mono" font-size="11">⏱️ 20 min away</text>
+
+      <rect x="588" width="180" height="54" rx="10" fill="#1E293B" />
+      <text x="604" y="24" fill="#F8FAFC" class="font-sans" font-size="12" font-weight="700">Island Hopping</text>
+      <text x="604" y="42" fill="#38BDF8" class="font-mono" font-size="11">⏱️ 25 min away</text>
+    </g>
+  </g>
+
+</svg>

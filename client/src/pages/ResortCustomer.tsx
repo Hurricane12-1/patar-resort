@@ -6,6 +6,16 @@ import { money, fmtDate, fmtTime } from '../lib/format.ts';
 import { toast } from '../components/Toasts.tsx';
 import { useReveal } from '../hooks/useReveal.ts';
 import { useAutoDraft } from '../hooks/useAutoDraft.ts';
+import { dispatchWordPrompt } from '../lib/wordPrompt.ts';
+
+function to11Digits(val: string): string {
+  if (!val) return '';
+  let digits = val.replace(/\D/g, '');
+  if (digits.startsWith('63') && digits.length >= 12) {
+    digits = '0' + digits.slice(2);
+  }
+  return digits.slice(0, 11);
+}
 
 export default function ResortCustomer() {
   const { session, profile, setAuthOpen, updateProfile } = useAuth();
@@ -29,14 +39,14 @@ export default function ResortCustomer() {
   useEffect(() => {
     if (profile) {
       setProfForm({
-        first_name: profile.first_name || '',
-        middle_name: profile.middle_name || '',
-        last_name: profile.last_name || '',
+        first_name: (profile.first_name || '').replace(/[^a-zA-Z\s\-]/g, ''),
+        middle_name: (profile.middle_name || '').replace(/[^a-zA-Z\s\-]/g, ''),
+        last_name: (profile.last_name || '').replace(/[^a-zA-Z\s\-]/g, ''),
         full_name: profile.full_name || '',
-        phone: profile.phone || '',
+        phone: to11Digits(profile.phone || ''),
         address: profile.address || '',
-        city: profile.city || '',
-        emergency_contact: profile.emergency_contact || '',
+        city: (profile.city || '').replace(/[^a-zA-Z\s\-]/g, ''),
+        emergency_contact: to11Digits(profile.emergency_contact || ''),
       });
     }
   }, [profile]);
@@ -88,6 +98,14 @@ export default function ResortCustomer() {
 
   async function saveProfileDetails(e) {
     e.preventDefault();
+    if (profForm.phone && profForm.phone.length !== 11) {
+      toast('Mobile phone must be strictly an 11-digit number (e.g. 09XXXXXXXXX).', true);
+      return;
+    }
+    if (profForm.emergency_contact && profForm.emergency_contact.length !== 11) {
+      toast('Emergency contact must be strictly an 11-digit number (e.g. 09XXXXXXXXX).', true);
+      return;
+    }
     setSavingProf(true);
     try {
       const full_name = [profForm.first_name, profForm.middle_name, profForm.last_name].filter(Boolean).join(' ') || profForm.full_name;
@@ -121,7 +139,10 @@ export default function ResortCustomer() {
               Guest <em style={{ fontStyle: 'italic' }}>Profile & Experience Hub</em>
             </h2>
           </div>
-          <button className="btn btn-ghost btn-sm" onClick={() => window.dispatchEvent(new Event('app:open-chat'))}>
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={() => dispatchWordPrompt('Guest Concierge', { template: 'Hello J & D Bot, what room services, dining, and tours can I book today?' })}
+          >
             Ask J & D Bot 💬
           </button>
         </div>
@@ -163,39 +184,70 @@ export default function ResortCustomer() {
               <h3 className="serif" style={{ fontSize: '1.5rem', marginBottom: 6 }}>Guest Profile Details</h3>
               <p className="muted small" style={{ marginBottom: 20 }}>Update your contact & address details for guest check-in & SMS pings.</p>
               <form onSubmit={saveProfileDetails}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: 12 }}>
                   <div className="field">
-                    <label>FIRST NAME</label>
-                    <input required value={profForm.first_name} placeholder="Johannes" onChange={(e) => setProfForm({ ...profForm, first_name: e.target.value })} />
+                    <label>FIRST NAME * (CHAR ONLY)</label>
+                    <input required value={profForm.first_name} placeholder="Juan" onChange={(e) => setProfForm({ ...profForm, first_name: e.target.value.replace(/[^a-zA-Z\s\-]/g, '') })} />
                   </div>
                   <div className="field">
-                    <label>MIDDLE NAME</label>
-                    <input value={profForm.middle_name} placeholder="Von" onChange={(e) => setProfForm({ ...profForm, middle_name: e.target.value })} />
+                    <label>MIDDLE NAME (CHAR ONLY)</label>
+                    <input value={profForm.middle_name} placeholder="Dela" onChange={(e) => setProfForm({ ...profForm, middle_name: e.target.value.replace(/[^a-zA-Z\s\-]/g, '') })} />
                   </div>
                   <div className="field">
-                    <label>LAST NAME</label>
-                    <input required value={profForm.last_name} placeholder="Shicksal" onChange={(e) => setProfForm({ ...profForm, last_name: e.target.value })} />
-                  </div>
-                </div>
-                <div className="field">
-                  <label>MOBILE PHONE (SMS pings)</label>
-                  <input required value={profForm.phone} onChange={(e) => setProfForm({ ...profForm, phone: e.target.value })} />
-                </div>
-                <div className="field">
-                  <label>HOME / STREET ADDRESS</label>
-                  <input required value={profForm.address} onChange={(e) => setProfForm({ ...profForm, address: e.target.value })} />
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                  <div className="field">
-                    <label>CITY / PROVINCE</label>
-                    <input value={profForm.city} onChange={(e) => setProfForm({ ...profForm, city: e.target.value })} />
-                  </div>
-                  <div className="field">
-                    <label>EMERGENCY CONTACT</label>
-                    <input value={profForm.emergency_contact} onChange={(e) => setProfForm({ ...profForm, emergency_contact: e.target.value })} />
+                    <label>LAST NAME * (CHAR ONLY)</label>
+                    <input required value={profForm.last_name} placeholder="Cruz" onChange={(e) => setProfForm({ ...profForm, last_name: e.target.value.replace(/[^a-zA-Z\s\-]/g, '') })} />
                   </div>
                 </div>
-                <button className="btn btn-sky" style={{ marginTop: 10 }} disabled={savingProf}>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                  <div className="field">
+                    <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.74rem' }}>PHONE (11 DIGITS)</span>
+                      {profForm.phone && (
+                        <span style={{ color: profForm.phone.length === 11 ? '#10B981' : '#F59E0B', fontSize: '0.72rem', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                          {profForm.phone.length}/11 digits
+                        </span>
+                      )}
+                    </label>
+                    <input
+                      required
+                      inputMode="numeric"
+                      maxLength={11}
+                      value={profForm.phone}
+                      placeholder="09XXXXXXXXX"
+                      onChange={(e) => setProfForm({ ...profForm, phone: e.target.value.replace(/\D/g, '').slice(0, 11) })}
+                    />
+                  </div>
+                  <div className="field">
+                    <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.74rem' }}>EMERGENCY CONTACT</span>
+                      {profForm.emergency_contact && (
+                        <span style={{ color: profForm.emergency_contact.length === 11 ? '#10B981' : '#F59E0B', fontSize: '0.72rem', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                          {profForm.emergency_contact.length}/11 digits
+                        </span>
+                      )}
+                    </label>
+                    <input
+                      inputMode="numeric"
+                      maxLength={11}
+                      value={profForm.emergency_contact}
+                      placeholder="09XXXXXXXXX"
+                      onChange={(e) => setProfForm({ ...profForm, emergency_contact: e.target.value.replace(/\D/g, '').slice(0, 11) })}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+                  <div className="field">
+                    <label style={{ fontSize: '0.74rem' }}>CITY / PROVINCE (CHAR ONLY)</label>
+                    <input value={profForm.city} placeholder="e.g. Manila" onChange={(e) => setProfForm({ ...profForm, city: e.target.value.replace(/[^a-zA-Z\s\-]/g, '') })} />
+                  </div>
+                  <div className="field">
+                    <label style={{ fontSize: '0.74rem' }}>HOME / STREET ADDRESS</label>
+                    <input required value={profForm.address} placeholder="Street, Barangay, Subdivision" onChange={(e) => setProfForm({ ...profForm, address: e.target.value })} />
+                  </div>
+                </div>
+                <button className="btn btn-sky" style={{ marginTop: 4 }} disabled={savingProf}>
                   {savingProf ? 'Saving Profile...' : 'Update Profile Details ✦'}
                 </button>
               </form>
@@ -235,7 +287,7 @@ export default function ResortCustomer() {
               <div className="bk-row" style={{ padding: 18, flexDirection: 'column', alignItems: 'flex-start' }}>
                 <span style={{ fontSize: '2rem' }}>🌊</span>
                 <h4 style={{ fontSize: '1.15rem', margin: '8px 0 4px' }}>Beachfront & High Tide</h4>
-                <p className="muted small">Tambak Beach is just 50 steps from your room porch. High tide occurs around 4:15 PM daily for peak swimming.</p>
+                <p className="muted small">Patar Beach is just 50 steps from your room porch. High tide occurs around 4:15 PM daily for peak swimming.</p>
               </div>
 
               <div className="bk-row" style={{ padding: 18, flexDirection: 'column', alignItems: 'flex-start' }}>
@@ -247,7 +299,7 @@ export default function ResortCustomer() {
               <div className="bk-row" style={{ padding: 18, flexDirection: 'column', alignItems: 'flex-start' }}>
                 <span style={{ fontSize: '2rem' }}>⛵</span>
                 <h4 style={{ fontSize: '1.15rem', margin: '8px 0 4px' }}>Patar Outriggers & Shuttles</h4>
-                <p className="muted small">Guided outrigger boats to Patar shallows depart twice daily at 9:00 AM and 2:00 PM. Book via Guest Hub.</p>
+                <p className="muted small">Guided outrigger boats to Patar shallows depart twice daily at 9:00 AM and 2:00 PM. Book via In-Room Services & Tours tab.</p>
               </div>
             </div>
           </div>
@@ -293,7 +345,7 @@ export default function ResortCustomer() {
                   <div><b>Check-in / Check-out</b><br /><small className="muted">2:00 PM / 12:00 NN</small></div>
                 </div>
                 <div className="bk-row" style={{ padding: 12 }}>
-                  <div><b>Tambak Beach Access</b><br /><small className="muted">50 steps from room porch</small></div>
+                  <div><b>Patar Beach Access</b><br /><small className="muted">50 steps from room porch</small></div>
                 </div>
               </div>
             </div>

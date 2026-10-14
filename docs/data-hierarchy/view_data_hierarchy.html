@@ -7,8 +7,8 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      background: #0f172a;
-      color: #f8fafc;
+      background: #f8fafc;
+      color: #0f172a;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       padding: 24px 20px;
       display: flex;
@@ -25,23 +25,24 @@
       display: inline-block;
       padding: 4px 14px;
       border-radius: 9999px;
-      background: rgba(56, 189, 248, 0.15);
-      color: #38bdf8;
+      background: #eff6ff;
+      color: #2563eb;
       font-size: 0.8rem;
       font-weight: 700;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
       margin-bottom: 10px;
-      border: 1px solid rgba(56, 189, 248, 0.3);
+      border: 1px solid #bfdbfe;
     }
     h1 {
       font-size: 28px;
-      color: #ffffff;
+      font-weight: 800;
+      color: #0f172a;
       margin-bottom: 8px;
     }
     p {
       font-size: 15px;
-      color: #94a3b8;
+      color: #64748b;
     }
     .controls {
       display: flex;
@@ -51,9 +52,9 @@
       margin-bottom: 20px;
     }
     .btn {
-      background: #1e293b;
-      border: 1px solid #334155;
-      color: #f8fafc;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: #0f172a;
       padding: 9px 18px;
       border-radius: 6px;
       cursor: pointer;
@@ -66,28 +67,26 @@
       gap: 6px;
     }
     .btn:hover {
-      background: #38bdf8;
-      color: #0f172a;
-      border-color: #38bdf8;
+      background: #f1f5f9;
+      border-color: #94a3b8;
+      transform: translateY(-1px);
     }
     .btn.active {
-      background: #38bdf8;
-      color: #0f172a;
-      border-color: #38bdf8;
+      background: #2563eb;
+      color: #ffffff;
+      border-color: #2563eb;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
     }
     .viewer-card {
       width: 100%;
       max-width: 1650px;
       background: #ffffff;
       border-radius: 12px;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-      padding: 20px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06);
+      padding: 24px;
       margin-bottom: 30px;
       position: relative;
-    }
-    .dark-card {
-      background: #0b132b;
-      border: 1px solid #1e293b;
     }
     .viewer-toolbar {
       display: flex;
@@ -97,16 +96,10 @@
       margin-bottom: 14px;
       border-bottom: 1px solid #e2e8f0;
     }
-    .dark-card .viewer-toolbar {
-      border-bottom: 1px solid #1e293b;
-    }
     .viewer-title {
       font-size: 1.1rem;
       font-weight: 700;
       color: #0f172a;
-    }
-    .dark-card .viewer-title {
-      color: #f8fafc;
     }
     .diagram-img {
       width: 100%;
@@ -121,23 +114,18 @@
     .format-link {
       font-size: 0.8rem;
       font-weight: 600;
-      padding: 4px 10px;
-      border-radius: 4px;
-      background: #f1f5f9;
+      padding: 5px 12px;
+      border-radius: 6px;
+      background: #f8fafc;
       color: #475569;
       text-decoration: none;
       border: 1px solid #cbd5e1;
       transition: all 0.15s;
     }
-    .dark-card .format-link {
-      background: #1e293b;
-      color: #94a3b8;
-      border-color: #334155;
-    }
     .format-link:hover {
-      background: #0284c7;
+      background: #2563eb;
       color: #ffffff;
-      border-color: #0284c7;
+      border-color: #2563eb;
     }
     .legend {
       margin-top: 15px;
@@ -147,12 +135,8 @@
       font-size: 0.88rem;
       color: #475569;
       line-height: 1.5;
-      border-left: 4px solid #0284c7;
-    }
-    .dark-card .legend {
-      background: #0f172a;
-      color: #94a3b8;
-      border-left-color: #38bdf8;
+      border: 1px solid #e2e8f0;
+      border-left: 4px solid #2563eb;
     }
   </style>
 </head>
@@ -189,7 +173,7 @@
   </div>
 
   <!-- 2. DATA HIERARCHY FLOWCHART CONTAINER -->
-  <div id="container-flow" class="viewer-card dark-card" style="display: none;">
+  <div id="container-flow" class="viewer-card" style="display: none;">
     <div class="viewer-toolbar">
       <span class="viewer-title">Diagram 2: Multi-Tier Data Hierarchy & Dependency Tree (Tier 0 to Tier 5)</span>
       <div class="format-links">

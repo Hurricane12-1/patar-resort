@@ -1,0 +1,21 @@
+{
+  "version": "1.0.0",
+  "codename": "Baseline Foundation",
+  "release_date": "2026-09-21",
+  "architecture": {
+    "api_style": "REST Only",
+    "cache": "None (Direct DB / Memory Fallback)",
+    "security": {
+      "tls": "HTTPS TLS v1.3 (Self-Signed / Git OpenSSL)",
+      "validation": "Zod Schema Validation",
+      "firewall": "NGWF Layer 7 Firewall"
+    },
+    "data_pipeline": "REST endpoints with mock failover fixtures (FALLBACK_*)"
+  },
+  "subsystems": {
+    "frontend": "React 18 + Vite 5 SPA",
+    "backend": "Express 4.19",
+    "database": "Supabase PostgreSQL 15+ (GiST Mathematical Guard)"
+  },
+  "gatepass_ref": "docs/security/version_1.0_gatepass.md"
+}

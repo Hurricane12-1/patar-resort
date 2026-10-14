@@ -25,7 +25,13 @@ docs/
 │   ├── data_hierarchy_diagram.drawio <-- Draw.io native format
 │   ├── data_hierarchy_diagram.xml  <-- XML diagram format
 │   └── view_data_hierarchy.html    <-- Interactive dual diagram browser viewer
-├── api/                            <-- REST API & WebSocket Specifications
+├── api/                            <-- REST API, WebSocket & Frontend Architecture Hub
+│   ├── README.md                   <-- Frontend API Architecture & 5-Layer Stack Guide
+│   ├── frontend_api_architecture.drawio <-- Draw.io native format
+│   ├── frontend_api_architecture.xml    <-- Universal XML diagram format
+│   ├── frontend_api_architecture.svg    <-- Infinite zoom vector SVG
+│   ├── frontend_api_architecture.png    <-- Rendered 4K PNG raster diagram
+│   ├── view_frontend_api_architecture.html <-- Interactive browser viewer
 │   └── API_REFERENCE.md            <-- All endpoints, request schemas & socket events
 ├── database/                       <-- PostgreSQL Schemas & BaaS Specifications
 │   ├── DATABASE_SCHEMA.md          <-- Tables, enums, triggers, RLS, & GiST constraints
@@ -46,6 +52,8 @@ docs/
 
 | Topic | Document Link | Description |
 | :--- | :--- | :--- |
+| **Frontend API Architecture** | [Frontend API Architecture](./api/README.md) | 5-layer reactive frontend architecture specification & diagrams. |
+| **Frontend API Viewer** | [View Frontend API (HTML)](./api/view_frontend_api_architecture.html) | Interactive browser viewer with zoom & layer breakdown. |
 | **Data Hierarchy Hub** | [Data Hierarchy Diagrams](./data-hierarchy/README.md) | Dedicated folder with native Mermaid flowchart & ER diagrams. |
 | **Data Hierarchy Viewer** | [View Data Hierarchy (HTML)](./data-hierarchy/view_data_hierarchy.html) | Interactive browser viewer for live vector Mermaid diagrams. |
 | **System Architecture** | [Architecture Guide](./architecture/README.md) | High-res diagrams, system layers, and edge data flows. |

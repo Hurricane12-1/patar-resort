@@ -1,123 +1,123 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mxfile host="app.diagrams.net" modified="2026-09-20T09:52:06.880Z" agent="Antigravity Draw.io MCP Server" version="24.0.0" type="device">
+<mxfile host="app.diagrams.net" modified="2026-09-21T05:02:40.289Z" agent="Antigravity Draw.io MCP Server" version="24.0.0" type="device">
   <diagram id="data-hierarchy" name="J &amp; D Beach House - Data Hierarchy">
-    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1100" background="#0b132b" math="0" shadow="0">
+    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1100" background="#ffffff" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
 
         <!-- Title Header -->
-        <mxCell id="hdr_badge" value="&lt;font color=&quot;#38bdf8&quot;&gt;&lt;b&gt;DATA HIERARCHY &amp;amp; ENTITY DEPENDENCY SPECIFICATION&lt;/b&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e293b;strokeColor=#38bdf8;strokeWidth=2;fontColor=#38bdf8;arcSize=50;" vertex="1" parent="1">
+        <mxCell id="hdr_badge" value="&lt;font color=&quot;#1e293b&quot;&gt;&lt;b&gt;DATA HIERARCHY &amp;amp; ENTITY DEPENDENCY SPECIFICATION&lt;/b&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f1f5f9;strokeColor=#cbd5e1;strokeWidth=1.5;fontColor=#1e293b;arcSize=50;" vertex="1" parent="1">
           <mxGeometry x="500" y="20" width="450" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="hdr_title" value="&lt;font color=&quot;#ffffff&quot; style=&quot;font-size: 24px;&quot;&gt;&lt;b&gt;J &amp;amp; D Beach House · Relational Data Hierarchy&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font color=&quot;#94a3b8&quot; style=&quot;font-size: 13px;&quot;&gt;Multi-Tier Foreign Key Dependencies, Cryptographic Identity &amp;amp; PostgreSQL 15+ Schema Isolation&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+        <mxCell id="hdr_title" value="&lt;font color=&quot;#0f172a&quot; style=&quot;font-size: 24px;&quot;&gt;&lt;b&gt;J &amp;amp; D Beach House · Relational Data Hierarchy&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot; style=&quot;font-size: 13px;&quot;&gt;Multi-Tier Foreign Key Dependencies, Cryptographic Identity &amp;amp; PostgreSQL 15+ Schema Isolation&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
           <mxGeometry x="400" y="55" width="650" height="50" as="geometry" />
         </mxCell>
 
         <!-- Tier 0: Root Schema -->
-        <mxCell id="t0_db" value="&lt;b&gt;&lt;font style=&quot;font-size: 15px;&quot; color=&quot;#ffffff&quot;&gt;Core PostgreSQL 15+ Database&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#cbd5e1&quot;&gt;Supabase Core Instance · Public Schema&lt;br&gt;Extensions: pgcrypto · btree_gist&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0f172a;strokeColor=#0284c7;strokeWidth=2;arcSize=10;" vertex="1" parent="1">
+        <mxCell id="t0_db" value="&lt;b&gt;&lt;font style=&quot;font-size: 15px;&quot; color=&quot;#0f172a&quot;&gt;Core PostgreSQL 15+ Database&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;Supabase Core Instance · Public Schema&lt;br&gt;Extensions: pgcrypto · btree_gist&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#475569;strokeWidth=1.5;arcSize=10;" vertex="1" parent="1">
           <mxGeometry x="540" y="120" width="370" height="60" as="geometry" />
         </mxCell>
 
         <!-- Tier 1: Master Roots -->
-        <mxCell id="t1_rooms" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#ffffff&quot;&gt;rooms&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#a7f3d0&quot;&gt;Accommodation Catalog&lt;br&gt;Unit Inventory, Base Rates &amp;amp; Capacity&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#064e3b;strokeColor=#10b981;strokeWidth=2;arcSize=10;" vertex="1" parent="1">
+        <mxCell id="t1_rooms" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#0f172a&quot;&gt;rooms&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#047857&quot;&gt;Accommodation Catalog&lt;br&gt;Unit Inventory, Base Rates &amp;amp; Capacity&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#059669;strokeWidth=1.5;arcSize=10;" vertex="1" parent="1">
           <mxGeometry x="120" y="230" width="280" height="70" as="geometry" />
         </mxCell>
 
-        <mxCell id="t1_auth" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#ffffff&quot;&gt;auth.users&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#bae6fd&quot;&gt;Supabase Cryptographic Identity Root&lt;br&gt;Managed OAuth / Passwords (UUID)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#075985;strokeColor=#38bdf8;strokeWidth=2;arcSize=10;" vertex="1" parent="1">
+        <mxCell id="t1_auth" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#0f172a&quot;&gt;auth.users&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#0369a1&quot;&gt;Supabase Cryptographic Identity Root&lt;br&gt;Managed OAuth / Passwords (UUID)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0284c7;strokeWidth=1.5;arcSize=10;" vertex="1" parent="1">
           <mxGeometry x="585" y="230" width="280" height="70" as="geometry" />
         </mxCell>
 
-        <mxCell id="t1_dept" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#ffffff&quot;&gt;dept_name (ENUM)&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#fde68a&quot;&gt;5 Operational Departments&lt;br&gt;front_desk · housekeeping · kitchen · tours · maint&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#78350f;strokeColor=#f59e0b;strokeWidth=2;arcSize=10;" vertex="1" parent="1">
+        <mxCell id="t1_dept" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#0f172a&quot;&gt;dept_name (ENUM)&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#b45309&quot;&gt;5 Operational Departments&lt;br&gt;front_desk · housekeeping · kitchen · tours · maint&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d97706;strokeWidth=1.5;arcSize=10;" vertex="1" parent="1">
           <mxGeometry x="1050" y="230" width="300" height="70" as="geometry" />
         </mxCell>
 
         <!-- Tier 2: Profiles (1:1 Auth) -->
-        <mxCell id="t2_profiles" value="&lt;b&gt;&lt;font style=&quot;font-size: 15px;&quot; color=&quot;#ffffff&quot;&gt;profiles&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#99f6e4&quot;&gt;Full Name · Phone · Address · Emergency Contact&lt;br&gt;&lt;b&gt;Role:&lt;/b&gt; customer | staff | receptionist | accounting | administrator&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#134e4a;strokeColor=#2dd4bf;strokeWidth=2.5;arcSize=10;" vertex="1" parent="1">
+        <mxCell id="t2_profiles" value="&lt;b&gt;&lt;font style=&quot;font-size: 15px;&quot; color=&quot;#0f172a&quot;&gt;profiles&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#0f766e&quot;&gt;Full Name · Phone · Address · Emergency Contact&lt;br&gt;&lt;b&gt;Role:&lt;/b&gt; customer | staff | receptionist | accounting | administrator&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0d9488;strokeWidth=2;arcSize=10;" vertex="1" parent="1">
           <mxGeometry x="525" y="350" width="400" height="70" as="geometry" />
         </mxCell>
 
         <!-- Tier 3: Core Transactional Entities -->
-        <mxCell id="t3_orders" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#ffffff&quot;&gt;resort_orders&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#bfdbfe&quot;&gt;In-Room Dining · Tour Bookings · Amenities&lt;br&gt;FK: guest_id → profiles.id&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e3a8a;strokeColor=#60a5fa;strokeWidth=2;arcSize=10;" vertex="1" parent="1">
+        <mxCell id="t3_orders" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#0f172a&quot;&gt;resort_orders&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;In-Room Dining · Tour Bookings · Amenities&lt;br&gt;&lt;font color=&quot;#2563eb&quot;&gt;FK: guest_id → profiles.id&lt;/font&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2563eb;strokeWidth=1.5;arcSize=10;" vertex="1" parent="1">
           <mxGeometry x="80" y="480" width="240" height="80" as="geometry" />
         </mxCell>
 
-        <mxCell id="t3_reservations" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#ffffff&quot;&gt;reservations&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#38bdf8&quot;&gt;&lt;b&gt;Date-Range Stay Engine (GiST Guard)&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font color=&quot;#bfdbfe&quot;&gt;Check-In · Check-Out · Total PHP · Status&lt;br&gt;FK: guest_id &amp;amp; room_id&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e3a8a;strokeColor=#38bdf8;strokeWidth=3;arcSize=10;" vertex="1" parent="1">
+        <mxCell id="t3_reservations" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#0f172a&quot;&gt;reservations&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#0284c7&quot;&gt;&lt;b&gt;Date-Range Stay Engine (GiST Guard)&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;Check-In · Check-Out · Total PHP · Status&lt;br&gt;&lt;font color=&quot;#2563eb&quot;&gt;FK: guest_id &amp;amp; room_id&lt;/font&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0284c7;strokeWidth=2;arcSize=10;" vertex="1" parent="1">
           <mxGeometry x="360" y="480" width="270" height="80" as="geometry" />
         </mxCell>
 
-        <mxCell id="t3_chat" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#ffffff&quot;&gt;chat_messages&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#bfdbfe&quot;&gt;AI Receptionist Dialogues &amp;amp; Transcripts&lt;br&gt;FK: profile_id → profiles.id&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e3a8a;strokeColor=#60a5fa;strokeWidth=2;arcSize=10;" vertex="1" parent="1">
+        <mxCell id="t3_chat" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#0f172a&quot;&gt;chat_messages&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;AI Receptionist Dialogues &amp;amp; Transcripts&lt;br&gt;&lt;font color=&quot;#2563eb&quot;&gt;FK: profile_id → profiles.id&lt;/font&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2563eb;strokeWidth=1.5;arcSize=10;" vertex="1" parent="1">
           <mxGeometry x="670" y="480" width="240" height="80" as="geometry" />
         </mxCell>
 
-        <mxCell id="t3_tasks" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#ffffff&quot;&gt;department_tasks&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#bfdbfe&quot;&gt;Housekeeping &amp;amp; Maintenance Queue&lt;br&gt;FK: created_by, room_id, dept_name&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e3a8a;strokeColor=#60a5fa;strokeWidth=2;arcSize=10;" vertex="1" parent="1">
+        <mxCell id="t3_tasks" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#0f172a&quot;&gt;department_tasks&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;Housekeeping &amp;amp; Maintenance Queue&lt;br&gt;&lt;font color=&quot;#2563eb&quot;&gt;FK: created_by, room_id, dept_name&lt;/font&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2563eb;strokeWidth=1.5;arcSize=10;" vertex="1" parent="1">
           <mxGeometry x="950" y="480" width="250" height="80" as="geometry" />
         </mxCell>
 
-        <mxCell id="t3_inventory" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#ffffff&quot;&gt;resort_inventory&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#fde68a&quot;&gt;Stock Qty &amp;amp; Reorder Triggers&lt;br&gt;Category: dept_name ENUM&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#78350f;strokeColor=#f59e0b;strokeWidth=2;arcSize=10;" vertex="1" parent="1">
+        <mxCell id="t3_inventory" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#0f172a&quot;&gt;resort_inventory&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;Stock Qty &amp;amp; Reorder Triggers&lt;br&gt;&lt;font color=&quot;#b45309&quot;&gt;Category: dept_name ENUM&lt;/font&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d97706;strokeWidth=1.5;arcSize=10;" vertex="1" parent="1">
           <mxGeometry x="1240" y="480" width="220" height="80" as="geometry" />
         </mxCell>
 
         <!-- Tier 4: Grandchild Transactions -->
-        <mxCell id="t4_reviews" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#ffffff&quot;&gt;reviews&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#c7d2fe&quot;&gt;Verified Stay 1-5 Star Ratings &amp;amp; Feedback&lt;br&gt;FK: 1:1 per stay (reservation_id)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#312e81;strokeColor=#818cf8;strokeWidth=2;arcSize=10;" vertex="1" parent="1">
+        <mxCell id="t4_reviews" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#0f172a&quot;&gt;reviews&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#4338ca&quot;&gt;Verified Stay 1-5 Star Ratings &amp;amp; Feedback&lt;br&gt;FK: 1:1 per stay (reservation_id)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#4f46e5;strokeWidth=1.5;arcSize=10;" vertex="1" parent="1">
           <mxGeometry x="270" y="630" width="260" height="75" as="geometry" />
         </mxCell>
 
-        <mxCell id="t4_notifs" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#ffffff&quot;&gt;notifications&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#c7d2fe&quot;&gt;Twilio SMS Logs &amp;amp; Pass Dispatch&lt;br&gt;FK: reservation_id &amp;amp; profile_id&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#312e81;strokeColor=#818cf8;strokeWidth=2;arcSize=10;" vertex="1" parent="1">
+        <mxCell id="t4_notifs" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#0f172a&quot;&gt;notifications&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#4338ca&quot;&gt;Twilio SMS Logs &amp;amp; Pass Dispatch&lt;br&gt;FK: reservation_id &amp;amp; profile_id&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#4f46e5;strokeWidth=1.5;arcSize=10;" vertex="1" parent="1">
           <mxGeometry x="570" y="630" width="260" height="75" as="geometry" />
         </mxCell>
 
         <!-- Tier 5: Analytics Views -->
-        <mxCell id="t5_analytics" value="&lt;b&gt;&lt;font style=&quot;font-size: 15px;&quot; color=&quot;#ffffff&quot;&gt;analytics_overview &amp;amp; analytics_daily (SQL Views)&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#fde68a&quot;&gt;Real-Time Occupancy Rate % · Weekly Revenue (PHP) · RevPAR · Check-Ins/Check-Outs · SMS Delivery Health&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#451a03;strokeColor=#fbbf24;strokeWidth=2.5;arcSize=10;" vertex="1" parent="1">
+        <mxCell id="t5_analytics" value="&lt;b&gt;&lt;font style=&quot;font-size: 15px;&quot; color=&quot;#0f172a&quot;&gt;analytics_overview &amp;amp; analytics_daily (SQL Views)&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#92400e&quot;&gt;Real-Time Occupancy Rate % · Weekly Revenue (PHP) · RevPAR · Check-Ins/Check-Outs · SMS Delivery Health&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffbeb;strokeColor=#d97706;strokeWidth=1.5;arcSize=10;" vertex="1" parent="1">
           <mxGeometry x="380" y="770" width="690" height="70" as="geometry" />
         </mxCell>
 
         <!-- CONNECTORS -->
-        <mxCell id="e_db_auth" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0284c7;strokeWidth=2;" edge="1" parent="1" source="t0_db" target="t1_auth">
+        <mxCell id="e_db_auth" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;" edge="1" parent="1" source="t0_db" target="t1_auth">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_db_rooms" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0284c7;strokeWidth=2;" edge="1" parent="1" source="t0_db" target="t1_rooms">
+        <mxCell id="e_db_rooms" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;" edge="1" parent="1" source="t0_db" target="t1_rooms">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_db_dept" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0284c7;strokeWidth=2;" edge="1" parent="1" source="t0_db" target="t1_dept">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-
-        <mxCell id="e_auth_prof" value="1:1 (id = id) CASCADE" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#38bdf8;strokeWidth=2.5;fontColor=#bae6fd;" edge="1" parent="1" source="t1_auth" target="t2_profiles">
+        <mxCell id="e_db_dept" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;" edge="1" parent="1" source="t0_db" target="t1_dept">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
-        <mxCell id="e_prof_orders" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2dd4bf;strokeWidth=2;" edge="1" parent="1" source="t2_profiles" target="t3_orders">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e_prof_res" value="1:N guest_id" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2dd4bf;strokeWidth=2.5;fontColor=#99f6e4;" edge="1" parent="1" source="t2_profiles" target="t3_reservations">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e_prof_chat" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2dd4bf;strokeWidth=2;" edge="1" parent="1" source="t2_profiles" target="t3_chat">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e_prof_tasks" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2dd4bf;strokeWidth=2;" edge="1" parent="1" source="t2_profiles" target="t3_tasks">
+        <mxCell id="e_auth_prof" value="1:1 (id = id) CASCADE" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0284c7;strokeWidth=2;fontColor=#0369a1;" edge="1" parent="1" source="t1_auth" target="t2_profiles">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
-        <mxCell id="e_rooms_res" value="1:N room_id" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#10b981;strokeWidth=2;dashed=1;fontColor=#a7f3d0;" edge="1" parent="1" source="t1_rooms" target="t3_reservations">
+        <mxCell id="e_prof_orders" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0d9488;strokeWidth=1.5;" edge="1" parent="1" source="t2_profiles" target="t3_orders">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_dept_tasks" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#f59e0b;strokeWidth=2;dashed=1;" edge="1" parent="1" source="t1_dept" target="t3_tasks">
+        <mxCell id="e_prof_res" value="1:N guest_id" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0d9488;strokeWidth=2;fontColor=#0f766e;" edge="1" parent="1" source="t2_profiles" target="t3_reservations">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_dept_inv" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#f59e0b;strokeWidth=2;dashed=1;" edge="1" parent="1" source="t1_dept" target="t3_inventory">
+        <mxCell id="e_prof_chat" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0d9488;strokeWidth=1.5;" edge="1" parent="1" source="t2_profiles" target="t3_chat">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-
-        <mxCell id="e_res_rev" value="1:1 Stay" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#38bdf8;strokeWidth=2;fontColor=#7dd3fc;" edge="1" parent="1" source="t3_reservations" target="t4_reviews">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e_res_notif" value="1:N Audit" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#38bdf8;strokeWidth=2;fontColor=#7dd3fc;" edge="1" parent="1" source="t3_reservations" target="t4_notifs">
+        <mxCell id="e_prof_tasks" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0d9488;strokeWidth=1.5;" edge="1" parent="1" source="t2_profiles" target="t3_tasks">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
-        <mxCell id="e_res_analytics" value="Aggregates Stays, Nightly Revenue, Occupancy" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#fbbf24;strokeWidth=2;dashed=1;fontColor=#fde68a;" edge="1" parent="1" source="t3_reservations" target="t5_analytics">
+        <mxCell id="e_rooms_res" value="1:N room_id" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#059669;strokeWidth=1.5;dashed=1;fontColor=#047857;" edge="1" parent="1" source="t1_rooms" target="t3_reservations">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dept_tasks" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#d97706;strokeWidth=1.5;dashed=1;" edge="1" parent="1" source="t1_dept" target="t3_tasks">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dept_inv" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#d97706;strokeWidth=1.5;dashed=1;" edge="1" parent="1" source="t1_dept" target="t3_inventory">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e_res_rev" value="1:1 Stay" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0284c7;strokeWidth=1.5;fontColor=#0369a1;" edge="1" parent="1" source="t3_reservations" target="t4_reviews">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_res_notif" value="1:N Audit" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0284c7;strokeWidth=1.5;fontColor=#0369a1;" edge="1" parent="1" source="t3_reservations" target="t4_notifs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e_res_analytics" value="Aggregates Stays, Nightly Revenue, Occupancy" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#d97706;strokeWidth=1.5;dashed=1;fontColor=#92400e;" edge="1" parent="1" source="t3_reservations" target="t5_analytics">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="495" y="600" />

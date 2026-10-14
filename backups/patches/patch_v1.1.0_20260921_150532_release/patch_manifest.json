@@ -1,0 +1,112 @@
+{
+  "system": "J & D Beach House Resort Management System",
+  "patch_version": "1.1.0",
+  "major_minor": "1.1",
+  "timestamp": "2026-09-21T07:05:32.640Z",
+  "git": {
+    "branch": "main",
+    "commit": "4d838f6"
+  },
+  "backup_type": "release",
+  "file_count": 16,
+  "total_bytes": 40229,
+  "checksum_algorithm": "SHA-256",
+  "files": [
+    {
+      "original_path": "package.json",
+      "backup_path": "package_manifests/package.json",
+      "bytes": 953,
+      "sha256": "f3f63fbde79f121395f47d09dc423287f0365c92159538be8a65cf94af45a710"
+    },
+    {
+      "original_path": "client/package.json",
+      "backup_path": "package_manifests/client_package.json",
+      "bytes": 573,
+      "sha256": "2b4696835cb03daefd1005675783c5e2418eb0fc906af8d648282d4198d50204"
+    },
+    {
+      "original_path": "server/package.json",
+      "backup_path": "package_manifests/server_package.json",
+      "bytes": 590,
+      "sha256": "6ce678fc741ced6d767584bef3beb29e4368ff1cb32af811763fe4b9998ffad3"
+    },
+    {
+      "original_path": ".env.example",
+      "backup_path": "configs/.env.example",
+      "bytes": 1258,
+      "sha256": "2dc323a9779eefd332cb47917c9a9bc44b870920cc07cf96a77f29b01b75dfdc"
+    },
+    {
+      "original_path": "server/.env.example",
+      "backup_path": "configs/server.env.example",
+      "bytes": 512,
+      "sha256": "a19b5a49ae09360efb364b13eacb691cb3996d404f61a6a889f43cf32794e601"
+    },
+    {
+      "original_path": "supabase/schema.sql",
+      "backup_path": "database/schema.sql",
+      "bytes": 15876,
+      "sha256": "7e575d12571ba42ddef42cbf0a61a517550120a58bedf423d68dacd1612c6c3d"
+    },
+    {
+      "original_path": "server/certs/cert.pem",
+      "backup_path": "certs/cert.pem",
+      "bytes": 1586,
+      "sha256": "fd6906348da27548802fb7804d8439152e2d136d0292dba43491c52b14082337"
+    },
+    {
+      "original_path": "server/certs/key.pem",
+      "backup_path": "certs/key.pem",
+      "bytes": 1704,
+      "sha256": "9d8e9db4e66d7f35917ffe42db7b295a9aedf3bcb28b68cd99526215879ee9bc"
+    },
+    {
+      "original_path": "deployments/v1.1/architecture_diff.md",
+      "backup_path": "deployments/v1.1/architecture_diff.md",
+      "bytes": 2965,
+      "sha256": "347d61ac56929a78b1bf184afedf1cf5575ea942e1084117b463966a194c9a3a"
+    },
+    {
+      "original_path": "deployments/v1.1/debug_session_log.md",
+      "backup_path": "deployments/v1.1/debug_session_log.md",
+      "bytes": 3370,
+      "sha256": "5a2f7ffef5c54bb74a863d0b33a6961681bc5b9720a30cdf2334b7b4d6c92f88"
+    },
+    {
+      "original_path": "deployments/v1.1/docker-compose.yml",
+      "backup_path": "deployments/v1.1/docker-compose.yml",
+      "bytes": 1370,
+      "sha256": "0ef8d600917bb958e2e84590d74a676e49b27872be3008054c6782cac4062aa9"
+    },
+    {
+      "original_path": "deployments/v1.1/env.template",
+      "backup_path": "deployments/v1.1/env.template",
+      "bytes": 975,
+      "sha256": "2fd16f1a6d6d7a30430988725c0e89d54f5bfcb18dfa0ec33da12384ed6df9f8"
+    },
+    {
+      "original_path": "deployments/v1.1/manifest.json",
+      "backup_path": "deployments/v1.1/manifest.json",
+      "bytes": 1512,
+      "sha256": "6a383e84792fc513a424028c0c2a6fb7a0139e672cc655bd1b1c4c8c3a3cb3eb"
+    },
+    {
+      "original_path": "deployments/nginx.conf",
+      "backup_path": "deployments/nginx.conf",
+      "bytes": 3504,
+      "sha256": "bff080792f56db21eda8614d84cec75365f013c6b2f60111dad022428bff9e4b"
+    },
+    {
+      "original_path": "docs/security/version_1_1_0_gatepass.json",
+      "backup_path": "security/version_1_1_0_gatepass.json",
+      "bytes": 1517,
+      "sha256": "6b871c3f6870921dbb0e4a2c326b6e1abc91be1cbc1a495fd9d898d2aba10afb"
+    },
+    {
+      "original_path": "docs/security/version_1_1_0_gatepass.md",
+      "backup_path": "security/version_1_1_0_gatepass.md",
+      "bytes": 1964,
+      "sha256": "0f7bd4915fcf33fdbe82964400324e46666616ccc19c8214cfec088d5bcac05b"
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useAuth } from '../context/AuthContext.tsx';
+import { useAuth, to11Digits } from '../context/AuthContext.tsx';
 import { api } from '../lib/api.ts';
 import { money, fmtDate, addDaysISO } from '../lib/format.ts';
 import { roomImg } from '../lib/images.ts';
@@ -24,7 +24,7 @@ export default function BookingFlow({ initialSlug }) {
   const resultsRef = useRef(null);
 
   useEffect(() => { api.rooms().then(setCatalog).catch(() => {}); }, []);
-  useEffect(() => { setPhone(profile?.phone || ''); }, [profile]);
+  useEffect(() => { setPhone(to11Digits(profile?.phone || '')); }, [profile]);
 
   const nights = Math.max(1, Math.round((new Date(checkOut) - new Date(checkIn)) / 86400000));
   const meta = (r) => catalog.find((c) => c.id === r.room_id);
@@ -49,6 +49,10 @@ export default function BookingFlow({ initialSlug }) {
 
   async function confirm() {
     if (!session) { setAuthOpen(true); return; }
+    if (phone && phone.length !== 11) {
+      toast('Phone number must be strictly an 11-digit number (e.g. 09XXXXXXXXX).', true);
+      return;
+    }
     setBusy(true);
     try {
       const stay = await api.createReservation({
@@ -143,9 +147,41 @@ export default function BookingFlow({ initialSlug }) {
               </div>
             </div>
             <div>
+              {session && profile && (
+                <div style={{
+                  padding: '10px 14px',
+                  borderRadius: 10,
+                  background: 'rgba(56, 189, 248, 0.1)',
+                  border: '1px solid rgba(56, 189, 248, 0.3)',
+                  fontSize: '0.78rem',
+                  color: '#BAE6FD',
+                  marginBottom: 14,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                }}>
+                  <span style={{ fontSize: '1rem' }}>✓</span>
+                  <span>
+                    Connected to verified Guest Manifest for <strong>{profile.full_name || 'Guest'}</strong>
+                  </span>
+                </div>
+              )}
               <div className="field">
-                <label>PHONE FOR SMS PINGS</label>
-                <input value={phone} placeholder="+63 9XX XXX XXXX" onChange={(e) => setPhone(e.target.value)} />
+                <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>PHONE FOR SMS PINGS (11-DIGIT NUMBER ONLY)</span>
+                  {phone && (
+                    <span style={{ color: phone.length === 11 ? '#10B981' : '#F59E0B', fontSize: '0.74rem', fontWeight: 600 }}>
+                      {phone.length}/11 digits
+                    </span>
+                  )}
+                </label>
+                <input
+                  inputMode="numeric"
+                  maxLength={11}
+                  value={phone}
+                  placeholder="09XXXXXXXXX"
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                />
               </div>
               <div className="field">
                 <label>SPECIAL REQUESTS</label>

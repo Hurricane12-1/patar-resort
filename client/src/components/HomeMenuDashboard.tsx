@@ -187,7 +187,7 @@ export default function HomeMenuDashboard({ isOpen, onClose, currentScene = 0, o
             {[
               ['/rooms', '🏨 Accommodations', 'Suites & Cottages'],
               ['/my-bookings', '📅 My Bookings', 'Digital Keycodes'],
-              ['/resort-customer', '🌴 Guest Hub', 'Dining & Excursions'],
+              ['/administrator', '🛡️ Administration', 'Control Center & Telemetry'],
             ].map(([path, title, desc]) => (
               <button
                 key={path}

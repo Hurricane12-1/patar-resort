@@ -1,0 +1,28 @@
+{
+  "timestamp": "2026-09-21T10:08:59.373Z",
+  "cache": {
+    "driver": "in-memory-lru",
+    "status": "FALLBACK_READY",
+    "latency_ms": 0,
+    "keys": {
+      "analytics:overview": "COLD",
+      "analytics:full_dive:30d": "COLD",
+      "rooms:catalog:all:all": "COLD"
+    }
+  },
+  "database": {
+    "analytics_overview": "local-offline",
+    "analytics_daily": "local-offline",
+    "analytics_top_rooms": "local-offline",
+    "reservations": "local-offline",
+    "resort_orders": "local-offline",
+    "rooms": "local-offline"
+  },
+  "memory": {
+    "heap_used_mb": 19,
+    "heap_total_mb": 29,
+    "rss_mb": 76
+  },
+  "optimization_score": 70,
+  "ready_for_10k_burst": false
+}

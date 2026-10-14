@@ -1,0 +1,87 @@
+{
+  "testResults": [
+    {
+      "testName": "Backend Server Operational on Port 4000",
+      "passed": true,
+      "details": "Status: 200"
+    },
+    {
+      "testName": "Rate Limiter Permits Requests Under Quota",
+      "passed": true,
+      "details": "5/5 permitted with 200 OK"
+    },
+    {
+      "testName": "Rate Limiter Blocks Excess Requests with HTTP 429",
+      "passed": true,
+      "details": "3/3 blocked with 429 Too Many Requests"
+    },
+    {
+      "testName": "RFC RateLimit Headers Present on Allowed Responses",
+      "passed": true,
+      "details": "Limit: 5 | Remaining: 4"
+    },
+    {
+      "testName": "GCRA (Generalized Cell Rate Algorithm) Active on Endpoints",
+      "passed": true,
+      "details": "Algorithm: GCRA (Generalized Cell Rate Algorithm)"
+    },
+    {
+      "testName": "Retry-After Header & Error Schema Returned on 429",
+      "passed": true,
+      "details": "Retry-After: 2s | Error: \"Too Many Requests\""
+    },
+    {
+      "testName": "Limiter Telemetry Tracks Throttled Requests in Real Time",
+      "passed": true,
+      "details": "Recorded 3 throttled events"
+    },
+    {
+      "testName": "Adaptive TCP Vegas / AIMD Concurrency Telemetry Verified",
+      "passed": true,
+      "details": "Algorithm: TCP-Vegas / AIMD (Auto-Tuning Latency Feedback)"
+    },
+    {
+      "testName": "Programmatic Limiter Reset Route Succeeds",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "testName": "Rate Limit Quota Refilled Immediately After Reset",
+      "passed": true,
+      "details": "Status: 200 | Remaining: 4"
+    },
+    {
+      "testName": "Load Balancer Gateway Spawned & Upstreams Reporting Healthy",
+      "passed": true,
+      "details": "Gateway Port: 5000 (2/2 Workers Active)"
+    },
+    {
+      "testName": "All Proxied Requests Successfully Resolved via Gateway",
+      "passed": true,
+      "details": "12/12 Requests 200 OK"
+    },
+    {
+      "testName": "Load Balancer Distributes Traffic Across Multiple Upstream Nodes",
+      "passed": true,
+      "details": "Upstream Nodes Handled: worker-1, worker-2"
+    },
+    {
+      "testName": "Load Balancer Live Status Endpoint Returns Accurate Routing Metrics",
+      "passed": true,
+      "details": "Total Routed: 14 requests"
+    },
+    {
+      "testName": "Multi-Strategy Algorithm Policy Telemetry Verified",
+      "passed": true,
+      "details": "Policy: Least-Connections with Cyclic Tie-Breaking"
+    },
+    {
+      "testName": "Consistent Hash Ring & Virtual Nodes Active",
+      "passed": true,
+      "details": "Virtual Nodes on Ring: 128"
+    }
+  ],
+  "passedCount": 16,
+  "failedCount": 0,
+  "timestamp": "2026-09-21T15:19:52.572Z"
+}

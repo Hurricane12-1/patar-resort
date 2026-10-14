@@ -15,7 +15,6 @@ export default function Footer() {
           <Link to="/">Book a stay</Link>
           <Link to="/rooms">Rooms & rates</Link>
           <Link to="/my-bookings">My bookings</Link>
-          <Link to="/resort-customer">Guest Hub</Link>
         </div>
         <div>
           <h4>Front desk</h4>
@@ -23,7 +22,7 @@ export default function Footer() {
         </div>
         <div>
           <h4>Find us</h4>
-          <p style={{ fontSize: '.88rem', color: '#94A3B8' }}>Tambak Beach Road<br />Bolinao, Pangasinan 2406<br />+63 900 555 0123 · hello@jdbeachhouse.ph</p>
+          <p style={{ fontSize: '.88rem', color: '#94A3B8' }}>Brgy. Patar<br />Bolinao, Pangasinan 2406<br />+63 900 555 0123 · hello@jdbeachhouse.ph</p>
         </div>
       </div>
       <div className="foot-bottom">

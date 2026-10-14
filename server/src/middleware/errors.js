@@ -1,5 +1,5 @@
 export class ApiError extends Error {
-  constructor(status, message) { super(message); this.status = status; }
+  constructor(status, message) { super(message); this.status = status; this.statusCode = status; }
 }
 export const asyncH = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 export const notFound = (_req, res) => res.status(404).json({ message: 'Not found' });

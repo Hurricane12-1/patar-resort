@@ -1,26 +1,51 @@
 import { Router } from 'express';
 import { asyncH } from '../middleware/errors.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, requireStaffOrAdmin } from '../middleware/auth.js';
+import { admin } from '../lib/supabase.js';
 
 const r = Router();
 
-// Sample Resort Operational CSV Data
-const SAMPLE_RESORT_CSV = `Account ID,First Name,Middle Name,Last Name,Full Name,Email,Role,Status,Total Spent (PHP)
-usr-1,Johannes,Von,Shicksal,Johannes Von Shicksal,jvs001@resortmanagement.ph,administrator,Active,0
-usr-2,Elena,Santos,Ramos,Elena Santos Ramos,esr002@resortmanagement.ph,receptionist,Active,0
-usr-3,Carlos,Mendoza,Ledger,Carlos Mendoza Ledger,cml003@resortmanagement.ph,accounting,Active,0
-usr-4,Juan,Dela,Cruz,Juan Dela Cruz,user@gmail.com,customer,Checked-In,14750
-usr-5,Maria,Clara,Santos,Maria Clara Santos,maria.santos@gmail.com,customer,Confirmed,7200`;
+// GET /api/csv/sample - Returns live resort accounts & operations CSV directly from Supabase
+r.get('/csv/sample', authenticate, requireStaffOrAdmin, asyncH(async (_req, res) => {
+  const { data: profiles, error } = await admin
+    .from('profiles')
+    .select('id, first_name, middle_name, last_name, full_name, role, reservations(total_php, status)')
+    .order('created_at', { ascending: true })
+    .limit(100);
 
-// GET /api/csv/sample - Returns sample resort CSV data
-r.get('/csv/sample', authenticate, (_req, res) => {
+  const header = 'Account ID,First Name,Middle Name,Last Name,Full Name,Role,Status,Total Spent (PHP)';
+  const lines = [header];
+
+  if (!error && profiles && profiles.length > 0) {
+    for (const p of profiles) {
+      const stays = p.reservations || [];
+      const totalSpent = stays.reduce((sum, s) => sum + (s.total_php || 0), 0);
+      const activeStay = stays.find((s) => ['checked_in', 'confirmed'].includes(s.status));
+      const status = activeStay
+        ? (activeStay.status === 'checked_in' ? 'Checked-In' : 'Confirmed')
+        : (stays.length > 0 ? 'Past Guest' : 'Active');
+
+      const safe = (str) => `"${String(str || '').replace(/"/g, '""')}"`;
+      lines.push([
+        safe(p.id.slice(0, 8)),
+        safe(p.first_name),
+        safe(p.middle_name),
+        safe(p.last_name),
+        safe(p.full_name),
+        safe(p.role),
+        safe(status),
+        totalSpent,
+      ].join(','));
+    }
+  }
+
   res.setHeader('Content-Type', 'text/csv');
-  res.setHeader('Content-Disposition', 'inline; filename="jd_beach_house_sample.csv"');
-  res.send(SAMPLE_RESORT_CSV);
-});
+  res.setHeader('Content-Disposition', 'inline; filename="jd_beach_house_accounts.csv"');
+  res.send(lines.join('\n'));
+}));
 
 // POST /api/csv/parse - Accepts raw CSV text payload and returns structured JSON rows
-r.post('/csv/parse', authenticate, asyncH(async (req, res) => {
+r.post('/csv/parse', authenticate, requireStaffOrAdmin, asyncH(async (req, res) => {
   const { csv_text } = req.body || {};
   if (!csv_text || typeof csv_text !== 'string') {
     return res.status(400).json({ error: 'csv_text payload required' });

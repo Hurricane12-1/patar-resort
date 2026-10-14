@@ -7,13 +7,22 @@ export function toast(msg, isErr = false) {
 export default function Toasts() {
   const [items, setItems] = useState([]);
   useEffect(() => {
+    const activeTimers = new Set();
     const on = (e) => {
       const id = Date.now() + Math.random();
       setItems((x) => [...x, { id, ...e.detail }]);
-      setTimeout(() => setItems((x) => x.filter((t) => t.id !== id)), 4200);
+      const timer = setTimeout(() => {
+        activeTimers.delete(timer);
+        setItems((x) => x.filter((t) => t.id !== id));
+      }, 4200);
+      activeTimers.add(timer);
     };
     window.addEventListener('app:toast', on);
-    return () => window.removeEventListener('app:toast', on);
+    return () => {
+      window.removeEventListener('app:toast', on);
+      activeTimers.forEach((t) => clearTimeout(t));
+      activeTimers.clear();
+    };
   }, []);
   return (
     <div className="toast-stack">

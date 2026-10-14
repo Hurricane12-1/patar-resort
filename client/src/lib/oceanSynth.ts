@@ -1,10 +1,15 @@
 // Synthesizes authentic tropical ocean wave soundscape using Web Audio API
-let audioCtx = null;
-let masterGain = null;
-let isPlaying = false;
-let waveTimer = null;
+// Fully bounded & leak-proof: disconnects all nodes, cancels timers & closes audio contexts
 
-export function toggleOceanSound(onStateChange) {
+let audioCtx: AudioContext | null = null;
+let masterGain: GainNode | null = null;
+let noiseSrc: AudioBufferSourceNode | null = null;
+let filter: BiquadFilterNode | null = null;
+let isPlaying = false;
+let waveTimer: any = null;
+let fadeTimeout: any = null;
+
+export function toggleOceanSound(onStateChange?: (active: boolean) => void): boolean {
   if (isPlaying) {
     stopOceanSound();
     if (onStateChange) onStateChange(false);
@@ -16,15 +21,19 @@ export function toggleOceanSound(onStateChange) {
   }
 }
 
-export function isOceanPlaying() {
+export function isOceanPlaying(): boolean {
   return isPlaying;
 }
 
-export function startOceanSound() {
+export function startOceanSound(): void {
   try {
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContext) return;
-    audioCtx = new AudioContext();
+    // 1. Teardown any existing active session immediately to guarantee single instance
+    stopOceanSound(true);
+
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+
+    audioCtx = new AudioContextClass();
 
     masterGain = audioCtx.createGain();
     masterGain.gain.setValueAtTime(0.18, audioCtx.currentTime);
@@ -48,12 +57,12 @@ export function startOceanSound() {
       b6 = white * 0.115926;
     }
 
-    const noiseSrc = audioCtx.createBufferSource();
+    noiseSrc = audioCtx.createBufferSource();
     noiseSrc.buffer = noiseBuffer;
     noiseSrc.loop = true;
 
     // Lowpass filter modulating like rolling ocean surf
-    const filter = audioCtx.createBiquadFilter();
+    filter = audioCtx.createBiquadFilter();
     filter.type = 'lowpass';
     filter.frequency.setValueAtTime(320, audioCtx.currentTime);
 
@@ -63,32 +72,74 @@ export function startOceanSound() {
 
     isPlaying = true;
 
-    // Modulate filter frequency rhythmically (wave cycle every 6-8 seconds)
+    // Modulate filter frequency rhythmically (wave cycle every 5 seconds)
     let up = true;
     waveTimer = setInterval(() => {
-      if (!audioCtx || audioCtx.state === 'closed') return;
-      const t = audioCtx.currentTime;
-      const targetFreq = up ? 850 : 260;
-      filter.frequency.exponentialRampToValueAtTime(targetFreq, t + 4.5);
-      up = !up;
+      if (!audioCtx || audioCtx.state === 'closed' || !filter) return;
+      try {
+        const t = audioCtx.currentTime;
+        const targetFreq = up ? 850 : 260;
+        filter.frequency.exponentialRampToValueAtTime(targetFreq, t + 4.5);
+        up = !up;
+      } catch {}
     }, 5000);
   } catch (err) {
-    console.warn('Web Audio playback error:', err);
-    isPlaying = false;
+    console.warn('Web Audio playback initialization error:', err);
+    stopOceanSound(true);
   }
 }
 
-export function stopOceanSound() {
-  if (waveTimer) clearInterval(waveTimer);
-  if (masterGain && audioCtx) {
-    try {
-      masterGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
-      setTimeout(() => {
-        if (audioCtx && audioCtx.state !== 'closed') audioCtx.close();
-        audioCtx = null;
-        masterGain = null;
-      }, 500);
-    } catch {}
-  }
+export function stopOceanSound(immediate = false): void {
   isPlaying = false;
+
+  // Clear recurring wave modulation timer immediately
+  if (waveTimer) {
+    clearInterval(waveTimer);
+    waveTimer = null;
+  }
+
+  // Clear any existing fade timeout
+  if (fadeTimeout) {
+    clearTimeout(fadeTimeout);
+    fadeTimeout = null;
+  }
+
+  const cleanupNodes = () => {
+    try {
+      if (noiseSrc) {
+        try { noiseSrc.stop(); } catch {}
+        try { noiseSrc.disconnect(); } catch {}
+        noiseSrc = null;
+      }
+      if (filter) {
+        try { filter.disconnect(); } catch {}
+        filter = null;
+      }
+      if (masterGain) {
+        try { masterGain.disconnect(); } catch {}
+        masterGain = null;
+      }
+      if (audioCtx && audioCtx.state !== 'closed') {
+        audioCtx.close().catch(() => {});
+        audioCtx = null;
+      }
+    } catch (err) {
+      console.warn('Audio cleanup warning:', err);
+    }
+  };
+
+  if (immediate || !masterGain || !audioCtx || audioCtx.state === 'closed') {
+    cleanupNodes();
+    return;
+  }
+
+  try {
+    masterGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+    fadeTimeout = setTimeout(() => {
+      cleanupNodes();
+      fadeTimeout = null;
+    }, 450);
+  } catch {
+    cleanupNodes();
+  }
 }

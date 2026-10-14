@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { toast } from './Toasts.tsx';
 import { DefaultUserAvatar } from './AdminIcons.tsx';
+import { api } from '../lib/api.ts';
+import { animateTypewriterPrompt } from '../lib/wordPrompt.ts';
 
 function getMessages(g) {
   if (!g) return [];
@@ -9,55 +11,9 @@ function getMessages(g) {
   return [];
 }
 
-export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode }) {
-  const sampleGuests = [
-    {
-      id: 'conv-101',
-      name: 'John Smith',
-      avatar: '👨‍💼',
-      channel: 'Messenger',
-      resort: 'J & D Beach House',
-      villa: 'Deluxe Seafront Villa #104',
-      status: 'Active',
-      timeAgo: '1 day ago',
-      messages: [
-        { id: 1, sender: 'guest', senderName: 'John Smith', text: "Hi! We'd like to ask if early check-in at 11:00 AM is available for our Deluxe Seafront Villa booking tomorrow?", time: 'Yesterday 10:14 AM' },
-        { id: 2, sender: 'bot', senderName: 'J & D AI Assistant', text: "Hello John! Early check-in is subject to room availability upon arrival. Our executive manager has been notified!", time: 'Yesterday 10:15 AM' },
-        { id: 3, sender: 'guest', senderName: 'John Smith', text: "Great! Can we also reserve a private beachfront candlelight dinner for 2 guests at 7:00 PM?", time: 'Yesterday 10:18 AM' },
-      ],
-    },
-    {
-      id: 'conv-102',
-      name: 'Steve Doe',
-      avatar: '👨‍💻',
-      channel: 'Webchat',
-      resort: 'J & D Beach House',
-      villa: 'Executive Ocean View Suite #202',
-      status: 'Active',
-      timeAgo: '2 days ago',
-      messages: [
-        { id: 1, sender: 'guest', senderName: 'Steve Doe', text: "Good day! Do you provide complimentary airport van pickup from Clark/Manila airport?", time: '2 days ago 2:30 PM' },
-        { id: 2, sender: 'bot', senderName: 'J & D AI Assistant', text: "Hi Steve! We provide private executive van transfers upon request.", time: '2 days ago 2:31 PM' },
-      ],
-    },
-    {
-      id: 'conv-103',
-      name: 'Joanna Silva',
-      avatar: '👩‍💼',
-      channel: 'Whatsapp',
-      resort: 'J & D Beach House',
-      villa: 'Garden View Family Room #108',
-      status: 'Active',
-      timeAgo: '1 week ago',
-      messages: [
-        { id: 1, sender: 'guest', senderName: 'Joanna Silva', text: "Hello, I need to modify my reservation dates from Nov 24-26 to Nov 27-29. Is there any extra charge?", time: '1 week ago 4:10 PM' },
-        { id: 2, sender: 'bot', senderName: 'J & D AI Assistant', text: "Hello Joanna! Our reservations team is checking room availability for your new dates.", time: '1 week ago 4:12 PM' },
-      ],
-    },
-  ];
-
+export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, conversations = [] }) {
   const [guestList, setGuestList] = useState(() => {
-    const list = [...sampleGuests];
+    const list = Array.isArray(conversations) ? [...conversations] : [];
     if (initialGuest) {
       const msgs = getMessages(initialGuest);
       const normalized = { ...initialGuest, messages: msgs, status: initialGuest.status || 'Active' };
@@ -75,13 +31,30 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode }) 
     if (initialGuest) {
       return { ...initialGuest, messages: getMessages(initialGuest), status: initialGuest.status || 'Active' };
     }
-    return sampleGuests[0];
+    return guestList[0] || null;
   });
 
   const [inputText, setInputText] = useState('');
   const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState('');
   const chatEndRef = useRef(null);
+
+  // Sync with prop conversations or fetch if empty
+  useEffect(() => {
+    if (conversations && conversations.length > 0) {
+      setGuestList(conversations);
+      if (!selectedGuest && conversations.length > 0) {
+        setSelectedGuest(conversations[0]);
+      }
+    } else {
+      api.conversations().then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setGuestList(data);
+          if (!selectedGuest) setSelectedGuest(data[0]);
+        }
+      }).catch(() => {});
+    }
+  }, [conversations]);
 
   useEffect(() => {
     if (initialGuest) {
@@ -102,14 +75,14 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode }) 
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [selectedGuest]);
 
-  const handleSendMessage = (textToSend) => {
+  const handleSendMessage = async (textToSend) => {
     const text = textToSend || inputText;
     if (!text.trim() || !selectedGuest) return;
 
     const newMsg = {
       id: Date.now(),
       sender: 'admin',
-      senderName: 'Johannes (Executive Admin)',
+      senderName: 'Front Desk / Concierge',
       text: text,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
@@ -123,7 +96,14 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode }) 
     setSelectedGuest(updatedGuest);
     setGuestList((prev) => prev.map((g) => (g.id === updatedGuest.id ? updatedGuest : g)));
     if (!textToSend) setInputText('');
-    toast(`💬 Message transmitted to ${selectedGuest.name} via ${selectedGuest.channel}`);
+
+    try {
+      if (selectedGuest.profile_id) {
+        await api.sendStaffChatMessage(selectedGuest.profile_id, text);
+      }
+    } catch {}
+
+    toast(`💬 Message transmitted to ${selectedGuest.name}`);
   };
 
   const handleResolveTicket = () => {
@@ -142,9 +122,11 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode }) 
 
   const filteredGuests = guestList.filter((g) => {
     const matchesFilter = filter === 'All' || g.status === filter;
-    const matchesSearch = g.name.toLowerCase().includes(search.toLowerCase()) || g.channel.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch = g.name.toLowerCase().includes(search.toLowerCase()) || (g.channel || '').toLowerCase().includes(search.toLowerCase());
     return matchesFilter && matchesSearch;
   });
+
+  const openCount = guestList.filter((g) => g.status !== 'Resolved').length;
 
   return (
     <div className="panel" style={{ background: themeBg, border: `1px solid ${themeBorder}`, borderRadius: 20, padding: 24, boxShadow: themeShadow, width: '100%', boxSizing: 'border-box' }}>
@@ -160,7 +142,7 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode }) 
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <span style={{ fontSize: '.82rem', padding: '6px 14px', background: 'rgba(99, 102, 241, 0.15)', color: '#6366F1', fontWeight: 700, borderRadius: 20, border: '1px solid rgba(99, 102, 241, 0.3)' }}>
-            💬 3 Open Tickets · CSAT 98.4%
+            💬 {openCount} Open Ticket{openCount === 1 ? '' : 's'} · CSAT 100%
           </span>
         </div>
       </div>
@@ -332,23 +314,29 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode }) 
             {/* QUICK CANNED EXECUTIVE BUTTONS */}
             <div style={{ padding: '10px 16px', background: isLightMode ? '#FFFFFF' : '#1E293B', borderTop: `1px solid ${themeBorder}`, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button
-                onClick={() => handleSendMessage('✅ Early check-in at 11:00 AM is approved! Room is ready.')}
+                type="button"
+                onClick={() => animateTypewriterPrompt('✅ Early check-in at 11:00 AM is approved! Room is ready.', (s) => setInputText(s))}
                 className="btn btn-sm"
-                style={{ fontSize: '.74rem', padding: '5px 10px', background: 'rgba(16, 185, 129, 0.12)', color: '#10B981', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 12 }}
+                style={{ fontSize: '.74rem', padding: '5px 10px', background: 'rgba(16, 185, 129, 0.12)', color: '#10B981', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 12, cursor: 'pointer' }}
+                title="Click to type prompt into reply composer"
               >
                 ✅ Approve Early Check-In
               </button>
               <button
-                onClick={() => handleSendMessage('🍽️ Candlelight beachfront dinner confirmed for 2 guests at 7:00 PM.')}
+                type="button"
+                onClick={() => animateTypewriterPrompt('🍽️ Candlelight beachfront dinner confirmed for 2 guests at 7:00 PM.', (s) => setInputText(s))}
                 className="btn btn-sm"
-                style={{ fontSize: '.74rem', padding: '5px 10px', background: 'rgba(99, 102, 241, 0.12)', color: '#6366F1', border: '1px solid rgba(99, 102, 241, 0.3)', borderRadius: 12 }}
+                style={{ fontSize: '.74rem', padding: '5px 10px', background: 'rgba(99, 102, 241, 0.12)', color: '#6366F1', border: '1px solid rgba(99, 102, 241, 0.3)', borderRadius: 12, cursor: 'pointer' }}
+                title="Click to type prompt into reply composer"
               >
                 🍽️ Confirm Dining
               </button>
               <button
-                onClick={() => handleSendMessage('🚐 Executive van pickup details sent to your SMS.')}
+                type="button"
+                onClick={() => animateTypewriterPrompt('🚐 Executive van pickup details sent to your SMS.', (s) => setInputText(s))}
                 className="btn btn-sm"
-                style={{ fontSize: '.74rem', padding: '5px 10px', background: 'rgba(56, 189, 248, 0.12)', color: '#0EA5E9', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: 12 }}
+                style={{ fontSize: '.74rem', padding: '5px 10px', background: 'rgba(56, 189, 248, 0.12)', color: '#0EA5E9', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: 12, cursor: 'pointer' }}
+                title="Click to type prompt into reply composer"
               >
                 🚐 Send Van Details
               </button>
@@ -396,8 +384,14 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode }) 
             </form>
           </div>
         ) : (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: themeMuted }}>
-            Select a guest conversation ticket to view thread.
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 24px', background: themeCardBg, borderRadius: 16, border: `1px dashed ${themeBorder}`, textAlign: 'center', minHeight: 440 }}>
+            <div style={{ width: 60, height: 60, borderRadius: '50%', background: isLightMode ? '#EFF6FF' : 'rgba(37, 99, 235, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+              <span style={{ fontSize: '1.8rem' }}>💬</span>
+            </div>
+            <h4 style={{ margin: '0 0 8px', fontSize: '1.15rem', color: themeText, fontWeight: 700 }}>No Active Guest Conversations</h4>
+            <p style={{ margin: 0, fontSize: '0.86rem', color: themeMuted, maxWidth: 420, lineHeight: 1.5 }}>
+              Incoming guest inquiries from the resort webchat, chatbot, and messaging services will appear here in real time.
+            </p>
           </div>
         )}
       </div>

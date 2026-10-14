@@ -8,7 +8,7 @@ create extension if not exists "btree_gist";
 -- ---------- ENUMS ----------
 create type stay_status       as enum ('pending','confirmed','checked_in','checked_out','cancelled','no_show');
 create type notif_status      as enum ('queued','sent','delivered','failed');
-create type user_role         as enum ('customer','staff','receptionist','accounting','administrator');
+create type user_role         as enum ('customer','staff','receptionist','accounting','administrator','admin');
 create type chat_role         as enum ('user','bot');
 create type dept_name         as enum ('front_desk','housekeeping','kitchen','tours','maintenance');
 create type task_priority     as enum ('low','normal','high','urgent');
@@ -52,13 +52,17 @@ create table reservations (
   room_id     uuid not null references rooms(id),
   check_in    date not null,
   check_out   date not null,
-  nights      int  generated always as (check_out - check_in) stored,
-  guests      int  not null check (guests > 0),
-  status      stay_status not null default 'pending',
-  notes       text not null default '',
-  total_php   int  not null check (total_php > 0),
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now(),
+  nights          int  generated always as (check_out - check_in) stored,
+  guests          int  not null check (guests > 0),
+  status          stay_status not null default 'pending',
+  payment_status  text not null default 'unpaid' check (payment_status in ('unpaid','partial','paid')),
+  downpayment_php int  not null default 0 check (downpayment_php >= 0),
+  total_php       int  not null check (total_php >= 0),
+  co_guests       text[] not null default '{}',
+  sub_unit_note   text,
+  notes           text not null default '',
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now(),
   check (check_out > check_in)
 );
 create index res_guest_idx   on reservations(guest_id);
@@ -141,6 +145,17 @@ create table resort_inventory (
   updated_at   timestamptz not null default now()
 );
 
+-- RESORT CUSTOMER SERVICE CATALOG
+create table resort_services (
+  id           uuid primary key default gen_random_uuid(),
+  category     text not null,               -- Dining | Amenity | Tour | Shuttle
+  name         text not null unique,
+  price_php    int not null default 0,
+  icon         text not null default '✨',
+  is_active    boolean not null default true,
+  created_at   timestamptz not null default now()
+);
+
 -- ---------- TRIGGERS ----------
 create or replace function handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
@@ -150,10 +165,11 @@ declare
   v_last text;
   v_full text;
 begin
-  v_first  := coalesce(new.raw_user_meta_data->>'first_name', '');
+  -- Support both custom metadata and Google/Facebook OAuth standards (given_name / family_name)
+  v_first  := coalesce(nullif(new.raw_user_meta_data->>'first_name', ''), nullif(new.raw_user_meta_data->>'given_name', ''), split_part(coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', ''), ' ', 1), '');
   v_middle := coalesce(new.raw_user_meta_data->>'middle_name', '');
-  v_last   := coalesce(new.raw_user_meta_data->>'last_name', '');
-  v_full   := coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', trim(concat(v_first, ' ', v_middle, ' ', v_last)));
+  v_last   := coalesce(nullif(new.raw_user_meta_data->>'last_name', ''), nullif(new.raw_user_meta_data->>'family_name', ''), substring(coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', '') from '^[^\s]+\s+(.*)$'), '');
+  v_full   := coalesce(nullif(new.raw_user_meta_data->>'full_name', ''), nullif(new.raw_user_meta_data->>'name', ''), trim(concat(v_first, ' ', v_middle, ' ', v_last)));
 
   insert into public.profiles (id, first_name, middle_name, last_name, full_name, phone, address, city, emergency_contact, role)
   values (new.id,
@@ -165,7 +181,12 @@ begin
           coalesce(new.raw_user_meta_data->>'address', ''),
           coalesce(new.raw_user_meta_data->>'city', ''),
           coalesce(new.raw_user_meta_data->>'emergency_contact', ''),
-          coalesce((new.raw_user_meta_data->>'role')::user_role, 'customer'));
+          coalesce((new.raw_user_meta_data->>'role')::user_role, 'customer'))
+  on conflict (id) do update set
+    first_name = case when excluded.first_name <> '' then excluded.first_name else profiles.first_name end,
+    last_name  = case when excluded.last_name <> '' then excluded.last_name else profiles.last_name end,
+    full_name  = case when excluded.full_name <> '' then excluded.full_name else profiles.full_name end,
+    role       = coalesce(excluded.role, profiles.role);
   return new;
 end $$;
 create trigger on_auth_user_created after insert on auth.users
@@ -275,7 +296,7 @@ alter table resort_inventory enable row level security;
 
 create or replace function public.is_admin_or_staff()
 returns boolean language sql stable security definer set search_path = public as $$
-  select exists (select 1 from public.profiles where id = auth.uid() and role in ('administrator','receptionist','accounting','staff'));
+  select exists (select 1 from public.profiles where id = auth.uid() and role in ('administrator','admin','receptionist','accounting','staff'));
 $$;
 
 create policy "profiles: self or admin read"   on profiles for select using (id = auth.uid() or is_admin_or_staff());
@@ -300,6 +321,10 @@ create policy "orders: own or staff read"      on resort_orders for select using
 create policy "orders: own insert"             on resort_orders for insert with check (guest_id = auth.uid());
 create policy "inventory: staff read write"    on resort_inventory for all using (is_admin_or_staff());
 
+alter table resort_services enable row level security;
+create policy "services: public read active"    on resort_services for select using (is_active or is_admin_or_staff());
+create policy "services: staff write"           on resort_services for all using (is_admin_or_staff()) with check (is_admin_or_staff());
+
 -- ---------- REALTIME ----------
 alter publication supabase_realtime add table reservations;
 alter publication supabase_realtime add table department_tasks;
@@ -307,6 +332,9 @@ alter publication supabase_realtime add table resort_orders;
 
 -- ---------- SEEDS · ROOM INVENTORY ----------
 insert into rooms (name, slug, category, description, capacity, units, rate_php, amenities) values
+ ('Unit TEV Grand Villa','unit-tev','Villa','Grand beachfront group villa for large gatherings, family reunions, and corporate retreats. Sleeps up to 60 guests.',60,1,18000,'{AC,Sea view,Kitchen,Grill,Karaoke,Porch}'),
+ ('Unit GEL Premier Suite','unit-gel','Suite','Spacious group suite overlooking the Patar white beach coastline. Sleeps up to 25 guests.',25,1,12000,'{AC,Balcony,Hot shower,WiFi,Kitchenette}'),
+ ('Unit CAT Cottage (Unit Papang)','unit-cat','Cottage','Native beachfront cottage with direct sand access. Also known in physical logbooks as Unit Papang. Sleeps up to 10 guests.',10,1,6000,'{Fan,AC,WiFi,Porch,Hot shower}'),
  ('Nipa Cove Cottage','nipa-cove','Cottage','Native nipa cottage steps from the sand. Fan-cooled, porch with hammock.',2,6,1450,'{Fan,Hot shower,WiFi,Porch}'),
  ('Garden Breeze Room','garden-breeze','Garden','AC room facing the mango garden. Queen bed, breakfast included.',2,8,1850,'{AC,WiFi,Hot shower,Breakfast}'),
  ('Habagat Sea-View Suite','habagat-suite','Suite','Front suite with private balcony hanging over the water.',3,4,2950,'{AC,Sea view,Balcony,WiFi,Breakfast}'),
@@ -322,3 +350,14 @@ insert into resort_inventory (item_name, category, stock_qty, unit, reorder_at) 
  ('Young Coconuts (Buko)', 'kitchen', 120, 'pcs', 25),
  ('Outrigger Life Jackets', 'tours', 35, 'pcs', 10),
  ('AC Air Filters & Gas', 'maintenance', 14, 'units', 4);
+
+-- ---------- SEEDS · SERVICES CATALOG ----------
+insert into resort_services (name, category, price_php, icon) values
+ ('Bolinao Grilled Bangus Breakfast', 'Dining', 380, '🐟'),
+ ('Fresh Buko Juice in Shell', 'Dining', 120, '🥥'),
+ ('Extra Beach Towels (Set of 2)', 'Amenity', 0, '🧺'),
+ ('Beachside Bonfire & Marshmallow Setup', 'Amenity', 850, '🔥'),
+ ('Patar Island Hopping Outrigger (Half-day)', 'Tour', 2200, '⛵'),
+ ('Cape Bolinao & Falls Guided Shuttle', 'Tour', 1400, '🗺️'),
+ ('Beachfront Sunset Kayak Rental (1 hr)', 'Tour', 450, '🚣'),
+ ('Bolinao Seafood Boodle Fight (Good for 6-8)', 'Dining', 3200, '🍤');

@@ -22,123 +22,123 @@ function generateDataHierarchyDrawio() {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <mxfile host="app.diagrams.net" modified="${new Date().toISOString()}" agent="Antigravity Draw.io MCP Server" version="24.0.0" type="device">
   <diagram id="data-hierarchy" name="J &amp; D Beach House - Data Hierarchy">
-    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1100" background="#0b132b" math="0" shadow="0">
+    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1100" background="#ffffff" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
 
         <!-- Title Header -->
-        <mxCell id="hdr_badge" value="&lt;font color=&quot;#38bdf8&quot;&gt;&lt;b&gt;DATA HIERARCHY &amp;amp; ENTITY DEPENDENCY SPECIFICATION&lt;/b&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e293b;strokeColor=#38bdf8;strokeWidth=2;fontColor=#38bdf8;arcSize=50;" vertex="1" parent="1">
+        <mxCell id="hdr_badge" value="&lt;font color=&quot;#1e293b&quot;&gt;&lt;b&gt;DATA HIERARCHY &amp;amp; ENTITY DEPENDENCY SPECIFICATION&lt;/b&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f1f5f9;strokeColor=#cbd5e1;strokeWidth=1.5;fontColor=#1e293b;arcSize=50;" vertex="1" parent="1">
           <mxGeometry x="500" y="20" width="450" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="hdr_title" value="&lt;font color=&quot;#ffffff&quot; style=&quot;font-size: 24px;&quot;&gt;&lt;b&gt;J &amp;amp; D Beach House · Relational Data Hierarchy&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font color=&quot;#94a3b8&quot; style=&quot;font-size: 13px;&quot;&gt;Multi-Tier Foreign Key Dependencies, Cryptographic Identity &amp;amp; PostgreSQL 15+ Schema Isolation&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+        <mxCell id="hdr_title" value="&lt;font color=&quot;#0f172a&quot; style=&quot;font-size: 24px;&quot;&gt;&lt;b&gt;J &amp;amp; D Beach House · Relational Data Hierarchy&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot; style=&quot;font-size: 13px;&quot;&gt;Multi-Tier Foreign Key Dependencies, Cryptographic Identity &amp;amp; PostgreSQL 15+ Schema Isolation&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
           <mxGeometry x="400" y="55" width="650" height="50" as="geometry" />
         </mxCell>
 
         <!-- Tier 0: Root Schema -->
-        <mxCell id="t0_db" value="&lt;b&gt;&lt;font style=&quot;font-size: 15px;&quot; color=&quot;#ffffff&quot;&gt;Core PostgreSQL 15+ Database&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#cbd5e1&quot;&gt;Supabase Core Instance · Public Schema&lt;br&gt;Extensions: pgcrypto · btree_gist&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0f172a;strokeColor=#0284c7;strokeWidth=2;arcSize=10;" vertex="1" parent="1">
+        <mxCell id="t0_db" value="&lt;b&gt;&lt;font style=&quot;font-size: 15px;&quot; color=&quot;#0f172a&quot;&gt;Core PostgreSQL 15+ Database&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;Supabase Core Instance · Public Schema&lt;br&gt;Extensions: pgcrypto · btree_gist&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#475569;strokeWidth=1.5;arcSize=10;" vertex="1" parent="1">
           <mxGeometry x="540" y="120" width="370" height="60" as="geometry" />
         </mxCell>
 
         <!-- Tier 1: Master Roots -->
-        <mxCell id="t1_rooms" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#ffffff&quot;&gt;rooms&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#a7f3d0&quot;&gt;Accommodation Catalog&lt;br&gt;Unit Inventory, Base Rates &amp;amp; Capacity&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#064e3b;strokeColor=#10b981;strokeWidth=2;arcSize=10;" vertex="1" parent="1">
+        <mxCell id="t1_rooms" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#0f172a&quot;&gt;rooms&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#047857&quot;&gt;Accommodation Catalog&lt;br&gt;Unit Inventory, Base Rates &amp;amp; Capacity&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#059669;strokeWidth=1.5;arcSize=10;" vertex="1" parent="1">
           <mxGeometry x="120" y="230" width="280" height="70" as="geometry" />
         </mxCell>
 
-        <mxCell id="t1_auth" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#ffffff&quot;&gt;auth.users&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#bae6fd&quot;&gt;Supabase Cryptographic Identity Root&lt;br&gt;Managed OAuth / Passwords (UUID)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#075985;strokeColor=#38bdf8;strokeWidth=2;arcSize=10;" vertex="1" parent="1">
+        <mxCell id="t1_auth" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#0f172a&quot;&gt;auth.users&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#0369a1&quot;&gt;Supabase Cryptographic Identity Root&lt;br&gt;Managed OAuth / Passwords (UUID)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0284c7;strokeWidth=1.5;arcSize=10;" vertex="1" parent="1">
           <mxGeometry x="585" y="230" width="280" height="70" as="geometry" />
         </mxCell>
 
-        <mxCell id="t1_dept" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#ffffff&quot;&gt;dept_name (ENUM)&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#fde68a&quot;&gt;5 Operational Departments&lt;br&gt;front_desk · housekeeping · kitchen · tours · maint&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#78350f;strokeColor=#f59e0b;strokeWidth=2;arcSize=10;" vertex="1" parent="1">
+        <mxCell id="t1_dept" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#0f172a&quot;&gt;dept_name (ENUM)&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#b45309&quot;&gt;5 Operational Departments&lt;br&gt;front_desk · housekeeping · kitchen · tours · maint&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d97706;strokeWidth=1.5;arcSize=10;" vertex="1" parent="1">
           <mxGeometry x="1050" y="230" width="300" height="70" as="geometry" />
         </mxCell>
 
         <!-- Tier 2: Profiles (1:1 Auth) -->
-        <mxCell id="t2_profiles" value="&lt;b&gt;&lt;font style=&quot;font-size: 15px;&quot; color=&quot;#ffffff&quot;&gt;profiles&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#99f6e4&quot;&gt;Full Name · Phone · Address · Emergency Contact&lt;br&gt;&lt;b&gt;Role:&lt;/b&gt; customer | staff | receptionist | accounting | administrator&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#134e4a;strokeColor=#2dd4bf;strokeWidth=2.5;arcSize=10;" vertex="1" parent="1">
+        <mxCell id="t2_profiles" value="&lt;b&gt;&lt;font style=&quot;font-size: 15px;&quot; color=&quot;#0f172a&quot;&gt;profiles&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#0f766e&quot;&gt;Full Name · Phone · Address · Emergency Contact&lt;br&gt;&lt;b&gt;Role:&lt;/b&gt; customer | staff | receptionist | accounting | administrator&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0d9488;strokeWidth=2;arcSize=10;" vertex="1" parent="1">
           <mxGeometry x="525" y="350" width="400" height="70" as="geometry" />
         </mxCell>
 
         <!-- Tier 3: Core Transactional Entities -->
-        <mxCell id="t3_orders" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#ffffff&quot;&gt;resort_orders&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#bfdbfe&quot;&gt;In-Room Dining · Tour Bookings · Amenities&lt;br&gt;FK: guest_id → profiles.id&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e3a8a;strokeColor=#60a5fa;strokeWidth=2;arcSize=10;" vertex="1" parent="1">
+        <mxCell id="t3_orders" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#0f172a&quot;&gt;resort_orders&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;In-Room Dining · Tour Bookings · Amenities&lt;br&gt;&lt;font color=&quot;#2563eb&quot;&gt;FK: guest_id → profiles.id&lt;/font&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2563eb;strokeWidth=1.5;arcSize=10;" vertex="1" parent="1">
           <mxGeometry x="80" y="480" width="240" height="80" as="geometry" />
         </mxCell>
 
-        <mxCell id="t3_reservations" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#ffffff&quot;&gt;reservations&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#38bdf8&quot;&gt;&lt;b&gt;Date-Range Stay Engine (GiST Guard)&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font color=&quot;#bfdbfe&quot;&gt;Check-In · Check-Out · Total PHP · Status&lt;br&gt;FK: guest_id &amp;amp; room_id&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e3a8a;strokeColor=#38bdf8;strokeWidth=3;arcSize=10;" vertex="1" parent="1">
+        <mxCell id="t3_reservations" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#0f172a&quot;&gt;reservations&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#0284c7&quot;&gt;&lt;b&gt;Date-Range Stay Engine (GiST Guard)&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;Check-In · Check-Out · Total PHP · Status&lt;br&gt;&lt;font color=&quot;#2563eb&quot;&gt;FK: guest_id &amp;amp; room_id&lt;/font&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0284c7;strokeWidth=2;arcSize=10;" vertex="1" parent="1">
           <mxGeometry x="360" y="480" width="270" height="80" as="geometry" />
         </mxCell>
 
-        <mxCell id="t3_chat" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#ffffff&quot;&gt;chat_messages&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#bfdbfe&quot;&gt;AI Receptionist Dialogues &amp;amp; Transcripts&lt;br&gt;FK: profile_id → profiles.id&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e3a8a;strokeColor=#60a5fa;strokeWidth=2;arcSize=10;" vertex="1" parent="1">
+        <mxCell id="t3_chat" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#0f172a&quot;&gt;chat_messages&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;AI Receptionist Dialogues &amp;amp; Transcripts&lt;br&gt;&lt;font color=&quot;#2563eb&quot;&gt;FK: profile_id → profiles.id&lt;/font&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2563eb;strokeWidth=1.5;arcSize=10;" vertex="1" parent="1">
           <mxGeometry x="670" y="480" width="240" height="80" as="geometry" />
         </mxCell>
 
-        <mxCell id="t3_tasks" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#ffffff&quot;&gt;department_tasks&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#bfdbfe&quot;&gt;Housekeeping &amp;amp; Maintenance Queue&lt;br&gt;FK: created_by, room_id, dept_name&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e3a8a;strokeColor=#60a5fa;strokeWidth=2;arcSize=10;" vertex="1" parent="1">
+        <mxCell id="t3_tasks" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#0f172a&quot;&gt;department_tasks&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;Housekeeping &amp;amp; Maintenance Queue&lt;br&gt;&lt;font color=&quot;#2563eb&quot;&gt;FK: created_by, room_id, dept_name&lt;/font&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2563eb;strokeWidth=1.5;arcSize=10;" vertex="1" parent="1">
           <mxGeometry x="950" y="480" width="250" height="80" as="geometry" />
         </mxCell>
 
-        <mxCell id="t3_inventory" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#ffffff&quot;&gt;resort_inventory&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#fde68a&quot;&gt;Stock Qty &amp;amp; Reorder Triggers&lt;br&gt;Category: dept_name ENUM&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#78350f;strokeColor=#f59e0b;strokeWidth=2;arcSize=10;" vertex="1" parent="1">
+        <mxCell id="t3_inventory" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#0f172a&quot;&gt;resort_inventory&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;Stock Qty &amp;amp; Reorder Triggers&lt;br&gt;&lt;font color=&quot;#b45309&quot;&gt;Category: dept_name ENUM&lt;/font&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d97706;strokeWidth=1.5;arcSize=10;" vertex="1" parent="1">
           <mxGeometry x="1240" y="480" width="220" height="80" as="geometry" />
         </mxCell>
 
         <!-- Tier 4: Grandchild Transactions -->
-        <mxCell id="t4_reviews" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#ffffff&quot;&gt;reviews&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#c7d2fe&quot;&gt;Verified Stay 1-5 Star Ratings &amp;amp; Feedback&lt;br&gt;FK: 1:1 per stay (reservation_id)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#312e81;strokeColor=#818cf8;strokeWidth=2;arcSize=10;" vertex="1" parent="1">
+        <mxCell id="t4_reviews" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#0f172a&quot;&gt;reviews&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#4338ca&quot;&gt;Verified Stay 1-5 Star Ratings &amp;amp; Feedback&lt;br&gt;FK: 1:1 per stay (reservation_id)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#4f46e5;strokeWidth=1.5;arcSize=10;" vertex="1" parent="1">
           <mxGeometry x="270" y="630" width="260" height="75" as="geometry" />
         </mxCell>
 
-        <mxCell id="t4_notifs" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#ffffff&quot;&gt;notifications&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#c7d2fe&quot;&gt;Twilio SMS Logs &amp;amp; Pass Dispatch&lt;br&gt;FK: reservation_id &amp;amp; profile_id&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#312e81;strokeColor=#818cf8;strokeWidth=2;arcSize=10;" vertex="1" parent="1">
+        <mxCell id="t4_notifs" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot; color=&quot;#0f172a&quot;&gt;notifications&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#4338ca&quot;&gt;Twilio SMS Logs &amp;amp; Pass Dispatch&lt;br&gt;FK: reservation_id &amp;amp; profile_id&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#4f46e5;strokeWidth=1.5;arcSize=10;" vertex="1" parent="1">
           <mxGeometry x="570" y="630" width="260" height="75" as="geometry" />
         </mxCell>
 
         <!-- Tier 5: Analytics Views -->
-        <mxCell id="t5_analytics" value="&lt;b&gt;&lt;font style=&quot;font-size: 15px;&quot; color=&quot;#ffffff&quot;&gt;analytics_overview &amp;amp; analytics_daily (SQL Views)&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#fde68a&quot;&gt;Real-Time Occupancy Rate % · Weekly Revenue (PHP) · RevPAR · Check-Ins/Check-Outs · SMS Delivery Health&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#451a03;strokeColor=#fbbf24;strokeWidth=2.5;arcSize=10;" vertex="1" parent="1">
+        <mxCell id="t5_analytics" value="&lt;b&gt;&lt;font style=&quot;font-size: 15px;&quot; color=&quot;#0f172a&quot;&gt;analytics_overview &amp;amp; analytics_daily (SQL Views)&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#92400e&quot;&gt;Real-Time Occupancy Rate % · Weekly Revenue (PHP) · RevPAR · Check-Ins/Check-Outs · SMS Delivery Health&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffbeb;strokeColor=#d97706;strokeWidth=1.5;arcSize=10;" vertex="1" parent="1">
           <mxGeometry x="380" y="770" width="690" height="70" as="geometry" />
         </mxCell>
 
         <!-- CONNECTORS -->
-        <mxCell id="e_db_auth" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0284c7;strokeWidth=2;" edge="1" parent="1" source="t0_db" target="t1_auth">
+        <mxCell id="e_db_auth" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;" edge="1" parent="1" source="t0_db" target="t1_auth">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_db_rooms" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0284c7;strokeWidth=2;" edge="1" parent="1" source="t0_db" target="t1_rooms">
+        <mxCell id="e_db_rooms" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;" edge="1" parent="1" source="t0_db" target="t1_rooms">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_db_dept" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0284c7;strokeWidth=2;" edge="1" parent="1" source="t0_db" target="t1_dept">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-
-        <mxCell id="e_auth_prof" value="1:1 (id = id) CASCADE" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#38bdf8;strokeWidth=2.5;fontColor=#bae6fd;" edge="1" parent="1" source="t1_auth" target="t2_profiles">
+        <mxCell id="e_db_dept" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;" edge="1" parent="1" source="t0_db" target="t1_dept">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
-        <mxCell id="e_prof_orders" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2dd4bf;strokeWidth=2;" edge="1" parent="1" source="t2_profiles" target="t3_orders">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e_prof_res" value="1:N guest_id" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2dd4bf;strokeWidth=2.5;fontColor=#99f6e4;" edge="1" parent="1" source="t2_profiles" target="t3_reservations">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e_prof_chat" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2dd4bf;strokeWidth=2;" edge="1" parent="1" source="t2_profiles" target="t3_chat">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e_prof_tasks" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2dd4bf;strokeWidth=2;" edge="1" parent="1" source="t2_profiles" target="t3_tasks">
+        <mxCell id="e_auth_prof" value="1:1 (id = id) CASCADE" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0284c7;strokeWidth=2;fontColor=#0369a1;" edge="1" parent="1" source="t1_auth" target="t2_profiles">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
-        <mxCell id="e_rooms_res" value="1:N room_id" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#10b981;strokeWidth=2;dashed=1;fontColor=#a7f3d0;" edge="1" parent="1" source="t1_rooms" target="t3_reservations">
+        <mxCell id="e_prof_orders" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0d9488;strokeWidth=1.5;" edge="1" parent="1" source="t2_profiles" target="t3_orders">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_dept_tasks" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#f59e0b;strokeWidth=2;dashed=1;" edge="1" parent="1" source="t1_dept" target="t3_tasks">
+        <mxCell id="e_prof_res" value="1:N guest_id" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0d9488;strokeWidth=2;fontColor=#0f766e;" edge="1" parent="1" source="t2_profiles" target="t3_reservations">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_dept_inv" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#f59e0b;strokeWidth=2;dashed=1;" edge="1" parent="1" source="t1_dept" target="t3_inventory">
+        <mxCell id="e_prof_chat" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0d9488;strokeWidth=1.5;" edge="1" parent="1" source="t2_profiles" target="t3_chat">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-
-        <mxCell id="e_res_rev" value="1:1 Stay" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#38bdf8;strokeWidth=2;fontColor=#7dd3fc;" edge="1" parent="1" source="t3_reservations" target="t4_reviews">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e_res_notif" value="1:N Audit" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#38bdf8;strokeWidth=2;fontColor=#7dd3fc;" edge="1" parent="1" source="t3_reservations" target="t4_notifs">
+        <mxCell id="e_prof_tasks" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0d9488;strokeWidth=1.5;" edge="1" parent="1" source="t2_profiles" target="t3_tasks">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
-        <mxCell id="e_res_analytics" value="Aggregates Stays, Nightly Revenue, Occupancy" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#fbbf24;strokeWidth=2;dashed=1;fontColor=#fde68a;" edge="1" parent="1" source="t3_reservations" target="t5_analytics">
+        <mxCell id="e_rooms_res" value="1:N room_id" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#059669;strokeWidth=1.5;dashed=1;fontColor=#047857;" edge="1" parent="1" source="t1_rooms" target="t3_reservations">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dept_tasks" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#d97706;strokeWidth=1.5;dashed=1;" edge="1" parent="1" source="t1_dept" target="t3_tasks">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dept_inv" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#d97706;strokeWidth=1.5;dashed=1;" edge="1" parent="1" source="t1_dept" target="t3_inventory">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e_res_rev" value="1:1 Stay" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0284c7;strokeWidth=1.5;fontColor=#0369a1;" edge="1" parent="1" source="t3_reservations" target="t4_reviews">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_res_notif" value="1:N Audit" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0284c7;strokeWidth=1.5;fontColor=#0369a1;" edge="1" parent="1" source="t3_reservations" target="t4_notifs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e_res_analytics" value="Aggregates Stays, Nightly Revenue, Occupancy" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#d97706;strokeWidth=1.5;dashed=1;fontColor=#92400e;" edge="1" parent="1" source="t3_reservations" target="t5_analytics">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="495" y="600" />
@@ -155,215 +155,185 @@ function generateDataHierarchyDrawio() {
 }
 
 function generateDataHierarchySvg() {
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1100" width="1600" height="1100" style="background:#0b132b; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1100" width="1600" height="1100" style="background:#ffffff; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
   <defs>
-    <linearGradient id="dbGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0f172a" />
-      <stop offset="100%" stop-color="#1e293b" />
-    </linearGradient>
-    <linearGradient id="roomsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#064e3b" />
-      <stop offset="100%" stop-color="#022c22" />
-    </linearGradient>
-    <linearGradient id="authGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#075985" />
-      <stop offset="100%" stop-color="#0c4a6e" />
-    </linearGradient>
-    <linearGradient id="deptGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#78350f" />
-      <stop offset="100%" stop-color="#451a03" />
-    </linearGradient>
-    <linearGradient id="profGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#134e4a" />
-      <stop offset="100%" stop-color="#042f2e" />
-    </linearGradient>
-    <linearGradient id="coreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#1e3a8a" />
-      <stop offset="100%" stop-color="#172554" />
-    </linearGradient>
-    <linearGradient id="leafGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#312e81" />
-      <stop offset="100%" stop-color="#1e1b4b" />
-    </linearGradient>
-    <linearGradient id="aggGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#451a03" />
-      <stop offset="100%" stop-color="#290f02" />
-    </linearGradient>
-
     <filter id="shadow" x="-5%" y="-5%" width="110%" height="115%">
-      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000000" flood-opacity="0.45" />
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f172a" flood-opacity="0.06" />
     </filter>
+    <marker id="arrowSlate" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
+    </marker>
     <marker id="arrowSky" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-      <polygon points="0 0, 10 3.5, 0 7" fill="#38bdf8" />
+      <polygon points="0 0, 10 3.5, 0 7" fill="#0284c7" />
     </marker>
     <marker id="arrowTeal" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-      <polygon points="0 0, 10 3.5, 0 7" fill="#2dd4bf" />
+      <polygon points="0 0, 10 3.5, 0 7" fill="#0d9488" />
     </marker>
     <marker id="arrowGold" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-      <polygon points="0 0, 10 3.5, 0 7" fill="#fbbf24" />
+      <polygon points="0 0, 10 3.5, 0 7" fill="#d97706" />
     </marker>
   </defs>
 
   <!-- Title Header -->
   <g transform="translate(800, 50)" text-anchor="middle">
-    <rect x="-220" y="-30" width="440" height="28" rx="14" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5" />
-    <text y="-11" fill="#38bdf8" font-size="12" font-weight="700" letter-spacing="1.5">DATA HIERARCHY &amp; SYSTEM SPECIFICATION</text>
-    <text y="28" fill="#ffffff" font-size="28" font-weight="800">J &amp; D Beach House · Entity Dependency Tree</text>
-    <text y="54" fill="#94a3b8" font-size="14">Multi-Tier Relational Structure · Foreign Key Isolation · Supabase / PostgreSQL 15+</text>
+    <rect x="-220" y="-30" width="440" height="28" rx="14" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5" />
+    <text y="-11" fill="#1e293b" font-size="12" font-weight="700" letter-spacing="1.5">DATA HIERARCHY &amp; SYSTEM SPECIFICATION</text>
+    <text y="28" fill="#0f172a" font-size="28" font-weight="800">J &amp; D Beach House · Entity Dependency Tree</text>
+    <text y="54" fill="#64748b" font-size="14">Multi-Tier Relational Structure · Foreign Key Isolation · Supabase / PostgreSQL 15+</text>
   </g>
 
   <!-- Connecting Lines -->
   <!-- DB Root to Tier 1 -->
-  <path d="M 800, 180 L 800, 230" stroke="#0284c7" stroke-width="2" marker-end="url(#arrowSky)" />
-  <path d="M 615, 150 L 260, 150 L 260, 230" stroke="#0284c7" stroke-width="2" marker-end="url(#arrowSky)" />
-  <path d="M 985, 150 L 1340, 150 L 1340, 230" stroke="#0284c7" stroke-width="2" marker-end="url(#arrowSky)" />
+  <path d="M 800, 180 L 800, 230" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrowSlate)" />
+  <path d="M 615, 150 L 260, 150 L 260, 230" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrowSlate)" />
+  <path d="M 985, 150 L 1340, 150 L 1340, 230" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrowSlate)" />
 
   <!-- Auth to Profiles -->
-  <path d="M 800, 300 L 800, 350" stroke="#38bdf8" stroke-width="3" marker-end="url(#arrowSky)" />
+  <path d="M 800, 300 L 800, 350" stroke="#0284c7" stroke-width="2" marker-end="url(#arrowSky)" />
 
   <!-- Profiles to Tier 3 Children -->
-  <path d="M 800, 420 L 800, 450 L 200, 450 L 200, 480" stroke="#2dd4bf" stroke-width="2" marker-end="url(#arrowTeal)" />
-  <path d="M 800, 420 L 800, 450 L 495, 450 L 495, 480" stroke="#2dd4bf" stroke-width="2.5" marker-end="url(#arrowTeal)" />
-  <path d="M 800, 420 L 800, 480" stroke="#2dd4bf" stroke-width="2" marker-end="url(#arrowTeal)" />
-  <path d="M 800, 420 L 800, 450 L 1075, 450 L 1075, 480" stroke="#2dd4bf" stroke-width="2" marker-end="url(#arrowTeal)" />
+  <path d="M 800, 420 L 800, 450 L 200, 450 L 200, 480" stroke="#0d9488" stroke-width="1.5" marker-end="url(#arrowTeal)" />
+  <path d="M 800, 420 L 800, 450 L 495, 450 L 495, 480" stroke="#0d9488" stroke-width="2" marker-end="url(#arrowTeal)" />
+  <path d="M 800, 420 L 800, 480" stroke="#0d9488" stroke-width="1.5" marker-end="url(#arrowTeal)" />
+  <path d="M 800, 420 L 800, 450 L 1075, 450 L 1075, 480" stroke="#0d9488" stroke-width="1.5" marker-end="url(#arrowTeal)" />
 
   <!-- Rooms Catalog to Reservations -->
-  <path d="M 260, 300 L 260, 370 L 430, 370 L 430, 480" stroke="#10b981" stroke-width="2" stroke-dasharray="6 4" />
+  <path d="M 260, 300 L 260, 370 L 430, 370 L 430, 480" stroke="#059669" stroke-width="1.5" stroke-dasharray="6 4" />
 
   <!-- Dept Enum to Tasks & Inventory -->
-  <path d="M 1340, 300 L 1340, 370 L 1150, 370 L 1150, 480" stroke="#f59e0b" stroke-width="2" stroke-dasharray="6 4" />
-  <path d="M 1340, 300 L 1340, 480" stroke="#f59e0b" stroke-width="2" stroke-dasharray="6 4" />
+  <path d="M 1340, 300 L 1340, 370 L 1150, 370 L 1150, 480" stroke="#d97706" stroke-width="1.5" stroke-dasharray="6 4" />
+  <path d="M 1340, 300 L 1340, 480" stroke="#d97706" stroke-width="1.5" stroke-dasharray="6 4" />
 
   <!-- Reservations to Tier 4 (Reviews & Notifications) -->
-  <path d="M 495, 560 L 495, 595 L 400, 595 L 400, 630" stroke="#818cf8" stroke-width="2" marker-end="url(#arrowSky)" />
-  <path d="M 495, 560 L 495, 595 L 700, 595 L 700, 630" stroke="#818cf8" stroke-width="2" marker-end="url(#arrowSky)" />
+  <path d="M 495, 560 L 495, 595 L 400, 595 L 400, 630" stroke="#4f46e5" stroke-width="1.5" marker-end="url(#arrowSky)" />
+  <path d="M 495, 560 L 495, 595 L 700, 595 L 700, 630" stroke="#4f46e5" stroke-width="1.5" marker-end="url(#arrowSky)" />
 
   <!-- Reservations & Units to Analytics -->
-  <path d="M 495, 560 L 495, 605 L 140, 605 L 140, 805 L 440, 805" stroke="#fbbf24" stroke-width="2.5" stroke-dasharray="6 4" marker-end="url(#arrowGold)" />
-  <path d="M 700, 705 L 700, 770" stroke="#fbbf24" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrowGold)" />
+  <path d="M 495, 560 L 495, 605 L 140, 605 L 140, 805 L 440, 805" stroke="#d97706" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrowGold)" />
+  <path d="M 700, 705 L 700, 770" stroke="#d97706" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#arrowGold)" />
 
   <!-- TIER 0: ROOT DATABASE -->
   <g transform="translate(615, 120)" filter="url(#shadow)">
-    <rect width="370" height="60" rx="10" fill="url(#dbGrad)" stroke="#0284c7" stroke-width="2" />
-    <rect x="14" y="10" width="80" height="18" rx="4" fill="#0369a1" />
-    <text x="54" y="23" fill="#38bdf8" font-size="10" font-weight="700" text-anchor="middle">TIER 0 · ROOT</text>
-    <text x="14" y="44" fill="#ffffff" font-size="15" font-weight="700">Core PostgreSQL 15+ Database</text>
-    <text x="14" y="56" fill="#94a3b8" font-size="11">Supabase Public Schema · pgcrypto · btree_gist</text>
+    <rect width="370" height="60" rx="10" fill="#f8fafc" stroke="#475569" stroke-width="1.5" />
+    <rect x="14" y="10" width="80" height="18" rx="4" fill="#e2e8f0" />
+    <text x="54" y="23" fill="#334155" font-size="10" font-weight="700" text-anchor="middle">TIER 0 · ROOT</text>
+    <text x="14" y="44" fill="#0f172a" font-size="15" font-weight="700">Core PostgreSQL 15+ Database</text>
+    <text x="14" y="56" fill="#64748b" font-size="11">Supabase Public Schema · pgcrypto · btree_gist</text>
   </g>
 
   <!-- TIER 1: MASTER ASSETS & AUTH -->
   <!-- Rooms Catalog -->
   <g transform="translate(120, 230)" filter="url(#shadow)">
-    <rect width="280" height="70" rx="10" fill="url(#roomsGrad)" stroke="#10b981" stroke-width="2" />
-    <rect x="14" y="10" width="85" height="18" rx="4" fill="#064e3b" />
-    <text x="56" y="23" fill="#34d399" font-size="10" font-weight="700" text-anchor="middle">TIER 1 · MASTER</text>
-    <text x="14" y="45" fill="#ffffff" font-size="16" font-weight="700">rooms</text>
-    <text x="14" y="60" fill="#a7f3d0" font-size="11">Accommodations Master Catalog &amp; Rates</text>
+    <rect width="280" height="70" rx="10" fill="#ffffff" stroke="#059669" stroke-width="1.5" />
+    <rect x="14" y="10" width="85" height="18" rx="4" fill="#d1fae5" />
+    <text x="56" y="23" fill="#065f46" font-size="10" font-weight="700" text-anchor="middle">TIER 1 · MASTER</text>
+    <text x="14" y="45" fill="#0f172a" font-size="16" font-weight="700">rooms</text>
+    <text x="14" y="60" fill="#047857" font-size="11">Accommodations Master Catalog &amp; Rates</text>
   </g>
 
   <!-- Supabase Auth Root -->
   <g transform="translate(660, 230)" filter="url(#shadow)">
-    <rect width="280" height="70" rx="10" fill="url(#authGrad)" stroke="#38bdf8" stroke-width="2.5" />
-    <rect x="14" y="10" width="85" height="18" rx="4" fill="#0369a1" />
-    <text x="56" y="23" fill="#38bdf8" font-size="10" font-weight="700" text-anchor="middle">TIER 1 · IDENTITY</text>
-    <text x="14" y="45" fill="#ffffff" font-size="16" font-weight="700">auth.users</text>
-    <text x="14" y="60" fill="#bae6fd" font-size="11">Cryptographic Identity Root (UUID)</text>
+    <rect width="280" height="70" rx="10" fill="#ffffff" stroke="#0284c7" stroke-width="2" />
+    <rect x="14" y="10" width="85" height="18" rx="4" fill="#e0f2fe" />
+    <text x="56" y="23" fill="#0369a1" font-size="10" font-weight="700" text-anchor="middle">TIER 1 · IDENTITY</text>
+    <text x="14" y="45" fill="#0f172a" font-size="16" font-weight="700">auth.users</text>
+    <text x="14" y="60" fill="#0284c7" font-size="11">Cryptographic Identity Root (UUID)</text>
   </g>
 
   <!-- Dept Name Enum -->
   <g transform="translate(1200, 230)" filter="url(#shadow)">
-    <rect width="280" height="70" rx="10" fill="url(#deptGrad)" stroke="#f59e0b" stroke-width="2" />
-    <rect x="14" y="10" width="75" height="18" rx="4" fill="#78350f" />
-    <text x="51" y="23" fill="#fbbf24" font-size="10" font-weight="700" text-anchor="middle">TIER 1 · ENUM</text>
-    <text x="14" y="45" fill="#ffffff" font-size="16" font-weight="700">dept_name (ENUM)</text>
-    <text x="14" y="60" fill="#fde68a" font-size="11">5 Operational Department Divisions</text>
+    <rect width="280" height="70" rx="10" fill="#ffffff" stroke="#d97706" stroke-width="1.5" />
+    <rect x="14" y="10" width="75" height="18" rx="4" fill="#fef3c7" />
+    <text x="51" y="23" fill="#92400e" font-size="10" font-weight="700" text-anchor="middle">TIER 1 · ENUM</text>
+    <text x="14" y="45" fill="#0f172a" font-size="16" font-weight="700">dept_name (ENUM)</text>
+    <text x="14" y="60" fill="#b45309" font-size="11">5 Operational Department Divisions</text>
   </g>
 
   <!-- TIER 2: IDENTITY PROFILES -->
   <g transform="translate(560, 350)" filter="url(#shadow)">
-    <rect width="480" height="70" rx="10" fill="url(#profGrad)" stroke="#2dd4bf" stroke-width="2.5" />
-    <rect x="14" y="10" width="105" height="18" rx="4" fill="#0f766e" />
-    <text x="66" y="23" fill="#5eead4" font-size="10" font-weight="700" text-anchor="middle">TIER 2 · 1:1 AUTH</text>
-    <text x="14" y="45" fill="#ffffff" font-size="16" font-weight="700">profiles</text>
-    <text x="14" y="60" fill="#ccfbf1" font-size="11">Full Name · Phone · Role: customer | staff | receptionist | admin</text>
+    <rect width="480" height="70" rx="10" fill="#ffffff" stroke="#0d9488" stroke-width="2" />
+    <rect x="14" y="10" width="105" height="18" rx="4" fill="#ccfbf1" />
+    <text x="66" y="23" fill="#0f766e" font-size="10" font-weight="700" text-anchor="middle">TIER 2 · 1:1 AUTH</text>
+    <text x="14" y="45" fill="#0f172a" font-size="16" font-weight="700">profiles</text>
+    <text x="14" y="60" fill="#0d9488" font-size="11">Full Name · Phone · Role: customer | staff | receptionist | admin</text>
   </g>
 
   <!-- TIER 3: CORE OPERATIONAL ENGINE -->
   <g transform="translate(80, 480)" filter="url(#shadow)">
-    <rect width="240" height="80" rx="10" fill="url(#coreGrad)" stroke="#60a5fa" stroke-width="2" />
-    <rect x="12" y="10" width="80" height="18" rx="4" fill="#1e40af" />
-    <text x="52" y="23" fill="#93c5fd" font-size="10" font-weight="700" text-anchor="middle">TIER 3 · 1:N</text>
-    <text x="12" y="46" fill="#ffffff" font-size="15" font-weight="700">resort_orders</text>
-    <text x="12" y="62" fill="#bfdbfe" font-size="11">Dining, Tours &amp; Amenities</text>
-    <text x="12" y="74" fill="#60a5fa" font-size="10">FK: guest_id → profiles.id</text>
+    <rect width="240" height="80" rx="10" fill="#ffffff" stroke="#2563eb" stroke-width="1.5" />
+    <rect x="12" y="10" width="80" height="18" rx="4" fill="#eff6ff" />
+    <text x="52" y="23" fill="#1d4ed8" font-size="10" font-weight="700" text-anchor="middle">TIER 3 · 1:N</text>
+    <text x="12" y="46" fill="#0f172a" font-size="15" font-weight="700">resort_orders</text>
+    <text x="12" y="62" fill="#475569" font-size="11">Dining, Tours &amp; Amenities</text>
+    <text x="12" y="74" fill="#2563eb" font-size="10">FK: guest_id → profiles.id</text>
   </g>
 
   <g transform="translate(360, 480)" filter="url(#shadow)">
-    <rect width="270" height="80" rx="10" fill="url(#coreGrad)" stroke="#38bdf8" stroke-width="3" />
-    <rect x="12" y="10" width="115" height="18" rx="4" fill="#0369a1" />
-    <text x="69" y="23" fill="#38bdf8" font-size="10" font-weight="700" text-anchor="middle">TIER 3 · CORE ENGINE</text>
-    <text x="12" y="46" fill="#ffffff" font-size="15" font-weight="700">reservations</text>
-    <text x="12" y="62" fill="#bae6fd" font-size="11">Date-Range Stay Engine (GiST Guard)</text>
-    <text x="12" y="74" fill="#38bdf8" font-size="10">FK: guest_id &amp; room_id</text>
+    <rect width="270" height="80" rx="10" fill="#ffffff" stroke="#0284c7" stroke-width="2.5" />
+    <rect x="12" y="10" width="115" height="18" rx="4" fill="#e0f2fe" />
+    <text x="69" y="23" fill="#0369a1" font-size="10" font-weight="700" text-anchor="middle">TIER 3 · CORE ENGINE</text>
+    <text x="12" y="46" fill="#0f172a" font-size="15" font-weight="700">reservations</text>
+    <text x="12" y="62" fill="#0284c7" font-size="11">Date-Range Stay Engine (GiST Guard)</text>
+    <text x="12" y="74" fill="#475569" font-size="10">FK: guest_id &amp; room_id</text>
   </g>
 
   <g transform="translate(670, 480)" filter="url(#shadow)">
-    <rect width="240" height="80" rx="10" fill="url(#coreGrad)" stroke="#60a5fa" stroke-width="2" />
-    <rect x="12" y="10" width="80" height="18" rx="4" fill="#1e40af" />
-    <text x="52" y="23" fill="#93c5fd" font-size="10" font-weight="700" text-anchor="middle">TIER 3 · 1:N</text>
-    <text x="12" y="46" fill="#ffffff" font-size="15" font-weight="700">chat_messages</text>
-    <text x="12" y="62" fill="#bfdbfe" font-size="11">AI Receptionist Transcripts</text>
-    <text x="12" y="74" fill="#60a5fa" font-size="10">FK: profile_id → profiles.id</text>
+    <rect width="240" height="80" rx="10" fill="#ffffff" stroke="#2563eb" stroke-width="1.5" />
+    <rect x="12" y="10" width="80" height="18" rx="4" fill="#eff6ff" />
+    <text x="52" y="23" fill="#1d4ed8" font-size="10" font-weight="700" text-anchor="middle">TIER 3 · 1:N</text>
+    <text x="12" y="46" fill="#0f172a" font-size="15" font-weight="700">chat_messages</text>
+    <text x="12" y="62" fill="#475569" font-size="11">AI Receptionist Transcripts</text>
+    <text x="12" y="74" fill="#2563eb" font-size="10">FK: profile_id → profiles.id</text>
   </g>
 
   <g transform="translate(950, 480)" filter="url(#shadow)">
-    <rect width="250" height="80" rx="10" fill="url(#coreGrad)" stroke="#60a5fa" stroke-width="2" />
-    <rect x="12" y="10" width="80" height="18" rx="4" fill="#1e40af" />
-    <text x="52" y="23" fill="#93c5fd" font-size="10" font-weight="700" text-anchor="middle">TIER 3 · 1:N</text>
-    <text x="12" y="46" fill="#ffffff" font-size="15" font-weight="700">department_tasks</text>
-    <text x="12" y="62" fill="#bfdbfe" font-size="11">Housekeeping / Maint Queue</text>
-    <text x="12" y="74" fill="#60a5fa" font-size="10">FK: created_by, room_id, dept</text>
+    <rect width="250" height="80" rx="10" fill="#ffffff" stroke="#2563eb" stroke-width="1.5" />
+    <rect x="12" y="10" width="80" height="18" rx="4" fill="#eff6ff" />
+    <text x="52" y="23" fill="#1d4ed8" font-size="10" font-weight="700" text-anchor="middle">TIER 3 · 1:N</text>
+    <text x="12" y="46" fill="#0f172a" font-size="15" font-weight="700">department_tasks</text>
+    <text x="12" y="62" fill="#475569" font-size="11">Housekeeping / Maint Queue</text>
+    <text x="12" y="74" fill="#2563eb" font-size="10">FK: created_by, room_id, dept</text>
   </g>
 
   <g transform="translate(1240, 480)" filter="url(#shadow)">
-    <rect width="240" height="80" rx="10" fill="url(#deptGrad)" stroke="#f59e0b" stroke-width="2" />
-    <rect x="12" y="10" width="80" height="18" rx="4" fill="#78350f" />
-    <text x="52" y="23" fill="#fbbf24" font-size="10" font-weight="700" text-anchor="middle">TIER 3 · 1:N</text>
-    <text x="12" y="46" fill="#ffffff" font-size="15" font-weight="700">resort_inventory</text>
-    <text x="12" y="62" fill="#fde68a" font-size="11">Stock Qty &amp; Reorder Triggers</text>
-    <text x="12" y="74" fill="#f59e0b" font-size="10">Category: dept_name ENUM</text>
+    <rect width="240" height="80" rx="10" fill="#ffffff" stroke="#d97706" stroke-width="1.5" />
+    <rect x="12" y="10" width="80" height="18" rx="4" fill="#fef3c7" />
+    <text x="52" y="23" fill="#92400e" font-size="10" font-weight="700" text-anchor="middle">TIER 3 · 1:N</text>
+    <text x="12" y="46" fill="#0f172a" font-size="15" font-weight="700">resort_inventory</text>
+    <text x="12" y="62" fill="#475569" font-size="11">Stock Qty &amp; Reorder Triggers</text>
+    <text x="12" y="74" fill="#d97706" font-size="10">Category: dept_name ENUM</text>
   </g>
 
   <!-- TIER 4: LEAF TRANSACTIONS -->
   <g transform="translate(270, 630)" filter="url(#shadow)">
-    <rect width="260" height="75" rx="10" fill="url(#leafGrad)" stroke="#818cf8" stroke-width="2" />
-    <rect x="12" y="10" width="90" height="18" rx="4" fill="#3730a3" />
-    <text x="57" y="23" fill="#c7d2fe" font-size="10" font-weight="700" text-anchor="middle">TIER 4 · 1:1 STAY</text>
-    <text x="12" y="46" fill="#ffffff" font-size="15" font-weight="700">reviews</text>
-    <text x="12" y="62" fill="#e0e7ff" font-size="11">Verified Stay Rating (1-5 Stars)</text>
+    <rect width="260" height="75" rx="10" fill="#ffffff" stroke="#4f46e5" stroke-width="1.5" />
+    <rect x="12" y="10" width="90" height="18" rx="4" fill="#eef2ff" />
+    <text x="57" y="23" fill="#3730a3" font-size="10" font-weight="700" text-anchor="middle">TIER 4 · 1:1 STAY</text>
+    <text x="12" y="46" fill="#0f172a" font-size="15" font-weight="700">reviews</text>
+    <text x="12" y="62" fill="#475569" font-size="11">Verified Stay Rating (1-5 Stars)</text>
   </g>
 
   <g transform="translate(570, 630)" filter="url(#shadow)">
-    <rect width="260" height="75" rx="10" fill="url(#leafGrad)" stroke="#818cf8" stroke-width="2" />
-    <rect x="12" y="10" width="80" height="18" rx="4" fill="#3730a3" />
-    <text x="52" y="23" fill="#c7d2fe" font-size="10" font-weight="700" text-anchor="middle">TIER 4 · 1:N</text>
-    <text x="12" y="46" fill="#ffffff" font-size="15" font-weight="700">notifications</text>
-    <text x="12" y="62" fill="#e0e7ff" font-size="11">Twilio SMS Logs &amp; Pass Sent</text>
+    <rect width="260" height="75" rx="10" fill="#ffffff" stroke="#4f46e5" stroke-width="1.5" />
+    <rect x="12" y="10" width="80" height="18" rx="4" fill="#eef2ff" />
+    <text x="52" y="23" fill="#3730a3" font-size="10" font-weight="700" text-anchor="middle">TIER 4 · 1:N</text>
+    <text x="12" y="46" fill="#0f172a" font-size="15" font-weight="700">notifications</text>
+    <text x="12" y="62" fill="#475569" font-size="11">Twilio SMS Logs &amp; Pass Sent</text>
   </g>
 
   <!-- TIER 5: ANALYTICS AGGREGATION VIEWS -->
   <g transform="translate(440, 770)" filter="url(#shadow)">
-    <rect width="720" height="75" rx="10" fill="url(#aggGrad)" stroke="#fbbf24" stroke-width="2.5" />
-    <rect x="14" y="10" width="140" height="18" rx="4" fill="#92400e" />
-    <text x="84" y="23" fill="#fde68a" font-size="10" font-weight="700" text-anchor="middle">TIER 5 · AGGREGATION</text>
-    <text x="14" y="46" fill="#ffffff" font-size="16" font-weight="700">analytics_overview &amp; analytics_daily (SQL Views)</text>
-    <text x="14" y="62" fill="#fef3c7" font-size="11">Live Occupancy %, Weekly Revenue (PHP), RevPAR, Stay Arrivals &amp; SMS Logs</text>
+    <rect width="720" height="75" rx="10" fill="#fffbeb" stroke="#d97706" stroke-width="1.5" />
+    <rect x="14" y="10" width="140" height="18" rx="4" fill="#fef3c7" />
+    <text x="84" y="23" fill="#92400e" font-size="10" font-weight="700" text-anchor="middle">TIER 5 · AGGREGATION</text>
+    <text x="14" y="46" fill="#0f172a" font-size="16" font-weight="700">analytics_overview &amp; analytics_daily (SQL Views)</text>
+    <text x="14" y="62" fill="#92400e" font-size="11">Live Occupancy %, Weekly Revenue (PHP), RevPAR, Stay Arrivals &amp; SMS Logs</text>
   </g>
 
   <!-- Footer Legend -->
   <g transform="translate(800, 1020)" text-anchor="middle" font-size="13" fill="#64748b">
-    <rect x="-420" y="-20" width="840" height="40" rx="8" fill="#0f172a" stroke="#1e293b" />
-    <text y="5" fill="#94a3b8">Solid Arrows = Foreign Key Hierarchies · Dashed Lines = Asset Links / Aggregations · Colors denote Tier 0 to Tier 5 Isolation</text>
+    <rect x="-420" y="-20" width="840" height="40" rx="8" fill="#f8fafc" stroke="#e2e8f0" />
+    <text y="5" fill="#475569">Solid Arrows = Foreign Key Hierarchies · Dashed Lines = Asset Links / Aggregations · Colors denote Tier 0 to Tier 5 Isolation</text>
   </g>
 </svg>`;
 }
@@ -1083,24 +1053,514 @@ function renderToPng(inputFilePath, outputPngPath, width = 1750, height = 1520, 
 }
 
 /**
+ * =========================================================================
+ * 3. FRONTEND API ARCHITECTURE DIAGRAM (NEW)
+ * =========================================================================
+ */
+function generateFrontendApiDrawio() {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="${new Date().toISOString()}" agent="Antigravity Draw.io MCP Server" version="24.0.0" type="device">
+  <diagram id="frontend-api-architecture" name="J &amp; D Beach House - Frontend API Architecture">
+    <mxGraphModel dx="1800" dy="1400" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1550" background="#ffffff" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title Header -->
+        <mxCell id="hdr_badge" value="&lt;font color=&quot;#1e293b&quot;&gt;&lt;b&gt;FRONTEND API ARCHITECTURE &amp;amp; DATA FLOW SPECIFICATION&lt;/b&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f1f5f9;strokeColor=#cbd5e1;strokeWidth=1.5;fontColor=#1e293b;arcSize=50;" vertex="1" parent="1">
+          <mxGeometry x="620" y="20" width="560" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="hdr_title" value="&lt;font color=&quot;#0f172a&quot; style=&quot;font-size: 24px;&quot;&gt;&lt;b&gt;J &amp;amp; D Beach House · Frontend API Architecture&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot; style=&quot;font-size: 13px;&quot;&gt;React UI Components ➔ State/Auth Context ➔ lib/api.ts Service Facade ➔ Protocol Gateway ➔ Express/Supabase Ingress&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="450" y="55" width="900" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- LAYER 1: UI PRESENTATION LAYER -->
+        <mxCell id="l1_box" value="LAYER 1 · USER INTERFACE &amp;amp; PRESENTATION LAYER (React 18 + Vite + TS)" style="swimlane;html=1;startSize=25;fillColor=#f8fafc;strokeColor=#94a3b8;fontColor=#0f172a;fontStyle=1;fontSize=11;rounded=1;strokeWidth=1.5;" vertex="1" parent="1">
+          <mxGeometry x="80" y="120" width="1640" height="195" as="geometry" />
+        </mxCell>
+        <mxCell id="ui_cust" value="&lt;b&gt;Customer Experience Desks&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot; color=&quot;#475569&quot;&gt;Home.tsx · Rooms.tsx&lt;br&gt;MyBookings.tsx · ResortCustomer.tsx&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0284c7;strokeWidth=1.5;fontColor=#0f172a;fontSize=12;" vertex="1" parent="l1_box">
+          <mxGeometry x="40" y="38" width="340" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="ui_ops" value="&lt;b&gt;Operations &amp;amp; Department Desks&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot; color=&quot;#475569&quot;&gt;Receptionist.tsx (Guest Arrivals/Keys)&lt;br&gt;ResortDepartment.tsx (Housekeeping/Kitchen)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0284c7;strokeWidth=1.5;fontColor=#0f172a;fontSize=12;" vertex="1" parent="l1_box">
+          <mxGeometry x="440" y="38" width="350" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="ui_exec" value="&lt;b&gt;Accounting &amp;amp; Executive Desks&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot; color=&quot;#475569&quot;&gt;Accounting.tsx (Financial Statements &amp;amp; CSV)&lt;br&gt;Admin.tsx (Staff Provisioning &amp;amp; RBAC Control)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0284c7;strokeWidth=1.5;fontColor=#0f172a;fontSize=12;" vertex="1" parent="l1_box">
+          <mxGeometry x="850" y="38" width="360" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="ui_widgets" value="&lt;b&gt;Interactive Component Widgets&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot; color=&quot;#475569&quot;&gt;BookingFlow.tsx · Chatbot.tsx&lt;br&gt;ExecutiveGuestChatModal · ImagePicker&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0284c7;strokeWidth=1.5;fontColor=#0f172a;fontSize=12;" vertex="1" parent="l1_box">
+          <mxGeometry x="1270" y="38" width="330" height="85" as="geometry" />
+        </mxCell>
+        <!-- UI Event Handlers -->
+        <mxCell id="hdlr_ui_events" value="&lt;b&gt;⚡ UI Component Event &amp;amp; Action Handlers:&lt;/b&gt; onSubmit={handleBookingSubmit} · onStatusChange={handleCheckInOut} · onAssign={handleTaskUpdate} · onSend={handleChatSubmit} · onOrderSubmit={handleOrderCreate} · onExport={handleCSVExport}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f1f5f9;strokeColor=#94a3b8;strokeWidth=1.2;fontColor=#1e293b;fontSize=11;strokeDasharray=4 3;" vertex="1" parent="l1_box">
+          <mxGeometry x="40" y="138" width="1560" height="42" as="geometry" />
+        </mxCell>
+
+        <!-- LAYER 2: STATE & CONTEXT LAYER -->
+        <mxCell id="l2_box" value="LAYER 2 · CLIENT STATE, CONTEXT &amp;amp; HOOK ORCHESTRATION" style="swimlane;html=1;startSize=25;fillColor=#f8fafc;strokeColor=#0d9488;fontColor=#0f172a;fontStyle=1;fontSize=11;rounded=1;strokeWidth=1.5;" vertex="1" parent="1">
+          <mxGeometry x="80" y="340" width="1640" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_auth" value="&lt;b&gt;AuthContext.tsx (Session &amp;amp; Identity State)&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot; color=&quot;#334155&quot;&gt;Supabase Session Listener · Bearer JWT Access Token Injection&lt;br&gt;Role Guards: customer | staff | receptionist | accounting | administrator&lt;br&gt;Offline/Mock Failover State · Auto-Credential Generator (@resortmanagement.ph)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0d9488;strokeWidth=2;fontColor=#0f172a;fontSize=12;" vertex="1" parent="l2_box">
+          <mxGeometry x="40" y="38" width="750" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_telemetry" value="&lt;b&gt;TelemetryTracker.tsx&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot; color=&quot;#334155&quot;&gt;Client Session Heartbeat&lt;br&gt;Live Density &amp;amp; Ping Dispatch&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0d9488;strokeWidth=1.5;fontColor=#0f172a;fontSize=12;" vertex="1" parent="l2_box">
+          <mxGeometry x="850" y="38" width="360" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_hooks" value="&lt;b&gt;Hooks &amp;amp; UI Notification Engine&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot; color=&quot;#334155&quot;&gt;useAutoDraft (LocalStorage Cache)&lt;br&gt;useReveal · Toasts.tsx (Feedback)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0d9488;strokeWidth=1.5;fontColor=#0f172a;fontSize=12;" vertex="1" parent="l2_box">
+          <mxGeometry x="1270" y="38" width="330" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- LAYER 3: LIB/API.TS SERVICE FACADE -->
+        <mxCell id="l3_box" value="LAYER 3 · FRONTEND API CLIENT &amp;amp; SERVICE ABSTRACTION FACADE (client/src/lib/api.ts)" style="swimlane;html=1;startSize=25;fillColor=#f8fafc;strokeColor=#2563eb;fontColor=#0f172a;fontStyle=1;fontSize=11;rounded=1;strokeWidth=1.5;" vertex="1" parent="1">
+          <mxGeometry x="80" y="505" width="1640" height="425" as="geometry" />
+        </mxCell>
+        <!-- Central Request Engine -->
+        <mxCell id="api_engine" value="&lt;b&gt;Central Request Engine: req(path, { method, body, fallback })&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot; color=&quot;#1e40af&quot;&gt;⚡ Bearer Token Injection (Authorization: Bearer &amp;lt;JWT&amp;gt;) · 🛡️ JSON Serialization &amp;amp; Content-Type · 🔄 Resilient Offline Mock Failover · ⚠️ Status &amp;amp; Error Interceptor&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eff6ff;strokeColor=#2563eb;strokeWidth=1.5;fontColor=#1e3a8a;fontSize=12;" vertex="1" parent="l3_box">
+          <mxGeometry x="40" y="35" width="1560" height="50" as="geometry" />
+        </mxCell>
+        <!-- Central Request & Error Handlers -->
+        <mxCell id="hdlr_client_pipeline" value="&lt;b&gt;🛠️ Central Client Request, Auth &amp;amp; Error Handlers:&lt;/b&gt; requestHandler(path, options) ➔ bearerTokenHandler(JWT) ➔ responseHandler(204/JSON) ➔ errorHandler(HTTP 4xx/5xx/CORS) ➔ mockFallbackHandler(Offline Failover)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0f9ff;strokeColor=#0284c7;strokeWidth=1.5;fontColor=#0369a1;fontSize=11;" vertex="1" parent="l3_box">
+          <mxGeometry x="40" y="95" width="1560" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- 8 API Modules -->
+        <mxCell id="mod_auth" value="&lt;b&gt;Auth &amp;amp; Profile API&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot; color=&quot;#475569&quot;&gt;api.me()&lt;br&gt;api.updateMe()&lt;br&gt;api.updatePassword()&lt;br&gt;&lt;font color=&quot;#2563eb&quot;&gt;/api/me&lt;/font&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=1.5;fontColor=#0f172a;fontSize=11;" vertex="1" parent="l3_box">
+          <mxGeometry x="40" y="145" width="180" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="mod_rooms" value="&lt;b&gt;Rooms &amp;amp; Catalog API&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot; color=&quot;#475569&quot;&gt;api.rooms()&lt;br&gt;api.availability()&lt;br&gt;available_rooms() RPC&lt;br&gt;&lt;font color=&quot;#2563eb&quot;&gt;/api/rooms&lt;/font&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=1.5;fontColor=#0f172a;fontSize=11;" vertex="1" parent="l3_box">
+          <mxGeometry x="240" y="145" width="180" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="mod_res" value="&lt;b&gt;Reservations Engine&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot; color=&quot;#475569&quot;&gt;api.createReservation()&lt;br&gt;api.myReservations()&lt;br&gt;api.setReservationStatus()&lt;br&gt;&lt;font color=&quot;#2563eb&quot;&gt;api.cancelReservation()&lt;/font&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=1.5;fontColor=#0f172a;fontSize=11;" vertex="1" parent="l3_box">
+          <mxGeometry x="440" y="145" width="180" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="mod_cust" value="&lt;b&gt;Customer Experience&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot; color=&quot;#475569&quot;&gt;api.customerServices()&lt;br&gt;api.customerOrders()&lt;br&gt;api.placeCustomerOrder()&lt;br&gt;&lt;font color=&quot;#2563eb&quot;&gt;api.digitalPass() / stats()&lt;/font&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=1.5;fontColor=#0f172a;fontSize=11;" vertex="1" parent="l3_box">
+          <mxGeometry x="640" y="145" width="180" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="mod_dept" value="&lt;b&gt;Department Operations&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot; color=&quot;#475569&quot;&gt;api.departmentTasks()&lt;br&gt;api.createDepartmentTask()&lt;br&gt;api.updateTaskStatus()&lt;br&gt;&lt;font color=&quot;#2563eb&quot;&gt;api.departmentRoomStatus()&lt;/font&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=1.5;fontColor=#0f172a;fontSize=11;" vertex="1" parent="l3_box">
+          <mxGeometry x="840" y="145" width="180" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="mod_analytics" value="&lt;b&gt;Analytics &amp;amp; BI Engine&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot; color=&quot;#475569&quot;&gt;api.analyticsOverview()&lt;br&gt;api.fullDiveAnalytics()&lt;br&gt;api.exportAnalyticsCSV()&lt;br&gt;&lt;font color=&quot;#2563eb&quot;&gt;Occupancy, ADR, RevPAR&lt;/font&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=1.5;fontColor=#0f172a;fontSize=11;" vertex="1" parent="l3_box">
+          <mxGeometry x="1040" y="145" width="180" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="mod_telemetry" value="&lt;b&gt;Telemetry &amp;amp; AI Forecast&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot; color=&quot;#475569&quot;&gt;api.telemetryStats()&lt;br&gt;api.telemetryPredictions()&lt;br&gt;7-Day Pacing Simulations&lt;br&gt;&lt;font color=&quot;#2563eb&quot;&gt;Endpoint: /api/telemetry&lt;/font&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=1.5;fontColor=#0f172a;fontSize=11;" vertex="1" parent="l3_box">
+          <mxGeometry x="1240" y="145" width="170" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="mod_admin" value="&lt;b&gt;Admin RBAC &amp;amp; Users&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot; color=&quot;#475569&quot;&gt;api.adminCustomers()&lt;br&gt;api.createStaffAccount()&lt;br&gt;api.updateUserRole()&lt;br&gt;&lt;font color=&quot;#2563eb&quot;&gt;api.resetUserPassword()&lt;/font&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=1.5;fontColor=#0f172a;fontSize=11;" vertex="1" parent="l3_box">
+          <mxGeometry x="1430" y="145" width="170" height="115" as="geometry" />
+        </mxCell>
+
+        <!-- Intelligent Mock Datasets Banner -->
+        <mxCell id="mock_banner" value="&lt;b&gt;Intelligent Mock Failover Datasets (Seamless Zero-Crash Degradation):&lt;/b&gt; FALLBACK_ROOMS · FALLBACK_ANALYTICS · FALLBACK_USERS · FALLBACK_PASS · FALLBACK_SERVICES · FALLBACK_ORDERS · FALLBACK_TASKS · FALLBACK_INVENTORY · FALLBACK_REVIEWS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffbeb;strokeColor=#f59e0b;strokeWidth=1.5;fontColor=#92400e;fontSize=11;" vertex="1" parent="l3_box">
+          <mxGeometry x="40" y="275" width="1560" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- LAYER 4: TRANSPORT CLIENTS -->
+        <mxCell id="l4_box" value="LAYER 4 · CLIENT COMMUNICATION &amp;amp; PROTOCOL GATEWAY ENGINES" style="swimlane;html=1;startSize=25;fillColor=#f8fafc;strokeColor=#7c3aed;fontColor=#0f172a;fontStyle=1;fontSize=11;rounded=1;strokeWidth=1.5;" vertex="1" parent="1">
+          <mxGeometry x="80" y="955" width="1640" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="client_http" value="&lt;b&gt;HTTP / REST Fetch Client&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot; color=&quot;#475569&quot;&gt;Native window.fetch API · Endpoint: /api/*&lt;br&gt;Headers: Authorization: Bearer &amp;lt;JWT&amp;gt;, Content-Type: application/json&lt;br&gt;REST Verbs: GET, POST, PATCH, DELETE · 204 No-Content Handler&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#7c3aed;strokeWidth=1.5;fontColor=#0f172a;fontSize=12;" vertex="1" parent="l4_box">
+          <mxGeometry x="40" y="38" width="600" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="client_socket" value="&lt;b&gt;Socket.io Client (lib/socket.ts)&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot; color=&quot;#475569&quot;&gt;Duplex WebSockets (ws://) with Long-Polling Fallback&lt;br&gt;Handshake Auth: { token: JWT }&lt;br&gt;Events: chat:message ➔ bot:message · bot:typing&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#7c3aed;strokeWidth=1.5;fontColor=#0f172a;fontSize=12;" vertex="1" parent="l4_box">
+          <mxGeometry x="680" y="38" width="450" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="client_supabase" value="&lt;b&gt;Supabase Client (lib/supabaseClient.ts)&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot; color=&quot;#475569&quot;&gt;@supabase/supabase-js Direct BaaS Client&lt;br&gt;Auth Credentials Storage &amp;amp; Session State&lt;br&gt;PostgreSQL CDC Realtime Broadcast Channels&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#7c3aed;strokeWidth=1.5;fontColor=#0f172a;fontSize=12;" vertex="1" parent="l4_box">
+          <mxGeometry x="1170" y="38" width="430" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- LAYER 5: BACKEND INGRESS & GATEWAY TARGET -->
+        <mxCell id="l5_box" value="LAYER 5 · NETWORK INGRESS, REVERSE PROXY &amp;amp; BACKEND SECURITY BOUNDARY" style="swimlane;html=1;startSize=25;fillColor=#f8fafc;strokeColor=#059669;fontColor=#0f172a;fontStyle=1;fontSize=11;rounded=1;strokeWidth=1.5;" vertex="1" parent="1">
+          <mxGeometry x="80" y="1115" width="1640" height="195" as="geometry" />
+        </mxCell>
+        <mxCell id="srv_proxy" value="&lt;b&gt;Vite Reverse Proxy &amp;amp; Ingress Gateway&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot; color=&quot;#475569&quot;&gt;Proxy Rule: /api ➔ http://localhost:5000/api&lt;br&gt;Express 4.x Application Engine&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#059669;strokeWidth=1.5;fontColor=#0f172a;fontSize=12;" vertex="1" parent="l5_box">
+          <mxGeometry x="40" y="38" width="450" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="srv_sec" value="&lt;b&gt;Security &amp;amp; Middleware Perimeter&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot; color=&quot;#475569&quot;&gt;🛡️ NGWF Layer 7 Firewall · 🧼 Anti-XSS Sanitizer&lt;br&gt;🔑 JWT Verification · 👮 Role Guards (Customer/Staff/Admin)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#059669;strokeWidth=1.5;fontColor=#0f172a;fontSize=12;" vertex="1" parent="l5_box">
+          <mxGeometry x="530" y="38" width="560" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="srv_downstream" value="&lt;b&gt;Downstream Persistence &amp;amp; External Services&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot; color=&quot;#475569&quot;&gt;🐘 Supabase Core PostgreSQL 15+ (GiST Guard &amp;amp; RLS)&lt;br&gt;📱 Twilio Cloud SMS · 🗄️ Media File Storage&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#059669;strokeWidth=1.5;fontColor=#0f172a;fontSize=12;" vertex="1" parent="l5_box">
+          <mxGeometry x="1130" y="38" width="470" height="85" as="geometry" />
+        </mxCell>
+        <!-- Express Route Handlers -->
+        <mxCell id="hdlr_express_routes" value="&lt;b&gt;🌐 Express Route Handlers &amp;amp; Controller Middleware:&lt;/b&gt; authRouteHandler · roomsRouteHandler · reservationsRouteHandler · tasksRouteHandler · ordersRouteHandler · analyticsRouteHandler · globalErrorHandlerMiddleware" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ecfdf5;strokeColor=#059669;strokeWidth=1.5;fontColor=#065f46;fontSize=11;" vertex="1" parent="l5_box">
+          <mxGeometry x="40" y="138" width="1560" height="42" as="geometry" />
+        </mxCell>
+
+        <!-- CONNECTORS -->
+        <mxCell id="e_ui_ctx" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;" edge="1" parent="1" source="l1_box" target="l2_box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ctx_api" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;" edge="1" parent="1" source="l2_box" target="l3_box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_api_trans" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;" edge="1" parent="1" source="l3_box" target="l4_box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_trans_srv" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;" edge="1" parent="1" source="l4_box" target="l5_box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>`;
+}
+
+function generateFrontendApiSvg() {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 1480" width="1800" height="1480" style="background:#ffffff; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <!-- Card Shadow -->
+    <filter id="fShadow" x="-2%" y="-2%" width="104%" height="106%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f172a" flood-opacity="0.06" />
+    </filter>
+
+    <!-- Arrow Markers -->
+    <marker id="arrSlate" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
+    </marker>
+    <marker id="arrTeal" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#0d9488" />
+    </marker>
+    <marker id="arrBlue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#2563eb" />
+    </marker>
+    <marker id="arrPurple" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#7c3aed" />
+    </marker>
+    <marker id="arrGreen" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#059669" />
+    </marker>
+  </defs>
+
+  <!-- Title Header -->
+  <g transform="translate(900, 48)" text-anchor="middle">
+    <rect x="-260" y="-30" width="520" height="28" rx="14" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5" />
+    <text y="-11" fill="#1e293b" font-size="12" font-weight="700" letter-spacing="1.5">FRONTEND API ARCHITECTURE &amp; DATA PIPELINE</text>
+    <text y="28" fill="#0f172a" font-size="28" font-weight="800">J &amp; D Beach House · Frontend API Architecture</text>
+    <text y="54" fill="#64748b" font-size="14">React UI Layer ➔ State/Auth Context ➔ lib/api.ts Service Facade ➔ Protocol Gateway ➔ Express/Supabase Ingress</text>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- LAYER 1: UI PRESENTATION LAYER -->
+  <!-- ========================================================================= -->
+  <g transform="translate(60, 115)" filter="url(#fShadow)">
+    <rect width="1680" height="205" rx="12" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5" />
+    <rect x="20" y="12" width="560" height="24" rx="6" fill="#e2e8f0" />
+    <text x="30" y="28" fill="#1e293b" font-size="11" font-weight="800">LAYER 1 · USER INTERFACE &amp; PRESENTATION LAYER (React 18 + Vite + TS)</text>
+
+    <!-- Box 1: Customer Desks -->
+    <g transform="translate(30, 48)">
+      <rect width="370" height="85" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5" />
+      <text x="16" y="26" fill="#0f172a" font-size="14" font-weight="700">Customer Experience Desks</text>
+      <text x="16" y="46" fill="#475569" font-size="12">Home.tsx · Rooms.tsx</text>
+      <text x="16" y="66" fill="#0284c7" font-size="11">MyBookings.tsx · ResortCustomer.tsx</text>
+    </g>
+
+    <!-- Box 2: Operations Desks -->
+    <g transform="translate(440, 48)">
+      <rect width="370" height="85" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5" />
+      <text x="16" y="26" fill="#0f172a" font-size="14" font-weight="700">Operations &amp; Department Desks</text>
+      <text x="16" y="46" fill="#475569" font-size="12">Receptionist.tsx (Arrivals, Passcodes, Keys)</text>
+      <text x="16" y="66" fill="#0284c7" font-size="11">ResortDepartment.tsx (Housekeeping/Kitchen)</text>
+    </g>
+
+    <!-- Box 3: Accounting & Admin -->
+    <g transform="translate(850, 48)">
+      <rect width="390" height="85" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5" />
+      <text x="16" y="26" fill="#0f172a" font-size="14" font-weight="700">Accounting &amp; Executive Desks</text>
+      <text x="16" y="46" fill="#475569" font-size="12">Accounting.tsx (P&amp;L, RevPAR, CSV Export)</text>
+      <text x="16" y="66" fill="#0284c7" font-size="11">Admin.tsx (Staff Provisioning &amp; Role Control)</text>
+    </g>
+
+    <!-- Box 4: Interactive Widgets -->
+    <g transform="translate(1280, 48)">
+      <rect width="370" height="85" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5" />
+      <text x="16" y="26" fill="#0f172a" font-size="14" font-weight="700">Interactive Component Widgets</text>
+      <text x="16" y="46" fill="#475569" font-size="12">BookingFlow.tsx · Chatbot.tsx</text>
+      <text x="16" y="66" fill="#0284c7" font-size="11">ExecutiveGuestChatModal · ImagePicker</text>
+    </g>
+
+    <!-- UI Component Event & Action Handlers -->
+    <g transform="translate(30, 145)">
+      <rect width="1620" height="46" rx="8" fill="#f1f5f9" stroke="#94a3b8" stroke-dasharray="4 3" stroke-width="1.2" />
+      <rect x="12" y="10" width="180" height="26" rx="4" fill="#e2e8f0" />
+      <text x="102" y="27" fill="#334155" font-size="10" font-weight="800" text-anchor="middle">UI EVENT HANDLERS</text>
+      <text x="205" y="28" fill="#0f172a" font-size="11" font-weight="600">onSubmit={handleBookingSubmit} · onStatusChange={handleCheckInOut} · onAssign={handleTaskUpdate} · onSend={handleChatSubmit} · onOrderSubmit={handleOrderCreate} · onExport={handleCSVExport}</text>
+    </g>
+  </g>
+
+  <!-- Connector L1 -> L2 -->
+  <path d="M 900, 320 L 900, 350" stroke="#64748b" stroke-width="2" marker-end="url(#arrTeal)" />
+
+  <!-- ========================================================================= -->
+  <!-- LAYER 2: STATE & CONTEXT LAYER -->
+  <!-- ========================================================================= -->
+  <g transform="translate(60, 350)" filter="url(#fShadow)">
+    <rect width="1680" height="135" rx="12" fill="#f8fafc" stroke="#0d9488" stroke-width="1.5" />
+    <rect x="20" y="12" width="560" height="24" rx="6" fill="#ccfbf1" />
+    <text x="30" y="28" fill="#0f766e" font-size="11" font-weight="800">LAYER 2 · CLIENT STATE, CONTEXT &amp; HOOK ORCHESTRATION</text>
+
+    <!-- Box 1: AuthContext -->
+    <g transform="translate(30, 42)">
+      <rect width="780" height="78" rx="8" fill="#ffffff" stroke="#0d9488" stroke-width="1.5" />
+      <text x="18" y="24" fill="#0f172a" font-size="15" font-weight="700">AuthContext.tsx (Session &amp; Cryptographic Identity)</text>
+      <text x="18" y="44" fill="#334155" font-size="11">Supabase Session Listener · Bearer JWT Access Token Storage &amp; Automatic Refresh</text>
+      <text x="18" y="62" fill="#0f766e" font-size="11">Multi-Role RBAC: customer | staff | receptionist | accounting | administrator · Offline Fallback State</text>
+    </g>
+
+    <!-- Box 2: Telemetry -->
+    <g transform="translate(850, 42)">
+      <rect width="390" height="78" rx="8" fill="#ffffff" stroke="#0d9488" stroke-width="1.5" />
+      <text x="18" y="24" fill="#0f172a" font-size="15" font-weight="700">TelemetryTracker.tsx</text>
+      <text x="18" y="44" fill="#334155" font-size="11">Visitor Heartbeat Dispatcher</text>
+      <text x="18" y="62" fill="#0f766e" font-size="11">Live Visitor Density &amp; Heartbeat Pings</text>
+    </g>
+
+    <!-- Box 3: Hooks & Feedback -->
+    <g transform="translate(1280, 42)">
+      <rect width="370" height="78" rx="8" fill="#ffffff" stroke="#0d9488" stroke-width="1.5" />
+      <text x="18" y="24" fill="#0f172a" font-size="15" font-weight="700">Hooks &amp; UI Feedback</text>
+      <text x="18" y="44" fill="#334155" font-size="11">useAutoDraft (LocalStorage Cache)</text>
+      <text x="18" y="62" fill="#0f766e" font-size="11">useReveal · Toasts.tsx Notification System</text>
+    </g>
+  </g>
+
+  <!-- Connector L2 -> L3 -->
+  <path d="M 900, 485 L 900, 515" stroke="#64748b" stroke-width="2" marker-end="url(#arrBlue)" />
+
+  <!-- ========================================================================= -->
+  <!-- LAYER 3: LIB/API.TS SERVICE FACADE -->
+  <!-- ========================================================================= -->
+  <g transform="translate(60, 515)" filter="url(#fShadow)">
+    <rect width="1680" height="430" rx="12" fill="#f8fafc" stroke="#2563eb" stroke-width="1.5" />
+    <rect x="20" y="12" width="620" height="24" rx="6" fill="#dbeafe" />
+    <text x="30" y="28" fill="#1e40af" font-size="11" font-weight="800">LAYER 3 · FRONTEND API CLIENT &amp; SERVICE ABSTRACTION FACADE (client/src/lib/api.ts)</text>
+
+    <!-- Central Request Engine Banner -->
+    <g transform="translate(30, 42)">
+      <rect width="1620" height="50" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5" />
+      <text x="24" y="23" fill="#1e3a8a" font-size="14" font-weight="800">Central Request Wrapper: req(path, { method = 'GET', body, fallback })</text>
+      <text x="24" y="40" fill="#1d4ed8" font-size="11">⚡ Bearer Token Injection (Authorization: Bearer &lt;JWT&gt;) · 🛡️ JSON Serialization · 🔄 Resilient Offline Mock Failover · ⚠️ Status &amp; Error Interceptor</text>
+    </g>
+
+    <!-- Central Client Request, Auth & Error Handlers -->
+    <g transform="translate(30, 100)">
+      <rect width="1620" height="46" rx="8" fill="#f0f9ff" stroke="#0284c7" stroke-width="1.5" />
+      <rect x="12" y="10" width="190" height="26" rx="4" fill="#e0f2fe" />
+      <text x="107" y="27" fill="#0369a1" font-size="10" font-weight="800" text-anchor="middle">CLIENT HANDLER PIPELINE</text>
+      <text x="215" y="28" fill="#0c4a6e" font-size="12" font-weight="600">requestHandler() ➔ bearerTokenHandler(JWT) ➔ responseHandler(204/JSON) ➔ errorHandler(HTTP 4xx/5xx/CORS) ➔ mockFallbackHandler(Offline Failover)</text>
+    </g>
+
+    <!-- 8 Specialized API Domain Modules -->
+    <g transform="translate(30, 158)">
+      <!-- 1. Auth -->
+      <g transform="translate(0, 0)">
+        <rect width="185" height="115" rx="8" fill="#ffffff" stroke="#93c5fd" stroke-width="1.5" />
+        <text x="12" y="22" fill="#0f172a" font-size="12" font-weight="700">Auth &amp; Profile API</text>
+        <text x="12" y="42" fill="#334155" font-size="10" font-family="monospace">api.me()</text>
+        <text x="12" y="60" fill="#334155" font-size="10" font-family="monospace">api.updateMe()</text>
+        <text x="12" y="78" fill="#334155" font-size="10" font-family="monospace">api.updatePassword()</text>
+        <text x="12" y="98" fill="#2563eb" font-size="10">/api/me</text>
+      </g>
+
+      <!-- 2. Rooms -->
+      <g transform="translate(205, 0)">
+        <rect width="185" height="115" rx="8" fill="#ffffff" stroke="#93c5fd" stroke-width="1.5" />
+        <text x="12" y="22" fill="#0f172a" font-size="12" font-weight="700">Rooms &amp; Catalog API</text>
+        <text x="12" y="42" fill="#334155" font-size="10" font-family="monospace">api.rooms()</text>
+        <text x="12" y="60" fill="#334155" font-size="10" font-family="monospace">api.availability()</text>
+        <text x="12" y="78" fill="#334155" font-size="10">RPC Date Engine</text>
+        <text x="12" y="98" fill="#2563eb" font-size="10">/api/rooms</text>
+      </g>
+
+      <!-- 3. Reservations -->
+      <g transform="translate(410, 0)">
+        <rect width="185" height="115" rx="8" fill="#ffffff" stroke="#2563eb" stroke-width="2" />
+        <text x="12" y="22" fill="#0f172a" font-size="12" font-weight="700">Reservations Engine</text>
+        <text x="12" y="40" fill="#334155" font-size="10" font-family="monospace">createReservation()</text>
+        <text x="12" y="56" fill="#334155" font-size="10" font-family="monospace">myReservations()</text>
+        <text x="12" y="72" fill="#334155" font-size="10" font-family="monospace">setReservationStatus()</text>
+        <text x="12" y="88" fill="#334155" font-size="10" font-family="monospace">cancelReservation()</text>
+        <text x="12" y="104" fill="#0284c7" font-size="9">GiST Hard Guard</text>
+      </g>
+
+      <!-- 4. Customer Experience -->
+      <g transform="translate(615, 0)">
+        <rect width="185" height="115" rx="8" fill="#ffffff" stroke="#93c5fd" stroke-width="1.5" />
+        <text x="12" y="22" fill="#0f172a" font-size="12" font-weight="700">Customer Experience</text>
+        <text x="12" y="40" fill="#334155" font-size="10" font-family="monospace">customerServices()</text>
+        <text x="12" y="56" fill="#334155" font-size="10" font-family="monospace">customerOrders()</text>
+        <text x="12" y="72" fill="#334155" font-size="10" font-family="monospace">placeCustomerOrder()</text>
+        <text x="12" y="88" fill="#334155" font-size="10" font-family="monospace">digitalPass() · stats()</text>
+        <text x="12" y="104" fill="#2563eb" font-size="9">Dining, Tours &amp; Pass</text>
+      </g>
+
+      <!-- 5. Operations -->
+      <g transform="translate(820, 0)">
+        <rect width="185" height="115" rx="8" fill="#ffffff" stroke="#93c5fd" stroke-width="1.5" />
+        <text x="12" y="22" fill="#0f172a" font-size="12" font-weight="700">Department Operations</text>
+        <text x="12" y="40" fill="#334155" font-size="10" font-family="monospace">departmentTasks()</text>
+        <text x="12" y="56" fill="#334155" font-size="10" font-family="monospace">createDepartmentTask()</text>
+        <text x="12" y="72" fill="#334155" font-size="10" font-family="monospace">updateTaskStatus()</text>
+        <text x="12" y="88" fill="#334155" font-size="10" font-family="monospace">departmentRoomStatus()</text>
+        <text x="12" y="104" fill="#2563eb" font-size="9">Housekeeping/Inventory</text>
+      </g>
+
+      <!-- 6. Analytics -->
+      <g transform="translate(1025, 0)">
+        <rect width="185" height="115" rx="8" fill="#ffffff" stroke="#93c5fd" stroke-width="1.5" />
+        <text x="12" y="22" fill="#0f172a" font-size="12" font-weight="700">Analytics &amp; BI Engine</text>
+        <text x="12" y="40" fill="#334155" font-size="10" font-family="monospace">analyticsOverview()</text>
+        <text x="12" y="56" fill="#334155" font-size="10" font-family="monospace">fullDiveAnalytics()</text>
+        <text x="12" y="72" fill="#334155" font-size="10" font-family="monospace">exportAnalyticsCSV()</text>
+        <text x="12" y="88" fill="#334155" font-size="10">Occupancy %, RevPAR</text>
+        <text x="12" y="104" fill="#2563eb" font-size="9">Financial Intelligence</text>
+      </g>
+
+      <!-- 7. Telemetry -->
+      <g transform="translate(1230, 0)">
+        <rect width="185" height="115" rx="8" fill="#ffffff" stroke="#93c5fd" stroke-width="1.5" />
+        <text x="12" y="22" fill="#0f172a" font-size="12" font-weight="700">Telemetry &amp; Forecast</text>
+        <text x="12" y="42" fill="#334155" font-size="10" font-family="monospace">telemetryStats()</text>
+        <text x="12" y="60" fill="#334155" font-size="10" font-family="monospace">telemetryPredictions()</text>
+        <text x="12" y="78" fill="#334155" font-size="10">7-Day Scenario Models</text>
+        <text x="12" y="98" fill="#2563eb" font-size="10">/api/telemetry</text>
+      </g>
+
+      <!-- 8. Admin RBAC -->
+      <g transform="translate(1435, 0)">
+        <rect width="185" height="115" rx="8" fill="#ffffff" stroke="#93c5fd" stroke-width="1.5" />
+        <text x="12" y="22" fill="#0f172a" font-size="12" font-weight="700">Admin RBAC &amp; Users</text>
+        <text x="12" y="40" fill="#334155" font-size="10" font-family="monospace">adminCustomers()</text>
+        <text x="12" y="56" fill="#334155" font-size="10" font-family="monospace">createStaffAccount()</text>
+        <text x="12" y="72" fill="#334155" font-size="10" font-family="monospace">updateUserRole()</text>
+        <text x="12" y="88" fill="#334155" font-size="10" font-family="monospace">resetUserPassword()</text>
+        <text x="12" y="104" fill="#2563eb" font-size="9">Role Provisioning</text>
+      </g>
+    </g>
+
+    <!-- Resilient Mock Datasets Fallback Bar -->
+    <g transform="translate(30, 285)">
+      <rect width="1620" height="85" rx="8" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.5" />
+      <rect x="14" y="10" width="220" height="20" rx="4" fill="#fef3c7" />
+      <text x="24" y="24" fill="#92400e" font-size="10" font-weight="700">SEAMLESS OFFLINE MOCK DATASETS</text>
+      <text x="14" y="46" fill="#0f172a" font-size="13" font-weight="700">Intelligent Fallback Layer: Guarantees 0-Crash Operation During Network Outage or Backend Cold Start</text>
+      <text x="14" y="68" fill="#92400e" font-size="11">FALLBACK_ROOMS · FALLBACK_ANALYTICS · FALLBACK_USERS · FALLBACK_PASS · FALLBACK_SERVICES · FALLBACK_ORDERS · FALLBACK_TASKS · FALLBACK_INVENTORY · FALLBACK_REVIEWS</text>
+    </g>
+  </g>
+
+  <!-- Connector L3 -> L4 -->
+  <path d="M 900, 945 L 900, 975" stroke="#64748b" stroke-width="2" marker-end="url(#arrPurple)" />
+
+  <!-- ========================================================================= -->
+  <!-- LAYER 4: TRANSPORT CLIENTS -->
+  <!-- ========================================================================= -->
+  <g transform="translate(60, 975)" filter="url(#fShadow)">
+    <rect width="1680" height="135" rx="12" fill="#f8fafc" stroke="#7c3aed" stroke-width="1.5" />
+    <rect x="20" y="12" width="600" height="24" rx="6" fill="#f3e8ff" />
+    <text x="30" y="28" fill="#6b21a8" font-size="11" font-weight="800">LAYER 4 · CLIENT COMMUNICATION &amp; PROTOCOL GATEWAY ENGINES</text>
+
+    <!-- Client 1: HTTP REST -->
+    <g transform="translate(30, 42)">
+      <rect width="580" height="78" rx="8" fill="#ffffff" stroke="#7c3aed" stroke-width="1.5" />
+      <text x="18" y="24" fill="#0f172a" font-size="15" font-weight="700">HTTP / REST Fetch Client (fetch API)</text>
+      <text x="18" y="44" fill="#475569" font-size="11">JSON over HTTP/1.1 &amp; HTTPS (TLS 1.3) · Target: /api/*</text>
+      <text x="18" y="62" fill="#6b21a8" font-size="11">Headers: Authorization: Bearer &lt;JWT&gt;, Content-Type: application/json · 204 No-Content Guard</text>
+    </g>
+
+    <!-- Client 2: Socket.io -->
+    <g transform="translate(650, 42)">
+      <rect width="470" height="78" rx="8" fill="#ffffff" stroke="#7c3aed" stroke-width="1.5" />
+      <text x="18" y="24" fill="#0f172a" font-size="15" font-weight="700">Socket.io Client (lib/socket.ts)</text>
+      <text x="18" y="44" fill="#475569" font-size="11">Duplex WebSockets (ws://) with Long-Polling Fallback</text>
+      <text x="18" y="62" fill="#6b21a8" font-size="11">Handshake: { auth: { token } } · chat:message ➔ bot:message</text>
+    </g>
+
+    <!-- Client 3: Supabase JS -->
+    <g transform="translate(1160, 42)">
+      <rect width="490" height="78" rx="8" fill="#ffffff" stroke="#7c3aed" stroke-width="1.5" />
+      <text x="18" y="24" fill="#0f172a" font-size="15" font-weight="700">Supabase JS Client (lib/supabaseClient.ts)</text>
+      <text x="18" y="44" fill="#475569" font-size="11">@supabase/supabase-js Direct SDK Gateway</text>
+      <text x="18" y="62" fill="#6b21a8" font-size="11">Session Auth Storage · PostgreSQL CDC Realtime Change Channels</text>
+    </g>
+  </g>
+
+  <!-- Connector L4 -> L5 -->
+  <path d="M 900, 1110 L 900, 1140" stroke="#64748b" stroke-width="2" marker-end="url(#arrGreen)" />
+
+  <!-- ========================================================================= -->
+  <!-- LAYER 5: BACKEND INGRESS & GATEWAY TARGET -->
+  <!-- ========================================================================= -->
+  <g transform="translate(60, 1140)" filter="url(#fShadow)">
+    <rect width="1680" height="205" rx="12" fill="#f8fafc" stroke="#059669" stroke-width="1.5" />
+    <rect x="20" y="12" width="620" height="24" rx="6" fill="#d1fae5" />
+    <text x="30" y="28" fill="#065f46" font-size="11" font-weight="800">LAYER 5 · NETWORK INGRESS, REVERSE PROXY &amp; BACKEND SECURITY BOUNDARY</text>
+
+    <!-- Target 1: Ingress Proxy -->
+    <g transform="translate(30, 44)">
+      <rect width="460" height="85" rx="8" fill="#ffffff" stroke="#059669" stroke-width="1.5" />
+      <text x="18" y="26" fill="#0f172a" font-size="15" font-weight="700">Vite Proxy &amp; Express Ingress</text>
+      <text x="18" y="46" fill="#475569" font-size="12">Dev Proxy: /api ➔ http://localhost:5000/api</text>
+      <text x="18" y="66" fill="#059669" font-size="11">Express 4.x Modular Route Mounts</text>
+    </g>
+
+    <!-- Target 2: Security Perimeter -->
+    <g transform="translate(520, 44)">
+      <rect width="580" height="85" rx="8" fill="#ffffff" stroke="#059669" stroke-width="1.5" />
+      <text x="18" y="26" fill="#0f172a" font-size="15" font-weight="700">Security Middleware Perimeter</text>
+      <text x="18" y="46" fill="#475569" font-size="12">🛡️ NGWF Layer 7 Firewall · 🧼 Anti-XSS Payload Sanitizer</text>
+      <text x="18" y="66" fill="#059669" font-size="11">🔑 JWT Bearer Auth Verification · 👮 RBAC Role Validation</text>
+    </g>
+
+    <!-- Target 3: Downstream Services -->
+    <g transform="translate(1130, 44)">
+      <rect width="520" height="85" rx="8" fill="#ffffff" stroke="#059669" stroke-width="1.5" />
+      <text x="18" y="26" fill="#0f172a" font-size="15" font-weight="700">Downstream Enterprise Services</text>
+      <text x="18" y="46" fill="#475569" font-size="12">🐘 Supabase PostgreSQL 15+ Core DB (GiST Guard &amp; RLS)</text>
+      <text x="18" y="66" fill="#059669" font-size="11">📱 Twilio SMS Dispatcher · 🗄️ Media Cloud Storage</text>
+    </g>
+
+    <!-- Express Route Handlers & Controller Middleware -->
+    <g transform="translate(30, 140)">
+      <rect width="1620" height="48" rx="8" fill="#ecfdf5" stroke="#059669" stroke-width="1.5" />
+      <rect x="12" y="11" width="200" height="26" rx="4" fill="#d1fae5" />
+      <text x="112" y="28" fill="#065f46" font-size="10" font-weight="800" text-anchor="middle">EXPRESS ROUTE HANDLERS</text>
+      <text x="225" y="29" fill="#064e3b" font-size="12" font-weight="600">authRouteHandler · roomsRouteHandler · reservationsRouteHandler · tasksRouteHandler · ordersRouteHandler · analyticsRouteHandler · globalErrorHandlerMiddleware</text>
+    </g>
+  </g>
+
+  <!-- Footer Legend -->
+  <g transform="translate(900, 1390)" text-anchor="middle" font-size="13" fill="#64748b">
+    <rect x="-470" y="-20" width="940" height="40" rx="8" fill="#f8fafc" stroke="#e2e8f0" />
+    <text y="5" fill="#475569">Solid Arrows = Synchronous JSON/REST &amp; State Pipelines · Flow denotes Layer 1 (UI) down to Layer 5 (Backend Gateway)</text>
+  </g>
+</svg>`;
+}
+
+/**
+ * Render an SVG or HTML file to high-resolution PNG using headless Microsoft Edge
+ */
+function renderToPng(inputFilePath, outputPngPath, width = 1750, height = 1520, scale = 2) {
+  const fileUrl = 'file:///' + inputFilePath.replace(/\\/g, '/');
+  const args = [
+    '--headless=new',
+    '--disable-gpu',
+    `--force-device-scale-factor=${scale}`,
+    `--window-size=${width},${height}`,
+    `--screenshot=${outputPngPath}`,
+    fileUrl
+  ];
+  console.log(`[Renderer] Converting ${path.basename(inputFilePath)} -> ${path.basename(outputPngPath)} (${width}x${height} @ ${scale}x scale)...`);
+  execFileSync(EDGE_PATH, args, { stdio: 'inherit' });
+  const stats = fs.statSync(outputPngPath);
+  console.log(`[Renderer] Successfully created ${outputPngPath} (${(stats.size / 1024).toFixed(1)} KB)`);
+  return outputPngPath;
+}
+
+/**
  * Build all project diagrams across docs folders
  */
-function buildAll() {
-  const rootDir = path.resolve(__dirname, '..');
-  const dataHierarchyDir = path.join(rootDir, 'docs', 'data-hierarchy');
-  const archDir = path.join(rootDir, 'docs', 'architecture');
-
-  fs.mkdirSync(dataHierarchyDir, { recursive: true });
-  fs.mkdirSync(archDir, { recursive: true });
-
-  console.log('============================================================');
-  console.log(' 📊 GENERATING NORMALIZED DIAGRAM SUITES');
-  console.log('============================================================');
-
-  // -------------------------------------------------------------
-  // 1. DATA HIERARCHY TIER FLOWCHART (DIAGRAM 2)
-  // -------------------------------------------------------------
-  console.log('\n[1/2] Building Data Hierarchy Tier Flowchart...');
+function buildDataHierarchy(dataHierarchyDir, archDir) {
+  console.log('\n[Data Hierarchy] Building Data Hierarchy Tier Flowchart...');
   const dhDrawioXml = generateDataHierarchyDrawio();
   const dhDrawioPath = path.join(dataHierarchyDir, 'data_hierarchy_diagram.drawio');
   const dhXmlPath = path.join(dataHierarchyDir, 'data_hierarchy_diagram.xml');
@@ -1114,10 +1574,14 @@ function buildAll() {
   const dhPngPath = path.join(dataHierarchyDir, 'data_hierarchy_diagram.png');
   renderToPng(dhSvgPath, dhPngPath, 1600, 1100, 2);
 
-  // -------------------------------------------------------------
-  // 2. ENTITY-RELATIONSHIP (ER) DIAGRAM (DIAGRAM 1 - FROM SPEC)
-  // -------------------------------------------------------------
-  console.log('\n[2/2] Building Entity-Relationship (ER) Diagram...');
+  // Sync Data Hierarchy diagram to docs/architecture
+  fs.copyFileSync(dhDrawioPath, path.join(archDir, 'data_hierarchy_diagram.drawio'));
+  fs.copyFileSync(dhSvgPath, path.join(archDir, 'data_hierarchy_diagram.svg'));
+  fs.copyFileSync(dhPngPath, path.join(archDir, 'data_hierarchy_diagram.png'));
+}
+
+function buildER(dataHierarchyDir, archDir) {
+  console.log('\n[Entity-Relationship] Building ER Diagram...');
   const erDrawioXml = generateERDiagramDrawio();
   const erDrawioPath = path.join(dataHierarchyDir, 'entity_relationship_diagram.drawio');
   const erXmlPath = path.join(dataHierarchyDir, 'entity_relationship_diagram.xml');
@@ -1131,18 +1595,91 @@ function buildAll() {
   const erPngPath = path.join(dataHierarchyDir, 'entity_relationship_diagram.png');
   renderToPng(erSvgPath, erPngPath, 1750, 1520, 2);
 
-  // Also copy ER diagram to docs/architecture for unified reference
+  // Sync ER diagram to docs/architecture
   fs.copyFileSync(erDrawioPath, path.join(archDir, 'entity_relationship_diagram.drawio'));
   fs.copyFileSync(erSvgPath, path.join(archDir, 'entity_relationship_diagram.svg'));
   fs.copyFileSync(erPngPath, path.join(archDir, 'entity_relationship_diagram.png'));
+}
+
+function buildFrontendApi(apiDir, archDir) {
+  console.log('\n[Frontend API] Building Frontend API Architecture Diagram (with Handlers Pipeline)...');
+  const fApiDrawioXml = generateFrontendApiDrawio();
+  const fApiDrawioPath = path.join(apiDir, 'frontend_api_architecture.drawio');
+  const fApiXmlPath = path.join(apiDir, 'frontend_api_architecture.xml');
+  fs.writeFileSync(fApiDrawioPath, fApiDrawioXml, 'utf8');
+  fs.writeFileSync(fApiXmlPath, fApiDrawioXml, 'utf8');
+
+  const fApiSvgContent = generateFrontendApiSvg();
+  const fApiSvgPath = path.join(apiDir, 'frontend_api_architecture.svg');
+  fs.writeFileSync(fApiSvgPath, fApiSvgContent, 'utf8');
+
+  const fApiPngPath = path.join(apiDir, 'frontend_api_architecture.png');
+  renderToPng(fApiSvgPath, fApiPngPath, 1800, 1460, 2);
+
+  // Sync Frontend API architecture to docs/architecture
+  fs.copyFileSync(fApiDrawioPath, path.join(archDir, 'frontend_api_architecture.drawio'));
+  fs.copyFileSync(fApiSvgPath, path.join(archDir, 'frontend_api_architecture.svg'));
+  fs.copyFileSync(fApiPngPath, path.join(archDir, 'frontend_api_architecture.png'));
+}
+
+/**
+ * Build diagrams based on target filter
+ */
+function buildTarget(target = 'all') {
+  const rootDir = path.resolve(__dirname, '..');
+  const dataHierarchyDir = path.join(rootDir, 'docs', 'data-hierarchy');
+  const archDir = path.join(rootDir, 'docs', 'architecture');
+  const apiDir = path.join(rootDir, 'docs', 'api');
+
+  fs.mkdirSync(dataHierarchyDir, { recursive: true });
+  fs.mkdirSync(archDir, { recursive: true });
+  fs.mkdirSync(apiDir, { recursive: true });
+
+  console.log('============================================================');
+  console.log(` 📊 DIAGRAM HANDLER: TARGET [${target.toUpperCase()}]`);
+  console.log('============================================================');
+
+  if (target === 'data-hierarchy' || target === 'all') {
+    buildDataHierarchy(dataHierarchyDir, archDir);
+  }
+  if (target === 'er' || target === 'all') {
+    buildER(dataHierarchyDir, archDir);
+  }
+  if (target === 'api' || target === 'frontend_api' || target === 'all') {
+    buildFrontendApi(apiDir, archDir);
+  }
 
   console.log('\n============================================================');
-  console.log(' 🏆 ALL DIAGRAMS BUILT AND NORMALIZED SUCCESSFULLY! 🟢');
+  console.log(' 🏆 DIAGRAMS PROCESSED AND NORMALIZED SUCCESSFULLY! 🟢');
   console.log('============================================================');
 }
 
+function buildAll() {
+  buildTarget('all');
+}
+
+function handleArgs() {
+  const args = process.argv.slice(2);
+  let target = 'all';
+  for (const arg of args) {
+    if (arg.startsWith('--target=')) {
+      target = arg.split('=')[1].trim();
+    } else if (arg === '--api' || arg === 'api') {
+      target = 'api';
+    } else if (arg === '--data-hierarchy' || arg === 'data-hierarchy') {
+      target = 'data-hierarchy';
+    } else if (arg === '--er' || arg === 'er') {
+      target = 'er';
+    } else if (arg === '--all' || arg === 'all') {
+      target = 'all';
+    }
+  }
+  return target;
+}
+
 if (require.main === module) {
-  buildAll();
+  const target = handleArgs();
+  buildTarget(target);
 }
 
 module.exports = {
@@ -1150,6 +1687,11 @@ module.exports = {
   generateDataHierarchySvg,
   generateERDiagramDrawio,
   generateERDiagramSvg,
+  generateFrontendApiDrawio,
+  generateFrontendApiSvg,
   renderToPng,
-  buildAll
+  buildTarget,
+  buildAll,
+  handleArgs
 };
+

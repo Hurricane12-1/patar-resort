@@ -19,11 +19,12 @@ export default function Navbar() {
     return () => { live = false; clearInterval(t); };
   }, [session]);
 
+  const isStaffOrAdmin = ['administrator', 'admin', 'receptionist', 'accounting', 'staff'].includes(profile?.role);
   const links = [
     ['/', 'Home'],
     ['/rooms', 'Accommodations'],
     ['/my-bookings', 'My Bookings'],
-    ['/resort-customer', 'Guest Hub'],
+    ...(isStaffOrAdmin ? [['/administrator', 'Admin Console'], ['/resort-department', 'Operations']] : []),
   ];
 
   return (
@@ -83,7 +84,26 @@ export default function Navbar() {
 
             {session ? (
               <>
-                <span className="nav-user">Hi, <b>{profile?.full_name?.split(' ')[0] || 'Guest'}</b></span>
+                <Link
+                  to="/my-bookings"
+                  className="nav-user"
+                  style={{
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '4px 10px',
+                    borderRadius: 8,
+                    background: 'rgba(56, 189, 248, 0.12)',
+                    border: '1px solid rgba(56, 189, 248, 0.32)',
+                    color: '#BAE6FD',
+                    transition: 'all 0.2s ease',
+                  }}
+                  title="View My Bookings & Guest Manifest Profile"
+                >
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981', display: 'inline-block' }} />
+                  <span>Hi, <b style={{ color: '#FFFFFF' }}>{profile?.full_name?.split(' ')[0] || 'Guest'}</b></span>
+                </Link>
                 <button
                   className="btn btn-sm"
                   style={{ color: '#fff', background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.3)' }}

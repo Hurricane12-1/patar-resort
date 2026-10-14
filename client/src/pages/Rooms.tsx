@@ -9,14 +9,6 @@ import { useReveal } from '../hooks/useReveal.ts';
 
 const CATS = ['All', 'Cottage', 'Garden', 'Suite', 'Villa', 'Dorm'];
 
-const DEFAULT_ROOMS = [
-  { id: '1', name: 'Habagat Sea-View Suite', slug: 'habagat-suite', category: 'Suite', description: 'Front suite with private balcony hanging over the turquoise ocean.', capacity: 3, units: 4, rate_php: 2950, rating_avg: 4.9, rating_count: 38, amenities: ['AC', 'Sea view', 'Balcony', 'Breakfast'] },
-  { id: '2', name: 'Nipa Cove Cottage', slug: 'nipa-cove', category: 'Cottage', description: 'Native nipa cottage steps from the sand with fan cooling and hammock porch.', capacity: 2, units: 6, rate_php: 1450, rating_avg: 4.8, rating_count: 52, amenities: ['Fan', 'Hot shower', 'WiFi', 'Porch'] },
-  { id: '3', name: 'Duyan Family Villa', slug: 'duyan-villa', category: 'Villa', description: 'Two-bedroom family villa with private outdoor hammock deck & barbecue grill.', capacity: 6, units: 3, rate_php: 4800, rating_avg: 5.0, rating_count: 24, amenities: ['AC', 'Kitchenette', 'Grill deck', 'WiFi'] },
-  { id: '4', name: 'Garden Breeze Room', slug: 'garden-breeze', category: 'Garden', description: 'Air-conditioned room looking out onto lush mango gardens.', capacity: 2, units: 8, rate_php: 1850, rating_avg: 4.9, rating_count: 41, amenities: ['AC', 'WiFi', 'Hot shower', 'Breakfast'] },
-  { id: '5', name: 'Backpacker Bunk Suite', slug: 'backpacker-bunk', category: 'Dorm', description: 'Cozy air-conditioned shared bunk suite steps away from Tambak beach front.', capacity: 1, units: 12, rate_php: 750, rating_avg: 4.7, rating_count: 65, amenities: ['AC', 'Lockers', 'Shared Bath', 'WiFi'] },
-];
-
 function RoomCardItem({ s, index }) {
   const gallery = useMemo(() => roomGallery(s.slug), [s.slug]);
   const [activeImg, setActiveImg] = useState(gallery[0]);
@@ -78,22 +70,22 @@ function RoomCardItem({ s, index }) {
 
 export default function Rooms() {
   const [all, setAll] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [cat, setCat] = useState('All');
   const [q, setQ] = useState('');
 
   useEffect(() => {
     api.rooms().then((data) => {
-      if (Array.isArray(data) && data.length > 0) setAll(data);
-    }).catch(() => {});
+      if (Array.isArray(data)) setAll(data);
+    }).catch(() => {})
+    .finally(() => setLoading(false));
   }, []);
 
   useReveal(true);
 
-  const displayRooms = all.length > 0 ? all : DEFAULT_ROOMS;
-
-  const list = useMemo(() => displayRooms.filter((s) =>
+  const list = useMemo(() => all.filter((s) =>
     (cat === 'All' || s.category === cat) &&
-    (q === '' || s.name.toLowerCase().includes(q.toLowerCase()))), [displayRooms, cat, q]);
+    (q === '' || s.name.toLowerCase().includes(q.toLowerCase()))), [all, cat, q]);
 
   return (
     <section className="section">
@@ -115,7 +107,9 @@ export default function Rooms() {
             <RoomCardItem key={s.id || s.slug} s={s} index={i} />
           ))}
         </div>
-        {list.length === 0 && <p className="empty">No rooms match — try another filter.</p>}
+        {!loading && list.length === 0 && (
+          <p className="empty">No accommodations found in this category. Adjust your filter or search query.</p>
+        )}
       </div>
     </section>
   );

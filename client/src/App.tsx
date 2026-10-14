@@ -1,4 +1,4 @@
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext.tsx';
 import Navbar from './components/Navbar.tsx';
 import Footer from './components/Footer.tsx';
@@ -6,6 +6,7 @@ import Chatbot from './components/Chatbot.tsx';
 import AuthModal from './components/AuthModal.tsx';
 import Toasts from './components/Toasts.tsx';
 import TelemetryTracker from './components/TelemetryTracker.tsx';
+import { NetworkStatusControl } from './components/NetworkStatusControl.tsx';
 import ProtectedRoute from './components/ProtectedRoute.tsx';
 import Home from './pages/Home.tsx';
 import Rooms from './pages/Rooms.tsx';
@@ -14,7 +15,6 @@ import Admin from './pages/Admin.tsx';
 import Accounting from './pages/Accounting.tsx';
 import Receptionist from './pages/Receptionist.tsx';
 import ResortDepartment from './pages/ResortDepartment.tsx';
-import ResortCustomer from './pages/ResortCustomer.tsx';
 
 function MainAppShell() {
   const location = useLocation();
@@ -40,11 +40,7 @@ function MainAppShell() {
             </ProtectedRoute>
           } />
 
-          <Route path="/resort-customer" element={
-            <ProtectedRoute allowedRoles={['customer', 'administrator', 'receptionist', 'accounting', 'staff']} portalTitle="Guest Experience Hub">
-              <ResortCustomer />
-            </ProtectedRoute>
-          } />
+          <Route path="/resort-customer" element={<Navigate to="/my-bookings" replace />} />
 
           <Route path="/resort-department" element={
             <ProtectedRoute allowedRoles={['staff', 'receptionist', 'accounting', 'administrator']} portalTitle="Operations & Department Hub">
@@ -53,6 +49,12 @@ function MainAppShell() {
           } />
 
           <Route path="/administrator" element={
+            <ProtectedRoute allowedRoles={['administrator']} portalTitle="Administrator Control Center">
+              <Admin />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/admin" element={
             <ProtectedRoute allowedRoles={['administrator']} portalTitle="Administrator Control Center">
               <Admin />
             </ProtectedRoute>
@@ -76,6 +78,7 @@ function MainAppShell() {
       {!isStaffRoute && <Chatbot />}
       <AuthModal />
       <Toasts />
+      <NetworkStatusControl />
     </div>
   );
 }

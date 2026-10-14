@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1440" height="1100" viewBox="0 0 1440 1100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>06 - Executive Analytics Dashboard (4 Units)</title>
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Playfair+Display:ital,wght@0,600;0,700;1,600&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap');
+      .font-sans { font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+      .font-serif { font-family: 'Playfair Display', Georgia, serif; }
+      .font-mono { font-family: 'JetBrains Mono', Consolas, monospace; }
+    </style>
+    <linearGradient id="grad-sky" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284C7" />
+      <stop offset="100%" stop-color="#0EA5E9" />
+    </linearGradient>
+    <linearGradient id="grad-dark" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+    <linearGradient id="grad-card" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E293B" />
+      <stop offset="100%" stop-color="#0F172A" />
+    </linearGradient>
+    <filter id="shadow-soft" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.3" />
+    </filter>
+    <filter id="shadow-modal" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="24" stdDeviation="32" flood-color="#000000" flood-opacity="0.6" />
+    </filter>
+  </defs>
+  
+  <rect width="1440" height="1100" fill="#0B132B" />
+
+  <!-- Admin Sidebar -->
+  <g transform="translate(0, 0)">
+    <rect width="260" height="1100" fill="#0F172A" />
+    <line x1="260" y1="0" x2="260" y2="1100" stroke="#1E293B" stroke-width="1" />
+    
+    <g transform="translate(24, 28)">
+      <circle cx="16" cy="16" r="16" fill="url(#grad-sky)" />
+      <text x="16" y="21" fill="#FFFFFF" class="font-sans" font-size="14" font-weight="800" text-anchor="middle">J</text>
+      <text x="44" y="22" fill="#F8FAFC" class="font-sans" font-size="16" font-weight="800">J &amp; D ADMIN</text>
+      <text x="144" y="22" fill="#38BDF8" class="font-mono" font-size="10">EXEC</text>
+    </g>
+
+    <g transform="translate(16, 90)">
+      <rect width="228" height="40" rx="8" fill="#0284C7" />
+      <text x="44" y="25" fill="#FFFFFF" class="font-sans" font-size="13" font-weight="700">📊 Overview Analytics</text>
+
+      <rect y="48" width="228" height="40" rx="8" fill="transparent" />
+      <text x="44" y="73" fill="#94A3B8" class="font-sans" font-size="13">🍳 Kitchen &amp; Dining BI</text>
+
+      <rect y="96" width="228" height="40" rx="8" fill="transparent" />
+      <text x="44" y="121" fill="#94A3B8" class="font-sans" font-size="13">📡 System Telemetry HUD</text>
+
+      <rect y="144" width="228" height="40" rx="8" fill="transparent" />
+      <text x="44" y="169" fill="#94A3B8" class="font-sans" font-size="13">👥 User &amp; Staff Roles</text>
+
+      <rect y="192" width="228" height="40" rx="8" fill="transparent" />
+      <text x="44" y="217" fill="#94A3B8" class="font-sans" font-size="13">📖 Ledger Ingestion</text>
+
+      <rect y="240" width="228" height="40" rx="8" fill="transparent" />
+      <text x="44" y="265" fill="#94A3B8" class="font-sans" font-size="13">📑 CSV Export / Import</text>
+
+      <rect y="288" width="228" height="40" rx="8" fill="transparent" />
+      <text x="44" y="313" fill="#94A3B8" class="font-sans" font-size="13">⚙️ Resort Settings</text>
+    </g>
+
+    <g transform="translate(20, 1020)">
+      <rect width="220" height="42" rx="10" fill="#1E293B" stroke="#334155" stroke-width="1" />
+      <text x="36" y="26" fill="#F8FAFC" class="font-sans" font-size="12" font-weight="600">☀️ Executive White / Dark</text>
+    </g>
+  </g>
+
+  <!-- Admin Main Content Area -->
+  <g transform="translate(290, 0)">
+    <rect width="1120" height="74" fill="#0B132B" />
+    <line x1="0" y1="74" x2="1120" y2="74" stroke="#1E293B" stroke-width="1" />
+    
+    <text x="0" y="44" fill="#F8FAFC" class="font-sans" font-size="22" font-weight="800">Executive Business Intelligence &amp; Yield HUD</text>
+    
+    <g transform="translate(860, 20)">
+      <rect width="180" height="36" rx="8" fill="#1E293B" stroke="#334155" stroke-width="1" />
+      <text x="90" y="22" fill="#38BDF8" class="font-mono" font-size="11" font-weight="700" text-anchor="middle">Live DB Sync: 100%</text>
+    </g>
+
+    <!-- 4 EXECUTIVE KPI CARDS -->
+    <g transform="translate(0, 100)">
+      <rect width="260" height="120" rx="14" fill="#0F172A" stroke="#1E293B" stroke-width="1.2" />
+      <g transform="translate(20, 24)">
+        <text x="0" y="16" fill="#94A3B8" class="font-sans" font-size="11" font-weight="700" letter-spacing="1">OCCUPANCY RATE</text>
+        <text x="0" y="52" fill="#F8FAFC" class="font-sans" font-size="28" font-weight="800">75.0%</text>
+        <text x="0" y="74" fill="#34D399" class="font-sans" font-size="11" font-weight="700">3 of 4 Units Occupied (TEV, CAT, CATH)</text>
+      </g>
+
+      <g transform="translate(280, 0)">
+        <rect width="260" height="120" rx="14" fill="#0F172A" stroke="#1E293B" stroke-width="1.2" />
+        <g transform="translate(20, 24)">
+          <text x="0" y="16" fill="#94A3B8" class="font-sans" font-size="11" font-weight="700" letter-spacing="1">AVERAGE DAILY RATE (ADR)</text>
+          <text x="0" y="52" fill="#F8FAFC" class="font-sans" font-size="28" font-weight="800">₱10,833</text>
+          <text x="0" y="74" fill="#38BDF8" class="font-sans" font-size="11" font-weight="700">Average of active bookings</text>
+        </g>
+      </g>
+
+      <g transform="translate(560, 0)">
+        <rect width="260" height="120" rx="14" fill="#0F172A" stroke="#1E293B" stroke-width="1.2" />
+        <g transform="translate(20, 24)">
+          <text x="0" y="16" fill="#94A3B8" class="font-sans" font-size="11" font-weight="700" letter-spacing="1">REVPAR YIELD</text>
+          <text x="0" y="52" fill="#38BDF8" class="font-sans" font-size="28" font-weight="800">₱8,125</text>
+          <text x="0" y="74" fill="#34D399" class="font-sans" font-size="11" font-weight="700">ADR × 75.0% Occupancy</text>
+        </g>
+      </g>
+
+      <g transform="translate(840, 0)">
+        <rect width="260" height="120" rx="14" fill="#0F172A" stroke="#1E293B" stroke-width="1.2" />
+        <g transform="translate(20, 24)">
+          <text x="0" y="16" fill="#94A3B8" class="font-sans" font-size="11" font-weight="700" letter-spacing="1">GROSS REVENUE (WTD)</text>
+          <text x="0" y="52" fill="#34D399" class="font-sans" font-size="28" font-weight="800">₱482,500</text>
+          <text x="0" y="74" fill="#94A3B8" class="font-sans" font-size="11">Dining: ₱94.2k · Rooms: ₱388.3k</text>
+        </g>
+      </g>
+    </g>
+
+    <!-- 7-DAY REVENUE DUAL SPLINE CHART -->
+    <g transform="translate(0, 244)">
+      <rect width="720" height="380" rx="16" fill="#0F172A" stroke="#1E293B" stroke-width="1.5" />
+      <g transform="translate(24, 24)">
+        <text x="0" y="20" fill="#F8FAFC" class="font-sans" font-size="16" font-weight="700">7-Day Revenue Trendline vs Dining Yield</text>
+        <text x="0" y="40" fill="#94A3B8" class="font-sans" font-size="12">Dynamic Supabase aggregations from resort_orders &amp; reservations</text>
+        
+        <g transform="translate(20, 70)">
+          <line x1="0" y1="40" x2="620" y2="40" stroke="#1E293B" stroke-width="1" />
+          <line x1="0" y1="90" x2="620" y2="90" stroke="#1E293B" stroke-width="1" />
+          <line x1="0" y1="140" x2="620" y2="140" stroke="#1E293B" stroke-width="1" />
+          <line x1="0" y1="190" x2="620" y2="190" stroke="#1E293B" stroke-width="1" />
+
+          <path d="M 0 160 Q 100 80, 200 120 T 400 60 T 620 30 L 620 210 L 0 210 Z" fill="#0284C7" fill-opacity="0.2" />
+          <path d="M 0 160 Q 100 80, 200 120 T 400 60 T 620 30" fill="none" stroke="#38BDF8" stroke-width="3" />
+          <path d="M 0 190 Q 100 160, 200 170 T 400 130 T 620 110" fill="none" stroke="#F59E0B" stroke-width="2" stroke-dasharray="4,4" />
+
+          <circle cx="200" cy="120" r="5" fill="#38BDF8" />
+          <circle cx="400" cy="60" r="5" fill="#38BDF8" />
+          <circle cx="620" cy="30" r="6" fill="#34D399" />
+          
+          <rect x="520" y="0" width="110" height="24" rx="4" fill="#0284C7" />
+          <text x="575" y="16" fill="#FFFFFF" class="font-sans" font-size="11" font-weight="700" text-anchor="middle">₱84,200 (Peak)</text>
+        </g>
+      </g>
+    </g>
+
+    <!-- DINING SALES LEADERBOARD -->
+    <g transform="translate(744, 244)">
+      <rect width="356" height="380" rx="16" fill="#0F172A" stroke="#1E293B" stroke-width="1.5" />
+      <g transform="translate(24, 24)">
+        <text x="0" y="20" fill="#F8FAFC" class="font-sans" font-size="16" font-weight="700">Top Bolinao Dishes</text>
+        <text x="0" y="40" fill="#94A3B8" class="font-sans" font-size="12">Live dining revenue distribution</text>
+
+        <g transform="translate(0, 60)">
+          <text x="0" y="16" fill="#F8FAFC" class="font-sans" font-size="13" font-weight="600">Bolinao Grilled Bangus</text>
+          <text x="300" y="16" fill="#38BDF8" class="font-sans" font-size="12" font-weight="700" text-anchor="end">48 Orders</text>
+          <rect y="24" width="300" height="8" rx="4" fill="#1E293B" />
+          <rect y="24" width="250" height="8" rx="4" fill="#0284C7" />
+        </g>
+
+        <g transform="translate(0, 114)">
+          <text x="0" y="16" fill="#F8FAFC" class="font-sans" font-size="13" font-weight="600">Seafood Sinigang Platter</text>
+          <text x="300" y="16" fill="#38BDF8" class="font-sans" font-size="12" font-weight="700" text-anchor="end">32 Orders</text>
+          <rect y="24" width="300" height="8" rx="4" fill="#1E293B" />
+          <rect y="24" width="180" height="8" rx="4" fill="#0EA5E9" />
+        </g>
+
+        <g transform="translate(0, 168)">
+          <text x="0" y="16" fill="#F8FAFC" class="font-sans" font-size="13" font-weight="600">Tropical Breakfast Baskets</text>
+          <text x="300" y="16" fill="#38BDF8" class="font-sans" font-size="12" font-weight="700" text-anchor="end">28 Orders</text>
+          <rect y="24" width="300" height="8" rx="4" fill="#1E293B" />
+          <rect y="24" width="150" height="8" rx="4" fill="#10B981" />
+        </g>
+
+        <g transform="translate(0, 222)">
+          <text x="0" y="16" fill="#F8FAFC" class="font-sans" font-size="13" font-weight="600">Fresh Buko Coconut Drinks</text>
+          <text x="300" y="16" fill="#38BDF8" class="font-sans" font-size="12" font-weight="700" text-anchor="end">56 Orders</text>
+          <rect y="24" width="300" height="8" rx="4" fill="#1E293B" />
+          <rect y="24" width="280" height="8" rx="4" fill="#F59E0B" />
+        </g>
+      </g>
+    </g>
+
+    <!-- SYSTEM TELEMETRY HUD BAR -->
+    <g transform="translate(0, 646)">
+      <rect width="1100" height="110" rx="16" fill="#0F172A" stroke="#1E293B" stroke-width="1.5" />
+      <g transform="translate(32, 28)">
+        <text x="0" y="20" fill="#38BDF8" class="font-sans" font-size="12" font-weight="700" letter-spacing="2">REAL-TIME CLOUD TELEMETRY</text>
+        <text x="0" y="48" fill="#F8FAFC" class="font-sans" font-size="16" font-weight="800">Supabase DB Latency: 16ms · Memory: 4.2MB · HTTP 200 OK</text>
+
+        <g transform="translate(680, 8)">
+          <rect width="180" height="42" rx="8" fill="#1E293B" stroke="#334155" stroke-width="1" />
+          <text x="24" y="26" fill="#34D399" class="font-mono" font-size="12">WS Sockets: 14 Active</text>
+
+          <rect x="196" width="180" height="42" rx="8" fill="#1E293B" stroke="#334155" stroke-width="1" />
+          <text x="220" y="26" fill="#38BDF8" class="font-mono" font-size="12">PostgreSQL: 4/20 Pool</text>
+        </g>
+      </g>
+    </g>
+  </g>
+
+</svg>

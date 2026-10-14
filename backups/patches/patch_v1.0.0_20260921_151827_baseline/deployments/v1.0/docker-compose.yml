@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  app:
+    image: node:20-alpine
+    container_name: jd_beach_house_v1_0
+    working_dir: /app
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+    volumes:
+      - .:/app
+    command: npm run server:start
+    restart: unless-stopped

@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1440" height="1080" viewBox="0 0 1440 1080" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>00 - Figma UI Kit & Canonical Room Roster</title>
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Playfair+Display:ital,wght@0,600;0,700;1,600&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap');
+      .font-sans { font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+      .font-serif { font-family: 'Playfair Display', Georgia, serif; }
+      .font-mono { font-family: 'JetBrains Mono', Consolas, monospace; }
+    </style>
+    <linearGradient id="grad-sky" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284C7" />
+      <stop offset="100%" stop-color="#0EA5E9" />
+    </linearGradient>
+    <linearGradient id="grad-dark" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+    <linearGradient id="grad-card" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E293B" />
+      <stop offset="100%" stop-color="#0F172A" />
+    </linearGradient>
+    <filter id="shadow-soft" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.3" />
+    </filter>
+    <filter id="shadow-modal" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="24" stdDeviation="32" flood-color="#000000" flood-opacity="0.6" />
+    </filter>
+  </defs>
+  
+  <rect width="1440" height="1080" fill="#090D16" />
+  
+  <pattern id="grid-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
+    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1E293B" stroke-width="0.75" />
+  </pattern>
+  <rect width="1440" height="1080" fill="url(#grid-pattern)" opacity="0.6" />
+
+  <!-- Frame Header -->
+  <g transform="translate(80, 60)">
+    <rect x="0" y="0" width="1280" height="90" rx="16" fill="#0F172A" stroke="#1E293B" stroke-width="1.5" />
+    <text x="32" y="42" fill="#38BDF8" class="font-sans" font-size="12" font-weight="700" letter-spacing="2">FIGMA DESIGN SYSTEM · J &amp; D BEACH HOUSE SPECIFICATION</text>
+    <text x="32" y="68" fill="#F8FAFC" class="font-sans" font-size="24" font-weight="800">UI Kit, Color Tokens &amp; Canonical Room Roster (TEV, CAT, GEL, CATH)</text>
+    <rect x="1100" y="28" width="148" height="34" rx="8" fill="#0284C7" />
+    <text x="1174" y="50" fill="#FFFFFF" class="font-sans" font-size="12" font-weight="700" text-anchor="middle">v2.0 Production</text>
+  </g>
+
+  <!-- Color Palette Swatches -->
+  <g transform="translate(80, 180)">
+    <text x="0" y="24" fill="#F8FAFC" class="font-sans" font-size="16" font-weight="700">01 · Resort Color Palette &amp; Surface Tokens</text>
+    
+    <g transform="translate(0, 44)">
+      <rect width="140" height="90" rx="12" fill="#0EA5E9" />
+      <text x="12" y="112" fill="#F8FAFC" class="font-sans" font-size="13" font-weight="600">Sky Primary</text>
+      <text x="12" y="128" fill="#94A3B8" class="font-mono" font-size="11">#0EA5E9</text>
+    </g>
+    <g transform="translate(160, 44)">
+      <rect width="140" height="90" rx="12" fill="#0284C7" />
+      <text x="12" y="112" fill="#F8FAFC" class="font-sans" font-size="13" font-weight="600">Sky Strong</text>
+      <text x="12" y="128" fill="#94A3B8" class="font-mono" font-size="11">#0284C7</text>
+    </g>
+    <g transform="translate(320, 44)">
+      <rect width="140" height="90" rx="12" fill="#0F172A" stroke="#334155" stroke-width="1" />
+      <text x="12" y="112" fill="#F8FAFC" class="font-sans" font-size="13" font-weight="600">Deep Blue</text>
+      <text x="12" y="128" fill="#94A3B8" class="font-mono" font-size="11">#0F172A</text>
+    </g>
+    <g transform="translate(480, 44)">
+      <rect width="140" height="90" rx="12" fill="#1E293B" stroke="#334155" stroke-width="1" />
+      <text x="12" y="112" fill="#F8FAFC" class="font-sans" font-size="13" font-weight="600">Card Surface</text>
+      <text x="12" y="128" fill="#94A3B8" class="font-mono" font-size="11">#1E293B</text>
+    </g>
+    <g transform="translate(640, 44)">
+      <rect width="140" height="90" rx="12" fill="#10B981" />
+      <text x="12" y="112" fill="#F8FAFC" class="font-sans" font-size="13" font-weight="600">Emerald Clean</text>
+      <text x="12" y="128" fill="#94A3B8" class="font-mono" font-size="11">#10B981</text>
+    </g>
+    <g transform="translate(800, 44)">
+      <rect width="140" height="90" rx="12" fill="#F59E0B" />
+      <text x="12" y="112" fill="#F8FAFC" class="font-sans" font-size="13" font-weight="600">Amber Sand</text>
+      <text x="12" y="128" fill="#94A3B8" class="font-mono" font-size="11">#F59E0B</text>
+    </g>
+    <g transform="translate(960, 44)">
+      <rect width="140" height="90" rx="12" fill="#EF4444" />
+      <text x="12" y="112" fill="#F8FAFC" class="font-sans" font-size="13" font-weight="600">Alert Red</text>
+      <text x="12" y="128" fill="#94A3B8" class="font-mono" font-size="11">#EF4444</text>
+    </g>
+    <g transform="translate(1120, 44)">
+      <rect width="140" height="90" rx="12" fill="#FFFFFF" />
+      <text x="12" y="112" fill="#0F172A" class="font-sans" font-size="13" font-weight="600">Exec White</text>
+      <text x="12" y="128" fill="#64748B" class="font-mono" font-size="11">#FFFFFF</text>
+    </g>
+  </g>
+
+  <!-- Canonical Resort Rooms Roster -->
+  <g transform="translate(80, 370)">
+    <text x="0" y="24" fill="#F8FAFC" class="font-sans" font-size="16" font-weight="700">02 · Canonical Project Accommodations (Only Real Units)</text>
+    <rect x="0" y="44" width="1280" height="260" rx="14" fill="#0F172A" stroke="#1E293B" stroke-width="1.5" />
+
+    <!-- Unit TEV -->
+    <g transform="translate(32, 70)">
+      <rect width="280" height="200" rx="12" fill="#1E293B" stroke="#0284C7" stroke-width="1.5" />
+      <text x="20" y="32" fill="#38BDF8" class="font-mono" font-size="12" font-weight="700">UNIT CODE: TEV</text>
+      <text x="20" y="60" fill="#F8FAFC" class="font-sans" font-size="20" font-weight="800">Unit TEV Grand Villa</text>
+      <text x="20" y="85" fill="#94A3B8" class="font-sans" font-size="13">Category: Beachfront Villa</text>
+      <text x="20" y="107" fill="#94A3B8" class="font-sans" font-size="13">Capacity: Up to 60 Guests</text>
+      <text x="20" y="148" fill="#F8FAFC" class="font-sans" font-size="22" font-weight="800">₱18,000</text>
+      <text x="110" y="148" fill="#64748B" class="font-sans" font-size="12">/night (Whole Villa)</text>
+      <rect x="20" y="162" width="90" height="22" rx="4" fill="#0284C7" fill-opacity="0.2" />
+      <text x="65" y="177" fill="#38BDF8" class="font-sans" font-size="10" font-weight="700" text-anchor="middle">EXCLUSIVE</text>
+    </g>
+
+    <!-- Unit CAT -->
+    <g transform="translate(340, 70)">
+      <rect width="280" height="200" rx="12" fill="#1E293B" stroke="#F59E0B" stroke-width="1.5" />
+      <text x="20" y="32" fill="#F59E0B" class="font-mono" font-size="12" font-weight="700">UNIT CODE: CAT</text>
+      <text x="20" y="60" fill="#F8FAFC" class="font-sans" font-size="20" font-weight="800">Unit CAT Cottage</text>
+      <text x="20" y="85" fill="#94A3B8" class="font-sans" font-size="13">Alias: Unit Papang</text>
+      <text x="20" y="107" fill="#94A3B8" class="font-sans" font-size="13">Capacity: Up to 10 Guests</text>
+      <text x="20" y="148" fill="#F8FAFC" class="font-sans" font-size="22" font-weight="800">₱6,000</text>
+      <text x="100" y="148" fill="#64748B" class="font-sans" font-size="12">/night (Cottage)</text>
+      <rect x="20" y="162" width="100" height="22" rx="4" fill="#F59E0B" fill-opacity="0.2" />
+      <text x="70" y="177" fill="#FBBF24" class="font-sans" font-size="10" font-weight="700" text-anchor="middle">BEACH COTTAGE</text>
+    </g>
+
+    <!-- Unit GEL -->
+    <g transform="translate(650, 70)">
+      <rect width="280" height="200" rx="12" fill="#1E293B" stroke="#10B981" stroke-width="1.5" />
+      <text x="20" y="32" fill="#10B981" class="font-mono" font-size="12" font-weight="700">UNIT CODE: GEL</text>
+      <text x="20" y="60" fill="#F8FAFC" class="font-sans" font-size="20" font-weight="800">Unit GEL Premier</text>
+      <text x="20" y="85" fill="#94A3B8" class="font-sans" font-size="13">Category: Coastal Suite</text>
+      <text x="20" y="107" fill="#94A3B8" class="font-sans" font-size="13">Capacity: Up to 25 Guests</text>
+      <text x="20" y="148" fill="#F8FAFC" class="font-sans" font-size="22" font-weight="800">₱12,000</text>
+      <text x="110" y="148" fill="#64748B" class="font-sans" font-size="12">/night (Suite)</text>
+      <rect x="20" y="162" width="90" height="22" rx="4" fill="#10B981" fill-opacity="0.2" />
+      <text x="65" y="177" fill="#34D399" class="font-sans" font-size="10" font-weight="700" text-anchor="middle">PREMIER</text>
+    </g>
+
+    <!-- Unit CATH -->
+    <g transform="translate(960, 70)">
+      <rect width="280" height="200" rx="12" fill="#1E293B" stroke="#A855F7" stroke-width="1.5" />
+      <text x="20" y="32" fill="#C084FC" class="font-mono" font-size="12" font-weight="700">UNIT CODE: CATH</text>
+      <text x="20" y="60" fill="#F8FAFC" class="font-sans" font-size="20" font-weight="800">Unit CATH Veranda</text>
+      <text x="20" y="85" fill="#94A3B8" class="font-sans" font-size="13">Category: Veranda Villa</text>
+      <text x="20" y="107" fill="#94A3B8" class="font-sans" font-size="13">Capacity: Up to 15 Guests</text>
+      <text x="20" y="148" fill="#F8FAFC" class="font-sans" font-size="22" font-weight="800">₱8,500</text>
+      <text x="100" y="148" fill="#64748B" class="font-sans" font-size="12">/night (Veranda)</text>
+      <rect x="20" y="162" width="90" height="22" rx="4" fill="#A855F7" fill-opacity="0.2" />
+      <text x="65" y="177" fill="#C084FC" class="font-sans" font-size="10" font-weight="700" text-anchor="middle">VERANDA</text>
+    </g>
+  </g>
+
+  <!-- Typography & Components Row -->
+  <g transform="translate(80, 680)">
+    <text x="0" y="24" fill="#F8FAFC" class="font-sans" font-size="16" font-weight="700">03 · UI Controls &amp; Verified Type Scale</text>
+    <rect x="0" y="44" width="1280" height="300" rx="14" fill="#0F172A" stroke="#1E293B" stroke-width="1.5" />
+
+    <!-- Button Variants -->
+    <g transform="translate(36, 75)">
+      <rect width="150" height="44" rx="10" fill="url(#grad-sky)" />
+      <text x="75" y="27" fill="#FFFFFF" class="font-sans" font-size="13" font-weight="700" text-anchor="middle">Reserve Unit</text>
+
+      <rect x="170" width="150" height="44" rx="10" fill="#1E293B" stroke="#334155" stroke-width="1" />
+      <text x="245" y="27" fill="#E2E8F0" class="font-sans" font-size="13" font-weight="600" text-anchor="middle">View Unit Details</text>
+
+      <rect x="340" width="130" height="44" rx="10" fill="transparent" stroke="#0284C7" stroke-width="1.5" />
+      <text x="405" y="27" fill="#38BDF8" class="font-sans" font-size="13" font-weight="600" text-anchor="middle">Cancel</text>
+    </g>
+
+    <!-- Inputs & Steppers -->
+    <g transform="translate(36, 145)">
+      <rect width="280" height="44" rx="10" fill="#090D16" stroke="#334155" stroke-width="1.2" />
+      <text x="16" y="27" fill="#E2E8F0" class="font-sans" font-size="13">Check-in: Oct 12, 2026</text>
+
+      <rect x="300" width="180" height="44" rx="10" fill="#090D16" stroke="#334155" stroke-width="1.2" />
+      <text x="320" y="27" fill="#38BDF8" class="font-sans" font-size="16" font-weight="700">−</text>
+      <text x="390" y="27" fill="#F8FAFC" class="font-sans" font-size="13" font-weight="700" text-anchor="middle">4 Guests</text>
+      <text x="460" y="27" fill="#38BDF8" class="font-sans" font-size="16" font-weight="700">+</text>
+    </g>
+
+    <!-- Status Badges -->
+    <g transform="translate(36, 215)">
+      <rect width="100" height="30" rx="15" fill="#10B981" fill-opacity="0.15" stroke="#10B981" stroke-width="1" />
+      <text x="50" y="19" fill="#34D399" class="font-sans" font-size="11" font-weight="700" text-anchor="middle">VACANT CLEAN</text>
+
+      <rect x="115" width="86" height="30" rx="15" fill="#0EA5E9" fill-opacity="0.15" stroke="#0EA5E9" stroke-width="1" />
+      <text x="158" y="19" fill="#38BDF8" class="font-sans" font-size="11" font-weight="700" text-anchor="middle">OCCUPIED</text>
+
+      <rect x="216" width="108" height="30" rx="15" fill="#F59E0B" fill-opacity="0.15" stroke="#F59E0B" stroke-width="1" />
+      <text x="270" y="19" fill="#FBBF24" class="font-sans" font-size="11" font-weight="700" text-anchor="middle">HOUSEKEEPING</text>
+
+      <rect x="339" width="102" height="30" rx="15" fill="#EF4444" fill-opacity="0.15" stroke="#EF4444" stroke-width="1" />
+      <text x="390" y="19" fill="#F87171" class="font-sans" font-size="11" font-weight="700" text-anchor="middle">MAINTENANCE</text>
+    </g>
+
+    <!-- Typography Specs on Right -->
+    <g transform="translate(600, 75)">
+      <text x="0" y="20" fill="#38BDF8" class="font-sans" font-size="11" font-weight="700" letter-spacing="1.5">EDITORIAL DISPLAY (PLAYFAIR DISPLAY 34PX)</text>
+      <text x="0" y="55" fill="#F8FAFC" class="font-serif" font-size="30" font-weight="700">Where sunrise paints the cape</text>
+      
+      <text x="0" y="95" fill="#38BDF8" class="font-sans" font-size="11" font-weight="700" letter-spacing="1.5">BODY &amp; INTERFACE COPY (PLUS JAKARTA SANS 14PX)</text>
+      <text x="0" y="120" fill="#94A3B8" class="font-sans" font-size="14">Flawless grammar and spelling across all guest touchpoints, checkout, and AI concierge.</text>
+      
+      <text x="0" y="160" fill="#38BDF8" class="font-sans" font-size="11" font-weight="700" letter-spacing="1.5">TECHNICAL MONOSPACE (JETBRAINS MONO 12PX)</text>
+      <text x="0" y="185" fill="#F8FAFC" class="font-mono" font-size="12">ROSTER: [UNIT-TEV, UNIT-CAT, UNIT-GEL, UNIT-CATH]</text>
+    </g>
+  </g>
+
+</svg>

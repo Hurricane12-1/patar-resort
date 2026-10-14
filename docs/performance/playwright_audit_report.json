@@ -1,0 +1,85 @@
+{
+  "audit_name": "J & D Beach House Playwright Performance & DOM Audit",
+  "timestamp": "2026-09-21T10:21:46.135Z",
+  "browser": "Chromium Headless (Playwright v1.63.0)",
+  "base_url": "https://127.0.0.1:4000",
+  "pages": [
+    {
+      "label": "Home Landing & Map Geolocation",
+      "url": "https://127.0.0.1:4000/",
+      "statusCode": 200,
+      "total_load_time_ms": 8034,
+      "dom_nodes_rendered": 373,
+      "body_bg_color": "rgb(7, 13, 27)",
+      "timing": {
+        "ttfbMs": 2.6,
+        "domInteractiveMs": 60,
+        "domContentLoadedMs": 241.5,
+        "completeLoadMs": 244.4,
+        "fcpMs": 476,
+        "usedHeapMb": 4.26,
+        "totalHeapMb": 6.42
+      },
+      "console_errors": [
+        "Framing 'https://maps.google.com/' violates the following Content Security Policy directive: \"default-src 'self'\". The request has been blocked. Note that 'frame-src' was not explicitly set, so 'default-src' is used as a fallback.\n",
+        "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+      ]
+    },
+    {
+      "label": "Executive Admin Portal",
+      "url": "https://127.0.0.1:4000/admin",
+      "statusCode": 200,
+      "total_load_time_ms": 7898,
+      "dom_nodes_rendered": 58,
+      "body_bg_color": "rgb(7, 13, 27)",
+      "timing": {
+        "ttfbMs": 3.6,
+        "domInteractiveMs": 69.8,
+        "domContentLoadedMs": 267.5,
+        "completeLoadMs": 269.9,
+        "fcpMs": 348,
+        "usedHeapMb": 2.98,
+        "totalHeapMb": 3.91
+      },
+      "console_errors": []
+    }
+  ],
+  "multi_user_session_burst": {
+    "virtual_users": 5,
+    "average_session_duration_ms": 910.6,
+    "sessions": [
+      {
+        "userId": 1,
+        "durationMs": 900,
+        "success": true
+      },
+      {
+        "userId": 2,
+        "durationMs": 920,
+        "success": true
+      },
+      {
+        "userId": 3,
+        "durationMs": 930,
+        "success": true
+      },
+      {
+        "userId": 4,
+        "durationMs": 896,
+        "success": true
+      },
+      {
+        "userId": 5,
+        "durationMs": 907,
+        "success": true
+      }
+    ]
+  },
+  "verdict": {
+    "fcp_under_1000ms": true,
+    "zero_console_errors": false,
+    "memory_usage_stable": true,
+    "multi_user_burst_passed": true,
+    "overall_status": "PERFORMANCE_OPTIMIZED_GRADE_A"
+  }
+}

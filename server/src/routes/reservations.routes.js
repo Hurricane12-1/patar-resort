@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { asyncH, ApiError } from '../middleware/errors.js';
-import { authenticate, requireAdmin } from '../middleware/auth.js';
+import { authenticate, requireAdmin, requireStaffOrAdmin } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { bookingLimiter } from '../middleware/security.js';
 import { admin } from '../lib/supabase.js';
@@ -80,8 +80,8 @@ r.patch('/reservations/:id/cancel', authenticate, asyncH(async (req, res) => {
   return res.json(data);
 }));
 
-// ---- admin ----
-r.get('/reservations', authenticate, requireAdmin, asyncH(async (_req, res) => {
+// ---- staff & admin ----
+r.get('/reservations', authenticate, requireStaffOrAdmin, asyncH(async (_req, res) => {
   const { data, error } = await admin.from('reservations')
     .select('*, profiles(full_name, phone), rooms(name)')
     .order('check_in', { ascending: false }).limit(100);
@@ -89,7 +89,7 @@ r.get('/reservations', authenticate, requireAdmin, asyncH(async (_req, res) => {
   return res.json(data || []);
 }));
 
-r.patch('/reservations/:id/status', authenticate, requireAdmin,
+r.patch('/reservations/:id/status', authenticate, requireStaffOrAdmin,
   validate(z.object({ status: z.enum(['pending','confirmed','checked_in','checked_out','cancelled','no_show']) })),
   asyncH(async (req, res) => {
     const { status } = req.body;

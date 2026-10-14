@@ -7,7 +7,9 @@ import { api } from '../lib/api.ts';
 import { money, initials } from '../lib/format.ts';
 import { IMG, roomImg } from '../lib/images.ts';
 import { useReveal } from '../hooks/useReveal.ts';
-import { toggleOceanSound, isOceanPlaying } from '../lib/oceanSynth.ts';
+import { toggleOceanSound, isOceanPlaying, stopOceanSound } from '../lib/oceanSynth.ts';
+import ResortMapGeolocation from '../components/ResortMapGeolocation.tsx';
+import { dispatchWordPrompt } from '../lib/wordPrompt.ts';
 
 function Counter({ to, decimals = 0, suffix = '' }) {
   const [v, setV] = useState(0);
@@ -42,13 +44,6 @@ function Counter({ to, decimals = 0, suffix = '' }) {
   return <span ref={ref}>{v.toLocaleString(undefined, { maximumFractionDigits: decimals, minimumFractionDigits: decimals })}{suffix}</span>;
 }
 
-const DEFAULT_ROOMS = [
-  { id: '1', name: 'Habagat Sea-View Suite', slug: 'habagat-suite', category: 'Suite', description: 'Front suite with private balcony hanging over the turquoise ocean.', capacity: 3, units: 4, rate_php: 2950, rating_avg: 4.9, amenities: ['AC', 'Sea view', 'Balcony', 'Breakfast'] },
-  { id: '2', name: 'Nipa Cove Cottage', slug: 'nipa-cove', category: 'Cottage', description: 'Native nipa cottage steps from the sand with fan cooling and hammock porch.', capacity: 2, units: 6, rate_php: 1450, rating_avg: 4.8, amenities: ['Fan', 'Hot shower', 'WiFi', 'Porch'] },
-  { id: '3', name: 'Duyan Family Villa', slug: 'duyan-villa', category: 'Villa', description: 'Two-bedroom family villa with private outdoor hammock deck & barbecue grill.', capacity: 6, units: 3, rate_php: 4800, rating_avg: 5.0, amenities: ['AC', 'Kitchenette', 'Grill deck', 'WiFi'] },
-  { id: '4', name: 'Garden Breeze Room', slug: 'garden-breeze', category: 'Garden', description: 'Air-conditioned room looking out onto lush mango gardens.', capacity: 2, units: 8, rate_php: 1850, rating_avg: 4.9, amenities: ['AC', 'WiFi', 'Hot shower', 'Breakfast'] },
-];
-
 const SCENES = [
   { id: 'sunset', label: '01 · Sunset Cape', img: IMG.hero },
   { id: 'suite', label: '02 · Sea Balcony', img: IMG.suite },
@@ -75,7 +70,7 @@ export default function Home() {
 
   useEffect(() => {
     api.rooms().then((data) => {
-      if (Array.isArray(data) && data.length > 0) setRooms(data);
+      if (Array.isArray(data)) setRooms(data);
     }).catch(() => {});
     api.recentReviews().then(setReviews).catch(() => {});
 
@@ -85,12 +80,15 @@ export default function Home() {
     };
     updateClock();
     const interval = setInterval(updateClock, 1000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      stopOceanSound();
+    };
   }, []);
 
   useReveal(true);
 
-  const displayRooms = rooms.length > 0 ? rooms : DEFAULT_ROOMS;
+  const displayRooms = rooms;
 
   const reserve = (slug) => {
     setPick(slug);
@@ -208,7 +206,18 @@ export default function Home() {
                 <span className="label">{s.category}</span>
                 <h3 className="serif">{s.name}</h3>
                 <p>{s.description}</p>
-                <div style={{ margin: '14px 0' }}>{s.amenities?.map((a) => <span key={a} className="tag">{a}</span>)}</div>
+                <div style={{ margin: '14px 0' }}>
+                  {s.amenities?.map((a) => (
+                    <span
+                      key={a}
+                      className="tag clickable-prompt-word"
+                      onClick={() => dispatchWordPrompt(a, { template: 'Tell me about rooms featuring {word}' })}
+                      title={`Click word to type AI prompt: "${a}"`}
+                    >
+                      {a}
+                    </span>
+                  ))}
+                </div>
                 <div className="sp-meta">
                   <span>Sleeps<b>{s.capacity}</b></span>
                   <span>Rating<b>★ {Number(s.rating_avg).toFixed(1)}</b></span>
@@ -231,7 +240,16 @@ export default function Home() {
       {/* ——— SERIF RIBBON ——— */}
       <div className="ribbon" aria-hidden="true">
         <div className="marquee-track">
-          {[...RIBBON, ...RIBBON].map((w, i) => <span key={i}>{w}<i>✦</i></span>)}
+          {[...RIBBON, ...RIBBON].map((w, i) => (
+            <span
+              key={i}
+              className="clickable-prompt-word"
+              onClick={() => dispatchWordPrompt(w, { template: 'What makes {word} special at J & D Beach House?' })}
+              title={`Click word to type AI prompt: "${w}"`}
+            >
+              {w}<i>✦</i>
+            </span>
+          ))}
         </div>
       </div>
 
@@ -241,14 +259,23 @@ export default function Home() {
           <span className="label light reveal">Beyond the gate</span>
           <h2 className="reveal">Bolinao keeps its wonders close.</h2>
           {EXP.map(([n, name, d], i) => (
-            <div className="exp-item reveal" key={n} style={{ transitionDelay: `${i * 90}ms` }}>
+            <div
+              className="exp-item reveal clickable-prompt-word"
+              key={n}
+              style={{ transitionDelay: `${i * 90}ms`, cursor: 'pointer' }}
+              onClick={() => dispatchWordPrompt(name, { template: `How do I visit ${name} (${d} away) from the resort?` })}
+              title={`Click to type prompt for ${name}`}
+            >
               <span className="n">{n}</span>
               <h3>{name}</h3>
               <span className="d">{d} away</span>
             </div>
           ))}
-          <button className="btn btn-line" style={{ marginTop: 32 }}
-            onClick={() => window.dispatchEvent(new Event('app:open-chat'))}>
+          <button
+            className="btn btn-line"
+            style={{ marginTop: 32 }}
+            onClick={() => dispatchWordPrompt('Plan my day in Bolinao', { template: 'Can you plan a 1-day itinerary around Bolinao with beach, caves, and dinner?' })}
+          >
             Ask J & D Bot to plan your day 💬
           </button>
         </div>
@@ -298,6 +325,9 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      {/* ——— RESORT GEOLOCATION & MAP ROUTE PLANNER ——— */}
+      <ResortMapGeolocation isLightMode={true} />
 
       {/* ——— FINALE ——— */}
       <section className="cine-cta grain">

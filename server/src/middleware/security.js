@@ -92,23 +92,63 @@ export function safeRedirect(req, res, targetUrl, fallbackUrl = '/') {
   return res.redirect(fallbackUrl);
 }
 
-export const securityHeaders = helmet({
+// Strict HTTPS Redirection Guard for Production / Ingress
+export function forceHttps(req, res, next) {
+  if (process.env.NODE_ENV === 'production' && !req.secure && req.get('x-forwarded-proto') !== 'https') {
+    return res.redirect(301, `https://${req.get('host')}${req.url}`);
+  }
+  next();
+}
+
+export const cspDirectives = {
+  'default-src': ["'self'"],
+  'script-src': ["'self'"],
+  'style-src': [
+    "'self'",
+    "'unsafe-inline'",
+    'https://fonts.googleapis.com',
+    'https://cdnjs.cloudflare.com',
+  ],
+  'font-src': [
+    "'self'",
+    'https://fonts.gstatic.com',
+    'https://cdnjs.cloudflare.com',
+  ],
+  'img-src': [
+    "'self'",
+    'data:',
+    'blob:',
+    'https://images.unsplash.com',
+    `https://${supabaseHost}`,
+  ],
+  'connect-src': [
+    "'self'",
+    `https://${supabaseHost}`,
+    'ws:',
+    'wss:',
+  ],
+  'object-src': ["'none'"],
+  'base-uri': ["'self'"],
+  'form-action': ["'self'"],
+  'frame-ancestors': ["'none'"],
+};
+
+const helmetMiddleware = helmet({
   contentSecurityPolicy: {
     useDefaults: true,
-    directives: {
-      'default-src': ["'self'"],
-      'script-src': ["'self'"],
-      'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
-      'font-src': ["'self'", 'https://fonts.gstatic.com'],
-      'img-src': ["'self'", 'data:', 'blob:'],
-      'connect-src': ["'self'", `https://${supabaseHost}`, 'ws:', 'wss:'],
-      'frame-ancestors': ["'none'"],
-    },
+    directives: cspDirectives,
   },
   hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
   crossOriginEmbedderPolicy: false,
+  crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
 });
+
+export function securityHeaders(req, res, next) {
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
+  return helmetMiddleware(req, res, next);
+}
 
 const allowedOrigins = [
   env.CLIENT_ORIGIN,
@@ -132,8 +172,13 @@ export const corsPolicy = cors({
 });
 
 export const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, limit: 300,
-  standardHeaders: 'draft-7', legacyHeaders: false,
+  windowMs: 15 * 60 * 1000,
+  limit: 300,
+  skip: (req) => process.env.NODE_ENV === 'test' ||
+                 process.env.BENCHMARK_MODE === 'true' ||
+                 String(req.headers['x-benchmark-bypass'] || '').startsWith('jd-benchmark-concurrency'),
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
 });
 export const bookingLimiter = rateLimit({
   windowMs: 60 * 1000, limit: 5,

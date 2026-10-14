@@ -10,10 +10,12 @@ coverage/
 client/node_modules/.vite/
 
 # Environment Variables & Secrets
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env
+.env.*
+server/.env
+client/.env
+!.env.example
+!server/.env.example
 
 # Logs
 logs/

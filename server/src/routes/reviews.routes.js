@@ -11,7 +11,9 @@ r.get('/reviews/recent', asyncH(async (_req, res) => {
   const { data, error } = await admin.from('reviews')
     .select('id, rating, comment, created_at, rooms(name), profiles(full_name)')
     .order('created_at', { ascending: false }).limit(9);
-  if (error) throw new ApiError(500, error.message);
+  if (error) {
+    throw new ApiError(500, error.message);
+  }
   return res.json(data || []);
 }));
 

@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { parseCSV, jsonToCSV } from '../lib/csvParser.ts';
+import { api } from '../lib/api.ts';
 import { toast } from './Toasts.tsx';
 import { IconCsv, IconDownload, IconSearch } from './AdminIcons.tsx';
 
@@ -11,6 +12,18 @@ export default function CsvTableViewer({ initialCsvText = '', title = 'CSV Data 
   const [sortAsc, setSortAsc] = useState(true);
   const [page, setPage] = useState(1);
   const pageSize = 8;
+
+  useEffect(() => {
+    if (initialCsvText) {
+      setCsvText(initialCsvText);
+    } else {
+      api.csvSample()
+        .then((txt) => {
+          if (txt) setCsvText(txt);
+        })
+        .catch(() => {});
+    }
+  }, [initialCsvText]);
 
   const themeCardBg = isLightMode ? '#FFFFFF' : 'rgba(15, 23, 42, 0.85)';
   const themeText = isLightMode ? '#0F172A' : '#F8FAFC';

@@ -1,0 +1,306 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1750 1520" width="1750" height="1520" style="background:#ffffff; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <!-- Card Shadow -->
+    <filter id="tableShadow" x="-5%" y="-5%" width="110%" height="112%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.08" />
+    </filter>
+
+    <!-- Crow's Foot & Cardinality Markers -->
+    <!-- 1:1 (Two parallel vertical bars) -->
+    <marker id="one-one-start" markerWidth="14" markerHeight="16" refX="2" refY="8" orient="auto">
+      <line x1="3" y1="1" x2="3" y2="15" stroke="#475569" stroke-width="1.8" />
+      <line x1="9" y1="1" x2="9" y2="15" stroke="#475569" stroke-width="1.8" />
+    </marker>
+    <marker id="one-one-end" markerWidth="14" markerHeight="16" refX="12" refY="8" orient="auto">
+      <line x1="5" y1="1" x2="5" y2="15" stroke="#475569" stroke-width="1.8" />
+      <line x1="11" y1="1" x2="11" y2="15" stroke="#475569" stroke-width="1.8" />
+    </marker>
+
+    <!-- 1:N Crow's foot with bar (Mandatory One to Many) -->
+    <marker id="crow-many-end" markerWidth="18" markerHeight="16" refX="16" refY="8" orient="auto">
+      <!-- circle for zero/many or bar for one/many -->
+      <circle cx="5" cy="8" r="3.5" fill="#ffffff" stroke="#475569" stroke-width="1.5" />
+      <path d="M 16, 2 L 6, 8 L 16, 14" fill="none" stroke="#475569" stroke-width="1.8" />
+    </marker>
+
+    <!-- Crow's foot start (for bidirectional) -->
+    <marker id="crow-many-start" markerWidth="18" markerHeight="16" refX="2" refY="8" orient="auto">
+      <circle cx="13" cy="8" r="3.5" fill="#ffffff" stroke="#475569" stroke-width="1.5" />
+      <path d="M 2, 2 L 12, 8 L 2, 14" fill="none" stroke="#475569" stroke-width="1.8" />
+    </marker>
+  </defs>
+
+  <style>
+    .tbl-header-bg { fill: #f8fafc; stroke: #334155; stroke-width: 1.6; }
+    .tbl-body-bg { fill: #ffffff; stroke: #334155; stroke-width: 1.6; }
+    .tbl-header-txt { font-size: 13px; font-weight: 800; fill: #0f172a; text-anchor: middle; letter-spacing: 0.5px; }
+    .tbl-sub-txt { font-size: 11px; font-style: italic; fill: #94a3b8; text-anchor: middle; }
+    .key-pk { font-size: 10px; font-weight: 800; fill: #b91c1c; font-family: monospace; }
+    .key-fk { font-size: 10px; font-weight: 700; fill: #0284c7; font-family: monospace; }
+    .key-uk { font-size: 10px; font-weight: 700; fill: #d97706; font-family: monospace; }
+    .type-txt { font-size: 11px; font-weight: 500; fill: #64748b; font-family: monospace; }
+    .col-txt { font-size: 11px; font-weight: 600; fill: #1e293b; font-family: monospace; }
+    .row-line { stroke: #f1f5f9; stroke-width: 1; }
+    
+    .rel-line { stroke: #64748b; stroke-width: 1.6; fill: none; }
+    .lbl-box { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1; rx: 4px; }
+    .lbl-txt { font-size: 10px; font-weight: 700; fill: #475569; text-anchor: middle; }
+  </style>
+
+  <!-- Title Watermark -->
+  <g transform="translate(875, 28)" text-anchor="middle">
+    <text y="0" font-size="22" font-weight="900" fill="#0f172a">J &amp; D Beach House · Entity Relationship Data Model</text>
+    <text y="20" font-size="12" font-weight="500" fill="#64748b">Normalized Schema Topology · Exact Foreign Key Constraints &amp; Cardinality</text>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- RELATIONSHIP PATHS & LABELS -->
+  <!-- ========================================================================= -->
+
+  <!-- 1. AUTH USERS -> PROFILES : creates 1:1 -->
+  <path d="M 270, 835 L 440, 835" class="rel-line" marker-start="url(#one-one-start)" marker-end="url(#one-one-end)" />
+  <g transform="translate(355, 835)">
+    <rect x="-42" y="-10" width="84" height="20" class="lbl-box" />
+    <text y="4" class="lbl-txt">creates 1:1</text>
+  </g>
+
+  <!-- 2. DEPT NAME -> RESORT_INVENTORY : tracks stock (1:N) -->
+  <path d="M 640, 105 L 860, 105" class="rel-line" marker-start="url(#one-one-start)" marker-end="url(#crow-many-end)" />
+  <g transform="translate(750, 105)">
+    <rect x="-60" y="-10" width="120" height="20" class="lbl-box" />
+    <text y="4" class="lbl-txt">tracks stock (1:N)</text>
+  </g>
+
+  <!-- 3. DEPT NAME -> DEPARTMENT_TASKS : categorizes (1:N) -->
+  <path d="M 555, 135 L 555, 210 L 780, 210 L 780, 290 L 860, 290" class="rel-line" marker-start="url(#one-one-start)" marker-end="url(#crow-many-end)" />
+  <g transform="translate(680, 210)">
+    <rect x="-55" y="-10" width="110" height="20" class="lbl-box" />
+    <text y="4" class="lbl-txt">categorizes (1:N)</text>
+  </g>
+
+  <!-- 4. ROOMS -> DEPARTMENT_TASKS : targeted at (0..1:N) -->
+  <path d="M 660, 470 L 750, 470 L 750, 355 L 860, 355" class="rel-line" marker-start="url(#one-one-start)" marker-end="url(#crow-many-end)" />
+  <g transform="translate(710, 470)">
+    <rect x="-65" y="-10" width="130" height="20" class="lbl-box" />
+    <text y="4" class="lbl-txt">targeted at (0..1:N)</text>
+  </g>
+
+  <!-- 5. PROFILES -> DEPARTMENT_TASKS : created by (1:N) -->
+  <path d="M 550, 770 L 550, 720 L 710, 720 L 710, 415 L 860, 415" class="rel-line" marker-start="url(#one-one-start)" marker-end="url(#crow-many-end)" />
+  <g transform="translate(780, 415)">
+    <rect x="-55" y="-10" width="110" height="20" class="lbl-box" />
+    <text y="4" class="lbl-txt">created by (1:N)</text>
+  </g>
+
+  <!-- 6. ROOMS -> REVIEWS : rated under (1:N) -->
+  <path d="M 660, 520 L 1320, 520" class="rel-line" marker-start="url(#one-one-start)" marker-end="url(#crow-many-end)" />
+  <g transform="translate(1210, 520)">
+    <rect x="-55" y="-10" width="110" height="20" class="lbl-box" />
+    <text y="4" class="lbl-txt">rated under (1:N)</text>
+  </g>
+
+  <!-- 7. PROFILES -> REVIEWS : written by (1:N) -->
+  <path d="M 660, 790 L 680, 790 L 680, 565 L 1320, 565" class="rel-line" marker-start="url(#one-one-start)" marker-end="url(#crow-many-end)" />
+  <g transform="translate(1210, 565)">
+    <rect x="-55" y="-10" width="110" height="20" class="lbl-box" />
+    <text y="4" class="lbl-txt">written by (1:N)</text>
+  </g>
+
+  <!-- 8. ROOMS -> RESERVATIONS : allocated to (1:N) -->
+  <path d="M 660, 610 L 770, 610 L 770, 690 L 860, 690" class="rel-line" marker-start="url(#one-one-start)" marker-end="url(#crow-many-end)" />
+  <g transform="translate(740, 650)">
+    <rect x="-55" y="-10" width="110" height="20" class="lbl-box" />
+    <text y="4" class="lbl-txt">allocated to (1:N)</text>
+  </g>
+
+  <!-- 9. PROFILES -> RESERVATIONS : books (1:N) -->
+  <path d="M 660, 830 L 780, 830 L 780, 765 L 860, 765" class="rel-line" marker-start="url(#one-one-start)" marker-end="url(#crow-many-end)" />
+  <g transform="translate(775, 830)">
+    <rect x="-42" y="-10" width="84" height="20" class="lbl-box" />
+    <text y="4" class="lbl-txt">books (1:N)</text>
+  </g>
+
+  <!-- 10. RESERVATIONS -> REVIEWS : evaluated by (1:1) -->
+  <path d="M 1110, 705 L 1230, 705 L 1230, 610 L 1320, 610" class="rel-line" marker-start="url(#one-one-start)" marker-end="url(#one-one-end)" />
+  <g transform="translate(1230, 660)">
+    <rect x="-55" y="-10" width="110" height="20" class="lbl-box" />
+    <text y="4" class="lbl-txt">evaluated by (1:1)</text>
+  </g>
+
+  <!-- 11. RESERVATIONS -> NOTIFICATIONS : triggers (1:N) -->
+  <path d="M 1110, 810 L 1320, 810" class="rel-line" marker-start="url(#one-one-start)" marker-end="url(#crow-many-end)" />
+  <g transform="translate(1215, 810)">
+    <rect x="-48" y="-10" width="96" height="20" class="lbl-box" />
+    <text y="4" class="lbl-txt">triggers (1:N)</text>
+  </g>
+
+  <!-- 12. PROFILES -> CHAT_MESSAGES : authors (1:N) -->
+  <path d="M 660, 870 L 760, 870 L 760, 1020 L 860, 1020" class="rel-line" marker-start="url(#one-one-start)" marker-end="url(#crow-many-end)" />
+  <g transform="translate(760, 945)">
+    <rect x="-45" y="-10" width="90" height="20" class="lbl-box" />
+    <text y="4" class="lbl-txt">authors (1:N)</text>
+  </g>
+
+  <!-- 13. PROFILES -> RESORT ORDERS : places (1:N) -->
+  <path d="M 660, 905 L 730, 905 L 730, 1175 L 860, 1175" class="rel-line" marker-start="url(#one-one-start)" marker-end="url(#crow-many-end)" />
+  <g transform="translate(730, 1100)">
+    <rect x="-42" y="-10" width="84" height="20" class="lbl-box" />
+    <text y="4" class="lbl-txt">places (1:N)</text>
+  </g>
+
+  <!-- 14. PROFILES -> NOTIFICATIONS : recipient (1:N) -->
+  <path d="M 520, 895 L 520, 1420 L 1440, 1420 L 1440, 930" class="rel-line" marker-start="url(#one-one-start)" marker-end="url(#crow-many-end)" />
+  <g transform="translate(980, 1420)">
+    <rect x="-50" y="-10" width="100" height="20" class="lbl-box" />
+    <text y="4" class="lbl-txt">recipient (1:N)</text>
+  </g>
+
+
+  <!-- ========================================================================= -->
+  <!-- TABLE CARDS -->
+  <!-- ========================================================================= -->
+
+  <!-- 1. DEPT NAME -->
+  <g transform="translate(470, 75)" filter="url(#tableShadow)">
+    <rect width="170" height="30" class="tbl-header-bg" rx="4" />
+    <rect y="30" width="170" height="30" class="tbl-body-bg" rx="4" />
+    <text x="85" y="20" class="tbl-header-txt">DEPT NAME</text>
+    <text x="85" y="50" class="tbl-sub-txt">(no attributes)</text>
+  </g>
+
+  <!-- 2. RESORT_INVENTORY -->
+  <g transform="translate(860, 50)" filter="url(#tableShadow)">
+    <rect width="240" height="30" class="tbl-header-bg" rx="4" />
+    <rect y="30" width="240" height="125" class="tbl-body-bg" rx="4" />
+    <text x="120" y="20" class="tbl-header-txt">RESORT_INVENTORY</text>
+    <!-- rows -->
+    <text x="12" y="52" class="key-pk">PK</text><text x="40" y="52" class="type-txt">uuid</text><text x="105" y="52" class="col-txt">id</text><line x1="0" y1="58" x2="240" y2="58" class="row-line" />
+    <text x="12" y="76" class="key-uk">UK</text><text x="40" y="76" class="type-txt">string</text><text x="105" y="76" class="col-txt">item_name</text><line x1="0" y1="82" x2="240" y2="82" class="row-line" />
+    <text x="40" y="100" class="type-txt">string</text><text x="105" y="100" class="col-txt">category</text><line x1="0" y1="106" x2="240" y2="106" class="row-line" />
+    <text x="40" y="124" class="type-txt">int</text><text x="105" y="124" class="col-txt">stock_qty</text><line x1="0" y1="130" x2="240" y2="130" class="row-line" />
+    <text x="40" y="148" class="type-txt">int</text><text x="105" y="148" class="col-txt">reorder_at</text>
+  </g>
+
+  <!-- 3. DEPARTMENT_TASKS -->
+  <g transform="translate(860, 240)" filter="url(#tableShadow)">
+    <rect width="240" height="30" class="tbl-header-bg" rx="4" />
+    <rect y="30" width="240" height="175" class="tbl-body-bg" rx="4" />
+    <text x="120" y="20" class="tbl-header-txt">DEPARTMENT_TASKS</text>
+    <!-- rows -->
+    <text x="12" y="52" class="key-pk">PK</text><text x="40" y="52" class="type-txt">uuid</text><text x="105" y="52" class="col-txt">id</text><line x1="0" y1="58" x2="240" y2="58" class="row-line" />
+    <text x="40" y="76" class="type-txt">string</text><text x="105" y="76" class="col-txt">department</text><line x1="0" y1="82" x2="240" y2="82" class="row-line" />
+    <text x="40" y="100" class="type-txt">string</text><text x="105" y="100" class="col-txt">title</text><line x1="0" y1="106" x2="240" y2="106" class="row-line" />
+    <text x="12" y="124" class="key-fk">FK</text><text x="40" y="124" class="type-txt">uuid</text><text x="105" y="124" class="col-txt">room_id</text><line x1="0" y1="130" x2="240" y2="130" class="row-line" />
+    <text x="40" y="148" class="type-txt">string</text><text x="105" y="148" class="col-txt">priority</text><line x1="0" y1="154" x2="240" y2="154" class="row-line" />
+    <text x="40" y="172" class="type-txt">string</text><text x="105" y="172" class="col-txt">status</text><line x1="0" y1="178" x2="240" y2="178" class="row-line" />
+    <text x="40" y="196" class="type-txt">string</text><text x="105" y="196" class="col-txt">assigned_to</text>
+  </g>
+
+  <!-- 4. ROOMS -->
+  <g transform="translate(440, 440)" filter="url(#tableShadow)">
+    <rect width="220" height="30" class="tbl-header-bg" rx="4" />
+    <rect y="30" width="220" height="175" class="tbl-body-bg" rx="4" />
+    <text x="110" y="20" class="tbl-header-txt">ROOMS</text>
+    <!-- rows -->
+    <text x="12" y="52" class="key-pk">PK</text><text x="40" y="52" class="type-txt">uuid</text><text x="105" y="52" class="col-txt">id</text><line x1="0" y1="58" x2="220" y2="58" class="row-line" />
+    <text x="40" y="76" class="type-txt">string</text><text x="105" y="76" class="col-txt">name</text><line x1="0" y1="82" x2="220" y2="82" class="row-line" />
+    <text x="40" y="100" class="type-txt">string</text><text x="105" y="100" class="col-txt">category</text><line x1="0" y1="106" x2="220" y2="106" class="row-line" />
+    <text x="40" y="124" class="type-txt">int</text><text x="105" y="124" class="col-txt">capacity</text><line x1="0" y1="130" x2="220" y2="130" class="row-line" />
+    <text x="40" y="148" class="type-txt">int</text><text x="105" y="148" class="col-txt">units</text><line x1="0" y1="154" x2="220" y2="154" class="row-line" />
+    <text x="40" y="172" class="type-txt">int</text><text x="105" y="172" class="col-txt">rate_php</text><line x1="0" y1="178" x2="220" y2="178" class="row-line" />
+    <text x="40" y="196" class="type-txt">numeric</text><text x="105" y="196" class="col-txt">rating_avg</text>
+  </g>
+
+  <!-- 5. RESERVATIONS -->
+  <g transform="translate(860, 640)" filter="url(#tableShadow)">
+    <rect width="250" height="30" class="tbl-header-bg" rx="4" />
+    <rect y="30" width="250" height="225" class="tbl-body-bg" rx="4" />
+    <text x="125" y="20" class="tbl-header-txt">RESERVATIONS</text>
+    <!-- rows -->
+    <text x="12" y="52" class="key-pk">PK</text><text x="40" y="52" class="type-txt">uuid</text><text x="110" y="52" class="col-txt">id</text><line x1="0" y1="58" x2="250" y2="58" class="row-line" />
+    <text x="12" y="76" class="key-fk">FK</text><text x="40" y="76" class="type-txt">uuid</text><text x="110" y="76" class="col-txt">guest_id</text><line x1="0" y1="82" x2="250" y2="82" class="row-line" />
+    <text x="12" y="100" class="key-fk">FK</text><text x="40" y="100" class="type-txt">uuid</text><text x="110" y="100" class="col-txt">room_id</text><line x1="0" y1="106" x2="250" y2="106" class="row-line" />
+    <text x="40" y="124" class="type-txt">date</text><text x="110" y="124" class="col-txt">check_in</text><line x1="0" y1="130" x2="250" y2="130" class="row-line" />
+    <text x="40" y="148" class="type-txt">date</text><text x="110" y="148" class="col-txt">check_out</text><line x1="0" y1="154" x2="250" y2="154" class="row-line" />
+    <text x="40" y="172" class="type-txt">int</text><text x="110" y="172" class="col-txt">nights</text><line x1="0" y1="178" x2="250" y2="178" class="row-line" />
+    <text x="40" y="196" class="type-txt">string</text><text x="110" y="196" class="col-txt">status</text><line x1="0" y1="202" x2="250" y2="202" class="row-line" />
+    <text x="40" y="220" class="type-txt">int</text><text x="110" y="220" class="col-txt">total_php</text><line x1="0" y1="226" x2="250" y2="226" class="row-line" />
+    <text x="40" y="244" class="type-txt">daterange</text><text x="110" y="244" class="col-txt">no_overbooking</text>
+  </g>
+
+  <!-- 6. REVIEWS -->
+  <g transform="translate(1320, 470)" filter="url(#tableShadow)">
+    <rect width="240" height="30" class="tbl-header-bg" rx="4" />
+    <rect y="30" width="240" height="150" class="tbl-body-bg" rx="4" />
+    <text x="120" y="20" class="tbl-header-txt">REVIEWS</text>
+    <!-- rows -->
+    <text x="12" y="52" class="key-pk">PK</text><text x="40" y="52" class="type-txt">uuid</text><text x="110" y="52" class="col-txt">id</text><line x1="0" y1="58" x2="240" y2="58" class="row-line" />
+    <text x="12" y="76" class="key-fk">FK</text><text x="40" y="76" class="type-txt">uuid</text><text x="110" y="76" class="col-txt">reservation_id</text><line x1="0" y1="82" x2="240" y2="82" class="row-line" />
+    <text x="12" y="100" class="key-fk">FK</text><text x="40" y="100" class="type-txt">uuid</text><text x="110" y="100" class="col-txt">room_id</text><line x1="0" y1="106" x2="240" y2="106" class="row-line" />
+    <text x="12" y="124" class="key-fk">FK</text><text x="40" y="124" class="type-txt">uuid</text><text x="110" y="124" class="col-txt">guest_id</text><line x1="0" y1="130" x2="240" y2="130" class="row-line" />
+    <text x="40" y="148" class="type-txt">int</text><text x="110" y="148" class="col-txt">rating</text><line x1="0" y1="154" x2="240" y2="154" class="row-line" />
+    <text x="40" y="172" class="type-txt">string</text><text x="110" y="172" class="col-txt">comment</text>
+  </g>
+
+  <!-- 7. AUTH USERS -->
+  <g transform="translate(60, 770)" filter="url(#tableShadow)">
+    <rect width="210" height="30" class="tbl-header-bg" rx="4" />
+    <rect y="30" width="210" height="100" class="tbl-body-bg" rx="4" />
+    <text x="105" y="20" class="tbl-header-txt">AUTH USERS</text>
+    <!-- rows -->
+    <text x="12" y="52" class="key-pk">PK</text><text x="35" y="52" class="type-txt">uuid</text><text x="95" y="52" class="col-txt">id</text><line x1="0" y1="58" x2="210" y2="58" class="row-line" />
+    <text x="35" y="76" class="type-txt">string</text><text x="95" y="76" class="col-txt">email</text><line x1="0" y1="82" x2="210" y2="82" class="row-line" />
+    <text x="35" y="100" class="type-txt">string</text><text x="95" y="100" class="col-txt">encrypted_password</text><line x1="0" y1="106" x2="210" y2="106" class="row-line" />
+    <text x="35" y="124" class="type-txt">timestamp</text><text x="95" y="124" class="col-txt">created_at</text>
+  </g>
+
+  <!-- 8. PROFILES -->
+  <g transform="translate(440, 770)" filter="url(#tableShadow)">
+    <rect width="220" height="30" class="tbl-header-bg" rx="4" />
+    <rect y="30" width="220" height="125" class="tbl-body-bg" rx="4" />
+    <text x="110" y="20" class="tbl-header-txt">PROFILES</text>
+    <!-- rows -->
+    <text x="35" y="52" class="type-txt">uuid</text><text x="95" y="52" class="col-txt">id</text><line x1="0" y1="58" x2="220" y2="58" class="row-line" />
+    <text x="35" y="76" class="type-txt">string</text><text x="95" y="76" class="col-txt">full_name</text><line x1="0" y1="82" x2="220" y2="82" class="row-line" />
+    <text x="35" y="100" class="type-txt">string</text><text x="95" y="100" class="col-txt">phone</text><line x1="0" y1="106" x2="220" y2="106" class="row-line" />
+    <text x="35" y="124" class="type-txt">string</text><text x="95" y="124" class="col-txt">role</text><line x1="0" y1="130" x2="220" y2="130" class="row-line" />
+    <text x="35" y="148" class="type-txt">string</text><text x="95" y="148" class="col-txt">emergency_contact</text>
+  </g>
+
+  <!-- 9. CHAT_MESSAGES -->
+  <g transform="translate(860, 990)" filter="url(#tableShadow)">
+    <rect width="180" height="30" class="tbl-header-bg" rx="4" />
+    <rect y="30" width="180" height="30" class="tbl-body-bg" rx="4" />
+    <text x="90" y="20" class="tbl-header-txt">CHAT MESSAGES</text>
+    <text x="90" y="50" class="tbl-sub-txt">(no attributes)</text>
+  </g>
+
+  <!-- 10. NOTIFICATIONS -->
+  <g transform="translate(1320, 750)" filter="url(#tableShadow)">
+    <rect width="240" height="30" class="tbl-header-bg" rx="4" />
+    <rect y="30" width="240" height="150" class="tbl-body-bg" rx="4" />
+    <text x="120" y="20" class="tbl-header-txt">NOTIFICATIONS</text>
+    <!-- rows -->
+    <text x="12" y="52" class="key-pk">PK</text><text x="40" y="52" class="type-txt">uuid</text><text x="110" y="52" class="col-txt">id</text><line x1="0" y1="58" x2="240" y2="58" class="row-line" />
+    <text x="12" y="76" class="key-fk">FK</text><text x="40" y="76" class="type-txt">uuid</text><text x="110" y="76" class="col-txt">profile_id</text><line x1="0" y1="82" x2="240" y2="82" class="row-line" />
+    <text x="12" y="100" class="key-fk">FK</text><text x="40" y="100" class="type-txt">uuid</text><text x="110" y="100" class="col-txt">reservation_id</text><line x1="0" y1="106" x2="240" y2="106" class="row-line" />
+    <text x="40" y="124" class="type-txt">string</text><text x="110" y="124" class="col-txt">to_phone</text><line x1="0" y1="130" x2="240" y2="130" class="row-line" />
+    <text x="40" y="148" class="type-txt">string</text><text x="110" y="148" class="col-txt">body</text><line x1="0" y1="154" x2="240" y2="154" class="row-line" />
+    <text x="40" y="172" class="type-txt">string</text><text x="110" y="172" class="col-txt">status</text>
+  </g>
+
+  <!-- 11. RESORT ORDERS -->
+  <g transform="translate(860, 1100)" filter="url(#tableShadow)">
+    <rect width="230" height="30" class="tbl-header-bg" rx="4" />
+    <rect y="30" width="230" height="150" class="tbl-body-bg" rx="4" />
+    <text x="115" y="20" class="tbl-header-txt">RESORT ORDERS</text>
+    <!-- rows -->
+    <text x="12" y="52" class="key-pk">PK</text><text x="40" y="52" class="type-txt">uuid</text><text x="105" y="52" class="col-txt">id</text><line x1="0" y1="58" x2="230" y2="58" class="row-line" />
+    <text x="12" y="76" class="key-fk">FK</text><text x="40" y="76" class="type-txt">uuid</text><text x="105" y="76" class="col-txt">guest_id</text><line x1="0" y1="82" x2="230" y2="82" class="row-line" />
+    <text x="40" y="100" class="type-txt">string</text><text x="105" y="100" class="col-txt">item_name</text><line x1="0" y1="106" x2="230" y2="106" class="row-line" />
+    <text x="40" y="124" class="type-txt">string</text><text x="105" y="124" class="col-txt">category</text><line x1="0" y1="130" x2="230" y2="130" class="row-line" />
+    <text x="40" y="148" class="type-txt">int</text><text x="105" y="148" class="col-txt">price_php</text><line x1="0" y1="154" x2="230" y2="154" class="row-line" />
+    <text x="40" y="172" class="type-txt">string</text><text x="105" y="172" class="col-txt">status</text>
+  </g>
+
+</svg>

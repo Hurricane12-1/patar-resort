@@ -1,0 +1,375 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1950" width="1600" height="1950" style="background:#ffffff; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <filter id="cardShadow" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f172a" flood-opacity="0.07" />
+    </filter>
+
+    <marker id="arrowBlue" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#2563eb" />
+    </marker>
+    <marker id="arrowGray" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#64748b" />
+    </marker>
+    <marker id="arrowDark" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#0f172a" />
+    </marker>
+  </defs>
+
+  <style>
+    .layer-box { fill: #f8fafc; stroke: #64748b; stroke-width: 1.5; rx: 8px; }
+    .layer-title { font-size: 13px; font-weight: 700; fill: #1e293b; }
+    .card-box { fill: #ffffff; stroke: #475569; stroke-width: 1.2; rx: 6px; }
+    .card-box-accent { fill: #ffffff; stroke: #2563eb; stroke-width: 1.6; rx: 6px; }
+    .node-title { font-size: 13px; font-weight: 700; fill: #0f172a; text-anchor: middle; }
+    .node-sub { font-size: 11px; font-weight: 400; fill: #475569; text-anchor: middle; }
+    .node-sub-blue { font-size: 11px; font-weight: 600; fill: #2563eb; text-anchor: middle; }
+    .edge-label-bg { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1; rx: 4px; }
+    .edge-text { font-size: 10px; font-weight: 600; fill: #334155; text-anchor: middle; }
+    .conn-blue { stroke: #2563eb; stroke-width: 1.5; fill: none; }
+    .conn-dashed { stroke: #64748b; stroke-width: 1.5; stroke-dasharray: 5 4; fill: none; }
+    .conn-dark { stroke: #0f172a; stroke-width: 1.6; fill: none; }
+  </style>
+
+  <!-- Title Header -->
+  <g transform="translate(800, 30)" text-anchor="middle">
+    <text y="0" font-size="20" font-weight="800" fill="#0f172a">J &amp; D Beach House · Full System Architecture</text>
+    <text y="20" font-size="12" font-weight="500" fill="#64748b">Complete Multi-Layer Security Perimeter, Node.js Engine &amp; PostgreSQL 15+ Supabase Infrastructure</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- 1. FRONTEND CLIENT LAYER -->
+  <!-- ================================================================= -->
+  <g transform="translate(100, 70)">
+    <rect width="1400" height="250" class="layer-box" />
+    <text x="20" y="24" class="layer-title">1. Frontend Client Layer (React 18 + Vite + TS)</text>
+
+    <!-- Socket.io Client -->
+    <g transform="translate(40, 45)" filter="url(#cardShadow)">
+      <rect width="260" height="60" class="card-box" />
+      <text x="130" y="26" class="node-title">Socket.io Client</text>
+      <text x="130" y="44" class="node-sub">(Realtime Chatbot Socket)</text>
+    </g>
+
+    <!-- Supabase Realtime Client -->
+    <g transform="translate(340, 45)" filter="url(#cardShadow)">
+      <rect width="260" height="60" class="card-box" />
+      <text x="130" y="26" class="node-title">Supabase Realtime Client</text>
+      <text x="130" y="44" class="node-sub">(PostgreSQL CDC Listener)</text>
+    </g>
+
+    <!-- Multi-Role Operations Desks -->
+    <g transform="translate(180, 155)" filter="url(#cardShadow)">
+      <rect width="320" height="70" class="card-box" />
+      <text x="160" y="28" class="node-title">Multi-Role Operations Desks</text>
+      <text x="160" y="48" class="node-sub">(Reception, Accounting, Depts, Executive Admin)</text>
+    </g>
+
+    <!-- Public Guest Portal -->
+    <g transform="translate(540, 155)" filter="url(#cardShadow)">
+      <rect width="320" height="70" class="card-box" />
+      <text x="160" y="28" class="node-title">Public Guest Portal</text>
+      <text x="160" y="48" class="node-sub">(Booking Flow, Room Gallery, Ocean Synth)</text>
+    </g>
+
+    <!-- Guest Experience Hub -->
+    <g transform="translate(900, 155)" filter="url(#cardShadow)">
+      <rect width="320" height="70" class="card-box" />
+      <text x="160" y="28" class="node-title">Guest Experience Hub</text>
+      <text x="160" y="48" class="node-sub">(In-Room Orders, Digital RFID Pass)</text>
+    </g>
+
+    <!-- Reactive Refresh Link: Realtime Client -> Operations Desks -->
+    <path d="M 470, 105 L 470, 155" class="conn-dashed" marker-end="url(#arrowGray)" />
+    <g transform="translate(470, 130)">
+      <rect x="-65" y="-8" width="130" height="16" class="edge-label-bg" />
+      <text y="4" class="edge-text">15. Reactive State Refresh</text>
+    </g>
+  </g>
+
+  <!-- Connectors: L1 -> L2 Rate Limiter -->
+  <path d="M 440, 295 L 440, 360 L 700, 360 L 700, 435" class="conn-blue" marker-end="url(#arrowBlue)" />
+  <g transform="translate(490, 350)">
+    <rect x="-95" y="-9" width="190" height="18" class="edge-label-bg" />
+    <text y="4" class="edge-text">1. HTTPS REST (Task Dispatch &amp; Reports)</text>
+  </g>
+
+  <path d="M 800, 295 L 800, 435" class="conn-blue" marker-end="url(#arrowBlue)" />
+  <g transform="translate(800, 350)">
+    <rect x="-85" y="-9" width="170" height="18" class="edge-label-bg" />
+    <text y="4" class="edge-text">1. HTTPS REST (Browse &amp; Reserve)</text>
+  </g>
+
+  <path d="M 1160, 295 L 1160, 360 L 900, 360 L 900, 435" class="conn-blue" marker-end="url(#arrowBlue)" />
+  <g transform="translate(1110, 350)">
+    <rect x="-90" y="-9" width="180" height="18" class="edge-label-bg" />
+    <text y="4" class="edge-text">1. HTTPS REST (Orders &amp; Digital Key)</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- 2. SECURITY & FIREWALL PERIMETER -->
+  <!-- ================================================================= -->
+  <g transform="translate(520, 390)">
+    <rect width="560" height="420" class="layer-box" />
+    <text x="20" y="24" class="layer-title">2. Security &amp; Firewall Perimeter</text>
+
+    <!-- Rate Limiter -->
+    <g transform="translate(50, 45)" filter="url(#cardShadow)">
+      <rect width="460" height="55" class="card-box" />
+      <text x="230" y="24" class="node-title">Rate Limiter</text>
+      <text x="230" y="41" class="node-sub">(Global 300 req / 15m · Booking 5 req / m)</text>
+    </g>
+
+    <!-- NGWF -->
+    <g transform="translate(50, 140)" filter="url(#cardShadow)">
+      <rect width="460" height="55" class="card-box" />
+      <text x="230" y="24" class="node-title">Next-Gen Web App Firewall (NGWF)</text>
+      <text x="230" y="41" class="node-sub">(Deep Payload SQLi / XSS / Traversal Filter)</text>
+    </g>
+
+    <!-- Anti-XSS -->
+    <g transform="translate(50, 235)" filter="url(#cardShadow)">
+      <rect width="460" height="55" class="card-box" />
+      <text x="230" y="24" class="node-title">Anti-XSS Sanitizer</text>
+      <text x="230" y="41" class="node-sub">(Recursive JSON &amp; Query Scrubber)</text>
+    </g>
+
+    <!-- Cookie Tokenizer -->
+    <g transform="translate(50, 330)" filter="url(#cardShadow)">
+      <rect width="460" height="55" class="card-box" />
+      <text x="230" y="24" class="node-title">Cookie Tokenizer</text>
+      <text x="230" y="41" class="node-sub">(Double-Submit CSRF Protection)</text>
+    </g>
+
+    <!-- Internal lines -->
+    <path d="M 280, 100 L 280, 140" class="conn-blue" marker-end="url(#arrowBlue)" />
+    <g transform="translate(280, 120)">
+      <rect x="-60" y="-8" width="120" height="16" class="edge-label-bg" />
+      <text y="4" class="edge-text">2. Rate-Passed Request</text>
+    </g>
+
+    <path d="M 280, 195 L 280, 235" class="conn-blue" marker-end="url(#arrowBlue)" />
+    <g transform="translate(280, 215)">
+      <rect x="-55" y="-8" width="110" height="16" class="edge-label-bg" />
+      <text y="4" class="edge-text">3. Threat Inspected</text>
+    </g>
+
+    <path d="M 280, 290 L 280, 330" class="conn-blue" marker-end="url(#arrowBlue)" />
+    <g transform="translate(280, 310)">
+      <rect x="-55" y="-8" width="110" height="16" class="edge-label-bg" />
+      <text y="4" class="edge-text">4. Payload Sanitized</text>
+    </g>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- 3. EXPRESS.JS BACKEND SERVER -->
+  <!-- ================================================================= -->
+  <g transform="translate(100, 880)">
+    <rect width="1400" height="260" class="layer-box" />
+    <text x="20" y="24" class="layer-title">3. Express.js Backend Server (Node.js)</text>
+
+    <!-- Telemetry & Forecasting Engine -->
+    <g transform="translate(40, 45)" filter="url(#cardShadow)">
+      <rect width="320" height="60" class="card-box" />
+      <text x="160" y="26" class="node-title">Telemetry &amp; Forecasting Engine</text>
+      <text x="160" y="44" class="node-sub">(Live Visitor Heartbeat &amp; Surge Predictor)</text>
+    </g>
+
+    <!-- Socket.io Engine -->
+    <g transform="translate(400, 45)" filter="url(#cardShadow)">
+      <rect width="340" height="60" class="card-box" />
+      <text x="170" y="26" class="node-title">Socket.io Engine</text>
+      <text x="170" y="44" class="node-sub">(Alan / J &amp; D Bot AI Concierge)</text>
+    </g>
+
+    <!-- Modular REST Endpoints -->
+    <g transform="translate(400, 160)" filter="url(#cardShadow)">
+      <rect width="440" height="65" class="card-box-accent" />
+      <text x="220" y="28" class="node-title">Modular REST Endpoints</text>
+      <text x="220" y="48" class="node-sub-blue">(/rooms, /reservations, /department, /analytics)</text>
+    </g>
+
+    <!-- Secure Media Upload Engine -->
+    <g transform="translate(980, 45)" filter="url(#cardShadow)">
+      <rect width="380" height="60" class="card-box" />
+      <text x="190" y="26" class="node-title">Secure Media Upload Engine</text>
+      <text x="190" y="44" class="node-sub">(MIME Type Whitelist &amp; UUID Filenames)</text>
+    </g>
+
+    <!-- Query Room Rates Link: Socket -> REST -->
+    <path d="M 570, 105 L 570, 160" class="conn-dashed" marker-end="url(#arrowGray)" />
+    <g transform="translate(570, 133)">
+      <rect x="-65" y="-8" width="130" height="16" class="edge-label-bg" />
+      <text y="4" class="edge-text">Query Room Rates &amp; Info</text>
+    </g>
+  </g>
+
+  <!-- L2 Cookie Tokenizer -> L3 Modular REST Link -->
+  <path d="M 800, 775 L 800, 845 L 720, 845 L 720, 1040" class="conn-blue" marker-end="url(#arrowBlue)" />
+  <g transform="translate(760, 845)">
+    <rect x="-50" y="-9" width="100" height="18" class="edge-label-bg" />
+    <text y="4" class="edge-text">5. CSRF Verified</text>
+  </g>
+
+  <!-- Duplex Socket Link: Client -> Server -->
+  <path d="M 230, 115 L 140, 115 L 140, 820 L 500, 820 L 500, 925" class="conn-dark" marker-end="url(#arrowDark)" />
+  <g transform="translate(140, 520)">
+    <rect x="-95" y="-9" width="190" height="18" class="edge-label-bg" />
+    <text y="4" class="edge-text">WSS Duplex (Chat &amp; Typing Events)</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- 4. SUPABASE DATABASE & BAAS (POSTGRESQL 15+) -->
+  <!-- ================================================================= -->
+  <g transform="translate(100, 1200)">
+    <rect width="980" height="530" class="layer-box" />
+    <text x="20" y="24" class="layer-title">4. Supabase Database &amp; BaaS (PostgreSQL 15+)</text>
+
+    <!-- Row-Level Security (RLS) -->
+    <g transform="translate(40, 50)" filter="url(#cardShadow)">
+      <rect width="280" height="65" class="card-box" />
+      <text x="140" y="26" class="node-title">Row-Level Security (RLS)</text>
+      <text x="140" y="44" class="node-sub">(Self-Data Isolation &amp; is_admin_or_staff)</text>
+    </g>
+
+    <!-- Stored Procedure: available_rooms() -->
+    <g transform="translate(350, 50)" filter="url(#cardShadow)">
+      <rect width="290" height="65" class="card-box" />
+      <text x="145" y="26" class="node-title">Stored Procedure: available_rooms()</text>
+      <text x="145" y="44" class="node-sub">(Dynamic Date-Range Availability Matrix)</text>
+    </g>
+
+    <!-- GiST Exclusion Constraint -->
+    <g transform="translate(670, 50)" filter="url(#cardShadow)">
+      <rect width="270" height="65" class="card-box" />
+      <text x="135" y="26" class="node-title">GiST Exclusion Constraint</text>
+      <text x="135" y="44" class="node-sub">(Hard Overbooking Guard: 0 Double Bookings)</text>
+    </g>
+
+    <!-- PostgreSQL Relational Tables -->
+    <g transform="translate(290, 205)" filter="url(#cardShadow)">
+      <rect width="400" height="65" class="card-box-accent" />
+      <text x="200" y="26" class="node-title">PostgreSQL Relational Tables</text>
+      <text x="200" y="44" class="node-sub-blue">profiles, rooms, reservations, orders, tasks, inventory</text>
+    </g>
+
+    <!-- Database Triggers -->
+    <g transform="translate(60, 360)" filter="url(#cardShadow)">
+      <rect width="380" height="70" class="card-box" />
+      <text x="190" y="26" class="node-title">Database Triggers</text>
+      <text x="190" y="44" class="node-sub">(sync_room_rating, handle_new_user, touch_updated_at)</text>
+    </g>
+
+    <!-- Supabase Realtime Engine -->
+    <g transform="translate(540, 360)" filter="url(#cardShadow)">
+      <rect width="380" height="70" class="card-box" />
+      <text x="190" y="26" class="node-title">Supabase Realtime Engine</text>
+      <text x="190" y="44" class="node-sub">(PostgreSQL WAL Change Data Capture)</text>
+    </g>
+
+    <!-- Internal L4 Lines -->
+    <path d="M 180, 115 L 180, 165 L 380, 165 L 380, 205" class="conn-blue" marker-end="url(#arrowBlue)" />
+    <g transform="translate(240, 155)">
+      <rect x="-45" y="-8" width="90" height="16" class="edge-label-bg" />
+      <text y="4" class="edge-text">7. Evaluated Query</text>
+    </g>
+
+    <path d="M 495, 115 L 495, 205" class="conn-blue" marker-end="url(#arrowBlue)" />
+    <g transform="translate(495, 160)">
+      <rect x="-65" y="-8" width="130" height="16" class="edge-label-bg" />
+      <text y="4" class="edge-text">9. Scan Active Date Spans</text>
+    </g>
+
+    <path d="M 805, 115 L 805, 165 L 610, 165 L 610, 205" class="conn-blue" marker-end="url(#arrowBlue)" />
+    <g transform="translate(730, 155)">
+      <rect x="-60" y="-8" width="120" height="16" class="edge-label-bg" />
+      <text y="4" class="edge-text">11. Overlap Check Passed</text>
+    </g>
+
+    <path d="M 390, 270 L 390, 320 L 250, 320 L 250, 360" class="conn-blue" marker-end="url(#arrowBlue)" />
+    <g transform="translate(280, 310)">
+      <rect x="-65" y="-8" width="130" height="16" class="edge-label-bg" />
+      <text y="4" class="edge-text">12. On Insert / Update / Delete</text>
+    </g>
+
+    <path d="M 590, 270 L 590, 320 L 730, 320 L 730, 360" class="conn-blue" marker-end="url(#arrowBlue)" />
+    <g transform="translate(700, 310)">
+      <rect x="-55" y="-8" width="110" height="16" class="edge-label-bg" />
+      <text y="4" class="edge-text">13. WAL Log Changes</text>
+    </g>
+  </g>
+
+  <!-- Connectors: L3 Modular REST -> L4 DB -->
+  <path d="M 540, 1105 L 540, 1160 L 280, 1160 L 280, 1250" class="conn-blue" marker-end="url(#arrowBlue)" />
+  <g transform="translate(360, 1150)">
+    <rect x="-70" y="-8" width="140" height="16" class="edge-label-bg" />
+    <text y="4" class="edge-text">6. Service-Role SQL Operations</text>
+  </g>
+
+  <path d="M 640, 1105 L 640, 1170 L 595, 1170 L 595, 1250" class="conn-blue" marker-end="url(#arrowBlue)" />
+  <g transform="translate(640, 1175)">
+    <rect x="-50" y="-8" width="100" height="16" class="edge-label-bg" />
+    <text y="4" class="edge-text">8. Availability Check</text>
+  </g>
+
+  <path d="M 740, 1105 L 740, 1160 L 905, 1160 L 905, 1250" class="conn-blue" marker-end="url(#arrowBlue)" />
+  <g transform="translate(840, 1150)">
+    <rect x="-55" y="-8" width="110" height="16" class="edge-label-bg" />
+    <text y="4" class="edge-text">10. Insert Stay Record</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- 5. EXTERNAL CLOUD INTEGRATIONS -->
+  <!-- ================================================================= -->
+  <g transform="translate(1120, 1200)">
+    <rect width="380" height="530" class="layer-box" />
+    <text x="20" y="24" class="layer-title">5. External Cloud Integrations</text>
+
+    <!-- Twilio SMS Gateway -->
+    <g transform="translate(40, 80)" filter="url(#cardShadow)">
+      <rect width="300" height="80" class="card-box" />
+      <text x="150" y="32" class="node-title">Twilio SMS Gateway</text>
+      <text x="150" y="54" class="node-sub">(Transactional Pings &amp; Verification)</text>
+    </g>
+
+    <!-- Cloudinary CDN -->
+    <g transform="translate(40, 280)" filter="url(#cardShadow)">
+      <rect width="300" height="80" class="card-box" />
+      <text x="150" y="32" class="node-title">Cloudinary CDN</text>
+      <text x="150" y="54" class="node-sub">(Optimized Image Asset Storage)</text>
+    </g>
+  </g>
+
+  <!-- Connector: Modular REST -> Twilio -->
+  <path d="M 840, 1070 L 1160, 1070 L 1160, 1280" class="conn-blue" marker-end="url(#arrowBlue)" />
+  <g transform="translate(1000, 1060)">
+    <rect x="-95" y="-8" width="190" height="16" class="edge-label-bg" />
+    <text y="4" class="edge-text">16. Outbound SMS Ping (Confirmation / Pass)</text>
+  </g>
+
+  <!-- Connector: Twilio -> REST Webhook -->
+  <path d="M 1200, 1280 L 1200, 1090 L 840, 1090" class="conn-dashed" marker-end="url(#arrowGray)" />
+  <g transform="translate(1020, 1095)">
+    <rect x="-95" y="-8" width="190" height="16" class="edge-label-bg" />
+    <text y="4" class="edge-text">17. Inbound Status Webhook (/webhooks/sms/status)</text>
+  </g>
+
+  <!-- Connector: Upload Engine -> Cloudinary CDN -->
+  <path d="M 1270, 985 L 1380, 985 L 1380, 1480" class="conn-blue" marker-end="url(#arrowBlue)" />
+  <g transform="translate(1380, 1140)">
+    <rect x="-70" y="-8" width="140" height="16" class="edge-label-bg" />
+    <text y="4" class="edge-text">18. Validated Photo Uploads</text>
+  </g>
+
+  <!-- Realtime WSS Push: L4 Realtime Engine -> L1 Realtime Client -->
+  <path d="M 740, 1630 L 60, 1630 L 60, 145 L 470, 145 L 470, 105" class="conn-dashed" marker-end="url(#arrowGray)" />
+  <g transform="translate(60, 880)">
+    <rect x="-85" y="-8" width="170" height="16" class="edge-label-bg" />
+    <text y="4" class="edge-text">14. Realtime WSS Push (Live Table Sync)</text>
+  </g>
+
+  <!-- Footer Specification Info -->
+  <g transform="translate(800, 1915)" text-anchor="middle">
+    <text y="0" font-size="12" font-weight="600" fill="#64748b">J &amp; D Beach House · Official System Architecture Diagram · High-Definition Vector Specification</text>
+    <text y="18" font-size="11" fill="#94a3b8">Solid Blue = Primary HTTPS &amp; SQL Query Flow · Dashed Gray = Realtime WebSockets &amp; Webhooks · Dark Border = Layer Boundaries</text>
+  </g>
+</svg>

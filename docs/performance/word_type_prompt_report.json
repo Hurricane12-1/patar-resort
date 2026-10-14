@@ -1,0 +1,52 @@
+{
+  "testResults": [
+    {
+      "testName": "Page Navigation to J & D Beach House",
+      "passed": true,
+      "details": "DOM loaded"
+    },
+    {
+      "testName": "Chatbot FAB Float Button Rendered",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "testName": "Chatbot Drawer Opens on Click",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "testName": "Suggested Prompt Chips Available",
+      "passed": true,
+      "details": "Found 4 chips"
+    },
+    {
+      "testName": "Typewriter Prompt Active State Triggered",
+      "passed": true,
+      "details": "Input pulsing / typing indicator displayed"
+    },
+    {
+      "testName": "Input Field Populated with Clicked Word Prompt",
+      "passed": true,
+      "details": "Input: \"Room rates\" | Expected: \"Room rates\""
+    },
+    {
+      "testName": "app:open-chat Event Types Custom Prompt into Input",
+      "passed": true,
+      "details": "Value: \"Weekend availability for 4 guests\""
+    },
+    {
+      "testName": "Clicking Destination Word Opens Chat & Types Prompt",
+      "passed": true,
+      "details": "Typed: \"How do I visit Cape Bolinao Lighthouse (10 min away) from the resort?\""
+    },
+    {
+      "testName": "Ribbon Marquee Words are Clickable Prompts",
+      "passed": true,
+      "details": "Tagged with clickable-prompt-word class"
+    }
+  ],
+  "passedCount": 9,
+  "failedCount": 0,
+  "timestamp": "2026-09-21T10:21:15.311Z"
+}
