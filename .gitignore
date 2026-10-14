@@ -38,3 +38,6 @@ Thumbs.db
 # Backup Archives (Large binaries)
 backups/snapshots/*.zip
 backups/snapshots/*.tar.gz
+
+# Helper scripts
+scripts/
