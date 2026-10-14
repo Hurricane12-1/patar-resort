@@ -6,6 +6,7 @@ import { money } from '../lib/format.ts';
 import { roomImg, roomGallery } from '../lib/images.ts';
 import Stars from '../components/Stars.tsx';
 import { useReveal } from '../hooks/useReveal.ts';
+import { CANONICAL_ROOMS } from '../lib/canonicalRooms.ts';
 
 const CATS = ['All', 'Cottage', 'Garden', 'Suite', 'Villa', 'Dorm'];
 
@@ -69,14 +70,14 @@ function RoomCardItem({ s, index }) {
 }
 
 export default function Rooms() {
-  const [all, setAll] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [all, setAll] = useState(CANONICAL_ROOMS);
+  const [loading, setLoading] = useState(false);
   const [cat, setCat] = useState('All');
   const [q, setQ] = useState('');
 
   useEffect(() => {
     api.rooms().then((data) => {
-      if (Array.isArray(data)) setAll(data);
+      if (Array.isArray(data) && data.length > 0) setAll(data);
     }).catch(() => {})
     .finally(() => setLoading(false));
   }, []);

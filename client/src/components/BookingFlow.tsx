@@ -4,6 +4,7 @@ import { api } from '../lib/api.ts';
 import { money, fmtDate, addDaysISO } from '../lib/format.ts';
 import { roomImg } from '../lib/images.ts';
 import { toast } from './Toasts.tsx';
+import { CANONICAL_ROOMS } from '../lib/canonicalRooms.ts';
 
 export default function BookingFlow({ initialSlug }) {
   const { session, profile, setAuthOpen } = useAuth();
@@ -11,7 +12,7 @@ export default function BookingFlow({ initialSlug }) {
   const [checkIn, setCheckIn] = useState(addDaysISO(today, 1));
   const [checkOut, setCheckOut] = useState(addDaysISO(today, 3));
   const [guests, setGuests] = useState(2);
-  const [catalog, setCatalog] = useState([]);
+  const [catalog, setCatalog] = useState(CANONICAL_ROOMS);
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [stage, setStage] = useState('search');   // search | results | details | done

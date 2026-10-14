@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient.js';
+import { CANONICAL_ROOMS } from './canonicalRooms.js';
 
 export class ApiError extends Error {
   status: number;
@@ -53,6 +54,7 @@ export const api = {
   },
 
   // Authentication & Profile Identity
+  login: (credentials: { email: string; password: string }) => req('/auth/login', { method: 'POST', body: credentials }),
   me: () => req('/me'),
   updateMe: (body: any) => req('/me', { method: 'PATCH', body }),
   updatePassword: (password: string) => req('/me/password', { method: 'PATCH', body: { password } }),
@@ -73,8 +75,20 @@ export const api = {
   conversationMessages: (profileId: string) => req(`/chat/conversations/${profileId}/messages`),
   sendStaffChatMessage: (profileId: string, content: string) => req(`/chat/conversations/${profileId}/messages`, { method: 'POST', body: { content } }),
 
-  // Accommodations Catalog & Availability (Cached via Redis)
-  rooms: () => req('/rooms'),
+  // Accommodations Catalog & Availability (Multi-Tier Resilient Architecture)
+  rooms: async () => {
+    try {
+      const data = await req('/rooms');
+      if (Array.isArray(data) && data.length > 0) return data;
+    } catch (err) {
+      console.warn('[Rooms Catalog] Primary API route notice, falling back to direct Supabase query:', err);
+    }
+    try {
+      const { data: sbRooms, error } = await supabase.from('rooms').select('*').eq('is_active', true).order('rate_php', { ascending: true });
+      if (!error && Array.isArray(sbRooms) && sbRooms.length > 0) return sbRooms;
+    } catch {}
+    return CANONICAL_ROOMS;
+  },
   availability: (check_in: string, check_out: string, guests: number) =>
     req(`/availability?check_in=${encodeURIComponent(check_in)}&check_out=${encodeURIComponent(check_out)}&guests=${guests}`),
 

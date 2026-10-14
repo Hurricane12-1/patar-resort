@@ -19,10 +19,10 @@ export async function authenticate(req, _res, next) {
     let userEmail = null;
     let userMetadata = {};
 
-    // 1. Try local JWT verification if custom secret is configured
-    if (env.SUPABASE_JWT_SECRET && !env.SUPABASE_JWT_SECRET.startsWith('demo-')) {
+    // 1. Try local JWT verification if secret is configured
+    if (env.SUPABASE_JWT_SECRET) {
       try {
-        const payload = jwt.verify(token, env.SUPABASE_JWT_SECRET, { audience: 'authenticated' });
+        const payload = jwt.verify(token, env.SUPABASE_JWT_SECRET);
         userId = payload.sub;
         userEmail = payload.email;
         userMetadata = payload.user_metadata || {};

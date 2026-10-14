@@ -164,14 +164,29 @@ export function AuthProvider({ children }) {
   const signIn = async (emailOrUsername, password) => {
     try {
       const res = await supabase.auth.signInWithPassword({ email: emailOrUsername, password });
-      if (res.error) {
-        return { data: null, error: res.error };
-      }
-      if (res.data?.session) {
+      if (!res.error && res.data?.session) {
         setSession(res.data.session);
         return res;
       }
-      return { data: null, error: new Error('Authentication failed. Please verify your credentials.') };
+
+      // If direct Supabase signInWithPassword encounters an issue (e.g. unconfirmed email or executive admin account),
+      // seamlessly verify via backend live authentication
+      try {
+        const serverAuth = await api.login({ email: emailOrUsername, password });
+        if (serverAuth?.session) {
+          setSession(serverAuth.session);
+          const userObj = serverAuth.user || serverAuth.profile;
+          setProfile(userObj);
+          localStorage.setItem('jd_session', JSON.stringify(serverAuth.session));
+          localStorage.setItem('jd_profile', JSON.stringify(userObj));
+          return { data: serverAuth, error: null };
+        }
+      } catch (serverErr) {
+        if (res.error) return { data: null, error: res.error };
+        return { data: null, error: serverErr };
+      }
+
+      return { data: null, error: res.error || new Error('Authentication failed. Please verify your credentials.') };
     } catch (err) {
       return { data: null, error: err };
     }

@@ -324,7 +324,7 @@ export default function Admin() {
                 type="email"
                 required
                 value={adminEmail}
-                placeholder="administrator@jdbeachhouse.ph"
+                placeholder="admin@yourdomain.com"
                 onChange={(e) => setAdminEmail(e.target.value)}
               />
             </div>

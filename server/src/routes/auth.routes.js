@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
+import { env } from '../config/env.js';
 import { asyncH, ApiError } from '../middleware/errors.js';
 import { validateJoi, joiSchemas } from '../middleware/joiValidation.js';
 import { admin } from '../lib/supabase.js';
@@ -8,6 +10,47 @@ import { pingSMS } from '../lib/sms.js';
 import { sendRecoveryOTP, sendPasswordResetSuccess, sendSignup2FAOTP, sendWelcomeClientEmail, sendSignupExpiredEmail } from '../lib/mailer.js';
 
 const r = Router();
+
+/**
+ * ============================================================================
+ * UNIFIED LIVE AUTHENTICATION (ADMINISTRATOR & REGISTERED GUEST ACCOUNTS)
+ * ============================================================================
+ */
+r.post('/auth/login', asyncH(async (req, res) => {
+  const { email, password } = req.body || {};
+  if (!email || !password) {
+    throw new ApiError(400, 'Email and password are required.');
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+
+  // Strictly authenticate via live Supabase Auth without hardcoded accounts
+  try {
+    const { data, error } = await admin.auth.signInWithPassword({
+      email: cleanEmail,
+      password,
+    });
+    if (error) throw error;
+    if (data?.session) {
+      let profile = null;
+      try {
+        const { data: prof } = await admin.from('profiles').select('*').eq('id', data.user.id).single();
+        profile = prof;
+      } catch {}
+
+      return res.json({
+        success: true,
+        session: data.session,
+        user: profile || data.user,
+        profile: profile || data.user,
+      });
+    }
+  } catch (sbErr) {
+    throw new ApiError(401, sbErr.message || 'Invalid login credentials. Please verify your email and password.');
+  }
+
+  throw new ApiError(401, 'Authentication failed. Please verify your credentials.');
+}));
 
 /**
  * ============================================================================

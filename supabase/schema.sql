@@ -301,6 +301,7 @@ $$;
 
 create policy "profiles: self or admin read"   on profiles for select using (id = auth.uid() or is_admin_or_staff());
 create policy "profiles: self update"          on profiles for update using (id = auth.uid());
+create policy "profiles: self insert"          on profiles for insert with check (id = auth.uid());
 
 create policy "rooms: public read active"      on rooms for select using (is_active or is_admin_or_staff());
 create policy "rooms: admin write"             on rooms for all using (is_admin_or_staff()) with check (is_admin_or_staff());

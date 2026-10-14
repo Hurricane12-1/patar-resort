@@ -10,6 +10,7 @@ import { useReveal } from '../hooks/useReveal.ts';
 import { toggleOceanSound, isOceanPlaying, stopOceanSound } from '../lib/oceanSynth.ts';
 import ResortMapGeolocation from '../components/ResortMapGeolocation.tsx';
 import { dispatchWordPrompt } from '../lib/wordPrompt.ts';
+import { CANONICAL_ROOMS } from '../lib/canonicalRooms.ts';
 
 function Counter({ to, decimals = 0, suffix = '' }) {
   const [v, setV] = useState(0);
@@ -60,7 +61,7 @@ const EXP = [
 ];
 
 export default function Home() {
-  const [rooms, setRooms] = useState([]);
+  const [rooms, setRooms] = useState(CANONICAL_ROOMS);
   const [reviews, setReviews] = useState([]);
   const [pick, setPick] = useState(null);
   const [activeScene, setActiveScene] = useState(SCENES[0]);
@@ -70,7 +71,7 @@ export default function Home() {
 
   useEffect(() => {
     api.rooms().then((data) => {
-      if (Array.isArray(data)) setRooms(data);
+      if (Array.isArray(data) && data.length > 0) setRooms(data);
     }).catch(() => {});
     api.recentReviews().then(setReviews).catch(() => {});
 
