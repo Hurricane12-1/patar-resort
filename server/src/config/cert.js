@@ -7,6 +7,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const certDir = path.resolve(__dirname, '../../certs');
 
 export function getTlsCredentials() {
+  if (process.env.RENDER) {
+    return { isSecure: false };
+  }
+
   const keyPath = process.env.SSL_KEY_PATH || path.join(certDir, 'key.pem');
   const certPath = process.env.SSL_CERT_PATH || path.join(certDir, 'cert.pem');
   const caPath = process.env.SSL_CA_PATH || path.join(certDir, 'ca-cert.pem');

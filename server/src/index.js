@@ -158,7 +158,7 @@ server.listen(env.port, () => {
   checkSupabaseConnection();
 
   // Secondary port listener (4000) for legacy script & test compatibility
-  if (env.port !== 4000) {
+  if (!process.env.RENDER && env.port !== 4000) {
     try {
       const secondaryServer = tlsCreds.isSecure
         ? https.createServer({ key: tlsCreds.key, cert: tlsCreds.cert }, app)
