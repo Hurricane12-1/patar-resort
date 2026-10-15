@@ -81,7 +81,7 @@ function MainAppShell() {
       {!isStaffRoute && !isGuestHome && <Chatbot />}
       <AuthModal />
       <Toasts />
-      <NetworkStatusControl />
+      {!isGuestHome && <NetworkStatusControl />}
     </div>
   );
 }

@@ -1,5 +1,24 @@
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Outfit:wght@300;400;500;600&display=swap');
-@import "tailwindcss";
+
+/*
+  CASCADE STRATEGY
+  ----------------
+  The legacy stylesheets (styles/global.css, styles/cinematic.css) are UNLAYERED and
+  contain element-level resets such as `* { margin:0; padding:0 }` and
+  `button { background:none; border:none }`. Unlayered CSS always beats layered CSS,
+  so plain Tailwind v4 utilities (inside @layer utilities) were silently discarded.
+
+  Fix:
+  1. Utilities are emitted with `important` so they win over the legacy cascade.
+  2. Tailwind only scans the guest app (`source(none)` + explicit @source) so no
+     utility class names leak into or collide with the admin / staff portals.
+  3. Tailwind preflight is NOT loaded globally (it would restyle the admin portals);
+     a scoped preflight lives under `.jd-app` below instead.
+*/
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities) important source(none);
+@source "./components/MobileResortApp.tsx";
 
 @theme {
   --color-navy: #060b18;
@@ -10,76 +29,163 @@
   --color-gold: #f6b74a;
   --color-text: #e8eef7;
 
-  --font-serif: "Cormorant Garamond", serif;
-  --font-sans: "Outfit", sans-serif;
+  --font-serif: "Cormorant Garamond", Georgia, serif;
+  --font-sans: "Outfit", system-ui, sans-serif;
 }
 
-/* GLOBAL RESET & SCROLLBAR HIDING */
-html, body, #root {
-  height: 100%;
-  margin: 0;
-  padding: 0;
+/* ============ SCOPED PREFLIGHT (guest app only) ============ */
+.jd-app {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
   background-color: #060b18;
   color: #e8eef7;
-  overflow: hidden;
-  font-family: "Outfit", sans-serif;
+  font-family: "Outfit", system-ui, sans-serif;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: normal;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+  text-size-adjust: 100%;
 }
 
-* {
+.jd-app *,
+.jd-app *::before,
+.jd-app *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border: 0 solid;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
 
-*::-webkit-scrollbar {
+.jd-app *::-webkit-scrollbar {
   display: none;
 }
 
-/* ANIMATIONS & KEYFRAMES */
-@keyframes ticker {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+.jd-app h1,
+.jd-app h2,
+.jd-app h3,
+.jd-app h4 {
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  letter-spacing: normal;
+  color: inherit;
 }
 
-@keyframes loadbar {
-  0% { width: 0%; }
-  100% { width: 100%; }
+.jd-app a {
+  color: inherit;
+  text-decoration: inherit;
+  display: inline;
+  padding: 0;
 }
 
-@keyframes fadeIn {
-  0% { opacity: 0; transform: translateY(4px); }
-  100% { opacity: 1; transform: translateY(0); }
+.jd-app ul,
+.jd-app ol {
+  list-style: none;
 }
 
-@keyframes kenburns {
-  0% { transform: scale(1.12); }
-  100% { transform: scale(1); }
+.jd-app img,
+.jd-app svg {
+  display: block;
+  max-width: 100%;
 }
 
-.animate-ticker {
-  animation: ticker 28s linear infinite;
+.jd-app button,
+.jd-app input,
+.jd-app select,
+.jd-app textarea {
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  background-color: transparent;
+  border-radius: 0;
 }
 
-.animate-loadbar {
-  animation: loadbar 2.3s ease-in-out forwards;
+.jd-app button {
+  cursor: pointer;
 }
 
-.animate-fade-in {
-  animation: fadeIn 0.6s ease-out forwards;
+.jd-app input::placeholder {
+  color: rgb(255 255 255 / 0.35);
 }
 
-.animate-kenburns {
-  animation: kenburns 8s ease-out forwards;
+.jd-app input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) opacity(0.6);
+  cursor: pointer;
 }
 
-/* CUSTOM UTILITIES */
-.cta-glow {
-  box-shadow: 0 10px 30px -8px rgba(34, 195, 238, 0.7);
+.jd-app select option {
+  background: #0b1426;
+  color: #e8eef7;
 }
 
-.floating-glass {
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+.jd-app footer {
+  margin-top: 0;
+  background: transparent;
+}
+
+.jd-app :focus-visible {
+  outline: 2px solid #22c3ee;
+  outline-offset: 2px;
+}
+
+.jd-app ::selection {
+  background: #22c3ee;
+  color: #060b18;
+}
+
+/* Each stage is its own scroll container */
+.jd-stage {
+  height: 100%;
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* ============ KEYFRAMES (prefixed to avoid clashing with cinematic.css) ============ */
+@keyframes jd-ticker {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes jd-loadbar {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
+/* Opacity only: a transform here would turn `position:fixed` children
+   (tab bar, menu overlay) into scroll-attached elements. */
+@keyframes jd-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes jd-kenburns {
+  from { transform: scale(1.12); }
+  to { transform: scale(1); }
+}
+
+.jd-app .animate-ticker { animation: jd-ticker 28s linear infinite; }
+.jd-app .animate-loadbar { animation: jd-loadbar 2.3s ease-in-out forwards; }
+.jd-app .animate-fade-in { animation: jd-fade 0.6s ease-out both; }
+.jd-app .animate-kenburns { animation: jd-kenburns 8s ease-out forwards; }
+
+/* Safe-area helpers */
+.jd-app .pt-safe { padding-top: env(safe-area-inset-top); }
+.jd-app .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+
+@media (prefers-reduced-motion: reduce) {
+  .jd-app .animate-ticker,
+  .jd-app .animate-kenburns,
+  .jd-app .animate-fade-in {
+    animation: none;
+  }
+  .jd-stage { scroll-behavior: auto; }
 }

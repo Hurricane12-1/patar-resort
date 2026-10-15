@@ -1,10 +1,32 @@
 import React, { useState, useEffect, useRef } from 'react';
 import site from '../content/site.json';
 
-// --- INLINE TYPOGRAPHY & DESIGN TOKENS ---
+// ==========================================================================
+// LAYOUT TOKENS
+// Mobile-first; widens at sm (640) / md (768) / lg (1024) / xl (1280).
+// ==========================================================================
+const WRAP = 'mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-10';
+const SECTION = 'pt-16 md:pt-24';
+const BTN_PRIMARY =
+  'inline-flex items-center justify-center rounded-full bg-cyan px-6 py-3.5 text-navy text-xs font-semibold uppercase tracking-[0.18em] shadow-[0_10px_30px_-8px_rgba(34,195,238,.7)] hover:brightness-110 active:scale-[.98] transition';
+const BTN_GHOST =
+  'inline-flex items-center justify-center rounded-full border border-white/25 px-6 py-3.5 text-white text-xs font-semibold uppercase tracking-[0.18em] backdrop-blur hover:bg-white/10 active:scale-[.98] transition';
+const CARD = 'rounded-3xl border border-white/10 bg-ink overflow-hidden';
+const FIELD =
+  'w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-sm text-white placeholder:text-white/35 outline-none focus:border-cyan/60 transition';
+const LABEL = 'block text-[10px] uppercase tracking-[0.2em] text-white/50 font-medium';
+// Horizontal snap carousel on phones, real grid on desktop
+const RAIL =
+  'flex gap-4 overflow-x-auto snap-x snap-mandatory -mx-5 px-5 sm:-mx-8 sm:px-8 pb-2 lg:mx-0 lg:px-0 lg:grid lg:overflow-visible';
+
+// ==========================================================================
+// PRIMITIVES
+// ==========================================================================
 export function Eyebrow({ children, light = false }: { children: React.ReactNode; light?: boolean }) {
   return (
-    <span className={`block text-[11px] font-medium uppercase tracking-[0.28em] ${light ? 'text-sky-700' : 'text-cyan'}`}>
+    <span
+      className={`block text-[11px] font-medium uppercase tracking-[0.28em] ${light ? 'text-sky-700' : 'text-cyan'}`}
+    >
       {children}
     </span>
   );
@@ -20,14 +42,14 @@ export function SectionTitle({
   light?: boolean;
 }) {
   return (
-    <h2 className={`font-serif text-3xl sm:text-4xl leading-tight mt-2 ${light ? 'text-[#060b18]' : 'text-white'}`}>
+    <h2
+      className={`mt-3 font-serif text-4xl md:text-5xl font-medium leading-tight ${light ? 'text-navy' : 'text-white'}`}
+    >
       {title}
       {accent && (
         <>
           <br />
-          <em className={`italic font-serif ${light ? 'text-sky-700' : 'text-cyan'}`}>
-            {accent}
-          </em>
+          <em className={`font-serif italic ${light ? 'text-sky-700' : 'text-cyan'}`}>{accent}</em>
         </>
       )}
     </h2>
@@ -35,39 +57,114 @@ export function SectionTitle({
 }
 
 export function Logo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
-  const markDimensions =
-    size === 'lg' ? 'w-20 h-20 rounded-3xl' : size === 'sm' ? 'w-8 h-8 rounded-lg' : 'w-10 h-10 rounded-xl';
-  const sunRadius = size === 'lg' ? 5 : size === 'sm' ? 2.5 : 3;
+  const mark =
+    size === 'lg' ? 'w-20 h-20 rounded-3xl' : size === 'sm' ? 'w-9 h-9 rounded-xl' : 'w-11 h-11 rounded-xl';
+  const word = size === 'lg' ? 'text-4xl' : size === 'sm' ? 'text-xl' : 'text-2xl';
 
   return (
     <div className="flex items-center gap-3">
       <div
-        className={`${markDimensions} border border-cyan/30 bg-gradient-to-br from-cyan/25 to-transparent flex items-center justify-center shrink-0 shadow-[0_4px_16px_-4px_rgba(34,195,238,.3)]`}
+        className={`${mark} shrink-0 flex items-center justify-center border border-cyan/30 bg-gradient-to-br from-cyan/20 to-transparent`}
       >
-        <svg viewBox="0 0 24 24" className="w-3/5 h-3/5" fill="none" xmlns="http://www.w3.org/2000/svg">
-          {/* Gold sun circle */}
-          <circle cx="12" cy="8" r={sunRadius} fill="#f6b74a" />
-          {/* Two cyan wave strokes */}
+        <svg viewBox="0 0 24 24" className="w-3/5 h-3/5" fill="none" aria-hidden="true">
+          <circle cx="12" cy="8" r="3" fill="#f6b74a" />
           <path d="M4 14C7 12 9 16 12 14C15 12 17 16 20 14" stroke="#22c3ee" strokeWidth="2" strokeLinecap="round" />
-          <path d="M4 18C7 16 9 20 12 18C15 16 17 20 20 18" stroke="#22c3ee" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.7" />
+          <path
+            d="M4 18C7 16 9 20 12 18C15 16 17 20 20 18"
+            stroke="#22c3ee"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeOpacity="0.7"
+          />
         </svg>
       </div>
-
-      <div className="whitespace-nowrap">
-        <span className="font-serif text-xl sm:text-2xl text-white font-medium tracking-wide block leading-tight">
-          {site.brand.name}
-        </span>
-        <span className="text-[9px] uppercase tracking-[0.25em] text-cyan/80 block font-sans">
-          {site.brand.sub}
-        </span>
-      </div>
+      {size !== 'lg' && (
+        <div className="whitespace-nowrap leading-none">
+          <span className={`block font-serif ${word} font-medium text-white`}>{site.brand.name}</span>
+          <span className="mt-1 block text-[9px] uppercase tracking-[0.25em] text-cyan/80">{site.brand.sub}</span>
+        </div>
+      )}
     </div>
   );
 }
 
-// --- MAIN MOBILE RESORT APP STATE MACHINE ---
+function AmenityIcon({ name }: { name: string }) {
+  const common = {
+    viewBox: '0 0 24 24',
+    className: 'w-4 h-4',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.8,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+    'aria-hidden': true,
+  };
+  switch (name) {
+    case 'wifi':
+      return (
+        <svg {...common}>
+          <path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0" />
+          <circle cx="12" cy="19" r="1" fill="currentColor" />
+        </svg>
+      );
+    case 'utensils':
+      return (
+        <svg {...common}>
+          <path d="M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10M17 3c-2 0-3 2-3 5s1 4 3 4v9" />
+        </svg>
+      );
+    case 'cocktail':
+      return (
+        <svg {...common}>
+          <path d="M4 4h16l-8 9-8-9zM12 13v7M8 20h8" />
+        </svg>
+      );
+    case 'sun':
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+        </svg>
+      );
+    case 'compass':
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="9" />
+          <path d="M15.5 8.5l-2 5-5 2 2-5 5-2z" />
+        </svg>
+      );
+    default:
+      return (
+        <svg {...common}>
+          <path d="M2 12c3-3 5 3 8 0s5 3 8 0 3-1 4 0M2 17c3-3 5 3 8 0s5 3 8 0 3-1 4 0" />
+        </svg>
+      );
+  }
+}
+
+function PinIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z" />
+      <circle cx="12" cy="9.5" r="2.5" />
+    </svg>
+  );
+}
+
+const peso = (n: number) => `₱${n.toLocaleString('en-PH')}`;
+
+// ==========================================================================
+// MAIN APP — 4-stage state machine: loading → intro → auth → app
+// ==========================================================================
 export default function MobileResortApp() {
-  const [stage, setStage] = useState<'loading' | 'intro' | 'auth' | 'app'>('loading');
+  const [stage, setStage] = useState<'loading' | 'intro' | 'auth' | 'app'>(() => {
+    // Dev-only preview helper: /?stage=app — production always starts at "loading"
+    if (import.meta.env.DEV) {
+      const s = new URLSearchParams(window.location.search).get('stage');
+      if (s === 'intro' || s === 'auth' || s === 'app') return s;
+    }
+    return 'loading';
+  });
   const [authMode, setAuthMode] = useState<'signup' | 'login'>('signup');
   const [activeScene, setActiveScene] = useState(0);
   const [ambientPlaying, setAmbientPlaying] = useState(false);
@@ -78,220 +175,267 @@ export default function MobileResortApp() {
   const [newsletterDone, setNewsletterDone] = useState(false);
   const [activeTab, setActiveTab] = useState('Home');
 
-  // Booking Card State
-  const today = new Date().toISOString().slice(0, 10);
-  const addDays = (d: string, days: number) => {
-    const res = new Date(d);
-    res.setDate(res.getDate() + days);
-    return res.toISOString().slice(0, 10);
+  // Booking card state
+  const toISO = (d: Date) => d.toISOString().slice(0, 10);
+  const addDays = (iso: string, days: number) => {
+    const d = new Date(iso);
+    d.setDate(d.getDate() + days);
+    return toISO(d);
   };
-
+  const today = toISO(new Date());
   const [checkIn, setCheckIn] = useState(addDays(today, 1));
   const [checkOut, setCheckOut] = useState(addDays(today, 3));
   const [guests, setGuests] = useState('2 Guests');
-  const [selectedRoom, setSelectedRoom] = useState(site.rooms.items[0]?.name || 'Oceanfront Sunset Villa');
+  const [selectedRoom, setSelectedRoom] = useState(site.rooms.items[0]?.name ?? '');
+  const [quote, setQuote] = useState<{ ok: boolean; text: string } | null>(null);
 
-  // Audio wave synthesizer for Ambient Waves
   const audioCtxRef = useRef<AudioContext | null>(null);
-  const noiseNodeRef = useRef<AudioNode | null>(null);
 
+  const go = (next: typeof stage, mode?: 'signup' | 'login') => {
+    if (mode) setAuthMode(mode);
+    setMenuOpen(false);
+    setStage(next);
+  };
+
+  // Ambient waves — Web Audio brown-noise synth, no external assets
   const toggleAmbientAudio = () => {
     if (ambientPlaying) {
-      if (audioCtxRef.current) {
-        audioCtxRef.current.close().catch(() => {});
-        audioCtxRef.current = null;
-      }
+      audioCtxRef.current?.close().catch(() => {});
+      audioCtxRef.current = null;
       setAmbientPlaying(false);
-    } else {
-      try {
-        const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-        const ctx = new AudioContextClass();
-        const bufferSize = ctx.sampleRate * 2;
-        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-        const data = buffer.getChannelData(0);
-        let lastOut = 0.0;
-        for (let i = 0; i < bufferSize; i++) {
-          const white = Math.random() * 2 - 1;
-          data[i] = (lastOut + 0.02 * white) / 1.02; // pink/brown noise
-          lastOut = data[i];
-          data[i] *= 0.15;
-        }
-        const noise = ctx.createBufferSource();
-        noise.buffer = buffer;
-        noise.loop = true;
-
-        const filter = ctx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(380, ctx.currentTime);
-
-        const gainNode = ctx.createGain();
-        gainNode.gain.setValueAtTime(0.08, ctx.currentTime);
-
-        noise.connect(filter);
-        filter.connect(gainNode);
-        gainNode.connect(ctx.destination);
-
-        noise.start();
-        audioCtxRef.current = ctx;
-        noiseNodeRef.current = noise;
-        setAmbientPlaying(true);
-      } catch {
-        setAmbientPlaying(!ambientPlaying);
+      return;
+    }
+    try {
+      const Ctx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const ctx = new Ctx();
+      const size = ctx.sampleRate * 2;
+      const buffer = ctx.createBuffer(1, size, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      let last = 0;
+      for (let i = 0; i < size; i++) {
+        last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.02;
+        data[i] = last * 3.5;
       }
+      const src = ctx.createBufferSource();
+      src.buffer = buffer;
+      src.loop = true;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 420;
+      const gain = ctx.createGain();
+      gain.gain.value = 0.25;
+      src.connect(filter).connect(gain).connect(ctx.destination);
+      src.start();
+      audioCtxRef.current = ctx;
+      setAmbientPlaying(true);
+    } catch {
+      setAmbientPlaying(false);
     }
   };
 
-  // 1. Loading stage transition (2400ms)
+  // loading → intro after 2400ms
   useEffect(() => {
-    if (stage === 'loading') {
-      const timer = setTimeout(() => {
-        setStage('intro');
-      }, 2400);
-      return () => clearTimeout(timer);
-    }
+    if (stage !== 'loading') return;
+    const t = setTimeout(() => setStage('intro'), 2400);
+    return () => clearTimeout(t);
   }, [stage]);
 
-  // Clean up audio on unmount
+  // Hero auto-crossfade every 7s
   useEffect(() => {
+    if (stage !== 'app') return;
+    const t = setInterval(() => setActiveScene((s) => (s + 1) % site.hero.scenes.length), 7000);
+    return () => clearInterval(t);
+  }, [stage]);
+
+  // Close menu on Escape, release audio on unmount
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setMenuOpen(false);
+    window.addEventListener('keydown', onKey);
     return () => {
-      if (audioCtxRef.current) {
-        audioCtxRef.current.close().catch(() => {});
-      }
+      window.removeEventListener('keydown', onKey);
+      audioCtxRef.current?.close().catch(() => {});
     };
   }, []);
 
-  // Copy code helper
   const handleCopyCode = (code: string) => {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(code).catch(() => {});
-    }
+    navigator.clipboard?.writeText(code).catch(() => {});
     setCopiedCode(code);
     setTimeout(() => setCopiedCode(null), 2500);
   };
 
-  // Scroll to section helper
   const scrollTo = (id: string) => {
     setMenuOpen(false);
-    const el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  // ==========================================
-  // STAGE 1: LOADING SCREEN
-  // ==========================================
+  const scrollTop = () => document.getElementById('main-scroll')?.scrollTo({ top: 0, behavior: 'smooth' });
+
+  const navTargets: Record<string, string> = {
+    'Rooms & Suites': 'rooms-section',
+    Experiences: 'experiences-section',
+    Amenities: 'amenities-section',
+    Dining: 'dining-section',
+    Location: 'location-section',
+    FAQ: 'faq-section',
+  };
+
+  const checkAvailability = () => {
+    const nights = Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000);
+    if (!checkIn || !checkOut || nights < 1) {
+      setQuote({ ok: false, text: 'Check-out must be at least one night after check-in.' });
+      return;
+    }
+    if (checkIn < today) {
+      setQuote({ ok: false, text: 'Check-in cannot be in the past.' });
+      return;
+    }
+    const room = site.rooms.items.find((r) => r.name === selectedRoom) ?? site.rooms.items[0];
+    setQuote({
+      ok: true,
+      text: `${room.name} · ${nights} night${nights > 1 ? 's' : ''} · ${guests} — est. ${peso(room.price * nights)}`,
+    });
+  };
+
+  // ========================================================================
+  // STAGE 1 — LOADING
+  // ========================================================================
   if (stage === 'loading') {
     return (
-      <main
-        className="h-[100dvh] w-full bg-[#060b18] text-[#e8eef7] flex flex-col items-center justify-center p-6 select-none animate-fade-in"
-        aria-label="Loading J & D Beach House"
-      >
-        <div className="flex flex-col items-center text-center">
+      <div className="jd-app">
+        <main
+          className="jd-stage flex flex-col items-center justify-center p-6 select-none animate-fade-in"
+          aria-label="Loading J & D Beach House"
+        >
           <Logo size="lg" />
-          <p className="font-serif text-3xl sm:text-4xl text-white font-medium mt-6 tracking-wide">
-            {site.brand.name}
-          </p>
-          <span className="text-xs uppercase tracking-[0.35em] text-cyan/80 mt-1 font-sans">
-            {site.brand.sub}
-          </span>
-
-          {/* 2px progress bar w-40 with loadbar */}
-          <div className="h-[2px] w-40 bg-white/10 rounded-full overflow-hidden mt-8">
-            <div className="h-full bg-cyan rounded-full animate-loadbar" />
+          <p className="mt-6 font-serif text-4xl font-medium text-white">{site.brand.name}</p>
+          <span className="mt-1 text-xs uppercase tracking-[0.35em] text-cyan/80">{site.brand.sub}</span>
+          <div className="mt-8 h-[2px] w-40 overflow-hidden rounded-full bg-white/10">
+            <div className="h-full rounded-full bg-cyan animate-loadbar" />
           </div>
-
-          <p className="text-xs text-white/50 tracking-wider mt-4 font-light">
-            {site.intro.loading}
-          </p>
-        </div>
-      </main>
+          <p className="mt-4 text-xs font-light tracking-wider text-white/50">{site.intro.loading}</p>
+        </main>
+      </div>
     );
   }
 
-  // ==========================================
-  // STAGE 2: INTRO SCREEN (8 SECTIONS)
-  // ==========================================
+  // ========================================================================
+  // STAGE 2 — INTRO
+  // ========================================================================
   if (stage === 'intro') {
     return (
-      <main
-        id="intro-scroll"
-        className="h-[100dvh] w-full overflow-y-auto bg-[#060b18] text-[#e8eef7] animate-fade-in"
-      >
-        <div className="mx-auto max-w-md min-h-screen flex flex-col relative">
-
-          {/* 1. HERO SECTION */}
-          <section className="h-[100dvh] relative flex flex-col justify-end p-6 pb-12 select-none overflow-hidden">
-            {/* Photo absolute inset-0 with kenburns */}
+      <div className="jd-app">
+        <main className="jd-stage animate-fade-in">
+          {/* HERO */}
+          <section className="relative flex min-h-[100dvh] flex-col overflow-hidden">
             <img
               src={site.intro.image}
-              alt={site.brand.name}
-              className="absolute inset-0 w-full h-full object-cover animate-kenburns pointer-events-none"
+              alt=""
+              className="pointer-events-none absolute inset-0 h-full w-full object-cover animate-kenburns"
             />
-            {/* Gradient from-navy/30 via-transparent to-navy */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#060b18] via-[#060b18]/40 to-[#060b18]/30 pointer-events-none" />
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-navy/30 via-navy/10 to-navy" />
+            <div className="pointer-events-none absolute inset-0 hidden bg-gradient-to-r from-navy/70 via-navy/20 to-transparent lg:block" />
 
-            <div className="relative z-10">
-              <Eyebrow>{`${site.brand.name} · ${site.brand.sub}`}</Eyebrow>
-
-              <h1 className="text-5xl sm:text-6xl font-serif leading-[0.95] text-white mt-3 font-medium">
-                {site.intro.title}
-                <br />
-                <em className="italic text-cyan font-serif">{site.intro.accent}</em>
-              </h1>
-
-              <p className="text-[15px] font-light leading-relaxed text-white/80 mt-4 max-w-sm">
-                {site.intro.body}
-              </p>
-
+            {/* Top bar */}
+            <div className={`${WRAP} relative z-10 flex items-center justify-between pt-[calc(1.25rem+env(safe-area-inset-top))]`}>
+              <Logo size="sm" />
               <button
                 type="button"
-                onClick={() => {
-                  setAuthMode('signup');
-                  setStage('auth');
-                }}
-                className="w-full py-4 mt-6 rounded-full bg-cyan text-navy font-semibold text-xs uppercase tracking-[0.18em] shadow-[0_10px_30px_-8px_rgba(34,195,238,.7)] hover:brightness-110 active:scale-[.98] transition cursor-pointer"
+                onClick={() => go('auth', 'login')}
+                className="rounded-full border border-white/25 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur hover:bg-white/10 transition"
               >
-                {site.intro.button}
+                {site.nav.signIn}
               </button>
+            </div>
 
-              <div className="text-center mt-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthMode('login');
-                    setStage('auth');
-                  }}
-                  className="text-xs text-white/70 hover:text-white transition tracking-wide py-2"
-                >
-                  {site.intro.haveAccount} <span className="text-cyan font-medium underline underline-offset-4">{site.intro.login}</span>
-                </button>
+            <div className={`${WRAP} relative z-10 mt-auto pb-10 md:pb-16`}>
+              <div className="max-w-xl">
+                <Eyebrow>{`${site.brand.name} · ${site.brand.sub}`}</Eyebrow>
+                <h1 className="mt-3 font-serif text-6xl md:text-7xl lg:text-8xl font-medium leading-[0.95] text-white">
+                  {site.intro.title}
+                  <br />
+                  <em className="font-serif italic text-cyan">{site.intro.accent}</em>
+                </h1>
+                <p className="mt-5 max-w-md text-[15px] md:text-base font-light leading-relaxed text-white/80">
+                  {site.intro.body}
+                </p>
+
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <button type="button" onClick={() => go('auth', 'signup')} className={`${BTN_PRIMARY} w-full py-4 sm:w-auto sm:px-10`}>
+                    {site.intro.button}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => go('auth', 'login')}
+                    className="py-2 text-xs tracking-wide text-white/70 hover:text-white transition sm:px-4"
+                  >
+                    {site.intro.haveAccount}{' '}
+                    <span className="font-medium text-cyan underline underline-offset-4">{site.intro.login}</span>
+                  </button>
+                </div>
               </div>
 
-              {/* Bouncing scroll cue */}
-              <div className="flex flex-col items-center mt-6 text-white/50 text-[11px] tracking-widest uppercase">
-                <span className="animate-bounce text-cyan text-base">↓</span>
+              <div className="mt-10 flex flex-col items-center text-[11px] uppercase tracking-[0.25em] text-white/50 lg:items-start">
+                <span className="text-base text-cyan animate-bounce">↓</span>
                 <span className="mt-1">{site.intro.scrollHint}</span>
               </div>
             </div>
           </section>
 
-          {/* 2. HIGHLIGHTS (3 CARDS) */}
-          <section className="px-6 pt-16">
+          {/* HIGHLIGHTS */}
+          <section className={`${WRAP} ${SECTION}`}>
             <Eyebrow>Sanctuary Highlights</Eyebrow>
-            <SectionTitle title="Moments Built for" accent="Stillness" />
-
-            <div className="mt-8 space-y-6">
+            <SectionTitle title="Moments built for" accent="stillness." />
+            <div className="mt-8 grid gap-5 md:grid-cols-3">
               {site.intro.highlights.map((h, i) => (
-                <article key={h.title} className="rounded-3xl border border-white/10 bg-[#0b1426] overflow-hidden">
-                  <img src={h.image} alt={h.title} className="w-full h-48 object-cover" loading="lazy" />
+                <article key={h.title} className={`${CARD} group`}>
+                  <div className="h-48 md:h-56 overflow-hidden">
+                    <img
+                      src={h.image}
+                      alt={h.title}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                    />
+                  </div>
                   <div className="p-6">
-                    <div className="flex items-baseline gap-2">
-                      <span className="font-serif italic text-cyan/70 text-lg">0{i + 1}</span>
-                      <h3 className="font-serif text-2xl text-white font-medium">{h.title}</h3>
+                    <div className="flex items-baseline gap-3">
+                      <span className="font-serif text-lg italic text-cyan/70">0{i + 1}</span>
+                      <h3 className="font-serif text-2xl font-medium text-white">{h.title}</h3>
                     </div>
-                    <p className="text-sm text-white/60 leading-relaxed mt-2 font-light">
-                      {h.body}
+                    <p className="mt-2 text-sm font-light leading-relaxed text-white/60">{h.body}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          {/* STATS */}
+          <section className={`${WRAP} pt-10 md:pt-14`}>
+            <StatRow />
+          </section>
+
+          {/* ROOMS TEASER */}
+          <section className={`${WRAP} ${SECTION}`}>
+            <Eyebrow>{site.rooms.eyebrow}</Eyebrow>
+            <SectionTitle title={site.rooms.title} />
+            <div className={`${RAIL} mt-8 lg:grid-cols-4`}>
+              {site.rooms.items.map((room) => (
+                <article
+                  key={room.name}
+                  className="group relative h-72 w-[78%] shrink-0 snap-start overflow-hidden rounded-3xl border border-white/10 sm:w-[46%] lg:w-auto"
+                >
+                  <img
+                    src={room.image}
+                    alt={room.name}
+                    loading="lazy"
+                    className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/30 to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 p-5">
+                    <h3 className="font-serif text-2xl font-medium leading-tight text-white">{room.name}</h3>
+                    <p className="mt-1 font-serif text-lg text-cyan">
+                      {peso(room.price)} <span className="font-sans text-[11px] text-white/60">/ night</span>
                     </p>
                   </div>
                 </article>
@@ -299,647 +443,493 @@ export default function MobileResortApp() {
             </div>
           </section>
 
-          {/* 3. STATS (STATROW INSIDE INK CARD) */}
-          <section className="px-6 pt-10">
-            <div className="rounded-3xl border border-white/10 bg-[#0b1426] p-6 grid grid-cols-3 divide-x divide-white/10 text-center">
-              {site.stats.map((st) => (
-                <div key={st.label} className="px-2">
-                  <span className="font-serif text-3xl text-cyan block font-medium">{st.value}</span>
-                  <span className="text-[10px] uppercase tracking-[0.2em] text-white/50 block mt-1 leading-tight">
-                    {st.label}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* 4. ROOMS TEASER (CAROUSEL) */}
-          <section className="pt-16">
-            <div className="px-6">
-              <Eyebrow>{site.rooms.eyebrow}</Eyebrow>
-              <SectionTitle title={site.rooms.title} />
-            </div>
-
-            <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pt-6 pb-2 px-6">
-              {site.rooms.items.map((room) => (
-                <div
-                  key={room.name}
-                  className="snap-start shrink-0 w-[78%] rounded-3xl border border-white/10 bg-[#0b1426] overflow-hidden group"
-                >
-                  <div className="relative h-64 overflow-hidden">
-                    <img
-                      src={room.image}
-                      alt={room.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition duration-700"
-                      loading="lazy"
-                    />
-                    <span className="absolute bottom-3 left-3 bg-[#060b18]/85 backdrop-blur-md px-3.5 py-1 rounded-full text-xs text-cyan border border-white/10 font-serif">
-                      ₱{room.price.toLocaleString()} <span className="text-[10px] text-white/60 font-sans">/night</span>
-                    </span>
-                  </div>
-                  <div className="p-5">
-                    <h3 className="font-serif text-xl text-white font-medium">{room.name}</h3>
-                    <p className="text-xs text-white/50 mt-1 font-light">{room.meta}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* 5. AMENITIES (3×2 TILE GRID) */}
-          <section className="px-6 pt-16">
+          {/* AMENITIES */}
+          <section className={`${WRAP} ${SECTION}`}>
             <Eyebrow>{site.amenities.eyebrow}</Eyebrow>
             <SectionTitle title={site.amenities.title} />
-
-            <div className="grid grid-cols-2 gap-3 mt-6">
-              {site.amenities.items.map((a) => (
-                <div
-                  key={a.label}
-                  className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 flex items-center gap-3"
-                >
-                  <div className="w-9 h-9 rounded-full bg-cyan/15 border border-cyan/30 flex items-center justify-center text-cyan shrink-0">
-                    <span className="text-xs">✦</span>
-                  </div>
-                  <span className="text-xs text-white/80 font-medium">{a.label}</span>
-                </div>
-              ))}
-            </div>
+            <AmenityGrid />
           </section>
 
-          {/* 6. REVIEW (SAND CARD) */}
-          <section className="px-6 pt-16">
-            <div className="rounded-3xl bg-[#f4e9d8] text-[#060b18] p-7 border border-[#e8d8be] shadow-lg">
-              <span className="text-sm tracking-widest text-[#d9962b] block">★★★★★</span>
-              <p className="font-serif italic text-2xl leading-snug mt-4 text-[#060b18]">
+          {/* REVIEW + OFFER */}
+          <section className={`${WRAP} ${SECTION} grid gap-5 lg:grid-cols-2`}>
+            <div className="flex flex-col rounded-3xl bg-sand p-7 md:p-10 text-navy">
+              <span className="text-sm tracking-[0.3em] text-[#d9962b]">★★★★★</span>
+              <p className="mt-4 font-serif text-2xl md:text-3xl italic leading-snug">
                 "{site.reviews.items[0].quote}"
               </p>
-              <div className="mt-5 pt-4 border-t border-[#060b18]/10 flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-semibold text-[#060b18] block">{site.reviews.items[0].name}</span>
-                  <span className="text-[11px] text-[#060b18]/60 block">{site.reviews.items[0].from}</span>
+              <div className="mt-auto flex items-center justify-between border-t border-navy/10 pt-5">
+                <div className="mt-0">
+                  <span className="block text-xs font-semibold">{site.reviews.items[0].name}</span>
+                  <span className="block text-[11px] text-navy/60">{site.reviews.items[0].from}</span>
                 </div>
-                <span className="text-[10px] uppercase tracking-widest text-[#060b18]/50 font-medium">Verified Guest</span>
+                <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-navy/50">Verified guest</span>
               </div>
             </div>
-          </section>
 
-          {/* 7. OFFER (CYAN -> SKY-600 GRADIENT CARD) */}
-          <section className="px-6 pt-16">
-            <div className="rounded-3xl bg-gradient-to-br from-cyan to-sky-600 text-navy p-7 shadow-[0_15px_35px_-10px_rgba(34,195,238,.4)]">
-              <span className="text-[10px] uppercase tracking-[0.25em] font-semibold text-navy/70 block">
-                {site.offers.items[0].tag} · Members Exclusive
+            <div className="flex flex-col rounded-3xl bg-gradient-to-br from-cyan to-sky-600 p-7 md:p-10 text-navy shadow-[0_15px_35px_-10px_rgba(34,195,238,.4)]">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-navy/70">
+                {site.offers.items[0].tag} · Members
               </span>
-              <h3 className="font-serif text-3xl font-medium mt-1 text-navy leading-tight">
-                {site.offers.items[0].title}
-              </h3>
-              <p className="text-sm text-navy/85 mt-2 leading-relaxed">
-                {site.offers.items[0].body}
-              </p>
+              <h3 className="mt-2 font-serif text-3xl md:text-4xl font-medium leading-tight">{site.offers.items[0].title}</h3>
+              <p className="mt-3 text-sm leading-relaxed text-navy/80">{site.offers.items[0].body}</p>
               <button
                 type="button"
-                onClick={() => {
-                  setAuthMode('signup');
-                  setStage('auth');
-                }}
-                className="mt-6 w-full py-3.5 rounded-full bg-navy text-white text-xs font-semibold uppercase tracking-[0.18em] shadow-md hover:brightness-110 active:scale-[.98] transition cursor-pointer"
+                onClick={() => go('auth', 'signup')}
+                className="mt-8 w-full rounded-full bg-navy py-4 text-xs font-semibold uppercase tracking-[0.18em] text-white transition hover:brightness-125 active:scale-[.98] lg:mt-auto"
               >
-                Sign Up for Privileges
+                Sign up for privileges
               </button>
             </div>
           </section>
 
-          {/* 8. MINI FOOTER */}
-          <footer className="pt-20 pb-12 px-6 text-center border-t border-white/10 mt-16">
-            <div className="flex justify-center">
+          {/* MINI FOOTER */}
+          <footer className="mt-20 border-t border-white/10 bg-deep">
+            <div className={`${WRAP} flex flex-col items-center py-14 text-center pb-[calc(3.5rem+env(safe-area-inset-bottom))]`}>
               <Logo size="sm" />
-            </div>
-            <p className="font-serif italic text-white/60 text-sm mt-3">"{site.brand.tagline}"</p>
-
-            <div className="flex justify-center gap-6 mt-5 text-xs text-white/50">
-              {site.footer.socials.map((s) => (
-                <span key={s} className="hover:text-cyan transition cursor-pointer">
-                  {s}
-                </span>
-              ))}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                setAuthMode('login');
-                setStage('auth');
-              }}
-              className="text-xs text-cyan tracking-wider uppercase font-semibold mt-6 block mx-auto underline underline-offset-4"
-            >
-              Sign in to Portal
-            </button>
-
-            <div className="mt-8 pt-6 border-t border-white/5 text-[10px] text-white/35">
-              <p>{site.footer.copyright}</p>
+              <p className="mt-4 font-serif text-base italic text-white/60">{site.brand.tagline}</p>
+              <div className="mt-5 flex gap-6 text-xs text-white/50">
+                {site.footer.socials.map((s) => (
+                  <span key={s} className="cursor-pointer transition hover:text-cyan">
+                    {s}
+                  </span>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => go('auth', 'login')}
+                className="mt-6 text-xs font-semibold uppercase tracking-wider text-cyan underline underline-offset-4"
+              >
+                {site.intro.login}
+              </button>
+              <div className="mt-6 flex flex-wrap justify-center gap-4 text-[10px] text-white/35">
+                {site.footer.legal.map((l) => (
+                  <span key={l}>{l}</span>
+                ))}
+              </div>
+              <p className="mt-3 max-w-md text-[10px] leading-relaxed text-white/35">{site.footer.copyright}</p>
             </div>
           </footer>
-        </div>
-      </main>
+        </main>
+      </div>
     );
   }
 
-  // ==========================================
-  // STAGE 3: AUTH SCREEN (SIGNUP / LOGIN)
-  // ==========================================
+  // ========================================================================
+  // STAGE 3 — AUTH (split screen on md+)
+  // ========================================================================
   if (stage === 'auth') {
     const isSignup = authMode === 'signup';
     const copy = isSignup ? site.auth.signup : site.auth.login;
 
     return (
-      <main
-        className="h-[100dvh] w-full overflow-y-auto bg-[#060b18] text-[#e8eef7] animate-fade-in flex flex-col"
-        key={authMode}
-      >
-        <div className="mx-auto max-w-md w-full min-h-screen flex flex-col p-6 pt-10 pb-8">
-          {/* Safe-area back button circle 40×40 */}
-          <div className="flex items-center justify-between">
-            <button
-              type="button"
-              onClick={() => setStage('intro')}
-              className="w-10 h-10 rounded-full border border-white/20 bg-white/5 flex items-center justify-center text-white/80 hover:bg-white/10 transition active:scale-95"
-              aria-label="Back to intro"
+      <div className="jd-app">
+        <main className="jd-stage animate-fade-in md:grid md:grid-cols-2" key={authMode}>
+          {/* Visual panel (tablet / desktop) */}
+          <aside className="relative hidden overflow-hidden md:sticky md:top-0 md:block md:h-[100dvh]">
+            <img src={site.hero.scenes[0].image} alt="" className="absolute inset-0 h-full w-full object-cover animate-kenburns" />
+            <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/30 to-navy/20" />
+            <div className="absolute inset-x-0 bottom-0 p-10 lg:p-14">
+              <Eyebrow>{site.hero.eyebrow}</Eyebrow>
+              <p className="mt-4 max-w-md font-serif text-4xl lg:text-5xl leading-tight text-white">
+                {site.hero.title}
+                <br />
+                <em className="italic text-cyan">{site.hero.accent}</em>
+              </p>
+            </div>
+          </aside>
+
+          <div className="mx-auto flex min-h-full w-full max-w-md flex-col px-6 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-[calc(1.5rem+env(safe-area-inset-top))] md:min-h-[100dvh] md:justify-center md:py-12 lg:max-w-lg lg:px-12">
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => go('intro')}
+                aria-label="Back"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/5 text-white/80 transition hover:bg-white/10 active:scale-95"
+              >
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <path d="M19 12H5M12 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <Logo size="sm" />
+            </div>
+
+            <div className="mt-10">
+              <Eyebrow>{isSignup ? 'New guest' : 'Returning guest'}</Eyebrow>
+              <h1 className="mt-3 font-serif text-4xl md:text-5xl font-medium leading-tight text-white">{copy.title}</h1>
+              <p className="mt-3 text-sm font-light leading-relaxed text-white/60">{copy.sub}</p>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                go('app');
+              }}
+              className="mt-8 flex flex-col gap-4"
             >
-              <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M19 12H5M12 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-
-            <Logo size="sm" />
-          </div>
-
-          <div className="mt-8">
-            <Eyebrow>{isSignup ? 'New Guest' : 'Returning Guest'}</Eyebrow>
-            <h1 className="font-serif text-3xl sm:text-4xl text-white font-medium mt-2">
-              {copy.title}
-            </h1>
-            <p className="text-sm text-white/60 mt-2 font-light leading-relaxed">
-              {copy.sub}
-            </p>
-          </div>
-
-          {/* FORM */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              setStage('app');
-            }}
-            className="mt-8 space-y-4"
-          >
-            {isSignup && (
-              <div>
-                <label className="text-[10px] uppercase tracking-[0.2em] text-white/50 block mb-1.5 font-medium">
-                  Full Name *
+              {isSignup && (
+                <label className="flex flex-col gap-1.5">
+                  <span className={LABEL}>Full name *</span>
+                  <input required type="text" autoComplete="name" placeholder="Maria Santos" className={FIELD} />
                 </label>
+              )}
+              <label className="flex flex-col gap-1.5">
+                <span className={LABEL}>Email *</span>
+                <input required type="email" autoComplete="email" placeholder="name@email.com" className={FIELD} />
+              </label>
+              {isSignup && (
+                <label className="flex flex-col gap-1.5">
+                  <span className={LABEL}>Mobile (for SMS confirmations)</span>
+                  <input type="tel" autoComplete="tel" placeholder="0917 123 4567" className={FIELD} />
+                </label>
+              )}
+              <label className="flex flex-col gap-1.5">
+                <span className="flex items-center justify-between">
+                  <span className={LABEL}>Password *</span>
+                  {!isSignup && (
+                    <button type="button" className="text-xs text-cyan hover:underline">
+                      {site.auth.forgot}
+                    </button>
+                  )}
+                </span>
                 <input
                   required
-                  type="text"
-                  placeholder="e.g. Maria Santos"
-                  className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-sm text-white placeholder-white/35 focus:outline-none focus:border-cyan/60 transition"
+                  type="password"
+                  minLength={6}
+                  autoComplete={isSignup ? 'new-password' : 'current-password'}
+                  placeholder="••••••••"
+                  className={FIELD}
                 />
-              </div>
-            )}
-
-            <div>
-              <label className="text-[10px] uppercase tracking-[0.2em] text-white/50 block mb-1.5 font-medium">
-                Email Address *
               </label>
-              <input
-                required
-                type="email"
-                placeholder="name@domain.com"
-                className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-sm text-white placeholder-white/35 focus:outline-none focus:border-cyan/60 transition"
-              />
-            </div>
 
-            {isSignup && (
-              <div>
-                <label className="text-[10px] uppercase tracking-[0.2em] text-white/50 block mb-1.5 font-medium">
-                  Mobile Number (SMS alerts)
-                </label>
-                <input
-                  type="tel"
-                  placeholder="09171234567"
-                  className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-sm text-white placeholder-white/35 focus:outline-none focus:border-cyan/60 transition"
-                />
-              </div>
-            )}
+              <button type="submit" className={`${BTN_PRIMARY} mt-3 w-full py-4`}>
+                {copy.cta}
+              </button>
+            </form>
 
-            <div>
-              <div className="flex justify-between items-center mb-1.5">
-                <label className="text-[10px] uppercase tracking-[0.2em] text-white/50 font-medium">
-                  Password *
-                </label>
-                {!isSignup && (
-                  <button type="button" className="text-xs text-cyan hover:underline">
-                    {site.auth.forgot}
-                  </button>
-                )}
-              </div>
-              <input
-                required
-                type="password"
-                placeholder="••••••••"
-                minLength={6}
-                className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-sm text-white placeholder-white/35 focus:outline-none focus:border-cyan/60 transition"
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="w-full py-4 mt-6 rounded-full bg-cyan text-navy font-semibold text-xs uppercase tracking-[0.18em] shadow-[0_10px_30px_-8px_rgba(34,195,238,.7)] hover:brightness-110 active:scale-[.98] transition cursor-pointer"
-            >
-              {copy.cta}
-            </button>
-          </form>
-
-          {/* DIVIDER */}
-          <div className="relative my-7 text-center">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/10" />
-            </div>
-            <span className="relative bg-[#060b18] px-3 text-[10px] uppercase tracking-widest text-white/35">
+            <div className="my-7 flex items-center gap-3 text-[10px] uppercase tracking-[0.2em] text-white/35">
+              <span className="h-px flex-1 bg-white/10" />
               {site.auth.or}
-            </span>
-          </div>
+              <span className="h-px flex-1 bg-white/10" />
+            </div>
 
-          {/* GOOGLE / FACEBOOK 2-COL */}
-          <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3">
+              {['Google', 'Facebook'].map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => go('app')}
+                  className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-xs font-medium text-white transition hover:bg-white/10 active:scale-[.98]"
+                >
+                  <span className={`font-serif text-base ${p === 'Google' ? 'text-gold' : 'text-cyan'}`}>{p[0]}</span>
+                  {p}
+                </button>
+              ))}
+            </div>
+
             <button
               type="button"
-              onClick={() => setStage('app')}
-              className="rounded-2xl border border-white/10 bg-white/[0.04] py-3 px-4 text-xs font-medium text-white flex items-center justify-center gap-2 hover:bg-white/10 active:scale-[.98] transition"
+              onClick={() => go('app')}
+              className="mt-3 w-full rounded-2xl border border-white/10 py-3.5 text-xs font-medium uppercase tracking-[0.18em] text-white/70 transition hover:bg-white/5 active:scale-[.98]"
             >
-              <span className="text-sm">G</span> Google
+              {site.auth.guest}
             </button>
-            <button
-              type="button"
-              onClick={() => setStage('app')}
-              className="rounded-2xl border border-white/10 bg-white/[0.04] py-3 px-4 text-xs font-medium text-white flex items-center justify-center gap-2 hover:bg-white/10 active:scale-[.98] transition"
-            >
-              <span className="text-sm font-bold">f</span> Facebook
-            </button>
-          </div>
 
-          {/* CONTINUE AS GUEST */}
-          <button
-            type="button"
-            onClick={() => setStage('app')}
-            className="w-full mt-3 py-3 rounded-2xl border border-white/10 text-xs text-white/70 hover:bg-white/5 active:scale-[.98] transition tracking-wider uppercase font-medium"
-          >
-            {site.auth.guest}
-          </button>
-
-          {/* BOTTOM MODE SWITCH PINNED */}
-          <div className="mt-auto pt-8 text-center text-xs text-white/60">
-            {copy.switch}{' '}
-            <button
-              type="button"
-              onClick={() => setAuthMode(isSignup ? 'login' : 'signup')}
-              className="text-cyan font-semibold ml-1 underline underline-offset-4 cursor-pointer"
-            >
-              {copy.switchCta}
-            </button>
+            <p className="mt-auto pt-10 text-center text-xs text-white/60 md:mt-10 md:pt-0">
+              {copy.switch}{' '}
+              <button
+                type="button"
+                onClick={() => setAuthMode(isSignup ? 'login' : 'signup')}
+                className="ml-1 font-semibold text-cyan underline underline-offset-4"
+              >
+                {copy.switchCta}
+              </button>
+            </p>
           </div>
-        </div>
-      </main>
+        </main>
+      </div>
     );
   }
 
-  // ==========================================
-  // STAGE 4: MAIN RESORT APP (16 SECTIONS IN ORDER)
-  // ==========================================
-  const currentScene = site.hero.scenes[activeScene] || site.hero.scenes[0];
-
+  // ========================================================================
+  // STAGE 4 — APP
+  // ========================================================================
   return (
-    <main
-      id="main-scroll"
-      className="h-[100dvh] w-full overflow-y-auto bg-[#060b18] text-[#e8eef7] animate-fade-in relative selection:bg-cyan selection:text-navy"
-    >
-      <div className="mx-auto max-w-md min-h-screen flex flex-col relative pb-28">
-
-        {/* 1. TICKER STRIP */}
+    <div className="jd-app">
+      <main id="main-scroll" className="jd-stage animate-fade-in">
+        {/* 1. TICKER */}
         <aside
-          aria-label="Resort Announcements"
-          className="bg-gradient-to-r from-cyan to-sky-500 text-navy py-1.5 text-[10px] font-semibold tracking-wider uppercase overflow-hidden whitespace-nowrap pt-[calc(0.4rem+env(safe-area-inset-top))]"
+          aria-label="Resort announcements"
+          className="overflow-hidden whitespace-nowrap bg-gradient-to-r from-cyan to-sky-500 pb-1.5 pt-[calc(0.375rem+env(safe-area-inset-top))] text-[10px] font-semibold uppercase tracking-[0.2em] text-navy"
         >
-          <div className="inline-block animate-ticker">
-            {[...site.ticker, ...site.ticker, ...site.ticker, ...site.ticker].map((t, idx) => (
-              <span key={idx} className="mx-3 inline-flex items-center gap-2">
-                <span>✦</span>
-                <span>{t}</span>
+          <div className="inline-flex animate-ticker">
+            {[...site.ticker, ...site.ticker, ...site.ticker, ...site.ticker].map((t, i) => (
+              <span key={i} className="mx-4 inline-flex items-center gap-3">
+                <span aria-hidden="true">✦</span>
+                {t}
               </span>
             ))}
           </div>
         </aside>
 
-        {/* 2. STICKY HEADER */}
-        <header className="sticky top-0 z-40 bg-[#060b18]/85 backdrop-blur-xl border-b border-white/10 px-5 py-3.5 flex items-center justify-between whitespace-nowrap shrink-0">
-          <Logo size="sm" />
-
-          <div className="flex items-center gap-2.5">
-            <button
-              type="button"
-              onClick={() => {
-                setAuthMode('login');
-                setStage('auth');
-              }}
-              className="text-xs text-white/70 hover:text-white uppercase tracking-wider font-medium px-2 py-1"
-            >
-              {site.nav.signIn}
+        {/* 2. HEADER */}
+        <header className="sticky top-0 z-40 border-b border-white/10 bg-navy/85 backdrop-blur-xl">
+          <div className={`${WRAP} flex h-16 items-center justify-between gap-4`}>
+            <button type="button" onClick={scrollTop} aria-label="Back to top">
+              <Logo size="sm" />
             </button>
 
-            <button
-              type="button"
-              onClick={() => scrollTo('booking-section')}
-              className="rounded-full bg-cyan px-4 py-2 text-navy text-[11px] font-semibold uppercase tracking-wider shadow-[0_4px_16px_-4px_rgba(34,195,238,.7)] hover:brightness-110 active:scale-95 transition"
-            >
-              {site.nav.book}
-            </button>
-
-            {/* 36px hamburger animating to X */}
-            <button
-              type="button"
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="w-9 h-9 rounded-full border border-white/15 bg-white/5 flex items-center justify-center text-white shrink-0 hover:bg-white/10 transition active:scale-95 ml-1"
-              aria-label="Toggle navigation menu"
-            >
-              {menuOpen ? (
-                <span className="text-lg leading-none font-light">✕</span>
-              ) : (
-                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" />
-                </svg>
-              )}
-            </button>
-          </div>
-        </header>
-
-        {/* DROPDOWN NAVIGATION MENU */}
-        {menuOpen && (
-          <nav
-            aria-label="Mobile Navigation Menu"
-            className="fixed inset-x-0 top-[57px] bottom-0 z-30 bg-[#060b18]/95 backdrop-blur-2xl p-6 flex flex-col justify-between border-b border-white/10 animate-fade-in max-w-md mx-auto"
-          >
-            <div className="space-y-4 pt-4">
-              <span className="text-[10px] uppercase tracking-[0.3em] text-cyan block mb-2">Explore the Resort</span>
-              {site.nav.links.map((link, i) => (
+            <nav aria-label="Primary" className="hidden items-center gap-7 lg:flex">
+              {site.nav.links.map((l) => (
                 <button
-                  key={link}
+                  key={l}
                   type="button"
-                  onClick={() => {
-                    const targetMap: Record<string, string> = {
-                      'Rooms & Suites': 'rooms-section',
-                      Experiences: 'experiences-section',
-                      Amenities: 'amenities-section',
-                      Dining: 'dining-section',
-                      Location: 'location-section',
-                      FAQ: 'faq-section',
-                    };
-                    scrollTo(targetMap[link] || 'rooms-section');
-                  }}
-                  className="block w-full text-left font-serif text-3xl text-white hover:text-cyan transition py-2 border-b border-white/10"
+                  onClick={() => scrollTo(navTargets[l])}
+                  className="text-[11px] font-medium uppercase tracking-[0.2em] text-white/70 transition hover:text-cyan"
                 >
-                  <span className="text-sm font-sans text-cyan/60 mr-3">0{i + 1}</span>
-                  {link}
+                  {l}
                 </button>
               ))}
-            </div>
+            </nav>
 
-            <div className="pt-6 border-t border-white/10">
-              <p className="text-xs text-white/50 mb-3">{site.brand.tagline}</p>
-              <div className="flex gap-4 text-xs text-cyan">
-                {site.footer.socials.map((s) => (
-                  <span key={s} className="hover:underline">{s}</span>
-                ))}
-              </div>
-            </div>
-          </nav>
-        )}
-
-        {/* 3. HERO SECTION */}
-        <section className="min-h-[660px] relative flex flex-col justify-end p-6 pb-28 overflow-hidden select-none">
-          {/* Crossfading scenes */}
-          {site.hero.scenes.map((sc, idx) => (
-            <img
-              key={sc.label}
-              src={sc.image}
-              alt={sc.label}
-              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
-                activeScene === idx ? 'opacity-100' : 'opacity-0 pointer-events-none'
-              }`}
-            />
-          ))}
-
-          {/* Navy gradient overlays */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#060b18] via-[#060b18]/45 to-[#060b18]/25 pointer-events-none" />
-
-          {/* Top-Right Ambient Waves Pill */}
-          <div className="absolute top-5 right-5 z-10">
-            <button
-              type="button"
-              onClick={toggleAmbientAudio}
-              className="rounded-full bg-[#060b18]/80 backdrop-blur-md border border-white/20 px-3.5 py-1.5 text-xs text-white flex items-center gap-2 shadow-lg active:scale-95 transition"
-            >
-              <span className={`w-2 h-2 rounded-full ${ambientPlaying ? 'bg-emerald-400 animate-pulse' : 'bg-white/40'}`} />
-              <span className="text-[11px] font-medium tracking-wide">{site.hero.ambient}</span>
-            </button>
-          </div>
-
-          <div className="relative z-10">
-            <Eyebrow>{site.hero.eyebrow}</Eyebrow>
-
-            <h1 className="text-[48px] sm:text-[52px] font-serif leading-[0.95] text-white mt-2 font-medium">
-              {site.hero.title}
-              <br />
-              <em className="italic text-cyan font-serif">{site.hero.accent}</em>
-            </h1>
-
-            <p className="text-[14px] font-light leading-relaxed text-white/80 mt-3 max-w-sm">
-              {site.hero.body}
-            </p>
-
-            <div className="flex gap-3 mt-5">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <button
+                type="button"
+                onClick={() => go('auth', 'login')}
+                className="hidden px-2 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-white/70 transition hover:text-white sm:inline-flex"
+              >
+                {site.nav.signIn}
+              </button>
               <button
                 type="button"
                 onClick={() => scrollTo('booking-section')}
-                className="rounded-full bg-cyan px-6 py-3.5 text-navy text-xs font-semibold uppercase tracking-[0.18em] shadow-[0_10px_30px_-8px_rgba(34,195,238,.7)] hover:brightness-110 active:scale-95 transition cursor-pointer"
+                className="rounded-full bg-cyan px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-navy shadow-[0_4px_16px_-4px_rgba(34,195,238,.7)] transition hover:brightness-110 active:scale-95"
               >
-                {site.hero.primary}
+                {site.nav.book}
               </button>
               <button
                 type="button"
-                onClick={() => scrollTo('rooms-section')}
-                className="rounded-full border border-white/25 text-white backdrop-blur hover:bg-white/10 px-5 py-3.5 text-xs font-semibold uppercase tracking-[0.18em] active:scale-95 transition cursor-pointer"
+                onClick={() => setMenuOpen(true)}
+                aria-label="Open menu"
+                aria-expanded={menuOpen}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:bg-white/10 active:scale-95 lg:hidden"
               >
-                {site.hero.secondary}
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />
+                </svg>
               </button>
             </div>
+          </div>
+        </header>
 
-            {/* Scene chips */}
-            <div className="flex gap-2 mt-6 overflow-x-auto pb-1">
-              {site.hero.scenes.map((sc, idx) => (
-                <button
-                  key={sc.label}
-                  type="button"
-                  onClick={() => setActiveScene(idx)}
-                  className={`rounded-full border px-3 py-1.5 text-[11px] whitespace-nowrap transition cursor-pointer ${
-                    activeScene === idx
-                      ? 'border-cyan bg-cyan/20 text-cyan font-medium'
-                      : 'border-white/15 bg-black/30 text-white/70 hover:border-white/30'
-                  }`}
-                >
-                  {sc.label}
+        {/* 3. HERO */}
+        <section className="relative flex min-h-[640px] h-[88dvh] max-h-[920px] flex-col overflow-hidden select-none">
+          {site.hero.scenes.map((sc, i) => (
+            <img
+              key={sc.label}
+              src={sc.image}
+              alt={i === activeScene ? sc.label : ''}
+              className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ${
+                activeScene === i ? 'opacity-100' : 'opacity-0'
+              }`}
+            />
+          ))}
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-navy/30 via-navy/20 to-navy" />
+          <div className="pointer-events-none absolute inset-0 hidden bg-gradient-to-r from-navy/70 via-navy/10 to-transparent lg:block" />
+
+          <div className={`${WRAP} relative z-10 flex justify-end pt-5`}>
+            <button
+              type="button"
+              onClick={toggleAmbientAudio}
+              aria-pressed={ambientPlaying}
+              className="flex items-center gap-2 rounded-full border border-white/20 bg-navy/70 px-3.5 py-1.5 text-[11px] font-medium tracking-wide text-white backdrop-blur-md transition active:scale-95"
+            >
+              <span className={`h-2 w-2 rounded-full ${ambientPlaying ? 'bg-cyan animate-pulse' : 'bg-white/40'}`} />
+              {site.hero.ambient}
+            </button>
+          </div>
+
+          <div className={`${WRAP} relative z-10 mt-auto pb-32 md:pb-40`}>
+            <div className="max-w-2xl">
+              <Eyebrow>{site.hero.eyebrow}</Eyebrow>
+              <h1 className="mt-3 font-serif text-[52px] md:text-7xl lg:text-8xl font-medium leading-[0.95] text-white">
+                {site.hero.title}
+                <br />
+                <em className="font-serif italic text-cyan">{site.hero.accent}</em>
+              </h1>
+              <p className="mt-5 max-w-lg text-[15px] md:text-base font-light leading-relaxed text-white/80">
+                {site.hero.body}
+              </p>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <button type="button" onClick={() => scrollTo('booking-section')} className={BTN_PRIMARY}>
+                  {site.hero.primary}
                 </button>
-              ))}
+                <button type="button" onClick={() => scrollTo('rooms-section')} className={BTN_GHOST}>
+                  {site.hero.secondary}
+                </button>
+              </div>
+              <div className="-mx-5 mt-6 flex gap-2 overflow-x-auto px-5 pb-1 sm:mx-0 sm:px-0">
+                {site.hero.scenes.map((sc, i) => (
+                  <button
+                    key={sc.label}
+                    type="button"
+                    onClick={() => setActiveScene(i)}
+                    className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-[11px] transition ${
+                      activeScene === i
+                        ? 'border-cyan bg-cyan/20 font-medium text-cyan'
+                        : 'border-white/15 bg-black/30 text-white/70 hover:border-white/30'
+                    }`}
+                  >
+                    {sc.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </section>
 
-        {/* 4. BOOKING CARD OVERLAP (-MT-24) */}
-        <section id="booking-section" className="-mt-20 relative z-20 px-4">
-          <div className="rounded-3xl border border-white/15 bg-[#0b1426]/90 backdrop-blur-2xl p-6 shadow-2xl shadow-black/80">
-            <div className="flex justify-between items-center mb-5">
-              <h2 className="font-serif text-2xl text-white font-medium">
-                {site.booking.title}
-              </h2>
-              <span className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-semibold tracking-wider uppercase">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+        {/* 4. BOOKING CARD (overlaps hero) */}
+        <section id="booking-section" className={`${WRAP} relative z-20 -mt-20 scroll-mt-24 md:-mt-24`}>
+          <div className="rounded-3xl border border-white/15 bg-ink/90 p-5 shadow-2xl shadow-black/60 backdrop-blur-2xl sm:p-6 lg:p-7">
+            <div className="mb-5 flex items-center justify-between gap-3">
+              <h2 className="font-serif text-2xl md:text-3xl font-medium text-white">{site.booking.title}</h2>
+              <span className="flex shrink-0 items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-cyan">
+                <span className="h-1.5 w-1.5 rounded-full bg-cyan animate-pulse" />
                 Live rates
               </span>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-                <label className="text-[10px] uppercase tracking-widest text-white/50 block font-medium">
-                  {site.booking.checkIn}
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-[1fr_1fr_1fr_1.5fr_auto]">
+              {[
+                { label: site.booking.checkIn, value: checkIn, set: setCheckIn, min: today },
+                { label: site.booking.checkOut, value: checkOut, set: setCheckOut, min: addDays(checkIn, 1) },
+              ].map((f) => (
+                <label key={f.label} className="flex flex-col gap-1 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+                  <span className={LABEL}>{f.label}</span>
+                  <input
+                    type="date"
+                    value={f.value}
+                    min={f.min}
+                    onChange={(e) => {
+                      f.set(e.target.value);
+                      setQuote(null);
+                    }}
+                    className="w-full text-sm font-medium text-white outline-none"
+                  />
                 </label>
-                <input
-                  type="date"
-                  value={checkIn}
-                  onChange={(e) => setCheckIn(e.target.value)}
-                  className="w-full bg-transparent text-sm text-white focus:outline-none mt-1 font-medium"
-                />
-              </div>
+              ))}
 
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-                <label className="text-[10px] uppercase tracking-widest text-white/50 block font-medium">
-                  {site.booking.checkOut}
-                </label>
-                <input
-                  type="date"
-                  value={checkOut}
-                  onChange={(e) => setCheckOut(e.target.value)}
-                  className="w-full bg-transparent text-sm text-white focus:outline-none mt-1 font-medium"
-                />
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-                <label className="text-[10px] uppercase tracking-widest text-white/50 block font-medium">
-                  {site.booking.guests}
-                </label>
+              <label className="flex flex-col gap-1 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+                <span className={LABEL}>{site.booking.guests}</span>
                 <select
                   value={guests}
-                  onChange={(e) => setGuests(e.target.value)}
-                  className="w-full bg-transparent text-sm text-white focus:outline-none mt-1 font-medium"
+                  onChange={(e) => {
+                    setGuests(e.target.value);
+                    setQuote(null);
+                  }}
+                  className="w-full text-sm font-medium text-white outline-none"
                 >
-                  <option value="1 Guest" className="bg-[#0b1426]">1 Guest</option>
-                  <option value="2 Guests" className="bg-[#0b1426]">2 Guests</option>
-                  <option value="3 Guests" className="bg-[#0b1426]">3 Guests</option>
-                  <option value="4 Guests" className="bg-[#0b1426]">4 Guests</option>
-                  <option value="5+ Barkada" className="bg-[#0b1426]">5+ Barkada</option>
+                  {['1 Guest', '2 Guests', '3 Guests', '4 Guests', '5+ Guests'].map((g) => (
+                    <option key={g}>{g}</option>
+                  ))}
                 </select>
-              </div>
+              </label>
 
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-                <label className="text-[10px] uppercase tracking-widest text-white/50 block font-medium">
-                  {site.booking.room}
-                </label>
+              <label className="flex flex-col gap-1 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+                <span className={LABEL}>{site.booking.room}</span>
                 <select
                   value={selectedRoom}
-                  onChange={(e) => setSelectedRoom(e.target.value)}
-                  className="w-full bg-transparent text-sm text-white focus:outline-none mt-1 font-medium truncate"
+                  onChange={(e) => {
+                    setSelectedRoom(e.target.value);
+                    setQuote(null);
+                  }}
+                  className="w-full truncate text-sm font-medium text-white outline-none"
                 >
                   {site.rooms.items.map((r) => (
-                    <option key={r.name} value={r.name} className="bg-[#0b1426]">
+                    <option key={r.name} value={r.name}>
                       {r.name}
                     </option>
                   ))}
                 </select>
-              </div>
+              </label>
+
+              <button type="button" onClick={checkAvailability} className={`${BTN_PRIMARY} col-span-2 py-4 lg:col-span-1 lg:h-full lg:px-8`}>
+                {site.booking.cta}
+              </button>
             </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                alert(`✦ Availability Verified for ${selectedRoom}: ${checkIn} → ${checkOut} (${guests}). Proceeding to instant SMS confirmation reservation.`);
-              }}
-              className="w-full py-4 rounded-full bg-cyan text-navy font-semibold text-xs uppercase tracking-[0.18em] shadow-[0_10px_30px_-8px_rgba(34,195,238,.7)] hover:brightness-110 active:scale-[.98] transition cursor-pointer"
-            >
-              {site.booking.cta}
-            </button>
+            {quote && (
+              <div
+                role="status"
+                className={`mt-4 flex flex-col gap-3 rounded-2xl border px-4 py-3 text-sm animate-fade-in sm:flex-row sm:items-center sm:justify-between ${
+                  quote.ok ? 'border-cyan/30 bg-cyan/10 text-white' : 'border-gold/40 bg-gold/10 text-gold'
+                }`}
+              >
+                <span>
+                  {quote.ok && <span className="mr-2 text-cyan">✦</span>}
+                  {quote.text}
+                </span>
+                {quote.ok && (
+                  <button
+                    type="button"
+                    onClick={() => go('auth', 'signup')}
+                    className="shrink-0 text-xs font-semibold uppercase tracking-[0.18em] text-cyan underline underline-offset-4"
+                  >
+                    Continue to reserve →
+                  </button>
+                )}
+              </div>
+            )}
 
-            <p className="text-[11px] text-white/50 text-center mt-3 font-light">
-              {site.booking.note}
-            </p>
+            <p className="mt-4 text-center text-[11px] font-light text-white/50">{site.booking.note}</p>
           </div>
         </section>
 
         {/* 5. STATS */}
-        <section className="px-4 pt-10">
-          <div className="rounded-3xl border border-white/10 bg-[#0b1426] p-6 grid grid-cols-3 divide-x divide-white/10 text-center">
-            {site.stats.map((st) => (
-              <div key={st.label} className="px-2">
-                <span className="font-serif text-3xl text-cyan block font-medium">{st.value}</span>
-                <span className="text-[10px] uppercase tracking-[0.2em] text-white/50 block mt-1 leading-tight">
-                  {st.label}
-                </span>
-              </div>
-            ))}
-          </div>
+        <section className={`${WRAP} pt-10 md:pt-14`}>
+          <StatRow />
         </section>
 
-        {/* 6. ROOMS CAROUSEL */}
-        <section id="rooms-section" className="pt-16">
-          <div className="px-6">
-            <Eyebrow>{site.rooms.eyebrow}</Eyebrow>
-            <SectionTitle title={site.rooms.title} />
+        {/* 6. ROOMS */}
+        <section id="rooms-section" className={`${WRAP} ${SECTION} scroll-mt-16`}>
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <Eyebrow>{site.rooms.eyebrow}</Eyebrow>
+              <SectionTitle title={site.rooms.title} />
+            </div>
+            <span className="hidden text-[11px] uppercase tracking-[0.2em] text-white/40 sm:block lg:hidden">Swipe →</span>
           </div>
 
-          <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pt-6 pb-2 px-6">
+          <div className={`${RAIL} mt-8 lg:grid-cols-4 lg:gap-5`}>
             {site.rooms.items.map((room) => (
               <article
                 key={room.name}
-                className="snap-start shrink-0 w-[78%] rounded-3xl border border-white/10 bg-[#0b1426] overflow-hidden group"
+                className={`${CARD} group flex w-[80%] shrink-0 snap-start flex-col sm:w-[46%] lg:w-auto`}
               >
                 <div className="relative h-56 overflow-hidden">
                   <img
                     src={room.image}
                     alt={room.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition duration-700"
                     loading="lazy"
+                    className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
                   />
-                  <span className="absolute bottom-3 left-3 bg-[#060b18]/85 backdrop-blur-md px-3.5 py-1 rounded-full text-xs text-cyan border border-white/10 font-serif">
-                    ₱{room.price.toLocaleString()} <span className="text-[10px] text-white/60 font-sans">/night</span>
+                  <span className="absolute bottom-3 left-3 rounded-full border border-white/10 bg-navy/85 px-3.5 py-1 font-serif text-sm text-cyan backdrop-blur-md">
+                    {peso(room.price)} <span className="font-sans text-[10px] text-white/60">/ night</span>
                   </span>
                 </div>
-                <div className="p-5 flex items-center justify-between">
+                <div className="flex flex-1 items-start justify-between gap-3 p-5">
                   <div>
-                    <h3 className="font-serif text-xl text-white font-medium">{room.name}</h3>
-                    <p className="text-xs text-white/50 mt-1 font-light">{room.meta}</p>
+                    <h3 className="font-serif text-xl font-medium leading-tight text-white">{room.name}</h3>
+                    <p className="mt-1.5 text-xs font-light leading-relaxed text-white/50">{room.meta}</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => {
                       setSelectedRoom(room.name);
+                      setQuote(null);
                       scrollTo('booking-section');
                     }}
-                    className="w-9 h-9 rounded-full bg-cyan/15 border border-cyan/40 text-cyan flex items-center justify-center shrink-0 hover:bg-cyan hover:text-navy transition cursor-pointer"
-                    aria-label={`Select ${room.name}`}
+                    aria-label={`Book ${room.name}`}
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-cyan/40 bg-cyan/15 text-cyan transition hover:bg-cyan hover:text-navy"
                   >
                     →
                   </button>
@@ -949,24 +939,24 @@ export default function MobileResortApp() {
           </div>
         </section>
 
-        {/* 7. EXPERIENCES (SAND PANEL) */}
-        <section id="experiences-section" className="px-4 pt-16">
-          <div className="rounded-3xl bg-[#f4e9d8] text-[#060b18] p-7 border border-[#e8d8be] shadow-xl">
-            <Eyebrow light>{site.experiences.eyebrow}</Eyebrow>
-            <h2 className="font-serif text-3xl font-medium text-[#060b18] mt-1">
-              {site.experiences.title}
-            </h2>
-
-            <div className="mt-6 divide-y divide-[#060b18]/10">
-              {site.experiences.items.map((exp, idx) => (
-                <div key={exp.title} className="py-4 first:pt-2 last:pb-2">
-                  <div className="flex items-baseline gap-2.5">
-                    <span className="font-serif italic text-sky-700/70 text-lg">0{idx + 1}</span>
-                    <h3 className="font-serif text-xl font-medium text-[#060b18]">{exp.title}</h3>
+        {/* 7. EXPERIENCES (sand) */}
+        <section id="experiences-section" className={`${WRAP} ${SECTION} scroll-mt-16`}>
+          <div className="rounded-3xl bg-sand p-7 text-navy sm:p-10 lg:grid lg:grid-cols-[1fr_1.6fr] lg:gap-16 lg:p-14">
+            <div>
+              <Eyebrow light>{site.experiences.eyebrow}</Eyebrow>
+              <SectionTitle title={site.experiences.title} light />
+              <p className="mt-4 hidden max-w-xs text-sm font-light leading-relaxed text-navy/70 lg:block">
+                {site.brand.tagline}
+              </p>
+            </div>
+            <div className="mt-8 grid gap-x-10 sm:grid-cols-2 lg:mt-0">
+              {site.experiences.items.map((exp, i) => (
+                <div key={exp.title} className="border-t border-navy/10 py-5">
+                  <div className="flex items-baseline gap-3">
+                    <span className="font-serif text-lg italic text-sky-700/60">0{i + 1}</span>
+                    <h3 className="font-serif text-xl font-medium">{exp.title}</h3>
                   </div>
-                  <p className="text-sm text-[#060b18]/75 leading-relaxed mt-1.5 font-light">
-                    {exp.body}
-                  </p>
+                  <p className="mt-2 text-sm font-light leading-relaxed text-navy/70">{exp.body}</p>
                 </div>
               ))}
             </div>
@@ -974,245 +964,205 @@ export default function MobileResortApp() {
         </section>
 
         {/* 8. AMENITIES */}
-        <section id="amenities-section" className="px-6 pt-16">
+        <section id="amenities-section" className={`${WRAP} ${SECTION} scroll-mt-16`}>
           <Eyebrow>{site.amenities.eyebrow}</Eyebrow>
           <SectionTitle title={site.amenities.title} />
-
-          <div className="grid grid-cols-2 gap-3 mt-6">
-            {site.amenities.items.map((a) => (
-              <div
-                key={a.label}
-                className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 flex items-center gap-3"
-              >
-                <div className="w-9 h-9 rounded-full bg-cyan/15 border border-cyan/30 flex items-center justify-center text-cyan shrink-0">
-                  <span className="text-xs">✦</span>
-                </div>
-                <span className="text-xs text-white/80 font-medium">{a.label}</span>
-              </div>
-            ))}
-          </div>
+          <AmenityGrid />
         </section>
 
-        {/* 9. GALLERY (2-COL × 3-ROW GRID H-[420PX]) */}
-        <section className="px-6 pt-16">
+        {/* 9. GALLERY */}
+        <section className={`${WRAP} ${SECTION}`}>
           <Eyebrow>{site.gallery.eyebrow}</Eyebrow>
           <SectionTitle title={site.gallery.title} />
-
-          <div className="grid grid-cols-2 grid-rows-3 gap-2.5 h-[420px] mt-6">
-            {site.gallery.images[0] && (
-              <div className="row-span-2 rounded-2xl overflow-hidden">
-                <img src={site.gallery.images[0]} alt="Gallery 1" className="w-full h-full object-cover" loading="lazy" />
-              </div>
-            )}
-            {site.gallery.images.slice(1, 5).map((img, i) => (
-              <div key={i} className="rounded-2xl overflow-hidden">
-                <img src={img} alt={`Gallery ${i + 2}`} className="w-full h-full object-cover" loading="lazy" />
+          <div className="mt-8 grid h-[420px] grid-cols-2 grid-rows-3 gap-2.5 md:h-[480px] md:grid-cols-4 md:grid-rows-2 md:gap-4 lg:h-[560px]">
+            {site.gallery.images.slice(0, 5).map((img, i) => (
+              <div key={img} className={`overflow-hidden rounded-2xl ${i === 0 ? 'row-span-2 md:col-span-2' : ''}`}>
+                <img
+                  src={img}
+                  alt={`${site.gallery.title} ${i + 1}`}
+                  loading="lazy"
+                  className="h-full w-full object-cover transition duration-700 hover:scale-105"
+                />
               </div>
             ))}
           </div>
         </section>
 
-        {/* 10. REVIEWS (CAROUSEL) */}
-        <section className="pt-16">
-          <div className="px-6">
-            <Eyebrow>{site.reviews.eyebrow}</Eyebrow>
-            <SectionTitle title={site.reviews.title} />
-          </div>
-
-          <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pt-6 pb-2 px-6">
+        {/* 10. REVIEWS */}
+        <section className={`${WRAP} ${SECTION}`}>
+          <Eyebrow>{site.reviews.eyebrow}</Eyebrow>
+          <SectionTitle title={site.reviews.title} />
+          <div className={`${RAIL} mt-8 lg:grid-cols-3 lg:gap-5`}>
             {site.reviews.items.map((rev) => (
-              <div
+              <figure
                 key={rev.name}
-                className="snap-start shrink-0 w-[82%] rounded-3xl border border-white/10 bg-[#0b1426] p-6 flex flex-col justify-between"
+                className="flex w-[85%] shrink-0 snap-start flex-col rounded-3xl border border-white/10 bg-ink p-6 sm:w-[60%] md:p-7 lg:w-auto"
               >
-                <div>
-                  <span className="text-sm tracking-widest text-[#f6b74a] block">★★★★★</span>
-                  <p className="font-serif italic text-lg leading-relaxed text-white/90 mt-3">
-                    "{rev.quote}"
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-3 mt-6 pt-4 border-t border-white/10">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan/30 to-sky-600/30 border border-cyan/40 text-cyan flex items-center justify-center font-bold text-xs font-serif">
+                <span className="text-sm tracking-[0.3em] text-gold">★★★★★</span>
+                <blockquote className="mt-4 font-serif text-xl italic leading-relaxed text-white/90">"{rev.quote}"</blockquote>
+                <figcaption className="mt-auto flex items-center gap-3 border-t border-white/10 pt-5">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full border border-cyan/40 bg-cyan/10 font-serif text-base text-cyan">
                     {rev.name[0]}
-                  </div>
-                  <div>
-                    <span className="text-xs font-medium text-white block">{rev.name}</span>
-                    <span className="text-[11px] text-white/50 block">{rev.from}</span>
-                  </div>
-                </div>
-              </div>
+                  </span>
+                  <span>
+                    <span className="block text-xs font-medium text-white">{rev.name}</span>
+                    <span className="block text-[11px] text-white/50">{rev.from}</span>
+                  </span>
+                </figcaption>
+              </figure>
             ))}
           </div>
         </section>
 
         {/* 11. LOCATION */}
-        <section id="location-section" className="px-4 pt-16">
-          <div className="rounded-3xl border border-white/10 bg-[#0b1426] p-6 relative overflow-hidden">
-            {/* Cyan blur orb */}
-            <div className="absolute top-0 right-0 w-48 h-48 bg-cyan/15 rounded-full blur-3xl pointer-events-none" />
-
-            <div className="relative z-10">
+        <section id="location-section" className={`${WRAP} ${SECTION} scroll-mt-16`}>
+          <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-ink p-6 sm:p-10 lg:grid lg:grid-cols-2 lg:items-center lg:gap-14 lg:p-14">
+            <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-cyan/15 blur-3xl" />
+            <div className="relative">
               <Eyebrow>{site.location.eyebrow}</Eyebrow>
               <SectionTitle title={site.location.title} />
-              <p className="text-sm text-white/70 leading-relaxed mt-2 font-light">
-                {site.location.body}
-              </p>
-
-              <div className="grid grid-cols-3 gap-2.5 my-6">
+              <p className="mt-4 text-sm md:text-[15px] font-light leading-relaxed text-white/70">{site.location.body}</p>
+            </div>
+            <div className="relative mt-8 lg:mt-0">
+              <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
                 {site.location.facts.map(([val, desc]) => (
-                  <div key={desc} className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-center">
-                    <span className="font-serif text-xl text-cyan block font-medium">{val}</span>
-                    <span className="text-[10px] text-white/50 block mt-1 leading-tight">{desc}</span>
+                  <div key={desc} className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-center sm:p-5">
+                    <span className="block font-serif text-2xl md:text-3xl font-medium text-cyan">{val}</span>
+                    <span className="mt-1 block text-[10px] md:text-xs leading-tight text-white/50">{desc}</span>
                   </div>
                 ))}
               </div>
-
               <a
                 href="https://maps.google.com/?q=Patar+Beach+Bolinao+Pangasinan"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full py-3.5 rounded-full border border-white/25 text-white backdrop-blur text-xs font-semibold uppercase tracking-[0.18em] flex items-center justify-center gap-2 hover:bg-white/10 transition"
+                className={`${BTN_GHOST} mt-6 w-full gap-2`}
               >
-                <span>📍</span> {site.location.button}
+                <PinIcon />
+                {site.location.button}
               </a>
             </div>
           </div>
         </section>
 
-        {/* 12. FAQ (ACCORDION) */}
-        <section id="faq-section" className="px-6 pt-16">
-          <Eyebrow>{site.faq.eyebrow}</Eyebrow>
-          <SectionTitle title={site.faq.title} />
-
-          <div className="mt-6 space-y-3">
-            {site.faq.items.map((item, idx) => {
-              const isOpen = openFaq === idx;
+        {/* 12. FAQ */}
+        <section id="faq-section" className={`${WRAP} ${SECTION} scroll-mt-16 lg:grid lg:grid-cols-[1fr_1.6fr] lg:gap-16`}>
+          <div>
+            <Eyebrow>{site.faq.eyebrow}</Eyebrow>
+            <SectionTitle title={site.faq.title} />
+          </div>
+          <div className="mt-8 flex flex-col gap-3 lg:mt-0">
+            {site.faq.items.map((item, i) => {
+              const open = openFaq === i;
               return (
-                <div
-                  key={item.q}
-                  className="rounded-2xl border border-white/10 bg-[#0b1426] overflow-hidden transition"
-                >
+                <div key={item.q} className="overflow-hidden rounded-2xl border border-white/10 bg-ink">
                   <button
                     type="button"
-                    onClick={() => setOpenFaq(isOpen ? null : idx)}
-                    className="w-full p-4 text-left flex items-center justify-between gap-3"
+                    onClick={() => setOpenFaq(open ? null : i)}
+                    aria-expanded={open}
+                    className="flex w-full items-center justify-between gap-4 p-5 text-left"
                   >
-                    <span className="font-serif text-lg text-white font-medium">{item.q}</span>
-                    <span className={`text-cyan text-lg shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-45' : 'rotate-0'}`}>
+                    <span className="font-serif text-lg md:text-xl font-medium text-white">{item.q}</span>
+                    <span
+                      className={`shrink-0 text-2xl font-light leading-none text-cyan transition-transform duration-300 ${open ? 'rotate-45' : ''}`}
+                    >
                       +
                     </span>
                   </button>
-
-                  {isOpen && (
-                    <div className="px-4 pb-4 pt-1 text-sm text-white/60 leading-relaxed font-light border-t border-white/5 animate-fade-in">
-                      {item.a}
+                  <div className={`grid transition-all duration-300 ${open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                    <div className="overflow-hidden">
+                      <p className="px-5 pb-5 text-sm font-light leading-relaxed text-white/60">{item.a}</p>
                     </div>
-                  )}
+                  </div>
                 </div>
               );
             })}
           </div>
         </section>
 
-        {/* 13. OFFERS (CAROUSEL WITH CODE COPY) */}
-        <section className="pt-16">
-          <div className="px-6">
-            <Eyebrow>{site.offers.eyebrow}</Eyebrow>
-            <SectionTitle title={site.offers.title} />
-          </div>
-
-          <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pt-6 pb-2 px-6">
-            {site.offers.items.map((offer, idx) => (
-              <div
-                key={offer.code}
-                className={`snap-start shrink-0 w-[80%] rounded-3xl p-6 flex flex-col justify-between ${
-                  idx === 0
-                    ? 'bg-gradient-to-br from-cyan to-sky-600 text-navy'
-                    : 'border border-white/10 bg-[#0b1426] text-white'
-                }`}
-              >
-                <div>
-                  <span className={`text-[10px] uppercase tracking-[0.25em] font-semibold ${idx === 0 ? 'text-navy/70' : 'text-cyan'} block`}>
+        {/* 13. OFFERS */}
+        <section className={`${WRAP} ${SECTION}`}>
+          <Eyebrow>{site.offers.eyebrow}</Eyebrow>
+          <SectionTitle title={site.offers.title} />
+          <div className={`${RAIL} mt-8 lg:grid-cols-3 lg:gap-5`}>
+            {site.offers.items.map((offer, i) => {
+              const featured = i === 0;
+              const copied = copiedCode === offer.code;
+              return (
+                <div
+                  key={offer.code}
+                  className={`flex w-[82%] shrink-0 snap-start flex-col rounded-3xl p-6 sm:w-[55%] md:p-7 lg:w-auto ${
+                    featured ? 'bg-gradient-to-br from-cyan to-sky-600 text-navy' : 'border border-white/10 bg-ink text-white'
+                  }`}
+                >
+                  <span
+                    className={`text-[10px] font-semibold uppercase tracking-[0.25em] ${featured ? 'text-navy/70' : 'text-cyan'}`}
+                  >
                     {offer.tag}
                   </span>
-                  <h3 className={`font-serif text-2xl font-medium mt-1 leading-tight ${idx === 0 ? 'text-navy' : 'text-white'}`}>
-                    {offer.title}
-                  </h3>
-                  <p className={`text-sm mt-2 leading-relaxed ${idx === 0 ? 'text-navy/85' : 'text-white/60'}`}>
-                    {offer.body}
-                  </p>
-                </div>
-
-                <div className="mt-6 pt-4 border-t border-current/15 flex items-center justify-between">
-                  <span className="text-[11px] font-mono tracking-wider opacity-75">PROMO CODE</span>
-                  <button
-                    type="button"
-                    onClick={() => handleCopyCode(offer.code)}
-                    className={`border border-dashed px-3 py-1.5 rounded-xl font-mono text-xs font-bold tracking-widest transition cursor-pointer ${
-                      copiedCode === offer.code
-                        ? 'bg-white text-navy border-white'
-                        : idx === 0
-                        ? 'border-navy/40 text-navy hover:bg-navy/10'
-                        : 'border-cyan/40 text-cyan hover:bg-cyan/10'
-                    }`}
+                  <h3 className="mt-2 font-serif text-2xl md:text-3xl font-medium leading-tight">{offer.title}</h3>
+                  <p className={`mt-2 text-sm leading-relaxed ${featured ? 'text-navy/80' : 'text-white/60'}`}>{offer.body}</p>
+                  <div
+                    className={`mt-auto flex items-center justify-between border-t pt-4 ${featured ? 'border-navy/15' : 'border-white/10'}`}
                   >
-                    {copiedCode === offer.code ? 'Copied ✦' : offer.code}
-                  </button>
+                    <span className="text-[10px] uppercase tracking-[0.2em] opacity-70">Promo code</span>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyCode(offer.code)}
+                      className={`rounded-xl border border-dashed px-3 py-1.5 font-mono text-xs font-bold tracking-widest transition ${
+                        copied
+                          ? 'border-white bg-white text-navy'
+                          : featured
+                            ? 'border-navy/40 text-navy hover:bg-navy/10'
+                            : 'border-cyan/40 text-cyan hover:bg-cyan/10'
+                      }`}
+                    >
+                      {copied ? 'Copied ✦' : offer.code}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 
         {/* 14. DINING */}
-        <section id="dining-section" className="px-4 pt-16">
-          <div className="rounded-3xl border border-white/10 bg-[#0b1426] overflow-hidden">
-            <div className="h-60 relative">
-              <img src={site.dining.image} alt={site.dining.title} className="w-full h-full object-cover" loading="lazy" />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0b1426] via-[#0b1426]/30 to-transparent" />
+        <section id="dining-section" className={`${WRAP} ${SECTION} scroll-mt-16`}>
+          <div className={`${CARD} md:grid md:grid-cols-2`}>
+            <div className="relative h-60 sm:h-72 md:h-full md:min-h-[440px]">
+              <img src={site.dining.image} alt={site.dining.title} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/20 to-transparent md:bg-gradient-to-l" />
             </div>
-
-            <div className="p-6 -mt-8 relative z-10">
+            <div className="relative -mt-10 p-6 sm:p-8 md:mt-0 md:flex md:flex-col md:justify-center md:p-12">
               <Eyebrow>{site.dining.eyebrow}</Eyebrow>
               <SectionTitle title={site.dining.title} />
-              <p className="text-sm text-white/70 leading-relaxed mt-2 font-light">
-                {site.dining.body}
-              </p>
-
-              <div className="mt-6 pt-4 border-t border-white/10 divide-y divide-white/10">
+              <p className="mt-4 text-sm md:text-[15px] font-light leading-relaxed text-white/70">{site.dining.body}</p>
+              <dl className="mt-6 divide-y divide-white/10 border-t border-white/10">
                 {site.dining.hours.map(([meal, time]) => (
-                  <div key={meal} className="py-2.5 flex justify-between items-center text-xs">
-                    <span className="text-white/80 font-medium">{meal}</span>
-                    <span className="text-cyan font-mono">{time}</span>
+                  <div key={meal} className="flex items-center justify-between py-3 text-sm">
+                    <dt className="text-white/80">{meal}</dt>
+                    <dd className="font-serif text-lg text-cyan">{time}</dd>
                   </div>
                 ))}
-              </div>
+              </dl>
             </div>
           </div>
         </section>
 
-        {/* 15. CTA FULL BLEED */}
-        <section className="px-4 pt-16">
-          <div className="relative rounded-3xl overflow-hidden p-8 text-center min-h-[380px] flex flex-col items-center justify-center">
-            <img src={site.cta.image} alt="Resort Vista" className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#060b18] via-[#060b18]/70 to-[#060b18]" />
-
-            <div className="relative z-10 max-w-xs">
+        {/* 15. CTA */}
+        <section className={`${WRAP} ${SECTION}`}>
+          <div className="relative flex min-h-[400px] flex-col items-center justify-center overflow-hidden rounded-3xl p-8 text-center md:min-h-[480px]">
+            <img src={site.cta.image} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/60 to-navy/40" />
+            <div className="relative max-w-xl">
               <Eyebrow>{site.cta.eyebrow}</Eyebrow>
-              <h2 className="font-serif text-4xl text-white font-medium mt-2 leading-tight">
+              <h2 className="mt-3 font-serif text-4xl md:text-6xl font-medium leading-tight text-white">
                 {site.cta.title}
                 <br />
-                <em className="italic text-cyan font-serif">{site.cta.accent}</em>
+                <em className="italic text-cyan">{site.cta.accent}</em>
               </h2>
-              <p className="text-sm text-white/80 mt-3 font-light leading-relaxed">
-                {site.cta.body}
-              </p>
-              <button
-                type="button"
-                onClick={() => scrollTo('booking-section')}
-                className="mt-6 px-8 py-4 rounded-full bg-cyan text-navy font-semibold text-xs uppercase tracking-[0.18em] shadow-[0_10px_30px_-8px_rgba(34,195,238,.7)] hover:brightness-110 active:scale-95 transition cursor-pointer"
-              >
+              <p className="mx-auto mt-4 max-w-md text-sm md:text-base font-light leading-relaxed text-white/80">{site.cta.body}</p>
+              <button type="button" onClick={() => scrollTo('booking-section')} className={`${BTN_PRIMARY} mt-8 px-10 py-4`}>
                 {site.cta.button}
               </button>
             </div>
@@ -1220,153 +1170,237 @@ export default function MobileResortApp() {
         </section>
 
         {/* 16. FOOTER */}
-        <footer className="pt-20 px-6 border-t border-white/10 mt-16 relative overflow-hidden">
-          {/* Giant faint italic 'Beach House' watermark */}
-          <span className="absolute -bottom-6 left-0 right-0 text-center font-serif italic text-[72px] sm:text-[90px] text-white/[0.03] select-none pointer-events-none whitespace-nowrap">
+        <footer className="relative mt-20 overflow-hidden border-t border-white/10 bg-deep md:mt-28">
+          <span className="pointer-events-none absolute -bottom-4 left-1/2 -translate-x-1/2 select-none whitespace-nowrap font-serif text-[80px] italic leading-none text-white/[0.03] md:-bottom-8 md:text-[160px] lg:text-[220px]">
             Beach House
           </span>
 
-          <Logo size="md" />
-          <p className="text-xs text-white/60 leading-relaxed mt-4 font-light max-w-sm">
-            {site.footer.about}
-          </p>
-
-          {/* Newsletter */}
-          <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-            <span className="text-[10px] uppercase tracking-widest text-cyan font-semibold block">
-              {site.footer.newsletter.title}
-            </span>
-            <p className="text-xs text-white/60 mt-1 font-light leading-relaxed">
-              {site.footer.newsletter.body}
-            </p>
-
-            {newsletterDone ? (
-              <p className="text-xs text-emerald-400 font-medium mt-3">
-                ✦ You are now subscribed to our private coastal dispatch.
-              </p>
-            ) : (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (newsletterEmail) setNewsletterDone(true);
-                }}
-                className="mt-3 flex gap-2"
-              >
-                <input
-                  required
-                  type="email"
-                  value={newsletterEmail}
-                  onChange={(e) => setNewsletterEmail(e.target.value)}
-                  placeholder={site.footer.newsletter.placeholder}
-                  className="w-full rounded-full border border-white/10 bg-[#060b18] px-4 py-2.5 text-xs text-white placeholder-white/35 focus:outline-none focus:border-cyan/60"
-                />
-                <button
-                  type="submit"
-                  className="rounded-full bg-cyan text-navy px-4 py-2.5 text-xs font-semibold uppercase tracking-wider shrink-0 hover:brightness-110"
-                >
-                  {site.footer.newsletter.button}
-                </button>
-              </form>
-            )}
-          </div>
-
-          {/* 2-Col Links */}
-          <div className="grid grid-cols-2 gap-6 mt-8 pt-6 border-t border-white/10">
-            {site.footer.columns.map((col) => (
-              <div key={col.title}>
-                <span className="text-[10px] uppercase tracking-widest text-white/40 font-semibold block mb-3">
-                  {col.title}
-                </span>
-                <ul className="space-y-2 text-xs text-white/70">
-                  {col.items.map((it) => (
-                    <li key={it} className="hover:text-cyan transition cursor-pointer">{it}</li>
+          <div className={`${WRAP} relative pb-[calc(8rem+env(safe-area-inset-bottom))] pt-16 lg:pb-16`}>
+            <div className="grid gap-10 lg:grid-cols-12">
+              <div className="lg:col-span-4">
+                <Logo size="md" />
+                <p className="mt-5 max-w-sm text-sm font-light leading-relaxed text-white/60">{site.footer.about}</p>
+                <div className="mt-5 flex gap-5 text-xs text-white/50">
+                  {site.footer.socials.map((s) => (
+                    <span key={s} className="cursor-pointer transition hover:text-cyan">
+                      {s}
+                    </span>
                   ))}
-                </ul>
+                </div>
               </div>
-            ))}
-          </div>
 
-          {/* Badges & Payments */}
-          <div className="mt-8 pt-6 border-t border-white/10 flex flex-wrap gap-2">
-            {site.footer.badges.map((b) => (
-              <span key={b} className="text-[10px] text-[#f6b74a] border border-[#f6b74a]/30 bg-[#f6b74a]/10 px-2.5 py-1 rounded-full">
-                ★ {b}
-              </span>
-            ))}
-          </div>
+              <div className="grid grid-cols-2 gap-6 lg:col-span-4">
+                {site.footer.columns.map((col) => (
+                  <div key={col.title}>
+                    <span className="mb-4 block text-[10px] font-semibold uppercase tracking-[0.25em] text-white/40">
+                      {col.title}
+                    </span>
+                    <ul className="flex flex-col gap-2.5 text-sm text-white/70">
+                      {col.items.map((it) => (
+                        <li key={it} className="cursor-pointer transition hover:text-cyan">
+                          {it}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
 
-          <div className="flex flex-wrap gap-2 mt-4 text-[10px] text-white/40 font-mono">
-            {site.footer.payments.map((p) => (
-              <span key={p} className="bg-white/5 px-2 py-0.5 rounded border border-white/10">{p}</span>
-            ))}
-          </div>
-
-          {/* Back to top */}
-          <div className="mt-8 text-center">
-            <button
-              type="button"
-              onClick={() => {
-                const el = document.getElementById('main-scroll');
-                if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="text-xs text-cyan tracking-wider uppercase font-semibold inline-flex items-center gap-1.5 hover:underline"
-            >
-              ↑ {site.footer.backToTop}
-            </button>
-          </div>
-
-          {/* Legal & Copyright */}
-          <div className="mt-8 pt-6 border-t border-white/5 text-[10px] text-white/40 flex flex-col gap-2 pb-6">
-            <div className="flex justify-center gap-4">
-              {site.footer.legal.map((l) => (
-                <span key={l} className="hover:underline cursor-pointer">{l}</span>
-              ))}
-              <a href="/admin" className="hover:underline opacity-50 hover:opacity-100 transition">Portal</a>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 lg:col-span-4">
+                <span className="block text-[10px] font-semibold uppercase tracking-[0.25em] text-cyan">
+                  {site.footer.newsletter.title}
+                </span>
+                <p className="mt-2 text-sm font-light leading-relaxed text-white/60">{site.footer.newsletter.body}</p>
+                {newsletterDone ? (
+                  <p className="mt-4 text-sm text-cyan">✦ You're on the list. Watch for the next high tide.</p>
+                ) : (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (newsletterEmail) setNewsletterDone(true);
+                    }}
+                    className="mt-4 flex flex-col gap-2 sm:flex-row"
+                  >
+                    <input
+                      required
+                      type="email"
+                      value={newsletterEmail}
+                      onChange={(e) => setNewsletterEmail(e.target.value)}
+                      placeholder={site.footer.newsletter.placeholder}
+                      className="min-w-0 flex-1 rounded-full border border-white/10 bg-navy px-4 py-3 text-sm text-white outline-none focus:border-cyan/60"
+                    />
+                    <button
+                      type="submit"
+                      className="shrink-0 rounded-full bg-cyan px-5 py-3 text-xs font-semibold uppercase tracking-[0.15em] text-navy transition hover:brightness-110"
+                    >
+                      {site.footer.newsletter.button}
+                    </button>
+                  </form>
+                )}
+              </div>
             </div>
-            <p className="text-center">{site.footer.copyright}</p>
+
+            <div className="mt-12 flex flex-col gap-4 border-t border-white/10 pt-8 md:flex-row md:items-center md:justify-between">
+              <div className="flex flex-wrap gap-2">
+                {site.footer.badges.map((b) => (
+                  <span key={b} className="rounded-full border border-gold/30 bg-gold/10 px-3 py-1 text-[10px] text-gold">
+                    ★ {b}
+                  </span>
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-2 text-[10px] text-white/45">
+                {site.footer.payments.map((p) => (
+                  <span key={p} className="rounded-md border border-white/10 bg-white/5 px-2 py-1">
+                    {p}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-8 flex flex-col items-center gap-4 border-t border-white/5 pt-6 text-[11px] text-white/40 md:flex-row md:justify-between">
+              <p className="text-center md:text-left">{site.footer.copyright}</p>
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                {site.footer.legal.map((l) => (
+                  <span key={l} className="cursor-pointer hover:text-white/70">
+                    {l}
+                  </span>
+                ))}
+                <a href="/admin" className="opacity-60 transition hover:opacity-100">
+                  Portal
+                </a>
+                <button type="button" onClick={scrollTop} className="font-semibold uppercase tracking-[0.15em] text-cyan">
+                  ↑ {site.footer.backToTop}
+                </button>
+              </div>
+            </div>
           </div>
         </footer>
+      </main>
 
-        {/* 17. TAB BAR (STICKY BOTTOM-0 FLOATING GLASS PILL) */}
-        <nav
-          aria-label="Bottom Navigation Bar"
-          className="fixed bottom-4 left-4 right-4 max-w-md mx-auto z-40 bg-[#0b1426]/85 backdrop-blur-2xl border border-white/10 rounded-full p-1.5 flex items-center justify-around shadow-2xl shadow-black/80"
+      {/* MENU OVERLAY (phones / tablets) */}
+      {menuOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Site menu"
+          className="fixed inset-0 z-50 bg-navy/95 backdrop-blur-2xl animate-fade-in lg:hidden"
         >
-          {site.tabs.map((tab) => {
-            const isBook = tab === 'Book';
-            const isActive = activeTab === tab;
-
-            return (
+          <div className="mx-auto flex h-full max-w-md flex-col px-6 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))]">
+            <div className="flex h-12 items-center justify-between">
+              <Logo size="sm" />
               <button
-                key={tab}
                 type="button"
-                onClick={() => {
-                  setActiveTab(tab);
-                  if (tab === 'Book') scrollTo('booking-section');
-                  else if (tab === 'Rooms') scrollTo('rooms-section');
-                  else if (tab === 'Dining') scrollTo('dining-section');
-                  else if (tab === 'Home') {
-                    const el = document.getElementById('main-scroll');
-                    if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
-                  } else if (tab === 'Profile') {
-                    setAuthMode('login');
-                    setStage('auth');
-                  }
-                }}
-                className={`py-2 px-3 sm:px-4 rounded-full text-xs transition cursor-pointer ${
-                  isBook
-                    ? 'bg-cyan text-navy font-bold shadow-[0_4px_16px_rgba(34,195,238,.6)]'
-                    : isActive
-                    ? 'bg-white/10 text-white font-medium'
-                    : 'text-white/60 hover:text-white'
-                }`}
+                onClick={() => setMenuOpen(false)}
+                aria-label="Close menu"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white"
               >
-                {tab}
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+                </svg>
               </button>
-            );
-          })}
-        </nav>
-      </div>
-    </main>
+            </div>
+
+            <span className="mt-10 text-[10px] uppercase tracking-[0.3em] text-cyan">Explore the resort</span>
+            <nav aria-label="Mobile" className="mt-4 flex flex-col">
+              {site.nav.links.map((l, i) => (
+                <button
+                  key={l}
+                  type="button"
+                  onClick={() => scrollTo(navTargets[l])}
+                  className="flex items-baseline gap-4 border-b border-white/10 py-3.5 text-left font-serif text-3xl text-white transition hover:text-cyan"
+                >
+                  <span className="font-serif text-sm italic text-cyan/60">0{i + 1}</span>
+                  {l}
+                </button>
+              ))}
+            </nav>
+
+            <div className="mt-auto flex flex-col gap-3 pt-8">
+              <button type="button" onClick={() => scrollTo('booking-section')} className={`${BTN_PRIMARY} w-full py-4`}>
+                {site.nav.book}
+              </button>
+              <button type="button" onClick={() => go('auth', 'login')} className={`${BTN_GHOST} w-full py-4`}>
+                {site.nav.signIn}
+              </button>
+              <div className="mt-4 flex justify-center gap-5 text-xs text-white/50">
+                {site.footer.socials.map((s) => (
+                  <span key={s}>{s}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 17. TAB BAR (hidden on desktop where the header nav takes over) */}
+      <nav
+        aria-label="Tab bar"
+        className="fixed inset-x-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-40 mx-auto flex max-w-md items-center justify-between rounded-full border border-white/10 bg-ink/85 p-1.5 shadow-2xl shadow-black/60 backdrop-blur-xl lg:hidden"
+      >
+        {site.tabs.map((tab) => {
+          const isBook = tab === 'Book';
+          const isActive = activeTab === tab;
+          return (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => {
+                setActiveTab(tab);
+                if (tab === 'Home') scrollTop();
+                else if (tab === 'Rooms') scrollTo('rooms-section');
+                else if (tab === 'Book') scrollTo('booking-section');
+                else if (tab === 'Dining') scrollTo('dining-section');
+                else go('auth', 'login');
+              }}
+              className={`flex-1 rounded-full py-2.5 text-[11px] font-medium transition ${
+                isBook
+                  ? 'bg-cyan font-semibold text-navy shadow-[0_4px_16px_rgba(34,195,238,.5)]'
+                  : isActive
+                    ? 'bg-white/10 text-white'
+                    : 'text-white/60 hover:text-white'
+              }`}
+            >
+              {tab}
+            </button>
+          );
+        })}
+      </nav>
+    </div>
+  );
+}
+
+// ==========================================================================
+// SHARED SECTIONS
+// ==========================================================================
+function StatRow() {
+  return (
+    <div className="mx-auto grid max-w-4xl grid-cols-3 divide-x divide-white/10 rounded-3xl border border-white/10 bg-ink px-2 py-6 text-center md:py-8">
+      {site.stats.map((st) => (
+        <div key={st.label} className="px-2">
+          <span className="block font-serif text-3xl md:text-5xl font-medium text-cyan">{st.value}</span>
+          <span className="mt-1.5 block text-[10px] md:text-xs uppercase leading-tight tracking-[0.2em] text-white/50">
+            {st.label}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function AmenityGrid() {
+  return (
+    <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+      {site.amenities.items.map((a) => (
+        <div
+          key={a.label}
+          className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition hover:border-cyan/30 md:p-5"
+        >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-cyan/30 bg-cyan/15 text-cyan">
+            <AmenityIcon name={a.icon} />
+          </span>
+          <span className="text-xs md:text-sm font-medium text-white/80">{a.label}</span>
+        </div>
+      ))}
+    </div>
   );
 }
