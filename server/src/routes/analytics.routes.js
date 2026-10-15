@@ -16,13 +16,14 @@ r.get('/analytics/overview', authenticate, requireStaffOrAdmin, asyncH(async (re
   }
 
   try {
+    const client = req.sb || admin;
     const [ovRes, dailyRes, topRes, resRes, ordersRes, chatCountRes] = await Promise.all([
-      admin.from('analytics_overview').select('*').single(),
-      admin.from('analytics_daily').select('*'),
-      admin.from('analytics_top_rooms').select('*'),
-      admin.from('reservations').select('*, profiles(full_name, phone), rooms(name)').order('created_at', { ascending: false }).limit(50),
-      admin.from('resort_orders').select('item_name, category, price_php, status, created_at').limit(250),
-      admin.from('chat_messages').select('id', { count: 'exact', head: true }),
+      client.from('analytics_overview').select('*').single(),
+      client.from('analytics_daily').select('*'),
+      client.from('analytics_top_rooms').select('*'),
+      client.from('reservations').select('*, profiles(full_name, phone), rooms(name)').order('created_at', { ascending: false }).limit(50),
+      client.from('resort_orders').select('item_name, category, price_php, status, created_at').limit(250),
+      client.from('chat_messages').select('id', { count: 'exact', head: true }),
     ]);
 
     const overview = ovRes.data || {};
@@ -148,13 +149,14 @@ function timeAgo(dateStr) {
   return `${Math.floor(diffSec / 86400)}d ago`;
 }
 
-async function computeFullDivePayload(range) {
+async function computeFullDivePayload(range, client = admin) {
+  const c = client || admin;
   const [roomsRes, resRes, ordersRes, tasksRes, notifsRes] = await Promise.all([
-    admin.from('rooms').select('id, name, units, rate_php, rating_avg').eq('is_active', true).order('name'),
-    admin.from('reservations').select('id, room_id, total_php, status, nights, check_in, check_out, created_at, rooms(name), profiles(full_name)').order('created_at', { ascending: false }).limit(50),
-    admin.from('resort_orders').select('id, item_name, category, price_php, status, created_at, profiles:guest_id(full_name)').order('created_at', { ascending: false }).limit(20),
-    admin.from('department_tasks').select('id, department, title, room_name, status, created_at').order('created_at', { ascending: false }).limit(10),
-    admin.from('notifications').select('id, to_phone, body, status, created_at').order('created_at', { ascending: false }).limit(10),
+    c.from('rooms').select('id, name, units, rate_php, rating_avg').eq('is_active', true).order('name'),
+    c.from('reservations').select('id, room_id, total_php, status, nights, check_in, check_out, created_at, rooms(name), profiles(full_name)').order('created_at', { ascending: false }).limit(50),
+    c.from('resort_orders').select('id, item_name, category, price_php, status, created_at, profiles:guest_id(full_name)').order('created_at', { ascending: false }).limit(20),
+    c.from('department_tasks').select('id, department, title, room_name, status, created_at').order('created_at', { ascending: false }).limit(10),
+    c.from('notifications').select('id, to_phone, body, status, created_at').order('created_at', { ascending: false }).limit(10),
   ]);
 
   const rooms = roomsRes.data || [];
@@ -256,7 +258,7 @@ r.get('/analytics/full-dive', authenticate, requireStaffOrAdmin, asyncH(async (r
     return res.json(cached);
   }
 
-  const payload = await computeFullDivePayload(range);
+  const payload = await computeFullDivePayload(range, req.sb || admin);
   await redis.set(cacheKey, payload, 60);
   res.setHeader('X-Cache', 'MISS');
   res.json(payload);
@@ -474,8 +476,9 @@ r.get('/analytics/stream', bearerFromQuery, authenticate, requireStaffOrAdmin, (
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
 
+  const client = req.sb || admin;
   const push = () => {
-    admin.from('analytics_overview').select('*').single()
+    client.from('analytics_overview').select('*').single()
       .then(({ data }) => {
         if (data) res.write(`data: ${JSON.stringify(data)}\n\n`);
       })

@@ -131,7 +131,8 @@ r.post('/rooms', authenticate, requireStaffOrAdmin,
       slug = req.body.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `room-${Date.now()}`;
     }
     const payload = { ...req.body, slug };
-    const { data, error } = await admin.from('rooms').insert(payload).select().single();
+    const client = req.sb || admin;
+    const { data, error } = await client.from('rooms').insert(payload).select().single();
     if (error) throw new ApiError(500, error.message);
     await redis.clear();
     return res.status(201).json(data);
@@ -150,7 +151,8 @@ r.patch('/rooms/:id', authenticate, requireStaffOrAdmin,
     is_active: z.boolean().optional(),
   })),
   asyncH(async (req, res) => {
-    const { data, error } = await admin.from('rooms')
+    const client = req.sb || admin;
+    const { data, error } = await client.from('rooms')
       .update(req.body)
       .eq('id', req.params.id)
       .select().single();
@@ -160,7 +162,8 @@ r.patch('/rooms/:id', authenticate, requireStaffOrAdmin,
   }));
 
 r.delete('/rooms/:id', authenticate, requireStaffOrAdmin, asyncH(async (req, res) => {
-  const { data, error } = await admin.from('rooms')
+  const client = req.sb || admin;
+  const { data, error } = await client.from('rooms')
     .update({ is_active: false })
     .eq('id', req.params.id)
     .select().single();

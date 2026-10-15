@@ -4,13 +4,20 @@ import { asyncH, ApiError } from '../middleware/errors.js';
 import { authenticate, requireStaffOrAdmin } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { admin } from '../lib/supabase.js';
+import { CANONICAL_ROOMS } from '../lib/canonicalRooms.js';
 
 const r = Router();
 
-r.get('/department/tasks', authenticate, requireStaffOrAdmin, asyncH(async (_req, res) => {
-  const { data, error } = await admin.from('department_tasks')
-    .select('*, rooms(name)').order('created_at', { ascending: false });
-  if (error) throw new ApiError(500, error.message);
+r.get('/department/tasks', authenticate, requireStaffOrAdmin, asyncH(async (req, res) => {
+  const client = req.sb || admin;
+  try {
+    const { data, error } = await client.from('department_tasks')
+      .select('*, rooms(name)').order('created_at', { ascending: false });
+    if (!error && data) return res.json(data);
+  } catch (err) {
+    console.warn('[Department Tasks] Notice on join query:', err.message);
+  }
+  const { data } = await client.from('department_tasks').select('*').order('created_at', { ascending: false });
   return res.json(data || []);
 }));
 
@@ -23,7 +30,8 @@ r.post('/department/tasks', authenticate, requireStaffOrAdmin,
     assigned_to: z.string().optional(),
   })),
   asyncH(async (req, res) => {
-    const { data, error } = await admin.from('department_tasks')
+    const client = req.sb || admin;
+    const { data, error } = await client.from('department_tasks')
       .insert({ ...req.body, created_by: req.user.id })
       .select().single();
     if (error) throw new ApiError(500, error.message);
@@ -33,21 +41,26 @@ r.post('/department/tasks', authenticate, requireStaffOrAdmin,
 r.patch('/department/tasks/:id/status', authenticate, requireStaffOrAdmin,
   validate(z.object({ status: z.enum(['pending', 'in_progress', 'completed', 'cancelled']) })),
   asyncH(async (req, res) => {
-    const { data, error } = await admin.from('department_tasks')
+    const client = req.sb || admin;
+    const { data, error } = await client.from('department_tasks')
       .update({ status: req.body.status }).eq('id', req.params.id)
       .select().single();
     if (error) throw new ApiError(500, error.message);
     return res.json(data);
   }));
 
-r.get('/department/room-status', authenticate, requireStaffOrAdmin, asyncH(async (_req, res) => {
+r.get('/department/room-status', authenticate, requireStaffOrAdmin, asyncH(async (req, res) => {
+  const client = req.sb || admin;
   const [roomsRes, activeRes, tasksRes] = await Promise.all([
-    admin.from('rooms').select('id, name, slug, category, units, rate_php').eq('is_active', true).order('name'),
-    admin.from('reservations').select('room_id').in('status', ['confirmed', 'checked_in']),
-    admin.from('department_tasks').select('room_name, department, title, status').in('status', ['pending', 'in_progress']),
+    client.from('rooms').select('id, name, slug, category, units, rate_php').eq('is_active', true).order('name'),
+    client.from('reservations').select('room_id').in('status', ['confirmed', 'checked_in']),
+    client.from('department_tasks').select('room_name, department, title, status').in('status', ['pending', 'in_progress']),
   ]);
 
-  const rooms = roomsRes.data || [];
+  let rooms = roomsRes.data || [];
+  if (rooms.length === 0) {
+    rooms = CANONICAL_ROOMS.filter(r => r.is_active);
+  }
   const activeStays = activeRes.data || [];
   const openTasks = tasksRes.data || [];
 
@@ -68,9 +81,13 @@ r.get('/department/room-status', authenticate, requireStaffOrAdmin, asyncH(async
   return res.json(result);
 }));
 
-r.get('/department/inventory', authenticate, requireStaffOrAdmin, asyncH(async (_req, res) => {
-  const { data, error } = await admin.from('resort_inventory').select('*').order('item_name');
-  if (error) throw new ApiError(500, error.message);
+r.get('/department/inventory', authenticate, requireStaffOrAdmin, asyncH(async (req, res) => {
+  const client = req.sb || admin;
+  const { data, error } = await client.from('resort_inventory').select('*').order('item_name');
+  if (error) {
+    console.warn('[Department Inventory] Select warning:', error.message);
+    return res.json([]);
+  }
   return res.json(data || []);
 }));
 
@@ -83,7 +100,8 @@ r.post('/department/inventory', authenticate, requireStaffOrAdmin,
     reorder_at: z.coerce.number().int().min(0).default(10),
   })),
   asyncH(async (req, res) => {
-    const { data, error } = await admin.from('resort_inventory').insert(req.body).select().single();
+    const client = req.sb || admin;
+    const { data, error } = await client.from('resort_inventory').insert(req.body).select().single();
     if (error) throw new ApiError(500, error.message);
     return res.status(201).json(data);
   }));
@@ -97,7 +115,8 @@ r.patch('/department/inventory/:id', authenticate, requireStaffOrAdmin,
     reorder_at: z.coerce.number().int().min(0).optional(),
   })),
   asyncH(async (req, res) => {
-    const { data, error } = await admin.from('resort_inventory')
+    const client = req.sb || admin;
+    const { data, error } = await client.from('resort_inventory')
       .update({ ...req.body, updated_at: new Date().toISOString() })
       .eq('id', req.params.id)
       .select().single();
@@ -106,7 +125,8 @@ r.patch('/department/inventory/:id', authenticate, requireStaffOrAdmin,
   }));
 
 r.delete('/department/inventory/:id', authenticate, requireStaffOrAdmin, asyncH(async (req, res) => {
-  const { error } = await admin.from('resort_inventory').delete().eq('id', req.params.id);
+  const client = req.sb || admin;
+  const { error } = await client.from('resort_inventory').delete().eq('id', req.params.id);
   if (error) throw new ApiError(500, error.message);
   return res.json({ success: true, deleted_id: req.params.id });
 }));

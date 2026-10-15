@@ -149,7 +149,13 @@ export const api = {
   customerStats: () => req('/customer/stats'),
 
   // Administrative Accounts & Multi-Role Provisioning
-  adminCustomers: (q = '') => req(`/admin/customers${q ? `?q=${encodeURIComponent(q)}` : ''}`),
+  adminCustomers: (q = '', role = '') => {
+    const params = new URLSearchParams();
+    if (q) params.set('q', q);
+    if (role) params.set('role', role);
+    const qs = params.toString();
+    return req(`/admin/customers${qs ? `?${qs}` : ''}`);
+  },
   createStaffAccount: (body: any) => req('/admin/users', { method: 'POST', body }),
   updateUserRole: (id: string, role: string) => req(`/admin/users/${id}/role`, { method: 'PATCH', body: { role } }),
   resetUserPassword: (id: string, new_password: string) => req(`/admin/users/${id}/reset-password`, { method: 'POST', body: { new_password } }),
