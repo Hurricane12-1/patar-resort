@@ -694,37 +694,36 @@ export function DualLineChart({ data = [], height = 170, isLightMode = false, on
   const [hoveredIdx, setHoveredIdx] = useState(null);
   const [selectedPoint, setSelectedPoint] = useState(null);
 
-  // Default dataset fallback if empty
-  const defaultData = [
-    { month: 'Jan', lineA: 35, lineB: 28, insight: 'Post-holiday travel lull with baseline weekend villa bookings.' },
-    { month: 'Feb', lineA: 52, lineB: 45, insight: "Valentine's Day romantic getaway surge in Habagat Sea-View Suites." },
-    { month: 'Mar', lineA: 85, lineB: 72, insight: 'Summer vacation kick-off & early Patar beach tour reservations.' },
-    { month: 'Apr', lineA: 68, lineB: 60, insight: 'Holy Week holiday occupancy rush & family villa packages.' },
-    { month: 'May', lineA: 74, lineB: 68, insight: 'Peak summer beach season; high demand for outrigger island tours.' },
-    { month: 'Jun', lineA: 58, lineB: 62, insight: 'Mid-year corporate team retreats & dining banquet events.' },
-    { month: 'Jul', lineA: 80, lineB: 55, insight: 'Monsoon flash discount promos driving high indoor suite bookings.' },
-    { month: 'Aug', lineA: 72, lineB: 78, insight: 'Patar Beach Festival weekend; peak seafood dining platter sales.' },
-    { month: 'Sep', lineA: 90, lineB: 82, insight: 'EarlyBER months holiday booking prep & advance deposits.' },
-    { month: 'Oct', lineA: 82, lineB: 76, insight: 'Halloween long weekend beach getaway rush.' },
-    { month: 'Nov', lineA: 55, lineB: 68, insight: 'Pre-Christmas corporate events & dining packages.' },
-    { month: 'Dec', lineA: 96, lineB: 88, insight: 'ANNUAL PEAK: Holiday season family villa reunions & New Year gala sales!' },
-  ];
-
-  const chartData = data && data.length > 0 ? data : defaultData;
+  const chartData = Array.isArray(data) ? data : [];
   const w = 520;
-  const max = 110;
 
-  const ptsA = chartData.map((d, i) => ({
-    x: (i / (chartData.length - 1)) * (w - 50) + 25,
-    y: height - 35 - ((d.lineA || 40) / max) * (height - 55),
-    val: d.lineA,
-  }));
+  const valsA = chartData.map((d) => Number(d.lineA) || 0);
+  const maxA = Math.max(1, ...valsA);
+  const valsB = chartData.map((d) => Number(d.lineB) || 0);
+  const maxB = Math.max(1, ...valsB);
 
-  const ptsB = chartData.map((d, i) => ({
-    x: (i / (chartData.length - 1)) * (w - 50) + 25,
-    y: height - 35 - ((d.lineB || 30) / max) * (height - 55),
-    val: d.lineB,
-  }));
+  const chartH = height - 55;
+  const ptsA = chartData.map((d, i) => {
+    const val = Number(d.lineA) || 0;
+    const ratio = maxA > 0 ? val / maxA : 0;
+    const rawY = height - 35 - ratio * (chartH - 12);
+    return {
+      x: chartData.length > 1 ? (i / (chartData.length - 1)) * (w - 50) + 25 : w / 2,
+      y: Math.max(15, Math.min(height - 35, rawY)),
+      val,
+    };
+  });
+
+  const ptsB = chartData.map((d, i) => {
+    const val = Number(d.lineB) || 0;
+    const ratio = maxB > 0 ? val / maxB : 0;
+    const rawY = height - 35 - ratio * (chartH - 12);
+    return {
+      x: chartData.length > 1 ? (i / (chartData.length - 1)) * (w - 50) + 25 : w / 2,
+      y: Math.max(15, Math.min(height - 35, rawY)),
+      val,
+    };
+  });
 
   const buildSpline = (pts) => {
     if (!pts || pts.length === 0) return '';
@@ -739,20 +738,26 @@ export function DualLineChart({ data = [], height = 170, isLightMode = false, on
 
   const handleSelectPoint = (i) => {
     const d = chartData[i];
-    const roomPhp = (d.lineA || 40) * 2200;
-    const diningPhp = (d.lineB || 30) * 1100;
+    const roomPhp = Number(d.lineA) || 0;
+    const diningPhp = Number(d.lineB) || 0;
     const totalPhp = roomPhp + diningPhp;
     const item = {
       index: i,
-      month: d.month,
+      month: d.month || `Day ${i + 1}`,
       roomPhp,
       diningPhp,
       totalPhp,
-      insight: d.insight || `High guest activity recorded during ${d.month}.`,
+      insight: d.insight || `Guest and dining activity logged for ${d.month || 'this date'}.`,
     };
     setSelectedPoint(item);
     if (onPointClick) onPointClick(item);
   };
+
+  const totalRoomSales = valsA.reduce((a, b) => a + b, 0);
+  const totalDiningSales = valsB.reduce((a, b) => a + b, 0);
+  const grandTotal = totalRoomSales + totalDiningSales;
+  const roomPct = grandTotal > 0 ? Math.round((totalRoomSales / grandTotal) * 100) : 0;
+  const diningPct = grandTotal > 0 ? Math.round((totalDiningSales / grandTotal) * 100) : 0;
 
   const themeText = isLightMode ? '#0F172A' : '#F8FAFC';
   const themeMuted = isLightMode ? '#64748B' : '#94A3B8';
@@ -827,91 +832,97 @@ export function DualLineChart({ data = [], height = 170, isLightMode = false, on
       </div>
 
       {/* SVG GRAPH */}
-      <div style={{ position: 'relative', width: '100%' }}>
-        <svg
-          viewBox={`0 0 ${w} ${height}`}
-          width="100%"
-          style={{ overflow: 'visible', cursor: 'crosshair' }}
-          onMouseLeave={() => setHoveredIdx(null)}
-        >
-          {/* Grid lines */}
-          {[0.3, 0.65].map((ratio, gi) => (
-            <line
-              key={gi}
-              x1={20}
-              y1={height - 35 - ratio * (height - 55)}
-              x2={w - 20}
-              y2={height - 35 - ratio * (height - 55)}
-              stroke={isLightMode ? 'rgba(15,23,42,0.06)' : 'rgba(255,255,255,0.05)'}
-              strokeDasharray="4 4"
-            />
-          ))}
-
-          {/* Lines */}
-          {showRoom && <path d={buildSpline(ptsA)} fill="none" stroke={colorRoom} strokeWidth="2.8" strokeLinecap="round" />}
-          {showDining && <path d={buildSpline(ptsB)} fill="none" stroke={colorDining} strokeWidth="2.5" strokeLinecap="round" strokeDasharray="4 4" />}
-
-          {/* Hover Crosshair */}
-          {hoveredIdx !== null && ptsA[hoveredIdx] && (
-            <line
-              x1={ptsA[hoveredIdx].x}
-              y1={15}
-              x2={ptsA[hoveredIdx].x}
-              y2={height - 25}
-              stroke={colorCrosshair}
-              strokeWidth="1.5"
-              strokeDasharray="3 3"
-              style={{ pointerEvents: 'none' }}
-            />
-          )}
-
-          {/* Line A Circles */}
-          {showRoom && ptsA.map((p, i) => {
-            const isHover = hoveredIdx === i;
-            const isSel = selectedPoint?.index === i;
-            return (
-              <circle
-                key={`a-${i}`}
-                cx={p.x}
-                cy={p.y}
-                r={isSel ? 6.5 : isHover ? 5.5 : 3.5}
-                fill={isSel ? colorRoom : isLightMode ? '#FFFFFF' : '#0F172A'}
-                stroke={colorRoom}
-                strokeWidth={isSel ? 3 : 2}
-                style={{ cursor: 'pointer', transition: 'all 0.15s ease' }}
-                onMouseEnter={() => setHoveredIdx(i)}
-                onClick={() => handleSelectPoint(i)}
+      <div style={{ position: 'relative', width: '100%', overflow: 'hidden' }}>
+        {chartData.length === 0 ? (
+          <div style={{ padding: '40px 10px', textAlign: 'center', color: themeMuted, fontSize: '.8rem' }}>
+            📊 No sales trends recorded yet. Data will automatically graph upon active bookings and orders.
+          </div>
+        ) : (
+          <svg
+            viewBox={`0 0 ${w} ${height}`}
+            width="100%"
+            style={{ overflow: 'hidden', cursor: 'crosshair', display: 'block' }}
+            onMouseLeave={() => setHoveredIdx(null)}
+          >
+            {/* Grid lines */}
+            {[0.3, 0.65].map((ratio, gi) => (
+              <line
+                key={gi}
+                x1={20}
+                y1={height - 35 - ratio * (height - 55)}
+                x2={w - 20}
+                y2={height - 35 - ratio * (height - 55)}
+                stroke={isLightMode ? 'rgba(15,23,42,0.06)' : 'rgba(255,255,255,0.05)'}
+                strokeDasharray="4 4"
               />
-            );
-          })}
+            ))}
 
-          {/* Line B Circles */}
-          {showDining && ptsB.map((p, i) => {
-            const isHover = hoveredIdx === i;
-            const isSel = selectedPoint?.index === i;
-            return (
-              <circle
-                key={`b-${i}`}
-                cx={p.x}
-                cy={p.y}
-                r={isSel ? 6.5 : isHover ? 5.5 : 3.5}
-                fill={isSel ? colorDining : isLightMode ? '#FFFFFF' : '#0F172A'}
-                stroke={colorDining}
-                strokeWidth={isSel ? 3 : 2}
-                style={{ cursor: 'pointer', transition: 'all 0.15s ease' }}
-                onMouseEnter={() => setHoveredIdx(i)}
-                onClick={() => handleSelectPoint(i)}
+            {/* Lines */}
+            {showRoom && <path d={buildSpline(ptsA)} fill="none" stroke={colorRoom} strokeWidth="2.8" strokeLinecap="round" />}
+            {showDining && <path d={buildSpline(ptsB)} fill="none" stroke={colorDining} strokeWidth="2.5" strokeLinecap="round" strokeDasharray="4 4" />}
+
+            {/* Hover Crosshair */}
+            {hoveredIdx !== null && ptsA[hoveredIdx] && (
+              <line
+                x1={ptsA[hoveredIdx].x}
+                y1={15}
+                x2={ptsA[hoveredIdx].x}
+                y2={height - 25}
+                stroke={colorCrosshair}
+                strokeWidth="1.5"
+                strokeDasharray="3 3"
+                style={{ pointerEvents: 'none' }}
               />
-            );
-          })}
+            )}
 
-          {/* Month Labels */}
-          {chartData.map((d, i) => (
-            <text key={i} x={ptsA[i]?.x || (i / (chartData.length - 1)) * (w - 50) + 25} y={height - 4} textAnchor="middle" fontSize="9" fontWeight="600" fill={themeMuted}>
-              {d.month}
-            </text>
-          ))}
-        </svg>
+            {/* Line A Circles */}
+            {showRoom && ptsA.map((p, i) => {
+              const isHover = hoveredIdx === i;
+              const isSel = selectedPoint?.index === i;
+              return (
+                <circle
+                  key={`a-${i}`}
+                  cx={p.x}
+                  cy={p.y}
+                  r={isSel ? 6.5 : isHover ? 5.5 : 3.5}
+                  fill={isSel ? colorRoom : isLightMode ? '#FFFFFF' : '#0F172A'}
+                  stroke={colorRoom}
+                  strokeWidth={isSel ? 3 : 2}
+                  style={{ cursor: 'pointer', transition: 'all 0.15s ease' }}
+                  onMouseEnter={() => setHoveredIdx(i)}
+                  onClick={() => handleSelectPoint(i)}
+                />
+              );
+            })}
+
+            {/* Line B Circles */}
+            {showDining && ptsB.map((p, i) => {
+              const isHover = hoveredIdx === i;
+              const isSel = selectedPoint?.index === i;
+              return (
+                <circle
+                  key={`b-${i}`}
+                  cx={p.x}
+                  cy={p.y}
+                  r={isSel ? 6.5 : isHover ? 5.5 : 3.5}
+                  fill={isSel ? colorDining : isLightMode ? '#FFFFFF' : '#0F172A'}
+                  stroke={colorDining}
+                  strokeWidth={isSel ? 3 : 2}
+                  style={{ cursor: 'pointer', transition: 'all 0.15s ease' }}
+                  onMouseEnter={() => setHoveredIdx(i)}
+                  onClick={() => handleSelectPoint(i)}
+                />
+              );
+            })}
+
+            {/* Month Labels */}
+            {chartData.map((d, i) => (
+              <text key={i} x={ptsA[i]?.x || (chartData.length > 1 ? (i / (chartData.length - 1)) * (w - 50) + 25 : w / 2)} y={height - 4} textAnchor="middle" fontSize="9" fontWeight="600" fill={themeMuted}>
+                {d.month}
+              </text>
+            ))}
+          </svg>
+        )}
 
         {/* Floating Tooltip */}
         {hoveredIdx !== null && chartData[hoveredIdx] && (
@@ -934,8 +945,8 @@ export function DualLineChart({ data = [], height = 170, isLightMode = false, on
             }}
           >
             <b style={{ color: '#93C5FD', display: 'block', marginBottom: 2 }}>📅 {chartData[hoveredIdx].month} Performance</b>
-            {showRoom && <div style={{ color: '#60A5FA', fontWeight: 600 }}>● Rooms: ₱{((chartData[hoveredIdx].lineA || 40) * 2200).toLocaleString()}</div>}
-            {showDining && <div style={{ color: '#FDA4AF', fontWeight: 600 }}>● Dining: ₱{((chartData[hoveredIdx].lineB || 30) * 1100).toLocaleString()}</div>}
+            {showRoom && <div style={{ color: '#60A5FA', fontWeight: 600 }}>● Rooms: ₱{Number(chartData[hoveredIdx].lineA || 0).toLocaleString()}</div>}
+            {showDining && <div style={{ color: '#FDA4AF', fontWeight: 600 }}>● Orders / Dining: {Number(chartData[hoveredIdx].lineB || 0).toLocaleString()}</div>}
             <div style={{ fontSize: '.68rem', color: '#94A3B8', marginTop: 2 }}>💡 Click point for full driver insight</div>
           </div>
         )}
@@ -969,19 +980,19 @@ export function DualLineChart({ data = [], height = 170, isLightMode = false, on
       {/* EVENLY FILLING BOTTOM SUMMARY GRID */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(85px, 1fr))', gap: 8, marginTop: 6, width: '100%' }}>
         <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(37,99,235,0.08)', padding: '8px 10px', borderRadius: 10, border: `1px solid ${isLightMode ? '#E2E8F0' : 'rgba(37,99,235,0.2)'}`, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <span style={{ fontSize: '.64rem', color: isLightMode ? '#475569' : '#38BDF8', fontWeight: 800, letterSpacing: '.06em', whiteSpace: 'nowrap' }}>ROOM SALES</span>
-          <b style={{ fontSize: '1rem', color: isLightMode ? '#0F172A' : '#38BDF8', lineHeight: 1.1 }}>₱1.48M</b>
-          <span style={{ fontSize: '.65rem', color: isLightMode ? '#2563EB' : '#38BDF8', fontWeight: 700, whiteSpace: 'nowrap' }}>● 68% share</span>
+          <span style={{ fontSize: '.64rem', color: isLightMode ? '#475569' : '#38BDF8', fontWeight: 800, letterSpacing: '.06em', whiteSpace: 'nowrap' }}>ROOM REVENUE</span>
+          <b style={{ fontSize: '1rem', color: isLightMode ? '#0F172A' : '#38BDF8', lineHeight: 1.1 }}>₱{totalRoomSales.toLocaleString()}</b>
+          <span style={{ fontSize: '.65rem', color: isLightMode ? '#2563EB' : '#38BDF8', fontWeight: 700, whiteSpace: 'nowrap' }}>● {roomPct}% share</span>
         </div>
         <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(225,29,72,0.08)', padding: '8px 10px', borderRadius: 10, border: `1px solid ${isLightMode ? '#E2E8F0' : 'rgba(225,29,72,0.2)'}`, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <span style={{ fontSize: '.64rem', color: isLightMode ? '#475569' : '#F43F5E', fontWeight: 800, letterSpacing: '.06em', whiteSpace: 'nowrap' }}>F&B DINING</span>
-          <b style={{ fontSize: '1rem', color: isLightMode ? '#0F172A' : '#F43F5E', lineHeight: 1.1 }}>₱425K</b>
-          <span style={{ fontSize: '.65rem', color: isLightMode ? '#E11D48' : '#F43F5E', fontWeight: 700, whiteSpace: 'nowrap' }}>● 32% share</span>
+          <span style={{ fontSize: '.64rem', color: isLightMode ? '#475569' : '#F43F5E', fontWeight: 800, letterSpacing: '.06em', whiteSpace: 'nowrap' }}>F&B / ORDERS</span>
+          <b style={{ fontSize: '1rem', color: isLightMode ? '#0F172A' : '#F43F5E', lineHeight: 1.1 }}>{totalDiningSales > 0 ? (totalDiningSales > 1000 ? `₱${totalDiningSales.toLocaleString()}` : `${totalDiningSales} Orders`) : '₱0'}</b>
+          <span style={{ fontSize: '.65rem', color: isLightMode ? '#E11D48' : '#F43F5E', fontWeight: 700, whiteSpace: 'nowrap' }}>● {diningPct}% share</span>
         </div>
         <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(16,185,129,0.08)', padding: '8px 10px', borderRadius: 10, border: `1px solid ${isLightMode ? '#E2E8F0' : 'rgba(16,185,129,0.2)'}`, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <span style={{ fontSize: '.64rem', color: isLightMode ? '#475569' : '#10B981', fontWeight: 800, letterSpacing: '.06em', whiteSpace: 'nowrap' }}>TARGET VARIANCE</span>
-          <b style={{ fontSize: '1rem', color: isLightMode ? '#0F172A' : '#10B981', lineHeight: 1.1 }}>+18.4%</b>
-          <span style={{ fontSize: '.65rem', color: isLightMode ? '#059669' : '#10B981', fontWeight: 700, whiteSpace: 'nowrap' }}>▲ Exceeding goal</span>
+          <span style={{ fontSize: '.64rem', color: isLightMode ? '#475569' : '#10B981', fontWeight: 800, letterSpacing: '.06em', whiteSpace: 'nowrap' }}>TOTAL VOLUME</span>
+          <b style={{ fontSize: '1rem', color: isLightMode ? '#0F172A' : '#10B981', lineHeight: 1.1 }}>₱{grandTotal.toLocaleString()}</b>
+          <span style={{ fontSize: '.65rem', color: isLightMode ? '#059669' : '#10B981', fontWeight: 700, whiteSpace: 'nowrap' }}>▲ Live sync</span>
         </div>
       </div>
     </div>

@@ -149,21 +149,41 @@ export default function CloudinarySettingsCard({
       {/* DYNAMIC URL TRANSFORMATION PRESETS & PREVIEW */}
       <div style={{ display: 'flex', gap: 16, alignItems: 'center', background: isLightMode ? '#FFF' : '#0F172A', border: `1px solid ${themeBorder}`, borderRadius: 12, padding: 14 }}>
         <div style={{ position: 'relative' }}>
-          <img
-            src={imageUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
-            alt="Cloudinary Avatar"
-            onError={(e) => {
-              e.target.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150';
-            }}
-            style={{
-              width: 64,
-              height: 64,
-              borderRadius: '50%',
-              objectFit: 'cover',
-              border: '2px solid #0EA5E9',
-              boxShadow: '0 0 15px rgba(56,189,248,0.3)',
-            }}
-          />
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt="Cloudinary Avatar"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }}
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: '50%',
+                objectFit: 'cover',
+                border: '2px solid #0EA5E9',
+                boxShadow: '0 0 15px rgba(56,189,248,0.3)',
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #0284C7, #0EA5E9)',
+                color: '#FFF',
+                display: 'grid',
+                placeItems: 'center',
+                fontWeight: 800,
+                fontSize: '1.4rem',
+                border: '2px solid #0EA5E9',
+                boxShadow: '0 0 15px rgba(56,189,248,0.3)',
+              }}
+            >
+              A
+            </div>
+          )}
           <span style={{ position: 'absolute', bottom: 0, right: 0, background: '#38BDF8', color: '#0F172A', borderRadius: '50%', width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.6rem', fontWeight: 800 }}>
             ☁️
           </span>

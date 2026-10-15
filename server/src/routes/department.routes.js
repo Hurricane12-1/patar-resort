@@ -5,6 +5,7 @@ import { authenticate, requireStaffOrAdmin } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { admin } from '../lib/supabase.js';
 import { CANONICAL_ROOMS } from '../lib/canonicalRooms.js';
+import { logAuditEvent } from '../lib/auditLogger.js';
 
 const r = Router();
 
@@ -103,6 +104,16 @@ r.post('/department/inventory', authenticate, requireStaffOrAdmin,
     const client = req.sb || admin;
     const { data, error } = await client.from('resort_inventory').insert(req.body).select().single();
     if (error) throw new ApiError(500, error.message);
+
+    await logAuditEvent({
+      actor: req.user,
+      action: 'INVENTORY_CREATE',
+      resourceType: 'inventory',
+      resourceId: data.id,
+      details: { item_name: data.item_name, category: data.category, stock_qty: data.stock_qty },
+      req,
+    });
+
     return res.status(201).json(data);
   }));
 
@@ -121,6 +132,16 @@ r.patch('/department/inventory/:id', authenticate, requireStaffOrAdmin,
       .eq('id', req.params.id)
       .select().single();
     if (error) throw new ApiError(500, error.message);
+
+    await logAuditEvent({
+      actor: req.user,
+      action: 'INVENTORY_UPDATE',
+      resourceType: 'inventory',
+      resourceId: req.params.id,
+      details: req.body,
+      req,
+    });
+
     return res.json(data);
   }));
 
@@ -128,6 +149,16 @@ r.delete('/department/inventory/:id', authenticate, requireStaffOrAdmin, asyncH(
   const client = req.sb || admin;
   const { error } = await client.from('resort_inventory').delete().eq('id', req.params.id);
   if (error) throw new ApiError(500, error.message);
+
+  await logAuditEvent({
+    actor: req.user,
+    action: 'INVENTORY_DELETE',
+    resourceType: 'inventory',
+    resourceId: req.params.id,
+    details: { deleted: true },
+    req,
+  });
+
   return res.json({ success: true, deleted_id: req.params.id });
 }));
 

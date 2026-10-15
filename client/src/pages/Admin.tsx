@@ -174,20 +174,23 @@ export default function Admin() {
   // Chart Time Range Filter
   const [chartRange, setChartRange] = useState('30d');
 
-  // Live Telemetry State
-  const [telemetryLive, setTelemetryLive] = useState({
-    cpuUsage: 0,
-    memoryUsage: 0,
-    diskUsage: 0,
-    activeSessions: 0,
-    dbLatency: 0,
-    smsDispatches: 0,
-    uptime: 0,
-    requestsPerMin: 0,
-    sparklineValues: [],
-    requestLog: [],
+  // Live Audit Auto Logger State
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [loadingAudit, setLoadingAudit] = useState(false);
+  const [auditActionFilter, setAuditActionFilter] = useState('ALL');
+  const [auditSearchQuery, setAuditSearchQuery] = useState('');
+  const [auditAutoRefresh, setAuditAutoRefresh] = useState(true);
+
+  // Provision Administrator & Staff Modal State
+  const [showAddAdminModal, setShowAddAdminModal] = useState(false);
+  const [newAdminForm, setNewAdminForm] = useState({
+    full_name: '',
+    email: '',
+    password: '',
+    phone: '',
+    role: 'administrator',
   });
-  const telemetryLogIdRef = useRef(6);
+  const [submittingAdmin, setSubmittingAdmin] = useState(false);
 
   // Provision Staff Modal Form
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -309,38 +312,34 @@ export default function Admin() {
     }
   }, [activeTab, searchQuery, roleFilter]);
 
-  // Live telemetry tick — update system gauges every 3s when telemetry tab is active
+  // Live Audit Auto Logger Data Fetching
+  const fetchAuditLogs = useCallback(() => {
+    setLoadingAudit(true);
+    const params = new URLSearchParams();
+    if (auditActionFilter !== 'ALL') params.append('action', auditActionFilter);
+    if (auditSearchQuery.trim()) params.append('q', auditSearchQuery.trim());
+    params.append('limit', '80');
+
+    api.auditLogs(params.toString())
+      .then((res) => {
+        if (res && Array.isArray(res.logs)) {
+          setAuditLogs(res.logs);
+        }
+      })
+      .catch((err) => {
+        console.warn('[Audit Logs] Fetch notice:', err.message);
+      })
+      .finally(() => setLoadingAudit(false));
+  }, [auditActionFilter, auditSearchQuery]);
+
   useEffect(() => {
-    if (activeTab !== 'telemetry') return;
-    const endpoints = ['/api/rooms', '/api/reservations', '/api/analytics/overview', '/api/reviews/recent', '/api/twilio/sms', '/api/profiles', '/api/food-sales', '/api/telemetry/ping'];
-    const methods = ['GET', 'GET', 'POST', 'GET', 'POST', 'GET', 'GET', 'GET'];
-    const iv = setInterval(() => {
-      const now = new Date();
-      const timeStr = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      const eIdx = Math.floor(Math.random() * endpoints.length);
-      const newEntry = {
-        id: telemetryLogIdRef.current++,
-        time: timeStr,
-        method: methods[eIdx],
-        path: endpoints[eIdx],
-        status: Math.random() > 0.05 ? 200 : 502,
-        ms: Math.round(Math.random() * 60 + 5),
-      };
-      setTelemetryLive(prev => ({
-        cpuUsage: Math.max(8, Math.min(95, prev.cpuUsage + (Math.random() - 0.5) * 12)),
-        memoryUsage: Math.max(30, Math.min(88, prev.memoryUsage + (Math.random() - 0.5) * 6)),
-        diskUsage: Math.max(35, Math.min(75, prev.diskUsage + (Math.random() - 0.5) * 2)),
-        activeSessions: Math.max(3, Math.min(42, prev.activeSessions + Math.round((Math.random() - 0.45) * 4))),
-        dbLatency: Math.max(0.3, Math.min(8, +(prev.dbLatency + (Math.random() - 0.5) * 1.2).toFixed(1))),
-        smsDispatches: prev.smsDispatches + (Math.random() > 0.7 ? 1 : 0),
-        uptime: 99.97,
-        requestsPerMin: Math.max(80, Math.min(500, prev.requestsPerMin + Math.round((Math.random() - 0.45) * 30))),
-        sparklineValues: [...prev.sparklineValues.slice(-24), prev.requestsPerMin + Math.round((Math.random() - 0.5) * 40)],
-        requestLog: [...prev.requestLog.slice(-14), newEntry],
-      }));
-    }, 3000);
-    return () => clearInterval(iv);
-  }, [activeTab]);
+    if (activeTab === 'audit') {
+      fetchAuditLogs();
+      if (!auditAutoRefresh) return;
+      const iv = setInterval(fetchAuditLogs, 5000);
+      return () => clearInterval(iv);
+    }
+  }, [activeTab, auditActionFilter, auditSearchQuery, auditAutoRefresh, fetchAuditLogs]);
 
   async function handleAdminCustomLogin(e) {
     e.preventDefault();
@@ -362,42 +361,64 @@ export default function Admin() {
     toast('⚙️ Executive Profile & Control Settings Live Synced ✦');
   };
 
-  // DEDICATED SEPARATE ADMINISTRATOR LOGIN PORTAL
+  // DEDICATED SEPARATE ADMINISTRATOR LOGIN PORTAL & RBAC GATE
   if (!profile || !['administrator', 'admin'].includes(profile.role)) {
+    const isCustomerOrGuest = profile && profile.role === 'customer';
     return (
       <div className="container section">
-        <div className="gate" style={{ maxWidth: 460, borderTop: '5px solid #0EA5E9' }}>
+        <div className="gate" style={{ maxWidth: 480, borderTop: '5px solid #0EA5E9' }}>
           <span className="label" style={{ color: '#38BDF8' }}>Executive System Control</span>
           <h2 className="serif" style={{ fontSize: '2.2rem', margin: '8px 0 12px' }}>Administrator Portal</h2>
           <p className="muted" style={{ marginBottom: 24, fontSize: '.92rem' }}>
-            Restricted executive portal for resort general managers and administrators.
+            {isCustomerOrGuest
+              ? `Access Restricted: You are signed in as ${profile.full_name || profile.email} (Role: Customer). Administrative credentials are required to access executive controls.`
+              : 'Restricted executive portal for resort general managers and administrators.'}
           </p>
 
-          <form onSubmit={handleAdminCustomLogin} style={{ textAlign: 'left' }}>
-            <div className="field">
-              <label>ADMINISTRATOR EMAIL</label>
-              <input
-                type="email"
-                required
-                value={adminEmail}
-                placeholder="admin@yourdomain.com"
-                onChange={(e) => setAdminEmail(e.target.value)}
-              />
+          {isCustomerOrGuest ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button
+                className="btn btn-sky"
+                onClick={() => signOut()}
+                style={{ width: '100%', justifyContent: 'center' }}
+              >
+                Sign Out & Switch Account 🔄
+              </button>
+              <a
+                href="/"
+                className="btn"
+                style={{ width: '100%', justifyContent: 'center', textAlign: 'center', border: '1px solid rgba(255,255,255,0.1)' }}
+              >
+                Return to Guest Homepage 🏖️
+              </a>
             </div>
-            <div className="field">
-              <label>SECURITY PASSWORD</label>
-              <input
-                type="password"
-                required
-                value={adminPass}
-                placeholder="••••••••"
-                onChange={(e) => setAdminPass(e.target.value)}
-              />
-            </div>
-            <button className="btn btn-sky" style={{ width: '100%', justifyContent: 'center', marginTop: 14 }} disabled={authenticating}>
-              {authenticating ? 'Verifying Security Credentials…' : 'Sign In to Executive Dashboard 👑'}
-            </button>
-          </form>
+          ) : (
+            <form onSubmit={handleAdminCustomLogin} style={{ textAlign: 'left' }}>
+              <div className="field">
+                <label>ADMINISTRATOR EMAIL</label>
+                <input
+                  type="email"
+                  required
+                  value={adminEmail}
+                  placeholder="admin@yourdomain.com"
+                  onChange={(e) => setAdminEmail(e.target.value)}
+                />
+              </div>
+              <div className="field">
+                <label>SECURITY PASSWORD</label>
+                <input
+                  type="password"
+                  required
+                  value={adminPass}
+                  placeholder="••••••••"
+                  onChange={(e) => setAdminPass(e.target.value)}
+                />
+              </div>
+              <button className="btn btn-sky" style={{ width: '100%', justifyContent: 'center', marginTop: 14 }} disabled={authenticating}>
+                {authenticating ? 'Verifying Security Credentials…' : 'Sign In to Executive Dashboard 👑'}
+              </button>
+            </form>
+          )}
         </div>
       </div>
     );
@@ -590,7 +611,7 @@ export default function Admin() {
     { key: 'conversations', label: 'Customer Services', icon: <span style={{ fontSize: '1.1rem' }}>💬</span> },
     { key: 'food_sales', label: 'Dining Sales', icon: <IconDining size={19} /> },
     { key: 'accounts', label: 'Staff & Accounts', icon: <IconUsers size={19} /> },
-    { key: 'telemetry', label: 'Telemetry Stream', icon: <IconTelemetry size={19} /> },
+    { key: 'audit', label: 'System Audit Logs', icon: <IconShield size={19} /> },
     { key: 'ledger', label: 'Reservations Ledger', icon: <IconLedger size={19} /> },
     { key: 'csv', label: 'CSV Explorer', icon: <IconCsv size={19} /> },
     { key: 'settings', label: 'Profile & Settings', icon: <IconSettings size={19} /> },
@@ -1144,7 +1165,7 @@ export default function Admin() {
                 <div
                   className="panel-card kpi-card"
                   onClick={() => {
-                    setActiveTab('telemetry');
+                    setActiveTab('conversations');
                     toast(`👥 ${ov.conversations_closed || guestConversations.length || 0} Operations Inquiries Handled`);
                   }}
                   style={{
@@ -1433,16 +1454,16 @@ export default function Admin() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     <div
                       onClick={() => {
-                        setActiveTab('telemetry');
-                        toast('📊 Switched to Live System Telemetry Audit');
+                        setActiveTab('audit');
+                        toast('🛡️ Switched to Live System Audit Logs');
                       }}
                       style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: isLightMode ? '#F0F9FF' : 'rgba(56,189,248,0.15)', borderRadius: 12, color: isLightMode ? '#0284C7' : '#0EA5E9', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s ease', border: `1px solid ${isLightMode ? '#BAE6FD' : 'rgba(56,189,248,0.3)'}` }}
                       onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
                       onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
-                      title="Click to view full System Telemetry Audit"
+                      title="Click to view full System Audit Trail"
                     >
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '.92rem' }}>📊 Overview</span>
-                      <span className="pill" style={{ background: '#0EA5E9', color: '#FFFFFF', fontWeight: 800, padding: '4px 12px', borderRadius: 16, fontSize: '.8rem' }}>1,248 pings</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '.92rem' }}>🛡️ Audit Trail</span>
+                      <span className="pill" style={{ background: '#0EA5E9', color: '#FFFFFF', fontWeight: 800, padding: '4px 12px', borderRadius: 16, fontSize: '.8rem' }}>Live Stream</span>
                     </div>
 
                     <div
@@ -1502,7 +1523,7 @@ export default function Admin() {
                 </div>
 
                 {/* Panel 3: Total Sales Dual-Line Multi-Trend Curve Graph */}
-                <div className="panel panel-card" style={{ background: themeCardBg, border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 20, boxShadow: themeShadow, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', overflow: 'visible' }}>
+                <div className="panel panel-card" style={{ background: themeCardBg, border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 20, boxShadow: themeShadow, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', overflow: 'hidden' }}>
                   <DualLineChart
                     data={dualSalesData}
                     height={150}
@@ -1927,13 +1948,35 @@ export default function Admin() {
                 {/* Profile Avatar + Name + Bio Row */}
                 <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'flex-end', gap: 22, flexWrap: 'wrap', marginTop: 35 }}>
                   {/* Avatar Container with Camera Badge */}
-                  <div style={{ position: 'relative' }}>
-                    <img
-                      src={adminProfileState.customAvatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300'}
-                      alt="Executive Avatar"
-                      onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300'; }}
-                      style={{ width: 96, height: 96, borderRadius: '50%', objectFit: 'cover', border: '4px solid #FFFFFF', boxShadow: '0 8px 24px rgba(0,0,0,0.35)' }}
-                    />
+                  <div style={{ position: 'relative', width: 96, height: 96 }}>
+                    {adminProfileState.customAvatarUrl && !adminProfileState.customAvatarUrl.startsWith('initials:') && !adminProfileState.customAvatarUrl.startsWith('svg:') ? (
+                      <img
+                        src={adminProfileState.customAvatarUrl}
+                        alt="Executive Avatar"
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        style={{ width: 96, height: 96, borderRadius: '50%', objectFit: 'cover', border: '4px solid #FFFFFF', boxShadow: '0 8px 24px rgba(0,0,0,0.35)' }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: 96,
+                          height: 96,
+                          borderRadius: '50%',
+                          background: 'linear-gradient(135deg, #0284C7, #0EA5E9)',
+                          color: '#FFFFFF',
+                          display: 'grid',
+                          placeItems: 'center',
+                          fontSize: '2.2rem',
+                          fontWeight: 800,
+                          border: '4px solid #FFFFFF',
+                          boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
+                        }}
+                      >
+                        {adminProfileState.customAvatarUrl?.startsWith('initials:')
+                          ? adminProfileState.customAvatarUrl.replace('initials:', '')
+                          : (adminProfileState.displayName || profile?.full_name || 'Admin')[0].toUpperCase()}
+                      </div>
+                    )}
                     <button
                       type="button"
                       onClick={() => {
@@ -2140,26 +2183,26 @@ export default function Admin() {
                     </div>
                   </div>
 
-                  {/* SECTION 3: SYSTEM CONTROLS & TELEMETRY PREFERENCES */}
+                  {/* SECTION 3: SYSTEM CONTROLS & AUDIT PREFERENCES */}
                   <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.5)', border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 24 }}>
                     <div style={{ marginBottom: 16, borderBottom: `1px solid ${themeBorder}`, paddingBottom: 12 }}>
                       <b style={{ fontSize: '1.1rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                        ⚡ System Controls & Telemetry Preferences
+                        ⚡ System Controls & Live Audit Preferences
                       </b>
-                      <span style={{ fontSize: '.76rem', color: themeMuted, display: 'block', marginTop: 2 }}>Configure real-time SSE stream intervals, auto-lock security, and Twilio SMS triggers</span>
+                      <span style={{ fontSize: '.76rem', color: themeMuted, display: 'block', marginTop: 2 }}>Configure real-time audit refresh intervals, auto-lock security, and Twilio SMS triggers</span>
                     </div>
 
                     <div className="admin-grid-2-col" style={{ marginBottom: 18 }}>
                       <div className="field">
-                        <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700 }}>TELEMETRY STREAM SPEED</label>
+                        <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700 }}>AUDIT STREAM INTERVAL</label>
                         <select
                           style={{ background: isLightMode ? '#FFF' : undefined, color: themeText }}
                           value={adminProfileState.refreshRate}
                           onChange={(e) => setAdminProfileState({ ...adminProfileState, refreshRate: e.target.value })}
                         >
-                          <option value="1">Turbo (1 Second Interval)</option>
-                          <option value="5">Normal (5 Seconds Interval)</option>
-                          <option value="15">Eco Mode (15 Seconds Interval)</option>
+                          <option value="5">Realtime (5 Seconds)</option>
+                          <option value="15">Balanced (15 Seconds)</option>
+                          <option value="30">Eco Mode (30 Seconds)</option>
                         </select>
                       </div>
                       <div className="field">
@@ -2246,138 +2289,207 @@ export default function Admin() {
             </div>
           )}
 
-          {/* TAB 4: REALTIME TELEMETRY STREAM */}
-          {activeTab === 'telemetry' && (
+          {/* TAB 4: REALTIME SYSTEM AUDIT & SECURITY AUTO LOGGER */}
+          {activeTab === 'audit' && (
             <div className="panel" style={{ background: themeCardBg, border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 24, boxShadow: themeShadow }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              {/* Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 14 }}>
                 <div>
-                  <span className="label light">System Telemetry & Health</span>
-                  <h3 className="serif" style={{ fontSize: '1.6rem', margin: '4px 0 0', color: themeText }}>Realtime Operations Telemetry Monitor</h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <span className="label light" style={{ color: '#0EA5E9' }}>Enterprise Security</span>
+                    <span style={{ fontSize: '.72rem', color: '#10B981', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(16,185,129,0.1)', padding: '2px 8px', borderRadius: 12, border: '1px solid rgba(16,185,129,0.3)' }}>
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981', display: 'inline-block', animation: 'pulse 1.5s infinite' }} />
+                      AUDIT AUTO-LOGGER ACTIVE
+                    </span>
+                  </div>
+                  <h3 className="serif" style={{ fontSize: '1.6rem', margin: '4px 0 0', color: themeText }}>System Audit & Security Event Trail</h3>
+                  <p className="muted small" style={{ margin: '4px 0 0' }}>Tamper-evident administrative audit log. Records all room, inventory, role, and security access events in real-time.</p>
                 </div>
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                  <span style={{ fontSize: '.72rem', color: '#10B981', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981', display: 'inline-block', animation: 'pulse 1.5s infinite' }} />
-                    LIVE
-                  </span>
-                  <button className="btn btn-sky btn-sm" onClick={() => toast('⚡ Telemetry Health Diagnostic Verified: 100% Operational')}>
-                    Run Health Check ⚡
+
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    className="btn btn-sm"
+                    onClick={() => setAuditAutoRefresh(!auditAutoRefresh)}
+                    style={{
+                      border: `1px solid ${auditAutoRefresh ? '#10B981' : themeBorder}`,
+                      color: auditAutoRefresh ? '#10B981' : themeMuted,
+                      background: auditAutoRefresh ? 'rgba(16,185,129,0.1)' : 'transparent',
+                      fontWeight: 700,
+                    }}
+                  >
+                    {auditAutoRefresh ? '🟢 Auto-Sync ON (5s)' : '⏸️ Auto-Sync Paused'}
+                  </button>
+
+                  <button className="btn btn-sky btn-sm" onClick={fetchAuditLogs} disabled={loadingAudit}>
+                    {loadingAudit ? 'Syncing…' : '🔄 Refresh Logs'}
+                  </button>
+
+                  <button
+                    className="btn btn-sm"
+                    onClick={() => {
+                      const blob = new Blob([JSON.stringify(auditLogs, null, 2)], { type: 'application/json' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `audit_logs_${new Date().toISOString().slice(0, 10)}.json`;
+                      a.click();
+                      toast('📥 Audit logs exported to JSON');
+                    }}
+                    style={{ border: `1px solid ${themeBorder}`, color: themeText, fontWeight: 700 }}
+                  >
+                    📥 Export JSON
                   </button>
                 </div>
               </div>
 
-              {/* SYSTEM GAUGES — CPU / MEMORY / DISK */}
-              <div className="admin-grid-3-col">
-                {[
-                  { label: 'CPU UTILIZATION', value: telemetryLive.cpuUsage, color: telemetryLive.cpuUsage > 80 ? '#F43F5E' : telemetryLive.cpuUsage > 60 ? '#F59E0B' : '#10B981', unit: '%' },
-                  { label: 'MEMORY USAGE', value: telemetryLive.memoryUsage, color: telemetryLive.memoryUsage > 80 ? '#F43F5E' : telemetryLive.memoryUsage > 60 ? '#F59E0B' : '#0EA5E9', unit: '%' },
-                  { label: 'DISK STORAGE', value: telemetryLive.diskUsage, color: telemetryLive.diskUsage > 80 ? '#F43F5E' : '#8B5CF6', unit: '%' },
-                ].map((g, gi) => {
-                  const radius = 52, stroke = 10, circ = 2 * Math.PI * radius;
-                  const offset = circ - (Math.min(g.value, 100) / 100) * circ;
-                  return (
-                    <div key={gi} style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.5)', border: `1px solid ${themeBorder}`, borderRadius: 14, padding: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
-                      <svg width={128} height={128} viewBox="0 0 128 128">
-                        <circle cx="64" cy="64" r={radius} fill="none" stroke={isLightMode ? '#E2E8F0' : 'rgba(255,255,255,0.06)'} strokeWidth={stroke} />
-                        <circle cx="64" cy="64" r={radius} fill="none" stroke={g.color} strokeWidth={stroke}
-                          strokeDasharray={circ} strokeDashoffset={offset}
-                          strokeLinecap="round" transform="rotate(-90 64 64)"
-                          style={{ transition: 'stroke-dashoffset 0.8s ease, stroke 0.4s ease' }} />
-                        <text x="64" y="58" textAnchor="middle" fontSize="22" fontWeight="800" fill={themeText}>
-                          {Math.round(g.value)}
-                        </text>
-                        <text x="64" y="76" textAnchor="middle" fontSize="11" fill={themeMuted}>{g.unit}</text>
-                      </svg>
-                      <div>
-                        <span style={{ fontSize: '.72rem', color: themeMuted, fontWeight: 700, letterSpacing: '.08em' }}>{g.label}</span>
-                        <b style={{ display: 'block', fontSize: '1.2rem', color: g.color, marginTop: 4 }}>{Math.round(g.value)}{g.unit}</b>
-                        <small style={{ fontSize: '.7rem', color: g.value > 80 ? '#F43F5E' : '#10B981' }}>
-                          {g.value > 80 ? '⚠️ High Load' : '🟢 Normal'}
-                        </small>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* METRIC CARDS ROW */}
-              <div className="admin-grid-4-col">
+              {/* AUDIT KPIS ROW */}
+              <div className="admin-grid-4-col" style={{ marginBottom: 20 }}>
                 <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.5)', border: `1px solid ${themeBorder}`, borderRadius: 12, padding: 16 }}>
-                  <span style={{ fontSize: '.72rem', color: themeMuted, fontWeight: 700 }}>ACTIVE SESSIONS</span>
-                  <b style={{ display: 'block', fontSize: '1.5rem', color: '#0EA5E9', marginTop: 4, transition: 'color 0.3s' }}>{Math.round(telemetryLive.activeSessions)}</b>
-                  <small style={{ fontSize: '.7rem', color: '#10B981' }}>🟢 SSE Healthy</small>
+                  <span style={{ fontSize: '.72rem', color: themeMuted, fontWeight: 700 }}>TOTAL LOGGED EVENTS</span>
+                  <b style={{ display: 'block', fontSize: '1.5rem', color: '#0EA5E9', marginTop: 4 }}>{auditLogs.length}</b>
+                  <small style={{ fontSize: '.7rem', color: '#10B981' }}>🟢 Ring Buffer Active</small>
                 </div>
                 <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.5)', border: `1px solid ${themeBorder}`, borderRadius: 12, padding: 16 }}>
-                  <span style={{ fontSize: '.72rem', color: themeMuted, fontWeight: 700 }}>DB LATENCY</span>
-                  <b style={{ display: 'block', fontSize: '1.5rem', color: telemetryLive.dbLatency > 5 ? '#F43F5E' : '#10B981', marginTop: 4, transition: 'color 0.3s' }}>{telemetryLive.dbLatency} ms</b>
-                  <small style={{ fontSize: '.7rem', color: themeMuted }}>Supabase Engine</small>
+                  <span style={{ fontSize: '.72rem', color: themeMuted, fontWeight: 700 }}>ROOM & INVENTORY ACTIONS</span>
+                  <b style={{ display: 'block', fontSize: '1.5rem', color: '#10B981', marginTop: 4 }}>
+                    {auditLogs.filter((l) => l.action?.startsWith('ROOM') || l.action?.startsWith('INVENTORY')).length}
+                  </b>
+                  <small style={{ fontSize: '.7rem', color: themeMuted }}>Inventory Mutations</small>
                 </div>
                 <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.5)', border: `1px solid ${themeBorder}`, borderRadius: 12, padding: 16 }}>
-                  <span style={{ fontSize: '.72rem', color: themeMuted, fontWeight: 700 }}>SMS DISPATCHES</span>
-                  <b style={{ display: 'block', fontSize: '1.5rem', color: '#F59E0B', marginTop: 4, transition: 'color 0.3s' }}>{telemetryLive.smsDispatches} Sent</b>
-                  <small style={{ fontSize: '.7rem', color: '#10B981' }}>100% Delivery</small>
+                  <span style={{ fontSize: '.72rem', color: themeMuted, fontWeight: 700 }}>USER & ROLE MUTATIONS</span>
+                  <b style={{ display: 'block', fontSize: '1.5rem', color: '#8B5CF6', marginTop: 4 }}>
+                    {auditLogs.filter((l) => l.action?.includes('PROVISIONED') || l.action?.includes('ROLE')).length}
+                  </b>
+                  <small style={{ fontSize: '.7rem', color: themeMuted }}>RBAC Provisioning</small>
                 </div>
                 <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.5)', border: `1px solid ${themeBorder}`, borderRadius: 12, padding: 16 }}>
-                  <span style={{ fontSize: '.72rem', color: themeMuted, fontWeight: 700 }}>SYSTEM UPTIME</span>
-                  <b style={{ display: 'block', fontSize: '1.5rem', color: '#10B981', marginTop: 4 }}>{telemetryLive.uptime}%</b>
-                  <small style={{ fontSize: '.7rem', color: themeMuted }}>30-Day Average</small>
+                  <span style={{ fontSize: '.72rem', color: themeMuted, fontWeight: 700 }}>SECURITY AUDIT DENIALS</span>
+                  <b style={{ display: 'block', fontSize: '1.5rem', color: auditLogs.some((l) => l.action?.includes('DENIED')) ? '#F43F5E' : '#10B981', marginTop: 4 }}>
+                    {auditLogs.filter((l) => l.action?.includes('DENIED')).length}
+                  </b>
+                  <small style={{ fontSize: '.7rem', color: auditLogs.some((l) => l.action?.includes('DENIED')) ? '#F43F5E' : '#10B981' }}>
+                    {auditLogs.some((l) => l.action?.includes('DENIED')) ? '⚠️ Breaches Blocked' : '🟢 0 Access Violations'}
+                  </small>
                 </div>
               </div>
 
-              {/* LIVE NETWORK EVENT PULSE SPARKLINE */}
-              <div style={{ marginBottom: 24 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <b style={{ fontSize: '.9rem', color: themeText }}>Live Network Event Pulse (Requests / Minute)</b>
-                  <span style={{ fontSize: '.78rem', color: '#0EA5E9', fontWeight: 700 }}>{telemetryLive.requestsPerMin} req/min</span>
+              {/* FILTER CONTROLS & SEARCH */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
+                <div className="chip-row">
+                  {[
+                    { key: 'ALL', label: 'ALL EVENTS' },
+                    { key: 'ROOM', label: 'ROOM ACTIONS' },
+                    { key: 'INVENTORY', label: 'INVENTORY' },
+                    { key: 'BOOKING', label: 'BOOKINGS' },
+                    { key: 'PROVISIONED', label: 'PROVISIONING' },
+                    { key: 'DENIED', label: 'SECURITY / DENIED' },
+                  ].map((f) => (
+                    <button
+                      key={f.key}
+                      className={`chip ${auditActionFilter === f.key ? 'sel' : ''}`}
+                      onClick={() => setAuditActionFilter(f.key)}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
                 </div>
-                <Sparkline values={telemetryLive.sparklineValues} width={760} height={120} />
+
+                <input
+                  className="search"
+                  placeholder="Search logs by actor, action, IP…"
+                  value={auditSearchQuery}
+                  onChange={(e) => setAuditSearchQuery(e.target.value)}
+                  style={{ maxWidth: 280, background: isLightMode ? '#FFF' : undefined, color: themeText }}
+                />
               </div>
 
-              {/* REALTIME REQUEST LOG TIMELINE */}
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <b style={{ fontSize: '.9rem', color: themeText }}>Live API Request Log</b>
-                  <span style={{ fontSize: '.72rem', color: themeMuted }}>{telemetryLive.requestLog.length} recent entries</span>
+              {/* AUDIT LOG TABLE */}
+              {loadingAudit && auditLogs.length === 0 ? (
+                <div className="skel" style={{ height: 260 }} />
+              ) : auditLogs.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px 20px', border: `1px dashed ${themeBorder}`, borderRadius: 12 }}>
+                  <span style={{ fontSize: '2rem' }}>🛡️</span>
+                  <h4 style={{ margin: '8px 0 4px', color: themeText }}>No Audit Logs Recorded Yet</h4>
+                  <p className="muted small">Actions taken by administrators on accommodations, inventory, and staff roles will automatically appear here.</p>
                 </div>
-                <div style={{ maxHeight: 300, overflowY: 'auto', borderRadius: 10, border: `1px solid ${themeBorder}` }}>
-                  <table style={{ width: '100%', fontSize: '.78rem', borderCollapse: 'collapse' }}>
+              ) : (
+                <div style={{ maxHeight: 520, overflowY: 'auto', borderRadius: 12, border: `1px solid ${themeBorder}` }}>
+                  <table style={{ width: '100%', fontSize: '.8rem', borderCollapse: 'collapse', color: themeText }}>
                     <thead>
-                      <tr style={{ background: isLightMode ? '#F1F5F9' : 'rgba(2,6,23,0.7)', position: 'sticky', top: 0 }}>
-                        <th style={{ padding: '8px 12px', textAlign: 'left', color: themeMuted, fontWeight: 700, fontSize: '.7rem', letterSpacing: '.06em' }}>TIME</th>
-                        <th style={{ padding: '8px 12px', textAlign: 'left', color: themeMuted, fontWeight: 700, fontSize: '.7rem' }}>METHOD</th>
-                        <th style={{ padding: '8px 12px', textAlign: 'left', color: themeMuted, fontWeight: 700, fontSize: '.7rem' }}>ENDPOINT</th>
-                        <th style={{ padding: '8px 12px', textAlign: 'center', color: themeMuted, fontWeight: 700, fontSize: '.7rem' }}>STATUS</th>
-                        <th style={{ padding: '8px 12px', textAlign: 'right', color: themeMuted, fontWeight: 700, fontSize: '.7rem' }}>LATENCY</th>
+                      <tr style={{ background: isLightMode ? '#F1F5F9' : 'rgba(30,41,59,0.8)', position: 'sticky', top: 0, zIndex: 10 }}>
+                        <th style={{ padding: '10px 14px', textAlign: 'left', color: themeMuted, fontWeight: 700, fontSize: '.72rem' }}>TIMESTAMP</th>
+                        <th style={{ padding: '10px 14px', textAlign: 'left', color: themeMuted, fontWeight: 700, fontSize: '.72rem' }}>ACTION</th>
+                        <th style={{ padding: '10px 14px', textAlign: 'left', color: themeMuted, fontWeight: 700, fontSize: '.72rem' }}>ACTOR</th>
+                        <th style={{ padding: '10px 14px', textAlign: 'left', color: themeMuted, fontWeight: 700, fontSize: '.72rem' }}>RESOURCE</th>
+                        <th style={{ padding: '10px 14px', textAlign: 'left', color: themeMuted, fontWeight: 700, fontSize: '.72rem' }}>DETAILS</th>
+                        <th style={{ padding: '10px 14px', textAlign: 'right', color: themeMuted, fontWeight: 700, fontSize: '.72rem' }}>IP / CLIENT</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {[...telemetryLive.requestLog].reverse().map((entry) => (
-                        <tr key={entry.id} style={{ borderBottom: `1px solid ${themeBorder}`, transition: 'background 0.3s' }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = isLightMode ? '#F8FAFC' : 'rgba(56,189,248,0.04)'}
-                          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                        >
-                          <td style={{ padding: '7px 12px', color: themeMuted, fontFamily: 'monospace', fontSize: '.74rem' }}>{entry.time}</td>
-                          <td style={{ padding: '7px 12px' }}>
-                            <span style={{
-                              padding: '2px 8px', borderRadius: 6, fontSize: '.68rem', fontWeight: 800,
-                              background: entry.method === 'POST' ? 'rgba(245,158,11,0.15)' : 'rgba(16,185,129,0.15)',
-                              color: entry.method === 'POST' ? '#F59E0B' : '#10B981',
-                            }}>{entry.method}</span>
-                          </td>
-                          <td style={{ padding: '7px 12px', fontFamily: 'monospace', fontSize: '.74rem', color: themeText }}>{entry.path}</td>
-                          <td style={{ padding: '7px 12px', textAlign: 'center' }}>
-                            <span style={{
-                              padding: '2px 8px', borderRadius: 6, fontSize: '.68rem', fontWeight: 700,
-                              background: entry.status === 200 || entry.status === 201 ? 'rgba(16,185,129,0.15)' : 'rgba(244,63,94,0.15)',
-                              color: entry.status === 200 || entry.status === 201 ? '#10B981' : '#F43F5E',
-                            }}>{entry.status}</span>
-                          </td>
-                          <td style={{ padding: '7px 12px', textAlign: 'right', fontFamily: 'monospace', fontSize: '.74rem', color: entry.ms > 200 ? '#F59E0B' : themeMuted }}>{entry.ms}ms</td>
-                        </tr>
-                      ))}
+                      {auditLogs.map((log) => {
+                        const isDanger = log.action?.includes('DELETE') || log.action?.includes('DENIED') || log.action?.includes('DEACTIVATE');
+                        const isSuccess = log.action?.includes('CREATE') || log.action?.includes('PROVISIONED');
+                        const isUpdate = log.action?.includes('UPDATE') || log.action?.includes('STATUS');
+
+                        return (
+                          <tr
+                            key={log.id}
+                            style={{ borderBottom: `1px solid ${themeBorder}`, transition: 'background 0.2s' }}
+                            onMouseEnter={(e) => (e.currentTarget.style.background = isLightMode ? '#F8FAFC' : 'rgba(56,189,248,0.04)')}
+                            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                          >
+                            <td style={{ padding: '10px 14px', whiteSpace: 'nowrap', fontFamily: 'monospace', fontSize: '.74rem', color: themeMuted }}>
+                              {log.timestamp ? new Date(log.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'Just now'}
+                            </td>
+                            <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
+                              <span style={{
+                                padding: '3px 8px', borderRadius: 6, fontSize: '.68rem', fontWeight: 800,
+                                background: isDanger ? 'rgba(244,63,94,0.15)' : isSuccess ? 'rgba(16,185,129,0.15)' : isUpdate ? 'rgba(14,165,233,0.15)' : 'rgba(139,92,246,0.15)',
+                                color: isDanger ? '#F43F5E' : isSuccess ? '#10B981' : isUpdate ? '#0EA5E9' : '#8B5CF6',
+                                border: `1px solid ${isDanger ? 'rgba(244,63,94,0.3)' : isSuccess ? 'rgba(16,185,129,0.3)' : isUpdate ? 'rgba(14,165,233,0.3)' : 'rgba(139,92,246,0.3)'}`,
+                              }}>
+                                {log.action}
+                              </span>
+                            </td>
+                            <td style={{ padding: '10px 14px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <div style={{
+                                  width: 24, height: 24, borderRadius: '50%',
+                                  background: 'linear-gradient(135deg, #0284C7, #0EA5E9)',
+                                  color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  fontSize: '.7rem', fontWeight: 800,
+                                }}>
+                                  {(log.actor_name || log.actor_email || 'A')[0].toUpperCase()}
+                                </div>
+                                <div>
+                                  <b style={{ display: 'block', fontSize: '.78rem', color: themeText }}>{log.actor_name || 'System Admin'}</b>
+                                  <span style={{ fontSize: '.7rem', color: themeMuted }}>{log.actor_email}</span>
+                                </div>
+                              </div>
+                            </td>
+                            <td style={{ padding: '10px 14px' }}>
+                              <span style={{ fontWeight: 600, color: themeText }}>{log.resource_type || 'system'}</span>
+                              {log.resource_id && <small style={{ color: themeMuted, display: 'block', fontFamily: 'monospace' }}>#{String(log.resource_id).slice(0, 12)}</small>}
+                            </td>
+                            <td style={{ padding: '10px 14px', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              <span style={{ color: themeMuted, fontSize: '.74rem' }}>
+                                {typeof log.details === 'object' ? JSON.stringify(log.details) : String(log.details)}
+                              </span>
+                            </td>
+                            <td style={{ padding: '10px 14px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                              <span style={{ fontFamily: 'monospace', fontSize: '.72rem', color: themeMuted, display: 'block' }}>{log.ip_address || '127.0.0.1'}</span>
+                              <span style={{ fontSize: '.68rem', color: themeMuted, opacity: 0.8 }}>
+                                {log.user_agent ? (log.user_agent.length > 25 ? log.user_agent.slice(0, 25) + '…' : log.user_agent) : 'Client'}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
@@ -2399,9 +2511,27 @@ export default function Admin() {
                     style={{ maxWidth: 260, background: isLightMode ? '#FFF' : undefined, color: themeText }}
                   />
                   {accountsSubTab === 'staff' && (
-                    <button className="btn btn-sky btn-sm" onClick={() => setShowCreateModal(true)}>
-                      + Provision Staff
-                    </button>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        className="btn btn-sky btn-sm"
+                        onClick={() => {
+                          setNewStaff({ first_name: '', middle_name: '', last_name: '', full_name: '', email: '', password: '', phone: '', role: 'administrator' });
+                          setShowCreateModal(true);
+                        }}
+                      >
+                        👑 + Provision Administrator
+                      </button>
+                      <button
+                        className="btn btn-sm"
+                        style={{ border: `1px solid ${themeBorder}`, color: themeText, background: isLightMode ? '#FFF' : 'rgba(255,255,255,0.05)' }}
+                        onClick={() => {
+                          setNewStaff({ first_name: '', middle_name: '', last_name: '', full_name: '', email: '', password: '', phone: '', role: 'receptionist' });
+                          setShowCreateModal(true);
+                        }}
+                      >
+                        🛡️ + Provision Staff
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -2774,8 +2904,12 @@ export default function Admin() {
           <div style={{ width: '100%', maxWidth: 520, background: isLightMode ? '#FFFFFF' : '#0F172A', borderRadius: 20, border: `1px solid ${themeBorder}`, padding: 24, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', maxHeight: '90vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: `1px solid ${themeBorder}`, paddingBottom: 12 }}>
               <div>
-                <span style={{ fontSize: '.74rem', color: '#6366F1', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>ADMINISTRATIVE ACCESS CONTROL</span>
-                <h3 style={{ margin: '4px 0 0', fontSize: '1.35rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>🛡️ Provision Staff Account</h3>
+                <span style={{ fontSize: '.74rem', color: newStaff.role === 'administrator' ? '#8B5CF6' : '#6366F1', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>
+                  {newStaff.role === 'administrator' ? 'EXECUTIVE RBAC PROVISIONING' : 'ADMINISTRATIVE ACCESS CONTROL'}
+                </span>
+                <h3 style={{ margin: '4px 0 0', fontSize: '1.35rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                  {newStaff.role === 'administrator' ? '👑 Provision Administrator Account' : '🛡️ Provision Staff Account'}
+                </h3>
               </div>
               <button onClick={() => setShowCreateModal(false)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
             </div>
@@ -2859,7 +2993,7 @@ export default function Admin() {
                   Cancel
                 </button>
                 <button type="submit" className="btn btn-sky btn-sm" disabled={creatingStaff}>
-                  {creatingStaff ? 'Provisioning…' : 'Create Staff Credentials ✦'}
+                  {creatingStaff ? 'Provisioning…' : (newStaff.role === 'administrator' ? 'Create Administrator Credentials ✦' : 'Create Staff Credentials ✦')}
                 </button>
               </div>
             </form>

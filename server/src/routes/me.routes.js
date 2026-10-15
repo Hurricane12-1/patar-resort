@@ -5,6 +5,7 @@ import { authenticate, requireAdmin } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { admin } from '../lib/supabase.js';
 import { pingSMS } from '../lib/sms.js';
+import { logAuditEvent } from '../lib/auditLogger.js';
 
 const r = Router();
 
@@ -157,7 +158,7 @@ r.post('/admin/users', authenticate, requireAdmin,
       console.warn('[Admin Create User] Profile upsert notice:', profErr.message);
     }
 
-    return res.status(201).json(prof || {
+    const createdRecord = prof || {
       id: authUser.user.id,
       email,
       first_name,
@@ -166,7 +167,18 @@ r.post('/admin/users', authenticate, requireAdmin,
       full_name,
       phone,
       role
+    };
+
+    await logAuditEvent({
+      actor: req.user,
+      action: role === 'administrator' ? 'ADMIN_PROVISIONED' : 'STAFF_PROVISIONED',
+      resourceType: 'user',
+      resourceId: authUser.user.id,
+      details: { email, full_name, role },
+      req,
     });
+
+    return res.status(201).json(createdRecord);
   }));
 
 // Modify Account Role
@@ -180,6 +192,16 @@ r.patch('/admin/users/:id/role', authenticate, requireAdmin,
     const { data, error } = await client.from('profiles')
       .update({ role }).eq('id', req.params.id).select().single();
     if (error) throw new ApiError(500, error.message);
+
+    await logAuditEvent({
+      actor: req.user,
+      action: 'ROLE_UPDATE',
+      resourceType: 'user',
+      resourceId: req.params.id,
+      details: { new_role: role, full_name: data.full_name },
+      req,
+    });
+
     return res.json(data);
   }));
 

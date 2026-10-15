@@ -3,10 +3,11 @@ import { z } from 'zod';
 import { asyncH, ApiError } from '../middleware/errors.js';
 import { validate } from '../middleware/validate.js';
 import { admin, getSystemAdminClient } from '../lib/supabase.js';
-import { authenticate, requireStaffOrAdmin } from '../middleware/auth.js';
+import { authenticate, requireStaffOrAdmin, requireAdmin } from '../middleware/auth.js';
 import { redis } from '../lib/redis.js';
 import { isSupabaseConfigured } from '../config/env.js';
 import { CANONICAL_ROOMS } from '../lib/canonicalRooms.js';
+import { logAuditEvent } from '../lib/auditLogger.js';
 
 const r = Router();
 
@@ -159,7 +160,7 @@ r.get('/availability', validate(rangeSchema, 'query'), asyncH(async (req, res) =
   return res.json(list);
 }));
 
-r.post('/rooms', authenticate, requireStaffOrAdmin,
+r.post('/rooms', authenticate, requireAdmin,
   validate(z.object({
     name: z.string().min(2).max(100),
     slug: z.string().min(2).max(100).optional(),
@@ -177,14 +178,24 @@ r.post('/rooms', authenticate, requireStaffOrAdmin,
       slug = req.body.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `room-${Date.now()}`;
     }
     const payload = { ...req.body, slug };
-    const client = req.sb || admin;
+    const client = req.sb || (await getSystemAdminClient());
     const { data, error } = await client.from('rooms').insert(payload).select().single();
     if (error) throw new ApiError(500, error.message);
     await redis.clear();
+
+    await logAuditEvent({
+      actor: req.user,
+      action: 'ROOM_CREATE',
+      resourceType: 'room',
+      resourceId: data.id,
+      details: { name: data.name, rate_php: data.rate_php, units: data.units, category: data.category },
+      req,
+    });
+
     return res.status(201).json(data);
   }));
 
-r.patch('/rooms/:id', authenticate, requireStaffOrAdmin,
+r.patch('/rooms/:id', authenticate, requireAdmin,
   validate(z.object({
     name: z.string().min(2).max(100).optional(),
     slug: z.string().min(2).max(100).optional(),
@@ -197,24 +208,62 @@ r.patch('/rooms/:id', authenticate, requireStaffOrAdmin,
     is_active: z.boolean().optional(),
   })),
   asyncH(async (req, res) => {
-    const client = req.sb || admin;
+    const client = req.sb || (await getSystemAdminClient());
     const { data, error } = await client.from('rooms')
       .update(req.body)
       .eq('id', req.params.id)
       .select().single();
     if (error) throw new ApiError(500, error.message);
     await redis.clear();
+
+    await logAuditEvent({
+      actor: req.user,
+      action: 'ROOM_UPDATE',
+      resourceType: 'room',
+      resourceId: req.params.id,
+      details: req.body,
+      req,
+    });
+
     return res.json(data);
   }));
 
-r.delete('/rooms/:id', authenticate, requireStaffOrAdmin, asyncH(async (req, res) => {
-  const client = req.sb || admin;
+r.delete('/rooms/:id', authenticate, requireAdmin, asyncH(async (req, res) => {
+  const client = req.sb || (await getSystemAdminClient());
+  const isHard = req.query.hard === 'true';
+
+  if (isHard) {
+    const { error: hardErr } = await client.from('rooms').delete().eq('id', req.params.id);
+    if (!hardErr) {
+      await redis.clear();
+      await logAuditEvent({
+        actor: req.user,
+        action: 'ROOM_DELETE_PERMANENT',
+        resourceType: 'room',
+        resourceId: req.params.id,
+        details: { permanent: true },
+        req,
+      });
+      return res.json({ success: true, deleted_id: req.params.id, permanent: true });
+    }
+  }
+
   const { data, error } = await client.from('rooms')
     .update({ is_active: false })
     .eq('id', req.params.id)
     .select().single();
   if (error) throw new ApiError(500, error.message);
   await redis.clear();
+
+  await logAuditEvent({
+    actor: req.user,
+    action: 'ROOM_DEACTIVATE',
+    resourceType: 'room',
+    resourceId: req.params.id,
+    details: { is_active: false },
+    req,
+  });
+
   return res.json({ success: true, deactivated: data });
 }));
 

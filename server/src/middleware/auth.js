@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
 import { admin, userClient } from '../lib/supabase.js';
 import { ApiError } from './errors.js';
+import { logAuditEvent } from '../lib/auditLogger.js';
 
 export async function authenticate(req, _res, next) {
   try {
@@ -113,6 +114,16 @@ export const requireRole = (...allowedRoles) => (req, _res, next) => {
   if (expandedAllowed.includes(userRole)) {
     return next();
   }
+
+  // Auto-log RBAC authorization breach attempt
+  logAuditEvent({
+    actor: req.user,
+    action: 'RBAC_ACCESS_DENIED',
+    resourceType: 'endpoint',
+    resourceId: req.originalUrl || req.path,
+    details: { attempted_role: userRole, allowed_roles: allowedRoles, method: req.method },
+    req,
+  }).catch(() => {});
 
   return next(new ApiError(403, `Access denied: Role "${userRole}" is not authorized for this action. Allowed: ${allowedRoles.join(', ')}`));
 };

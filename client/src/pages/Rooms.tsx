@@ -11,39 +11,56 @@ import { CANONICAL_ROOMS } from '../lib/canonicalRooms.ts';
 const CATS = ['All', 'Cottage', 'Garden', 'Suite', 'Villa', 'Dorm'];
 
 function RoomCardItem({ s, index }) {
-  const gallery = useMemo(() => roomGallery(s.slug), [s.slug]);
+  const gallery = useMemo(() => {
+    const list = [s.image_url, ...roomGallery(s.slug)].filter(Boolean);
+    return Array.from(new Set(list));
+  }, [s.slug, s.image_url]);
   const [activeImg, setActiveImg] = useState(gallery[0]);
+
+  useEffect(() => {
+    setActiveImg(gallery[0]);
+  }, [gallery]);
 
   return (
     <div className="room-card reveal" style={{ transitionDelay: `${(index % 2) * 110}ms` }}>
       {/* MAIN INTERCHANGEABLE DISPLAY IMAGE */}
       <div className="im" style={{ position: 'relative' }}>
-        <img src={activeImg} alt={s.name} loading="lazy" style={{ transition: 'opacity 0.3s ease' }} />
+        {activeImg ? (
+          <img src={activeImg} alt={s.name} loading="lazy" style={{ transition: 'opacity 0.3s ease' }} />
+        ) : (
+          <div style={{ width: '100%', height: 210, background: 'linear-gradient(135deg, rgba(2,132,199,0.18), rgba(14,165,233,0.06))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ fontSize: '3.5rem', fontWeight: 800, color: '#0EA5E9' }}>
+              {(s.name || 'Room')[0].toUpperCase()}
+            </span>
+          </div>
+        )}
         
         {/* INTERCHANGEABLE THUMBNAIL OVERLAY SWITCHER */}
-        <div style={{ position: 'absolute', bottom: 10, right: 10, display: 'flex', gap: 6, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)', padding: 4, borderRadius: 8 }}>
-          {gallery.map((gUrl, gIdx) => (
-            <img
-              key={gIdx}
-              src={gUrl}
-              alt={`View ${gIdx + 1}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                setActiveImg(gUrl);
-              }}
-              style={{
-                width: 28,
-                height: 24,
-                borderRadius: 4,
-                objectFit: 'cover',
-                cursor: 'pointer',
-                border: activeImg === gUrl ? '2px solid #0EA5E9' : '1px solid rgba(255,255,255,0.4)',
-                opacity: activeImg === gUrl ? 1 : 0.65,
-                transition: 'all 0.2s ease',
-              }}
-            />
-          ))}
-        </div>
+        {gallery.length > 1 && (
+          <div style={{ position: 'absolute', bottom: 10, right: 10, display: 'flex', gap: 6, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)', padding: 4, borderRadius: 8 }}>
+            {gallery.map((gUrl, gIdx) => (
+              <img
+                key={gIdx}
+                src={gUrl}
+                alt={`View ${gIdx + 1}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveImg(gUrl);
+                }}
+                style={{
+                  width: 28,
+                  height: 24,
+                  borderRadius: 4,
+                  objectFit: 'cover',
+                  cursor: 'pointer',
+                  border: activeImg === gUrl ? '2px solid #0EA5E9' : '1px solid rgba(255,255,255,0.4)',
+                  opacity: activeImg === gUrl ? 1 : 0.65,
+                  transition: 'all 0.2s ease',
+                }}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="bd">
@@ -108,8 +125,18 @@ export default function Rooms() {
             <RoomCardItem key={s.id || s.slug} s={s} index={i} />
           ))}
         </div>
-        {!loading && list.length === 0 && (
-          <p className="empty">No accommodations found in this category. Adjust your filter or search query.</p>
+        {!loading && all.length === 0 && (
+          <div className="reveal" style={{ padding: '60px 24px', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: 16, border: '1px dashed rgba(255,255,255,0.15)', margin: '30px 0 60px' }}>
+            <div style={{ fontSize: '3rem', marginBottom: 12 }}>🏖️</div>
+            <h3 className="serif" style={{ fontSize: '1.6rem', margin: '0 0 8px' }}>Accommodations Awaiting Provisioning</h3>
+            <p className="muted" style={{ maxWidth: 540, margin: '0 auto 20px', fontSize: '.92rem', lineHeight: 1.6 }}>
+              Resort management is currently updating our active beachfront inventory. Villas, suites, and cottages will be published here upon provisioning.
+            </p>
+            <Link to="/contact" className="btn btn-sky btn-sm">Contact Concierge</Link>
+          </div>
+        )}
+        {!loading && all.length > 0 && list.length === 0 && (
+          <p className="empty">No accommodations found matching "{cat !== 'All' ? cat : q}". Adjust your filter or search query.</p>
         )}
       </div>
     </section>

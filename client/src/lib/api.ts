@@ -89,19 +89,19 @@ export const api = {
   rooms: async () => {
     try {
       const data = await req('/rooms');
-      if (Array.isArray(data) && data.length > 0) return data;
+      if (Array.isArray(data)) return data;
     } catch (err) {
       console.warn('[Rooms Catalog] Primary API route notice, falling back to direct Supabase query:', err);
     }
     try {
       const { data: sbRooms, error } = await supabase.from('rooms').select('*').eq('is_active', true).order('rate_php', { ascending: true });
-      if (!error && Array.isArray(sbRooms) && sbRooms.length > 0) return sbRooms;
+      if (!error && Array.isArray(sbRooms)) return sbRooms;
     } catch {}
-    return CANONICAL_ROOMS;
+    return [];
   },
   createRoom: (body: any) => req('/rooms', { method: 'POST', body }),
   updateRoom: (id: string, body: any) => req(`/rooms/${id}`, { method: 'PATCH', body }),
-  deleteRoom: (id: string) => req(`/rooms/${id}`, { method: 'DELETE' }),
+  deleteRoom: (id: string, hard = false) => req(`/rooms/${id}${hard ? '?hard=true' : ''}`, { method: 'DELETE' }),
   availability: (check_in: string, check_out: string, guests: number) =>
     req(`/availability?check_in=${encodeURIComponent(check_in)}&check_out=${encodeURIComponent(check_out)}&guests=${guests}`),
 
@@ -126,10 +126,17 @@ export const api = {
     window.open(url, '_blank');
   },
 
+  // Audit Auto Logger API
+  auditLogs: (params = '') => req(`/audit-logs${params ? `?${params}` : ''}`),
+  logAuditEvent: (body: any) => req('/audit-logs', { method: 'POST', body }),
+
+  // Administrator & Staff Provisioning
+  adminCreateUser: (body: any) => req('/admin/users', { method: 'POST', body }),
+  updateUserRole: (id: string, role: string) => req(`/admin/users/${id}/role`, { method: 'PATCH', body: { role } }),
+  adminResetPassword: (id: string, new_password: string) => req(`/admin/users/${id}/reset-password`, { method: 'POST', body: { new_password } }),
+
   // Telemetry & Network Status Control
   networkStatus: () => req('/network/status'),
-  telemetryStats: () => req('/telemetry/stats'),
-  telemetryPredictions: (scenario = 'normal') => req(`/telemetry/predictions?scenario=${scenario}`),
 
   // Department Operations Hub
   departmentTasks: () => req('/department/tasks'),
@@ -157,7 +164,6 @@ export const api = {
     return req(`/admin/customers${qs ? `?${qs}` : ''}`);
   },
   createStaffAccount: (body: any) => req('/admin/users', { method: 'POST', body }),
-  updateUserRole: (id: string, role: string) => req(`/admin/users/${id}/role`, { method: 'PATCH', body: { role } }),
   resetUserPassword: (id: string, new_password: string) => req(`/admin/users/${id}/reset-password`, { method: 'POST', body: { new_password } }),
 
   // CSV Operations

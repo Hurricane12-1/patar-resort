@@ -197,40 +197,59 @@ export default function Home() {
             <Link to="/rooms" className="btn btn-ghost btn-sm">All rooms →</Link>
           </div>
 
-          {displayRooms.slice(0, 4).map((s, i) => (
-            <div className={`spread reveal ${i % 2 ? 'flip' : ''}`} key={s.id || s.slug} style={{ marginBottom: 48 }}>
-              <div className="sp-img" onClick={() => setPreviewRoom(s)} style={{ cursor: 'pointer' }}>
-                <img src={roomImg(s.slug)} alt={s.name} loading="lazy" />
-                <span className="sp-tag">{money(s.rate_php)} / night</span>
-              </div>
-              <div className="sp-copy">
-                <span className="label">{s.category}</span>
-                <h3 className="serif">{s.name}</h3>
-                <p>{s.description}</p>
-                <div style={{ margin: '14px 0' }}>
-                  {s.amenities?.map((a) => (
-                    <span
-                      key={a}
-                      className="tag clickable-prompt-word"
-                      onClick={() => dispatchWordPrompt(a, { template: 'Tell me about rooms featuring {word}' })}
-                      title={`Click word to type AI prompt: "${a}"`}
-                    >
-                      {a}
-                    </span>
-                  ))}
-                </div>
-                <div className="sp-meta">
-                  <span>Sleeps<b>{s.capacity}</b></span>
-                  <span>Rating<b>★ {Number(s.rating_avg).toFixed(1)}</b></span>
-                  <span>Units<b>{s.units}</b></span>
-                </div>
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <button className="btn btn-sky" onClick={() => reserve(s.slug)}>Reserve this room</button>
-                  <button className="btn btn-ghost btn-sm" onClick={() => setPreviewRoom(s)}>Quick View</button>
-                </div>
-              </div>
+          {displayRooms.length === 0 ? (
+            <div className="reveal" style={{ padding: '48px 24px', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: 16, border: '1px dashed rgba(255,255,255,0.15)', margin: '20px 0 40px' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🏖️</div>
+              <h3 className="serif" style={{ fontSize: '1.5rem', margin: '0 0 8px' }}>Accommodations Awaiting Provisioning</h3>
+              <p className="muted" style={{ maxWidth: 520, margin: '0 auto 20px', fontSize: '.9rem', lineHeight: 1.6 }}>
+                Resort management is currently updating our active beachfront inventory. Villas, suites, and cottages will be published here upon provisioning.
+              </p>
+              <Link to="/contact" className="btn btn-ghost btn-sm">Contact Concierge</Link>
             </div>
-          ))}
+          ) : (
+            displayRooms.slice(0, 4).map((s, i) => (
+              <div className={`spread reveal ${i % 2 ? 'flip' : ''}`} key={s.id || s.slug} style={{ marginBottom: 48 }}>
+                <div className="sp-img" onClick={() => setPreviewRoom(s)} style={{ cursor: 'pointer' }}>
+                  {s.image_url || roomImg(s.slug) ? (
+                    <img src={s.image_url || roomImg(s.slug)} alt={s.name} loading="lazy" />
+                  ) : (
+                    <div style={{ width: '100%', height: 260, background: 'linear-gradient(135deg, rgba(2,132,199,0.18), rgba(14,165,233,0.06))', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 16 }}>
+                      <span style={{ fontSize: '4rem', fontWeight: 800, color: '#0EA5E9' }}>
+                        {(s.name || 'Room')[0].toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                  <span className="sp-tag">{money(s.rate_php)} / night</span>
+                </div>
+                <div className="sp-copy">
+                  <span className="label">{s.category}</span>
+                  <h3 className="serif">{s.name}</h3>
+                  <p>{s.description}</p>
+                  <div style={{ margin: '14px 0' }}>
+                    {s.amenities?.map((a) => (
+                      <span
+                        key={a}
+                        className="tag clickable-prompt-word"
+                        onClick={() => dispatchWordPrompt(a, { template: 'Tell me about rooms featuring {word}' })}
+                        title={`Click word to type AI prompt: "${a}"`}
+                      >
+                        {a}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="sp-meta">
+                    <span>Sleeps<b>{s.capacity}</b></span>
+                    <span>Rating<b>★ {Number(s.rating_avg).toFixed(1)}</b></span>
+                    <span>Units<b>{s.units}</b></span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button className="btn btn-sky" onClick={() => reserve(s.slug)}>Reserve this room</button>
+                    <button className="btn btn-ghost btn-sm" onClick={() => setPreviewRoom(s)}>Quick View</button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
 
           <div style={{ textAlign: 'center', marginTop: 32 }}>
             <Link to="/rooms" className="btn btn-ghost">View all rooms & rates</Link>
@@ -354,7 +373,15 @@ export default function Home() {
                 onClick={() => setPreviewRoom(null)}>×</button>
             </div>
             <div style={{ height: 220, overflow: 'hidden' }}>
-              <img src={roomImg(previewRoom.slug)} alt={previewRoom.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              {previewRoom.image_url || roomImg(previewRoom.slug) ? (
+                <img src={previewRoom.image_url || roomImg(previewRoom.slug)} alt={previewRoom.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, rgba(2,132,199,0.25), rgba(14,165,233,0.1))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ fontSize: '4.5rem', fontWeight: 800, color: '#0EA5E9' }}>
+                    {(previewRoom.name || 'R')[0].toUpperCase()}
+                  </span>
+                </div>
+              )}
             </div>
             <div className="modal-body">
               <p style={{ fontSize: '.95rem', color: '#E2E8F0', marginBottom: 16 }}>{previewRoom.description}</p>

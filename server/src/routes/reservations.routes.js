@@ -8,6 +8,7 @@ import { admin, getSystemAdminClient } from '../lib/supabase.js';
 import { pingSMS } from '../lib/sms.js';
 import { redis } from '../lib/redis.js';
 import { CANONICAL_ROOMS } from '../lib/canonicalRooms.js';
+import { logAuditEvent } from '../lib/auditLogger.js';
 
 const r = Router();
 const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -99,6 +100,15 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
 
   await redis.clear();
 
+  await logAuditEvent({
+    actor: req.user,
+    action: 'BOOKING_CREATE',
+    resourceType: 'reservation',
+    resourceId: stay.id,
+    details: { room: stay.rooms?.name || roomName, check_in, check_out, guests, total_php },
+    req,
+  });
+
   pingSMS({
     profileId: req.user.id, reservationId: stay.id, toPhone: finalPhone,
     body: `Mabuhay! J & D Beach House ✦ Confirmed: ${stay.rooms?.name || roomName}, ${check_in} → ${check_out} (${nights} night${nights > 1 ? 's' : ''}), ₱${total_php.toLocaleString()}. Check-in 2:00 PM.`,
@@ -127,6 +137,15 @@ r.patch('/reservations/:id/cancel', authenticate, asyncH(async (req, res) => {
 
   await redis.clear();
 
+  await logAuditEvent({
+    actor: req.user,
+    action: 'BOOKING_CANCEL',
+    resourceType: 'reservation',
+    resourceId: b.id,
+    details: { reason: 'Guest cancelled reservation' },
+    req,
+  });
+
   pingSMS({ profileId: req.user.id, reservationId: b.id, toPhone: req.user.phone,
     body: 'J & D Beach House: your reservation was cancelled. The beach will miss you — rebook anytime.' }).catch(() => {});
   return res.json(data);
@@ -153,6 +172,15 @@ r.patch('/reservations/:id/status', authenticate, requireStaffOrAdmin,
     if (error || !data) throw new ApiError(404, 'Reservation not found');
 
     await redis.clear();
+
+    await logAuditEvent({
+      actor: req.user,
+      action: 'BOOKING_STATUS_UPDATE',
+      resourceType: 'reservation',
+      resourceId: data.id,
+      details: { status, guest_name: data.profiles?.full_name, room: data.rooms?.name },
+      req,
+    });
 
     const msg =
       status === 'checked_in'  ? `J & D Beach House: welcome! 🌊 Checked in to ${data.rooms?.name || 'your room'}. Enjoy Bolinao!` :
