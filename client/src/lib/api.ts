@@ -118,8 +118,10 @@ export const api = {
 
   // Financial & Executive Analytics (Cached via Redis)
   analyticsOverview: () => req('/analytics/overview'),
-  fullDiveAnalytics: (range = '30d') => req(`/analytics/full-dive?range=${range}`),
-  exportAnalyticsCSV: () => window.open('/api/analytics/export', '_blank'),
+  exportAnalyticsCSV: () => {
+    const url = API_BASE ? `${API_BASE}/api/analytics/export` : '/api/analytics/export';
+    window.open(url, '_blank');
+  },
 
   // Telemetry & Network Status Control
   networkStatus: () => req('/network/status'),
