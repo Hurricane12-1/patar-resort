@@ -91,7 +91,7 @@ export default function HomeMenuDashboard({ isOpen, onClose, currentScene = 0, o
         </div>
 
         {/* TELEMETRY LIVE MONITOR GRID */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 22 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 22 }}>
           <div style={{ background: 'rgba(30,41,59,0.7)', border: '1px solid rgba(56,189,248,0.25)', borderRadius: 12, padding: 14 }}>
             <span style={{ fontSize: '.68rem', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.12em', fontWeight: 700 }}>Telemetry Stream</span>
             <b style={{ display: 'block', fontSize: '1.4rem', color: '#38BDF8', fontFamily: 'var(--font-serif)', marginTop: 2 }}>
@@ -183,7 +183,7 @@ export default function HomeMenuDashboard({ isOpen, onClose, currentScene = 0, o
           <span style={{ fontSize: '.72rem', textTransform: 'uppercase', letterSpacing: '.14em', color: '#94A3B8', fontWeight: 700, display: 'block', marginBottom: 10 }}>
             🚀 MODULE QUICK LAUNCHERS
           </span>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10 }}>
             {[
               ['/rooms', '🏨 Accommodations', 'Suites & Cottages'],
               ['/my-bookings', '📅 My Bookings', 'Digital Keycodes'],

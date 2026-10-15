@@ -99,7 +99,7 @@ export function InterchangeableImagePicker({ currentImageUrl, onImageSelect, isL
       <b style={{ fontSize: '.78rem', color: themeMuted, textTransform: 'uppercase', letterSpacing: '.05em', display: 'block', marginBottom: 10 }}>
         PRESET INTERCHANGEABLE HIGH-RES GALLERY
       </b>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10, marginBottom: 18 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(68px, 1fr))', gap: 10, marginBottom: 18 }}>
         {presetImages.map((img) => {
           const isSelected = currentImageUrl === img.url;
           return (
@@ -162,7 +162,7 @@ export function InterchangeableImagePicker({ currentImageUrl, onImageSelect, isL
       </div>
 
       {/* 3. LOCAL FILE UPLOADER & CUSTOM URL */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
         <div>
           <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 6 }}>UPLOAD LOCAL IMAGE FILE</label>
           <label className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center', cursor: 'pointer', border: `1px solid ${themeBorder}`, padding: '8px 14px', fontSize: '.84rem', background: isLightMode ? '#FFF' : undefined, color: themeText }}>

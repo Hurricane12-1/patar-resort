@@ -541,7 +541,10 @@ export default function Admin() {
             return (
               <button
                 key={item.key}
-                onClick={() => setActiveTab(item.key)}
+                onClick={() => {
+                  setActiveTab(item.key);
+                  setSidebarMobileOpen(false);
+                }}
                 className={`sidebar-nav-item ${isActive ? 'active' : ''}`}
                 style={{
                   display: 'flex',
@@ -705,6 +708,7 @@ export default function Admin() {
             {/* LIGHT MODE / DARK MODE TOGGLE BUTTON */}
             <button
               onClick={toggleThemeMode}
+              className="admin-theme-toggle-btn"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -722,7 +726,7 @@ export default function Admin() {
               title="Toggle Executive White / Dark Theme"
             >
               {isLightMode ? <IconSun size={16} color="#F59E0B" /> : <IconMoon size={16} color="#38BDF8" />}
-              <span>{isLightMode ? 'White Mode' : 'Dark Mode'}</span>
+              <span className="theme-btn-label">{isLightMode ? 'White Mode' : 'Dark Mode'}</span>
             </button>
 
             {/* NOTIFICATION BAR ICON & DROPDOWN */}
@@ -759,6 +763,7 @@ export default function Admin() {
                     right: 0,
                     top: 48,
                     width: 320,
+                    maxWidth: 'calc(100vw - 28px)',
                     background: themeSidebarBg,
                     border: `1px solid ${themeBorder}`,
                     borderRadius: 14,
@@ -1508,7 +1513,7 @@ export default function Admin() {
                       <span style={{ fontSize: '.74rem', color: '#3B82F6', fontWeight: 700, background: 'rgba(59, 130, 246, 0.1)', padding: '4px 12px', borderRadius: 16, border: '1px solid rgba(59, 130, 246, 0.2)' }}>Facebook Profile Sync</span>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                    <div className="admin-grid-2-col" style={{ marginBottom: 16 }}>
                       <div className="field" style={{ gridColumn: 'span 2' }}>
                         <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700 }}>EXECUTIVE BIO / STATUS MESSAGE</label>
                         <input
@@ -1589,7 +1594,7 @@ export default function Admin() {
                         />
                       </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                      <div className="admin-grid-2-col" style={{ gap: 14 }}>
                         <div className="field">
                           <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700 }}>NEW PASSWORD</label>
                           <input
@@ -1634,7 +1639,7 @@ export default function Admin() {
                     {/* Active Login Sessions */}
                     <div style={{ marginTop: 20, paddingTop: 16, borderTop: `1px solid ${themeBorder}` }}>
                       <span style={{ fontSize: '.76rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 10 }}>WHERE YOU'RE LOGGED IN</span>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                      <div className="admin-grid-2-col" style={{ gap: 12 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: isLightMode ? '#FFFFFF' : 'rgba(255,255,255,0.04)', borderRadius: 12, border: `1px solid ${themeBorder}` }}>
                           <div style={{ fontSize: '.84rem', color: themeText }}>
                             💻 <b>Windows PC</b> · Manila, PH
@@ -1662,7 +1667,7 @@ export default function Admin() {
                       <span style={{ fontSize: '.76rem', color: themeMuted, display: 'block', marginTop: 2 }}>Configure real-time SSE stream intervals, auto-lock security, and Twilio SMS triggers</span>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 18 }}>
+                    <div className="admin-grid-2-col" style={{ marginBottom: 18 }}>
                       <div className="field">
                         <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700 }}>TELEMETRY STREAM SPEED</label>
                         <select
@@ -1779,7 +1784,7 @@ export default function Admin() {
               </div>
 
               {/* SYSTEM GAUGES — CPU / MEMORY / DISK */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
+              <div className="admin-grid-3-col">
                 {[
                   { label: 'CPU UTILIZATION', value: telemetryLive.cpuUsage, color: telemetryLive.cpuUsage > 80 ? '#F43F5E' : telemetryLive.cpuUsage > 60 ? '#F59E0B' : '#10B981', unit: '%' },
                   { label: 'MEMORY USAGE', value: telemetryLive.memoryUsage, color: telemetryLive.memoryUsage > 80 ? '#F43F5E' : telemetryLive.memoryUsage > 60 ? '#F59E0B' : '#0EA5E9', unit: '%' },
@@ -1813,7 +1818,7 @@ export default function Admin() {
               </div>
 
               {/* METRIC CARDS ROW */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 24 }}>
+              <div className="admin-grid-4-col">
                 <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.5)', border: `1px solid ${themeBorder}`, borderRadius: 12, padding: 16 }}>
                   <span style={{ fontSize: '.72rem', color: themeMuted, fontWeight: 700 }}>ACTIVE SESSIONS</span>
                   <b style={{ display: 'block', fontSize: '1.5rem', color: '#0EA5E9', marginTop: 4, transition: 'color 0.3s' }}>{Math.round(telemetryLive.activeSessions)}</b>
@@ -2027,7 +2032,7 @@ export default function Admin() {
               {accountsSubTab === 'customers' && (
                 <>
                   {/* Customer Summary Stats */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 20 }}>
+                  <div className="admin-grid-3-col" style={{ gap: 14, marginBottom: 20 }}>
                     {(() => {
                       const custUsers = users.filter(u => !u.role || u.role === 'customer');
                       const totalCust = custUsers.length;

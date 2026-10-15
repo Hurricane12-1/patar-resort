@@ -340,6 +340,67 @@
   }
 }
 
+/* 8. RESPONSIVE UTILITY GRIDS & CONTAINERS */
+.admin-grid-4-col {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 24px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.admin-grid-3-col {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.admin-grid-2-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.conversations-grid-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 20px;
+  min-height: 580px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 1024px) {
+  .admin-grid-4-col {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .conversations-grid-layout {
+    grid-template-columns: 280px 1fr;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 860px) {
+  .conversations-grid-layout {
+    grid-template-columns: 1fr !important;
+    min-height: auto;
+  }
+  .conversations-inbox-column {
+    border-right: none !important;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+    padding-right: 0 !important;
+    padding-bottom: 16px;
+    max-height: 260px;
+    overflow-y: auto;
+  }
+}
+
 @media (max-width: 768px) {
   .admin-grid-bottom-3 {
     grid-template-columns: 1fr;
@@ -348,11 +409,19 @@
     grid-template-columns: 1fr;
     gap: 14px;
   }
+  .admin-grid-3-col {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .admin-grid-2-col {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
   .admin-portal header {
-    padding: 0 14px !important;
+    padding: 0 12px !important;
   }
   .admin-header-search {
-    width: 160px !important;
+    width: 140px !important;
   }
 }
 
@@ -360,10 +429,41 @@
   .admin-grid-metrics-4 {
     grid-template-columns: 1fr;
   }
+  .admin-grid-4-col {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
   .admin-main-content {
-    padding: 12px 12px 90px 12px !important;
+    padding: 10px 10px 90px 10px !important;
   }
   .admin-header-title {
     display: none !important;
+  }
+  .theme-btn-label {
+    display: none !important;
+  }
+  .admin-theme-toggle-btn {
+    padding: 6px 10px !important;
+  }
+  .admin-header-search {
+    width: 110px !important;
+    font-size: .75rem !important;
+  }
+  .admin-portal .panel {
+    padding: 14px !important;
+    border-radius: 14px !important;
+  }
+  .admin-portal aside {
+    width: 270px !important;
+    max-width: 85vw !important;
+  }
+}
+
+@media (max-width: 440px) {
+  .admin-header-search {
+    display: none !important;
+  }
+  .admin-portal header {
+    gap: 6px !important;
   }
 }

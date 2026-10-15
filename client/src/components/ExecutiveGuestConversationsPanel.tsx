@@ -147,10 +147,10 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
         </div>
       </div>
 
-      {/* 2-COLUMN PANEL LAYOUT (LEFT LIST 320px / RIGHT CHAT EXPANDED) */}
-      <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 20, minHeight: 580 }}>
+      {/* 2-COLUMN RESPONSIVE PANEL LAYOUT */}
+      <div className="conversations-grid-layout">
         {/* LEFT INBOX TICKET LIST */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, borderRight: `1px solid ${themeBorder}`, paddingRight: 16 }}>
+        <div className="conversations-inbox-column" style={{ display: 'flex', flexDirection: 'column', gap: 14, borderRight: `1px solid ${themeBorder}`, paddingRight: 16 }}>
           {/* SEARCH & FILTER */}
           <input
             type="text"

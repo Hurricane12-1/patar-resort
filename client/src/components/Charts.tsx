@@ -453,7 +453,7 @@ export function DualSplineWaveChart({ height = 230, isLightMode = false, onPoint
             </button>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12, marginBottom: 12 }}>
             <div style={{ background: 'rgba(52, 211, 153, 0.1)', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(52, 211, 153, 0.25)' }}>
               <span style={{ fontSize: '.68rem', color: '#34D399', fontWeight: 800, letterSpacing: '.06em' }}>AUTOMATED AI CHATS</span>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 2 }}>
@@ -1038,7 +1038,7 @@ export function BarChart({ data = [], height = 160 }) {
   return (
     <div className="bar-chart-container" style={{ width: '100%' }}>
       {/* PREDICTIVE VISITOR SUMMARY STATS BAND */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 16 }}>
         <div style={{ background: 'rgba(30,41,59,0.7)', border: '1px solid rgba(56,189,248,0.3)', borderRadius: 10, padding: '10px 14px' }}>
           <span style={{ fontSize: '.68rem', textTransform: 'uppercase', letterSpacing: '.12em', color: '#94A3B8', fontWeight: 700 }}>
             Weekly Visitor Forecast

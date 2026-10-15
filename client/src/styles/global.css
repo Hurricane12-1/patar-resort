@@ -31,6 +31,8 @@
 /* ============ CURSOR REGULATION: REMOVE TEXT CURSOR ON NON-INPUTS ============ */
 html, body {
   cursor: default;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 /* Form inputs & editable content retain proper I-beam text cursor */
