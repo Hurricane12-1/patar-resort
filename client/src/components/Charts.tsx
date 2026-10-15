@@ -2,18 +2,9 @@ import React, { useState } from 'react';
 
 // Multi-Segment Donut Pie Chart (Matching "User Activity" in reference UI)
 export function DonutChart({
-  totalValue = '3,599',
+  totalValue = '0',
   totalLabel = 'ACTIVE USERS',
-  segments = [
-    { label: 'Webchat', value: 35, color: '#E0E7FF' },
-    { label: 'F. Messenger', value: 20, color: '#6366F1' },
-    { label: 'Whatsapp', value: 15, color: '#4338CA' },
-    { label: 'Booking Messages', value: 10, color: '#0EA5E9' },
-    { label: 'WeChat', value: 8, color: '#064E3B' },
-    { label: 'Telegram', value: 5, color: '#10B981' },
-    { label: 'Instagram', value: 4, color: '#34D399' },
-    { label: 'Email', value: 3, color: '#A7F3D0' },
-  ],
+  segments = [],
   size = 180,
   onSegmentClick,
 }) {
@@ -22,6 +13,16 @@ export function DonutChart({
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const total = segments.reduce((sum, s) => sum + s.value, 0);
+
+  if (total === 0 || segments.length === 0) {
+    return (
+      <div style={{ textAlign: 'center', padding: '24px 16px', border: '1px dashed rgba(255,255,255,0.12)', borderRadius: 16, width: '100%', maxWidth: size + 80 }}>
+        <span style={{ fontSize: '1.6rem', display: 'block', marginBottom: 6 }}>📊</span>
+        <b style={{ fontSize: '.84rem', color: 'var(--theme-text, #0F172A)', display: 'block' }}>Awaiting Channel Activity</b>
+        <span style={{ fontSize: '.72rem', color: '#64748B' }}>0 active guest sessions recorded</span>
+      </div>
+    );
+  }
 
   let accumulatedPercent = 0;
 
@@ -95,12 +96,26 @@ export function DonutChart({
 }
 
 // Dual Spline Wave Chart (Matching "Conversations Evolution" in reference UI)
-export function DualSplineWaveChart({ height = 230, isLightMode = false, onPointClick }) {
+export function DualSplineWaveChart({ height = 230, isLightMode = false, onPointClick, totalChats = 0 }) {
   const [timeRange, setTimeRange] = useState('Month'); // 'Month' | 'Week' | 'Day'
   const [showAuto, setShowAuto] = useState(true);
   const [showStaff, setShowStaff] = useState(true);
   const [hoveredIdx, setHoveredIdx] = useState(null);
   const [selectedPoint, setSelectedPoint] = useState(null);
+
+  if (totalChats === 0) {
+    return (
+      <div style={{ height, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '24px 16px' }}>
+        <span style={{ fontSize: '2rem', marginBottom: 8 }}>🌊</span>
+        <h4 style={{ margin: '0 0 6px', fontSize: '1.05rem', color: isLightMode ? '#0F172A' : '#F8FAFC', fontWeight: 700 }}>
+          Conversations Evolution
+        </h4>
+        <p style={{ margin: 0, fontSize: '.8rem', color: '#64748B', maxWidth: 360, lineHeight: 1.4 }}>
+          Awaiting live chat traffic from Supabase — Automated AI bot interactions and staff response volume will graph here dynamically as guests send inquiries.
+        </p>
+      </div>
+    );
+  }
 
   // Datasets for Month (30d), Week (7d), and Day (24h)
   const monthData = {
@@ -495,14 +510,24 @@ export function AreaLineChart({ data = [], height = 180, onPointClick }) {
   const [hoveredIdx, setHoveredIdx] = useState(null);
   const [selectedIdx, setSelectedIdx] = useState(null);
 
-  if (!data || data.length === 0) return null;
+  const hasData = Array.isArray(data) && data.length > 0 && data.some((d) => (d.revenue > 0 || d.value > 0));
+  if (!hasData) {
+    return (
+      <div style={{ height, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 12 }}>
+        <span style={{ fontSize: '1.5rem', marginBottom: 4 }}>📈</span>
+        <b style={{ fontSize: '.84rem', color: 'var(--theme-text, #0F172A)' }}>Awaiting Live Revenue Records</b>
+        <span style={{ fontSize: '.72rem', color: '#64748B' }}>Daily booking revenue from Supabase will plot here</span>
+      </div>
+    );
+  }
+
   const max = Math.max(...data.map((d) => d.value), 1);
   const min = Math.min(...data.map((d) => d.value));
   const range = Math.max(1, max - min);
   const w = 480;
 
   const points = data.map((d, i) => {
-    const x = (i / (data.length - 1)) * (w - 40) + 20;
+    const x = data.length > 1 ? (i / (data.length - 1)) * (w - 40) + 20 : w / 2;
     const y = height - 30 - ((d.value - min) / range) * (height - 60);
     return { x, y, label: d.label, value: d.value, raw: d };
   });
@@ -615,7 +640,16 @@ export function AreaLineChart({ data = [], height = 180, onPointClick }) {
 // Multi-Color Series Grouped Bar Chart (Matching "Performance" in reference UI)
 export function MultiBarChart({ data = [], height = 180, onBarClick }) {
   const [hoverIndex, setHoverIndex] = useState(null);
-  if (!data || data.length === 0) return null;
+  const hasData = Array.isArray(data) && data.length > 0 && data.some((d) => (d.target > 0 || d.paid > 0 || d.pending > 0));
+  if (!hasData) {
+    return (
+      <div style={{ height, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 12 }}>
+        <span style={{ fontSize: '1.5rem', marginBottom: 4 }}>📊</span>
+        <b style={{ fontSize: '.84rem', color: 'var(--theme-text, #0F172A)' }}>Awaiting Weekly Performance</b>
+        <span style={{ fontSize: '.72rem', color: '#64748B' }}>Staff reply and inquiry resolution data will appear here</span>
+      </div>
+    );
+  }
   const max = 100;
   const w = 480;
   const groupWidth = (w - 40) / data.length;
@@ -1002,6 +1036,17 @@ export function DualLineChart({ data = [], height = 170, isLightMode = false, on
 // Referrer Category Bar Chart Component (Clean & Non-Overflowing for "Total Amount")
 export function ReferrerCategoryBarChart({ isLightMode = true, totalAmount = 0 }) {
   const tot = typeof totalAmount === 'number' && totalAmount >= 0 ? totalAmount : 0;
+
+  if (tot === 0) {
+    return (
+      <div style={{ textAlign: 'center', padding: '24px 12px', border: '1px dashed rgba(255,255,255,0.12)', borderRadius: 14 }}>
+        <span style={{ fontSize: '1.4rem', display: 'block', marginBottom: 4 }}>🏖️</span>
+        <b style={{ fontSize: '.82rem', color: isLightMode ? '#0F172A' : '#F8FAFC', display: 'block' }}>Awaiting Live Bookings</b>
+        <span style={{ fontSize: '.72rem', color: '#64748B' }}>₱0 revenue recorded from referral channels</span>
+      </div>
+    );
+  }
+
   const categories = [
     { label: 'Direct Booking', pct: 45, amount: `₱${Math.round(tot * 0.45).toLocaleString()}`, color: '#0EA5E9' },
     { label: 'Agoda & OTAs', pct: 28, amount: `₱${Math.round(tot * 0.28).toLocaleString()}`, color: '#10B981' },

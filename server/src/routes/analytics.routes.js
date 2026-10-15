@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { asyncH } from '../middleware/errors.js';
-import { authenticate, requireStaffOrAdmin, requireAdmin, bearerFromQuery } from '../middleware/auth.js';
-import { admin } from '../lib/supabase.js';
+import { authenticate, requireStaffOrAdmin, requireAdmin, requireAdminSecurityBlock, bearerFromQuery } from '../middleware/auth.js';
+import { admin, getSystemAdminClient } from '../lib/supabase.js';
 import { redis } from '../lib/redis.js';
 
 const r = Router();
 
-r.get('/analytics/overview', authenticate, requireStaffOrAdmin, asyncH(async (req, res) => {
+r.get('/analytics/overview', authenticate, requireAdminSecurityBlock, asyncH(async (req, res) => {
   const cacheKey = 'analytics:overview';
   const cached = await redis.get(cacheKey);
   if (cached) {
@@ -16,46 +16,80 @@ r.get('/analytics/overview', authenticate, requireStaffOrAdmin, asyncH(async (re
   }
 
   try {
-    const client = req.sb || admin;
-    const [ovRes, dailyRes, topRes, resRes, ordersRes, chatCountRes] = await Promise.all([
-      client.from('analytics_overview').select('*').single(),
-      client.from('analytics_daily').select('*'),
-      client.from('analytics_top_rooms').select('*'),
-      client.from('reservations').select('*, profiles(full_name, phone), rooms(name)').order('created_at', { ascending: false }).limit(50),
+    const client = await getSystemAdminClient();
+    const [roomsRes, resRes, ordersRes, chatCountRes, reviewsRes] = await Promise.all([
+      client.from('rooms').select('id, name, units, rate_php, rating_avg').eq('is_active', true).order('rate_php', { ascending: true }),
+      client.from('reservations').select('id, room_id, total_php, status, nights, check_in, check_out, channel, notes, created_at, rooms(name), profiles(full_name)').order('created_at', { ascending: false }).limit(200),
       client.from('resort_orders').select('item_name, category, price_php, status, created_at').limit(250),
       client.from('chat_messages').select('id', { count: 'exact', head: true }),
+      client.from('reviews').select('rating, created_at'),
     ]);
 
-    const overview = ovRes.data || {};
-    const daily = dailyRes.data || [];
-    const top = topRes.data || [];
+    const activeRooms = roomsRes.data || [];
     const bookings = resRes.data || [];
     const orders = ordersRes.data || [];
+    const reviews = reviewsRes.data || [];
     const totalChats = chatCountRes.count || 0;
 
-    // Financial KPI Analytics
-    const roomRev = bookings.reduce((a, b) => a + (b.total_php || 0), 0);
+    // Filter valid non-cancelled bookings
+    const activeBookings = bookings.filter((b) => b.status !== 'cancelled');
+
+    // Financial KPI Analytics (Direct Live Aggregation)
+    const roomRev = activeBookings.reduce((a, b) => a + (b.total_php || 0), 0);
     const diningRev = orders.filter((o) => o.category === 'Dining').reduce((a, o) => a + (o.price_php || 0), 0);
     const tourRev = orders.filter((o) => o.category === 'Tour').reduce((a, o) => a + (o.price_php || 0), 0);
     const totalRev = roomRev + diningRev + tourRev;
 
-    const totalNights = bookings.reduce((a, b) => a + (b.nights || 1), 0);
-    const adr = totalNights > 0 ? Math.round(roomRev / totalNights) : 0; // Average Daily Rate
+    const totalNights = activeBookings.reduce((a, b) => a + (b.nights || 1), 0);
+    const adr = totalNights > 0 ? Math.round(roomRev / totalNights) : 0;
 
-    // Dynamic Occupancy & Stays Fallbacks
+    // Dynamic Occupancy & Stays
     const today = new Date().toISOString().slice(0, 10);
-    const arrivalsToday = overview.arrivals_today ?? bookings.filter((b) => b.check_in === today).length;
-    const departuresToday = overview.departures_today ?? bookings.filter((b) => b.check_out === today).length;
-    const activeStays = bookings.filter((b) => ['confirmed', 'checked_in'].includes(b.status)).length;
-    const occupancyPct = overview.occupancy_pct ?? (bookings.length > 0 ? Math.min(100, Math.round((activeStays / 12) * 100)) : 0);
+    const arrivalsToday = activeBookings.filter((b) => b.check_in === today).length;
+    const departuresToday = activeBookings.filter((b) => b.check_out === today).length;
+    const activeStays = activeBookings.filter((b) => ['confirmed', 'checked_in'].includes(b.status)).length;
+    const totalUnitsCapacity = activeRooms.reduce((sum, r) => sum + (r.units || 1), 0) || 12;
+    const occupancyPct = totalUnitsCapacity > 0 ? Math.min(100, Math.round((activeStays / totalUnitsCapacity) * 100)) : 0;
 
-    const revpar = Math.round(adr * (occupancyPct / 100)); // Revenue per available room
-    const alos = bookings.length > 0 ? Number((totalNights / bookings.length).toFixed(1)) : 0;
+    const revpar = Math.round(adr * (occupancyPct / 100));
+    const alos = activeBookings.length > 0 ? Number((totalNights / activeBookings.length).toFixed(1)) : 0;
 
-    // Dynamic Kitchen & Dining Sales Aggregation
+    // Dynamic Top Performing Rooms (Strictly ACTIVE rooms, excluding deactivated mock rooms)
+    const top = activeRooms.map((room) => {
+      const roomBookings = activeBookings.filter((b) => b.room_id === room.id);
+      const rev = roomBookings.reduce((sum, b) => sum + (b.total_php || 0), 0);
+      return {
+        id: room.id,
+        name: room.name,
+        stays: roomBookings.length,
+        revenue_php: rev,
+      };
+    }).sort((a, b) => b.revenue_php - a.revenue_php);
+
+    // Dynamic 7-Day Daily Revenue & Booking Timeline (Derived from live records)
+    const daily = [];
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const dayStr = d.toISOString().slice(0, 10);
+      const dayBookings = activeBookings.filter((b) => b.created_at?.slice(0, 10) === dayStr);
+      const dayRev = dayBookings.reduce((a, b) => a + (b.total_php || 0), 0);
+      const dayNights = dayBookings.reduce((a, b) => a + (b.nights || 1), 0);
+      daily.push({
+        day: dayStr,
+        date: dayStr,
+        bookings: dayBookings.length,
+        nights_sold: dayNights,
+        revenue_php: dayRev,
+        is_forecast: false,
+      });
+    }
+
+    // Dynamic Kitchen & Dining Sales Aggregation (Purely live orders, empty array if no orders yet)
     const itemMap = new Map();
     for (const order of orders.filter((o) => o.category === 'Dining')) {
-      const name = order.item_name || 'Patar Specialty Feast';
+      const name = order.item_name || 'Kitchen Order';
       if (!itemMap.has(name)) {
         itemMap.set(name, {
           id: `food-${itemMap.size + 1}`,
@@ -79,16 +113,17 @@ r.get('/analytics/overview', authenticate, requireStaffOrAdmin, asyncH(async (re
       }));
 
     // Chatbot and Operations Efficiency Metrics
-    const chatbotBookingsCount = bookings.filter((b) => b.channel === 'chatbot' || (b.notes && b.notes.toLowerCase().includes('chat'))).length;
-    const csatScore = overview.avg_rating ? Math.min(100, Math.round((Number(overview.avg_rating) / 5) * 100)) : 0;
-    const automationRate = bookings.length > 0 ? Math.round((chatbotBookingsCount / bookings.length) * 100) : 0;
+    const chatbotBookingsCount = activeBookings.filter((b) => b.channel === 'chatbot' || (b.notes && b.notes.toLowerCase().includes('chat'))).length;
+    const avgRating = reviews.length > 0 ? Number((reviews.reduce((s, r) => s + (r.rating || 5), 0) / reviews.length).toFixed(1)) : 0;
+    const csatScore = reviews.length > 0 ? Math.min(100, Math.round((avgRating / 5) * 100)) : 0;
+    const automationRate = activeBookings.length > 0 ? Math.round((chatbotBookingsCount / activeBookings.length) * 100) : 0;
 
     const payload = {
       overview: {
-        ...overview,
         arrivals_today: arrivalsToday,
         departures_today: departuresToday,
         occupancy_pct: occupancyPct,
+        revenue_week_php: daily.reduce((s, d) => s + d.revenue_php, 0),
         total_revenue_php: totalRev,
         room_revenue_php: roomRev,
         dining_revenue_php: diningRev,
@@ -97,6 +132,9 @@ r.get('/analytics/overview', authenticate, requireStaffOrAdmin, asyncH(async (re
         revpar_php: revpar,
         alos_nights: alos,
         goppar_php: Math.round(revpar * 0.72),
+        avg_rating: avgRating,
+        sms_delivered: 0,
+        stays_total: activeBookings.length,
         automation_rate_pct: automationRate,
         chatbot_bookings: chatbotBookingsCount,
         chatbot_csat_pct: csatScore,
@@ -105,7 +143,7 @@ r.get('/analytics/overview', authenticate, requireStaffOrAdmin, asyncH(async (re
       daily,
       top,
       food_sales,
-      bookings,
+      bookings: activeBookings,
     };
 
     // Cache in Redis/memory with 30s TTL
@@ -132,9 +170,14 @@ r.get('/analytics/overview', authenticate, requireStaffOrAdmin, asyncH(async (re
         avg_rating: 0,
         sms_delivered: 0,
         stays_total: 0,
+        automation_rate_pct: 0,
+        chatbot_bookings: 0,
+        chatbot_csat_pct: 0,
+        conversations_closed: 0,
       },
       daily: [],
       top: [],
+      food_sales: [],
       bookings: [],
     });
   }
@@ -233,23 +276,23 @@ async function computeFullDivePayload(range, client = admin) {
   allEvents.sort((a, b) => b.timestamp - a.timestamp);
   const liveEvents = allEvents.slice(0, 6);
 
-  // Funnel derived from actual reservation count
+  // Funnel derived purely from actual reservation count (0 if awaiting live bookings)
   const confirmedCount = bookings.filter((b) => ['confirmed', 'checked_in', 'checked_out'].includes(b.status)).length;
   const checkedInCount = bookings.filter((b) => ['checked_in', 'checked_out'].includes(b.status)).length;
-  const totalInquiries = Math.max(bookings.length * 15, 100);
+  const totalInquiries = bookings.length > 0 ? bookings.length * 15 : 0;
   const funnel = [
-    { step: 'Availability Checks', count: totalInquiries, pct: 100 },
-    { step: 'Dates Selected', count: Math.max(bookings.length * 5, 40), pct: 40.0 },
-    { step: 'Reservations Placed', count: bookings.length, pct: Number(((bookings.length / totalInquiries) * 100).toFixed(1)) },
-    { step: 'Confirmed Bookings', count: confirmedCount, pct: Number(((confirmedCount / totalInquiries) * 100).toFixed(1)) },
-    { step: 'Checked-In Guests', count: checkedInCount, pct: Number(((checkedInCount / totalInquiries) * 100).toFixed(1)) },
+    { step: 'Availability Checks', count: totalInquiries, pct: totalInquiries > 0 ? 100 : 0 },
+    { step: 'Dates Selected', count: bookings.length > 0 ? Math.max(bookings.length * 5, 1) : 0, pct: totalInquiries > 0 ? 40.0 : 0 },
+    { step: 'Reservations Placed', count: bookings.length, pct: totalInquiries > 0 ? Number(((bookings.length / totalInquiries) * 100).toFixed(1)) : 0 },
+    { step: 'Confirmed Bookings', count: confirmedCount, pct: totalInquiries > 0 ? Number(((confirmedCount / totalInquiries) * 100).toFixed(1)) : 0 },
+    { step: 'Checked-In Guests', count: checkedInCount, pct: totalInquiries > 0 ? Number(((checkedInCount / totalInquiries) * 100).toFixed(1)) : 0 },
   ];
 
   return { range, funnel, heatmaps, liveEvents };
 }
 
 // Full-Dive Analytics RPC Endpoint (Cached with 60s TTL)
-r.get('/analytics/full-dive', authenticate, requireStaffOrAdmin, asyncH(async (req, res) => {
+r.get('/analytics/full-dive', authenticate, requireAdminSecurityBlock, asyncH(async (req, res) => {
   const range = String(req.query.range || '30d');
   const cacheKey = `analytics:full_dive:${range}`;
   const cached = await redis.get(cacheKey);
@@ -258,7 +301,8 @@ r.get('/analytics/full-dive', authenticate, requireStaffOrAdmin, asyncH(async (r
     return res.json(cached);
   }
 
-  const payload = await computeFullDivePayload(range, req.sb || admin);
+  const client = await getSystemAdminClient();
+  const payload = await computeFullDivePayload(range, client);
   await redis.set(cacheKey, payload, 60);
   res.setHeader('X-Cache', 'MISS');
   res.json(payload);
@@ -275,7 +319,7 @@ r.post('/analytics/cache/purge', authenticate, requireAdmin, asyncH(async (_req,
 }));
 
 // Performance & Cache Inspection Endpoint
-r.get('/analytics/inspect', authenticate, requireStaffOrAdmin, asyncH(async (_req, res) => {
+r.get('/analytics/inspect', authenticate, requireAdminSecurityBlock, asyncH(async (_req, res) => {
   const t0 = Date.now();
   const ping = await redis.ping();
   const ovCached = Boolean(await redis.get('analytics:overview'));
@@ -316,107 +360,14 @@ r.get('/analytics/inspect', authenticate, requireStaffOrAdmin, asyncH(async (_re
 }));
 
 // Performance Optimization & Cache Pre-Warming Endpoint
-r.post('/analytics/optimize', authenticate, requireAdmin, asyncH(async (_req, res) => {
+r.post('/analytics/optimize', authenticate, requireAdminSecurityBlock, asyncH(async (_req, res) => {
   const t0 = Date.now();
 
   // 1. Purge stale/fragmented keys
   await redis.del('analytics:overview');
   await redis.del('analytics:full_dive:30d');
 
-  // 2. Pre-warm analytics overview
-  const [ovRes, dailyRes, topRes, resRes, ordersRes, chatCountRes] = await Promise.all([
-    admin.from('analytics_overview').select('*').single(),
-    admin.from('analytics_daily').select('*'),
-    admin.from('analytics_top_rooms').select('*'),
-    admin.from('reservations').select('*, profiles(full_name, phone), rooms(name)').order('created_at', { ascending: false }).limit(50),
-    admin.from('resort_orders').select('item_name, category, price_php, status, created_at').limit(250),
-    admin.from('chat_messages').select('id', { count: 'exact', head: true }),
-  ]);
-
-  const overview = ovRes.data || {};
-  const daily = dailyRes.data || [];
-  const top = topRes.data || [];
-  const bookings = resRes.data || [];
-  const orders = ordersRes.data || [];
-  const totalChats = chatCountRes.count || 0;
-
-  const roomRev = bookings.reduce((a, b) => a + (b.total_php || 0), 0);
-  const diningRev = orders.filter((o) => o.category === 'Dining').reduce((a, o) => a + (o.price_php || 0), 0);
-  const tourRev = orders.filter((o) => o.category === 'Tour').reduce((a, o) => a + (o.price_php || 0), 0);
-  const totalRev = roomRev + diningRev + tourRev;
-  const totalNights = bookings.reduce((a, b) => a + (b.nights || 1), 0);
-  const adr = totalNights > 0 ? Math.round(roomRev / totalNights) : 0;
-
-  const today = new Date().toISOString().slice(0, 10);
-  const arrivalsToday = overview.arrivals_today ?? bookings.filter((b) => b.check_in === today).length;
-  const departuresToday = overview.departures_today ?? bookings.filter((b) => b.check_out === today).length;
-  const activeStays = bookings.filter((b) => ['confirmed', 'checked_in'].includes(b.status)).length;
-  const occupancyPct = overview.occupancy_pct ?? (bookings.length > 0 ? Math.min(100, Math.round((activeStays / 12) * 100)) : 0);
-
-  const revpar = Math.round(adr * (occupancyPct / 100));
-  const alos = bookings.length > 0 ? Number((totalNights / bookings.length).toFixed(1)) : 0;
-
-  // Aggregate Food Sales
-  const itemMap = new Map();
-  for (const order of orders.filter((o) => o.category === 'Dining')) {
-    const name = order.item_name || 'Patar Specialty Feast';
-    if (!itemMap.has(name)) {
-      itemMap.set(name, {
-        id: `food-${itemMap.size + 1}`,
-        name,
-        category: order.category,
-        orders: 0,
-        revenue_php: 0,
-      });
-    }
-    const entry = itemMap.get(name);
-    entry.orders += 1;
-    entry.revenue_php += (order.price_php || 0);
-  }
-
-  const food_sales = Array.from(itemMap.values())
-    .sort((a, b) => b.revenue_php - a.revenue_php)
-    .map((item, idx) => ({
-      ...item,
-      trend: idx === 0 ? 'popular' : idx === 1 ? 'trending' : 'steady',
-      growth: idx === 0 ? '+24%' : idx === 1 ? '+15%' : '+8%',
-    }));
-
-  const chatbotBookingsCount = bookings.filter((b) => b.channel === 'chatbot' || (b.notes && b.notes.toLowerCase().includes('chat'))).length;
-  const csatScore = overview.avg_rating ? Math.min(99, Math.round((Number(overview.avg_rating) / 5) * 100)) : 88;
-
-  const warmedOverview = {
-    overview: {
-      ...overview,
-      arrivals_today: arrivalsToday,
-      departures_today: departuresToday,
-      occupancy_pct: occupancyPct,
-      total_revenue_php: totalRev,
-      room_revenue_php: roomRev,
-      dining_revenue_php: diningRev,
-      tour_revenue_php: tourRev,
-      adr_php: adr,
-      revpar_php: revpar,
-      alos_nights: alos,
-      goppar_php: Math.round(revpar * 0.72),
-      automation_rate_pct: 82,
-      chatbot_bookings: chatbotBookingsCount > 0 ? chatbotBookingsCount : Math.max(1, Math.round(bookings.length * 0.35)),
-      chatbot_csat_pct: csatScore,
-      conversations_closed: totalChats > 0 ? totalChats : 24,
-    },
-    daily,
-    top,
-    food_sales,
-    bookings,
-  };
-
-  await redis.set('analytics:overview', warmedOverview, 30);
-
-  // 3. Pre-warm full dive analytics directly from database
-  const warmedFullDive = await computeFullDivePayload('30d');
-  await redis.set('analytics:full_dive:30d', warmedFullDive, 60);
-
-  // 4. Pre-warm rooms catalog
+  // 2. Pre-warm rooms catalog
   const { data: rooms } = await admin.from('rooms').select('*').eq('is_active', true).order('rating_avg', { ascending: false });
   await redis.set('rooms:catalog:all:all', rooms || [], 60);
 
@@ -425,20 +376,21 @@ r.post('/analytics/optimize', authenticate, requireAdmin, asyncH(async (_req, re
     success: true,
     message: 'Analytics pipeline optimized and pre-warmed for maximum concurrency.',
     duration_ms: durationMs,
-    warmed_keys: ['analytics:overview', 'analytics:full_dive:30d', 'rooms:catalog:all:all'],
+    warmed_keys: ['rooms:catalog:all:all'],
     optimization_score: 100,
   });
 }));
 
-// Export Analytics Report CSV (Derived from live Supabase tables & views)
-r.get('/analytics/export', authenticate, requireStaffOrAdmin, asyncH(async (_req, res) => {
-  const [ovRes, resRes, ordersRes] = await Promise.all([
-    admin.from('analytics_overview').select('*').single(),
-    admin.from('reservations').select('total_php, nights, status').neq('status', 'cancelled'),
-    admin.from('resort_orders').select('price_php, category'),
+// Export Analytics Report CSV (Derived from live Supabase tables)
+r.get('/analytics/export', authenticate, requireAdminSecurityBlock, asyncH(async (_req, res) => {
+  const client = await getSystemAdminClient();
+  const [roomsRes, resRes, ordersRes] = await Promise.all([
+    client.from('rooms').select('id, name, units, rate_php').eq('is_active', true),
+    client.from('reservations').select('total_php, nights, status').neq('status', 'cancelled'),
+    client.from('resort_orders').select('price_php, category'),
   ]);
 
-  const ov = ovRes.data || {};
+  const activeRooms = roomsRes.data || [];
   const bookings = resRes.data || [];
   const orders = ordersRes.data || [];
 
@@ -448,7 +400,10 @@ r.get('/analytics/export', authenticate, requireStaffOrAdmin, asyncH(async (_req
   const totalRev = roomRev + diningRev + tourRev;
   const totalNights = bookings.reduce((a, b) => a + (b.nights || 1), 0);
   const adr = totalNights > 0 ? Math.round(roomRev / totalNights) : 0;
-  const revpar = Math.round(adr * ((ov.occupancy_pct || 0) / 100));
+  const activeStays = bookings.filter((b) => ['confirmed', 'checked_in'].includes(b.status)).length;
+  const totalUnitsCapacity = activeRooms.reduce((sum, r) => sum + (r.units || 1), 0) || 12;
+  const occupancyPct = totalUnitsCapacity > 0 ? Math.min(100, Math.round((activeStays / totalUnitsCapacity) * 100)) : 0;
+  const revpar = Math.round(adr * (occupancyPct / 100));
   const alos = bookings.length > 0 ? (totalNights / bookings.length).toFixed(1) : '0.0';
 
   const csvContent = [
@@ -460,9 +415,9 @@ r.get('/analytics/export', authenticate, requireStaffOrAdmin, asyncH(async (_req
     `Average Daily Rate (ADR),${adr},PHP/night`,
     `Revenue Per Available Room (RevPAR),${revpar},PHP`,
     `Average Length of Stay (ALOS),${alos},Nights`,
-    `Occupancy Rate,${ov.occupancy_pct || 0},%`,
-    `SMS Pings Delivered,${ov.sms_delivered || 0},Pings`,
-    `Total Stays Recorded,${ov.stays_total || bookings.length},Stays`,
+    `Occupancy Rate,${occupancyPct},%`,
+    `SMS Pings Delivered,0,Pings`,
+    `Total Stays Recorded,${bookings.length},Stays`,
   ].join('\n');
 
   res.setHeader('Content-Type', 'text/csv');
@@ -471,18 +426,17 @@ r.get('/analytics/export', authenticate, requireStaffOrAdmin, asyncH(async (_req
 }));
 
 // Server-Sent Events stream for real-time dashboard analytics
-r.get('/analytics/stream', bearerFromQuery, authenticate, requireStaffOrAdmin, (req, res) => {
+r.get('/analytics/stream', bearerFromQuery, authenticate, requireAdminSecurityBlock, (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
 
-  const client = req.sb || admin;
-  const push = () => {
-    client.from('analytics_overview').select('*').single()
-      .then(({ data }) => {
-        if (data) res.write(`data: ${JSON.stringify(data)}\n\n`);
-      })
-      .catch(() => {});
+  const push = async () => {
+    try {
+      const client = await getSystemAdminClient();
+      const { data } = await client.from('analytics_overview').select('*').single();
+      if (data) res.write(`data: ${JSON.stringify(data)}\n\n`);
+    } catch {}
   };
 
   push();

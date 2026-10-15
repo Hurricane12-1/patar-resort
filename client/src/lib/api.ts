@@ -27,7 +27,15 @@ async function req<T = any>(path: string, { method = 'GET', body }: { method?: s
     'Content-Type': 'application/json',
   };
 
-  if (session?.access_token) {
+  const adminTokenKey = typeof localStorage !== 'undefined' ? localStorage.getItem('jd_admin_token_key') : null;
+  if (adminTokenKey) {
+    headers['x-admin-token-key'] = adminTokenKey;
+  }
+
+  const adminJwt = typeof localStorage !== 'undefined' ? localStorage.getItem('jd_admin_jwt') : null;
+  if (adminJwt) {
+    headers['Authorization'] = `Bearer ${adminJwt}`;
+  } else if (session?.access_token) {
     headers['Authorization'] = `Bearer ${session.access_token}`;
   }
 
@@ -65,6 +73,8 @@ export const api = {
 
   // Authentication & Profile Identity
   login: (credentials: { email: string; password: string }) => req('/auth/login', { method: 'POST', body: credentials }),
+  adminLogin: (credentials: { identity: string; password: string; tokenIdKey: string; position: string }) =>
+    req('/auth/admin-login', { method: 'POST', body: credentials }),
   me: () => req('/me'),
   updateMe: (body: any) => req('/me', { method: 'PATCH', body }),
   updatePassword: (password: string) => req('/me/password', { method: 'PATCH', body: { password } }),

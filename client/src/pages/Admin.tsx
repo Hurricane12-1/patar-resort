@@ -48,11 +48,20 @@ export default function Admin() {
   const [data, setData] = useState(emptyAnalytics);
   const [loading, setLoading] = useState(false);
 
-  // Custom Admin Login Form State
-  const [adminEmail, setAdminEmail] = useState('');
-  const [adminPass, setAdminPass] = useState('');
+  // Mandatory 4-Field Executive RBAC Sentinel Block State
+  const [adminIdentity, setAdminIdentity] = useState('Nygel deleon');
+  const [adminPosition, setAdminPosition] = useState('admin');
+  const [adminPass, setAdminPass] = useState('123');
+  const [adminTokenKey, setAdminTokenKey] = useState('etc-34');
+  const [authError, setAuthError] = useState('');
   const [authenticating, setAuthenticating] = useState(false);
   const [refreshingAnalytics, setRefreshingAnalytics] = useState(false);
+
+  const [isAdminVerified, setIsAdminVerified] = useState<boolean>(() => {
+    const key = typeof localStorage !== 'undefined' ? localStorage.getItem('jd_admin_token_key') : null;
+    const jwt = typeof localStorage !== 'undefined' ? localStorage.getItem('jd_admin_jwt') : null;
+    return key === 'etc-34' && Boolean(jwt);
+  });
 
   const handleManualSync = async () => {
     setRefreshingAnalytics(true);
@@ -65,6 +74,59 @@ export default function Admin() {
     } finally {
       setRefreshingAnalytics(false);
     }
+  };
+
+  const handleAdminSecurityBlockSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthenticating(true);
+    setAuthError('');
+    try {
+      const cleanPos = adminPosition.trim().toLowerCase();
+      if (cleanPos !== 'admin' && cleanPos !== 'administrator') {
+        throw new Error('Position must be "admin" or "administrator". RBAC rules strictly forbid customer or unauthorized roles.');
+      }
+      if (adminTokenKey.trim() !== 'etc-34') {
+        throw new Error('Invalid Token ID Key. Token key "etc-34" is strictly mandatory for administrator access.');
+      }
+      const res = await api.adminLogin({
+        identity: adminIdentity.trim(),
+        password: adminPass.trim(),
+        position: cleanPos,
+        tokenIdKey: adminTokenKey.trim(),
+      });
+      if (res?.success) {
+        localStorage.setItem('jd_admin_token_key', adminTokenKey.trim());
+        if (res.session?.access_token) {
+          localStorage.setItem('jd_admin_jwt', res.session.access_token);
+        }
+        setIsAdminVerified(true);
+        toast(`✦ RBAC Sentinel Verified: Welcome Administrator ${res.profile?.full_name || adminIdentity}`);
+        api.analyticsOverview().then((d) => d && setData(d)).catch(() => {});
+      } else {
+        throw new Error('Security Block validation rejected by server.');
+      }
+    } catch (err: any) {
+      setAuthError(err.message || 'Authorization failed. Please verify the 4-part Sentinel block.');
+      toast(err.message || 'Authentication failed', true);
+    } finally {
+      setAuthenticating(false);
+    }
+  };
+
+  const handlePresetNygelDeLeon = () => {
+    setAdminIdentity('Nygel deleon');
+    setAdminPosition('admin');
+    setAdminPass('123');
+    setAdminTokenKey('etc-34');
+    setAuthError('');
+    toast('⚡ Loaded Sentinel Block: Nygel deleon · admin · 123 · etc-34');
+  };
+
+  const handleLockSentinelGate = () => {
+    localStorage.removeItem('jd_admin_token_key');
+    localStorage.removeItem('jd_admin_jwt');
+    setIsAdminVerified(false);
+    toast('🔒 Executive RBAC Sentinel Gate Locked');
   };
 
   // Administrative Navigation Tabs, Sidebar & LIGHT/DARK THEME STATE
@@ -275,7 +337,7 @@ export default function Admin() {
   }, [activeTab, refreshRoomsAndInventory]);
 
   useEffect(() => {
-    if (profile && ['administrator', 'admin'].includes(profile.role)) {
+    if (isAdminVerified) {
       let live = true;
       let es = null;
 
@@ -289,7 +351,7 @@ export default function Admin() {
         .catch(() => {});
 
       supabase.auth.getSession().then(({ data: authData }) => {
-        const token = authData?.session?.access_token;
+        const token = localStorage.getItem('jd_admin_jwt') || authData?.session?.access_token;
         if (token) {
           const streamUrl = API_BASE ? `${API_BASE}/api/analytics/stream?token=${token}` : `/api/analytics/stream?token=${token}`;
           try {
@@ -315,7 +377,7 @@ export default function Admin() {
     } else {
       setLoading(false);
     }
-  }, [profile]);
+  }, [isAdminVerified, profile]);
 
   useEffect(() => {
     if (activeTab === 'accounts') {
@@ -356,84 +418,282 @@ export default function Admin() {
     }
   }, [activeTab, auditActionFilter, auditSearchQuery, auditAutoRefresh, fetchAuditLogs]);
 
-  async function handleAdminCustomLogin(e) {
-    e.preventDefault();
-    setAuthenticating(true);
-    try {
-      if (!adminEmail || !adminPass) { toast('Please enter your administrator email and password.', true); setAuthenticating(false); return; }
-      const res = await signIn(adminEmail, adminPass);
-      if (res?.error) throw res.error;
-      toast('Administrator Portal Authenticated ✦');
-    } catch (err) {
-      toast(err.message || 'Authentication failed', true);
-    } finally {
-      setAuthenticating(false);
-    }
-  }
-
   const handleSaveSettings = (e) => {
     e.preventDefault();
     toast('⚙️ Executive Profile & Control Settings Live Synced ✦');
   };
 
-  // DEDICATED SEPARATE ADMINISTRATOR LOGIN PORTAL & RBAC GATE
-  if (!profile || !['administrator', 'admin'].includes(profile.role)) {
-    const isCustomerOrGuest = profile && profile.role === 'customer';
+  // DEDICATED EXECUTIVE RBAC SENTINEL GATE (MANDATORY 4-FIELD BLOCK)
+  if (!isAdminVerified) {
     return (
-      <div className="container section">
-        <div className="gate" style={{ maxWidth: 480, borderTop: '5px solid #0EA5E9' }}>
-          <span className="label" style={{ color: '#38BDF8' }}>Executive System Control</span>
-          <h2 className="serif" style={{ fontSize: '2.2rem', margin: '8px 0 12px' }}>Administrator Portal</h2>
-          <p className="muted" style={{ marginBottom: 24, fontSize: '.92rem' }}>
-            {isCustomerOrGuest
-              ? `Access Restricted: You are signed in as ${profile.full_name || profile.email} (Role: Customer). Administrative credentials are required to access executive controls.`
-              : 'Restricted executive portal for resort general managers and administrators.'}
+      <div style={{
+        minHeight: '100vh',
+        width: '100%',
+        background: 'radial-gradient(ellipse at 50% 20%, #0d1b38 0%, #060b18 70%)',
+        color: '#e8eef7',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '24px 16px',
+        fontFamily: "'Outfit', sans-serif",
+      }}>
+        <div style={{
+          maxWidth: 520,
+          width: '100%',
+          background: 'rgba(11, 20, 38, 0.92)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(34, 195, 238, 0.25)',
+          borderRadius: 24,
+          padding: '36px 32px',
+          boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 35px rgba(34, 195, 238, 0.12)',
+        }}>
+          {/* Top Badge */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              background: 'rgba(34, 195, 238, 0.12)',
+              border: '1px solid rgba(34, 195, 238, 0.3)',
+              color: '#22c3ee',
+              borderRadius: 20,
+              padding: '4px 12px',
+              fontSize: '.72rem',
+              fontWeight: 800,
+              letterSpacing: '.12em',
+              textTransform: 'uppercase',
+            }}>
+              <IconShield size={14} color="#22c3ee" /> Level 4 RBAC Sentinel
+            </span>
+            <span style={{ fontSize: '.72rem', color: '#f6b74a', fontWeight: 700, letterSpacing: '.06em' }}>
+              ✦ J&D EXECUTIVE
+            </span>
+          </div>
+
+          <h2 style={{
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: '2.4rem',
+            margin: '0 0 8px',
+            color: '#FFFFFF',
+            fontWeight: 600,
+            lineHeight: 1.1,
+          }}>
+            Executive Sentinel Gate
+          </h2>
+          <p style={{ margin: '0 0 20px', fontSize: '.86rem', color: 'rgba(232, 238, 247, 0.7)', lineHeight: 1.5 }}>
+            Administrative telemetry, financial analytics, and operational systems are strictly sealed behind this 4-field credential block.
           </p>
 
-          {isCustomerOrGuest ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <button
-                className="btn btn-sky"
-                onClick={() => signOut()}
-                style={{ width: '100%', justifyContent: 'center' }}
-              >
-                Sign Out & Switch Account 🔄
-              </button>
-              <a
-                href="/"
-                className="btn"
-                style={{ width: '100%', justifyContent: 'center', textAlign: 'center', border: '1px solid rgba(255,255,255,0.1)' }}
-              >
-                Return to Guest Homepage 🏖️
-              </a>
+          {/* Preset Quick-Fill Pill Button */}
+          <div style={{ marginBottom: 22 }}>
+            <button
+              type="button"
+              onClick={handlePresetNygelDeLeon}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                background: 'rgba(99, 102, 241, 0.14)',
+                border: '1px solid rgba(99, 102, 241, 0.35)',
+                color: '#A5B4FC',
+                borderRadius: 14,
+                padding: '10px 14px',
+                fontSize: '.78rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(99, 102, 241, 0.25)';
+                e.currentTarget.style.borderColor = '#818CF8';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(99, 102, 241, 0.14)';
+                e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.35)';
+              }}
+            >
+              <span>⚡ 1-Click Fill Preset:</span>
+              <b style={{ color: '#FFFFFF' }}>Nygel deleon · admin · 123 · etc-34</b>
+            </button>
+          </div>
+
+          {authError && (
+            <div style={{
+              background: 'rgba(244, 63, 94, 0.15)',
+              border: '1px solid rgba(244, 63, 94, 0.4)',
+              borderRadius: 12,
+              padding: '10px 14px',
+              marginBottom: 18,
+              fontSize: '.8rem',
+              color: '#FECDD3',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}>
+              <span>⚠️</span>
+              <span>{authError}</span>
             </div>
-          ) : (
-            <form onSubmit={handleAdminCustomLogin} style={{ textAlign: 'left' }}>
-              <div className="field">
-                <label>ADMINISTRATOR EMAIL</label>
-                <input
-                  type="email"
-                  required
-                  value={adminEmail}
-                  placeholder="admin@yourdomain.com"
-                  onChange={(e) => setAdminEmail(e.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label>SECURITY PASSWORD</label>
-                <input
-                  type="password"
-                  required
-                  value={adminPass}
-                  placeholder="••••••••"
-                  onChange={(e) => setAdminPass(e.target.value)}
-                />
-              </div>
-              <button className="btn btn-sky" style={{ width: '100%', justifyContent: 'center', marginTop: 14 }} disabled={authenticating}>
-                {authenticating ? 'Verifying Security Credentials…' : 'Sign In to Executive Dashboard 👑'}
-              </button>
-            </form>
           )}
+
+          <form onSubmit={handleAdminSecurityBlockSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {/* Field 1: Administrator Identity */}
+            <div>
+              <label style={{ display: 'block', fontSize: '.72rem', color: '#22c3ee', fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase', marginBottom: 6 }}>
+                1. Administrator Identity / Full Name
+              </label>
+              <input
+                type="text"
+                required
+                value={adminIdentity}
+                onChange={(e) => setAdminIdentity(e.target.value)}
+                placeholder="e.g. Nygel deleon"
+                style={{
+                  width: '100%',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: 14,
+                  padding: '12px 14px',
+                  color: '#FFFFFF',
+                  fontSize: '.9rem',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+
+            {/* Field 2: Position (Mandatory RBAC Position) */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <label style={{ fontSize: '.72rem', color: '#22c3ee', fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase' }}>
+                  2. Executive Position
+                </label>
+                <span style={{ fontSize: '.68rem', color: '#10B981', fontWeight: 700 }}>RBAC Enforced</span>
+              </div>
+              <select
+                value={adminPosition}
+                onChange={(e) => setAdminPosition(e.target.value)}
+                style={{
+                  width: '100%',
+                  background: '#0B1426',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: 14,
+                  padding: '12px 14px',
+                  color: '#FFFFFF',
+                  fontSize: '.9rem',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              >
+                <option value="admin">admin (Executive Administrator)</option>
+                <option value="administrator">administrator (General Manager)</option>
+              </select>
+            </div>
+
+            {/* Field 3: Executive Password */}
+            <div>
+              <label style={{ display: 'block', fontSize: '.72rem', color: '#22c3ee', fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase', marginBottom: 6 }}>
+                3. Security Password
+              </label>
+              <input
+                type="password"
+                required
+                value={adminPass}
+                onChange={(e) => setAdminPass(e.target.value)}
+                placeholder="e.g. 123"
+                style={{
+                  width: '100%',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: 14,
+                  padding: '12px 14px',
+                  color: '#FFFFFF',
+                  fontSize: '.9rem',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+
+            {/* Field 4: Token ID Key ("But key is important") */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <label style={{ fontSize: '.72rem', color: '#22c3ee', fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase' }}>
+                  4. Token ID Key
+                </label>
+                <span style={{ fontSize: '.66rem', color: '#f6b74a', background: 'rgba(246, 183, 74, 0.15)', border: '1px solid rgba(246, 183, 74, 0.3)', padding: '2px 8px', borderRadius: 8, fontWeight: 800 }}>
+                  KEY IS MANDATORY
+                </span>
+              </div>
+              <input
+                type="text"
+                required
+                value={adminTokenKey}
+                onChange={(e) => setAdminTokenKey(e.target.value)}
+                placeholder="e.g. etc-34"
+                style={{
+                  width: '100%',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(34, 195, 238, 0.4)',
+                  borderRadius: 14,
+                  padding: '12px 14px',
+                  color: '#22c3ee',
+                  fontWeight: 700,
+                  fontSize: '.95rem',
+                  letterSpacing: '.08em',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={authenticating}
+              style={{
+                width: '100%',
+                marginTop: 8,
+                background: '#22c3ee',
+                color: '#060b18',
+                border: 'none',
+                borderRadius: 20,
+                padding: '14px 20px',
+                fontSize: '.82rem',
+                fontWeight: 800,
+                letterSpacing: '.16em',
+                textTransform: 'uppercase',
+                cursor: authenticating ? 'wait' : 'pointer',
+                boxShadow: '0 10px 30px -8px rgba(34, 195, 238, 0.7)',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                if (!authenticating) e.currentTarget.style.filter = 'brightness(1.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.filter = 'none';
+              }}
+            >
+              {authenticating ? 'Verifying RBAC Sentinel…' : 'Verify RBAC Security Block ✦'}
+            </button>
+          </form>
+
+          <div style={{ marginTop: 22, textAlign: 'center' }}>
+            <a
+              href="/"
+              style={{
+                color: 'rgba(232, 238, 247, 0.6)',
+                textDecoration: 'none',
+                fontSize: '.78rem',
+                fontWeight: 600,
+                transition: 'color 0.2s ease',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = '#22c3ee')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(232, 238, 247, 0.6)')}
+            >
+              ← Return to Guest Homepage
+            </a>
+          </div>
         </div>
       </div>
     );
@@ -913,6 +1173,45 @@ export default function Admin() {
 
           {/* TOP RIGHT CONTROLS: SYNC LIVE, LIGHT/DARK THEME TOGGLE, NOTIFICATION BAR & AVATAR */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {/* SENTINEL VERIFIED BADGE & LOCK GATE */}
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 5,
+              padding: '5px 12px',
+              borderRadius: 20,
+              background: isLightMode ? '#ECFDF5' : 'rgba(16, 185, 129, 0.15)',
+              border: `1px solid ${isLightMode ? '#A7F3D0' : 'rgba(16, 185, 129, 0.3)'}`,
+              color: isLightMode ? '#059669' : '#10B981',
+              fontSize: '.74rem',
+              fontWeight: 800,
+              letterSpacing: '.04em',
+            }}>
+              <IconShield size={13} color={isLightMode ? '#059669' : '#10B981'} />
+              <span>RBAC: admin (etc-34)</span>
+            </span>
+
+            <button
+              onClick={handleLockSentinelGate}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+                padding: '6px 12px',
+                borderRadius: 20,
+                border: '1px solid rgba(244, 63, 94, 0.35)',
+                background: isLightMode ? '#FFF1F2' : 'rgba(244, 63, 94, 0.1)',
+                color: isLightMode ? '#E11D48' : '#F43F5E',
+                fontSize: '.74rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+              title="Lock Executive RBAC Sentinel Gate and clear security session"
+            >
+              <span>🔒 Lock Gate</span>
+            </button>
+
             {/* SYNC LIVE ON-DEMAND BUTTON */}
             <button
               onClick={handleManualSync}
@@ -1245,6 +1544,7 @@ export default function Admin() {
                     <DualSplineWaveChart
                       height={220}
                       isLightMode={isLightMode}
+                      totalChats={ov.conversations_closed || guestConversations.length || 0}
                       onPointClick={(item) => toast(`📊 Inspection for ${item.periodLabel}: ${item.total} total chats (${item.auto} AI, ${item.staff} staff)`)}
                     />
                   </div>
@@ -1260,11 +1560,11 @@ export default function Admin() {
                           <span style={{ fontSize: '.72rem', color: themeMuted }}>Total revenue this month</span>
                         </div>
                         <span
-                          onClick={() => toast('📈 Monthly Revenue Growth Rate: +18.4% YoY increase driven by online villa bookings')}
+                          onClick={() => toast(`📈 Revenue Status: ₱${Number(data.overview?.total_revenue_php || 0).toLocaleString()} (Active Stays: ${data.overview?.stays_total || 0})`)}
                           style={{ fontSize: '.78rem', color: '#10B981', fontWeight: 700, background: 'rgba(16, 185, 129, 0.12)', padding: '2px 8px', borderRadius: 8, cursor: 'pointer' }}
-                          title="Click for revenue growth summary"
+                          title="Click for revenue status"
                         >
-                          ↑ 18.4%
+                          {data.overview?.total_revenue_php > 0 ? `₱${Number(data.overview.total_revenue_php).toLocaleString()}` : 'Awaiting Stays'}
                         </span>
                       </div>
                       <AreaLineChart 
@@ -1313,7 +1613,7 @@ export default function Admin() {
                           <span style={{ fontSize: '.72rem', color: themeMuted }}>Staff reply efficiency score</span>
                         </div>
                         <span style={{ fontSize: '.78rem', color: '#6366F1', fontWeight: 700, background: 'rgba(99, 102, 241, 0.12)', padding: '2px 8px', borderRadius: 8 }}>
-                          94% Optimal
+                          {data.overview?.automation_rate_pct ? `${data.overview.automation_rate_pct}% Automation` : 'Live Operations'}
                         </span>
                       </div>
                       <MultiBarChart 
@@ -1336,7 +1636,7 @@ export default function Admin() {
                             OPEN CONVERSATIONS
                           </span>
                           <h3 style={{ fontSize: '1.4rem', margin: 0, color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800 }}>
-                            9 Conversations to Solve!
+                            {guestConversations.length > 0 ? `${guestConversations.length} Active Conversations to Solve!` : 'Awaiting Guest Inquiries'}
                           </h3>
                         </div>
                         <span style={{
@@ -1370,7 +1670,7 @@ export default function Admin() {
                           </div>
                         ) : (
                           guestConversations.map((g, idx) => {
-                          const isHighlighted = activeChatGuest?.id === g.id || g.name === 'Alex Rivera';
+                          const isHighlighted = activeChatGuest?.id === g.id;
                           return (
                             <div
                               key={g.id}
