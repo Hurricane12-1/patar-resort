@@ -4,6 +4,7 @@
   "type": "module",
   "main": "server.js",
   "scripts": {
+    "build": "echo 'Server ready'",
     "dev": "node --watch src/index.js",
     "start": "node server.js",
     "test": "node test/verify-all.test.js"
