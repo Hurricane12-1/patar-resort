@@ -32,8 +32,8 @@ export const env = {
     ? '*'
     : (getEnv('CLIENT_ORIGIN') || '*'),
   SUPABASE_URL: getEnv('SUPABASE_URL', 'https://owhodkhzldygavuwnqfg.supabase.co').replace(/\/+$/, ''),
-  SUPABASE_ANON_KEY: getEnv('SUPABASE_ANON_KEY', ''),
-  SUPABASE_SERVICE_ROLE_KEY: getEnv('SUPABASE_SERVICE_ROLE_KEY') || getEnv('SUPABASE_ANON_KEY') || 'demo-service-role-key',
+  SUPABASE_ANON_KEY: getEnv('SUPABASE_ANON_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93aG9ka2h6bGR5Z2F2dXducWZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyNzg4NTMsImV4cCI6MjEwNDg1NDg1M30.NyRQYrpcROhnlfEXq83eqnAIYhegCZl_b08YV-G9J_c'),
+  SUPABASE_SERVICE_ROLE_KEY: getEnv('SUPABASE_SERVICE_ROLE_KEY') || getEnv('SUPABASE_ANON_KEY') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93aG9ka2h6bGR5Z2F2dXducWZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyNzg4NTMsImV4cCI6MjEwNDg1NDg1M30.NyRQYrpcROhnlfEXq83eqnAIYhegCZl_b08YV-G9J_c',
   SUPABASE_JWT_SECRET: getEnv('SUPABASE_JWT_SECRET', 'demo-jwt-secret-key-32-chars-long-min'),
   PUBLIC_API_URL: getEnv('PUBLIC_API_URL', 'https://localhost:8000'),
   TWILIO_ACCOUNT_SID: getEnv('TWILIO_ACCOUNT_SID', ''),

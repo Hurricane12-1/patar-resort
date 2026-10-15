@@ -2,6 +2,7 @@ import express from 'express';
 import http from 'http';
 import https from 'https';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { env } from './config/env.js';
 import { securityHeaders, corsPolicy, globalLimiter, cookieTokenizer, antiXssSanitizer } from './middleware/security.js';
@@ -119,6 +120,10 @@ app.post('/api/limiter/reset', (_req, res) => {
   res.json({ success: true, message: 'All rate and concurrency limiter buckets reset.' });
 });
 
+app.get('/health', (_req, res) => {
+  res.json({ status: 'ok', service: 'J & D Beach House API', version: '1.1.0', timestamp: new Date().toISOString() });
+});
+
 // Bootstrap Isolated Modular Framework (IMF) with dynamic auto-discovery & bulkhead error boundaries
 await bootstrapFramework(app);
 
@@ -127,11 +132,19 @@ const uploadsDir = path.resolve(__dirname, '../uploads');
 app.use('/uploads', express.static(uploadsDir));
 
 const dist = path.resolve(__dirname, '../../client/dist');
-app.use(express.static(dist));
+if (fs.existsSync(dist)) {
+  app.use(express.static(dist));
+}
+
 app.use((req, res, next) => {
-  if (req.method === 'GET' && !req.path.startsWith('/api') && !req.path.startsWith('/uploads'))
-    res.sendFile(path.join(dist, 'index.html'));
-  else next();
+  if (req.method === 'GET' && !req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
+    const indexPath = path.join(dist, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      return res.sendFile(indexPath);
+    }
+    return res.json({ status: 'ok', service: 'J & D Beach House API', version: '1.1.0' });
+  }
+  next();
 });
 
 app.use(notFound);
