@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import site from '../content/site.json';
-import { useAuth } from '../context/AuthContext.tsx';
+import { useAuth, to11Digits } from '../context/AuthContext.tsx';
+import { api } from '../lib/api.ts';
+import { CANONICAL_ROOMS } from '../lib/canonicalRooms.ts';
 import { toast } from './Toasts.tsx';
 
 // ==========================================================================
@@ -215,6 +217,82 @@ export default function MobileResortApp() {
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
+  // Guest Profile & Manifest State
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [profileTab, setProfileTab] = useState<'manifest' | 'bookings' | 'contact'>('manifest');
+  const [profFirstName, setProfFirstName] = useState('');
+  const [profLastName, setProfLastName] = useState('');
+  const [profPhone, setProfPhone] = useState('');
+  const [profAddress, setProfAddress] = useState('');
+  const [profCity, setProfCity] = useState('');
+  const [profEmergency, setProfEmergency] = useState('');
+  const [profSaving, setProfSaving] = useState(false);
+
+  // My Bookings State
+  const [myBookings, setMyBookings] = useState<any[]>([]);
+  const [loadingBookings, setLoadingBookings] = useState(false);
+
+  // Contact Services & Special Request State
+  const [contactSubject, setContactSubject] = useState('Front Desk Inquiry');
+  const [contactMessage, setContactMessage] = useState('');
+  const [contactSending, setContactSending] = useState(false);
+
+  // Live Availability & Reservation Checkout Modal State
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
+  const [reservationModalOpen, setReservationModalOpen] = useState(false);
+  const [resRoom, setResRoom] = useState<any>(null);
+  const [resNotes, setResNotes] = useState('');
+  const [resPhone, setResPhone] = useState('');
+  const [resName, setResName] = useState('');
+  const [resEmail, setResEmail] = useState('');
+  const [resPaymentMethod, setResPaymentMethod] = useState('GCash');
+  const [resSubmitting, setResSubmitting] = useState(false);
+  const [resConfirmed, setResConfirmed] = useState<any | null>(null);
+
+  // Sync profile fields whenever profile/session changes
+  useEffect(() => {
+    if (profile) {
+      setProfFirstName(profile.first_name || '');
+      setProfLastName(profile.last_name || '');
+      setProfPhone(profile.phone ? to11Digits(profile.phone) : '');
+      setProfAddress(profile.address || '');
+      setProfCity(profile.city || '');
+      setProfEmergency(profile.emergency_contact ? to11Digits(profile.emergency_contact) : '');
+      const full = profile.full_name || [profile.first_name, profile.last_name].filter(Boolean).join(' ') || '';
+      setResName(full);
+      setResPhone(profile.phone ? to11Digits(profile.phone) : '');
+      setResEmail(profile.email || session?.user?.email || '');
+    } else if (session?.user) {
+      const meta = session.user.user_metadata || {};
+      const full = meta.full_name || meta.name || '';
+      const [first, ...rest] = full.split(' ');
+      setProfFirstName(first || '');
+      setProfLastName(rest.join(' ') || '');
+      setResName(full || '');
+      setResEmail(session.user.email || '');
+    }
+  }, [profile, session]);
+
+  // Fetch guest's active and past bookings
+  const fetchMyBookings = async () => {
+    if (!session) return;
+    setLoadingBookings(true);
+    try {
+      const list = await api.myReservations();
+      setMyBookings(Array.isArray(list) ? list : []);
+    } catch (err: any) {
+      console.warn('[Reservations] Mine query notice:', err.message);
+    } finally {
+      setLoadingBookings(false);
+    }
+  };
+
+  useEffect(() => {
+    if (profileModalOpen && profileTab === 'bookings') {
+      fetchMyBookings();
+    }
+  }, [profileModalOpen, profileTab]);
+
   // Automatically advance to app if user returned from OAuth callback
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -420,7 +498,83 @@ export default function MobileResortApp() {
     FAQ: 'faq-section',
   };
 
-  const checkAvailability = () => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!session) {
+      toast('Please sign in to update your guest manifest.', true);
+      go('auth', 'login');
+      return;
+    }
+    const cleanPhone = to11Digits(profPhone);
+    if (!cleanPhone || cleanPhone.length !== 11) {
+      toast('Mobile number must be strictly 11 digits (e.g. 0917xxxxxxx)', true);
+      return;
+    }
+    const cleanEmergency = profEmergency ? to11Digits(profEmergency) : '';
+    if (profEmergency && cleanEmergency.length !== 11) {
+      toast('Emergency contact must be 11 digits (e.g. 0918xxxxxxx)', true);
+      return;
+    }
+    setProfSaving(true);
+    try {
+      const cleanFirst = profFirstName.replace(/[^a-zA-Z\s\-]/g, '').trim();
+      const cleanLast = profLastName.replace(/[^a-zA-Z\s\-]/g, '').trim();
+      const fullName = [cleanFirst, cleanLast].filter(Boolean).join(' ') || profile?.full_name || 'Guest Resident';
+      const cleanCity = profCity.replace(/[^a-zA-Z\s\-]/g, '').trim();
+
+      const updatePayload = {
+        first_name: cleanFirst,
+        last_name: cleanLast,
+        full_name: fullName,
+        phone: cleanPhone,
+        address: profAddress.trim(),
+        city: cleanCity,
+        emergency_contact: cleanEmergency,
+      };
+
+      if (auth?.updateProfile) {
+        await auth.updateProfile(updatePayload);
+      } else {
+        await api.updateMe(updatePayload);
+      }
+      toast('Guest Manifest updated and synchronized ✦');
+    } catch (err: any) {
+      toast(err.message || 'Failed to update manifest', true);
+    } finally {
+      setProfSaving(false);
+    }
+  };
+
+  const handleSendContactMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!contactMessage.trim()) {
+      toast('Please enter your inquiry or special request.', true);
+      return;
+    }
+    setContactSending(true);
+    try {
+      toast(`✦ Special Request "${contactSubject}" transmitted to Front Desk!`, false);
+      setContactMessage('');
+      window.dispatchEvent(new CustomEvent('app:open-chat'));
+    } catch (err: any) {
+      toast(err.message || 'Failed to send message', true);
+    } finally {
+      setContactSending(false);
+    }
+  };
+
+  const handleCancelBooking = async (id: string) => {
+    if (!confirm('Are you sure you want to cancel this reservation?')) return;
+    try {
+      await api.cancelReservation(id);
+      toast('Reservation cancelled successfully');
+      fetchMyBookings();
+    } catch (err: any) {
+      toast(err.message || 'Failed to cancel reservation', true);
+    }
+  };
+
+  const checkAvailability = async () => {
     const nights = Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000);
     if (!checkIn || !checkOut || nights < 1) {
       setQuote({ ok: false, text: 'Check-out must be at least one night after check-in.' });
@@ -430,11 +584,100 @@ export default function MobileResortApp() {
       setQuote({ ok: false, text: 'Check-in cannot be in the past.' });
       return;
     }
-    const room = site.rooms.items.find((r) => r.name === selectedRoom) ?? site.rooms.items[0];
-    setQuote({
-      ok: true,
-      text: `${room.name} · ${nights} night${nights > 1 ? 's' : ''} · ${guests} — est. ${peso(room.price * nights)}`,
-    });
+
+    const guestCount = parseInt(guests) || 2;
+    setCheckingAvailability(true);
+    try {
+      const avail = await api.availability(checkIn, checkOut, guestCount);
+      const chosen = (Array.isArray(avail) ? avail : []).find((r: any) => r.name.toLowerCase() === selectedRoom.toLowerCase())
+        || (Array.isArray(avail) && avail.length > 0 ? avail[0] : null)
+        || CANONICAL_ROOMS.find((c) => c.name.toLowerCase() === selectedRoom.toLowerCase());
+
+      const rate = chosen?.rate_php || 4200;
+      const units = chosen?.units_left ?? 1;
+
+      if (units <= 0) {
+        setQuote({
+          ok: false,
+          text: `${selectedRoom} is fully booked for those dates. Please select other dates or explore our other villas.`,
+        });
+      } else {
+        setQuote({
+          ok: true,
+          text: `${chosen.name} · ${units} villa${units > 1 ? 's' : ''} available · ${nights} night${nights > 1 ? 's' : ''} — Total ${peso(rate * nights)} (30% downpayment: ${peso(Math.round(rate * nights * 0.3))})`,
+        });
+      }
+    } catch (err: any) {
+      const room = site.rooms.items.find((r) => r.name === selectedRoom) ?? site.rooms.items[0];
+      setQuote({
+        ok: true,
+        text: `${room.name} · ${nights} night${nights > 1 ? 's' : ''} · ${guests} — est. ${peso(room.price * nights)}`,
+      });
+    } finally {
+      setCheckingAvailability(false);
+    }
+  };
+
+  const openReservation = (roomName?: string) => {
+    const targetName = roomName || selectedRoom;
+    const roomMeta = CANONICAL_ROOMS.find((r) => r.name.toLowerCase() === targetName.toLowerCase())
+      || site.rooms.items.find((r) => r.name.toLowerCase() === targetName.toLowerCase())
+      || CANONICAL_ROOMS[0];
+    
+    setResRoom(roomMeta);
+    setResConfirmed(null);
+    setReservationModalOpen(true);
+  };
+
+  const handleConfirmReservation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!session) {
+      toast('Please sign in or register to secure your reservation voucher.', true);
+      setReservationModalOpen(false);
+      go('auth', 'login');
+      return;
+    }
+    const cleanPhone = to11Digits(resPhone || profile?.phone || '');
+    if (!cleanPhone || cleanPhone.length !== 11) {
+      toast('Please enter an 11-digit mobile phone for SMS booking verification (09xxxxxxxxx)', true);
+      return;
+    }
+    const nights = Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000));
+    const targetRoomId = resRoom?.id || CANONICAL_ROOMS.find((c) => c.name.toLowerCase() === (resRoom?.name || '').toLowerCase())?.id || CANONICAL_ROOMS[0].id;
+    const rate = resRoom?.rate_php || resRoom?.price || 4200;
+    const totalPhp = nights * rate;
+    const downpaymentPhp = Math.round(totalPhp * 0.3);
+
+    setResSubmitting(true);
+    try {
+      const payload = {
+        roomId: targetRoomId,
+        room_id: targetRoomId,
+        check_in: checkIn,
+        check_out: checkOut,
+        guests: parseInt(guests) || 2,
+        notes: resNotes ? `${resNotes} [Payment: ${resPaymentMethod}]` : `Payment method: ${resPaymentMethod}`,
+        phone: cleanPhone,
+      };
+
+      const result = await api.createReservation(payload);
+      setResConfirmed({
+        ...result,
+        roomName: resRoom?.name || 'Villa',
+        nights,
+        total_php: totalPhp,
+        downpayment_php: downpaymentPhp,
+        payment_method: resPaymentMethod,
+        guest_phone: cleanPhone,
+        guest_name: resName || profile?.full_name || 'Guest Resident',
+      });
+      toast('Reservation Confirmed! Your Official Voucher is Ready ✦');
+      fetchMyBookings();
+    } catch (err: any) {
+      toast(err.message || 'Reservation failed. Please check room availability.', true);
+    } finally {
+      setResSubmitting(false);
+    }
   };
 
   // ========================================================================
@@ -911,14 +1154,33 @@ export default function MobileResortApp() {
             <div className="flex items-center gap-2 sm:gap-3">
               {session ? (
                 <div className="hidden sm:flex items-center gap-2">
-                  <div className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-xs text-white">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-cyan/20 text-[10px] font-bold text-cyan">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProfileTab('manifest');
+                      setProfileModalOpen(true);
+                    }}
+                    className="flex items-center gap-1.5 rounded-full border border-cyan/30 bg-cyan/10 px-2.5 py-1 text-xs text-white hover:border-cyan/60 transition cursor-pointer"
+                    title="Open Guest Profile & Manifest"
+                  >
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-cyan text-[10px] font-bold text-navy">
                       {(profile?.first_name?.[0] || session.user?.email?.[0] || 'U').toUpperCase()}
                     </span>
                     <span className="max-w-[110px] truncate font-medium text-white/90">
                       {profile?.first_name || session.user?.user_metadata?.full_name?.split(' ')[0] || session.user?.email?.split('@')[0]}
                     </span>
-                  </div>
+                    <span className="text-[10px] text-cyan">✦</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProfileTab('bookings');
+                      setProfileModalOpen(true);
+                    }}
+                    className="hidden md:inline-flex px-2 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-white/70 transition hover:text-cyan cursor-pointer"
+                  >
+                    My Stays
+                  </button>
                   <button
                     type="button"
                     onClick={async () => {
@@ -941,7 +1203,7 @@ export default function MobileResortApp() {
               )}
               <button
                 type="button"
-                onClick={() => scrollTo('booking-section')}
+                onClick={() => openReservation(selectedRoom)}
                 className="rounded-full bg-cyan px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-navy shadow-[0_4px_16px_-4px_rgba(34,195,238,.7)] transition hover:brightness-110 active:scale-95 cursor-pointer"
               >
                 {site.nav.book}
@@ -1092,8 +1354,20 @@ export default function MobileResortApp() {
                 </select>
               </label>
 
-              <button type="button" onClick={checkAvailability} className={`${BTN_PRIMARY} col-span-2 py-4 lg:col-span-1 lg:h-full lg:px-8`}>
-                {site.booking.cta}
+              <button
+                type="button"
+                onClick={checkAvailability}
+                disabled={checkingAvailability}
+                className={`${BTN_PRIMARY} col-span-2 py-4 lg:col-span-1 lg:h-full lg:px-8 cursor-pointer flex items-center justify-center gap-2`}
+              >
+                {checkingAvailability ? (
+                  <>
+                    <span className="h-4 w-4 border-2 border-navy border-t-transparent rounded-full animate-spin" />
+                    <span>Checking…</span>
+                  </>
+                ) : (
+                  site.booking.cta
+                )}
               </button>
             </div>
 
@@ -1111,8 +1385,8 @@ export default function MobileResortApp() {
                 {quote.ok && (
                   <button
                     type="button"
-                    onClick={() => go('auth', 'signup')}
-                    className="shrink-0 text-xs font-semibold uppercase tracking-[0.18em] text-cyan underline underline-offset-4"
+                    onClick={() => openReservation(selectedRoom)}
+                    className="shrink-0 text-xs font-semibold uppercase tracking-[0.18em] text-cyan underline underline-offset-4 cursor-pointer hover:brightness-120"
                   >
                     Continue to reserve →
                   </button>
@@ -1165,11 +1439,10 @@ export default function MobileResortApp() {
                     type="button"
                     onClick={() => {
                       setSelectedRoom(room.name);
-                      setQuote(null);
-                      scrollTo('booking-section');
+                      openReservation(room.name);
                     }}
                     aria-label={`Book ${room.name}`}
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-cyan/40 bg-cyan/15 text-cyan transition hover:bg-cyan hover:text-navy"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-cyan/40 bg-cyan/15 text-cyan transition hover:bg-cyan hover:text-navy cursor-pointer"
                   >
                     →
                   </button>
@@ -1618,16 +1891,48 @@ export default function MobileResortApp() {
               </button>
               {session ? (
                 <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3.5 text-white">
+                  <div
+                    onClick={() => {
+                      setProfileTab('manifest');
+                      setProfileModalOpen(true);
+                      setMenuOpen(false);
+                    }}
+                    className="flex items-center gap-3 rounded-2xl border border-cyan/30 bg-cyan/10 p-3.5 text-white cursor-pointer hover:border-cyan/60 transition"
+                  >
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cyan text-xs font-bold text-navy">
                       {(profile?.first_name?.[0] || session.user?.email?.[0] || 'U').toUpperCase()}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-medium text-white">
-                        {profile?.first_name ? `${profile.first_name} ${profile.last_name || ''}`.trim() : session.user?.user_metadata?.full_name || session.user?.email}
+                      <p className="truncate text-xs font-medium text-white flex items-center gap-1.5">
+                        <span>{profile?.first_name ? `${profile.first_name} ${profile.last_name || ''}`.trim() : session.user?.user_metadata?.full_name || session.user?.email}</span>
+                        <span className="text-[10px] text-cyan">✦</span>
                       </p>
                       <p className="truncate text-[10px] text-white/50">{session.user?.email}</p>
                     </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProfileTab('manifest');
+                        setProfileModalOpen(true);
+                        setMenuOpen(false);
+                      }}
+                      className="rounded-xl border border-white/10 bg-white/5 py-2.5 text-[11px] font-medium text-white hover:bg-white/10 cursor-pointer"
+                    >
+                      Guest Manifest
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProfileTab('bookings');
+                        setProfileModalOpen(true);
+                        setMenuOpen(false);
+                      }}
+                      className="rounded-xl border border-cyan/30 bg-cyan/10 py-2.5 text-[11px] font-medium text-cyan hover:bg-cyan/20 cursor-pointer"
+                    >
+                      My Bookings
+                    </button>
                   </div>
                   <button
                     type="button"
@@ -1636,7 +1941,7 @@ export default function MobileResortApp() {
                       setMenuOpen(false);
                       toast('Signed out ✦');
                     }}
-                    className={`${BTN_GHOST} w-full py-3.5 cursor-pointer`}
+                    className={`${BTN_GHOST} w-full py-2.5 cursor-pointer text-white/60 hover:text-white`}
                   >
                     Sign out
                   </button>
@@ -1683,13 +1988,14 @@ export default function MobileResortApp() {
                 else if (tab === 'Dining') scrollTo('dining-section');
                 else {
                   if (session) {
-                    toast(`Signed in as ${profile?.first_name || session.user?.email} ✦`);
+                    setProfileTab('manifest');
+                    setProfileModalOpen(true);
                   } else {
                     go('auth', 'login');
                   }
                 }
               }}
-              className={`flex-1 rounded-full py-2.5 text-[11px] font-medium transition ${
+              className={`flex-1 rounded-full py-2.5 text-[11px] font-medium transition cursor-pointer ${
                 isBook
                   ? 'bg-cyan font-semibold text-navy shadow-[0_4px_16px_rgba(34,195,238,.5)]'
                   : isActive
@@ -1702,6 +2008,601 @@ export default function MobileResortApp() {
           );
         })}
       </nav>
+
+      {/* GUEST PROFILE & MANIFEST MODAL */}
+      {profileModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy/85 backdrop-blur-md overflow-y-auto animate-fade-in">
+          <div className="relative w-full max-w-lg rounded-3xl border border-white/10 bg-ink p-6 sm:p-8 shadow-2xl text-white my-8 max-h-[92vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between gap-4 pb-4 border-b border-white/10">
+              <div>
+                <span className="text-[11px] font-medium uppercase tracking-[0.28em] text-cyan block">Guest Sanctuary</span>
+                <h3 className="font-serif text-2xl sm:text-3xl font-medium text-white mt-1">
+                  {profileTab === 'manifest' ? 'Guest Manifest & Profile' : profileTab === 'bookings' ? 'My Reservations & Stays' : 'Front Desk & Concierge'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setProfileModalOpen(false)}
+                aria-label="Close profile modal"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Nav Tabs */}
+            <div className="flex gap-2 p-1.5 mt-4 rounded-2xl bg-white/[0.04] border border-white/10 text-xs">
+              <button
+                type="button"
+                onClick={() => setProfileTab('manifest')}
+                className={`flex-1 py-2 px-3 rounded-xl font-medium transition cursor-pointer ${
+                  profileTab === 'manifest' ? 'bg-cyan text-navy font-semibold shadow-sm' : 'text-white/60 hover:text-white'
+                }`}
+              >
+                📋 Manifest
+              </button>
+              <button
+                type="button"
+                onClick={() => setProfileTab('bookings')}
+                className={`flex-1 py-2 px-3 rounded-xl font-medium transition cursor-pointer ${
+                  profileTab === 'bookings' ? 'bg-cyan text-navy font-semibold shadow-sm' : 'text-white/60 hover:text-white'
+                }`}
+              >
+                📅 My Stays {myBookings.length > 0 && `(${myBookings.length})`}
+              </button>
+              <button
+                type="button"
+                onClick={() => setProfileTab('contact')}
+                className={`flex-1 py-2 px-3 rounded-xl font-medium transition cursor-pointer ${
+                  profileTab === 'contact' ? 'bg-cyan text-navy font-semibold shadow-sm' : 'text-white/60 hover:text-white'
+                }`}
+              >
+                🛎️ Services
+              </button>
+            </div>
+
+            {/* Modal Tab Body */}
+            <div className="mt-5 overflow-y-auto pr-1 flex-1">
+              {profileTab === 'manifest' && (
+                <form onSubmit={handleSaveProfile} className="flex flex-col gap-4">
+                  <div className="flex items-center gap-3 p-3.5 rounded-2xl border border-white/10 bg-white/[0.03]">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-cyan/20 border border-cyan/40 text-cyan text-base font-bold font-serif">
+                      {(profFirstName?.[0] || session?.user?.email?.[0] || 'G').toUpperCase()}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-white truncate">
+                        {profFirstName || profLastName ? `${profFirstName} ${profLastName}`.trim() : 'Guest Resident'}
+                      </p>
+                      <p className="text-xs text-white/50 truncate">{session?.user?.email}</p>
+                      <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wider bg-cyan/15 text-cyan border border-cyan/30">
+                        {profile?.role === 'administrator' ? 'Resort Administrator' : 'Verified Resident'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className="flex flex-col gap-1.5">
+                      <span className={LABEL}>First Name *</span>
+                      <input
+                        required
+                        type="text"
+                        value={profFirstName}
+                        onChange={(e) => setProfFirstName(e.target.value)}
+                        placeholder="Juan"
+                        className={FIELD}
+                      />
+                    </label>
+                    <label className="flex flex-col gap-1.5">
+                      <span className={LABEL}>Last Name *</span>
+                      <input
+                        required
+                        type="text"
+                        value={profLastName}
+                        onChange={(e) => setProfLastName(e.target.value)}
+                        placeholder="Dela Cruz"
+                        className={FIELD}
+                      />
+                    </label>
+                  </div>
+
+                  <label className="flex flex-col gap-1.5">
+                    <span className={LABEL}>Mobile Phone (11-Digit PH Format) *</span>
+                    <input
+                      required
+                      type="tel"
+                      maxLength={11}
+                      value={profPhone}
+                      onChange={(e) => setProfPhone(to11Digits(e.target.value))}
+                      placeholder="09171234567"
+                      className={FIELD}
+                    />
+                    <span className="text-[10px] text-white/40">Used for official booking voucher & front desk SMS updates</span>
+                  </label>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className="flex flex-col gap-1.5">
+                      <span className={LABEL}>Residential Address</span>
+                      <input
+                        type="text"
+                        value={profAddress}
+                        onChange={(e) => setProfAddress(e.target.value)}
+                        placeholder="Street / Barangay"
+                        className={FIELD}
+                      />
+                    </label>
+                    <label className="flex flex-col gap-1.5">
+                      <span className={LABEL}>City / Province</span>
+                      <input
+                        type="text"
+                        value={profCity}
+                        onChange={(e) => setProfCity(e.target.value)}
+                        placeholder="Bolinao, Pangasinan"
+                        className={FIELD}
+                      />
+                    </label>
+                  </div>
+
+                  <label className="flex flex-col gap-1.5">
+                    <span className={LABEL}>Emergency Contact (11-Digit Mobile)</span>
+                    <input
+                      type="tel"
+                      maxLength={11}
+                      value={profEmergency}
+                      onChange={(e) => setProfEmergency(to11Digits(e.target.value))}
+                      placeholder="09181234567"
+                      className={FIELD}
+                    />
+                  </label>
+
+                  <div className="pt-2 flex gap-3">
+                    <button
+                      type="submit"
+                      disabled={profSaving}
+                      className={`${BTN_PRIMARY} flex-1 py-3.5 cursor-pointer`}
+                    >
+                      {profSaving ? 'Saving & Syncing…' : 'Save Manifest & Sync ✦'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (signOut) await signOut();
+                        setProfileModalOpen(false);
+                        toast('Signed out ✦');
+                      }}
+                      className={`${BTN_GHOST} px-4 py-3.5 cursor-pointer text-white/60 hover:text-white`}
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {profileTab === 'bookings' && (
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between pb-2 border-b border-white/10">
+                    <span className="text-xs text-white/60">Your resort itinerary and booking vouchers</span>
+                    <button
+                      type="button"
+                      onClick={fetchMyBookings}
+                      disabled={loadingBookings}
+                      className="text-[11px] text-cyan underline uppercase tracking-wider hover:brightness-120 cursor-pointer"
+                    >
+                      {loadingBookings ? 'Refreshing…' : 'Refresh'}
+                    </button>
+                  </div>
+
+                  {loadingBookings ? (
+                    <div className="py-12 text-center text-xs text-white/50">
+                      <span className="inline-block h-5 w-5 border-2 border-cyan border-t-transparent rounded-full animate-spin mb-2" />
+                      <p>Loading your reservations…</p>
+                    </div>
+                  ) : myBookings.length === 0 ? (
+                    <div className="py-10 text-center rounded-2xl border border-white/5 bg-white/[0.02] p-6">
+                      <span className="font-serif text-3xl text-cyan">✦</span>
+                      <p className="mt-2 text-sm font-medium text-white">No Active Reservations</p>
+                      <p className="mt-1 text-xs text-white/50 max-w-xs mx-auto">
+                        You have no booked stays currently. Explore our beachfront villas facing the Patar sunset.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProfileModalOpen(false);
+                          scrollTo('rooms-section');
+                        }}
+                        className={`${BTN_PRIMARY} mt-5 py-2.5 px-6 text-[10px] cursor-pointer`}
+                      >
+                        Explore Accommodations →
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {myBookings.map((b) => (
+                        <div key={b.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-xs">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <span className="font-serif text-base font-medium text-white block">
+                                {b.rooms?.name || 'Beachfront Accommodation'}
+                              </span>
+                              <span className="text-[10px] uppercase tracking-wider text-cyan block mt-0.5">
+                                Ref: JD-RES-{b.id?.slice(0, 8).toUpperCase()}
+                              </span>
+                            </div>
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider border ${
+                              b.status === 'confirmed'
+                                ? 'bg-cyan/15 text-cyan border-cyan/40'
+                                : b.status === 'checked_in'
+                                ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40'
+                                : b.status === 'cancelled'
+                                ? 'bg-rose-500/15 text-rose-300 border-rose-500/40'
+                                : 'bg-gold/15 text-gold border-gold/40'
+                            }`}>
+                              {b.status}
+                            </span>
+                          </div>
+
+                          <div className="mt-3 grid grid-cols-2 gap-2 text-white/70 py-2 border-y border-white/5">
+                            <div>
+                              <span className="text-[10px] uppercase text-white/40 block">Check-in</span>
+                              <span className="font-medium text-white">{b.check_in}</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] uppercase text-white/40 block">Check-out</span>
+                              <span className="font-medium text-white">{b.check_out}</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] uppercase text-white/40 block">Guests</span>
+                              <span className="font-medium text-white">{b.guests || 2} Guests</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] uppercase text-white/40 block">Total Rate</span>
+                              <span className="font-medium text-cyan">{peso(b.total_php || 0)}</span>
+                            </div>
+                          </div>
+
+                          {['pending', 'confirmed'].includes(b.status) && (
+                            <div className="mt-3 flex justify-end">
+                              <button
+                                type="button"
+                                onClick={() => handleCancelBooking(b.id)}
+                                className="text-[10px] text-rose-300 hover:text-rose-200 underline uppercase tracking-wider cursor-pointer"
+                              >
+                                Cancel Stay
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {profileTab === 'contact' && (
+                <div className="flex flex-col gap-4">
+                  {/* Direct Contact Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <a
+                      href="tel:+639175558899"
+                      className="flex items-center gap-3 p-3.5 rounded-2xl border border-white/10 bg-white/[0.03] hover:border-cyan/40 transition group"
+                    >
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-cyan/15 text-cyan text-sm">
+                        📞
+                      </span>
+                      <div>
+                        <span className="text-[10px] uppercase tracking-wider text-white/50 block">Front Desk Hotline</span>
+                        <span className="text-xs font-semibold text-white group-hover:text-cyan transition">+63 917 555 8899</span>
+                      </div>
+                    </a>
+
+                    <a
+                      href="mailto:concierge@janddbeachhouse.ph"
+                      className="flex items-center gap-3 p-3.5 rounded-2xl border border-white/10 bg-white/[0.03] hover:border-cyan/40 transition group"
+                    >
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-cyan/15 text-cyan text-sm">
+                        ✉️
+                      </span>
+                      <div>
+                        <span className="text-[10px] uppercase tracking-wider text-white/50 block">Resort Concierge</span>
+                        <span className="text-xs font-semibold text-white group-hover:text-cyan transition truncate block">concierge@jandd.ph</span>
+                      </div>
+                    </a>
+                  </div>
+
+                  {/* Resort Location Note */}
+                  <div className="p-3.5 rounded-2xl border border-white/10 bg-white/[0.02] text-xs text-white/70">
+                    <p className="font-semibold text-white flex items-center gap-1.5">
+                      <span>📍 Patar Beach, Bolinao, Pangasinan</span>
+                    </p>
+                    <p className="mt-1 text-[11px] text-white/50">
+                      Check-in starts at 2:00 PM. Check-out is at 12:00 PM. Complimentary Wi-Fi, fresh coconut welcome drinks, and sunset bonfire.
+                    </p>
+                  </div>
+
+                  {/* Request Form */}
+                  <form onSubmit={handleSendContactMessage} className="flex flex-col gap-3">
+                    <label className="flex flex-col gap-1.5">
+                      <span className={LABEL}>Request Category</span>
+                      <select
+                        value={contactSubject}
+                        onChange={(e) => setContactSubject(e.target.value)}
+                        className="w-full rounded-2xl border border-white/10 bg-ink px-4 py-3 text-xs text-white outline-none focus:border-cyan/60"
+                      >
+                        <option value="Front Desk Inquiry">Front Desk General Inquiry</option>
+                        <option value="Special Dietary Request">Special Dietary & Grill Requests</option>
+                        <option value="Airport / Bus Terminal Transfer">Airport / Van Transfer Assistance</option>
+                        <option value="Early Check-In / Late Check-Out">Early Check-In / Late Check-Out</option>
+                        <option value="Romantic / Celebration Setup">Flower / Anniversary Room Setup</option>
+                      </select>
+                    </label>
+
+                    <label className="flex flex-col gap-1.5">
+                      <span className={LABEL}>Inquiry Details & Instructions *</span>
+                      <textarea
+                        required
+                        rows={3}
+                        value={contactMessage}
+                        onChange={(e) => setContactMessage(e.target.value)}
+                        placeholder="Please state any special instructions or arrival notes…"
+                        className="w-full rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-xs text-white outline-none focus:border-cyan/60 resize-none"
+                      />
+                    </label>
+
+                    <div className="flex gap-2">
+                      <button
+                        type="submit"
+                        disabled={contactSending}
+                        className={`${BTN_PRIMARY} flex-1 py-3 text-[11px] cursor-pointer`}
+                      >
+                        {contactSending ? 'Transmitting…' : 'Send to Front Desk ✦'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProfileModalOpen(false);
+                          window.dispatchEvent(new CustomEvent('app:open-chat'));
+                        }}
+                        className="px-4 py-3 rounded-full border border-cyan/40 bg-cyan/15 text-cyan text-[11px] font-semibold uppercase tracking-wider hover:bg-cyan hover:text-navy transition cursor-pointer"
+                      >
+                        AI Concierge
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* RESERVATION CHECKOUT & OFFICIAL VOUCHER MODAL */}
+      {reservationModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy/85 backdrop-blur-md overflow-y-auto animate-fade-in">
+          <div className="relative w-full max-w-lg rounded-3xl border border-white/10 bg-ink p-6 sm:p-8 shadow-2xl text-white my-8 max-h-[92vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-start justify-between gap-4 pb-4 border-b border-white/10">
+              <div>
+                <span className="text-[11px] font-medium uppercase tracking-[0.28em] text-cyan block">Direct Booking Sanctuary</span>
+                <h3 className="font-serif text-2xl sm:text-3xl font-medium text-white mt-1">
+                  {resConfirmed ? 'Official Booking Voucher' : 'Confirm Reservation'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setReservationModalOpen(false);
+                  setResConfirmed(null);
+                }}
+                aria-label="Close reservation modal"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="mt-5 overflow-y-auto pr-1 flex-1">
+              {resConfirmed ? (
+                /* OFFICIAL CONFIRMED VOUCHER */
+                <div className="flex flex-col gap-4 animate-fade-in">
+                  <div className="rounded-2xl border border-cyan/40 bg-gradient-to-b from-cyan/15 via-ink to-ink p-5 text-center relative overflow-hidden">
+                    <span className="font-serif text-4xl text-cyan block">✦</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-cyan mt-1 block">J & D Beach House · Patar Bolinao</span>
+                    <h4 className="font-serif text-2xl font-medium text-white mt-1">Reservation Confirmed</h4>
+                    <div className="mt-3 inline-block rounded-full bg-cyan px-4 py-1 font-mono text-xs font-bold tracking-widest text-navy">
+                      REF: JD-RES-{resConfirmed.id ? resConfirmed.id.slice(0, 8).toUpperCase() : 'GUARANTEED'}
+                    </div>
+
+                    <div className="mt-5 grid grid-cols-2 gap-2 text-left text-xs bg-white/[0.03] p-3.5 rounded-xl border border-white/10">
+                      <div>
+                        <span className="text-[10px] uppercase text-white/40 block">Guest Resident</span>
+                        <span className="font-medium text-white">{resConfirmed.guest_name}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase text-white/40 block">Accommodation</span>
+                        <span className="font-medium text-cyan">{resConfirmed.roomName}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase text-white/40 block">Check-in</span>
+                        <span className="font-medium text-white">{checkIn}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase text-white/40 block">Check-out</span>
+                        <span className="font-medium text-white">{checkOut} ({resConfirmed.nights} Nights)</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase text-white/40 block">Total Est.</span>
+                        <span className="font-medium text-white">{peso(resConfirmed.total_php)}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase text-white/40 block">30% Downpayment</span>
+                        <span className="font-medium text-cyan">{peso(resConfirmed.downpayment_php)}</span>
+                      </div>
+                    </div>
+
+                    <p className="mt-3 text-[11px] text-white/60">
+                      We look forward to welcoming you! Present this digital voucher or SMS upon arrival at the Front Desk.
+                    </p>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard?.writeText(`JD-RES-${resConfirmed.id ? resConfirmed.id.slice(0, 8).toUpperCase() : 'GUARANTEED'}`);
+                        toast('Voucher Reference Copied to Clipboard ✦');
+                      }}
+                      className={`${BTN_GHOST} flex-1 py-3 text-xs`}
+                    >
+                      Copy Voucher Code
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setReservationModalOpen(false);
+                        setResConfirmed(null);
+                        setProfileTab('bookings');
+                        setProfileModalOpen(true);
+                      }}
+                      className={`${BTN_PRIMARY} flex-1 py-3 text-xs`}
+                    >
+                      View in My Stays
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* RESERVATION CHECKOUT FORM */
+                <form onSubmit={handleConfirmReservation} className="flex flex-col gap-4">
+                  {/* Selected Room Card Preview */}
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 flex items-center justify-between gap-3">
+                    <div>
+                      <span className="font-serif text-lg font-medium text-white block">
+                        {resRoom?.name || selectedRoom}
+                      </span>
+                      <span className="text-xs text-white/50 block">
+                        {checkIn} → {checkOut} ({Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000))} Nights) · {guests}
+                      </span>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="font-serif text-base text-cyan block font-semibold">
+                        {peso((resRoom?.rate_php || resRoom?.price || 4200) * Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000)))}
+                      </span>
+                      <span className="text-[10px] text-white/40 block">
+                        30% DP: {peso(Math.round((resRoom?.rate_php || resRoom?.price || 4200) * Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000)) * 0.3))}
+                      </span>
+                    </div>
+                  </div>
+
+                  {!session && (
+                    <div className="rounded-2xl border border-gold/40 bg-gold/10 p-3.5 text-xs text-gold flex items-center justify-between gap-3">
+                      <div>
+                        <p className="font-semibold">Sign in required to confirm voucher</p>
+                        <p className="text-[11px] text-white/70">Register or log in to generate official resort voucher.</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setReservationModalOpen(false);
+                          go('auth', 'signup');
+                        }}
+                        className="shrink-0 px-3 py-1.5 rounded-full bg-cyan text-navy font-semibold text-[10px] uppercase tracking-wider hover:brightness-110 cursor-pointer"
+                      >
+                        Sign In / Register
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Guest Info */}
+                  <label className="flex flex-col gap-1.5">
+                    <span className={LABEL}>Guest Name for Manifest *</span>
+                    <input
+                      required
+                      type="text"
+                      value={resName}
+                      onChange={(e) => setResName(e.target.value)}
+                      placeholder="Full Name"
+                      className={FIELD}
+                    />
+                  </label>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className="flex flex-col gap-1.5">
+                      <span className={LABEL}>Mobile Phone (11 Digits) *</span>
+                      <input
+                        required
+                        type="tel"
+                        maxLength={11}
+                        value={resPhone}
+                        onChange={(e) => setResPhone(to11Digits(e.target.value))}
+                        placeholder="09171234567"
+                        className={FIELD}
+                      />
+                    </label>
+                    <label className="flex flex-col gap-1.5">
+                      <span className={LABEL}>Email Address *</span>
+                      <input
+                        required
+                        type="email"
+                        value={resEmail}
+                        onChange={(e) => setResEmail(e.target.value)}
+                        placeholder="name@email.com"
+                        className={FIELD}
+                      />
+                    </label>
+                  </div>
+
+                  {/* Payment Method Selector */}
+                  <label className="flex flex-col gap-1.5">
+                    <span className={LABEL}>Preferred Downpayment Method (30% Required)</span>
+                    <div className="grid grid-cols-2 gap-2 mt-1">
+                      {['GCash', 'Maya', 'Credit / Debit Card', 'Bank Transfer (BDO/BPI)'].map((pm) => (
+                        <button
+                          key={pm}
+                          type="button"
+                          onClick={() => setResPaymentMethod(pm)}
+                          className={`p-2.5 rounded-xl text-xs font-medium text-left border transition cursor-pointer ${
+                            resPaymentMethod === pm
+                              ? 'border-cyan bg-cyan/15 text-white'
+                              : 'border-white/10 bg-white/[0.02] text-white/60 hover:border-white/20'
+                          }`}
+                        >
+                          <span className="block text-[11px] font-semibold">{pm}</span>
+                          <span className="text-[9px] text-white/40 block mt-0.5">30% Advance Downpayment</span>
+                        </button>
+                      ))}
+                    </div>
+                  </label>
+
+                  {/* Special Requests */}
+                  <label className="flex flex-col gap-1.5">
+                    <span className={LABEL}>Special Requests & Expected Arrival Time</span>
+                    <textarea
+                      rows={2}
+                      value={resNotes}
+                      onChange={(e) => setResNotes(e.target.value)}
+                      placeholder="e.g. ETA 3:00 PM, extra beach towels, barbecue grill setup…"
+                      className="w-full rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-xs text-white outline-none focus:border-cyan/60 resize-none"
+                    />
+                  </label>
+
+                  <div className="pt-2">
+                    <button
+                      type="submit"
+                      disabled={resSubmitting}
+                      className={`${BTN_PRIMARY} w-full py-4 text-xs font-semibold uppercase tracking-[0.18em] cursor-pointer`}
+                    >
+                      {resSubmitting ? 'Confirming Reservation…' : 'Confirm Stay & Generate Voucher ✦'}
+                    </button>
+                    <p className="mt-2 text-center text-[10px] text-white/40">
+                      No cancellation fee up to 48 hours before check-in. Instant confirmation.
+                    </p>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

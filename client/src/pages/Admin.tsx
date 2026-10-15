@@ -8,7 +8,8 @@ import {
   IconDashboard, IconDining, IconUsers, IconTelemetry, IconLedger,
   IconCsv, IconSettings, IconSignOut, IconSearch, IconBell,
   IconSun, IconMoon, IconCrown, IconTrendingUp, IconCreditCard,
-  IconWallet, IconBuilding, IconShield, IconBriefcase, DefaultUserAvatar
+  IconWallet, IconBuilding, IconShield, IconBriefcase, DefaultUserAvatar,
+  IconMessages, IconAnalytics, IconRefresh
 } from '../components/AdminIcons.tsx';
 import { api, API_BASE } from '../lib/api.ts';
 import { supabase } from '../lib/supabaseClient.ts';
@@ -51,6 +52,20 @@ export default function Admin() {
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPass, setAdminPass] = useState('');
   const [authenticating, setAuthenticating] = useState(false);
+  const [refreshingAnalytics, setRefreshingAnalytics] = useState(false);
+
+  const handleManualSync = async () => {
+    setRefreshingAnalytics(true);
+    try {
+      const fresh = await api.analyticsOverview();
+      if (fresh) setData(fresh);
+      toast('Live Analytics & Ledger Synchronized ✦');
+    } catch (err: any) {
+      toast(err.message || 'Sync failed', true);
+    } finally {
+      setRefreshingAnalytics(false);
+    }
+  };
 
   // Administrative Navigation Tabs, Sidebar & LIGHT/DARK THEME STATE
   const [activeTab, setActiveTab] = useState('overview'); // overview | food_sales | telemetry | accounts | settings | ledger | csv
@@ -606,9 +621,9 @@ export default function Admin() {
   }
 
   const sidebarItems = [
-    { key: 'overview', label: 'Dashboard', icon: <IconDashboard size={19} /> },
+    { key: 'overview', label: 'Dashboard & Analytics', icon: <IconAnalytics size={19} /> },
     { key: 'inventory', label: 'Accommodations & Inventory', icon: <IconBuilding size={19} /> },
-    { key: 'conversations', label: 'Customer Services', icon: <span style={{ fontSize: '1.1rem' }}>💬</span> },
+    { key: 'conversations', label: 'Customer Services', icon: <IconMessages size={19} /> },
     { key: 'food_sales', label: 'Dining Sales', icon: <IconDining size={19} /> },
     { key: 'accounts', label: 'Staff & Accounts', icon: <IconUsers size={19} /> },
     { key: 'audit', label: 'System Audit Logs', icon: <IconShield size={19} /> },
@@ -896,8 +911,34 @@ export default function Admin() {
             </div>
           </div>
 
-          {/* TOP RIGHT CONTROLS: LIGHT/DARK THEME TOGGLE, NOTIFICATION BAR & AVATAR */}
+          {/* TOP RIGHT CONTROLS: SYNC LIVE, LIGHT/DARK THEME TOGGLE, NOTIFICATION BAR & AVATAR */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {/* SYNC LIVE ON-DEMAND BUTTON */}
+            <button
+              onClick={handleManualSync}
+              disabled={refreshingAnalytics}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 7,
+                padding: '6px 14px',
+                borderRadius: 20,
+                border: isLightMode ? '1px solid #BAE6FD' : '1px solid rgba(14, 165, 233, 0.4)',
+                background: isLightMode ? '#F0F9FF' : 'rgba(14, 165, 233, 0.12)',
+                color: '#0284C7',
+                fontWeight: 700,
+                fontSize: '.8rem',
+                cursor: refreshingAnalytics ? 'wait' : 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+              title="Synchronize live analytics and bookings with database"
+            >
+              <span style={{ display: 'inline-flex', animation: refreshingAnalytics ? 'spin 1s linear infinite' : 'none' }}>
+                <IconRefresh size={14} color="#0284C7" />
+              </span>
+              <span>{refreshingAnalytics ? 'Syncing…' : 'Sync Live'}</span>
+            </button>
+
             {/* LIGHT MODE / DARK MODE TOGGLE BUTTON */}
             <button
               onClick={toggleThemeMode}
