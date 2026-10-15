@@ -887,17 +887,25 @@ export default function MobileResortApp() {
               <Logo size="sm" />
             </button>
 
-            <nav aria-label="Primary" className="hidden items-center gap-7 lg:flex">
+            <nav aria-label="Primary" className="hidden items-center gap-6 lg:flex">
               {site.nav.links.map((l) => (
                 <button
                   key={l}
                   type="button"
                   onClick={() => scrollTo(navTargets[l])}
-                  className="text-[11px] font-medium uppercase tracking-[0.2em] text-white/70 transition hover:text-cyan"
+                  className="text-[11px] font-medium uppercase tracking-[0.2em] text-white/70 transition hover:text-cyan cursor-pointer"
                 >
                   {l}
                 </button>
               ))}
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new CustomEvent('app:open-chat'))}
+                className="flex items-center gap-1.5 rounded-full border border-cyan/30 bg-cyan/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-cyan transition hover:bg-cyan/20 cursor-pointer"
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-cyan animate-pulse" />
+                AI Concierge
+              </button>
             </nav>
 
             <div className="flex items-center gap-2 sm:gap-3">
@@ -1309,6 +1317,26 @@ export default function MobileResortApp() {
                 </div>
               );
             })}
+
+            {/* AI Concierge Direct Query Card */}
+            <div className="mt-2 flex flex-col gap-4 rounded-2xl border border-cyan/25 bg-cyan/[0.06] p-5 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="flex items-center gap-2 text-sm font-medium text-white">
+                  <span className="h-2 w-2 rounded-full bg-cyan animate-pulse" />
+                  Have more questions about your stay?
+                </p>
+                <p className="mt-1 text-xs text-white/60">
+                  Our 24/7 AI Concierge can instantly answer room rates, amenities, beach guidelines, and group packages.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new CustomEvent('app:open-chat'))}
+                className="shrink-0 rounded-full bg-cyan px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-navy shadow-[0_4px_16px_rgba(34,195,238,.4)] transition hover:brightness-110 active:scale-95 cursor-pointer"
+              >
+                Ask AI Concierge ✦
+              </button>
+            </div>
           </div>
         </section>
 
@@ -1429,7 +1457,21 @@ export default function MobileResortApp() {
                     </span>
                     <ul className="flex flex-col gap-2.5 text-sm text-white/70">
                       {col.items.map((it) => (
-                        <li key={it} className="cursor-pointer transition hover:text-cyan">
+                        <li
+                          key={it}
+                          onClick={() => {
+                            if (it === 'Concierge Desk') {
+                              window.dispatchEvent(new CustomEvent('app:open-chat'));
+                            } else if (it === 'Direct Booking FAQ') {
+                              scrollTo('faq-section');
+                            } else if (it === 'Accommodations') {
+                              scrollTo('rooms-section');
+                            } else if (it === 'Dining & Grill') {
+                              scrollTo('dining-section');
+                            }
+                          }}
+                          className="cursor-pointer transition hover:text-cyan"
+                        >
                           {it}
                         </li>
                       ))}
@@ -1545,6 +1587,22 @@ export default function MobileResortApp() {
                   {l}
                 </button>
               ))}
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  window.dispatchEvent(new CustomEvent('app:open-chat'));
+                }}
+                className="flex items-center justify-between border-b border-white/10 py-3.5 text-left font-serif text-2xl text-cyan transition hover:text-white cursor-pointer"
+              >
+                <span className="flex items-center gap-3">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-cyan/20 text-xs text-cyan">✦</span>
+                  AI Concierge
+                </span>
+                <span className="rounded-full bg-cyan/15 px-2.5 py-1 font-sans text-[10px] font-semibold uppercase tracking-widest text-cyan">
+                  24/7 Live
+                </span>
+              </button>
             </nav>
 
             <div className="mt-auto flex flex-col gap-3 pt-8">

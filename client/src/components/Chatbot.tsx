@@ -7,11 +7,24 @@ import {
   RESORT_CONTACT_INFO,
 } from '../lib/aiGuardrails.ts';
 
+const DEFAULT_WELCOME = {
+  from: 'bot',
+  text: "Mabuhay! I'm J & D Bot 🌊 How can I help you plan your stay, recommend rooms for your family or group, or answer questions about J & D Beach House?",
+  is_ai: true,
+};
+
+const DEFAULT_CHIPS = [
+  'Recommend a room for a family',
+  'How far is Cape Bolinao lighthouse?',
+  'What are the resort amenities?',
+  'Direct booking perks',
+];
+
 export default function Chatbot() {
   const { session } = useAuth();
   const [open, setOpen] = useState(false);
-  const [msgs, setMsgs] = useState<any[]>([]);
-  const [chips, setChips] = useState<string[]>([]);
+  const [msgs, setMsgs] = useState<any[]>([DEFAULT_WELCOME]);
+  const [chips, setChips] = useState<string[]>(DEFAULT_CHIPS);
   const [typing, setTyping] = useState(false);
   const [text, setText] = useState('');
   const [isTypingPrompt, setIsTypingPrompt] = useState(false);
@@ -74,8 +87,15 @@ export default function Chatbot() {
     sockRef.current = s;
 
     const handleMessage = (m: any) => {
-      setMsgs((x) => [...x, { from: 'bot', ...m }]);
-      setChips(m.chips || []);
+      setMsgs((x) => {
+        if (x.length === 1 && x[0].text === m.text) {
+          return x;
+        }
+        return [...x, { from: 'bot', ...m }];
+      });
+      if (m.chips && m.chips.length > 0) {
+        setChips(m.chips);
+      }
       setTyping(false);
     };
 
@@ -122,11 +142,15 @@ export default function Chatbot() {
       return;
     }
 
-    if (!sockRef.current) return;
     setMsgs((x) => [...x, { from: 'user', text: clean }]);
     setChips([]);
     setText('');
-    sockRef.current.emit('chat:message', { text: clean });
+    setTyping(true);
+
+    const s = sockRef.current || getSocket(session?.access_token);
+    if (s) {
+      s.emit('chat:message', { text: clean });
+    }
   }
 
   return (

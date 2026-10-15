@@ -78,7 +78,7 @@ function MainAppShell() {
       </main>
 
       {!isStaffRoute && !isGuestHome && <Footer />}
-      {!isStaffRoute && !isGuestHome && <Chatbot />}
+      {!isStaffRoute && <Chatbot />}
       <AuthModal />
       <Toasts />
       {!isGuestHome && <NetworkStatusControl />}
