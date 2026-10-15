@@ -1,0 +1,300 @@
+{
+  "brand": {
+    "name": "J & D",
+    "sub": "Beach House",
+    "tagline": "Where days slow to the tide."
+  },
+  "ticker": [
+    "Cape Bolinao Lighthouse 10 mins away",
+    "Barefoot luxury on quiet Patar sand",
+    "Fresh grilled seafood nightly",
+    "Exclusive direct booking privileges"
+  ],
+  "nav": {
+    "signIn": "Sign in",
+    "book": "Book stay",
+    "links": ["Rooms & Suites", "Experiences", "Amenities", "Dining", "Location", "FAQ"]
+  },
+  "hero": {
+    "eyebrow": "Patar Beach · Bolinao, Pangasinan",
+    "title": "Where days slow",
+    "accent": "to the tide.",
+    "body": "Barefoot cottages, sea-view suites and villas on Pangasinan's quietest sand — ten minutes from the Cape Bolinao lighthouse, a world away from everything else.",
+    "primary": "Reserve your stay",
+    "secondary": "Explore the rooms",
+    "ambient": "Ambient Waves",
+    "scenes": [
+      {
+        "label": "01 · Sunset Tide",
+        "image": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&q=80"
+      },
+      {
+        "label": "02 · Coral Horizon",
+        "image": "https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=1200&q=80"
+      },
+      {
+        "label": "03 · Golden Coast",
+        "image": "https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=1200&q=80"
+      }
+    ]
+  },
+  "booking": {
+    "title": "Reserve Your Sanctuary",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "guests": "Guests",
+    "room": "Accommodation",
+    "cta": "Check Availability & Book",
+    "note": "Instant SMS confirmation · Zero booking fees · Direct resort rates"
+  },
+  "stats": [
+    { "value": "18", "label": "Cottages & Suites" },
+    { "value": "50", "label": "Steps to the Sand" },
+    { "value": "2016", "label": "Welcoming Guests" }
+  ],
+  "rooms": {
+    "eyebrow": "Accommodations",
+    "title": "Private Coastal Living",
+    "items": [
+      {
+        "name": "Oceanfront Sunset Villa",
+        "price": 6500,
+        "meta": "Sleeps 4 · Ocean View · King Bed · Balcony",
+        "image": "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=900&q=80"
+      },
+      {
+        "name": "Deluxe Beach Cottage",
+        "price": 4200,
+        "meta": "Sleeps 2 · Garden Access · Queen Bed · Veranda",
+        "image": "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=900&q=80"
+      },
+      {
+        "name": "Family Coral Suite",
+        "price": 8500,
+        "meta": "Sleeps 6 · Two Bedrooms · Kitchenette · Terrace",
+        "image": "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=900&q=80"
+      },
+      {
+        "name": "Secluded Palms Studio",
+        "price": 3800,
+        "meta": "Sleeps 2 · Tropical Courtyard · Queen Bed",
+        "image": "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=900&q=80"
+      }
+    ]
+  },
+  "experiences": {
+    "eyebrow": "Curated Moments",
+    "title": "Bolinao Unhurried",
+    "items": [
+      {
+        "title": "Sunset Outrigger Sail",
+        "body": "Glide through calm Lingayen waters on a traditional wooden bangka as the sun sets over the West Philippine Sea."
+      },
+      {
+        "title": "Lighthouse Lantern Walk",
+        "body": "Evening stroll to the 1905 Cape Bolinao Lighthouse, carrying warm woven bamboo lanterns along the bluff."
+      },
+      {
+        "title": "Balingasay River Cruise",
+        "body": "Gentle drift through one of Luzon's cleanest river ecosystems surrounded by lush centuries-old mangroves."
+      },
+      {
+        "title": "Fresh Coral Reef Snorkeling",
+        "body": "Guided morning snorkel along the preserved giant clam sanctuaries and coral gardens of Patar reef."
+      }
+    ]
+  },
+  "amenities": {
+    "eyebrow": "Resort Comforts",
+    "title": "Thoughtful Simplicity",
+    "items": [
+      { "icon": "wave", "label": "Beachfront Access" },
+      { "icon": "wifi", "label": "High-Speed Wi-Fi" },
+      { "icon": "utensils", "label": "All-Day Dining" },
+      { "icon": "cocktail", "label": "Sunset Bar" },
+      { "icon": "sun", "label": "Shaded Cabanas" },
+      { "icon": "compass", "label": "Island Tours" }
+    ]
+  },
+  "gallery": {
+    "eyebrow": "Visual Journal",
+    "title": "Scenes from the Shore",
+    "images": [
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1000&q=80",
+      "https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=800&q=80",
+      "https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=800&q=80",
+      "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&q=80",
+      "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80"
+    ]
+  },
+  "reviews": {
+    "eyebrow": "Guest Reflections",
+    "title": "Memories of Patar",
+    "items": [
+      {
+        "quote": "The sweetest sea breeze and warmest hospitality. Waking up fifty steps from the sand felt like our own private paradise.",
+        "name": "Maria & Christian S.",
+        "from": "Makati City"
+      },
+      {
+        "quote": "No noisy crowds, just pristine golden sand, grilled seafood at dusk, and stargazing from the veranda. We will return every summer.",
+        "name": "David L.",
+        "from": "Singapore"
+      },
+      {
+        "quote": "Our barkada loved the relaxed atmosphere and easy access to the lighthouse. The staff treats you like beloved family.",
+        "name": "Camille R.",
+        "from": "Quezon City"
+      }
+    ]
+  },
+  "location": {
+    "eyebrow": "Find Your Way",
+    "title": "The Tip of Pangasinan",
+    "body": "Perched on Patar Beach in Bolinao, Pangasinan. A scenic four-hour coastal drive north of Metro Manila, directly overlooking the open West Philippine Sea.",
+    "facts": [
+      ["10 min", "Cape Bolinao Lighthouse"],
+      ["15 min", "Enchanted Cave & Falls"],
+      ["4.5 hrs", "Drive from Metro Manila"]
+    ],
+    "button": "Open in Google Maps"
+  },
+  "faq": {
+    "eyebrow": "Frequently Inquired",
+    "title": "Helpful Details",
+    "items": [
+      {
+        "q": "What time is check-in and check-out?",
+        "a": "Check-in begins at 2:00 PM and check-out is at 12:00 PM noon. Early check-in or late check-out is accommodated whenever available."
+      },
+      {
+        "q": "Is the beach swimmable and child-friendly?",
+        "a": "Yes, Patar Beach features shallow natural lagoons with gentle slope and soft golden sand, ideal for swimming and wading at low and mid tides."
+      },
+      {
+        "q": "Can we bring our own food or cook on site?",
+        "a": "Our on-site seaside kitchen serves freshly prepared local seafood, breakfast, and grilled dishes. Grilling stations are also available for guests upon request."
+      },
+      {
+        "q": "Do you offer transportation or boat hire?",
+        "a": "Yes, our concierge team can coordinate outrigger boat excursions to Hundred Islands and local tricycles to nearby Bolinao attractions."
+      }
+    ]
+  },
+  "offers": {
+    "eyebrow": "Exclusive Privileges",
+    "title": "Seasonal Coastal Escapes",
+    "items": [
+      {
+        "tag": "Early Bird",
+        "title": "Quiet Season Retreat",
+        "body": "Enjoy 20% off three-night weekday stays booked at least 14 days in advance.",
+        "code": "PATAR20"
+      },
+      {
+        "tag": "Long Stay",
+        "title": "Work by the Water",
+        "body": "Complimentary daily breakfast and high-speed workspace privileges on stays over 5 nights.",
+        "code": "COASTAL5"
+      },
+      {
+        "tag": "Couples",
+        "title": "Sunset Anniversary",
+        "body": "Includes sunset outrigger tour and candlelit grilled seafood dinner on the beach.",
+        "code": "ROMANCE"
+      }
+    ]
+  },
+  "dining": {
+    "eyebrow": "Coastal Kitchen",
+    "title": "Grilled Fresh at Dusk",
+    "body": "No stiff dining rooms. Enjoy hot garlic sinangag in the morning, grilled Dagupan bangus at midday, and fresh catch of the day by lantern light.",
+    "image": "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=900&q=80",
+    "hours": [
+      ["Breakfast", "07:00 – 10:30"],
+      ["Lunch & Afternoon", "11:30 – 16:00"],
+      ["Dinner & Lantern Grill", "17:30 – 21:30"]
+    ]
+  },
+  "cta": {
+    "eyebrow": "Your Room Awaits",
+    "title": "Let the tide set",
+    "accent": "your pace.",
+    "body": "Escape the city rush. Reserve direct for guaranteed lowest rates and personalized concierge care.",
+    "button": "Check Availability",
+    "image": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&q=80"
+  },
+  "intro": {
+    "loading": "Preparing your coastal sanctuary…",
+    "title": "Where days slow",
+    "accent": "to the tide.",
+    "body": "Barefoot luxury on Patar's quietest sand. Ten minutes from the Cape Bolinao lighthouse.",
+    "button": "Begin your journey",
+    "login": "Sign in to account",
+    "haveAccount": "Already have an account?",
+    "image": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&q=80",
+    "scrollHint": "Scroll to explore",
+    "highlights": [
+      {
+        "title": "Quiet Sands of Patar",
+        "body": "Fifty steps from your pillow to the golden shore of Bolinao.",
+        "image": "https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=800&q=80"
+      },
+      {
+        "title": "Lanterns at Dusk",
+        "body": "Nightly grilled seafood and unhurried conversations by the water.",
+        "image": "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&q=80"
+      },
+      {
+        "title": "The Historic Cape",
+        "body": "Dramatic coral bluffs and the beacon of Cape Bolinao lighthouse.",
+        "image": "https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=800&q=80"
+      }
+    ]
+  },
+  "auth": {
+    "signup": {
+      "title": "Create Your Account",
+      "sub": "Join our coastal circle for direct reservations and member privileges.",
+      "cta": "Create Account",
+      "switch": "Already have an account?",
+      "switchCta": "Sign in"
+    },
+    "login": {
+      "title": "Welcome Back",
+      "sub": "Sign in to manage your stays and access exclusive rates.",
+      "cta": "Sign In",
+      "switch": "New to J & D Beach House?",
+      "switchCta": "Create an account"
+    },
+    "forgot": "Forgot password?",
+    "or": "or continue with",
+    "guest": "Continue as guest"
+  },
+  "footer": {
+    "about": "A family-run barefoot luxury retreat on the golden shores of Patar Beach in Bolinao, Pangasinan. Built with natural stone, native wood, and warm northern hospitality.",
+    "columns": [
+      {
+        "title": "Explore",
+        "items": ["Accommodations", "Patar Beachfront", "Cape Lighthouse", "Dining & Grill", "Exclusive Offers"]
+      },
+      {
+        "title": "Resort Info",
+        "items": ["Getting Here", "House Guidelines", "Direct Booking FAQ", "Concierge Desk", "Privacy Policy"]
+      }
+    ],
+    "newsletter": {
+      "title": "Letters from the Shore",
+      "body": "Occasional notes on high tides, new seasons, and private member privileges.",
+      "placeholder": "Enter your email address",
+      "button": "Subscribe"
+    },
+    "socials": ["Instagram", "Facebook", "TikTok"],
+    "payments": ["GCash", "Maya", "Visa", "Mastercard", "Bank Transfer"],
+    "badges": ["Top Rated Beachfront 2026", "Bolinao Heritage Partner"],
+    "legal": ["Privacy Policy", "Terms of Stay", "Cancellation Rules"],
+    "backToTop": "Back to top",
+    "copyright": "© 2026 J & D Beach House. All rights reserved. Patar Beach, Bolinao, Pangasinan, Philippines."
+  },
+  "tabs": ["Home", "Rooms", "Book", "Dining", "Profile"]
+}

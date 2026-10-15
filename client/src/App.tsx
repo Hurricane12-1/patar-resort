@@ -8,6 +8,7 @@ import Toasts from './components/Toasts.tsx';
 import TelemetryTracker from './components/TelemetryTracker.tsx';
 import { NetworkStatusControl } from './components/NetworkStatusControl.tsx';
 import ProtectedRoute from './components/ProtectedRoute.tsx';
+import MobileResortApp from './components/MobileResortApp.tsx';
 import Home from './pages/Home.tsx';
 import Rooms from './pages/Rooms.tsx';
 import MyBookings from './pages/MyBookings.tsx';
@@ -21,17 +22,19 @@ function MainAppShell() {
   const isStaffRoute = ['/administrator', '/admin', '/receptionist', '/accounting', '/resort-department'].some((p) =>
     location.pathname.toLowerCase().startsWith(p)
   );
+  const isGuestHome = location.pathname === '/';
 
   return (
     <div className="app-shell">
       <TelemetryTracker />
 
-      {/* Render Public Guest Navbar & Footer ONLY on Guest Routes */}
-      {!isStaffRoute && <Navbar />}
+      {/* Render Public Guest Navbar ONLY when not on Mobile App Home or Staff Routes */}
+      {!isStaffRoute && !isGuestHome && <Navbar />}
 
       <main>
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<MobileResortApp />} />
+          <Route path="/classic-home" element={<Home />} />
           <Route path="/rooms" element={<Rooms />} />
 
           <Route path="/my-bookings" element={
@@ -74,8 +77,8 @@ function MainAppShell() {
         </Routes>
       </main>
 
-      {!isStaffRoute && <Footer />}
-      {!isStaffRoute && <Chatbot />}
+      {!isStaffRoute && !isGuestHome && <Footer />}
+      {!isStaffRoute && !isGuestHome && <Chatbot />}
       <AuthModal />
       <Toasts />
       <NetworkStatusControl />

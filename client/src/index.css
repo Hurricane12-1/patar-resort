@@ -1,0 +1,85 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Outfit:wght@300;400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-navy: #060b18;
+  --color-ink: #0b1426;
+  --color-deep: #03060f;
+  --color-cyan: #22c3ee;
+  --color-sand: #f4e9d8;
+  --color-gold: #f6b74a;
+  --color-text: #e8eef7;
+
+  --font-serif: "Cormorant Garamond", serif;
+  --font-sans: "Outfit", sans-serif;
+}
+
+/* GLOBAL RESET & SCROLLBAR HIDING */
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: #060b18;
+  color: #e8eef7;
+  overflow: hidden;
+  font-family: "Outfit", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+}
+
+/* ANIMATIONS & KEYFRAMES */
+@keyframes ticker {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes loadbar {
+  0% { width: 0%; }
+  100% { width: 100%; }
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; transform: translateY(4px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes kenburns {
+  0% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+.animate-ticker {
+  animation: ticker 28s linear infinite;
+}
+
+.animate-loadbar {
+  animation: loadbar 2.3s ease-in-out forwards;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.6s ease-out forwards;
+}
+
+.animate-kenburns {
+  animation: kenburns 8s ease-out forwards;
+}
+
+/* CUSTOM UTILITIES */
+.cta-glow {
+  box-shadow: 0 10px 30px -8px rgba(34, 195, 238, 0.7);
+}
+
+.floating-glass {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
