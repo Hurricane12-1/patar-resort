@@ -82,7 +82,7 @@ export default function Rooms() {
     .finally(() => setLoading(false));
   }, []);
 
-  useReveal(true);
+  useReveal(all);
 
   const list = useMemo(() => all.filter((s) =>
     (cat === 'All' || s.category === cat) &&

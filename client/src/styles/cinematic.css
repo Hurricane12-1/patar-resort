@@ -913,8 +913,13 @@ footer h4 {
     gap: 20px;
     margin-bottom: 36px;
   }
+  .spread .sp-img,
   .spread.flip .sp-img {
-    order: 0;
+    order: 1 !important;
+  }
+  .spread .sp-copy,
+  .spread.flip .sp-copy {
+    order: 2 !important;
   }
   .sp-img img {
     height: 260px;
@@ -933,6 +938,55 @@ footer h4 {
     right: 16px;
     padding: 6px 10px;
     font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .reserve-bar {
+    grid-template-columns: 1fr !important;
+    margin-top: -24px !important;
+    border-radius: 12px;
+  }
+  .rb-cell {
+    border-left: none !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 12px 16px !important;
+  }
+  .rb-btn {
+    width: 100% !important;
+    padding: 14px !important;
+    font-size: 0.95rem !important;
+    border-radius: 0 0 12px 12px !important;
+  }
+  .spread {
+    margin-bottom: 32px !important;
+    gap: 16px !important;
+  }
+  .sp-img img {
+    height: 210px !important;
+  }
+  .sp-copy h3 {
+    font-size: 1.55rem !important;
+    margin: 6px 0 8px !important;
+  }
+  .sp-copy p {
+    font-size: 0.9rem !important;
+    line-height: 1.55 !important;
+  }
+  .sp-meta {
+    flex-wrap: wrap !important;
+    gap: 14px !important;
+    margin: 10px 0 14px !important;
+  }
+  .sp-meta b {
+    font-size: 1.15rem !important;
+  }
+  .step-item {
+    min-width: 100% !important;
+    padding: 0 0 14px 0 !important;
+  }
+  .step-item:not(:last-child)::after {
+    display: none !important;
   }
 }
 

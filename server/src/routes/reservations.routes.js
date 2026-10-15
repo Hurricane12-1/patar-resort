@@ -4,31 +4,74 @@ import { asyncH, ApiError } from '../middleware/errors.js';
 import { authenticate, requireAdmin, requireStaffOrAdmin } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { bookingLimiter } from '../middleware/security.js';
-import { admin } from '../lib/supabase.js';
+import { admin, getSystemAdminClient } from '../lib/supabase.js';
 import { pingSMS } from '../lib/sms.js';
+import { redis } from '../lib/redis.js';
+import { CANONICAL_ROOMS } from '../lib/canonicalRooms.js';
 
 const r = Router();
 const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
 const createSchema = z.object({
-  roomId: z.string().uuid(),
+  roomId: z.string().optional(),
+  room_id: z.string().optional(),
   check_in: dateStr,
   check_out: dateStr,
-  guests: z.number().int().min(1).max(12),
+  guests: z.coerce.number().int().min(1).max(12).default(1),
   notes: z.string().max(500).default(''),
   phone: z.string().max(20).optional(),
-}).refine((d) => d.check_out > d.check_in, { message: 'Check-out must be after check-in' });
+}).refine((d) => Boolean(d.roomId || d.room_id), { message: 'roomId or room_id is required' })
+  .refine((d) => d.check_out > d.check_in, { message: 'Check-out must be after check-in' });
 
 r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), asyncH(async (req, res) => {
-  const { roomId, check_in, check_out, guests, notes, phone } = req.body;
+  const { roomId, room_id, check_in, check_out, guests, notes, phone } = req.body;
+  const targetRoomId = roomId || room_id;
 
   const today = new Date().toISOString().slice(0, 10);
   if (check_in < today) throw new ApiError(422, 'Check-in cannot be in the past');
 
-  const { data: room, error: roomError } = await admin.from('rooms').select('*')
-    .eq('id', roomId).eq('is_active', true).single();
-  
-  if (roomError || !room) throw new ApiError(404, 'Room not found or inactive');
+  const sysClient = await getSystemAdminClient();
+
+  let room = null;
+  try {
+    const { data } = await sysClient.from('rooms').select('*').eq('id', targetRoomId).single();
+    if (data) room = data;
+  } catch {}
+  if (!room) {
+    room = CANONICAL_ROOMS.find((c) => c.id === targetRoomId || c.slug === targetRoomId);
+  }
+  if (!room) throw new ApiError(404, 'Room not found or inactive');
+
+  // Hard overbooking check: count active bookings per night in requested date range
+  let activeRes = [];
+  try {
+    const { data } = await sysClient.from('reservations')
+      .select('id, check_in, check_out')
+      .eq('room_id', targetRoomId)
+      .in('status', ['pending', 'confirmed', 'checked_in'])
+      .lt('check_in', check_out)
+      .gt('check_out', check_in);
+    if (data) activeRes = data;
+  } catch {}
+
+  const nightsList = [];
+  let cur = new Date(check_in);
+  const end = new Date(check_out);
+  while (cur < end) {
+    nightsList.push(cur.toISOString().slice(0, 10));
+    cur.setDate(cur.getDate() + 1);
+  }
+
+  let peakOccupied = 0;
+  for (const night of nightsList) {
+    const count = activeRes.filter((b) => b.check_in <= night && b.check_out > night).length;
+    if (count > peakOccupied) peakOccupied = count;
+  }
+
+  const roomUnits = Number(room.units) || 1;
+  if (peakOccupied >= roomUnits) {
+    throw new ApiError(409, 'That room was just booked for those dates — please pick another.');
+  }
 
   const roomName = room.name;
   const roomRate = room.rate_php;
@@ -36,11 +79,15 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
   const total_php = nights * roomRate;
 
   const finalPhone = phone || req.user.phone;
-  if (phone && phone !== req.user.phone)
-    await admin.from('profiles').update({ phone }).eq('id', req.user.id);
+  if (phone && phone !== req.user.phone) {
+    try {
+      await (req.sb || sysClient).from('profiles').update({ phone }).eq('id', req.user.id);
+    } catch {}
+  }
 
-  const { data: stay, error } = await req.sb.from('reservations')
-    .insert({ guest_id: req.user.id, room_id: roomId, check_in, check_out,
+  const client = req.sb || sysClient;
+  const { data: stay, error } = await client.from('reservations')
+    .insert({ guest_id: req.user.id, room_id: targetRoomId, check_in, check_out,
               guests, notes, total_php, status: 'confirmed' })
     .select('*, rooms(name)').single();
   
@@ -49,6 +96,8 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
     throw new ApiError(raced ? 409 : 500,
       raced ? 'That room was just booked for those dates — please pick another.' : error.message);
   }
+
+  await redis.clear();
 
   pingSMS({
     profileId: req.user.id, reservationId: stay.id, toPhone: finalPhone,
@@ -75,14 +124,18 @@ r.patch('/reservations/:id/cancel', authenticate, asyncH(async (req, res) => {
     .update({ status: 'cancelled' }).eq('id', b.id)
     .select('*, rooms(name)').single();
   if (error) throw new ApiError(500, error.message);
+
+  await redis.clear();
+
   pingSMS({ profileId: req.user.id, reservationId: b.id, toPhone: req.user.phone,
     body: 'J & D Beach House: your reservation was cancelled. The beach will miss you — rebook anytime.' }).catch(() => {});
   return res.json(data);
 }));
 
 // ---- staff & admin ----
-r.get('/reservations', authenticate, requireStaffOrAdmin, asyncH(async (_req, res) => {
-  const { data, error } = await admin.from('reservations')
+r.get('/reservations', authenticate, requireStaffOrAdmin, asyncH(async (req, res) => {
+  const client = req.sb || admin;
+  const { data, error } = await client.from('reservations')
     .select('*, profiles(full_name, phone), rooms(name)')
     .order('check_in', { ascending: false }).limit(100);
   if (error) throw new ApiError(500, error.message);
@@ -93,10 +146,14 @@ r.patch('/reservations/:id/status', authenticate, requireStaffOrAdmin,
   validate(z.object({ status: z.enum(['pending','confirmed','checked_in','checked_out','cancelled','no_show']) })),
   asyncH(async (req, res) => {
     const { status } = req.body;
-    const { data, error } = await admin.from('reservations')
+    const client = req.sb || admin;
+    const { data, error } = await client.from('reservations')
       .update({ status }).eq('id', req.params.id)
       .select('*, profiles(id, phone, full_name), rooms(name)').single();
     if (error || !data) throw new ApiError(404, 'Reservation not found');
+
+    await redis.clear();
+
     const msg =
       status === 'checked_in'  ? `J & D Beach House: welcome! 🌊 Checked in to ${data.rooms?.name || 'your room'}. Enjoy Bolinao!` :
       status === 'checked_out' ? `J & D Beach House: safe travels ✦ Salamat for staying with us. Rate your stay in My Bookings!` :

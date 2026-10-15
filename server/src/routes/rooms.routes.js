@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { asyncH, ApiError } from '../middleware/errors.js';
 import { validate } from '../middleware/validate.js';
-import { admin } from '../lib/supabase.js';
+import { admin, getSystemAdminClient } from '../lib/supabase.js';
 import { authenticate, requireStaffOrAdmin } from '../middleware/auth.js';
 import { redis } from '../lib/redis.js';
 import { isSupabaseConfigured } from '../config/env.js';
@@ -85,32 +85,78 @@ const rangeSchema = z.object({
 r.get('/availability', validate(rangeSchema, 'query'), asyncH(async (req, res) => {
   const { check_in, check_out, guests } = req.query;
   if (check_out <= check_in) throw new ApiError(422, 'Check-out must be after check-in');
-  try {
-    const { data, error } = await admin.rpc('available_rooms',
-      { p_check_in: check_in, p_check_out: check_out, p_guests: guests });
-    if (error) throw error;
-    return res.json(data || []);
-  } catch (rpcErr) {
-    console.warn('[Availability] RPC fallback query engaged:', rpcErr?.message);
-    let allRooms = [];
-    try {
-      const { data } = await admin.from('rooms').select('id, name, category, capacity, rate_php, units, rating_avg').eq('is_active', true);
-      if (data && data.length > 0) allRooms = data;
-    } catch (e) {
-      console.warn('[Availability] Direct select error:', e?.message);
-    }
-    const sourceRooms = allRooms.length > 0 ? allRooms : CANONICAL_ROOMS.filter(r => r.is_active);
-    const list = sourceRooms.map((r) => ({
-      room_id: r.id,
-      name: r.name,
-      category: r.category,
-      capacity: r.capacity,
-      rate_php: r.rate_php,
-      units_left: r.units || 1,
-      rating_avg: r.rating_avg || 0,
-    }));
-    return res.json(list);
+
+  const cacheKey = `avail:${check_in}:${check_out}:${guests}`;
+  const cached = await redis.get(cacheKey);
+  if (cached) {
+    res.setHeader('X-Cache', 'HIT');
+    return res.json(cached);
   }
+
+  const sysClient = await getSystemAdminClient();
+
+  // 1. Fetch active rooms from database or fallback catalog
+  let allRooms = [];
+  try {
+    const { data, error } = await sysClient.from('rooms').select('*').eq('is_active', true);
+    if (!error && data && data.length > 0) allRooms = data;
+  } catch (err) {
+    console.warn('[Availability] Rooms query notice:', err.message);
+  }
+  if (allRooms.length === 0) {
+    allRooms = CANONICAL_ROOMS.filter(r => r.is_active);
+  }
+
+  // 2. Query overlapping reservations in database: [check_in, check_out)
+  let overlappingRes = [];
+  try {
+    const { data } = await sysClient.from('reservations')
+      .select('room_id, check_in, check_out, status')
+      .in('status', ['pending', 'confirmed', 'checked_in'])
+      .lt('check_in', check_out)
+      .gt('check_out', check_in);
+    if (data) overlappingRes = data;
+  } catch (err) {
+    console.warn('[Availability] Overlapping reservations notice:', err.message);
+  }
+
+  // 3. Generate date sequence for each night: [check_in, check_out)
+  const nights = [];
+  let cur = new Date(check_in);
+  const end = new Date(check_out);
+  while (cur < end) {
+    nights.push(cur.toISOString().slice(0, 10));
+    cur.setDate(cur.getDate() + 1);
+  }
+
+  // 4. Calculate peak occupancy per room across the stay duration
+  const list = allRooms
+    .filter((r) => r.capacity >= guests)
+    .map((r) => {
+      const roomBookings = overlappingRes.filter((b) => b.room_id === r.id);
+      let peakBusy = 0;
+      for (const night of nights) {
+        const busyTonight = roomBookings.filter((b) => b.check_in <= night && b.check_out > night).length;
+        if (busyTonight > peakBusy) peakBusy = busyTonight;
+      }
+      const totalUnits = Number(r.units) || 1;
+      const unitsLeft = Math.max(0, totalUnits - peakBusy);
+      return {
+        room_id: r.id,
+        name: r.name,
+        category: r.category,
+        capacity: r.capacity,
+        rate_php: r.rate_php,
+        units_left: unitsLeft,
+        rating_avg: Number(r.rating_avg) || 0,
+      };
+    })
+    .sort((a, b) => a.rate_php - b.rate_php);
+
+  await redis.set(cacheKey, list, 30);
+  res.setHeader('X-Cache', 'MISS');
+  res.setHeader('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+  return res.json(list);
 }));
 
 r.post('/rooms', authenticate, requireStaffOrAdmin,

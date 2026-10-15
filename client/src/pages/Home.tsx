@@ -87,7 +87,7 @@ export default function Home() {
     };
   }, []);
 
-  useReveal(true);
+  useReveal(rooms);
 
   const displayRooms = rooms;
 
