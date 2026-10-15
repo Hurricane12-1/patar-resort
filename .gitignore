@@ -7,6 +7,8 @@ node_modules/
 coverage/
 
 # Production build artifacts
+dist/
+client/dist/
 client/node_modules/.vite/
 
 # Environment Variables & Secrets

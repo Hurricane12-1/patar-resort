@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { API_BASE } from '../lib/api.js';
 
 export default function TelemetryTracker() {
   const location = useLocation();
@@ -12,7 +13,8 @@ export default function TelemetryTracker() {
     }
 
     const ping = () => {
-      fetch('/api/telemetry/ping', {
+      const endpoint = API_BASE ? `${API_BASE}/api/telemetry/ping` : '/api/telemetry/ping';
+      fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ session_id, path: location.pathname }),

@@ -12,6 +12,15 @@ export class ApiError extends Error {
   }
 }
 
+export const API_BASE = (
+  (typeof import.meta !== 'undefined' && (
+    import.meta.env.VITE_API_URL ||
+    import.meta.env.PUBLIC_API_URL ||
+    import.meta.env.VITE_PUBLIC_API_URL ||
+    import.meta.env.VITE_BACKEND_URL
+  )) || ''
+).replace(/\/+$/, '');
+
 async function req<T = any>(path: string, { method = 'GET', body }: { method?: string; body?: any } = {}): Promise<T> {
   const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
   const headers: Record<string, string> = {
@@ -22,7 +31,8 @@ async function req<T = any>(path: string, { method = 'GET', body }: { method?: s
     headers['Authorization'] = `Bearer ${session.access_token}`;
   }
 
-  const res = await fetch(`/api${path}`, {
+  const endpoint = API_BASE ? `${API_BASE}/api${path}` : `/api${path}`;
+  const res = await fetch(endpoint, {
     method,
     headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
@@ -141,7 +151,8 @@ export const api = {
     const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
     const headers: Record<string, string> = {};
     if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
-    const res = await fetch('/api/csv/sample', { headers });
+    const endpoint = API_BASE ? `${API_BASE}/api/csv/sample` : '/api/csv/sample';
+    const res = await fetch(endpoint, { headers });
     if (!res.ok) throw new ApiError(res.status, 'Failed to fetch CSV');
     return res.text();
   },
