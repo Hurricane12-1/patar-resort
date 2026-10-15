@@ -127,12 +127,8 @@ export default function AuthModal() {
     }
   }, [f.first_name, f.middle_name, f.last_name, mode, signupProvider]);
 
-  // Social Auth Handlers
+  // Social Auth Handlers (Google & Facebook OAuth)
   async function handleGoogleLogin() {
-    if (mode === 'up') {
-      handleAutoSignUp('google');
-      return;
-    }
     try {
       toast('Redirecting to Google Sign-In…');
       await signInWithGoogle();
@@ -147,10 +143,6 @@ export default function AuthModal() {
   }
 
   async function handleFacebookLogin() {
-    if (mode === 'up') {
-      handleAutoSignUp('facebook');
-      return;
-    }
     try {
       toast('Redirecting to Facebook Sign-In…');
       await signInWithFacebook();

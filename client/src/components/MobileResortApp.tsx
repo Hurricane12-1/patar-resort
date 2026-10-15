@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import site from '../content/site.json';
+import { useAuth } from '../context/AuthContext.tsx';
+import { toast } from './Toasts.tsx';
 
 // ==========================================================================
 // LAYOUT TOKENS
@@ -158,10 +160,15 @@ const peso = (n: number) => `₱${n.toLocaleString('en-PH')}`;
 // ==========================================================================
 export default function MobileResortApp() {
   const [stage, setStage] = useState<'loading' | 'intro' | 'auth' | 'app'>(() => {
-    // Dev-only preview helper: /?stage=app — production always starts at "loading"
-    if (import.meta.env.DEV) {
-      const s = new URLSearchParams(window.location.search).get('stage');
-      if (s === 'intro' || s === 'auth' || s === 'app') return s;
+    if (typeof window !== 'undefined') {
+      if (window.location.hash?.includes('access_token=') || window.location.search?.includes('code=')) {
+        return 'app';
+      }
+      // Dev-only preview helper: /?stage=app — production always starts at "loading"
+      if (import.meta.env.DEV) {
+        const s = new URLSearchParams(window.location.search).get('stage');
+        if (s === 'intro' || s === 'auth' || s === 'app') return s as any;
+      }
     }
     return 'loading';
   });
@@ -191,8 +198,140 @@ export default function MobileResortApp() {
 
   const audioCtxRef = useRef<AudioContext | null>(null);
 
+  // Real Authentication Integration via AuthContext
+  const auth = (useAuth ? useAuth() : null) as any;
+  const session = auth?.session;
+  const profile = auth?.profile;
+  const signInWithGoogle = auth?.signInWithGoogle;
+  const signInWithFacebook = auth?.signInWithFacebook;
+  const signIn = auth?.signIn;
+  const signUp = auth?.signUp;
+  const signOut = auth?.signOut;
+
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authFullName, setAuthFullName] = useState('');
+  const [authPhone, setAuthPhone] = useState('');
+  const [authBusy, setAuthBusy] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  // Automatically advance to app if user returned from OAuth callback
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (window.location.hash?.includes('access_token=') || window.location.search?.includes('code=')) {
+        setStage('app');
+      }
+    }
+  }, []);
+
+  // When session is active and user is in auth screen, automatically advance to app
+  useEffect(() => {
+    if (session && stage === 'auth') {
+      setStage('app');
+      const name = profile?.first_name || session?.user?.user_metadata?.full_name || session?.user?.email || 'Guest';
+      toast(`Signed in as ${name} ✦`);
+    }
+  }, [session, profile, stage]);
+
+  const handleGoogleAuth = async () => {
+    try {
+      setAuthBusy(true);
+      setAuthError(null);
+      toast('Redirecting to Google Sign-In…');
+      if (signInWithGoogle) {
+        await signInWithGoogle();
+      } else {
+        throw new Error('Google OAuth is not initialized in client.');
+      }
+    } catch (err: any) {
+      console.error('Google OAuth Error:', err);
+      const msg = err.msg || err.message || err.error_description || 'Google Sign-In failed';
+      setAuthError(msg);
+      toast(msg, true);
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  const handleFacebookAuth = async () => {
+    try {
+      setAuthBusy(true);
+      setAuthError(null);
+      toast('Redirecting to Facebook Sign-In…');
+      if (signInWithFacebook) {
+        await signInWithFacebook();
+      } else {
+        throw new Error('Facebook OAuth is not initialized in client.');
+      }
+    } catch (err: any) {
+      console.error('Facebook OAuth Error:', err);
+      const msg = err.msg || err.message || err.error_description || 'Facebook Sign-In failed';
+      setAuthError(msg);
+      toast(msg, true);
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  const handleAuthSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthBusy(true);
+    setAuthError(null);
+
+    try {
+      if (authMode === 'login') {
+        if (!authEmail.trim() || !authPassword) {
+          throw new Error('Please enter both your email address and password.');
+        }
+        if (!signIn) throw new Error('Authentication service unavailable');
+        const res = await signIn(authEmail.trim(), authPassword);
+        if (res?.error) throw res.error;
+        toast('Welcome back ✦');
+        go('app');
+      } else {
+        const fullName = authFullName.trim();
+        if (!fullName) {
+          throw new Error('Full name is strictly required for the guest manifest.');
+        }
+        const parts = fullName.split(/\s+/);
+        const firstName = parts[0] || 'Guest';
+        const lastName = parts.slice(1).join(' ') || 'Resident';
+
+        if (!signUp) throw new Error('Registration service unavailable');
+        const res = await signUp(authEmail.trim(), authPassword, {
+          first_name: firstName,
+          last_name: lastName,
+          full_name: fullName,
+          phone: authPhone.trim(),
+        });
+        if (res?.error) throw res.error;
+
+        if (res?.data?.session) {
+          toast('Account created and verified! Welcome ✦');
+          go('app');
+        } else {
+          const loginRes = await signIn?.(authEmail.trim(), authPassword);
+          if (!loginRes?.error) {
+            toast('Account registered successfully! Welcome ✦');
+            go('app');
+          } else {
+            toast('Account created! Please sign in with your credentials.', false);
+            setAuthMode('login');
+          }
+        }
+      }
+    } catch (err: any) {
+      const msg = err.msg || err.message || 'Authentication failed. Please verify your credentials.';
+      setAuthError(msg);
+      toast(msg, true);
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
   const go = (next: typeof stage, mode?: 'signup' | 'login') => {
     if (mode) setAuthMode(mode);
+    setAuthError(null);
     setMenuOpen(false);
     setStage(next);
   };
@@ -340,13 +479,23 @@ export default function MobileResortApp() {
             {/* Top bar */}
             <div className={`${WRAP} relative z-10 flex items-center justify-between pt-[calc(1.25rem+env(safe-area-inset-top))]`}>
               <Logo size="sm" />
-              <button
-                type="button"
-                onClick={() => go('auth', 'login')}
-                className="rounded-full border border-white/25 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur hover:bg-white/10 transition"
-              >
-                {site.nav.signIn}
-              </button>
+              {session ? (
+                <button
+                  type="button"
+                  onClick={() => go('app')}
+                  className="rounded-full bg-cyan/20 border border-cyan/40 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan backdrop-blur hover:bg-cyan/30 transition cursor-pointer"
+                >
+                  Enter Resort →
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => go('auth', 'login')}
+                  className="rounded-full border border-white/25 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur hover:bg-white/10 transition cursor-pointer"
+                >
+                  {site.nav.signIn}
+                </button>
+              )}
             </div>
 
             <div className={`${WRAP} relative z-10 mt-auto pb-10 md:pb-16`}>
@@ -362,17 +511,23 @@ export default function MobileResortApp() {
                 </p>
 
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <button type="button" onClick={() => go('auth', 'signup')} className={`${BTN_PRIMARY} w-full py-4 sm:w-auto sm:px-10`}>
-                    {site.intro.button}
-                  </button>
                   <button
                     type="button"
-                    onClick={() => go('auth', 'login')}
-                    className="py-2 text-xs tracking-wide text-white/70 hover:text-white transition sm:px-4"
+                    onClick={() => go(session ? 'app' : 'auth', 'signup')}
+                    className={`${BTN_PRIMARY} w-full py-4 sm:w-auto sm:px-10 cursor-pointer`}
                   >
-                    {site.intro.haveAccount}{' '}
-                    <span className="font-medium text-cyan underline underline-offset-4">{site.intro.login}</span>
+                    {session ? 'Enter Resort ✦' : site.intro.button}
                   </button>
+                  {!session && (
+                    <button
+                      type="button"
+                      onClick={() => go('auth', 'login')}
+                      className="py-2 text-xs tracking-wide text-white/70 hover:text-white transition sm:px-4 cursor-pointer"
+                    >
+                      {site.intro.haveAccount}{' '}
+                      <span className="font-medium text-cyan underline underline-offset-4">{site.intro.login}</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -559,34 +714,65 @@ export default function MobileResortApp() {
               <p className="mt-3 text-sm font-light leading-relaxed text-white/60">{copy.sub}</p>
             </div>
 
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                go('app');
-              }}
-              className="mt-8 flex flex-col gap-4"
-            >
+            {authError && (
+              <div role="alert" className="mt-6 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-xs text-red-200">
+                <span className="font-semibold text-red-400">Notice: </span>
+                {authError}
+              </div>
+            )}
+
+            <form onSubmit={handleAuthSubmit} className="mt-8 flex flex-col gap-4">
               {isSignup && (
                 <label className="flex flex-col gap-1.5">
                   <span className={LABEL}>Full name *</span>
-                  <input required type="text" autoComplete="name" placeholder="Maria Santos" className={FIELD} />
+                  <input
+                    required
+                    type="text"
+                    autoComplete="name"
+                    placeholder="Maria Santos"
+                    value={authFullName}
+                    onChange={(e) => setAuthFullName(e.target.value)}
+                    disabled={authBusy}
+                    className={FIELD}
+                  />
                 </label>
               )}
               <label className="flex flex-col gap-1.5">
                 <span className={LABEL}>Email *</span>
-                <input required type="email" autoComplete="email" placeholder="name@email.com" className={FIELD} />
+                <input
+                  required
+                  type="email"
+                  autoComplete="email"
+                  placeholder="name@email.com"
+                  value={authEmail}
+                  onChange={(e) => setAuthEmail(e.target.value)}
+                  disabled={authBusy}
+                  className={FIELD}
+                />
               </label>
               {isSignup && (
                 <label className="flex flex-col gap-1.5">
                   <span className={LABEL}>Mobile (for SMS confirmations)</span>
-                  <input type="tel" autoComplete="tel" placeholder="0917 123 4567" className={FIELD} />
+                  <input
+                    type="tel"
+                    autoComplete="tel"
+                    placeholder="0917 123 4567"
+                    value={authPhone}
+                    onChange={(e) => setAuthPhone(e.target.value)}
+                    disabled={authBusy}
+                    className={FIELD}
+                  />
                 </label>
               )}
               <label className="flex flex-col gap-1.5">
                 <span className="flex items-center justify-between">
                   <span className={LABEL}>Password *</span>
                   {!isSignup && (
-                    <button type="button" className="text-xs text-cyan hover:underline">
+                    <button
+                      type="button"
+                      onClick={() => toast('Please use your email or Google account to sign in directly.')}
+                      className="text-xs text-cyan hover:underline"
+                    >
                       {site.auth.forgot}
                     </button>
                   )}
@@ -597,12 +783,19 @@ export default function MobileResortApp() {
                   minLength={6}
                   autoComplete={isSignup ? 'new-password' : 'current-password'}
                   placeholder="••••••••"
+                  value={authPassword}
+                  onChange={(e) => setAuthPassword(e.target.value)}
+                  disabled={authBusy}
                   className={FIELD}
                 />
               </label>
 
-              <button type="submit" className={`${BTN_PRIMARY} mt-3 w-full py-4`}>
-                {copy.cta}
+              <button
+                type="submit"
+                disabled={authBusy}
+                className={`${BTN_PRIMARY} mt-3 w-full py-4 disabled:opacity-50 cursor-pointer`}
+              >
+                {authBusy ? 'Verifying…' : copy.cta}
               </button>
             </form>
 
@@ -612,18 +805,34 @@ export default function MobileResortApp() {
               <span className="h-px flex-1 bg-white/10" />
             </div>
 
+            {/* REAL GOOGLE & FACEBOOK OAUTH BUTTONS */}
             <div className="grid grid-cols-2 gap-3">
-              {['Google', 'Facebook'].map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => go('app')}
-                  className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-xs font-medium text-white transition hover:bg-white/10 active:scale-[.98]"
-                >
-                  <span className={`font-serif text-base ${p === 'Google' ? 'text-gold' : 'text-cyan'}`}>{p[0]}</span>
-                  {p}
-                </button>
-              ))}
+              <button
+                type="button"
+                onClick={handleGoogleAuth}
+                disabled={authBusy}
+                className="flex items-center justify-center gap-2.5 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-xs font-medium text-white transition hover:bg-white/10 active:scale-[.98] disabled:opacity-50 cursor-pointer"
+              >
+                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                </svg>
+                Google
+              </button>
+
+              <button
+                type="button"
+                onClick={handleFacebookAuth}
+                disabled={authBusy}
+                className="flex items-center justify-center gap-2.5 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-xs font-medium text-white transition hover:bg-white/10 active:scale-[.98] disabled:opacity-50 cursor-pointer"
+              >
+                <svg className="w-4 h-4 shrink-0 fill-[#1877F2]" viewBox="0 0 24 24">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                </svg>
+                Facebook
+              </button>
             </div>
 
             <button
@@ -692,17 +901,40 @@ export default function MobileResortApp() {
             </nav>
 
             <div className="flex items-center gap-2 sm:gap-3">
-              <button
-                type="button"
-                onClick={() => go('auth', 'login')}
-                className="hidden px-2 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-white/70 transition hover:text-white sm:inline-flex"
-              >
-                {site.nav.signIn}
-              </button>
+              {session ? (
+                <div className="hidden sm:flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-xs text-white">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-cyan/20 text-[10px] font-bold text-cyan">
+                      {(profile?.first_name?.[0] || session.user?.email?.[0] || 'U').toUpperCase()}
+                    </span>
+                    <span className="max-w-[110px] truncate font-medium text-white/90">
+                      {profile?.first_name || session.user?.user_metadata?.full_name?.split(' ')[0] || session.user?.email?.split('@')[0]}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (signOut) await signOut();
+                      toast('Signed out ✦');
+                    }}
+                    className="px-2 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-white/60 transition hover:text-white cursor-pointer"
+                  >
+                    Sign out
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => go('auth', 'login')}
+                  className="hidden px-2 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-white/70 transition hover:text-white sm:inline-flex cursor-pointer"
+                >
+                  {site.nav.signIn}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => scrollTo('booking-section')}
-                className="rounded-full bg-cyan px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-navy shadow-[0_4px_16px_-4px_rgba(34,195,238,.7)] transition hover:brightness-110 active:scale-95"
+                className="rounded-full bg-cyan px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-navy shadow-[0_4px_16px_-4px_rgba(34,195,238,.7)] transition hover:brightness-110 active:scale-95 cursor-pointer"
               >
                 {site.nav.book}
               </button>
@@ -1316,12 +1548,53 @@ export default function MobileResortApp() {
             </nav>
 
             <div className="mt-auto flex flex-col gap-3 pt-8">
-              <button type="button" onClick={() => scrollTo('booking-section')} className={`${BTN_PRIMARY} w-full py-4`}>
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  scrollTo('booking-section');
+                }}
+                className={`${BTN_PRIMARY} w-full py-4 cursor-pointer`}
+              >
                 {site.nav.book}
               </button>
-              <button type="button" onClick={() => go('auth', 'login')} className={`${BTN_GHOST} w-full py-4`}>
-                {site.nav.signIn}
-              </button>
+              {session ? (
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3.5 text-white">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cyan text-xs font-bold text-navy">
+                      {(profile?.first_name?.[0] || session.user?.email?.[0] || 'U').toUpperCase()}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-medium text-white">
+                        {profile?.first_name ? `${profile.first_name} ${profile.last_name || ''}`.trim() : session.user?.user_metadata?.full_name || session.user?.email}
+                      </p>
+                      <p className="truncate text-[10px] text-white/50">{session.user?.email}</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (signOut) await signOut();
+                      setMenuOpen(false);
+                      toast('Signed out ✦');
+                    }}
+                    className={`${BTN_GHOST} w-full py-3.5 cursor-pointer`}
+                  >
+                    Sign out
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    go('auth', 'login');
+                  }}
+                  className={`${BTN_GHOST} w-full py-4 cursor-pointer`}
+                >
+                  {site.nav.signIn}
+                </button>
+              )}
               <div className="mt-4 flex justify-center gap-5 text-xs text-white/50">
                 {site.footer.socials.map((s) => (
                   <span key={s}>{s}</span>
@@ -1350,7 +1623,13 @@ export default function MobileResortApp() {
                 else if (tab === 'Rooms') scrollTo('rooms-section');
                 else if (tab === 'Book') scrollTo('booking-section');
                 else if (tab === 'Dining') scrollTo('dining-section');
-                else go('auth', 'login');
+                else {
+                  if (session) {
+                    toast(`Signed in as ${profile?.first_name || session.user?.email} ✦`);
+                  } else {
+                    go('auth', 'login');
+                  }
+                }
               }}
               className={`flex-1 rounded-full py-2.5 text-[11px] font-medium transition ${
                 isBook
@@ -1360,7 +1639,7 @@ export default function MobileResortApp() {
                     : 'text-white/60 hover:text-white'
               }`}
             >
-              {tab}
+              {tab === 'Profile' && session ? (profile?.first_name || 'Account') : tab}
             </button>
           );
         })}
