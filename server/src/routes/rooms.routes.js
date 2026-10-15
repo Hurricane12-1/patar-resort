@@ -6,6 +6,7 @@ import { admin } from '../lib/supabase.js';
 import { authenticate, requireStaffOrAdmin } from '../middleware/auth.js';
 import { redis } from '../lib/redis.js';
 import { isSupabaseConfigured } from '../config/env.js';
+import { CANONICAL_ROOMS } from '../lib/canonicalRooms.js';
 
 const r = Router();
 
@@ -38,6 +39,17 @@ r.get('/rooms', asyncH(async (req, res) => {
     console.warn('[Rooms API] Query exception:', err.message);
   }
 
+  if (result.length === 0) {
+    result = [...CANONICAL_ROOMS];
+    if (req.query.category && req.query.category !== 'All') {
+      result = result.filter(r => r.category.toLowerCase() === req.query.category.toLowerCase());
+    }
+    if (req.query.q) {
+      const qLower = req.query.q.toLowerCase();
+      result = result.filter(r => r.name.toLowerCase().includes(qLower) || r.description.toLowerCase().includes(qLower));
+    }
+  }
+
   if (result.length > 0) {
     await redis.set(cacheKey, result, 60);
   }
@@ -47,12 +59,21 @@ r.get('/rooms', asyncH(async (req, res) => {
 }));
 
 r.get('/rooms/:slug', asyncH(async (req, res) => {
-  const { data, error } = await admin.from('rooms').select('*')
-    .eq('slug', req.params.slug).single();
-  if (error || !data) {
+  let room = null;
+  try {
+    const { data, error } = await admin.from('rooms').select('*')
+      .eq('slug', req.params.slug).single();
+    if (!error && data) room = data;
+  } catch (err) {
+    console.warn('[Rooms Slug API] Error fetching slug:', err?.message);
+  }
+  if (!room) {
+    room = CANONICAL_ROOMS.find(r => r.slug === req.params.slug || r.id === req.params.slug);
+  }
+  if (!room) {
     throw new ApiError(404, 'Room not found');
   }
-  return res.json(data);
+  return res.json(room);
 }));
 
 const rangeSchema = z.object({
@@ -71,8 +92,15 @@ r.get('/availability', validate(rangeSchema, 'query'), asyncH(async (req, res) =
     return res.json(data || []);
   } catch (rpcErr) {
     console.warn('[Availability] RPC fallback query engaged:', rpcErr?.message);
-    const { data: allRooms } = await admin.from('rooms').select('id, name, category, capacity, rate_php, units, rating_avg').eq('is_active', true);
-    const list = (allRooms || []).map((r) => ({
+    let allRooms = [];
+    try {
+      const { data } = await admin.from('rooms').select('id, name, category, capacity, rate_php, units, rating_avg').eq('is_active', true);
+      if (data && data.length > 0) allRooms = data;
+    } catch (e) {
+      console.warn('[Availability] Direct select error:', e?.message);
+    }
+    const sourceRooms = allRooms.length > 0 ? allRooms : CANONICAL_ROOMS.filter(r => r.is_active);
+    const list = sourceRooms.map((r) => ({
       room_id: r.id,
       name: r.name,
       category: r.category,
