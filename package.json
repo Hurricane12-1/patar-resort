@@ -5,6 +5,9 @@
   "private": true,
   "description": "J & D Beach House - Full-Stack Resort Management Platform",
   "scripts": {
+    "build": "npm --prefix client install && npm --prefix client run build",
+    "dev": "npm run dev --prefix client",
+    "start": "node server/server.js",
     "diagram:build": "node scripts/generate_professional_diagrams.js",
     "certs:generate": "node scripts/generate_certs.js",
     "gatekeeper": "node scripts/gatekeeper.js",
