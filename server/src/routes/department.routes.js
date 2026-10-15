@@ -74,4 +74,41 @@ r.get('/department/inventory', authenticate, requireStaffOrAdmin, asyncH(async (
   return res.json(data || []);
 }));
 
+r.post('/department/inventory', authenticate, requireStaffOrAdmin,
+  validate(z.object({
+    item_name: z.string().min(2).max(100),
+    category: z.enum(['front_desk', 'housekeeping', 'kitchen', 'tours', 'maintenance']).default('housekeeping'),
+    stock_qty: z.coerce.number().int().min(0).default(0),
+    unit: z.string().default('pcs'),
+    reorder_at: z.coerce.number().int().min(0).default(10),
+  })),
+  asyncH(async (req, res) => {
+    const { data, error } = await admin.from('resort_inventory').insert(req.body).select().single();
+    if (error) throw new ApiError(500, error.message);
+    return res.status(201).json(data);
+  }));
+
+r.patch('/department/inventory/:id', authenticate, requireStaffOrAdmin,
+  validate(z.object({
+    item_name: z.string().min(2).max(100).optional(),
+    category: z.enum(['front_desk', 'housekeeping', 'kitchen', 'tours', 'maintenance']).optional(),
+    stock_qty: z.coerce.number().int().min(0).optional(),
+    unit: z.string().optional(),
+    reorder_at: z.coerce.number().int().min(0).optional(),
+  })),
+  asyncH(async (req, res) => {
+    const { data, error } = await admin.from('resort_inventory')
+      .update({ ...req.body, updated_at: new Date().toISOString() })
+      .eq('id', req.params.id)
+      .select().single();
+    if (error) throw new ApiError(500, error.message);
+    return res.json(data);
+  }));
+
+r.delete('/department/inventory/:id', authenticate, requireStaffOrAdmin, asyncH(async (req, res) => {
+  const { error } = await admin.from('resort_inventory').delete().eq('id', req.params.id);
+  if (error) throw new ApiError(500, error.message);
+  return res.json({ success: true, deleted_id: req.params.id });
+}));
+
 export default r;

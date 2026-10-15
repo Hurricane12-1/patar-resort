@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { asyncH, ApiError } from '../middleware/errors.js';
 import { validate } from '../middleware/validate.js';
 import { admin } from '../lib/supabase.js';
-
+import { authenticate, requireStaffOrAdmin } from '../middleware/auth.js';
 import { redis } from '../lib/redis.js';
 import { isSupabaseConfigured } from '../config/env.js';
 
@@ -59,6 +59,62 @@ r.get('/availability', validate(rangeSchema, 'query'), asyncH(async (req, res) =
     { p_check_in: check_in, p_check_out: check_out, p_guests: guests });
   if (error) throw new ApiError(500, error.message);
   return res.json(data || []);
+}));
+
+r.post('/rooms', authenticate, requireStaffOrAdmin,
+  validate(z.object({
+    name: z.string().min(2).max(100),
+    slug: z.string().min(2).max(100).optional(),
+    category: z.string().default('Cottage'),
+    description: z.string().default(''),
+    capacity: z.coerce.number().int().min(1).default(2),
+    units: z.coerce.number().int().min(1).default(1),
+    rate_php: z.coerce.number().int().min(100),
+    amenities: z.array(z.string()).default([]),
+    is_active: z.boolean().default(true),
+  })),
+  asyncH(async (req, res) => {
+    let slug = req.body.slug;
+    if (!slug) {
+      slug = req.body.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `room-${Date.now()}`;
+    }
+    const payload = { ...req.body, slug };
+    const { data, error } = await admin.from('rooms').insert(payload).select().single();
+    if (error) throw new ApiError(500, error.message);
+    await redis.clear();
+    return res.status(201).json(data);
+  }));
+
+r.patch('/rooms/:id', authenticate, requireStaffOrAdmin,
+  validate(z.object({
+    name: z.string().min(2).max(100).optional(),
+    slug: z.string().min(2).max(100).optional(),
+    category: z.string().optional(),
+    description: z.string().optional(),
+    capacity: z.coerce.number().int().min(1).optional(),
+    units: z.coerce.number().int().min(1).optional(),
+    rate_php: z.coerce.number().int().min(100).optional(),
+    amenities: z.array(z.string()).optional(),
+    is_active: z.boolean().optional(),
+  })),
+  asyncH(async (req, res) => {
+    const { data, error } = await admin.from('rooms')
+      .update(req.body)
+      .eq('id', req.params.id)
+      .select().single();
+    if (error) throw new ApiError(500, error.message);
+    await redis.clear();
+    return res.json(data);
+  }));
+
+r.delete('/rooms/:id', authenticate, requireStaffOrAdmin, asyncH(async (req, res) => {
+  const { data, error } = await admin.from('rooms')
+    .update({ is_active: false })
+    .eq('id', req.params.id)
+    .select().single();
+  if (error) throw new ApiError(500, error.message);
+  await redis.clear();
+  return res.json({ success: true, deactivated: data });
 }));
 
 export default r;

@@ -10,7 +10,7 @@ import {
   IconSun, IconMoon, IconCrown, IconTrendingUp, IconCreditCard,
   IconWallet, IconBuilding, IconShield, IconBriefcase, DefaultUserAvatar
 } from '../components/AdminIcons.tsx';
-import { api } from '../lib/api.ts';
+import { api, API_BASE } from '../lib/api.ts';
 import { supabase } from '../lib/supabaseClient.ts';
 import { InterchangeableImagePicker } from '../components/InterchangeableImagePicker.tsx';
 import CloudinarySettingsCard from '../components/CloudinarySettingsCard.tsx';
@@ -42,7 +42,8 @@ const emptyAnalytics = {
 };
 
 export default function Admin() {
-  const { profile, signIn, signOut } = useAuth();
+  const { session, profile, signIn, signOut } = useAuth();
+  const user = session?.user;
   const [data, setData] = useState(emptyAnalytics);
   const [loading, setLoading] = useState(false);
 
@@ -206,6 +207,55 @@ export default function Admin() {
   const [showKeywordsModal, setShowKeywordsModal] = useState(false);
   const [showCampaignsModal, setShowCampaignsModal] = useState(false);
 
+  // Accommodations & Inventory State (Live Synchronized with Supabase & Backend)
+  const [roomsList, setRoomsList] = useState([]);
+  const [inventoryList, setInventoryList] = useState([]);
+  const [loadingRoomsAndInv, setLoadingRoomsAndInv] = useState(false);
+  const [inventorySubTab, setInventorySubTab] = useState('accommodations'); // 'accommodations' | 'supplies'
+  const [inventoryDeptFilter, setInventoryDeptFilter] = useState('all');
+  const [inventoryRoomFilter, setInventoryRoomFilter] = useState('all');
+  const [inventorySearch, setInventorySearch] = useState('');
+
+  // Modals for Accommodations & Inventory
+  const [showCreateRoomModal, setShowCreateRoomModal] = useState(false);
+  const [newRoom, setNewRoom] = useState({
+    name: '',
+    category: 'Cottage',
+    description: '',
+    capacity: 2,
+    units: 1,
+    rate_php: 3500,
+    amenities: 'Air Conditioning, Free Wi-Fi, Private Bath, Sea View',
+  });
+  const [editingRoom, setEditingRoom] = useState(null);
+
+  const [showCreateSupplyModal, setShowCreateSupplyModal] = useState(false);
+  const [newSupply, setNewSupply] = useState({
+    item_name: '',
+    category: 'housekeeping',
+    stock_qty: 20,
+    unit: 'pcs',
+    reorder_at: 10,
+  });
+  const [editingSupply, setEditingSupply] = useState(null);
+
+  const refreshRoomsAndInventory = useCallback(() => {
+    setLoadingRoomsAndInv(true);
+    Promise.all([api.rooms(), api.departmentInventory()])
+      .then(([r, inv]) => {
+        setRoomsList(Array.isArray(r) ? r : []);
+        setInventoryList(Array.isArray(inv) ? inv : []);
+      })
+      .catch((e) => toast(e.message, true))
+      .finally(() => setLoadingRoomsAndInv(false));
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'inventory') {
+      refreshRoomsAndInventory();
+    }
+  }, [activeTab, refreshRoomsAndInventory]);
+
   useEffect(() => {
     if (profile && ['administrator', 'admin'].includes(profile.role)) {
       let live = true;
@@ -223,14 +273,20 @@ export default function Admin() {
       supabase.auth.getSession().then(({ data: authData }) => {
         const token = authData?.session?.access_token;
         if (token) {
-          es = new EventSource(`/api/analytics/stream?token=${token}`);
-          es.onmessage = (e) => {
-            if (!live) return;
-            try {
-              const ov = JSON.parse(e.data);
-              setData((prev) => (prev ? { ...prev, overview: ov } : prev));
-            } catch {}
-          };
+          const streamUrl = API_BASE ? `${API_BASE}/api/analytics/stream?token=${token}` : `/api/analytics/stream?token=${token}`;
+          try {
+            es = new EventSource(streamUrl);
+            es.onmessage = (e) => {
+              if (!live) return;
+              try {
+                const ov = JSON.parse(e.data);
+                setData((prev) => (prev ? { ...prev, overview: ov } : prev));
+              } catch {}
+            };
+            es.onerror = () => {
+              if (es) { es.close(); es = null; }
+            };
+          } catch {}
         }
       });
 
@@ -413,8 +469,124 @@ export default function Admin() {
     finally { setResettingPass(false); }
   }
 
+  // Accommodations & Inventory Handlers
+  async function handleCreateRoom(e) {
+    e.preventDefault();
+    try {
+      const amenitiesArr = newRoom.amenities
+        ? newRoom.amenities.split(',').map((s) => s.trim()).filter(Boolean)
+        : [];
+      const created = await api.createRoom({
+        name: newRoom.name,
+        category: newRoom.category,
+        description: newRoom.description,
+        capacity: Number(newRoom.capacity),
+        units: Number(newRoom.units),
+        rate_php: Number(newRoom.rate_php),
+        amenities: amenitiesArr,
+      });
+      setRoomsList((prev) => [...prev, created]);
+      setShowCreateRoomModal(false);
+      setNewRoom({
+        name: '',
+        category: 'Cottage',
+        description: '',
+        capacity: 2,
+        units: 1,
+        rate_php: 3500,
+        amenities: 'Air Conditioning, Free Wi-Fi, Private Bath, Sea View',
+      });
+      toast(`✦ Accommodation "${created.name}" created successfully`);
+    } catch (err) {
+      toast(err.message, true);
+    }
+  }
+
+  async function handleUpdateRoomSubmit(e) {
+    e.preventDefault();
+    if (!editingRoom) return;
+    try {
+      const amenitiesArr = typeof editingRoom.amenities === 'string'
+        ? editingRoom.amenities.split(',').map((s) => s.trim()).filter(Boolean)
+        : (editingRoom.amenities || []);
+      const updated = await api.updateRoom(editingRoom.id, {
+        name: editingRoom.name,
+        category: editingRoom.category,
+        description: editingRoom.description,
+        capacity: Number(editingRoom.capacity),
+        units: Number(editingRoom.units),
+        rate_php: Number(editingRoom.rate_php),
+        amenities: amenitiesArr,
+      });
+      setRoomsList((prev) => prev.map((r) => (r.id === editingRoom.id ? { ...r, ...updated } : r)));
+      setEditingRoom(null);
+      toast(`✦ Accommodation "${editingRoom.name}" updated`);
+    } catch (err) {
+      toast(err.message, true);
+    }
+  }
+
+  async function handleToggleRoomActive(room) {
+    try {
+      const nextActive = !room.is_active;
+      await api.updateRoom(room.id, { is_active: nextActive });
+      setRoomsList((prev) => prev.map((r) => (r.id === room.id ? { ...r, is_active: nextActive } : r)));
+      toast(nextActive ? `✅ ${room.name} marked Active` : `⏸️ ${room.name} placed in Maintenance`);
+    } catch (err) {
+      toast(err.message, true);
+    }
+  }
+
+  async function handleCreateSupply(e) {
+    e.preventDefault();
+    try {
+      const created = await api.createInventoryItem({
+        item_name: newSupply.item_name,
+        category: newSupply.category,
+        stock_qty: Number(newSupply.stock_qty),
+        unit: newSupply.unit,
+        reorder_at: Number(newSupply.reorder_at),
+      });
+      setInventoryList((prev) => [...prev, created]);
+      setShowCreateSupplyModal(false);
+      setNewSupply({
+        item_name: '',
+        category: 'housekeeping',
+        stock_qty: 20,
+        unit: 'pcs',
+        reorder_at: 10,
+      });
+      toast(`✦ Supply "${created.item_name}" registered`);
+    } catch (err) {
+      toast(err.message, true);
+    }
+  }
+
+  async function handleAdjustSupplyStock(item, delta) {
+    const nextQty = Math.max(0, (item.stock_qty || 0) + delta);
+    try {
+      const updated = await api.updateInventoryItem(item.id, { stock_qty: nextQty });
+      setInventoryList((prev) => prev.map((i) => (i.id === item.id ? { ...i, stock_qty: nextQty, updated_at: updated.updated_at } : i)));
+      toast(`Stock for ${item.item_name}: ${nextQty} ${item.unit}`);
+    } catch (err) {
+      toast(err.message, true);
+    }
+  }
+
+  async function handleDeleteSupply(id, name) {
+    if (!confirm(`Delete supply item "${name}" from inventory?`)) return;
+    try {
+      await api.deleteInventoryItem(id);
+      setInventoryList((prev) => prev.filter((i) => i.id !== id));
+      toast(`Deleted "${name}"`);
+    } catch (err) {
+      toast(err.message, true);
+    }
+  }
+
   const sidebarItems = [
     { key: 'overview', label: 'Dashboard', icon: <IconDashboard size={19} /> },
+    { key: 'inventory', label: 'Accommodations & Inventory', icon: <IconBuilding size={19} /> },
     { key: 'conversations', label: 'Customer Services', icon: <span style={{ fontSize: '1.1rem' }}>💬</span> },
     { key: 'food_sales', label: 'Dining Sales', icon: <IconDining size={19} /> },
     { key: 'accounts', label: 'Staff & Accounts', icon: <IconUsers size={19} /> },
@@ -1342,7 +1514,317 @@ export default function Admin() {
             </>
           )}
 
-          {/* TAB 2: GUEST CONVERSATIONS & RESOLUTION INBOX PANEL PAGE */}
+          {/* TAB 2: ACCOMMODATIONS & INVENTORY MANAGEMENT */}
+          {activeTab === 'inventory' && (
+            <div className="panel" style={{ background: themeCardBg, border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 24, boxShadow: themeShadow }}>
+              {/* Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 14 }}>
+                <div>
+                  <span className="label light">Resort Infrastructure & Assets</span>
+                  <h3 className="serif" style={{ fontSize: '1.6rem', margin: '4px 0 0', color: themeText }}>Accommodations & Inventory Hub</h3>
+                  <p className="muted small" style={{ margin: '4px 0 0' }}>Live control of room rates, unit inventory, availability, and resort department stock supplies.</p>
+                </div>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <input
+                    className="search"
+                    placeholder="Search rooms or supplies…"
+                    value={inventorySearch}
+                    onChange={(e) => setInventorySearch(e.target.value)}
+                    style={{ maxWidth: 220, background: isLightMode ? '#FFF' : undefined, color: themeText }}
+                  />
+                  <button className="btn btn-sm" onClick={refreshRoomsAndInventory} disabled={loadingRoomsAndInv} style={{ border: `1px solid ${themeBorder}`, color: themeText }}>
+                    {loadingRoomsAndInv ? 'Syncing…' : '↻ Sync Now'}
+                  </button>
+                  {inventorySubTab === 'accommodations' ? (
+                    <button className="btn btn-sky btn-sm" onClick={() => setShowCreateRoomModal(true)}>
+                      + Provision Room
+                    </button>
+                  ) : (
+                    <button className="btn btn-sky btn-sm" onClick={() => setShowCreateSupplyModal(true)}>
+                      + Add Supply Item
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* STAT SUMMARY BAND */}
+              <div className="admin-grid-4-col" style={{ gap: 12, marginBottom: 20 }}>
+                <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)', border: `1px solid ${themeBorder}`, borderRadius: 12, padding: 14 }}>
+                  <span style={{ fontSize: '.72rem', color: themeMuted, textTransform: 'uppercase', fontWeight: 700 }}>Accommodations</span>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: themeText, marginTop: 4 }}>{roomsList.length} Categories</div>
+                </div>
+                <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)', border: `1px solid ${themeBorder}`, borderRadius: 12, padding: 14 }}>
+                  <span style={{ fontSize: '.72rem', color: themeMuted, textTransform: 'uppercase', fontWeight: 700 }}>Total Units</span>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#38BDF8', marginTop: 4 }}>
+                    {roomsList.reduce((acc, r) => acc + (r.units || 0), 0)} Physical Rooms
+                  </div>
+                </div>
+                <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)', border: `1px solid ${themeBorder}`, borderRadius: 12, padding: 14 }}>
+                  <span style={{ fontSize: '.72rem', color: themeMuted, textTransform: 'uppercase', fontWeight: 700 }}>Resort Supplies</span>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#10B981', marginTop: 4 }}>
+                    {inventoryList.length} Tracked Items
+                  </div>
+                </div>
+                <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)', border: `1px solid ${themeBorder}`, borderRadius: 12, padding: 14 }}>
+                  <span style={{ fontSize: '.72rem', color: themeMuted, textTransform: 'uppercase', fontWeight: 700 }}>Reorder Alerts</span>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: inventoryList.filter(i => (i.stock_qty || 0) <= (i.reorder_at || 10)).length > 0 ? '#F43F5E' : '#10B981', marginTop: 4 }}>
+                    {inventoryList.filter(i => (i.stock_qty || 0) <= (i.reorder_at || 10)).length} Items Low
+                  </div>
+                </div>
+              </div>
+
+              {/* SUBTAB SWITCHER */}
+              <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.04)', borderRadius: 12, padding: 4 }}>
+                {[
+                  { key: 'accommodations', label: '🏡 Accommodations & Rates', count: roomsList.length },
+                  { key: 'supplies', label: '📦 Resort Supplies Ledger', count: inventoryList.length },
+                ].map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setInventorySubTab(tab.key)}
+                    style={{
+                      flex: 1, padding: '10px 16px', border: 'none', borderRadius: 10, cursor: 'pointer',
+                      fontSize: '.84rem', fontWeight: 700, transition: 'all 0.25s ease',
+                      background: inventorySubTab === tab.key
+                        ? (tab.key === 'accommodations' ? 'linear-gradient(135deg, #0284C7, #0EA5E9)' : 'linear-gradient(135deg, #4338CA, #6366F1)')
+                        : 'transparent',
+                      color: inventorySubTab === tab.key ? '#FFF' : themeMuted,
+                      boxShadow: inventorySubTab === tab.key ? '0 4px 12px rgba(14,165,233,0.25)' : 'none',
+                    }}
+                  >
+                    {tab.label} <span style={{ opacity: 0.85, fontSize: '.74rem', marginLeft: 4 }}>({tab.count})</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* SUBTAB 1: ACCOMMODATIONS & ROOM RATES */}
+              {inventorySubTab === 'accommodations' && (
+                <>
+                  {/* Category Filter Chips */}
+                  <div className="chip-row" style={{ marginBottom: 16 }}>
+                    {['all', 'Cottage', 'Villa', 'Suite', 'Garden', 'Dorm'].map((cat) => (
+                      <button
+                        key={cat}
+                        className={`chip ${inventoryRoomFilter === cat ? 'sel' : ''}`}
+                        onClick={() => setInventoryRoomFilter(cat)}
+                      >
+                        {cat === 'all' ? 'ALL CATEGORIES' : cat.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+
+                  {loadingRoomsAndInv ? (
+                    <div className="skel" style={{ height: 260 }} />
+                  ) : (() => {
+                    const filteredRooms = roomsList
+                      .filter((r) => inventoryRoomFilter === 'all' || r.category?.toLowerCase() === inventoryRoomFilter.toLowerCase())
+                      .filter((r) => !inventorySearch || r.name?.toLowerCase().includes(inventorySearch.toLowerCase()) || r.description?.toLowerCase().includes(inventorySearch.toLowerCase()));
+
+                    return filteredRooms.length === 0 ? (
+                      <p className="muted" style={{ padding: '30px 0', textAlign: 'center' }}>No accommodations found matching filters.</p>
+                    ) : (
+                      <div className="admin-grid-3-col" style={{ gap: 16 }}>
+                        {filteredRooms.map((room) => (
+                          <div
+                            key={room.id}
+                            style={{
+                              background: isLightMode ? '#FFFFFF' : 'rgba(15,23,42,0.85)',
+                              border: `1px solid ${themeBorder}`,
+                              borderRadius: 14,
+                              padding: 18,
+                              display: 'flex',
+                              flexDirection: 'column',
+                              justifyContent: 'space-between',
+                              boxShadow: themeShadow,
+                            }}
+                          >
+                            <div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                <span className="pill" style={{ background: 'rgba(14,165,233,0.15)', color: '#0EA5E9', fontWeight: 800, fontSize: '.72rem' }}>
+                                  {room.category || 'Standard'}
+                                </span>
+                                <button
+                                  onClick={() => handleToggleRoomActive(room)}
+                                  style={{
+                                    border: 'none',
+                                    borderRadius: 12,
+                                    padding: '3px 10px',
+                                    fontSize: '.72rem',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    background: room.is_active ? 'rgba(16,185,129,0.15)' : 'rgba(244,63,94,0.15)',
+                                    color: room.is_active ? '#10B981' : '#F43F5E',
+                                  }}
+                                  title="Click to toggle Active vs Maintenance"
+                                >
+                                  {room.is_active ? '● Active' : '⏸ Maintenance'}
+                                </button>
+                              </div>
+
+                              <h4 style={{ margin: '0 0 6px', fontSize: '1.15rem', color: themeText }}>{room.name}</h4>
+                              <p style={{ margin: '0 0 12px', fontSize: '.82rem', color: themeMuted, lineHeight: 1.4, minHeight: 36 }}>
+                                {room.description || 'Patar beachfront accommodation with scenic sea vistas and resort amenities.'}
+                              </p>
+
+                              <div style={{ display: 'flex', gap: 14, marginBottom: 12, fontSize: '.84rem', color: themeText, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)', padding: '8px 12px', borderRadius: 10 }}>
+                                <div><span style={{ color: themeMuted, fontSize: '.72rem', display: 'block' }}>Capacity</span><b>Sleeps {room.capacity || 2}</b></div>
+                                <div><span style={{ color: themeMuted, fontSize: '.72rem', display: 'block' }}>Physical Units</span><b style={{ color: '#0EA5E9' }}>{room.units || 1} units</b></div>
+                                <div><span style={{ color: themeMuted, fontSize: '.72rem', display: 'block' }}>Rating</span><b>★ {room.rating_avg || 5.0}</b></div>
+                              </div>
+
+                              {Array.isArray(room.amenities) && room.amenities.length > 0 && (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 14 }}>
+                                  {room.amenities.slice(0, 4).map((a, i) => (
+                                    <span key={i} style={{ fontSize: '.68rem', padding: '2px 8px', borderRadius: 8, background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.05)', color: themeMuted }}>
+                                      {a}
+                                    </span>
+                                  ))}
+                                  {room.amenities.length > 4 && (
+                                    <span style={{ fontSize: '.68rem', padding: '2px 6px', borderRadius: 8, color: themeMuted }}>+{room.amenities.length - 4} more</span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            <div style={{ borderTop: `1px solid ${themeBorder}`, paddingTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div>
+                                <span style={{ fontSize: '.72rem', color: themeMuted, display: 'block' }}>Rate per night</span>
+                                <b style={{ fontSize: '1.15rem', color: '#10B981' }}>₱{money(room.rate_php)}</b>
+                              </div>
+                              <button
+                                className="btn btn-sky btn-sm"
+                                onClick={() => setEditingRoom({ ...room, amenities: Array.isArray(room.amenities) ? room.amenities.join(', ') : (room.amenities || '') })}
+                              >
+                                Edit Rates
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </>
+              )}
+
+              {/* SUBTAB 2: RESORT SUPPLIES & STOCK LEDGER */}
+              {inventorySubTab === 'supplies' && (
+                <>
+                  {/* Department Filter Chips */}
+                  <div className="chip-row" style={{ marginBottom: 16 }}>
+                    {[
+                      { id: 'all', label: 'ALL DEPARTMENTS' },
+                      { id: 'front_desk', label: 'FRONT DESK' },
+                      { id: 'housekeeping', label: 'HOUSEKEEPING' },
+                      { id: 'kitchen', label: 'KITCHEN & DINING' },
+                      { id: 'tours', label: 'TOURS & LEISURE' },
+                      { id: 'maintenance', label: 'MAINTENANCE' },
+                    ].map((dept) => (
+                      <button
+                        key={dept.id}
+                        className={`chip ${inventoryDeptFilter === dept.id ? 'sel' : ''}`}
+                        onClick={() => setInventoryDeptFilter(dept.id)}
+                      >
+                        {dept.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {loadingRoomsAndInv ? (
+                    <div className="skel" style={{ height: 260 }} />
+                  ) : (() => {
+                    const filteredSupplies = inventoryList
+                      .filter((i) => inventoryDeptFilter === 'all' || i.category === inventoryDeptFilter)
+                      .filter((i) => !inventorySearch || i.item_name?.toLowerCase().includes(inventorySearch.toLowerCase()));
+
+                    return filteredSupplies.length === 0 ? (
+                      <p className="muted" style={{ padding: '30px 0', textAlign: 'center' }}>No supplies found in this department.</p>
+                    ) : (
+                      <div className="table-wrap" style={{ background: isLightMode ? '#FFFFFF' : 'rgba(15,23,42,0.85)', border: `1px solid ${themeBorder}` }}>
+                        <table className="table" style={{ color: themeText }}>
+                          <thead>
+                            <tr style={{ background: isLightMode ? '#F1F5F9' : 'rgba(30,41,59,0.8)' }}>
+                              <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Supply Item</th>
+                              <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Department</th>
+                              <th style={{ color: isLightMode ? '#475569' : themeMuted }}>In-Stock Ledger</th>
+                              <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Reorder Threshold</th>
+                              <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Inventory Health</th>
+                              <th style={{ color: isLightMode ? '#475569' : themeMuted, textAlign: 'right' }}>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {filteredSupplies.map((item) => {
+                              const isLow = (item.stock_qty || 0) <= (item.reorder_at || 10);
+                              return (
+                                <tr key={item.id} style={{ borderBottom: `1px solid ${themeBorder}` }}>
+                                  <td>
+                                    <b style={{ color: themeText }}>{item.item_name}</b>
+                                    <span style={{ fontSize: '.72rem', color: themeMuted, display: 'block' }}>Unit: {item.unit || 'pcs'}</span>
+                                  </td>
+                                  <td>
+                                    <span className="pill" style={{ background: 'rgba(99,102,241,0.12)', color: '#818CF8', fontSize: '.72rem', textTransform: 'uppercase' }}>
+                                      {(item.category || 'general').replace('_', ' ')}
+                                    </span>
+                                  </td>
+                                  <td>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                      <button
+                                        onClick={() => handleAdjustSupplyStock(item, -1)}
+                                        style={{ width: 26, height: 26, borderRadius: 6, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.06)', color: themeText, cursor: 'pointer', fontWeight: 800 }}
+                                        title="Decrease stock by 1"
+                                      >
+                                        -
+                                      </button>
+                                      <b style={{ minWidth: 36, textAlign: 'center', fontSize: '1rem', color: isLow ? '#F43F5E' : '#10B981' }}>
+                                        {item.stock_qty} {item.unit || 'pcs'}
+                                      </b>
+                                      <button
+                                        onClick={() => handleAdjustSupplyStock(item, 1)}
+                                        style={{ width: 26, height: 26, borderRadius: 6, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.06)', color: themeText, cursor: 'pointer', fontWeight: 800 }}
+                                        title="Increase stock by 1"
+                                      >
+                                        +
+                                      </button>
+                                    </div>
+                                  </td>
+                                  <td>
+                                    <span style={{ fontSize: '.84rem', color: themeMuted }}>Min {item.reorder_at || 10} {item.unit || 'pcs'}</span>
+                                  </td>
+                                  <td>
+                                    <span
+                                      className="pill"
+                                      style={{
+                                        background: isLow ? 'rgba(244,63,94,0.15)' : 'rgba(16,185,129,0.15)',
+                                        color: isLow ? '#F43F5E' : '#10B981',
+                                        fontSize: '.74rem',
+                                        fontWeight: 700,
+                                      }}
+                                    >
+                                      {isLow ? '⚠️ Reorder Needed' : '🟢 In Stock'}
+                                    </span>
+                                  </td>
+                                  <td style={{ textAlign: 'right' }}>
+                                    <button
+                                      onClick={() => handleDeleteSupply(item.id, item.item_name)}
+                                      style={{ background: 'none', border: 'none', color: '#F43F5E', cursor: 'pointer', fontSize: '.8rem', fontWeight: 700 }}
+                                      title="Delete supply item"
+                                    >
+                                      Delete
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    );
+                  })()}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* TAB 3: GUEST CONVERSATIONS & RESOLUTION INBOX PANEL PAGE */}
           {activeTab === 'conversations' && (
             <ExecutiveGuestConversationsPanel
               initialGuest={selectedPanelGuest || guestConversations[0] || null}
@@ -2282,6 +2764,458 @@ export default function Admin() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: PROVISION STAFF ACCOUNT */}
+      {showCreateModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(2, 6, 23, 0.75)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={() => setShowCreateModal(false)}>
+          <div style={{ width: '100%', maxWidth: 520, background: isLightMode ? '#FFFFFF' : '#0F172A', borderRadius: 20, border: `1px solid ${themeBorder}`, padding: 24, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', maxHeight: '90vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: `1px solid ${themeBorder}`, paddingBottom: 12 }}>
+              <div>
+                <span style={{ fontSize: '.74rem', color: '#6366F1', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>ADMINISTRATIVE ACCESS CONTROL</span>
+                <h3 style={{ margin: '4px 0 0', fontSize: '1.35rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>🛡️ Provision Staff Account</h3>
+              </div>
+              <button onClick={() => setShowCreateModal(false)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+            </div>
+
+            <form onSubmit={handleProvisionStaff} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>First Name *</label>
+                  <input
+                    required
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
+                    value={newStaff.first_name}
+                    onChange={(e) => setNewStaff({ ...newStaff, first_name: e.target.value })}
+                    placeholder="e.g. Maria"
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Last Name *</label>
+                  <input
+                    required
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
+                    value={newStaff.last_name}
+                    onChange={(e) => setNewStaff({ ...newStaff, last_name: e.target.value })}
+                    placeholder="e.g. Santos"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Corporate Email</label>
+                <input
+                  type="email"
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
+                  value={newStaff.email}
+                  onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })}
+                  placeholder={generateAccountEmail(newStaff.first_name || 'm', '', newStaff.last_name || 's', users.length + 1)}
+                />
+                <small style={{ fontSize: '.72rem', color: themeMuted }}>Leave blank to auto-generate resort corporate email.</small>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Phone (SMS Alerts)</label>
+                  <input
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
+                    value={newStaff.phone}
+                    onChange={(e) => setNewStaff({ ...newStaff, phone: e.target.value })}
+                    placeholder="09171234567"
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Assigned Role *</label>
+                  <select
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : '#1E293B', color: themeText }}
+                    value={newStaff.role}
+                    onChange={(e) => setNewStaff({ ...newStaff, role: e.target.value })}
+                  >
+                    <option value="receptionist">Receptionist / Front Desk</option>
+                    <option value="staff">Resort House Staff</option>
+                    <option value="accounting">Accounting & Finance</option>
+                    <option value="administrator">Full Administrator</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Temporary Password * (min 6 chars)</label>
+                <input
+                  required
+                  type="password"
+                  minLength={6}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
+                  value={newStaff.password}
+                  onChange={(e) => setNewStaff({ ...newStaff, password: e.target.value })}
+                  placeholder="••••••••"
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 8 }}>
+                <button type="button" className="btn btn-sm" onClick={() => setShowCreateModal(false)} style={{ border: `1px solid ${themeBorder}`, color: themeText }}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-sky btn-sm" disabled={creatingStaff}>
+                  {creatingStaff ? 'Provisioning…' : 'Create Staff Credentials ✦'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 4: RESET PASSWORD & SMS RECOVERY */}
+      {recoveryTarget && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(2, 6, 23, 0.75)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={() => setRecoveryTarget(null)}>
+          <div style={{ width: '100%', maxWidth: 440, background: isLightMode ? '#FFFFFF' : '#0F172A', borderRadius: 20, border: `1px solid ${themeBorder}`, padding: 24, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: `1px solid ${themeBorder}`, paddingBottom: 12 }}>
+              <div>
+                <span style={{ fontSize: '.74rem', color: '#F43F5E', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>ACCOUNT SECURITY</span>
+                <h3 style={{ margin: '4px 0 0', fontSize: '1.25rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>🔑 Reset Credentials</h3>
+              </div>
+              <button onClick={() => setRecoveryTarget(null)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+            </div>
+
+            <p style={{ fontSize: '.84rem', color: themeMuted, margin: '0 0 16px' }}>
+              Reset password for <b>{recoveryTarget.full_name || recoveryTarget.email}</b> ({recoveryTarget.role}).
+            </p>
+
+            <form onSubmit={handlePasswordRecovery} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>New Password * (min 6 characters)</label>
+                <input
+                  required
+                  type="password"
+                  minLength={6}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter new password…"
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 8 }}>
+                <button type="button" className="btn btn-sm" onClick={() => setRecoveryTarget(null)} style={{ border: `1px solid ${themeBorder}`, color: themeText }}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-sky btn-sm" disabled={resettingPass}>
+                  {resettingPass ? 'Resetting…' : 'Update Password & Ping SMS ✦'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 5: PROVISION NEW ACCOMMODATION */}
+      {showCreateRoomModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(2, 6, 23, 0.75)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={() => setShowCreateRoomModal(false)}>
+          <div style={{ width: '100%', maxWidth: 540, background: isLightMode ? '#FFFFFF' : '#0F172A', borderRadius: 20, border: `1px solid ${themeBorder}`, padding: 24, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', maxHeight: '90vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: `1px solid ${themeBorder}`, paddingBottom: 12 }}>
+              <div>
+                <span style={{ fontSize: '.74rem', color: '#0EA5E9', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>ACCOMMODATION CATALOG</span>
+                <h3 style={{ margin: '4px 0 0', fontSize: '1.35rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>🏡 Add New Accommodation</h3>
+              </div>
+              <button onClick={() => setShowCreateRoomModal(false)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+            </div>
+
+            <form onSubmit={handleCreateRoom} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Room Name *</label>
+                <input
+                  required
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
+                  value={newRoom.name}
+                  onChange={(e) => setNewRoom({ ...newRoom, name: e.target.value })}
+                  placeholder="e.g. Sunset Luxury Cottage"
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Category *</label>
+                  <select
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : '#1E293B', color: themeText }}
+                    value={newRoom.category}
+                    onChange={(e) => setNewRoom({ ...newRoom, category: e.target.value })}
+                  >
+                    <option value="Cottage">Cottage</option>
+                    <option value="Villa">Villa</option>
+                    <option value="Suite">Suite</option>
+                    <option value="Garden">Garden</option>
+                    <option value="Dorm">Dorm</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Nightly Rate (₱) *</label>
+                  <input
+                    required
+                    type="number"
+                    min={100}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
+                    value={newRoom.rate_php}
+                    onChange={(e) => setNewRoom({ ...newRoom, rate_php: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Sleeps Capacity (Guests)</label>
+                  <input
+                    required
+                    type="number"
+                    min={1}
+                    max={20}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
+                    value={newRoom.capacity}
+                    onChange={(e) => setNewRoom({ ...newRoom, capacity: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Total Physical Units</label>
+                  <input
+                    required
+                    type="number"
+                    min={1}
+                    max={50}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
+                    value={newRoom.units}
+                    onChange={(e) => setNewRoom({ ...newRoom, units: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Description</label>
+                <textarea
+                  rows={3}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
+                  value={newRoom.description}
+                  onChange={(e) => setNewRoom({ ...newRoom, description: e.target.value })}
+                  placeholder="Describe view, ambiance, and special features…"
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Amenities (comma separated)</label>
+                <input
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
+                  value={newRoom.amenities}
+                  onChange={(e) => setNewRoom({ ...newRoom, amenities: e.target.value })}
+                  placeholder="Air Conditioning, Free Wi-Fi, Private Bath, Sea View"
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 8 }}>
+                <button type="button" className="btn btn-sm" onClick={() => setShowCreateRoomModal(false)} style={{ border: `1px solid ${themeBorder}`, color: themeText }}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-sky btn-sm">
+                  Save Accommodation ✦
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 6: EDIT ACCOMMODATION & RATES */}
+      {editingRoom && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(2, 6, 23, 0.75)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={() => setEditingRoom(null)}>
+          <div style={{ width: '100%', maxWidth: 540, background: isLightMode ? '#FFFFFF' : '#0F172A', borderRadius: 20, border: `1px solid ${themeBorder}`, padding: 24, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', maxHeight: '90vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: `1px solid ${themeBorder}`, paddingBottom: 12 }}>
+              <div>
+                <span style={{ fontSize: '.74rem', color: '#10B981', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>UPDATE ROOM RATES & UNITS</span>
+                <h3 style={{ margin: '4px 0 0', fontSize: '1.35rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>✏️ Edit {editingRoom.name}</h3>
+              </div>
+              <button onClick={() => setEditingRoom(null)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+            </div>
+
+            <form onSubmit={handleUpdateRoomSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Room Name *</label>
+                <input
+                  required
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
+                  value={editingRoom.name}
+                  onChange={(e) => setEditingRoom({ ...editingRoom, name: e.target.value })}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Nightly Rate (₱) *</label>
+                  <input
+                    required
+                    type="number"
+                    min={100}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
+                    value={editingRoom.rate_php}
+                    onChange={(e) => setEditingRoom({ ...editingRoom, rate_php: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Available Units *</label>
+                  <input
+                    required
+                    type="number"
+                    min={1}
+                    max={50}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
+                    value={editingRoom.units}
+                    onChange={(e) => setEditingRoom({ ...editingRoom, units: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Category</label>
+                  <select
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : '#1E293B', color: themeText }}
+                    value={editingRoom.category}
+                    onChange={(e) => setEditingRoom({ ...editingRoom, category: e.target.value })}
+                  >
+                    <option value="Cottage">Cottage</option>
+                    <option value="Villa">Villa</option>
+                    <option value="Suite">Suite</option>
+                    <option value="Garden">Garden</option>
+                    <option value="Dorm">Dorm</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Sleeps Capacity</label>
+                  <input
+                    type="number"
+                    min={1}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
+                    value={editingRoom.capacity}
+                    onChange={(e) => setEditingRoom({ ...editingRoom, capacity: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Description</label>
+                <textarea
+                  rows={3}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
+                  value={editingRoom.description || ''}
+                  onChange={(e) => setEditingRoom({ ...editingRoom, description: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Amenities (comma separated)</label>
+                <input
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
+                  value={editingRoom.amenities}
+                  onChange={(e) => setEditingRoom({ ...editingRoom, amenities: e.target.value })}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 8 }}>
+                <button type="button" className="btn btn-sm" onClick={() => setEditingRoom(null)} style={{ border: `1px solid ${themeBorder}`, color: themeText }}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-sky btn-sm">
+                  Save Changes ✦
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 7: ADD NEW SUPPLY ITEM */}
+      {showCreateSupplyModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(2, 6, 23, 0.75)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={() => setShowCreateSupplyModal(false)}>
+          <div style={{ width: '100%', maxWidth: 480, background: isLightMode ? '#FFFFFF' : '#0F172A', borderRadius: 20, border: `1px solid ${themeBorder}`, padding: 24, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: `1px solid ${themeBorder}`, paddingBottom: 12 }}>
+              <div>
+                <span style={{ fontSize: '.74rem', color: '#10B981', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>DEPARTMENT STOCK REGISTRY</span>
+                <h3 style={{ margin: '4px 0 0', fontSize: '1.35rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>📦 Register Supply Item</h3>
+              </div>
+              <button onClick={() => setShowCreateSupplyModal(false)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+            </div>
+
+            <form onSubmit={handleCreateSupply} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Item Name *</label>
+                <input
+                  required
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
+                  value={newSupply.item_name}
+                  onChange={(e) => setNewSupply({ ...newSupply, item_name: e.target.value })}
+                  placeholder="e.g. Premium Bath Towels"
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Department *</label>
+                  <select
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : '#1E293B', color: themeText }}
+                    value={newSupply.category}
+                    onChange={(e) => setNewSupply({ ...newSupply, category: e.target.value })}
+                  >
+                    <option value="housekeeping">Housekeeping</option>
+                    <option value="front_desk">Front Desk</option>
+                    <option value="kitchen">Kitchen & Dining</option>
+                    <option value="tours">Tours & Outrigger</option>
+                    <option value="maintenance">Maintenance</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Unit *</label>
+                  <input
+                    required
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
+                    value={newSupply.unit}
+                    onChange={(e) => setNewSupply({ ...newSupply, unit: e.target.value })}
+                    placeholder="pcs / sets / bottles"
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Initial Stock Quantity</label>
+                  <input
+                    required
+                    type="number"
+                    min={0}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
+                    value={newSupply.stock_qty}
+                    onChange={(e) => setNewSupply({ ...newSupply, stock_qty: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Reorder Threshold</label>
+                  <input
+                    required
+                    type="number"
+                    min={1}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
+                    value={newSupply.reorder_at}
+                    onChange={(e) => setNewSupply({ ...newSupply, reorder_at: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 8 }}>
+                <button type="button" className="btn btn-sm" onClick={() => setShowCreateSupplyModal(false)} style={{ border: `1px solid ${themeBorder}`, color: themeText }}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-sky btn-sm">
+                  Register Item ✦
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

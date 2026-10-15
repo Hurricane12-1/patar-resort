@@ -864,6 +864,44 @@ await runTest('AI .TSX Guardrailing: Anti-Hacking, System Inquiries, Concerns & 
   assert(backendContent.includes('contact_card: true'), 'Backend fallback must support contact card dispatch');
 });
 
+// 28. Admin Control Center: Accommodations & Inventory Management Suite
+await runTest('Admin Control Center: Accommodations & Inventory Management Suite', async () => {
+  // 1. Verify rooms backend routes
+  const roomsRoutePath = path.resolve(serverRoot, 'src/routes/rooms.routes.js');
+  const roomsContent = fs.readFileSync(roomsRoutePath, 'utf8');
+  assert(roomsContent.includes("r.post('/rooms'"), 'rooms.routes.js must export POST /rooms');
+  assert(roomsContent.includes("r.patch('/rooms/:id'"), 'rooms.routes.js must export PATCH /rooms/:id');
+  assert(roomsContent.includes("r.delete('/rooms/:id'"), 'rooms.routes.js must export DELETE /rooms/:id');
+
+  // 2. Verify department inventory backend routes
+  const deptRoutePath = path.resolve(serverRoot, 'src/routes/department.routes.js');
+  const deptContent = fs.readFileSync(deptRoutePath, 'utf8');
+  assert(deptContent.includes("r.post('/department/inventory'"), 'department.routes.js must export POST /department/inventory');
+  assert(deptContent.includes("r.patch('/department/inventory/:id'"), 'department.routes.js must export PATCH /department/inventory/:id');
+  assert(deptContent.includes("r.delete('/department/inventory/:id'"), 'department.routes.js must export DELETE /department/inventory/:id');
+
+  // 3. Verify client API mutations
+  const apiPath = path.resolve(projectRoot, 'client/src/lib/api.ts');
+  const apiContent = fs.readFileSync(apiPath, 'utf8');
+  assert(apiContent.includes('createRoom:'), 'api.ts must export createRoom');
+  assert(apiContent.includes('updateRoom:'), 'api.ts must export updateRoom');
+  assert(apiContent.includes('deleteRoom:'), 'api.ts must export deleteRoom');
+  assert(apiContent.includes('createInventoryItem:'), 'api.ts must export createInventoryItem');
+  assert(apiContent.includes('updateInventoryItem:'), 'api.ts must export updateInventoryItem');
+  assert(apiContent.includes('deleteInventoryItem:'), 'api.ts must export deleteInventoryItem');
+
+  // 4. Verify Admin UI integration & modals
+  const adminPath = path.resolve(projectRoot, 'client/src/pages/Admin.tsx');
+  const adminContent = fs.readFileSync(adminPath, 'utf8');
+  assert(adminContent.includes("activeTab === 'inventory'"), 'Admin.tsx must render inventory tab');
+  assert(adminContent.includes('showCreateModal'), 'Admin.tsx must include showCreateModal');
+  assert(adminContent.includes('recoveryTarget'), 'Admin.tsx must include recoveryTarget');
+  assert(adminContent.includes('showCreateRoomModal'), 'Admin.tsx must include showCreateRoomModal');
+  assert(adminContent.includes('editingRoom'), 'Admin.tsx must include editingRoom modal');
+  assert(adminContent.includes('showCreateSupplyModal'), 'Admin.tsx must include showCreateSupplyModal');
+  assert(adminContent.includes('API_BASE'), 'Admin.tsx must use API_BASE for SSE streaming');
+});
+
 console.log('\n-------------------------------------------------------------');
 console.log(` 🏆 GREEN SUITE VERIFICATION RESULT: ${passedTests}/${totalTests} TESTS PASSED 🟢`);
 console.log('=============================================================\n');

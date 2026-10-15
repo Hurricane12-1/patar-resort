@@ -99,6 +99,9 @@ export const api = {
     } catch {}
     return CANONICAL_ROOMS;
   },
+  createRoom: (body: any) => req('/rooms', { method: 'POST', body }),
+  updateRoom: (id: string, body: any) => req(`/rooms/${id}`, { method: 'PATCH', body }),
+  deleteRoom: (id: string) => req(`/rooms/${id}`, { method: 'DELETE' }),
   availability: (check_in: string, check_out: string, guests: number) =>
     req(`/availability?check_in=${encodeURIComponent(check_in)}&check_out=${encodeURIComponent(check_out)}&guests=${guests}`),
 
@@ -134,6 +137,9 @@ export const api = {
   updateDepartmentTaskStatus: (id: string, status: string) => req(`/department/tasks/${id}/status`, { method: 'PATCH', body: { status } }),
   departmentRoomStatus: () => req('/department/room-status'),
   departmentInventory: () => req('/department/inventory'),
+  createInventoryItem: (body: any) => req('/department/inventory', { method: 'POST', body }),
+  updateInventoryItem: (id: string, body: any) => req(`/department/inventory/${id}`, { method: 'PATCH', body }),
+  deleteInventoryItem: (id: string) => req(`/department/inventory/${id}`, { method: 'DELETE' }),
 
   // Customer Experience Hub & Digital Pass
   customerServices: () => req('/customer/services'),
