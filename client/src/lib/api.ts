@@ -47,10 +47,19 @@ async function req<T = any>(path: string, { method = 'GET', body }: { method?: s
     headers['Authorization'] = `Bearer ${adminJwt}`;
   }
 
+  // Double-Submit CSRF Token Protection Header
+  if (typeof document !== 'undefined') {
+    const match = document.cookie.match(/(?:^|; )csrf_token=([^;]*)/);
+    if (match && match[1]) {
+      headers['X-CSRF-Token'] = decodeURIComponent(match[1]);
+    }
+  }
+
   const endpoint = API_BASE ? `${API_BASE}/api${path}` : `/api${path}`;
   const res = await fetch(endpoint, {
     method,
     headers,
+    credentials: 'include',
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
