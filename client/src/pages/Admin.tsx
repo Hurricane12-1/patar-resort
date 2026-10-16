@@ -85,7 +85,7 @@ export default function Admin() {
     setAuthError('');
     try {
       if (!adminEmail.trim() || !adminPass) {
-        throw new Error('Please enter administrator email and password.');
+        throw new Error('Please enter administrator username or email, and password.');
       }
       const res = await signIn(adminEmail.trim(), adminPass);
       if (res?.error) throw res.error;
@@ -601,14 +601,14 @@ export default function Admin() {
           <form onSubmit={handleAdminLogin} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div>
               <label style={{ display: 'block', fontSize: '.72rem', color: '#22c3ee', fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase', marginBottom: 6 }}>
-                Administrator Email
+                Administrator Username or Email
               </label>
               <input
-                type="email"
+                type="text"
                 required
                 value={adminEmail}
                 onChange={(e) => setAdminEmail(e.target.value)}
-                placeholder="admin@example.com"
+                placeholder="admin_username or admin@example.com"
                 style={{
                   width: '100%',
                   background: 'rgba(255, 255, 255, 0.05)',

@@ -117,8 +117,9 @@ export const api = {
   },
 
   // Authentication & Profile Identity
-  login: (credentials: { email: string; password: string }) => req('/auth/login', { method: 'POST', body: credentials }),
-  adminLogin: (credentials: { email?: string; identity?: string; password: string; tokenIdKey?: string; position?: string }) =>
+  login: (credentials: { email?: string; username?: string; identifier?: string; password: string }) =>
+    req('/auth/login', { method: 'POST', body: credentials }),
+  adminLogin: (credentials: { email?: string; username?: string; identifier?: string; identity?: string; password: string; tokenIdKey?: string; position?: string }) =>
     req('/auth/admin-login', { method: 'POST', body: credentials }),
   me: () => req('/me'),
   updateMe: (body: any) => req('/me', { method: 'PATCH', body }),

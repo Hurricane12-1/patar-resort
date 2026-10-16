@@ -82,7 +82,7 @@ r.get('/admin/customers', authenticate, requireAdmin, asyncH(async (req, res) =>
       .order('created_at', { ascending: false });
     
     if (query) {
-      q = q.or(`full_name.ilike.%${query}%,phone.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%`);
+      q = q.or(`full_name.ilike.%${query}%,phone.ilike.%${query}%,username.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%`);
     }
     if (roleFilter) {
       q = q.eq('role', roleFilter);
@@ -106,7 +106,7 @@ r.get('/admin/customers', authenticate, requireAdmin, asyncH(async (req, res) =>
   try {
     let q = client.from('profiles').select('*').order('created_at', { ascending: false });
     if (query) {
-      q = q.or(`full_name.ilike.%${query}%,phone.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%`);
+      q = q.or(`full_name.ilike.%${query}%,phone.ilike.%${query}%,username.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%`);
     }
     if (roleFilter) {
       q = q.eq('role', roleFilter);
@@ -133,28 +133,30 @@ r.post('/admin/users', authenticate, requireAdmin,
     middle_name: z.string().optional(),
     last_name: z.string().optional(),
     full_name: z.string().optional(),
+    username: z.string().optional(),
     email: z.string().email(),
     password: z.string().min(6),
     phone: z.string().optional(),
     role: z.enum(['customer', 'staff', 'receptionist', 'accounting', 'administrator']),
   })),
   asyncH(async (req, res) => {
-    let { first_name = '', middle_name = '', last_name = '', full_name, email, password, phone, role } = req.body;
+    let { first_name = '', middle_name = '', last_name = '', full_name, username, email, password, phone, role } = req.body;
     if (!full_name) {
       full_name = [first_name, middle_name, last_name].filter(Boolean).join(' ') || 'Resort User';
     }
+    const cleanUsername = (username || email.split('@')[0]).trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '');
 
     let authUser = null;
     try {
       const { data, error } = await admin.auth.admin.createUser({
-        email, password, user_metadata: { first_name, middle_name, last_name, full_name, phone, role }, email_confirm: true,
+        email, password, user_metadata: { first_name, middle_name, last_name, full_name, username: cleanUsername, phone, role }, email_confirm: true,
       });
       if (!error && data?.user) authUser = data;
     } catch {}
 
     if (!authUser) {
       const { data, error } = await (req.sb || admin).auth.signUp({
-        email, password, options: { data: { first_name, middle_name, last_name, full_name, phone, role } }
+        email, password, options: { data: { first_name, middle_name, last_name, full_name, username: cleanUsername, phone, role } }
       });
       if (error) throw new ApiError(400, error.message);
       authUser = data;
@@ -162,7 +164,7 @@ r.post('/admin/users', authenticate, requireAdmin,
 
     const client = req.sb || admin;
     const { data: prof, error: profErr } = await client.from('profiles')
-      .upsert({ id: authUser.user.id, first_name, middle_name, last_name, full_name, phone, role })
+      .upsert({ id: authUser.user.id, email, username: cleanUsername, first_name, middle_name, last_name, full_name, phone, role })
       .select().single();
     if (profErr) {
       console.warn('[Admin Create User] Profile upsert notice:', profErr.message);
@@ -171,6 +173,7 @@ r.post('/admin/users', authenticate, requireAdmin,
     const createdRecord = prof || {
       id: authUser.user.id,
       email,
+      username: cleanUsername,
       first_name,
       middle_name,
       last_name,

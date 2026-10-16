@@ -1020,18 +1020,22 @@ export default function AuthModal() {
 
                 <div className="field">
                   <label>
-                    {signupProvider === 'gmail' && mode === 'up'
+                    {mode === 'in'
+                      ? 'USERNAME OR EMAIL'
+                      : signupProvider === 'gmail' && mode === 'up'
                       ? 'GMAIL ADDRESS (2FA CONFIRMATION DISPATCH)'
                       : signupProvider === 'facebook' && mode === 'up'
                       ? 'FACEBOOK ACCOUNT EMAIL'
                       : 'ACCOUNT EMAIL'}
                   </label>
                   <input
-                    type="email"
+                    type={mode === 'in' ? 'text' : 'email'}
                     required
                     value={f.email}
                     placeholder={
-                      signupProvider === 'gmail' && mode === 'up'
+                      mode === 'in'
+                        ? 'Username or user@email.com'
+                        : signupProvider === 'gmail' && mode === 'up'
                         ? 'user@gmail.com'
                         : signupProvider === 'facebook' && mode === 'up'
                         ? 'user@facebook.com'

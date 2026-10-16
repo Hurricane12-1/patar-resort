@@ -23,15 +23,15 @@ const r = Router();
  * ============================================================================
  */
 r.post('/auth/admin-login', asyncH(async (req, res) => {
-  const { email, identity, name, password, position, tokenIdKey, token_id_key } = req.body || {};
-  const userIdent = (email || identity || name || '').trim();
+  const { email, identity, name, username, identifier, password, position, tokenIdKey, token_id_key } = req.body || {};
+  const userIdent = (username || identifier || email || identity || name || '').trim();
   const rawPass = (password || '').trim();
   const rawPos = (position || '').trim().toLowerCase();
   const key = (tokenIdKey || token_id_key || '').trim();
 
-  // 1. Check required login credentials (only Email & Password required)
+  // 1. Check required login credentials (Username/Email & Password required)
   if (!userIdent || !rawPass) {
-    throw new ApiError(400, 'Administrator email and password are required.');
+    throw new ApiError(400, 'Administrator username or email, and password are required.');
   }
 
   // 2. If token key or position is optionally passed, check consistency
@@ -48,11 +48,33 @@ r.post('/auth/admin-login', asyncH(async (req, res) => {
     throw new ApiError(403, 'RBAC_ACCESS_DENIED: Invalid administrative Token ID Key.');
   }
 
+  // 3. Resolve username to email if identifier is not an email
+  let targetEmail = userIdent.toLowerCase();
+  if (!targetEmail.includes('@')) {
+    const { data: matched } = await admin
+      .from('profiles')
+      .select('email')
+      .ilike('username', userIdent)
+      .maybeSingle();
+    if (matched?.email) {
+      targetEmail = matched.email.toLowerCase();
+    } else {
+      const { data: userMatched } = await admin
+        .from('users')
+        .select('email')
+        .ilike('username', userIdent)
+        .maybeSingle();
+      if (userMatched?.email) {
+        targetEmail = userMatched.email.toLowerCase();
+      }
+    }
+  }
+
   // 4. Live Supabase PostgreSQL Credential & RBAC Role Verification (Zero Hardcoded Accounts)
   let verifiedUser = null;
   try {
     const { data, error } = await admin.auth.signInWithPassword({
-      email: userIdent.toLowerCase(),
+      email: targetEmail,
       password: rawPass,
     });
     if (error) throw error;
@@ -143,17 +165,49 @@ r.post('/auth/admin-login', asyncH(async (req, res) => {
  * ============================================================================
  */
 r.post('/auth/login', asyncH(async (req, res) => {
-  const { email, password } = req.body || {};
-  if (!email || !password) {
-    throw new ApiError(400, 'Email and password are required.');
+  const { email, username, login, identifier, password } = req.body || {};
+  const userIdent = (username || login || identifier || email || '').trim();
+  if (!userIdent || !password) {
+    throw new ApiError(400, 'Username or email, and password are required.');
   }
 
-  const cleanEmail = email.trim().toLowerCase();
+  let targetEmail = userIdent.toLowerCase();
+
+  // If user entered a username (no '@'), look up registered email in profiles, customers, or users
+  if (!targetEmail.includes('@')) {
+    const { data: matched } = await admin
+      .from('profiles')
+      .select('email')
+      .ilike('username', userIdent)
+      .maybeSingle();
+
+    if (matched?.email) {
+      targetEmail = matched.email.toLowerCase();
+    } else {
+      const { data: custMatched } = await admin
+        .from('customers')
+        .select('email')
+        .ilike('username', userIdent)
+        .maybeSingle();
+      if (custMatched?.email) {
+        targetEmail = custMatched.email.toLowerCase();
+      } else {
+        const { data: userMatched } = await admin
+          .from('users')
+          .select('email')
+          .ilike('username', userIdent)
+          .maybeSingle();
+        if (userMatched?.email) {
+          targetEmail = userMatched.email.toLowerCase();
+        }
+      }
+    }
+  }
 
   // Strictly authenticate via live Supabase Auth without hardcoded accounts
   try {
     const { data, error } = await admin.auth.signInWithPassword({
-      email: cleanEmail,
+      email: targetEmail,
       password,
     });
     if (error) throw error;
@@ -172,7 +226,7 @@ r.post('/auth/login', asyncH(async (req, res) => {
       });
     }
   } catch (sbErr) {
-    throw new ApiError(401, sbErr.message || 'Invalid login credentials. Please verify your email and password.');
+    throw new ApiError(401, sbErr.message || 'Invalid login credentials. Please verify your username/email and password.');
   }
 
   throw new ApiError(401, 'Authentication failed. Please verify your credentials.');
@@ -195,7 +249,7 @@ r.post('/auth/signup/initiate',
   validateJoi(joiSchemas.initiateSignup),
   asyncH(async (req, res) => {
     const {
-      email, password, first_name, middle_name, last_name,
+      email, password, first_name, middle_name, last_name, username,
       phone, address, city, emergency_contact, provider = 'email', is_automated = false,
     } = req.body;
 
@@ -203,6 +257,7 @@ r.post('/auth/signup/initiate',
     const cleanFirst = first_name.trim();
     const cleanLast = last_name.trim();
     const cleanMiddle = (middle_name || '').trim();
+    const cleanUsername = (username || cleanEmail.split('@')[0]).trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '');
 
     // Strict Name Requirement Check ("and the name is still need")
     if (!cleanFirst || !cleanLast) {
@@ -247,6 +302,7 @@ r.post('/auth/signup/initiate',
         password,
         email_confirm: false,
         user_metadata: {
+          username: cleanUsername,
           first_name: cleanFirst,
           middle_name: cleanMiddle,
           last_name: cleanLast,
@@ -277,6 +333,8 @@ r.post('/auth/signup/initiate',
     if (userId && !userId.startsWith('pending_')) {
       await admin.from('profiles').upsert({
         id: userId,
+        email: cleanEmail,
+        username: cleanUsername,
         first_name: cleanFirst,
         middle_name: cleanMiddle,
         last_name: cleanLast,
@@ -299,9 +357,11 @@ r.post('/auth/signup/initiate',
     await redis.set(cacheKey, {
       code,
       email: cleanEmail,
+      username: cleanUsername,
       password,
       userId,
       profile: {
+        username: cleanUsername,
         first_name: cleanFirst,
         middle_name: cleanMiddle,
         last_name: cleanLast,
@@ -480,6 +540,8 @@ r.post('/auth/signup/confirm-2fa',
     // Upsert confirmed guest profile in database
     const { data: prof, error: profErr } = await admin.from('profiles').upsert({
       id: userId,
+      email: cleanEmail,
+      username: record.profile?.username || cleanEmail.split('@')[0],
       first_name,
       middle_name: middle_name || '',
       last_name,
@@ -489,6 +551,7 @@ r.post('/auth/signup/confirm-2fa',
       city: city || '',
       emergency_contact: emergency_contact || '',
       role: 'customer',
+      is_verified: true,
     }).select().single();
 
     if (profErr) {

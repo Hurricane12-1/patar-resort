@@ -36,15 +36,14 @@ export const joiSchemas = {
 
   // Authentication Credentials Schema
   login: Joi.object({
-    email: Joi.string().email().required().messages({
-      'string.email': 'A valid email address is required',
-      'any.required': 'Email is required',
-    }),
+    email: Joi.string().allow('', null).optional(),
+    username: Joi.string().allow('', null).optional(),
+    identifier: Joi.string().allow('', null).optional(),
     password: Joi.string().min(6).max(128).required().messages({
       'string.min': 'Password must be at least 6 characters long',
       'any.required': 'Password is required',
     }),
-  }),
+  }).or('email', 'username', 'identifier'),
 
   // Customer Dining & Concierge Order Schema
   order: Joi.object({
@@ -114,6 +113,9 @@ export const joiSchemas = {
       'string.pattern.base': 'Last name must contain characters only (letters, spaces, hyphens)',
       'string.empty': 'Last name is strictly required',
       'any.required': 'Last name is required',
+    }),
+    username: Joi.string().trim().pattern(/^[a-zA-Z0-9_.-]*$/).max(30).allow('', null).optional().messages({
+      'string.pattern.base': 'Username can only contain alphanumeric characters, underscores, dots, or hyphens',
     }),
     phone: Joi.string().pattern(/^[+\d\s\-()]{7,20}$/).allow('', null).optional().messages({
       'string.pattern.base': 'Phone must contain numbers only',

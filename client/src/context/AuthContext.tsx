@@ -165,35 +165,47 @@ export function AuthProvider({ children }) {
 
   const signIn = async (emailOrUsername, password) => {
     try {
-      const res = await supabase.auth.signInWithPassword({ email: emailOrUsername, password });
-      if (!res.error && res.data?.session) {
-        setSession(res.data.session);
-        localStorage.setItem('jd_session', JSON.stringify(res.data.session));
+      const cleanIdent = (emailOrUsername || '').trim();
+      let res = null;
 
-        // Immediately load profile from Supabase so ProtectedRoute unlocks without delay
-        try {
-          const { data: sbProfile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', res.data.session.user.id)
-            .maybeSingle();
-          if (sbProfile) {
-            const userObj = { ...sbProfile, email: res.data.session.user.email || emailOrUsername };
-            setProfile(userObj);
-            localStorage.setItem('jd_profile', JSON.stringify(userObj));
-            if (['administrator', 'admin'].includes(userObj.role)) {
-              localStorage.setItem('jd_admin_token_key', 'etc-34');
-              localStorage.setItem('jd_admin_jwt', res.data.session.access_token);
+      // 1. If it contains '@', attempt Supabase Auth directly first
+      if (cleanIdent.includes('@')) {
+        res = await supabase.auth.signInWithPassword({ email: cleanIdent, password });
+        if (!res.error && res.data?.session) {
+          setSession(res.data.session);
+          localStorage.setItem('jd_session', JSON.stringify(res.data.session));
+
+          // Immediately load profile from Supabase so ProtectedRoute unlocks without delay
+          try {
+            const { data: sbProfile } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', res.data.session.user.id)
+              .maybeSingle();
+            if (sbProfile) {
+              const userObj = { ...sbProfile, email: res.data.session.user.email || cleanIdent };
+              setProfile(userObj);
+              localStorage.setItem('jd_profile', JSON.stringify(userObj));
+              if (['administrator', 'admin'].includes(userObj.role)) {
+                localStorage.setItem('jd_admin_token_key', 'etc-34');
+                localStorage.setItem('jd_admin_jwt', res.data.session.access_token);
+              }
             }
-          }
-        } catch {}
+          } catch {}
 
-        return res;
+          return res;
+        }
       }
 
-      // If direct Supabase signInWithPassword encounters an issue, verify via backend live authentication
+      // 2. If it's a username (no '@') OR direct Supabase Auth returned an error,
+      // authenticate via backend live authentication which resolves username to email
       try {
-        const serverAuth = await api.login({ email: emailOrUsername, password });
+        const serverAuth = await api.login({
+          email: cleanIdent.includes('@') ? cleanIdent : undefined,
+          username: !cleanIdent.includes('@') ? cleanIdent : undefined,
+          identifier: cleanIdent,
+          password,
+        });
         if (serverAuth?.session) {
           setSession(serverAuth.session);
           const userObj = serverAuth.user || serverAuth.profile;
@@ -209,11 +221,11 @@ export function AuthProvider({ children }) {
           return { data: serverAuth, error: null };
         }
       } catch (serverErr) {
-        if (res.error) return { data: null, error: res.error };
+        if (res?.error) return { data: null, error: res.error };
         return { data: null, error: serverErr };
       }
 
-      return { data: null, error: res.error || new Error('Authentication failed. Please verify your credentials.') };
+      return { data: null, error: res?.error || new Error('Authentication failed. Please verify your username/email and password.') };
     } catch (err) {
       return { data: null, error: err };
     }

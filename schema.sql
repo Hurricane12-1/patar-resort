@@ -61,6 +61,7 @@ END $$;
 CREATE TABLE IF NOT EXISTS public.customers (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT,
+  username TEXT UNIQUE,
   first_name TEXT DEFAULT '',
   middle_name TEXT DEFAULT '',
   last_name TEXT DEFAULT '',
@@ -83,6 +84,7 @@ COMMENT ON TABLE public.customers IS 'Resort Guest & Client Accounts Storage';
 CREATE TABLE IF NOT EXISTS public.users (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT,
+  username TEXT UNIQUE,
   first_name TEXT DEFAULT '',
   middle_name TEXT DEFAULT '',
   last_name TEXT DEFAULT '',
@@ -103,6 +105,7 @@ COMMENT ON TABLE public.users IS 'Resort Executive & Staff User Accounts Storage
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT,
+  username TEXT UNIQUE,
   first_name TEXT DEFAULT '',
   middle_name TEXT DEFAULT '',
   last_name TEXT DEFAULT '',
@@ -360,6 +363,7 @@ DECLARE
   v_last TEXT;
   v_middle TEXT;
   v_full TEXT;
+  v_username TEXT;
   v_role public.user_role;
   v_pos TEXT;
   v_phone TEXT;
@@ -377,6 +381,11 @@ BEGIN
     new.raw_user_meta_data->>'name',
     split_part(new.email, '@', 1)
   );
+  v_username := COALESCE(
+    NULLIF(LOWER(TRIM(new.raw_user_meta_data->>'username')), ''),
+    NULLIF(LOWER(TRIM(split_part(new.email, '@', 1))), ''),
+    'user_' || substr(new.id::text, 1, 8)
+  );
   v_role := COALESCE((new.raw_user_meta_data->>'role')::public.user_role, 'customer'::public.user_role);
   v_pos := COALESCE(new.raw_user_meta_data->>'position', '');
   v_phone := COALESCE(new.raw_user_meta_data->>'phone', '');
@@ -387,15 +396,16 @@ BEGIN
 
   -- A. Insert into unified profiles table (Foreign Key Anchor)
   INSERT INTO public.profiles (
-    id, email, first_name, middle_name, last_name, full_name,
+    id, email, username, first_name, middle_name, last_name, full_name,
     role, position, phone, address, city, emergency_contact, provider
   )
   VALUES (
-    new.id, new.email, v_first, v_middle, v_last, v_full,
+    new.id, new.email, v_username, v_first, v_middle, v_last, v_full,
     v_role, v_pos, v_phone, v_addr, v_city, v_emerg, v_prov
   )
   ON CONFLICT (id) DO UPDATE SET
     email = EXCLUDED.email,
+    username = COALESCE(profiles.username, EXCLUDED.username),
     first_name = CASE WHEN profiles.first_name = '' THEN EXCLUDED.first_name ELSE profiles.first_name END,
     last_name = CASE WHEN profiles.last_name = '' THEN EXCLUDED.last_name ELSE profiles.last_name END,
     full_name = CASE WHEN profiles.full_name = '' THEN EXCLUDED.full_name ELSE profiles.full_name END,
@@ -405,15 +415,16 @@ BEGIN
   -- B. Physical Separation: Route into customers OR users
   IF v_role = 'customer' THEN
     INSERT INTO public.customers (
-      id, email, first_name, middle_name, last_name, full_name,
+      id, email, username, first_name, middle_name, last_name, full_name,
       role, phone, address, city, emergency_contact, provider
     )
     VALUES (
-      new.id, new.email, v_first, v_middle, v_last, v_full,
+      new.id, new.email, v_username, v_first, v_middle, v_last, v_full,
       'customer', v_phone, v_addr, v_city, v_emerg, v_prov
     )
     ON CONFLICT (id) DO UPDATE SET
       email = EXCLUDED.email,
+      username = COALESCE(customers.username, EXCLUDED.username),
       first_name = CASE WHEN customers.first_name = '' THEN EXCLUDED.first_name ELSE customers.first_name END,
       last_name = CASE WHEN customers.last_name = '' THEN EXCLUDED.last_name ELSE customers.last_name END,
       full_name = CASE WHEN customers.full_name = '' THEN EXCLUDED.full_name ELSE customers.full_name END,
@@ -421,15 +432,16 @@ BEGIN
       updated_at = now();
   ELSE
     INSERT INTO public.users (
-      id, email, first_name, middle_name, last_name, full_name,
+      id, email, username, first_name, middle_name, last_name, full_name,
       role, position, phone, emergency_contact
     )
     VALUES (
-      new.id, new.email, v_first, v_middle, v_last, v_full,
+      new.id, new.email, v_username, v_first, v_middle, v_last, v_full,
       v_role, v_pos, v_phone, v_emerg
     )
     ON CONFLICT (id) DO UPDATE SET
       email = EXCLUDED.email,
+      username = COALESCE(users.username, EXCLUDED.username),
       first_name = CASE WHEN users.first_name = '' THEN EXCLUDED.first_name ELSE users.first_name END,
       last_name = CASE WHEN users.last_name = '' THEN EXCLUDED.last_name ELSE users.last_name END,
       full_name = CASE WHEN users.full_name = '' THEN EXCLUDED.full_name ELSE users.full_name END,
@@ -454,15 +466,16 @@ RETURNS trigger AS $$
 BEGIN
   IF NEW.role = 'customer' THEN
     INSERT INTO public.customers (
-      id, email, first_name, middle_name, last_name, full_name,
+      id, email, username, first_name, middle_name, last_name, full_name,
       role, phone, address, city, emergency_contact, provider, avatar_url, updated_at
     )
     VALUES (
-      NEW.id, NEW.email, NEW.first_name, NEW.middle_name, NEW.last_name, NEW.full_name,
+      NEW.id, NEW.email, NEW.username, NEW.first_name, NEW.middle_name, NEW.last_name, NEW.full_name,
       'customer', NEW.phone, NEW.address, NEW.city, NEW.emergency_contact, NEW.provider, NEW.avatar_url, NEW.updated_at
     )
     ON CONFLICT (id) DO UPDATE SET
       email = EXCLUDED.email,
+      username = COALESCE(EXCLUDED.username, customers.username),
       first_name = EXCLUDED.first_name,
       middle_name = EXCLUDED.middle_name,
       last_name = EXCLUDED.last_name,
@@ -476,15 +489,16 @@ BEGIN
       updated_at = now();
   ELSE
     INSERT INTO public.users (
-      id, email, first_name, middle_name, last_name, full_name,
+      id, email, username, first_name, middle_name, last_name, full_name,
       role, position, phone, emergency_contact, avatar_url, updated_at
     )
     VALUES (
-      NEW.id, NEW.email, NEW.first_name, NEW.middle_name, NEW.last_name, NEW.full_name,
+      NEW.id, NEW.email, NEW.username, NEW.first_name, NEW.middle_name, NEW.last_name, NEW.full_name,
       NEW.role, NEW.position, NEW.phone, NEW.emergency_contact, NEW.avatar_url, NEW.updated_at
     )
     ON CONFLICT (id) DO UPDATE SET
       email = EXCLUDED.email,
+      username = COALESCE(EXCLUDED.username, users.username),
       first_name = EXCLUDED.first_name,
       middle_name = EXCLUDED.middle_name,
       last_name = EXCLUDED.last_name,
