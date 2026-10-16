@@ -5,8 +5,6 @@ import { validate } from '../middleware/validate.js';
 import { admin, getSystemAdminClient } from '../lib/supabase.js';
 import { authenticate, requireStaffOrAdmin, requireAdmin } from '../middleware/auth.js';
 import { redis } from '../lib/redis.js';
-import { isSupabaseConfigured } from '../config/env.js';
-import { CANONICAL_ROOMS } from '../lib/canonicalRooms.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
 
 const r = Router();
@@ -40,17 +38,6 @@ r.get('/rooms', asyncH(async (req, res) => {
     console.warn('[Rooms API] Query exception:', err.message);
   }
 
-  if (result.length === 0) {
-    result = [...CANONICAL_ROOMS];
-    if (req.query.category && req.query.category !== 'All') {
-      result = result.filter(r => r.category.toLowerCase() === req.query.category.toLowerCase());
-    }
-    if (req.query.q) {
-      const qLower = req.query.q.toLowerCase();
-      result = result.filter(r => r.name.toLowerCase().includes(qLower) || r.description.toLowerCase().includes(qLower));
-    }
-  }
-
   if (result.length > 0) {
     await redis.set(cacheKey, result, 60);
   }
@@ -67,9 +54,6 @@ r.get('/rooms/:slug', asyncH(async (req, res) => {
     if (!error && data) room = data;
   } catch (err) {
     console.warn('[Rooms Slug API] Error fetching slug:', err?.message);
-  }
-  if (!room) {
-    room = CANONICAL_ROOMS.find(r => r.slug === req.params.slug || r.id === req.params.slug);
   }
   if (!room) {
     throw new ApiError(404, 'Room not found');
@@ -96,16 +80,13 @@ r.get('/availability', validate(rangeSchema, 'query'), asyncH(async (req, res) =
 
   const sysClient = await getSystemAdminClient();
 
-  // 1. Fetch active rooms from database or fallback catalog
+  // 1. Fetch active rooms strictly from live Supabase database
   let allRooms = [];
   try {
     const { data, error } = await sysClient.from('rooms').select('*').eq('is_active', true);
     if (!error && data && data.length > 0) allRooms = data;
   } catch (err) {
     console.warn('[Availability] Rooms query notice:', err.message);
-  }
-  if (allRooms.length === 0) {
-    allRooms = CANONICAL_ROOMS.filter(r => r.is_active);
   }
 
   // 2. Query overlapping reservations in database: [check_in, check_out)

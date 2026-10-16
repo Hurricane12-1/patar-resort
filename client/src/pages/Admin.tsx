@@ -49,10 +49,10 @@ export default function Admin() {
   const [loading, setLoading] = useState(false);
 
   // Mandatory 4-Field Executive RBAC Sentinel Block State
-  const [adminIdentity, setAdminIdentity] = useState('Nygel deleon');
+  const [adminIdentity, setAdminIdentity] = useState('');
   const [adminPosition, setAdminPosition] = useState('admin');
-  const [adminPass, setAdminPass] = useState('123');
-  const [adminTokenKey, setAdminTokenKey] = useState('etc-34');
+  const [adminPass, setAdminPass] = useState('');
+  const [adminTokenKey, setAdminTokenKey] = useState('');
   const [authError, setAuthError] = useState('');
   const [authenticating, setAuthenticating] = useState(false);
   const [refreshingAnalytics, setRefreshingAnalytics] = useState(false);
@@ -60,7 +60,7 @@ export default function Admin() {
   const [isAdminVerified, setIsAdminVerified] = useState<boolean>(() => {
     const key = typeof localStorage !== 'undefined' ? localStorage.getItem('jd_admin_token_key') : null;
     const jwt = typeof localStorage !== 'undefined' ? localStorage.getItem('jd_admin_jwt') : null;
-    return key === 'etc-34' && Boolean(jwt);
+    return Boolean(key) && Boolean(jwt);
   });
 
   const handleManualSync = async () => {
@@ -85,8 +85,8 @@ export default function Admin() {
       if (cleanPos !== 'admin' && cleanPos !== 'administrator') {
         throw new Error('Position must be "admin" or "administrator". RBAC rules strictly forbid customer or unauthorized roles.');
       }
-      if (adminTokenKey.trim() !== 'etc-34') {
-        throw new Error('Invalid Token ID Key. Token key "etc-34" is strictly mandatory for administrator access.');
+      if (!adminTokenKey.trim()) {
+        throw new Error('Token ID Key is strictly mandatory for administrator access.');
       }
       const res = await api.adminLogin({
         identity: adminIdentity.trim(),
@@ -111,15 +111,6 @@ export default function Admin() {
     } finally {
       setAuthenticating(false);
     }
-  };
-
-  const handlePresetNygelDeLeon = () => {
-    setAdminIdentity('Nygel deleon');
-    setAdminPosition('admin');
-    setAdminPass('123');
-    setAdminTokenKey('etc-34');
-    setAuthError('');
-    toast('⚡ Loaded Sentinel Block: Nygel deleon · admin · 123 · etc-34');
   };
 
   const handleLockSentinelGate = () => {
@@ -484,41 +475,6 @@ export default function Admin() {
             Administrative telemetry, financial analytics, and operational systems are strictly sealed behind this 4-field credential block.
           </p>
 
-          {/* Preset Quick-Fill Pill Button */}
-          <div style={{ marginBottom: 22 }}>
-            <button
-              type="button"
-              onClick={handlePresetNygelDeLeon}
-              style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                background: 'rgba(99, 102, 241, 0.14)',
-                border: '1px solid rgba(99, 102, 241, 0.35)',
-                color: '#A5B4FC',
-                borderRadius: 14,
-                padding: '10px 14px',
-                fontSize: '.78rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(99, 102, 241, 0.25)';
-                e.currentTarget.style.borderColor = '#818CF8';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(99, 102, 241, 0.14)';
-                e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.35)';
-              }}
-            >
-              <span>⚡ 1-Click Fill Preset:</span>
-              <b style={{ color: '#FFFFFF' }}>Nygel deleon · admin · 123 · etc-34</b>
-            </button>
-          </div>
-
           {authError && (
             <div style={{
               background: 'rgba(244, 63, 94, 0.15)',
@@ -538,17 +494,17 @@ export default function Admin() {
           )}
 
           <form onSubmit={handleAdminSecurityBlockSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {/* Field 1: Administrator Identity */}
+            {/* Field 1: Administrator Email */}
             <div>
               <label style={{ display: 'block', fontSize: '.72rem', color: '#22c3ee', fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase', marginBottom: 6 }}>
-                1. Administrator Identity / Full Name
+                1. Administrator Email
               </label>
               <input
-                type="text"
+                type="email"
                 required
                 value={adminIdentity}
                 onChange={(e) => setAdminIdentity(e.target.value)}
-                placeholder="e.g. Nygel deleon"
+                placeholder="Enter Supabase administrator email"
                 style={{
                   width: '100%',
                   background: 'rgba(255, 255, 255, 0.05)',
@@ -601,7 +557,7 @@ export default function Admin() {
                 required
                 value={adminPass}
                 onChange={(e) => setAdminPass(e.target.value)}
-                placeholder="e.g. 123"
+                placeholder="Enter administrator password"
                 style={{
                   width: '100%',
                   background: 'rgba(255, 255, 255, 0.05)',
@@ -616,7 +572,7 @@ export default function Admin() {
               />
             </div>
 
-            {/* Field 4: Token ID Key ("But key is important") */}
+            {/* Field 4: Token ID Key */}
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <label style={{ fontSize: '.72rem', color: '#22c3ee', fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase' }}>
@@ -631,7 +587,7 @@ export default function Admin() {
                 required
                 value={adminTokenKey}
                 onChange={(e) => setAdminTokenKey(e.target.value)}
-                placeholder="e.g. etc-34"
+                placeholder="Enter administrative Token ID Key"
                 style={{
                   width: '100%',
                   background: 'rgba(255, 255, 255, 0.05)',

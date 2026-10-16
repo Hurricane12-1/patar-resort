@@ -4,7 +4,6 @@ import { asyncH, ApiError } from '../middleware/errors.js';
 import { authenticate, requireStaffOrAdmin } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { admin } from '../lib/supabase.js';
-import { CANONICAL_ROOMS } from '../lib/canonicalRooms.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
 
 const r = Router();
@@ -58,10 +57,7 @@ r.get('/department/room-status', authenticate, requireStaffOrAdmin, asyncH(async
     client.from('department_tasks').select('room_name, department, title, status').in('status', ['pending', 'in_progress']),
   ]);
 
-  let rooms = roomsRes.data || [];
-  if (rooms.length === 0) {
-    rooms = CANONICAL_ROOMS.filter(r => r.is_active);
-  }
+  const rooms = roomsRes.data || [];
   const activeStays = activeRes.data || [];
   const openTasks = tasksRes.data || [];
 

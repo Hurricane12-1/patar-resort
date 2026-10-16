@@ -7,7 +7,6 @@ import { bookingLimiter } from '../middleware/security.js';
 import { admin, getSystemAdminClient } from '../lib/supabase.js';
 import { pingSMS } from '../lib/sms.js';
 import { redis } from '../lib/redis.js';
-import { CANONICAL_ROOMS } from '../lib/canonicalRooms.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
 
 const r = Router();
@@ -38,9 +37,6 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
     const { data } = await sysClient.from('rooms').select('*').eq('id', targetRoomId).single();
     if (data) room = data;
   } catch {}
-  if (!room) {
-    room = CANONICAL_ROOMS.find((c) => c.id === targetRoomId || c.slug === targetRoomId);
-  }
   if (!room) throw new ApiError(404, 'Room not found or inactive');
 
   // Hard overbooking check: count active bookings per night in requested date range

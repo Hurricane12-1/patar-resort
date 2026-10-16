@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
 import { asyncH, ApiError } from '../middleware/errors.js';
 import { validateJoi, joiSchemas } from '../middleware/joiValidation.js';
-import { admin } from '../lib/supabase.js';
+import { admin, userClient } from '../lib/supabase.js';
 import { redis } from '../lib/redis.js';
 import { pingSMS } from '../lib/sms.js';
 import { sendRecoveryOTP, sendPasswordResetSuccess, sendSignup2FAOTP, sendWelcomeClientEmail, sendSignupExpiredEmail } from '../lib/mailer.js';
@@ -16,10 +16,10 @@ const r = Router();
  * ============================================================================
  * MANDATORY 4-FIELD EXECUTIVE RBAC ADMINISTRATOR AUTHENTICATION
  * Block Requirements:
- *  1. Identity / Name: e.g. "Nygel deleon" or email
- *  2. Password: e.g. "123"
- *  3. Token ID Key: e.g. "etc-34" ("But key is important")
- *  4. Position: e.g. "admin" / "administrator" (enforced strictly by RBAC)
+ *  1. Identity / Email (Supabase Auth administrator account)
+ *  2. Password (verified via Supabase Auth)
+ *  3. Token ID Key (verified via ADMIN_TOKEN_KEY)
+ *  4. Position ('admin' | 'administrator', enforced strictly by RBAC)
  * ============================================================================
  */
 r.post('/auth/admin-login', asyncH(async (req, res) => {
@@ -47,9 +47,9 @@ r.post('/auth/admin-login', asyncH(async (req, res) => {
     throw new ApiError(403, `RBAC_ACCESS_DENIED: Position "${rawPos}" is not authorized. Position must be administrator or admin.`);
   }
 
-  // 3. Mandatory Token ID Key Verification ("But key is important")
-  const expectedKey = process.env.ADMIN_TOKEN_KEY || 'etc-34';
-  if (key !== expectedKey) {
+  // 3. Mandatory Token ID Key Verification
+  const expectedKey = env.ADMIN_TOKEN_KEY;
+  if (!expectedKey || key !== expectedKey) {
     await logAuditEvent({
       actor: { full_name: userIdent, role: rawPos },
       action: 'RBAC_ACCESS_DENIED',
@@ -58,54 +58,37 @@ r.post('/auth/admin-login', asyncH(async (req, res) => {
       details: { reason: 'Invalid or missing administrative Token ID Key', provided_key: key },
       req,
     }).catch(() => {});
-    throw new ApiError(403, 'RBAC_ACCESS_DENIED: Invalid or missing administrative Token ID Key. Key "etc-34" is strictly required.');
+    throw new ApiError(403, 'RBAC_ACCESS_DENIED: Invalid or missing administrative Token ID Key.');
   }
 
-  // 4. Credential Verification
-  const isNygel = /nygel|deleon|julian/i.test(userIdent);
-  const isStandardAdmin = userIdent.toLowerCase() === 'admin' || userIdent.toLowerCase() === 'admin@janddbeachhouse.ph';
+  // 4. Live Supabase PostgreSQL Credential & RBAC Role Verification (Zero Hardcoded Accounts)
   let verifiedUser = null;
+  try {
+    const { data, error } = await admin.auth.signInWithPassword({
+      email: userIdent.toLowerCase(),
+      password: rawPass,
+    });
+    if (error) throw error;
+    if (data?.session && data?.user) {
+      const authedClient = userClient(data.session.access_token);
+      const { data: prof } = await authedClient.from('profiles').select('*').eq('id', data.user.id).single();
 
-  if ((isNygel && (rawPass === '123' || rawPass === 'AdminPassword123!')) ||
-      (isStandardAdmin && (rawPass === '123' || rawPass === 'AdminPassword123!'))) {
-    verifiedUser = {
-      id: 'a4995e4b-568f-4134-9fe1-3f66952c25af',
-      email: 'admin@janddbeachhouse.ph',
-      full_name: isNygel ? 'Julian Nygel J. De Leon' : 'Resort Administrator',
-      role: 'administrator',
-      position: 'admin',
-    };
-  } else {
-    try {
-      const { data, error } = await admin.auth.signInWithPassword({
-        email: userIdent.toLowerCase(),
-        password: rawPass,
-      });
-      if (error) throw error;
-      if (data?.session) {
-        let prof = null;
-        try {
-          const { data: p } = await admin.from('profiles').select('*').eq('id', data.user.id).single();
-          prof = p;
-        } catch {}
-
-        const role = prof?.role || data.user.user_metadata?.role || 'customer';
-        if (role !== 'administrator' && role !== 'admin') {
-          throw new ApiError(403, `Access denied: Role "${role}" is not authorized for administrative operations.`);
-        }
-
-        verifiedUser = {
-          id: data.user.id,
-          email: data.user.email,
-          full_name: prof?.full_name || data.user.user_metadata?.full_name || userIdent,
-          role: 'administrator',
-          position: 'admin',
-        };
+      const role = prof?.role || data.user.user_metadata?.role || 'customer';
+      if (role !== 'administrator' && role !== 'admin') {
+        throw new ApiError(403, `Access denied: Role "${role}" is not authorized for administrative operations.`);
       }
-    } catch (err) {
-      if (err instanceof ApiError) throw err;
-      throw new ApiError(401, 'Invalid administrative credentials. Identity and password do not match.');
+
+      verifiedUser = {
+        id: data.user.id,
+        email: data.user.email,
+        full_name: prof?.full_name || data.user.user_metadata?.full_name || data.user.email,
+        role: 'administrator',
+        position: rawPos,
+      };
     }
+  } catch (err) {
+    if (err instanceof ApiError) throw err;
+    throw new ApiError(401, 'Invalid administrative credentials. Please sign in with your verified Supabase Administrator email and password.');
   }
 
   if (!verifiedUser) {

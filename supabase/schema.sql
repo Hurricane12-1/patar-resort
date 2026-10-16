@@ -331,34 +331,3 @@ alter publication supabase_realtime add table reservations;
 alter publication supabase_realtime add table department_tasks;
 alter publication supabase_realtime add table resort_orders;
 
--- ---------- SEEDS · ROOM INVENTORY ----------
-insert into rooms (name, slug, category, description, capacity, units, rate_php, amenities) values
- ('Unit TEV Grand Villa','unit-tev','Villa','Grand beachfront group villa for large gatherings, family reunions, and corporate retreats. Sleeps up to 60 guests.',60,1,18000,'{AC,Sea view,Kitchen,Grill,Karaoke,Porch}'),
- ('Unit GEL Premier Suite','unit-gel','Suite','Spacious group suite overlooking the Patar white beach coastline. Sleeps up to 25 guests.',25,1,12000,'{AC,Balcony,Hot shower,WiFi,Kitchenette}'),
- ('Unit CAT Cottage (Unit Papang)','unit-cat','Cottage','Native beachfront cottage with direct sand access. Also known in physical logbooks as Unit Papang. Sleeps up to 10 guests.',10,1,6000,'{Fan,AC,WiFi,Porch,Hot shower}'),
- ('Nipa Cove Cottage','nipa-cove','Cottage','Native nipa cottage steps from the sand. Fan-cooled, porch with hammock.',2,6,1450,'{Fan,Hot shower,WiFi,Porch}'),
- ('Garden Breeze Room','garden-breeze','Garden','AC room facing the mango garden. Queen bed, breakfast included.',2,8,1850,'{AC,WiFi,Hot shower,Breakfast}'),
- ('Habagat Sea-View Suite','habagat-suite','Suite','Front suite with private balcony hanging over the water.',3,4,2950,'{AC,Sea view,Balcony,WiFi,Breakfast}'),
- ('Sunset Pavilion','sunset-pavilion','Suite','Premium king suite facing the Cape Bolinao sunset.',2,2,3600,'{AC,Sea view,King bed,Bathtub,Breakfast}'),
- ('Duyan Family Villa','duyan-villa','Villa','Two-bedroom villa with kitchenette and outdoor hammock deck.',6,3,4800,'{AC,Kitchenette,2 bedrooms,WiFi,Grill deck}'),
- ('Backpacker Bunk','backpacker-bunk','Dorm','Shared bunk for island hoppers. Locker and shared bath.',1,10,650,'{WiFi,Locker,Fan,Shared bath}');
-
--- ---------- SEEDS · INVENTORY ITEMS ----------
-insert into resort_inventory (item_name, category, stock_qty, unit, reorder_at) values
- ('Beach Towel Sets', 'housekeeping', 85, 'sets', 20),
- ('Fresh Linen Sets (King/Queen)', 'housekeeping', 42, 'sets', 10),
- ('Bolinao Fresh Bangus', 'kitchen', 60, 'pcs', 15),
- ('Young Coconuts (Buko)', 'kitchen', 120, 'pcs', 25),
- ('Outrigger Life Jackets', 'tours', 35, 'pcs', 10),
- ('AC Air Filters & Gas', 'maintenance', 14, 'units', 4);
-
--- ---------- SEEDS · SERVICES CATALOG ----------
-insert into resort_services (name, category, price_php, icon) values
- ('Bolinao Grilled Bangus Breakfast', 'Dining', 380, '🐟'),
- ('Fresh Buko Juice in Shell', 'Dining', 120, '🥥'),
- ('Extra Beach Towels (Set of 2)', 'Amenity', 0, '🧺'),
- ('Beachside Bonfire & Marshmallow Setup', 'Amenity', 850, '🔥'),
- ('Patar Island Hopping Outrigger (Half-day)', 'Tour', 2200, '⛵'),
- ('Cape Bolinao & Falls Guided Shuttle', 'Tour', 1400, '🗺️'),
- ('Beachfront Sunset Kayak Rental (1 hr)', 'Tour', 450, '🚣'),
- ('Bolinao Seafood Boodle Fight (Good for 6-8)', 'Dining', 3200, '🍤');
