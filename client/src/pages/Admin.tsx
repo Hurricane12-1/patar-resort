@@ -2896,7 +2896,7 @@ export default function Admin() {
                 <div className="admin-tab-header-actions">
                   <input
                     className="search"
-                    placeholder="Search by name or phone…"
+                    placeholder="Search by name, email, or phone…"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     style={{ maxWidth: 260, background: isLightMode ? '#FFF' : undefined, color: themeText }}
@@ -2993,7 +2993,7 @@ export default function Admin() {
                             {staffUsers.map((u) => (
                               <tr key={u.id} style={{ borderBottom: `1px solid ${themeBorder}` }}>
                                 <td><b>{u.full_name || 'Staff User'}</b></td>
-                                <td style={{ fontSize: '.8rem', color: themeMuted }}>{u.email || 'N/A'}</td>
+                                <td style={{ fontSize: '.8rem', color: themeMuted }}>{u.email || (u.role === 'administrator' ? 'admin@janddbeachhouse.ph' : 'N/A')}</td>
                                 <td>{u.phone || 'N/A'}</td>
                                 <td>
                                   <span className="pill" style={{
