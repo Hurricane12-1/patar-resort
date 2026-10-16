@@ -3,8 +3,10 @@ import { z } from 'zod';
 import { asyncH, ApiError } from '../middleware/errors.js';
 import { authenticate } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
-import { getSystemAdminClient } from '../lib/supabase.js';
+import { getSystemAdminClient, admin } from '../lib/supabase.js';
 import { redis } from '../lib/redis.js';
+import jwt from 'jsonwebtoken';
+import { env } from '../config/env.js';
 
 const r = Router();
 
@@ -366,6 +368,104 @@ r.post('/chat/request-staff', asyncH(async (req, res) => {
   // Invalidate cached analytics so staff request line on evolution chart reflects immediately
   await redis.del('analytics:overview').catch(() => {});
   res.json({ ok: true, message: 'Service agent request logged' });
+}));
+
+/**
+ * GET /api/chat/my-messages
+ * Mandated account chat reload: returns all saved chat exchanges for the account.
+ */
+r.get('/chat/my-messages', asyncH(async (req, res) => {
+  const client = await getSystemAdminClient();
+
+  let userId = req.user?.id;
+  if (!userId) {
+    const token = req.headers.authorization?.replace(/^Bearer\s+/i, '') || req.cookies?.session_token || req.cookies?.access_token;
+    if (token) {
+      if (env.SUPABASE_JWT_SECRET) {
+        try {
+          userId = jwt.verify(token, env.SUPABASE_JWT_SECRET).sub;
+        } catch {}
+      }
+      if (!userId) {
+        try {
+          const { data: { user } } = await admin.auth.getUser(token);
+          if (user?.id) userId = user.id;
+        } catch {}
+      }
+    }
+  }
+
+  const guestSessionId = req.query.guest_session_id || req.headers['x-guest-session-id'];
+  let query = client.from('chat_messages').select('*').order('created_at', { ascending: true });
+
+  if (userId) {
+    query = query.eq('profile_id', userId);
+  } else if (guestSessionId) {
+    query = query.contains('metadata', { guest_session_id: guestSessionId });
+  } else {
+    return res.json([]);
+  }
+
+  const { data: messages, error } = await query.limit(150);
+  if (error || !messages) return res.json([]);
+
+  const formatted = messages.map((m) => ({
+    id: m.id,
+    from: m.role === 'user' ? 'user' : 'bot',
+    text: m.content,
+    is_ai: m.role !== 'user',
+    chips: m.metadata?.chips || [],
+    feedback: m.metadata?.feedback,
+    feedbackStage: m.metadata?.feedback === 'thumbs_up' ? 'recorded_up' : undefined,
+    contact_card: !!m.metadata?.requested_staff,
+    created_at: m.created_at,
+  }));
+
+  return res.json(formatted);
+}));
+
+/**
+ * POST /api/chat/my-messages
+ * Mandated account chat saving: saves user & concierge message pairs into Supabase.
+ */
+r.post('/chat/my-messages', asyncH(async (req, res) => {
+  const client = await getSystemAdminClient();
+
+  let userId = req.user?.id;
+  if (!userId) {
+    const token = req.headers.authorization?.replace(/^Bearer\s+/i, '') || req.cookies?.session_token || req.cookies?.access_token;
+    if (token) {
+      if (env.SUPABASE_JWT_SECRET) {
+        try {
+          userId = jwt.verify(token, env.SUPABASE_JWT_SECRET).sub;
+        } catch {}
+      }
+      if (!userId) {
+        try {
+          const { data: { user } } = await admin.auth.getUser(token);
+          if (user?.id) userId = user.id;
+        } catch {}
+      }
+    }
+  }
+
+  const { role, content, metadata } = req.body || {};
+  if (!content) throw new ApiError(400, 'Message content is required');
+
+  const { data, error } = await client.from('chat_messages').insert({
+    profile_id: userId || null,
+    role: role === 'user' ? 'user' : 'bot',
+    sender: role === 'user' ? (userId ? 'customer' : 'guest') : 'concierge_ai',
+    content: String(content).slice(0, 2000),
+    metadata: {
+      is_customer: !!userId,
+      saved_at: new Date().toISOString(),
+      ...(metadata || {}),
+    },
+  }).select().single();
+
+  if (error) throw new ApiError(500, error.message);
+  return res.status(201).json(data);
 }));
 
 export default r;

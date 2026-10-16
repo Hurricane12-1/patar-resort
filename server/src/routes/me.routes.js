@@ -290,4 +290,84 @@ r.post('/admin/users/:id/reset-password', authenticate, requireAdmin,
     return res.json({ success: true, message: `Password reset successfully for ${prof?.full_name || 'account'}` });
   }));
 
+// Administrative Account Details Update
+r.patch('/admin/users/:id', authenticate, requireAdmin,
+  validate(z.object({
+    full_name: z.string().optional(),
+    first_name: z.string().optional(),
+    middle_name: z.string().optional(),
+    last_name: z.string().optional(),
+    username: z.string().optional(),
+    phone: z.string().optional(),
+    role: z.enum(['customer', 'staff', 'receptionist', 'accounting', 'administrator']).optional(),
+  })),
+  asyncH(async (req, res) => {
+    const userId = req.params.id;
+    const { full_name, first_name, middle_name, last_name, username, phone, role } = req.body;
+
+    const updates = {};
+    if (full_name !== undefined) updates.full_name = full_name;
+    if (first_name !== undefined) updates.first_name = first_name;
+    if (middle_name !== undefined) updates.middle_name = middle_name;
+    if (last_name !== undefined) updates.last_name = last_name;
+    if (username !== undefined) updates.username = username;
+    if (phone !== undefined) updates.phone = phone;
+    if (role !== undefined) updates.role = role;
+
+    // Update profile in database
+    const client = req.sb || admin;
+    const { data, error } = await client.from('profiles').update(updates).eq('id', userId).select().single();
+    if (error) throw new ApiError(500, error.message);
+
+    // Sync auth metadata if applicable
+    try {
+      await admin.auth.admin.updateUserById(userId, {
+        user_metadata: updates,
+      });
+    } catch {}
+
+    await logAuditEvent({
+      actor: req.user,
+      action: 'USER_PROFILE_UPDATED',
+      resourceType: 'user',
+      resourceId: userId,
+      details: { updates, target_user: data?.full_name || userId },
+      req,
+    });
+
+    return res.json(data);
+  }));
+
+// Administrative Account Deletion
+r.delete('/admin/users/:id', authenticate, requireAdmin, asyncH(async (req, res) => {
+  const userId = req.params.id;
+  if (req.user?.id === userId) {
+    throw new ApiError(400, 'Cannot delete currently signed-in administrative account.');
+  }
+
+  const client = req.sb || admin;
+  const { data: prof } = await client.from('profiles').select('full_name, email, role').eq('id', userId).maybeSingle();
+
+  // 1. Delete from profiles
+  await client.from('profiles').delete().eq('id', userId).catch(() => {});
+
+  // 2. Delete from Supabase Auth
+  try {
+    await admin.auth.admin.deleteUser(userId);
+  } catch (err) {
+    console.warn('[Admin Delete User] Auth delete notice:', err.message);
+  }
+
+  await logAuditEvent({
+    actor: req.user,
+    action: 'USER_DELETED',
+    resourceType: 'user',
+    resourceId: userId,
+    details: { deleted_user: prof?.full_name || userId, email: prof?.email, role: prof?.role },
+    req,
+  });
+
+  return res.json({ success: true, message: `Account for ${prof?.full_name || userId} has been permanently deleted.` });
+}));
+
 export default r;

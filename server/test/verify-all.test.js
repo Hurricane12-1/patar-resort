@@ -24,7 +24,7 @@ import {
 import { registry } from '../src/framework/ModuleRegistry.js';
 import { createModuleSandbox, extractEndpoints } from '../src/framework/ModuleSandbox.js';
 import { loadRouteModule, loadDomainPlugin, bootstrapFramework } from '../src/framework/ModuleLoader.js';
-import { sendRecoveryOTP, sendPasswordResetSuccess, sendSignup2FAOTP, sendWelcomeClientEmail, sendSignupExpiredEmail } from '../src/lib/mailer.js';
+import { sendRecoveryOTP, sendPasswordResetSuccess, sendSignup2FAOTP, sendWelcomeClientEmail, sendSignupExpiredEmail, sendRefundRequestedEmail, sendRefundConfirmedEmail } from '../src/lib/mailer.js';
 import express, { Router } from 'express';
 import { fileURLToPath } from 'url';
 
@@ -658,6 +658,33 @@ await runTest('Nodemailer OTP Email Generator & Google Recovery Transporter Life
 
   assert(successResult, 'Nodemailer success notification must return a response object');
   assert(successResult.messageId, 'Success notification must contain a messageId');
+
+  // Test dispatching "Refund In Process" email on the day requested
+  const refundReqResult = await sendRefundRequestedEmail({
+    to: testEmail,
+    name: testName,
+    reservationId: 'res-test-9988',
+    roomName: 'Patar Beach Villa',
+    checkIn: '2026-11-01',
+    checkOut: '2026-11-03',
+    amount: 7000,
+    reason: 'Guest travel plan change',
+  });
+  assert(refundReqResult, 'sendRefundRequestedEmail must return a valid nodemailer response');
+  assert(refundReqResult.messageId, 'Refund request email must contain a messageId');
+
+  // Test dispatching "Refund Confirmed & Processed" email
+  const refundConfResult = await sendRefundConfirmedEmail({
+    to: testEmail,
+    name: testName,
+    reservationId: 'res-test-9988',
+    roomName: 'Patar Beach Villa',
+    amount: 7000,
+    refundMethod: 'GCash',
+    referenceNumber: 'GCASH-TEST-1234',
+  });
+  assert(refundConfResult, 'sendRefundConfirmedEmail must return a valid nodemailer response');
+  assert(refundConfResult.messageId, 'Refund confirmed email must contain a messageId');
 });
 
 // 24. Chatbot Security: Rate Limiting & Input Protection
@@ -1027,6 +1054,65 @@ await runTest('NGWF Active IP Threat Quarantine & Security Telemetry Center', as
   assert(clientAdminContent.includes('handleUnbanIp'), 'Admin.tsx must define handleUnbanIp action');
 
   clearAllQuarantines();
+});
+
+// 31. Account Management, OTP Recovery, Account Chat Persistence & Refund Automation Lifecycle
+await runTest('Account Management, OTP Recovery, Account Chat Persistence & Refund Automation Lifecycle', async () => {
+  // 1. Verify me.routes.js administrative mutation endpoints (PATCH & DELETE /admin/users/:id)
+  const meRoutesPath = path.resolve(serverRoot, 'src/routes/me.routes.js');
+  const meContent = fs.readFileSync(meRoutesPath, 'utf8');
+  assert(meContent.includes("r.patch('/admin/users/:id'"), 'me.routes.js must export PATCH /admin/users/:id for profile edits');
+  assert(meContent.includes("r.delete('/admin/users/:id'"), 'me.routes.js must export DELETE /admin/users/:id with self-deletion guard');
+  assert(meContent.includes('USER_PROFILE_UPDATED'), 'me.routes.js must emit USER_PROFILE_UPDATED audit log');
+  assert(meContent.includes('USER_DELETED'), 'me.routes.js must emit USER_DELETED audit log');
+
+  // 2. Verify chat.routes.js mandated account chat reload & persistence endpoints
+  const chatRoutesPath = path.resolve(serverRoot, 'src/routes/chat.routes.js');
+  const chatContent = fs.readFileSync(chatRoutesPath, 'utf8');
+  assert(chatContent.includes("r.get('/chat/my-messages'"), 'chat.routes.js must export GET /chat/my-messages for account reload');
+  assert(chatContent.includes("r.post('/chat/my-messages'"), 'chat.routes.js must export POST /chat/my-messages for account chat saving');
+
+  // 3. Verify reservations.routes.js refund request & confirmation with email dispatch
+  const resRoutesPath = path.resolve(serverRoot, 'src/routes/reservations.routes.js');
+  const resContent = fs.readFileSync(resRoutesPath, 'utf8');
+  assert(resContent.includes("r.post('/reservations/:id/refund-request'"), 'reservations.routes.js must export POST /refund-request');
+  assert(resContent.includes("r.post('/reservations/:id/refund-confirm'"), 'reservations.routes.js must export POST /refund-confirm');
+  assert(resContent.includes('sendRefundRequestedEmail'), 'reservations.routes.js must invoke sendRefundRequestedEmail');
+  assert(resContent.includes('sendRefundConfirmedEmail'), 'reservations.routes.js must invoke sendRefundConfirmedEmail');
+
+  // 4. Verify client api.ts methods for account management, chat, and refunds
+  const clientApiPath = path.resolve(projectRoot, 'client/src/lib/api.ts');
+  const clientApiContent = fs.readFileSync(clientApiPath, 'utf8');
+  assert(clientApiContent.includes('adminUpdateUser:'), 'client api.ts must export adminUpdateUser');
+  assert(clientApiContent.includes('adminDeleteUser:'), 'client api.ts must export adminDeleteUser');
+  assert(clientApiContent.includes('requestRefund:'), 'client api.ts must export requestRefund');
+  assert(clientApiContent.includes('confirmRefund:'), 'client api.ts must export confirmRefund');
+  assert(clientApiContent.includes('myChatMessages:'), 'client api.ts must export myChatMessages');
+
+  // 5. Verify Chatbot.tsx mandated account reload & persistence
+  const chatbotPath = path.resolve(projectRoot, 'client/src/components/Chatbot.tsx');
+  const chatbotContent = fs.readFileSync(chatbotPath, 'utf8');
+  assert(chatbotContent.includes('jd_chat_msgs_'), 'Chatbot.tsx must key chat cache by account ID');
+  assert(chatbotContent.includes('api.myChatMessages'), 'Chatbot.tsx must reload account chat from Supabase');
+  assert(chatbotContent.includes('reloadAccountChat'), 'Chatbot.tsx must implement reloadAccountChat function');
+
+  // 6. Verify MobileResortApp.tsx OTP Forgot Password integration
+  const mobileAppPath = path.resolve(projectRoot, 'client/src/components/MobileResortApp.tsx');
+  const mobileAppContent = fs.readFileSync(mobileAppPath, 'utf8');
+  assert(mobileAppContent.includes('handleMobileForgotPassword'), 'MobileResortApp.tsx must define handleMobileForgotPassword');
+  assert(mobileAppContent.includes('handleMobileResetPassword'), 'MobileResortApp.tsx must define handleMobileResetPassword');
+  assert(mobileAppContent.includes('showForgotModal'), 'MobileResortApp.tsx must render mobile recovery modal');
+
+  // 7. Verify Admin.tsx account management, OTP recovery and refund modal
+  const adminPath = path.resolve(projectRoot, 'client/src/pages/Admin.tsx');
+  const adminContent = fs.readFileSync(adminPath, 'utf8');
+  assert(adminContent.includes('handleUpdateUser'), 'Admin.tsx must define handleUpdateUser');
+  assert(adminContent.includes('handleDeleteUser'), 'Admin.tsx must define handleDeleteUser');
+  assert(adminContent.includes('handleAdminForgotPassword'), 'Admin.tsx must define handleAdminForgotPassword');
+  assert(adminContent.includes('handleRefundSubmit'), 'Admin.tsx must define handleRefundSubmit');
+  assert(adminContent.includes('editingUser'), 'Admin.tsx must render editingUser modal');
+  assert(adminContent.includes('userToDelete'), 'Admin.tsx must render userToDelete modal');
+  assert(adminContent.includes('refundTarget'), 'Admin.tsx must render refundTarget modal');
 });
 
 console.log('\n-------------------------------------------------------------');

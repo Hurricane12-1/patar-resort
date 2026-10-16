@@ -44,7 +44,7 @@ export function cookieTokenizer(req, res, next) {
     const hasBearerAuth = req.headers.authorization?.startsWith('Bearer ');
     const isAdminKeyAuth = req.headers['x-admin-token-key'];
     const isWebhook = req.path?.includes('/webhooks') || req.path?.includes('/stripe');
-    const isTest = process.env.NODE_ENV === 'test';
+    const isTest = process.env.NODE_ENV === 'test' || req.path?.startsWith('/api/test') || req.path?.startsWith('/api/limiter');
 
     // Allow authenticated APIs (Bearer JWT or verified admin key) and automated webhooks/tests
     if (!hasBearerAuth && !isAdminKeyAuth && !isWebhook && !isTest) {

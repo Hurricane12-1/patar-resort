@@ -244,6 +244,19 @@ export const api = {
   },
   createStaffAccount: (body: any) => req('/admin/users', { method: 'POST', body }),
   resetUserPassword: (id: string, new_password: string) => req(`/admin/users/${id}/reset-password`, { method: 'POST', body: { new_password } }),
+  adminUpdateUser: (id: string, body: any) => req(`/admin/users/${id}`, { method: 'PATCH', body }),
+  adminDeleteUser: (id: string) => req(`/admin/users/${id}`, { method: 'DELETE' }),
+
+  // Refund Management & Automated Invoicing
+  requestRefund: (reservationId: string, reason?: string, amount?: number) =>
+    req(`/reservations/${reservationId}/refund-request`, { method: 'POST', body: { reason, amount } }),
+  confirmRefund: (reservationId: string, body?: any) =>
+    req(`/reservations/${reservationId}/refund-confirm`, { method: 'POST', body }),
+
+  // Mandated Account Chat Reload & Persistence
+  myChatMessages: (guestSessionId?: string) =>
+    req(`/chat/my-messages${guestSessionId ? `?guest_session_id=${encodeURIComponent(guestSessionId)}` : ''}`),
+  saveChatMessage: (body: any) => req('/chat/my-messages', { method: 'POST', body }),
 
   // Defense-in-Depth Security & Quarantine Hub
   securityPosture: () => req('/security/posture'),

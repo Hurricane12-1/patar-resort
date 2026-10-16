@@ -25,15 +25,69 @@ const DEFAULT_CHIPS = [
 export default function Chatbot() {
   const { session } = useAuth();
   const [open, setOpen] = useState(false);
-  const [msgs, setMsgs] = useState<any[]>([DEFAULT_WELCOME]);
+  const accountId = session?.user?.id || 'guest';
+  const storageKey = `jd_chat_msgs_${accountId}`;
+
+  const [msgs, setMsgs] = useState<any[]>(() => {
+    try {
+      const cached = typeof localStorage !== 'undefined' ? localStorage.getItem(`jd_chat_msgs_${session?.user?.id || 'guest'}`) : null;
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return [DEFAULT_WELCOME];
+  });
   const [chips, setChips] = useState<string[]>(DEFAULT_CHIPS);
   const [typing, setTyping] = useState(false);
   const [text, setText] = useState('');
   const [isTypingPrompt, setIsTypingPrompt] = useState(false);
+  const [reloadingChat, setReloadingChat] = useState(false);
   const sockRef = useRef<any>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const cancelTypewriterRef = useRef<(() => void) | null>(null);
+
+  // Mandated Account Chat Reload: Hydrate from localStorage and sync with Supabase
+  const reloadAccountChat = async () => {
+    setReloadingChat(true);
+    try {
+      // 1. Immediately hydrate from localStorage
+      const cached = localStorage.getItem(storageKey);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setMsgs(parsed);
+        }
+      }
+
+      // 2. Fetch server-persisted messages for authenticated account
+      if (session?.user?.id) {
+        const serverMsgs = await api.myChatMessages();
+        if (Array.isArray(serverMsgs) && serverMsgs.length > 0) {
+          setMsgs(serverMsgs);
+          localStorage.setItem(storageKey, JSON.stringify(serverMsgs));
+        }
+      }
+    } catch (err) {
+      console.warn('[Chat Reload Warning]', err);
+    } finally {
+      setReloadingChat(false);
+    }
+  };
+
+  useEffect(() => {
+    reloadAccountChat();
+  }, [accountId, session?.user?.id, storageKey]);
+
+  // Mandated Account Chat Saving: Persist every conversation turn to localStorage
+  useEffect(() => {
+    if (msgs && msgs.length > 0) {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(msgs));
+      } catch {}
+    }
+  }, [msgs, storageKey]);
 
   // Smoothly types any clicked word or prompt into the input field
   const typePrompt = (promptText: string, autoSubmit = false) => {
@@ -338,20 +392,44 @@ export default function Chatbot() {
                 24/7 Concierge
               </small>
             </div>
-            <button
-              style={{
-                marginLeft: 'auto',
-                color: '#fff',
-                fontSize: '1.2rem',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-              }}
-              aria-label="Close chat"
-              onClick={() => setOpen(false)}
-            >
-              ×
-            </button>
+            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <button
+                type="button"
+                onClick={reloadAccountChat}
+                disabled={reloadingChat}
+                style={{
+                  color: '#BAE6FD',
+                  fontSize: '0.68rem',
+                  fontWeight: 600,
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.18)',
+                  borderRadius: 6,
+                  padding: '3px 8px',
+                  cursor: reloadingChat ? 'wait' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                }}
+                title="Reload and sync saved chat from account"
+              >
+                {reloadingChat ? '🔄 Syncing…' : '💾 Saved'}
+              </button>
+              <button
+                style={{
+                  color: '#fff',
+                  fontSize: '1.2rem',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  lineHeight: 1,
+                  padding: '0 4px',
+                }}
+                aria-label="Close chat"
+                onClick={() => setOpen(false)}
+              >
+                ×
+              </button>
+            </div>
           </div>
 
           {/* Message List */}

@@ -232,6 +232,14 @@ export default function MobileResortApp() {
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
+  // Forgot Password / OTP Recovery State
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [recoveryEmail, setRecoveryEmail] = useState('');
+  const [recoveryStep, setRecoveryStep] = useState(1);
+  const [recoveryCode, setRecoveryCode] = useState('');
+  const [recoveryNewPassword, setRecoveryNewPassword] = useState('');
+  const [recoveryBusy, setRecoveryBusy] = useState(false);
+
   // Guest Profile & Manifest State
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [profileTab, setProfileTab] = useState<'manifest' | 'bookings' | 'contact'>('manifest');
@@ -419,6 +427,40 @@ export default function MobileResortApp() {
       toast(msg, true);
     } finally {
       setAuthBusy(false);
+    }
+  };
+
+  const handleMobileForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!recoveryEmail) return toast('Please enter your account email', true);
+    setRecoveryBusy(true);
+    try {
+      const res = await api.forgotPassword(recoveryEmail);
+      toast(res.message || 'OTP verification code dispatched to your email!');
+      setRecoveryStep(2);
+    } catch (err: any) {
+      toast(err.message, true);
+    } finally {
+      setRecoveryBusy(false);
+    }
+  };
+
+  const handleMobileResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!recoveryCode || recoveryCode.length !== 6) return toast('Enter the 6-digit verification code', true);
+    if (!recoveryNewPassword || recoveryNewPassword.length < 6) return toast('New password must be at least 6 characters', true);
+    setRecoveryBusy(true);
+    try {
+      const res = await api.resetPassword(recoveryEmail, recoveryCode, recoveryNewPassword);
+      toast(res.message || 'Password reset successful! Please sign in.');
+      setShowForgotModal(false);
+      setRecoveryStep(1);
+      setAuthEmail(recoveryEmail);
+      setAuthPassword(recoveryNewPassword);
+    } catch (err: any) {
+      toast(err.message, true);
+    } finally {
+      setRecoveryBusy(false);
     }
   };
 
@@ -1050,7 +1092,11 @@ export default function MobileResortApp() {
                   {!isSignup && (
                     <button
                       type="button"
-                      onClick={() => toast('Please use your email or Google account to sign in directly.')}
+                      onClick={() => {
+                        setRecoveryEmail(authEmail || '');
+                        setRecoveryStep(1);
+                        setShowForgotModal(true);
+                      }}
                       className="text-xs text-cyan hover:underline"
                     >
                       {site.auth.forgot}
@@ -2651,6 +2697,121 @@ export default function MobileResortApp() {
                 </form>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MOBILE FORGOT PASSWORD & OTP RECOVERY MODAL */}
+      {showForgotModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy/85 backdrop-blur-md animate-fade-in"
+          onClick={() => setShowForgotModal(false)}
+        >
+          <div
+            className="relative w-full max-w-md rounded-3xl border border-white/15 bg-navy-deep p-6 md:p-8 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-4 border-b border-white/10">
+              <div>
+                <span className="text-[10px] font-bold tracking-[0.2em] text-cyan uppercase">Account Security</span>
+                <h3 className="font-serif text-xl font-medium text-white mt-0.5">Reset Password via OTP</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowForgotModal(false)}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-white/70 hover:bg-white/10 cursor-pointer text-lg leading-none"
+                aria-label="Close recovery modal"
+              >
+                ×
+              </button>
+            </div>
+
+            {recoveryStep === 1 ? (
+              <form onSubmit={handleMobileForgotPassword} className="mt-5 flex flex-col gap-4">
+                <p className="text-xs font-light text-white/70 leading-relaxed">
+                  Enter your registered account email. A secure 6-digit OTP verification code will be dispatched to your inbox via Google Mail / SMTP.
+                </p>
+                <label className="flex flex-col gap-1.5">
+                  <span className={LABEL}>Account Email *</span>
+                  <input
+                    required
+                    type="email"
+                    value={recoveryEmail}
+                    onChange={(e) => setRecoveryEmail(e.target.value)}
+                    placeholder="guest@gmail.com"
+                    className={FIELD}
+                  />
+                </label>
+                <button
+                  type="submit"
+                  disabled={recoveryBusy}
+                  className={`${BTN_PRIMARY} mt-2 w-full py-3.5 text-xs font-semibold uppercase tracking-[0.16em] disabled:opacity-50 cursor-pointer`}
+                >
+                  {recoveryBusy ? 'Dispatching OTP…' : 'Send 6-Digit Email OTP ✦'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowForgotModal(false)}
+                  className="text-xs text-white/50 hover:text-white/80 text-center py-1 cursor-pointer"
+                >
+                  ← Back to Sign In
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleMobileResetPassword} className="mt-5 flex flex-col gap-4">
+                <p className="text-xs font-light text-white/70 leading-relaxed">
+                  Enter the 6-digit OTP verification code sent to <strong className="text-cyan">{recoveryEmail}</strong> and enter a new password.
+                </p>
+                <label className="flex flex-col gap-1.5">
+                  <span className={LABEL}>6-Digit OTP Verification Code *</span>
+                  <input
+                    required
+                    maxLength={6}
+                    value={recoveryCode}
+                    onChange={(e) => setRecoveryCode(e.target.value.trim())}
+                    placeholder="123456"
+                    className={`${FIELD} text-center text-xl font-bold tracking-[0.3em] text-cyan`}
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  <span className={LABEL}>New Password (min 6 characters) *</span>
+                  <input
+                    required
+                    type="password"
+                    minLength={6}
+                    value={recoveryNewPassword}
+                    onChange={(e) => setRecoveryNewPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className={FIELD}
+                  />
+                </label>
+                <button
+                  type="submit"
+                  disabled={recoveryBusy}
+                  className={`${BTN_PRIMARY} mt-2 w-full py-3.5 text-xs font-semibold uppercase tracking-[0.16em] disabled:opacity-50 cursor-pointer`}
+                >
+                  {recoveryBusy ? 'Updating Password…' : 'Verify OTP & Reset Password ✦'}
+                </button>
+                <div className="flex justify-between items-center pt-1 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setRecoveryStep(1)}
+                    className="text-cyan hover:underline cursor-pointer"
+                  >
+                    Resend Code
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotModal(false)}
+                    className="text-white/50 hover:text-white/80 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

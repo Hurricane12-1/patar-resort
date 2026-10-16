@@ -8,6 +8,7 @@ import { admin, getSystemAdminClient } from '../lib/supabase.js';
 import { pingSMS } from '../lib/sms.js';
 import { redis } from '../lib/redis.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
+import { sendRefundRequestedEmail, sendRefundConfirmedEmail } from '../lib/mailer.js';
 
 const r = Router();
 const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -244,5 +245,182 @@ r.patch('/reservations/:id/status', authenticate, requireStaffOrAdmin,
       toPhone, body: msg }).catch(() => {});
     return res.json(data);
   }));
+
+// POST /reservations/:id/refund-request
+r.post('/reservations/:id/refund-request', authenticate,
+  validate(z.object({
+    reason: z.string().max(500).optional(),
+    amount: z.coerce.number().optional(),
+  })),
+  asyncH(async (req, res) => {
+    const sysClient = await getSystemAdminClient();
+    const client = req.sb || sysClient;
+    const { data: b, error } = await client.from('reservations')
+      .select('*, profiles(id, phone, full_name, email), rooms(name)')
+      .eq('id', req.params.id)
+      .single();
+    if (error || !b) throw new ApiError(404, 'Reservation not found');
+
+    const isOwner = b.guest_id === req.user.id;
+    const isStaff = ['administrator', 'staff', 'accounting', 'receptionist'].includes(req.user.role);
+    if (!isOwner && !isStaff) {
+      throw new ApiError(403, 'Unauthorized to request a refund for this booking');
+    }
+
+    const refundReason = req.body.reason || 'Guest requested refund for booking';
+    const refundAmount = req.body.amount || b.downpayment_php || b.total_php || 0;
+    const todayStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const updatedNotes = `${b.notes || ''}\n[Refund Requested ${todayStr}]: ${refundReason} (₱${refundAmount})`.trim();
+
+    const { data: updated, error: updateErr } = await sysClient.from('reservations')
+      .update({
+        payment_status: 'refund_pending',
+        notes: updatedNotes,
+      })
+      .eq('id', b.id)
+      .select('*, profiles(id, phone, full_name, email), rooms(name)')
+      .single();
+
+    if (updateErr) throw new ApiError(500, updateErr.message);
+
+    await redis.clear();
+
+    const targetEmail = b.guest_email || b.profiles?.email || req.user.email;
+    const guestName = b.guest_name || b.profiles?.full_name || req.user.full_name || 'Valued Guest';
+    const roomName = b.rooms?.name || 'Patar Beach Suite';
+
+    if (targetEmail) {
+      sendRefundRequestedEmail({
+        to: targetEmail,
+        name: guestName,
+        reservationId: b.id,
+        roomName,
+        checkIn: b.check_in,
+        checkOut: b.check_out,
+        amount: refundAmount,
+        reason: refundReason,
+        dateRequested: todayStr,
+      }).catch((e) => console.warn('[Refund Request Mail Warning]', e.message));
+    }
+
+    await sysClient.from('notifications').insert([
+      {
+        profile_id: b.guest_id || req.user.id,
+        title: 'Refund Request In Process',
+        body: `Your refund request for ${roomName} (₱${refundAmount.toLocaleString()}) has been received and is being processed.`,
+        type: 'sms',
+        recipient: guestName,
+        status: 'sent',
+      },
+      {
+        title: 'Guest Refund Requested',
+        body: `Guest ${guestName} requested refund of ₱${refundAmount.toLocaleString()} for ${roomName} (#${b.id.slice(0, 8)}).`,
+        type: 'sms',
+        recipient: 'Accounting Desk',
+        status: 'sent',
+      }
+    ]).catch(() => {});
+
+    await logAuditEvent({
+      actor: req.user,
+      action: 'REFUND_REQUESTED',
+      resourceType: 'reservation',
+      resourceId: b.id,
+      details: { amount: refundAmount, reason: refundReason, guest_name: guestName, room: roomName },
+      req,
+    });
+
+    return res.json({ success: true, message: 'Refund request submitted and processing notification dispatched.', reservation: updated });
+  })
+);
+
+// POST /reservations/:id/refund-confirm
+r.post('/reservations/:id/refund-confirm', authenticate, requireStaffOrAdmin,
+  validate(z.object({
+    amount: z.coerce.number().optional(),
+    refund_method: z.string().optional(),
+    reference_number: z.string().optional(),
+    cancel_booking: z.boolean().default(true),
+  })),
+  asyncH(async (req, res) => {
+    const sysClient = await getSystemAdminClient();
+    const { data: b, error } = await sysClient.from('reservations')
+      .select('*, profiles(id, phone, full_name, email), rooms(name)')
+      .eq('id', req.params.id)
+      .single();
+    if (error || !b) throw new ApiError(404, 'Reservation not found');
+
+    const refundAmount = req.body.amount || b.downpayment_php || b.total_php || 0;
+    const refundMethod = req.body.refund_method || b.payment_method || 'GCash / Electronic Transfer';
+    const refNum = req.body.reference_number || `REF-${Date.now().toString().slice(-6)}`;
+    const todayStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const updatedNotes = `${b.notes || ''}\n[Refund Confirmed ${todayStr}]: ₱${refundAmount} via ${refundMethod} (Ref: ${refNum})`.trim();
+
+    const updatePayload = {
+      payment_status: 'refunded',
+      notes: updatedNotes,
+    };
+    if (req.body.cancel_booking) {
+      updatePayload.status = 'cancelled';
+    }
+
+    const { data: updated, error: updateErr } = await sysClient.from('reservations')
+      .update(updatePayload)
+      .eq('id', b.id)
+      .select('*, profiles(id, phone, full_name, email), rooms(name)')
+      .single();
+
+    if (updateErr) throw new ApiError(500, updateErr.message);
+
+    await redis.clear();
+
+    const targetEmail = b.guest_email || b.profiles?.email;
+    const guestName = b.guest_name || b.profiles?.full_name || 'Valued Guest';
+    const roomName = b.rooms?.name || 'Patar Beach Suite';
+
+    if (targetEmail) {
+      sendRefundConfirmedEmail({
+        to: targetEmail,
+        name: guestName,
+        reservationId: b.id,
+        roomName,
+        amount: refundAmount,
+        refundMethod,
+        referenceNumber: refNum,
+        dateProcessed: todayStr,
+      }).catch((e) => console.warn('[Refund Confirmed Mail Warning]', e.message));
+    }
+
+    const toPhone = b.phone || b.profiles?.phone;
+    if (toPhone) {
+      pingSMS({
+        profileId: b.guest_id || b.profiles?.id,
+        reservationId: b.id,
+        toPhone,
+        body: `J & D Beach House: Your refund of ₱${refundAmount.toLocaleString()} for ${roomName} has been processed via ${refundMethod}. Ref: ${refNum}. Salamat!`,
+      }).catch(() => {});
+    }
+
+    await sysClient.from('notifications').insert({
+      profile_id: b.guest_id || null,
+      title: 'Refund Approved & Processed',
+      body: `Refund of ₱${refundAmount.toLocaleString()} has been sent to your account via ${refundMethod}. Ref: ${refNum}.`,
+      type: 'sms',
+      recipient: guestName,
+      status: 'sent',
+    }).catch(() => {});
+
+    await logAuditEvent({
+      actor: req.user,
+      action: 'REFUND_CONFIRMED',
+      resourceType: 'reservation',
+      resourceId: b.id,
+      details: { amount: refundAmount, method: refundMethod, ref: refNum, guest_name: guestName },
+      req,
+    });
+
+    return res.json({ success: true, message: 'Refund confirmed and confirmation email dispatched to guest.', reservation: updated });
+  })
+);
 
 export default r;

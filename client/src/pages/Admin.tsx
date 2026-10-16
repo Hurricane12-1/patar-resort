@@ -320,6 +320,31 @@ export default function Admin() {
   const [newPassword, setNewPassword] = useState('');
   const [resettingPass, setResettingPass] = useState(false);
 
+  // Administrative User Edit Modal State
+  const [editingUser, setEditingUser] = useState(null);
+  const [savingUser, setSavingUser] = useState(false);
+
+  // Administrative User Deletion State
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [deletingUser, setDeletingUser] = useState(false);
+
+  // Administrator Forgot Password Modal State
+  const [showAdminForgotModal, setShowAdminForgotModal] = useState(false);
+  const [adminRecoveryEmail, setAdminRecoveryEmail] = useState('');
+  const [adminRecoveryStep, setAdminRecoveryStep] = useState(1);
+  const [adminRecoveryCode, setAdminRecoveryCode] = useState('');
+  const [adminRecoveryNewPass, setAdminRecoveryNewPass] = useState('');
+  const [adminRecoveryBusy, setAdminRecoveryBusy] = useState(false);
+
+  // Ledger Refund Modal State
+  const [refundTarget, setRefundTarget] = useState(null);
+  const [refundReason, setRefundReason] = useState('');
+  const [refundAmount, setRefundAmount] = useState('');
+  const [submittingRefund, setSubmittingRefund] = useState(false);
+  const [refundMode, setRefundMode] = useState('request'); // 'request' | 'confirm'
+  const [refundMethod, setRefundMethod] = useState('GCash');
+  const [refundRefNum, setRefundRefNum] = useState('');
+
   // Interactive Modals & Analytical Breakdown States
   const [selectedSalesItem, setSelectedSalesItem] = useState(null);
   const [showKeywordsModal, setShowKeywordsModal] = useState(false);
@@ -766,6 +791,28 @@ export default function Admin() {
               />
             </div>
 
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: -6 }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setAdminRecoveryEmail(adminEmail || '');
+                  setAdminRecoveryStep(1);
+                  setShowAdminForgotModal(true);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#38BDF8',
+                  fontSize: '.78rem',
+                  cursor: 'pointer',
+                  padding: 0,
+                  textDecoration: 'underline',
+                }}
+              >
+                Forgot password? Reset via OTP
+              </button>
+            </div>
+
             <button
               type="submit"
               disabled={authenticating}
@@ -937,6 +984,116 @@ export default function Admin() {
       setNewPassword('');
     } catch (err) { toast(err.message, true); }
     finally { setResettingPass(false); }
+  }
+
+  // Administrative User Profile Update Handler
+  async function handleUpdateUser(e) {
+    e.preventDefault();
+    if (!editingUser) return;
+    setSavingUser(true);
+    try {
+      const full_name = [editingUser.first_name, editingUser.middle_name, editingUser.last_name].filter(Boolean).join(' ') || editingUser.full_name;
+      const payload = {
+        full_name,
+        first_name: editingUser.first_name,
+        middle_name: editingUser.middle_name,
+        last_name: editingUser.last_name,
+        phone: editingUser.phone,
+        username: editingUser.username,
+        role: editingUser.role,
+      };
+      const updated = await api.adminUpdateUser(editingUser.id, payload);
+      setUsers((prev) => prev.map((u) => (u.id === editingUser.id ? { ...u, ...updated, full_name } : u)));
+      toast(`Profile updated for ${full_name || 'Account'} ✦`);
+      setEditingUser(null);
+    } catch (err) {
+      toast(err.message, true);
+    } finally {
+      setSavingUser(false);
+    }
+  }
+
+  // Administrative User Permanent Deletion Handler
+  async function handleDeleteUser() {
+    if (!userToDelete) return;
+    setDeletingUser(true);
+    try {
+      await api.adminDeleteUser(userToDelete.id);
+      setUsers((prev) => prev.filter((u) => u.id !== userToDelete.id));
+      toast(`Account permanently deleted for ${userToDelete.full_name || userToDelete.email} ✦`);
+      setUserToDelete(null);
+    } catch (err) {
+      toast(err.message, true);
+    } finally {
+      setDeletingUser(false);
+    }
+  }
+
+  // Administrator Sign-In Forgot Password OTP Request
+  async function handleAdminForgotPassword(e) {
+    e.preventDefault();
+    if (!adminRecoveryEmail) return toast('Please enter your administrator account email', true);
+    setAdminRecoveryBusy(true);
+    try {
+      const res = await api.forgotPassword(adminRecoveryEmail);
+      toast(res.message || 'OTP verification code dispatched to your email!');
+      setAdminRecoveryStep(2);
+    } catch (err) {
+      toast(err.message, true);
+    } finally {
+      setAdminRecoveryBusy(false);
+    }
+  }
+
+  // Administrator Sign-In Reset Password with OTP
+  async function handleAdminResetPassword(e) {
+    e.preventDefault();
+    if (!adminRecoveryCode || adminRecoveryCode.length !== 6) return toast('Enter the 6-digit verification code', true);
+    if (!adminRecoveryNewPass || adminRecoveryNewPass.length < 6) return toast('New password must be at least 6 characters', true);
+    setAdminRecoveryBusy(true);
+    try {
+      const res = await api.resetPassword(adminRecoveryEmail, adminRecoveryCode, adminRecoveryNewPass);
+      toast(res.message || 'Password reset successfully! Please sign in with your new credentials.');
+      setShowAdminForgotModal(false);
+      setAdminRecoveryStep(1);
+      setAdminEmail(adminRecoveryEmail);
+      setAdminPass(adminRecoveryNewPass);
+    } catch (err) {
+      toast(err.message, true);
+    } finally {
+      setAdminRecoveryBusy(false);
+    }
+  }
+
+  // Ledger Refund Submission Handler
+  async function handleRefundSubmit(e) {
+    e.preventDefault();
+    if (!refundTarget) return;
+    setSubmittingRefund(true);
+    try {
+      const amountNum = Number(refundAmount) || refundTarget.downpayment_php || refundTarget.total_php || 0;
+      if (refundMode === 'request') {
+        const res = await api.requestRefund(refundTarget.id, refundReason, amountNum);
+        toast(res.message || 'Refund request registered and in-process email dispatched ✦');
+      } else {
+        const res = await api.confirmRefund(refundTarget.id, {
+          amount: amountNum,
+          refund_method: refundMethod,
+          reference_number: refundRefNum || `REF-${Date.now().toString().slice(-6)}`,
+          cancel_booking: true,
+        });
+        toast(res.message || 'Refund confirmed and confirmation email dispatched ✦');
+      }
+      setRefundTarget(null);
+      setRefundReason('');
+      setRefundAmount('');
+      setRefundRefNum('');
+      refreshReservations();
+    } catch (err) {
+      toast(err.message, true);
+    } finally {
+      setSubmittingRefund(false);
+    }
   }
 
   // Accommodations & Inventory Handlers
@@ -3645,8 +3802,8 @@ export default function Admin() {
                               <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Phone</th>
                               <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Role</th>
                               <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Status</th>
-                              <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Role Action</th>
-                              <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Recovery</th>
+                              <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Role Assignment</th>
+                              <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Account Actions</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -3676,10 +3833,23 @@ export default function Admin() {
                                   </select>
                                 </td>
                                 <td>
-                                  <button className="act-btn" style={{ color: '#0EA5E9', borderColor: '#38BDF8' }}
-                                    onClick={() => { setRecoveryTarget(u); setNewPassword(''); }}>
-                                    🔑 Reset
-                                  </button>
+                                  <div style={{ display: 'flex', gap: 6 }}>
+                                    <button className="act-btn" style={{ color: '#38BDF8', borderColor: '#38BDF8' }}
+                                      title="Edit profile & contact details"
+                                      onClick={() => setEditingUser(u)}>
+                                      ✏️ Edit
+                                    </button>
+                                    <button className="act-btn" style={{ color: '#0EA5E9', borderColor: '#38BDF8' }}
+                                      title="Reset user password"
+                                      onClick={() => { setRecoveryTarget(u); setNewPassword(''); }}>
+                                      🔑 Reset
+                                    </button>
+                                    <button className="act-btn" style={{ color: '#EF4444', borderColor: '#EF4444' }}
+                                      title="Delete account permanently"
+                                      onClick={() => setUserToDelete(u)}>
+                                      🗑️ Delete
+                                    </button>
+                                  </div>
                                 </td>
                               </tr>
                             ))}
@@ -3735,7 +3905,7 @@ export default function Admin() {
                               <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Orders</th>
                               <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Total Spent (₱)</th>
                               <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Promote</th>
-                              <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Recovery</th>
+                              <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Account Actions</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -3761,10 +3931,23 @@ export default function Admin() {
                                   </select>
                                 </td>
                                 <td>
-                                  <button className="act-btn" style={{ color: '#0EA5E9', borderColor: '#38BDF8' }}
-                                    onClick={() => { setRecoveryTarget(u); setNewPassword(''); }}>
-                                    🔑 Reset
-                                  </button>
+                                  <div style={{ display: 'flex', gap: 6 }}>
+                                    <button className="act-btn" style={{ color: '#38BDF8', borderColor: '#38BDF8' }}
+                                      title="Edit guest profile & contact details"
+                                      onClick={() => setEditingUser(u)}>
+                                      ✏️ Edit
+                                    </button>
+                                    <button className="act-btn" style={{ color: '#0EA5E9', borderColor: '#38BDF8' }}
+                                      title="Reset guest password"
+                                      onClick={() => { setRecoveryTarget(u); setNewPassword(''); }}>
+                                      🔑 Reset
+                                    </button>
+                                    <button className="act-btn" style={{ color: '#EF4444', borderColor: '#EF4444' }}
+                                      title="Delete account permanently"
+                                      onClick={() => setUserToDelete(u)}>
+                                      🗑️ Delete
+                                    </button>
+                                  </div>
                                 </td>
                               </tr>
                             ))}
@@ -3952,10 +4135,22 @@ export default function Admin() {
                             <small style={{ display: 'block', color: themeMuted, fontSize: '.72rem' }}>{b.payment_method || 'GCash'}</small>
                           </td>
                           <td>
-                            <span className={`pill ${b.status}`}>{b.status.replace('_', ' ')}</span>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                              <span className={`pill ${b.status}`}>{b.status.replace('_', ' ')}</span>
+                              {b.payment_status === 'refund_pending' && (
+                                <span className="pill" style={{ background: 'rgba(245,158,11,0.2)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.3)', fontSize: '.7rem' }}>
+                                  ⏳ Refund Pending
+                                </span>
+                              )}
+                              {b.payment_status === 'refunded' && (
+                                <span className="pill" style={{ background: 'rgba(16,185,129,0.2)', color: '#10B981', border: '1px solid rgba(16,185,129,0.3)', fontSize: '.7rem' }}>
+                                  ✅ Refunded
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td>
-                            <div style={{ display: 'flex', gap: 6 }}>
+                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                               {['pending', 'confirmed'].includes(b.status) && (
                                 <button className="act-btn" onClick={() => updateStatus(b.id, 'checked_in')} style={{ color: '#10B981', borderColor: '#10B981' }}>
                                   🛎️ Check-in
@@ -3969,6 +4164,34 @@ export default function Admin() {
                               {['pending', 'confirmed'].includes(b.status) && (
                                 <button className="act-btn" onClick={() => updateStatus(b.id, 'cancelled')} style={{ color: '#EF4444', borderColor: '#EF4444' }}>
                                   ✕ Cancel
+                                </button>
+                              )}
+                              {b.payment_status === 'refund_pending' ? (
+                                <button
+                                  className="act-btn"
+                                  onClick={() => {
+                                    setRefundTarget(b);
+                                    setRefundMode('confirm');
+                                    setRefundAmount(b.downpayment_php || b.total_php || '');
+                                    setRefundMethod(b.payment_method || 'GCash');
+                                  }}
+                                  style={{ color: '#10B981', borderColor: '#10B981', background: 'rgba(16,185,129,0.1)' }}
+                                  title="Approve & confirm refund with automated email"
+                                >
+                                  💵 Confirm Refund
+                                </button>
+                              ) : b.payment_status !== 'refunded' && (
+                                <button
+                                  className="act-btn"
+                                  onClick={() => {
+                                    setRefundTarget(b);
+                                    setRefundMode('request');
+                                    setRefundAmount(b.downpayment_php || b.total_php || '');
+                                  }}
+                                  style={{ color: '#F59E0B', borderColor: '#F59E0B' }}
+                                  title="Request refund with automated email on the day requested"
+                                >
+                                  💰 Refund
                                 </button>
                               )}
                             </div>
@@ -4579,6 +4802,319 @@ export default function Admin() {
                 </button>
                 <button type="submit" className="btn btn-sky btn-sm" disabled={resettingPass}>
                   {resettingPass ? 'Resetting…' : 'Update Password & Ping SMS ✦'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EDIT USER PROFILE */}
+      {editingUser && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(2, 6, 23, 0.75)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={() => setEditingUser(null)}>
+          <div style={{ width: '100%', maxWidth: 500, background: isLightMode ? '#FFFFFF' : '#0F172A', borderRadius: 20, border: `1px solid ${themeBorder}`, padding: 24, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: `1px solid ${themeBorder}`, paddingBottom: 12 }}>
+              <div>
+                <span style={{ fontSize: '.74rem', color: '#0EA5E9', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>ACCOUNT MANAGEMENT</span>
+                <h3 style={{ margin: '4px 0 0', fontSize: '1.25rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>✏️ Edit Account Profile</h3>
+              </div>
+              <button onClick={() => setEditingUser(null)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+            </div>
+
+            <form onSubmit={handleUpdateUser} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                <div>
+                  <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>First Name</label>
+                  <input
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
+                    value={editingUser.first_name || ''}
+                    onChange={(e) => setEditingUser({ ...editingUser, first_name: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Middle</label>
+                  <input
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
+                    value={editingUser.middle_name || ''}
+                    onChange={(e) => setEditingUser({ ...editingUser, middle_name: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Last Name</label>
+                  <input
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
+                    value={editingUser.last_name || ''}
+                    onChange={(e) => setEditingUser({ ...editingUser, last_name: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Display / Full Name *</label>
+                <input
+                  required
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
+                  value={editingUser.full_name || ''}
+                  onChange={(e) => setEditingUser({ ...editingUser, full_name: e.target.value })}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div>
+                  <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Phone</label>
+                  <input
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
+                    value={editingUser.phone || ''}
+                    onChange={(e) => setEditingUser({ ...editingUser, phone: e.target.value })}
+                    placeholder="09171234567"
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Role</label>
+                  <select
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : '#1E293B', color: themeText }}
+                    value={editingUser.role || 'customer'}
+                    onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
+                  >
+                    <option value="customer">Customer / Guest</option>
+                    <option value="receptionist">Receptionist</option>
+                    <option value="accounting">Accounting</option>
+                    <option value="staff">Staff</option>
+                    <option value="administrator">Administrator</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 12 }}>
+                <button type="button" className="btn btn-sm" onClick={() => setEditingUser(null)} style={{ border: `1px solid ${themeBorder}`, color: themeText }}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-sky btn-sm" disabled={savingUser}>
+                  {savingUser ? 'Saving…' : 'Save Changes ✦'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: DELETE USER CONFIRMATION */}
+      {userToDelete && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(2, 6, 23, 0.75)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={() => setUserToDelete(null)}>
+          <div style={{ width: '100%', maxWidth: 440, background: isLightMode ? '#FFFFFF' : '#0F172A', borderRadius: 20, border: '1px solid rgba(239, 68, 68, 0.4)', padding: 24, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <span style={{ fontSize: '.74rem', color: '#EF4444', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>DANGER ZONE</span>
+              <button onClick={() => setUserToDelete(null)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+            </div>
+            <h3 style={{ margin: '0 0 10px', fontSize: '1.25rem', color: '#EF4444', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+              🗑️ Delete Account Permanently?
+            </h3>
+            <p style={{ fontSize: '.86rem', color: themeText, lineHeight: 1.5, margin: '0 0 16px' }}>
+              Are you sure you want to delete the account for <strong>{userToDelete.full_name || userToDelete.email || 'this user'}</strong> ({userToDelete.role})?
+            </p>
+            <p style={{ fontSize: '.78rem', color: themeMuted, background: 'rgba(239, 68, 68, 0.1)', padding: '10px 12px', borderRadius: 8, margin: '0 0 18px', border: '1px solid rgba(239,68,68,0.2)' }}>
+              ⚠️ This will delete authentication credentials and profile records from Supabase and log an administrative audit event.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button type="button" className="btn btn-sm" onClick={() => setUserToDelete(null)} style={{ border: `1px solid ${themeBorder}`, color: themeText }}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={handleDeleteUser}
+                disabled={deletingUser}
+                style={{ background: '#EF4444', color: '#FFF', fontWeight: 700 }}
+              >
+                {deletingUser ? 'Deleting…' : 'Yes, Delete Account'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: ADMIN FORGOT PASSWORD OTP RECOVERY */}
+      {showAdminForgotModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(2, 6, 23, 0.85)', backdropFilter: 'blur(8px)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={() => setShowAdminForgotModal(false)}>
+          <div style={{ width: '100%', maxWidth: 440, background: '#0F172A', borderRadius: 20, border: '1px solid rgba(34, 195, 238, 0.35)', padding: 26, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.6)' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <div>
+                <span style={{ fontSize: '.72rem', color: '#22c3ee', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.12em' }}>ADMIN SECURITY RECOVERY</span>
+                <h3 style={{ margin: '4px 0 0', fontSize: '1.25rem', color: '#FFF', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>🔑 Reset Administrator Password</h3>
+              </div>
+              <button onClick={() => setShowAdminForgotModal(false)} style={{ background: 'none', border: 'none', color: '#94A3B8', fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+            </div>
+
+            {adminRecoveryStep === 1 ? (
+              <form onSubmit={handleAdminForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <p style={{ fontSize: '.84rem', color: '#94A3B8', margin: 0, lineHeight: 1.5 }}>
+                  Enter your registered administrator email. A secure 6-digit OTP verification code will be dispatched to your inbox via Google Mail / SMTP.
+                </p>
+                <div>
+                  <label style={{ fontSize: '.76rem', color: '#22c3ee', fontWeight: 700, display: 'block', marginBottom: 4 }}>ADMINISTRATOR EMAIL</label>
+                  <input
+                    required
+                    type="email"
+                    value={adminRecoveryEmail}
+                    onChange={(e) => setAdminRecoveryEmail(e.target.value)}
+                    placeholder="admin@resortmanagement.ph"
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: '#FFF', fontSize: '.88rem' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 4 }}>
+                  <button type="button" className="btn btn-sm" onClick={() => setShowAdminForgotModal(false)} style={{ border: '1px solid rgba(255,255,255,0.2)', color: '#FFF' }}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-sky btn-sm" disabled={adminRecoveryBusy}>
+                    {adminRecoveryBusy ? 'Sending OTP…' : 'Send 6-Digit OTP ✦'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleAdminResetPassword} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <p style={{ fontSize: '.84rem', color: '#94A3B8', margin: 0, lineHeight: 1.5 }}>
+                  Enter the 6-digit OTP sent to <strong>{adminRecoveryEmail}</strong> and choose a new password.
+                </p>
+                <div>
+                  <label style={{ fontSize: '.76rem', color: '#22c3ee', fontWeight: 700, display: 'block', marginBottom: 4 }}>6-DIGIT OTP VERIFICATION CODE</label>
+                  <input
+                    required
+                    maxLength={6}
+                    value={adminRecoveryCode}
+                    onChange={(e) => setAdminRecoveryCode(e.target.value.trim())}
+                    placeholder="123456"
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #22c3ee', background: 'rgba(255,255,255,0.05)', color: '#38BDF8', fontSize: '1.2rem', textAlign: 'center', letterSpacing: '0.3em', fontWeight: 700 }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '.76rem', color: '#22c3ee', fontWeight: 700, display: 'block', marginBottom: 4 }}>NEW PASSWORD (MIN 6 CHARACTERS)</label>
+                  <input
+                    required
+                    type="password"
+                    minLength={6}
+                    value={adminRecoveryNewPass}
+                    onChange={(e) => setAdminRecoveryNewPass(e.target.value)}
+                    placeholder="••••••••"
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: '#FFF', fontSize: '.88rem' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                  <button
+                    type="button"
+                    onClick={() => setAdminRecoveryStep(1)}
+                    style={{ background: 'none', border: 'none', color: '#38BDF8', fontSize: '.78rem', cursor: 'pointer', padding: 0 }}
+                  >
+                    ← Back / Change Email
+                  </button>
+                  <button type="submit" className="btn btn-sky btn-sm" disabled={adminRecoveryBusy}>
+                    {adminRecoveryBusy ? 'Resetting…' : 'Verify & Reset Password ✦'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: LEDGER REFUND (REQUEST & CONFIRM) */}
+      {refundTarget && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(2, 6, 23, 0.75)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={() => setRefundTarget(null)}>
+          <div style={{ width: '100%', maxWidth: 480, background: isLightMode ? '#FFFFFF' : '#0F172A', borderRadius: 20, border: `1px solid ${themeBorder}`, padding: 24, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, borderBottom: `1px solid ${themeBorder}`, paddingBottom: 10 }}>
+              <div>
+                <span style={{ fontSize: '.74rem', color: refundMode === 'confirm' ? '#10B981' : '#F59E0B', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>
+                  {refundMode === 'confirm' ? 'ACCOUNTING REFUND APPROVAL' : 'GUEST REFUND CLAIM'}
+                </span>
+                <h3 style={{ margin: '4px 0 0', fontSize: '1.25rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                  {refundMode === 'confirm' ? '💵 Confirm & Process Refund' : '💰 Initiate Refund Request'}
+                </h3>
+              </div>
+              <button onClick={() => setRefundTarget(null)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+            </div>
+
+            <p style={{ fontSize: '.84rem', color: themeMuted, margin: '0 0 14px', lineHeight: 1.5 }}>
+              Folio: <b>{refundTarget.guest_name || refundTarget.profiles?.full_name || 'Guest'}</b> · {refundTarget.rooms?.name || 'Villa'} ({fmtDate(refundTarget.check_in)} → {fmtDate(refundTarget.check_out)})
+            </p>
+
+            <form onSubmit={handleRefundSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div>
+                  <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Mode</label>
+                  <select
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : '#1E293B', color: themeText }}
+                    value={refundMode}
+                    onChange={(e) => setRefundMode(e.target.value)}
+                  >
+                    <option value="request">Request In-Process</option>
+                    <option value="confirm">Approve & Disburse</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Refund Amount (₱) *</label>
+                  <input
+                    required
+                    type="number"
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
+                    value={refundAmount}
+                    onChange={(e) => setRefundAmount(e.target.value)}
+                    placeholder="e.g. 3500"
+                  />
+                </div>
+              </div>
+
+              {refundMode === 'confirm' ? (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <div>
+                    <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Payment Method</label>
+                    <select
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : '#1E293B', color: themeText }}
+                      value={refundMethod}
+                      onChange={(e) => setRefundMethod(e.target.value)}
+                    >
+                      <option value="GCash">GCash</option>
+                      <option value="Maya">Maya</option>
+                      <option value="Bank Transfer">Bank Transfer</option>
+                      <option value="Credit Card">Credit Card</option>
+                      <option value="Cash">Cash (Front Desk)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Reference Number</label>
+                    <input
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
+                      value={refundRefNum}
+                      onChange={(e) => setRefundRefNum(e.target.value)}
+                      placeholder="e.g. GCASH-998811"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Reason for Refund</label>
+                  <input
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
+                    value={refundReason}
+                    onChange={(e) => setRefundReason(e.target.value)}
+                    placeholder="e.g. Typhoon weather advisory cancellation"
+                  />
+                </div>
+              )}
+
+              <div style={{ padding: '10px 12px', background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.03)', borderRadius: 10, border: `1px solid ${themeBorder}`, fontSize: '.76rem', color: themeMuted, lineHeight: 1.4 }}>
+                📧 <strong>Automated Email Notification:</strong> Submitting will immediately trigger an automated email to <strong>{refundTarget.guest_email || refundTarget.profiles?.email || 'guest email'}</strong> notifying them of this status update.
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 8 }}>
+                <button type="button" className="btn btn-sm" onClick={() => setRefundTarget(null)} style={{ border: `1px solid ${themeBorder}`, color: themeText }}>
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className={`btn btn-sm ${refundMode === 'confirm' ? 'btn-green' : 'btn-sky'}`}
+                  disabled={submittingRefund}
+                  style={refundMode === 'confirm' ? { background: '#10B981', color: '#FFF', fontWeight: 700 } : {}}
+                >
+                  {submittingRefund ? 'Processing…' : (refundMode === 'confirm' ? 'Confirm & Email Guest ✦' : 'Submit & Email Guest ✦')}
                 </button>
               </div>
             </form>

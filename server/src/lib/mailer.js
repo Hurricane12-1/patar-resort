@@ -464,4 +464,283 @@ Brgy. Patar, Bolinao, Pangasinan, Philippines
   });
 }
 
+/**
+ * Sends immediate "Refund Request Received & In Process" email on the day requested.
+ */
+export async function sendRefundRequestedEmail({
+  to,
+  name = 'Guest',
+  reservationId = '',
+  roomName = 'Patar Beach Suite',
+  checkIn = '',
+  checkOut = '',
+  amount = 0,
+  reason = 'Guest requested refund',
+  dateRequested = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+}) {
+  const mail = getTransporter();
+  const shortId = (reservationId || '').slice(0, 8).toUpperCase() || 'RESORT-REF';
+
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Refund Request In Process</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #0F172A; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #F8FAFC;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0F172A; padding: 36px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" style="max-width: 560px; background-color: #1E293B; border: 1px solid #334155; border-radius: 18px; overflow: hidden; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);">
+          <!-- Header Banner -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #D97706, #F59E0B, #FBBF24); padding: 26px 30px; text-align: left;">
+              <span style="font-size: 11px; letter-spacing: 0.15em; color: rgba(15,23,42,0.85); text-transform: uppercase; font-weight: 800;">J & D Beach House · Guest Billing Operations</span>
+              <h1 style="margin: 6px 0 0; color: #0F172A; font-size: 22px; font-weight: 800; letter-spacing: -0.02em;">Refund Request In Process</h1>
+            </td>
+          </tr>
+
+          <!-- Main Content -->
+          <tr>
+            <td style="padding: 30px;">
+              <p style="margin: 0 0 16px; font-size: 15px; color: #E2E8F0; line-height: 1.5;">
+                Mabuhay, <strong>${name}</strong>,
+              </p>
+              <p style="margin: 0 0 20px; font-size: 14px; color: #94A3B8; line-height: 1.6;">
+                We have received your refund request today (<strong>${dateRequested}</strong>) for Booking Reference <strong style="color: #38BDF8;">#${shortId}</strong>. Our finance and resort administration team has placed this request into active processing.
+              </p>
+
+              <!-- Reservation & Refund Details Table -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 24px; background-color: #0F172A; border: 1px solid #334155; border-radius: 12px; overflow: hidden;">
+                <tr>
+                  <td style="padding: 14px 18px; border-bottom: 1px solid #1E293B; font-size: 13px; color: #94A3B8;">Booking Reference:</td>
+                  <td style="padding: 14px 18px; border-bottom: 1px solid #1E293B; font-size: 13px; color: #F8FAFC; font-weight: 700; text-align: right;">#${shortId}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 14px 18px; border-bottom: 1px solid #1E293B; font-size: 13px; color: #94A3B8;">Room Reserved:</td>
+                  <td style="padding: 14px 18px; border-bottom: 1px solid #1E293B; font-size: 13px; color: #F8FAFC; text-align: right;">${roomName}</td>
+                </tr>
+                ${checkIn && checkOut ? `
+                <tr>
+                  <td style="padding: 14px 18px; border-bottom: 1px solid #1E293B; font-size: 13px; color: #94A3B8;">Stay Schedule:</td>
+                  <td style="padding: 14px 18px; border-bottom: 1px solid #1E293B; font-size: 13px; color: #F8FAFC; text-align: right;">${checkIn} → ${checkOut}</td>
+                </tr>
+                ` : ''}
+                <tr>
+                  <td style="padding: 14px 18px; border-bottom: 1px solid #1E293B; font-size: 13px; color: #94A3B8;">Refund Amount:</td>
+                  <td style="padding: 14px 18px; border-bottom: 1px solid #1E293B; font-size: 16px; color: #F59E0B; font-weight: 800; text-align: right;">₱${Number(amount).toLocaleString()}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 14px 18px; font-size: 13px; color: #94A3B8;">Stated Reason:</td>
+                  <td style="padding: 14px 18px; font-size: 13px; color: #CBD5E1; text-align: right;">${reason}</td>
+                </tr>
+              </table>
+
+              <!-- Notice Badge -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 24px;">
+                <tr>
+                  <td style="background-color: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 12px; padding: 16px 18px;">
+                    <span style="display: block; font-size: 12px; color: #FBBF24; font-weight: 700; margin-bottom: 4px;">⏳ Processing Window</span>
+                    <span style="display: block; font-size: 13px; color: #CBD5E1; line-height: 1.5;">
+                      Standard payment reconciliations are reviewed and disbursed within 1 to 3 banking business days. You will receive an immediate confirmation email as soon as the funds are approved and dispatched.
+                    </span>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 0; font-size: 12px; color: #64748B; line-height: 1.5;">
+                Need assistance with this claim? Contact our Accounting & Concierge desk directly at concierge@janddbeachhouse.ph or call +63 900 555 0123.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #0F172A; border-top: 1px solid #334155; padding: 18px 30px; text-align: center;">
+              <p style="margin: 0; font-size: 11px; color: #64748B; line-height: 1.5;">
+                J & D Beach House Resort Management System<br>
+                Brgy. Patar, Bolinao, Pangasinan, Philippines 2406<br>
+                Direct Concierge Desk: +63 900 555 0123
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+
+  const text = `
+J & D Beach House · Refund Request In Process
+
+Mabuhay, ${name},
+
+We received your refund request today (${dateRequested}) for Booking Reference #${shortId}.
+Our finance and resort administration team has placed this request into active processing.
+
+Details:
+- Booking Reference: #${shortId}
+- Room: ${roomName}
+${checkIn && checkOut ? `- Stay Dates: ${checkIn} → ${checkOut}\n` : ''}- Refund Amount: ₱${Number(amount).toLocaleString()}
+- Stated Reason: ${reason}
+- Processing Timeline: 1 to 3 banking business days
+
+You will receive an automated confirmation email once the refund is finalized.
+For inquiries, contact: concierge@janddbeachhouse.ph | +63 900 555 0123
+
+J & D Beach House Resort
+Brgy. Patar, Bolinao, Pangasinan, Philippines
+`;
+
+  return await mail.sendMail({
+    from: env.SMTP_FROM,
+    to,
+    subject: `Refund Request In Process · Booking #${shortId} · J & D Beach House`,
+    text,
+    html,
+  });
+}
+
+/**
+ * Sends "Refund Confirmed & Processed" email when accounting approves the refund.
+ */
+export async function sendRefundConfirmedEmail({
+  to,
+  name = 'Guest',
+  reservationId = '',
+  roomName = 'Patar Beach Suite',
+  amount = 0,
+  refundMethod = 'GCash / Original Payment Method',
+  referenceNumber = `REF-${Date.now().toString().slice(-6)}`,
+  dateProcessed = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+}) {
+  const mail = getTransporter();
+  const shortId = (reservationId || '').slice(0, 8).toUpperCase() || 'RESORT-REF';
+
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Refund Confirmed and Processed</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #0F172A; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #F8FAFC;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0F172A; padding: 36px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" style="max-width: 560px; background-color: #1E293B; border: 1px solid #334155; border-radius: 18px; overflow: hidden; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);">
+          <!-- Header Banner -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #059669, #10B981, #34D399); padding: 26px 30px; text-align: left;">
+              <span style="font-size: 11px; letter-spacing: 0.15em; color: rgba(15,23,42,0.85); text-transform: uppercase; font-weight: 800;">J & D Beach House · Guest Billing Operations</span>
+              <h1 style="margin: 6px 0 0; color: #0F172A; font-size: 22px; font-weight: 800; letter-spacing: -0.02em;">Refund Confirmed & Processed</h1>
+            </td>
+          </tr>
+
+          <!-- Main Content -->
+          <tr>
+            <td style="padding: 30px;">
+              <p style="margin: 0 0 16px; font-size: 15px; color: #E2E8F0; line-height: 1.5;">
+                Mabuhay, <strong>${name}</strong>,
+              </p>
+              <p style="margin: 0 0 20px; font-size: 14px; color: #94A3B8; line-height: 1.6;">
+                Great news! Your refund for Booking Reference <strong style="color: #38BDF8;">#${shortId}</strong> has been <strong>approved and confirmed</strong> by our accounting office on <strong>${dateProcessed}</strong>.
+              </p>
+
+              <!-- Confirmation Details Table -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 24px; background-color: #0F172A; border: 1px solid #334155; border-radius: 12px; overflow: hidden;">
+                <tr>
+                  <td style="padding: 14px 18px; border-bottom: 1px solid #1E293B; font-size: 13px; color: #94A3B8;">Booking Reference:</td>
+                  <td style="padding: 14px 18px; border-bottom: 1px solid #1E293B; font-size: 13px; color: #F8FAFC; font-weight: 700; text-align: right;">#${shortId}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 14px 18px; border-bottom: 1px solid #1E293B; font-size: 13px; color: #94A3B8;">Room:</td>
+                  <td style="padding: 14px 18px; border-bottom: 1px solid #1E293B; font-size: 13px; color: #F8FAFC; text-align: right;">${roomName}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 14px 18px; border-bottom: 1px solid #1E293B; font-size: 13px; color: #94A3B8;">Refunded Amount:</td>
+                  <td style="padding: 14px 18px; border-bottom: 1px solid #1E293B; font-size: 18px; color: #10B981; font-weight: 800; text-align: right;">₱${Number(amount).toLocaleString()}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 14px 18px; border-bottom: 1px solid #1E293B; font-size: 13px; color: #94A3B8;">Payment Channel:</td>
+                  <td style="padding: 14px 18px; border-bottom: 1px solid #1E293B; font-size: 13px; color: #F8FAFC; text-align: right;">${refundMethod}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 14px 18px; font-size: 13px; color: #94A3B8;">Reference No.:</td>
+                  <td style="padding: 14px 18px; font-size: 13px; color: #38BDF8; font-family: monospace; font-weight: 700; text-align: right;">${referenceNumber}</td>
+                </tr>
+              </table>
+
+              <!-- Success Alert Box -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 24px;">
+                <tr>
+                  <td style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 12px; padding: 16px 18px;">
+                    <span style="display: block; font-size: 12px; color: #34D399; font-weight: 700; margin-bottom: 4px;">✅ Funds Dispatched</span>
+                    <span style="display: block; font-size: 13px; color: #CBD5E1; line-height: 1.5;">
+                      Depending on your financial institution or e-wallet provider (GCash / Maya / Bank), the reflected balance may take between a few minutes to 48 hours to appear on your transaction statement.
+                    </span>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 0; font-size: 12px; color: #64748B; line-height: 1.5;">
+                We hope to welcome you to J & D Beach House in the future! For further inquiries, contact us at concierge@janddbeachhouse.ph.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #0F172A; border-top: 1px solid #334155; padding: 18px 30px; text-align: center;">
+              <p style="margin: 0; font-size: 11px; color: #64748B; line-height: 1.5;">
+                J & D Beach House Resort Management System<br>
+                Brgy. Patar, Bolinao, Pangasinan, Philippines 2406<br>
+                Direct Concierge Desk: +63 900 555 0123
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+
+  const text = `
+J & D Beach House · Refund Confirmed & Processed
+
+Mabuhay, ${name},
+
+Your refund for Booking Reference #${shortId} has been confirmed and processed on ${dateProcessed}.
+
+Details:
+- Booking Reference: #${shortId}
+- Room: ${roomName}
+- Total Refunded: ₱${Number(amount).toLocaleString()}
+- Refund Channel: ${refundMethod}
+- Reference Number: ${referenceNumber}
+
+The funds have been returned to your original payment method.
+Salamat for your patience, and we hope to welcome you to Bolinao soon!
+
+J & D Beach House Resort
+Brgy. Patar, Bolinao, Pangasinan, Philippines
+`;
+
+  return await mail.sendMail({
+    from: env.SMTP_FROM,
+    to,
+    subject: `Refund Confirmed & Processed · Booking #${shortId} · J & D Beach House`,
+    text,
+    html,
+  });
+}
+
+
 
