@@ -2,12 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext.tsx';
 import { getSocket } from '../lib/socket.ts';
 import { animateTypewriterPrompt } from '../lib/wordPrompt.ts';
+import { api } from '../lib/api.ts';
 import {
   evaluateClientGuardrails,
   RESORT_CONTACT_INFO,
 } from '../lib/aiGuardrails.ts';
 
 const DEFAULT_WELCOME = {
+  id: 'welcome-0',
   from: 'bot',
   text: "Mabuhay! I'm J & D Bot 🌊 How can I help you plan your stay, recommend rooms for your family or group, or answer questions about J & D Beach House?",
   is_ai: true,
@@ -63,6 +65,154 @@ export default function Chatbot() {
     );
   };
 
+  // Submit thumbs up or thumbs down feedback
+  const handleFeedback = async (idx: number, feedback: 'thumbs_up' | 'thumbs_down') => {
+    const targetMsg = msgs[idx];
+    const msgId = targetMsg?.id;
+
+    try {
+      await api.submitChatFeedback({
+        messageId: msgId,
+        feedback,
+      });
+    } catch (e) {
+      console.warn('[Feedback Error]', e);
+    }
+
+    if (sockRef.current) {
+      sockRef.current.emit('chat:feedback', {
+        messageId: msgId,
+        feedback,
+      });
+    }
+
+    setMsgs((prev) =>
+      prev.map((m, i) => {
+        if (i !== idx) return m;
+        return {
+          ...m,
+          feedback,
+          feedbackStage: feedback === 'thumbs_up' ? 'recorded_up' : 'ask_clarification',
+        };
+      })
+    );
+  };
+
+  // Handle distinction: Did it help you? vs Did it resolve the problem?
+  const handleClarification = async (idx: number, type: 'help' | 'problem') => {
+    const targetMsg = msgs[idx];
+    const msgId = targetMsg?.id;
+
+    try {
+      await api.submitChatFeedback({
+        messageId: msgId,
+        feedback: 'thumbs_down',
+        reason: type === 'help' ? 'inquiry_help' : 'problem_resolution',
+      });
+    } catch (e) {
+      console.warn('[Clarification Error]', e);
+    }
+
+    if (sockRef.current) {
+      sockRef.current.emit('chat:feedback', {
+        messageId: msgId,
+        feedback: 'thumbs_down',
+        reason: type === 'help' ? 'inquiry_help' : 'problem_resolution',
+      });
+    }
+
+    setMsgs((prev) =>
+      prev.map((m, i) => {
+        if (i !== idx) return m;
+        return {
+          ...m,
+          clarificationType: type,
+          feedbackStage: type === 'help' ? 'check_help' : 'check_problem',
+        };
+      })
+    );
+  };
+
+  // Follow-up answer for "Did it help you?"
+  const handleHelpAnswer = async (idx: number, didHelp: boolean) => {
+    const targetMsg = msgs[idx];
+    const msgId = targetMsg?.id;
+
+    try {
+      await api.submitChatFeedback({
+        messageId: msgId,
+        feedback: didHelp ? 'thumbs_up' : 'thumbs_down',
+        reason: 'inquiry_help',
+        details: didHelp ? 'Guest confirmed it helped' : 'Did not help guest inquiry',
+      });
+    } catch {}
+
+    setMsgs((prev) =>
+      prev.map((m, i) => {
+        if (i !== idx) return m;
+        return {
+          ...m,
+          feedbackStage: didHelp ? 'help_success' : 'show_resolutions',
+        };
+      })
+    );
+  };
+
+  // Follow-up answer for "Did it resolve the problem?"
+  const handleProblemAnswer = async (idx: number, didResolve: boolean) => {
+    const targetMsg = msgs[idx];
+    const msgId = targetMsg?.id;
+
+    try {
+      await api.submitChatFeedback({
+        messageId: msgId,
+        feedback: didResolve ? 'thumbs_up' : 'thumbs_down',
+        reason: 'problem_resolution',
+        details: didResolve ? 'Problem resolved' : 'Problem unresolved',
+      });
+    } catch {}
+
+    setMsgs((prev) =>
+      prev.map((m, i) => {
+        if (i !== idx) return m;
+        return {
+          ...m,
+          feedbackStage: didResolve ? 'problem_success' : 'show_resolutions',
+        };
+      })
+    );
+  };
+
+  // Contact Service Agent quick action
+  const handleContactAgent = async () => {
+    try {
+      await api.requestStaffAssistance({
+        message: 'Guest requested live service agent after chatbot answer',
+      });
+    } catch (e) {
+      console.warn('[Staff Request Error]', e);
+    }
+
+    if (sockRef.current) {
+      sockRef.current.emit('chat:request_staff', {
+        message: 'Guest requested live service agent after chatbot answer',
+      });
+    }
+
+    setMsgs((prev) => [
+      ...prev,
+      {
+        id: `agent-req-${Date.now()}`,
+        from: 'bot',
+        text: '🛎️ Live Service Agent Requested: We have alerted our 24/7 Front Desk team and priority-flagged your conversation. An agent is reviewing your inquiry. In the meantime, you can reach out directly via our verified hotline:',
+        is_ai: true,
+        contact_card: true,
+        is_concern: true,
+        requested_staff: true,
+      },
+    ]);
+  };
+
   useEffect(() => {
     const on = (e: any) => {
       setOpen(true);
@@ -91,7 +241,14 @@ export default function Chatbot() {
         if (x.length === 1 && x[0].text === m.text) {
           return x;
         }
-        return [...x, { from: 'bot', ...m }];
+        return [
+          ...x,
+          {
+            from: 'bot',
+            id: m.id || `bot-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            ...m,
+          },
+        ];
       });
       if (m.chips && m.chips.length > 0) {
         setChips(m.chips);
@@ -373,6 +530,186 @@ export default function Chatbot() {
                         📋 Copy Hotline
                       </button>
                     </div>
+                  </div>
+                )}
+
+                {/* Interactive Feedback & Resolution Flow */}
+                {m.from === 'bot' && !m.guardrail && (
+                  <div className="chat-feedback-wrap">
+                    {/* Stage 0: Initial Thumbs Up / Down Prompt */}
+                    {!m.feedback && (
+                      <div className="chat-feedback-bar">
+                        <span className="chat-feedback-label">Was this helpful?</span>
+                        <button
+                          type="button"
+                          onClick={() => handleFeedback(i, 'thumbs_up')}
+                          className="feedback-btn up"
+                          title="Thumbs up - Helpful"
+                        >
+                          👍
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleFeedback(i, 'thumbs_down')}
+                          className="feedback-btn down"
+                          title="Thumbs down - Needs improvement"
+                        >
+                          👎
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Stage 1: Thumbs Up Quiet Recorded State */}
+                    {m.feedbackStage === 'recorded_up' && (
+                      <div className="chat-feedback-recorded">
+                        <span>✓ Thank you for your feedback! 👍</span>
+                      </div>
+                    )}
+
+                    {/* Stage 2: Thumbs Down Clarification: Did it help you? vs Did it resolve the problem? */}
+                    {m.feedbackStage === 'ask_clarification' && (
+                      <div className="chat-feedback-clarification">
+                        <span className="clarify-title">We want to help. Which describes your need?</span>
+                        <div className="clarify-btn-group">
+                          <button
+                            type="button"
+                            onClick={() => handleClarification(i, 'help')}
+                            className="clarify-btn help"
+                          >
+                            <span>❓ Did it help you?</span>
+                            <small>General inquiries, resort rates, or directions</small>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleClarification(i, 'problem')}
+                            className="clarify-btn problem"
+                          >
+                            <span>⚠️ Did it resolve the problem?</span>
+                            <small>Booking issues, cancellations, refunds, or stay concerns</small>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Stage 3A: Checking "Did it help you?" */}
+                    {m.feedbackStage === 'check_help' && (
+                      <div className="chat-feedback-followup">
+                        <span className="clarify-sub">Did this answer provide the help you were looking for?</span>
+                        <div className="clarify-btn-row">
+                          <button
+                            type="button"
+                            onClick={() => handleHelpAnswer(i, true)}
+                            className="chip-ans yes"
+                          >
+                            ✓ Yes, it helped
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleHelpAnswer(i, false)}
+                            className="chip-ans no"
+                          >
+                            ✕ No, didn't help
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Stage 3B: Checking "Did it resolve the problem?" */}
+                    {m.feedbackStage === 'check_problem' && (
+                      <div className="chat-feedback-followup">
+                        <span className="clarify-sub">Did this resolve the specific problem or booking concern?</span>
+                        <div className="clarify-btn-row">
+                          <button
+                            type="button"
+                            onClick={() => handleProblemAnswer(i, true)}
+                            className="chip-ans yes"
+                          >
+                            ✓ Yes, resolved
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleProblemAnswer(i, false)}
+                            className="chip-ans no"
+                          >
+                            ✕ No, not resolved
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Stage 4: Positive resolution completion notes */}
+                    {m.feedbackStage === 'help_success' && (
+                      <div className="chat-feedback-recorded">
+                        <span>✓ Glad we could help you! 🌊</span>
+                      </div>
+                    )}
+                    {m.feedbackStage === 'problem_success' && (
+                      <div className="chat-feedback-recorded">
+                        <span>✓ Great! Glad your problem was resolved. 🌴</span>
+                      </div>
+                    )}
+
+                    {/* Stage 5: If it did NOT help or did NOT resolve -> Structured Resolution Suggestions */}
+                    {m.feedbackStage === 'show_resolutions' && (
+                      <div className="chat-resolutions-panel">
+                        <div className="chat-resolutions-header">
+                          <span>💡 Here are direct options to resolve your request:</span>
+                        </div>
+                        <div className="chat-resolutions-grid">
+                          <button
+                            type="button"
+                            onClick={handleContactAgent}
+                            className="resolution-chip-btn agent"
+                          >
+                            <span>🧑‍💼</span>
+                            <div>
+                              <b>Contact Service Agent</b>
+                              <small style={{ display: 'block', fontSize: '0.62rem', opacity: 0.85 }}>Priority front desk live assistance</small>
+                            </div>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => typePrompt('How to get here directions', true)}
+                            className="resolution-chip-btn"
+                          >
+                            <span>📍</span>
+                            <span>How to Get Here (Directions)</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => typePrompt('How to refund', true)}
+                            className="resolution-chip-btn"
+                          >
+                            <span>💸</span>
+                            <span>How to Refund</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => typePrompt('Refund and cancellation policy', true)}
+                            className="resolution-chip-btn"
+                          >
+                            <span>📋</span>
+                            <span>Refund Policy</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => typePrompt('Recommend a room for a family', true)}
+                            className="resolution-chip-btn"
+                          >
+                            <span>🛏️</span>
+                            <span>Room Rates & Capacity</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => typePrompt('Check-in and check-out hours', true)}
+                            className="resolution-chip-btn"
+                          >
+                            <span>🕒</span>
+                            <span>Check-in / Check-out Times</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

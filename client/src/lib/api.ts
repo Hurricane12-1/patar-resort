@@ -140,6 +140,10 @@ export const api = {
   conversations: () => req('/chat/conversations'),
   conversationMessages: (profileId: string) => req(`/chat/conversations/${profileId}/messages`),
   sendStaffChatMessage: (profileId: string, content: string) => req(`/chat/conversations/${profileId}/messages`, { method: 'POST', body: { content } }),
+  submitChatFeedback: (data: { messageId?: string; feedback: 'thumbs_up' | 'thumbs_down'; reason?: string; details?: string }) =>
+    req('/chat/feedback', { method: 'POST', body: data }),
+  requestStaffAssistance: (data: { message?: string }) =>
+    req('/chat/request-staff', { method: 'POST', body: data }),
 
   // Accommodations Catalog & Availability (Multi-Tier Resilient Architecture)
   rooms: async (includeInactive = false) => {

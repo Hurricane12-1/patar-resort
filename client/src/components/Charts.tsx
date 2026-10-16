@@ -96,26 +96,12 @@ export function DonutChart({
 }
 
 // Dual Spline Wave Chart (Matching "Conversations Evolution" in reference UI)
-export function DualSplineWaveChart({ height = 230, isLightMode = false, onPointClick, totalChats = 0 }) {
-  const [timeRange, setTimeRange] = useState('Month'); // 'Month' | 'Week' | 'Day'
+export function DualSplineWaveChart({ height = 230, isLightMode = false, onPointClick, totalChats = 0, dynamicData = null }: any) {
+  const [timeRange, setTimeRange] = useState('Week'); // Default 'Week' to match user reference Mon-Sun
   const [showAuto, setShowAuto] = useState(true);
   const [showStaff, setShowStaff] = useState(true);
-  const [hoveredIdx, setHoveredIdx] = useState(null);
-  const [selectedPoint, setSelectedPoint] = useState(null);
-
-  if (totalChats === 0) {
-    return (
-      <div style={{ height, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '24px 16px' }}>
-        <span style={{ fontSize: '2rem', marginBottom: 8 }}>🌊</span>
-        <h4 style={{ margin: '0 0 6px', fontSize: '1.05rem', color: isLightMode ? '#0F172A' : '#F8FAFC', fontWeight: 700 }}>
-          Conversations Evolution
-        </h4>
-        <p style={{ margin: 0, fontSize: '.8rem', color: '#64748B', maxWidth: 360, lineHeight: 1.4 }}>
-          Awaiting live chat traffic from Supabase — Automated AI bot interactions and staff response volume will graph here dynamically as guests send inquiries.
-        </p>
-      </div>
-    );
-  }
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const [selectedPoint, setSelectedPoint] = useState<any>(null);
 
   // Datasets for Month (30d), Week (7d), and Day (24h)
   const monthData = {
@@ -167,15 +153,19 @@ export function DualSplineWaveChart({ height = 230, isLightMode = false, onPoint
     ]
   };
 
-  const currentDataset = timeRange === 'Month' ? monthData : timeRange === 'Week' ? weekData : dayData;
-  const { labels, lineA, lineB, insights } = currentDataset;
+  const currentDataset = timeRange === 'Month' 
+    ? (dynamicData?.month?.lineA ? { ...monthData, ...dynamicData.month } : monthData) 
+    : timeRange === 'Week' 
+    ? (dynamicData?.week?.lineA ? { ...weekData, ...dynamicData.week } : weekData) 
+    : dayData;
+  const { labels, lineA, lineB, insights = [] } = currentDataset;
 
   const w = 640;
-  const maxVal = 130;
+  const maxVal = Math.max(15, Math.max(...(lineA || [15])), Math.max(...(lineB || [15]))) * 1.25;
 
-  const getPoints = (arr) =>
+  const getPoints = (arr: any[]) =>
     arr.map((val, i) => ({
-      x: (i / (arr.length - 1)) * (w - 50) + 25,
+      x: (i / Math.max(1, arr.length - 1)) * (w - 50) + 25,
       y: height - 40 - (val / maxVal) * (height - 70),
       val,
     }));

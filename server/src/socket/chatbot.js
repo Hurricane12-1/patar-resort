@@ -2,6 +2,7 @@ import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
 import { admin } from '../lib/supabase.js';
+import { redis } from '../lib/redis.js';
 
 export function attachChatbot(httpServer) {
   const io = new Server(httpServer, {
@@ -76,9 +77,60 @@ export function attachChatbot(httpServer) {
       pendingTimeout = setTimeout(() => {
         if (!socket.connected) return;
         socket.emit('bot:message', reply);
-        persist(socket.userId, clean, reply.text);
+        persist(socket.userId, clean, reply.text, { requested_staff: !!reply.requested_staff });
         pendingTimeout = null;
       }, Math.max(0, 550 - (Date.now() - started)));
+    });
+
+    // Handle interactive guest thumbs up / thumbs down feedback
+    socket.on('chat:feedback', async (payload) => {
+      try {
+        const { messageId, feedback, reason, details } = payload || {};
+        if (messageId && /^[0-9a-fA-F-]{36}$/.test(messageId)) {
+          const { data: existing } = await admin.from('chat_messages').select('metadata').eq('id', messageId).single();
+          const meta = existing?.metadata || {};
+          await admin.from('chat_messages').update({
+            metadata: { ...meta, feedback, reason, details, feedback_at: new Date().toISOString() }
+          }).eq('id', messageId);
+        } else {
+          await admin.from('chat_messages').insert({
+            profile_id: socket.userId || null,
+            role: 'system',
+            sender: 'feedback',
+            content: `[Guest Feedback: ${feedback === 'thumbs_up' ? 'Helpful 👍' : 'Needs Improvement 👎'}] Reason: ${reason || 'Not specified'}${details ? ` - ${details}` : ''}`,
+            metadata: { feedback, reason, details, is_feedback: true, is_positive: feedback === 'thumbs_up', created_at: new Date().toISOString() }
+          });
+        }
+        await redis.del('analytics:overview').catch(() => {});
+        socket.emit('feedback:recorded', { ok: true, feedback, reason });
+      } catch (err) {
+        console.warn('[Chatbot Feedback Error]', err.message);
+      }
+    });
+
+    // Handle explicit guest request to connect with staff / service agent
+    socket.on('chat:request_staff', async (payload) => {
+      try {
+        await admin.from('chat_messages').insert({
+          profile_id: socket.userId || null,
+          role: 'user',
+          sender: socket.userId ? 'customer' : 'guest',
+          content: payload?.message || 'Guest requested to connect with a Front Desk service agent.',
+          metadata: { requested_staff: true, status: 'pending_staff', created_at: new Date().toISOString() }
+        });
+
+        await admin.from('notifications').insert({
+          title: 'Guest Requested Service Agent',
+          body: payload?.message ? `Live Chat Assistance: ${payload.message.slice(0, 100)}` : 'A guest in live chat requested to speak with a front desk service agent.',
+          type: 'sms',
+          recipient: 'Front Desk',
+          status: 'sent',
+        }).catch(() => {});
+
+        await redis.del('analytics:overview').catch(() => {});
+      } catch (err) {
+        console.warn('[Chatbot Staff Request Error]', err.message);
+      }
     });
 
     socket.on('disconnect', () => {
@@ -306,6 +358,45 @@ function resortKnowledgeFallback(text, rooms = []) {
     };
   }
 
+  // 5. Contact Service Agent / Live Staff
+  if (/service\s*agent|contact\s*(the\s*)?(service\s*)?agent|kausap na tao|talk to (a )?human|speak with staff|human agent|live agent/i.test(t)) {
+    return {
+      text: '🛎️ Ikinokonekta kita sa aming 24/7 Front Desk service agent. May on-site personnel na na-notify para tumulong sa iyo. Maaari ka ring tumawag o mag-message agad sa aming hotline: +63 900 555 0123.',
+      chips: ['Call Front Desk (+63 900 555 0123)', 'How to Get Here', 'Refund Policy'],
+      is_ai: true,
+      contact_card: true,
+      is_concern: true,
+      requested_staff: true,
+    };
+  }
+
+  // 6. How to Get Here (Directions)
+  if (/how to get here|directions|paano pumunta|commute|route|waze|maps|sakay|transport/i.test(t)) {
+    return {
+      text: '📍 Paano Pumunta sa J & D Beach House (Patar, Bolinao, Pangasinan):\n\n• Public Bus: Sumakay ng Victory Liner, Solid North, o Five Star bus galing Cubao/Pasay papuntang Bolinao town proper (5-6 oras).\n• From Town Proper: Sumakay ng tricycle direkta sa Patar Rock View / J & D Beach House (25-30 mins, ₱250-₱300).\n• Private Vehicle: NLEX → SCTEX → TPLEX (Exit Paniqui/Urdaneta) → Alaminos → Bolinao. I-search ang "J & D Beach House Patar" sa Waze o Google Maps.\n• Landmark: Katabi ng Patar Rock Formations at 10 minuto mula sa Cape Bolinao Lighthouse.',
+      chips: ['Cape Bolinao Lighthouse', 'Room Rates', 'Contact Service Agent'],
+      is_ai: true,
+    };
+  }
+
+  // 7. How to Refund
+  if (/how to refund|paano mag\s*refund|process refund|request refund|soli bayad/i.test(t)) {
+    return {
+      text: '💸 Paano Mag-Request ng Refund sa J & D Beach House:\n\n1. Ihanda ang inyong Booking Reference ID mula sa confirmation pass o email/SMS.\n2. Makipag-ugnayan sa aming Front Desk team o mag-email sa support@janddbeachhouse.ph kalakip ang inyong reference.\n3. Ive-verify ng reservation officer ang petsa at cancellation eligibility.\n4. Kapag aprubado, maibabalik ang pondo diretso sa inyong GCash, Maya, o Bank Account sa loob ng 3 hanggang 5 business days.',
+      chips: ['Refund Policy', 'Contact Service Agent', 'Booking Status'],
+      is_ai: true,
+    };
+  }
+
+  // 8. Refund & Cancellation Policy
+  if (/refund policy|cancellation policy|cancel policy|polisiya sa refund|kanselasyon/i.test(t)) {
+    return {
+      text: '📋 J & D Beach House Refund & Cancellation Policy:\n\n• 100% Full Refund: Kanselasyon na ginawa 7 araw o higit pa bago ang check-in date.\n• 50% Refund: Kanselasyon 3 hanggang 6 na araw bago ang check-in.\n• Non-refundable: Kanselasyon sa loob ng 72 oras bago ang check-in (pinapayagan ang libreng rebooking ng petsa depende sa availability ng kuwarto).\n• Severe Weather / Force Majeure: Sakaling magkaroon ng opisyal na babala ng bagyo (PAGASA storm signal), libreng full refund o free rebooking ang ipagkakaloob.',
+      chips: ['How to Refund', 'Contact Service Agent', 'Room Rates'],
+      is_ai: true,
+    };
+  }
+
   return {
     text: 'Mabuhay! Ako si J & D Bot. Matutulungan kita sa lahat ng impormasyon tungkol sa aming mga kuwarto, presyo, 30% downpayment reservation, RFID keycard, at mga pasyalan sa Patar, Bolinao.',
     chips: ['Room Rates & Capacity', 'Check-in Time & Location', '30% Downpayment Info'],
@@ -337,7 +428,7 @@ async function answer(userId, text) {
     }
 
     // 2. Strict Escalation Check: ONLY pass to human personnel when beyond AI capacity or explicitly requested
-    const isExplicitStaffRequest = /talk to (a )?(human|person|agent|staff|manager)|speak with (a )?(human|staff|person)|gusto ko (ng )?tao|makausap ang (staff|tao|admin|manager)|connect me to (an )?agent/i.test(t);
+    const isExplicitStaffRequest = /talk to (a )?(human|person|agent|staff|manager)|speak with (a )?(human|staff|person)|gusto ko (ng )?tao|makausap ang (staff|tao|admin|manager)|connect me to (an )?agent|contact (the )?(service )?agent|service agent/i.test(t);
     const isPhysicalEmergency = /emergency|saklolo|nasusunog|magnanakaw|aircon sira|aircon not working|tulo ang tubig|baha sa kwarto|leaking pipe|hospital|police/i.test(t);
 
     if (isExplicitStaffRequest || isPhysicalEmergency) {
@@ -349,6 +440,7 @@ async function answer(userId, text) {
         is_ai: true,
         contact_card: true,
         is_concern: true,
+        requested_staff: true,
       };
     }
 
@@ -407,7 +499,7 @@ async function answer(userId, text) {
  * Registered customer chats are permanently preserved; unlinked ephemeral guest chats
  * are automatically purged by database trigger once no longer needed.
  */
-function persist(userId, userText, botText) {
+function persist(userId, userText, botText, extraMeta = {}) {
   const profileId = userId || null;
   admin.from('chat_messages').insert([
     {
@@ -415,14 +507,16 @@ function persist(userId, userText, botText) {
       role: 'user',
       sender: profileId ? 'customer' : 'guest',
       content: userText,
-      metadata: { is_customer: !!profileId, saved_at: new Date().toISOString() },
+      metadata: { is_customer: !!profileId, saved_at: new Date().toISOString(), ...extraMeta },
     },
     {
       profile_id: profileId,
       role: 'bot',
       sender: 'concierge_ai',
       content: botText,
-      metadata: { is_customer: !!profileId, saved_at: new Date().toISOString() },
+      metadata: { is_customer: !!profileId, saved_at: new Date().toISOString(), ...extraMeta },
     },
-  ]).then(() => {}).catch(() => {});
+  ]).then(() => {
+    redis.del('analytics:overview').catch(() => {});
+  }).catch(() => {});
 }

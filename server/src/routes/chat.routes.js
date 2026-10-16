@@ -4,6 +4,7 @@ import { asyncH, ApiError } from '../middleware/errors.js';
 import { authenticate } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { getSystemAdminClient } from '../lib/supabase.js';
+import { redis } from '../lib/redis.js';
 
 const r = Router();
 
@@ -308,5 +309,63 @@ r.post('/chat/conversations/:profileId/messages', authenticate,
       throw new ApiError(500, `Failed to post message: ${err.message}`);
     }
   }));
+
+/**
+ * POST /api/chat/feedback
+ * Records thumbs up / thumbs down and help vs problem resolution reasons into Supabase
+ */
+r.post('/chat/feedback', asyncH(async (req, res) => {
+  const { messageId, feedback, reason, details } = req.body || {};
+  const client = await getSystemAdminClient();
+
+  if (messageId && /^[0-9a-fA-F-]{36}$/.test(messageId)) {
+    const { data: existing } = await client.from('chat_messages').select('metadata').eq('id', messageId).single();
+    const meta = existing?.metadata || {};
+    await client.from('chat_messages').update({
+      metadata: { ...meta, feedback, reason, details, feedback_at: new Date().toISOString() }
+    }).eq('id', messageId);
+  } else {
+    await client.from('chat_messages').insert({
+      profile_id: req.user?.id || null,
+      role: 'system',
+      sender: 'feedback',
+      content: `[Guest Feedback: ${feedback === 'thumbs_up' ? 'Helpful 👍' : 'Needs Improvement 👎'}] Reason: ${reason || 'Not specified'}${details ? ` - ${details}` : ''}`,
+      metadata: { feedback, reason, details, is_feedback: true, is_positive: feedback === 'thumbs_up', created_at: new Date().toISOString() }
+    });
+  }
+
+  // Invalidate cached analytics so dashboard reflects new CSAT in real-time
+  await redis.del('analytics:overview').catch(() => {});
+  res.json({ ok: true, feedback, reason });
+}));
+
+/**
+ * POST /api/chat/request-staff
+ * Requests live human service agent assistance and flags conversation for staff
+ */
+r.post('/chat/request-staff', asyncH(async (req, res) => {
+  const client = await getSystemAdminClient();
+  const profileId = req.user?.id || null;
+
+  await client.from('chat_messages').insert({
+    profile_id: profileId,
+    role: 'user',
+    sender: profileId ? 'customer' : 'guest',
+    content: req.body?.message || 'Guest requested to connect with a Front Desk service agent.',
+    metadata: { requested_staff: true, status: 'pending_staff', created_at: new Date().toISOString() }
+  });
+
+  await client.from('notifications').insert({
+    title: 'Guest Requested Service Agent',
+    body: req.body?.message ? `Live Chat Assistance: ${req.body.message.slice(0, 100)}` : 'A guest in live chat is requesting Front Desk service agent assistance.',
+    type: 'sms',
+    recipient: 'Front Desk',
+    status: 'sent',
+  }).catch(() => {});
+
+  // Invalidate cached analytics so staff request line on evolution chart reflects immediately
+  await redis.del('analytics:overview').catch(() => {});
+  res.json({ ok: true, message: 'Service agent request logged' });
+}));
 
 export default r;
