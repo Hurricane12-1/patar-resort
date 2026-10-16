@@ -5,7 +5,7 @@ import BookingFlow from '../components/BookingFlow.tsx';
 import Stars from '../components/Stars.tsx';
 import { api } from '../lib/api.ts';
 import { money, initials } from '../lib/format.ts';
-import { IMG, roomImg } from '../lib/images.ts';
+import { IMG, roomImg, getRoomImageUrl, handleImageError } from '../lib/images.ts';
 import { useReveal } from '../hooks/useReveal.ts';
 import { toggleOceanSound, isOceanPlaying, stopOceanSound } from '../lib/oceanSynth.ts';
 import ResortMapGeolocation from '../components/ResortMapGeolocation.tsx';
@@ -212,15 +212,12 @@ export default function Home() {
             displayRooms.slice(0, 4).map((s, i) => (
               <div className={`spread reveal ${i % 2 ? 'flip' : ''}`} key={s.id || s.slug} style={{ marginBottom: 48 }}>
                 <div className="sp-img" onClick={() => setPreviewRoom(s)} style={{ cursor: 'pointer' }}>
-                  {s.image_url || roomImg(s.slug) ? (
-                    <img src={s.image_url || roomImg(s.slug)} alt={s.name} loading="lazy" />
-                  ) : (
-                    <div style={{ width: '100%', height: 260, background: 'linear-gradient(135deg, rgba(2,132,199,0.18), rgba(14,165,233,0.06))', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 16 }}>
-                      <span style={{ fontSize: '4rem', fontWeight: 800, color: '#0EA5E9' }}>
-                        {(s.name || 'Room')[0].toUpperCase()}
-                      </span>
-                    </div>
-                  )}
+                  <img
+                    src={getRoomImageUrl(s)}
+                    alt={s.name}
+                    loading="lazy"
+                    onError={handleImageError}
+                  />
                   <span className="sp-tag">{money(s.rate_php)} / night</span>
                 </div>
                 <div className="sp-copy">
@@ -375,15 +372,12 @@ export default function Home() {
                 onClick={() => setPreviewRoom(null)}>×</button>
             </div>
             <div style={{ height: 220, overflow: 'hidden' }}>
-              {previewRoom.image_url || roomImg(previewRoom.slug) ? (
-                <img src={previewRoom.image_url || roomImg(previewRoom.slug)} alt={previewRoom.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, rgba(2,132,199,0.25), rgba(14,165,233,0.1))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <span style={{ fontSize: '4.5rem', fontWeight: 800, color: '#0EA5E9' }}>
-                    {(previewRoom.name || 'R')[0].toUpperCase()}
-                  </span>
-                </div>
-              )}
+              <img
+                src={getRoomImageUrl(previewRoom)}
+                alt={previewRoom.name}
+                onError={handleImageError}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
             </div>
             <div className="modal-body">
               <p style={{ fontSize: '.95rem', color: '#E2E8F0', marginBottom: 16 }}>{previewRoom.description}</p>

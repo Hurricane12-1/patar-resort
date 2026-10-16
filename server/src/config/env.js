@@ -58,6 +58,9 @@ export const env = {
   LOAD_BALANCER_PORT: parseInt(process.env.LOAD_BALANCER_PORT || '8080', 10),
   CLUSTER_WORKERS: parseInt(process.env.CLUSTER_WORKERS || '2', 10),
   GEMINI_API_KEY: getEnv('GEMINI_API_KEY', 'AQ.Ab8RN6KrqmseA37LVXLF7T6yxkgmlDDQVa5MZQhGg6Xxx38Qew'),
+  CLOUDINARY_CLOUD_NAME: getEnv('CLOUDINARY_CLOUD_NAME', ''),
+  CLOUDINARY_API_KEY: getEnv('CLOUDINARY_API_KEY', '574761323936344'),
+  CLOUDINARY_API_SECRET: getEnv('CLOUDINARY_API_SECRET', 'zCCxnvdWw5LNwXo4bJjdMcgZ40g'),
 };
 
 export const isSupabaseConfigured = Boolean(
@@ -67,7 +70,12 @@ export const isSupabaseConfigured = Boolean(
   !env.SUPABASE_URL.includes('demo-project')
 );
 
+export const isCloudinaryConfigured = Boolean(
+  env.CLOUDINARY_CLOUD_NAME && env.CLOUDINARY_API_KEY && env.CLOUDINARY_API_SECRET
+);
+
 export const smsEnabled = Boolean(env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN && env.TWILIO_FROM);
 export const emailEnabled = Boolean(env.SMTP_USER && env.SMTP_PASS);
 export const geminiEnabled = Boolean(env.GEMINI_API_KEY);
+
 

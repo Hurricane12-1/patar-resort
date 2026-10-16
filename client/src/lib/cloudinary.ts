@@ -17,7 +17,7 @@ const STORAGE_KEY = 'jd_beach_house_cloudinary_config';
 export const DEFAULT_CLOUDINARY_CONFIG: CloudinaryConfig = {
   cloudName: '',
   uploadPreset: '',
-  apiKey: '',
+  apiKey: '574761323936344',
   imageUrl: '',
 };
 
@@ -26,7 +26,7 @@ export function getCloudinaryConfig(): CloudinaryConfig {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      return { ...DEFAULT_CLOUDINARY_CONFIG, ...parsed };
+      return { ...DEFAULT_CLOUDINARY_CONFIG, ...parsed, apiKey: parsed.apiKey || '574761323936344' };
     }
   } catch {}
   return { ...DEFAULT_CLOUDINARY_CONFIG };
@@ -99,14 +99,18 @@ export async function uploadImageToCloudinary(
   // 2. Reliable Backend Server Uploads Endpoint (/api/upload/image)
   try {
     const base64Data = await fileToBase64(file);
-    const data = await api.uploadImage(base64Data, file.name);
+    const data = await api.uploadImage(base64Data, file.name, {
+      cloud_name: cfg.cloudName,
+      api_key: cfg.apiKey || '574761323936344',
+    });
     if (data?.url) {
+      const isCloudinary = data.source === 'cloudinary' || data.url.includes('cloudinary.com');
       const serverUrl = window.location.origin.includes('5173') ? 'http://localhost:8000' : '';
       const fullUrl = data.url.startsWith('http') ? data.url : `${serverUrl}${data.url}`;
       return {
         url: fullUrl,
-        publicId: data.filename,
-        source: 'server',
+        publicId: data.public_id || data.filename,
+        source: isCloudinary ? 'cloudinary' : 'server',
       };
     }
   } catch (err) {

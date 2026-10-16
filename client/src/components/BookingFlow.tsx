@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth, to11Digits } from '../context/AuthContext.tsx';
 import { api } from '../lib/api.ts';
 import { money, fmtDate, addDaysISO } from '../lib/format.ts';
-import { roomImg } from '../lib/images.ts';
+import { roomImg, getRoomImageUrl, handleImageError } from '../lib/images.ts';
 import { toast } from './Toasts.tsx';
 import { CANONICAL_ROOMS } from '../lib/canonicalRooms.ts';
 
@@ -122,15 +122,12 @@ export default function BookingFlow({ initialSlug }) {
               return (
                 <div className="room-option" key={r.room_id}>
                   <div className="im">
-                    {m?.image_url || roomImg(m?.slug) ? (
-                      <img src={m?.image_url || roomImg(m?.slug)} alt={r.name} loading="lazy" />
-                    ) : (
-                      <div style={{ width: '100%', height: '100%', minHeight: 90, borderRadius: 12, background: 'linear-gradient(135deg, rgba(2,132,199,0.2), rgba(14,165,233,0.08))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <span style={{ fontSize: '2.4rem', fontWeight: 800, color: '#0EA5E9' }}>
-                          {(r.name || 'R')[0].toUpperCase()}
-                        </span>
-                      </div>
-                    )}
+                    <img
+                      src={getRoomImageUrl(m || r)}
+                      alt={r.name}
+                      loading="lazy"
+                      onError={handleImageError}
+                    />
                   </div>
                   <div>
                     <span className="label">{r.category}</span>

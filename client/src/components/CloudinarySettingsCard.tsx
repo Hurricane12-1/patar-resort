@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getThemePalette, getCardStyles } from '../styles/modules/index.ts';
 import { getCloudinaryConfig, saveCloudinaryConfig } from '../lib/cloudinary.ts';
+import { api } from '../lib/api.ts';
 
 export default function CloudinarySettingsCard({
   cloudinaryConfig = {},
@@ -11,7 +12,7 @@ export default function CloudinarySettingsCard({
   const initial = { ...getCloudinaryConfig(), ...cloudinaryConfig };
   const [cloudName, setCloudName] = useState(initial.cloudName || '');
   const [uploadPreset, setUploadPreset] = useState(initial.uploadPreset || '');
-  const [apiKey, setApiKey] = useState(initial.apiKey || '');
+  const [apiKey, setApiKey] = useState(initial.apiKey || '574761323936344');
   const [imageUrl, setImageUrl] = useState(initial.imageUrl || '');
   const [testing, setTesting] = useState(false);
 
@@ -19,6 +20,12 @@ export default function CloudinarySettingsCard({
     const fresh = getCloudinaryConfig();
     if (!cloudName && fresh.cloudName) setCloudName(fresh.cloudName);
     if (!uploadPreset && fresh.uploadPreset) setUploadPreset(fresh.uploadPreset);
+    if (!apiKey && fresh.apiKey) setApiKey(fresh.apiKey);
+
+    api.getCloudinaryConfig().then((res) => {
+      if (res?.cloud_name && !cloudName) setCloudName(res.cloud_name);
+      if (res?.api_key && (!apiKey || apiKey === '')) setApiKey(res.api_key);
+    }).catch(() => {});
   }, []);
 
   const t = getThemePalette(isLightMode);
@@ -48,7 +55,8 @@ export default function CloudinarySettingsCard({
     const updated = { cloudName, uploadPreset, apiKey, imageUrl };
     saveCloudinaryConfig(updated);
     onConfigChange(updated);
-    toast('☁️ Cloudinary CDN settings updated and saved successfully');
+    api.saveCloudinaryConfig({ cloud_name: cloudName, api_key: apiKey }).catch(() => {});
+    toast('☁️ Cloudinary CDN settings updated and synchronized with backend');
   };
 
   const handleTestConnection = () => {

@@ -114,9 +114,11 @@ export default function RoomImageCarousel({
     setCurrentIndex((prev) => (prev + 1) % carouselImages.length);
   };
 
-  const currentSrc = carouselImages[currentIndex] || roomImg(slug) || IMG.hero;
+  const catLower = (category || '').toLowerCase();
+  const catFallback = (IMG as Record<string, string>)[catLower] || IMG.cottage || IMG.hero;
+  const currentSrc = carouselImages[currentIndex] || roomImg(slug) || catFallback;
   const isFailed = failedImages[currentSrc];
-  const displaySrc = isFailed ? (roomImg(slug) || IMG.hero) : currentSrc;
+  const displaySrc = isFailed ? (roomImg(slug) || catFallback) : currentSrc;
 
   return (
     <div
@@ -141,8 +143,12 @@ export default function RoomImageCarousel({
         src={displaySrc}
         alt={`${roomName} - View ${currentIndex + 1}`}
         loading="lazy"
-        onError={() => {
+        onError={(e) => {
           setFailedImages((prev) => ({ ...prev, [currentSrc]: true }));
+          const target = e.currentTarget;
+          if (target.src !== IMG.cottage && target.src !== IMG.hero) {
+            target.src = IMG.cottage;
+          }
         }}
         style={{
           width: '100%',

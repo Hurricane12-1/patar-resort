@@ -985,7 +985,11 @@ export default function Admin() {
         images: currentList,
       });
 
-      toast('✅ Room photo uploaded successfully!');
+      if (uploaded.source === 'cloudinary' || (uploaded.url && uploaded.url.includes('cloudinary.com'))) {
+        toast('☁️ Room photo uploaded to Cloudinary CDN & synchronized!');
+      } else {
+        toast('✅ Room photo uploaded & saved successfully!');
+      }
     } catch (err: any) {
       toast(err.message || 'Failed to upload photo', true);
     } finally {
@@ -4615,7 +4619,17 @@ export default function Admin() {
                               boxShadow: isPrimary ? '0 0 0 2px rgba(14,165,233,0.3)' : 'none',
                             }}
                           >
-                            <img src={imgUrl} alt={`Photo ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <img
+                              src={imgUrl}
+                              alt={`Photo ${i + 1}`}
+                              onError={(e) => { e.currentTarget.src = '/img/cottage.jpg'; }}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            />
+                            {imgUrl.includes('cloudinary.com') && (
+                              <span style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(56, 189, 248, 0.9)', color: '#0F172A', fontSize: '.58rem', fontWeight: 800, padding: '2px 5px', borderRadius: 4 }}>
+                                ☁️ CDN
+                              </span>
+                            )}
                             {isPrimary && (
                               <span style={{ position: 'absolute', top: 4, left: 4, background: '#0EA5E9', color: '#FFF', fontSize: '.6rem', fontWeight: 800, padding: '2px 6px', borderRadius: 4 }}>
                                 ⭐ Primary

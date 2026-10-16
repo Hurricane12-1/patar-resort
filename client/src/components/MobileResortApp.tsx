@@ -4,6 +4,7 @@ import { useAuth, to11Digits } from '../context/AuthContext.tsx';
 import { api } from '../lib/api.ts';
 import { CANONICAL_ROOMS } from '../lib/canonicalRooms.ts';
 import { toast } from './Toasts.tsx';
+import { getRoomImageUrl, handleImageError } from '../lib/images.ts';
 
 // ==========================================================================
 // LAYOUT TOKENS
@@ -858,9 +859,10 @@ export default function MobileResortApp() {
                     className="group relative h-72 w-[78%] shrink-0 snap-start overflow-hidden rounded-3xl border border-white/10 sm:w-[46%] lg:w-auto"
                   >
                     <img
-                      src={room.image_url || room.image || (Array.isArray(room.images) && room.images[0]) || ''}
+                      src={getRoomImageUrl(room)}
                       alt={room.name}
                       loading="lazy"
+                      onError={handleImageError}
                       className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/30 to-transparent" />
@@ -1468,9 +1470,10 @@ export default function MobileResortApp() {
                 >
                   <div className="relative h-56 overflow-hidden">
                     <img
-                      src={room.image_url || room.image || (Array.isArray(room.images) && room.images[0]) || ''}
+                      src={getRoomImageUrl(room)}
                       alt={room.name}
                       loading="lazy"
+                      onError={handleImageError}
                       className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
                     />
                     <span className="absolute bottom-3 left-3 rounded-full border border-white/10 bg-navy/85 px-3.5 py-1 font-serif text-sm text-cyan backdrop-blur-md">

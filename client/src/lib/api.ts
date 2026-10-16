@@ -90,10 +90,20 @@ export function normalizeRoom(room: any) {
     }
   }
 
-  const primaryImage = room.image_url || images[0] || '';
+  // Guaranteed resort fallback image based on room category / slug
+  let fallbackImage = '/img/cottage.jpg';
+  const cat = String(room.category || '').toLowerCase();
+  const slug = String(room.slug || '').toLowerCase();
+  if (cat.includes('villa') || slug.includes('villa')) fallbackImage = '/img/villa.jpg';
+  else if (cat.includes('suite') || slug.includes('suite') || slug.includes('gel')) fallbackImage = '/img/suite.jpg';
+  else if (cat.includes('garden') || slug.includes('garden')) fallbackImage = '/img/garden.jpg';
+  else if (cat.includes('dorm') || cat.includes('bunk') || slug.includes('dorm')) fallbackImage = '/img/bunk.jpg';
+  else fallbackImage = '/img/cottage.jpg';
+
+  const primaryImage = (room.image_url && String(room.image_url).trim()) || images[0] || fallbackImage;
   const allImages = Array.isArray(room.images) && room.images.length > 0
     ? room.images
-    : (images.length > 0 ? images : (primaryImage ? [primaryImage] : []));
+    : (images.length > 0 ? images : [primaryImage]);
 
   return {
     ...room,
@@ -164,8 +174,10 @@ export const api = {
   createRoom: (body: any) => req('/rooms', { method: 'POST', body }),
   updateRoom: (id: string, body: any) => req(`/rooms/${id}`, { method: 'PATCH', body }),
   deleteRoom: (id: string, hard = false) => req(`/rooms/${id}${hard ? '?hard=true' : ''}`, { method: 'DELETE' }),
-  uploadImage: (image_data: string, filename?: string) =>
-    req('/upload/image', { method: 'POST', body: { image_data, filename } }),
+  uploadImage: (image_data: string, filename?: string, extra?: Record<string, any>) =>
+    req('/upload/image', { method: 'POST', body: { image_data, filename, ...(extra || {}) } }),
+  getCloudinaryConfig: () => req('/cloudinary/config'),
+  saveCloudinaryConfig: (body: any) => req('/cloudinary/config', { method: 'POST', body }),
   availability: (check_in: string, check_out: string, guests: number) =>
     req(`/availability?check_in=${encodeURIComponent(check_in)}&check_out=${encodeURIComponent(check_out)}&guests=${guests}`),
 
