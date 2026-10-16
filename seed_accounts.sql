@@ -1,18 +1,26 @@
 -- ==============================================================================
--- J & D Beach House Resort · Direct Production Cloud Seed Accounts
+-- J & D Beach House Resort · Production Cloud Seed Script (With Auto-Cleanup)
 -- Cloud Target: Supabase Dashboard SQL Editor (PostgreSQL 15+)
 --
--- This script directly populates:
---   1. auth.users & auth.identities
---   2. public.profiles (Unified Identity Table)
---   3. public.users (Dedicated Staff & Administrator Accounts)
---   4. public.customers (Dedicated Client & Guest Accounts)
+-- This script fixes "duplicate key value violates unique constraint" by first
+-- cleaning up any existing conflicting accounts, then inserting fresh, working credentials.
 -- ==============================================================================
 
 -- Step 1: Ensure cryptographic extension
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- Step 2: Insert into Supabase Auth Core (auth.users)
+-- Step 2: Clean up any old duplicate auth records to guarantee a clean slate
+DELETE FROM auth.users 
+WHERE email IN (
+  'admin@janddbeachhouse.ph',
+  'receptionist@janddbeachhouse.ph',
+  'accounting@janddbeachhouse.ph',
+  'housekeeping@janddbeachhouse.ph',
+  'kitchen@janddbeachhouse.ph',
+  'guest.juan@gmail.com'
+);
+
+-- Step 3: Insert into Supabase Auth Core (auth.users)
 INSERT INTO auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
   raw_app_meta_data, raw_user_meta_data, created_at, updated_at
@@ -103,7 +111,7 @@ ON CONFLICT (id) DO UPDATE SET
   raw_user_meta_data = EXCLUDED.raw_user_meta_data,
   updated_at = now();
 
--- Step 3: Insert into auth.identities for GoTrue password authentication
+-- Step 4: Provision identities if auth.identities exists
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'auth' AND table_name = 'identities') THEN
@@ -120,7 +128,7 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
--- Step 4: Insert into Unified Identity Anchor (public.profiles)
+-- Step 5: Insert into Unified Identity Anchor (public.profiles)
 INSERT INTO public.profiles (
   id, email, username, first_name, last_name, full_name, role, position, phone, updated_at
 )
@@ -142,7 +150,7 @@ ON CONFLICT (id) DO UPDATE SET
   phone = EXCLUDED.phone,
   updated_at = now();
 
--- Step 5: Insert into Dedicated Staff & Admin Storage (public.users)
+-- Step 6: Insert into Dedicated Staff & Admin Storage (public.users)
 INSERT INTO public.users (
   id, email, username, first_name, last_name, full_name, role, position, department, phone, is_active, updated_at
 )
@@ -165,7 +173,7 @@ ON CONFLICT (id) DO UPDATE SET
   is_active = true,
   updated_at = now();
 
--- Step 6: Insert into Dedicated Customer & Guest Storage (public.customers)
+-- Step 7: Insert into Dedicated Customer & Guest Storage (public.customers)
 INSERT INTO public.customers (
   id, email, username, first_name, last_name, full_name, role, phone, address, city, is_verified, total_stays, updated_at
 )
