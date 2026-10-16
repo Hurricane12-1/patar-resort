@@ -69,23 +69,11 @@ r.get('/admin/customers', authenticate, requireAdmin, asyncH(async (req, res) =>
   const roleFilter = String(req.query.role || '').trim();
   const client = req.sb || admin;
 
-  // If query is an email query for admin, expand search term to match the Resort Administrator profile
-  let dbSearchTerm = query;
-  if (query.toLowerCase().includes('admin@janddbeachhouse.ph') || query.toLowerCase() === 'admin') {
-    dbSearchTerm = 'Administrator';
-  }
-
   const resolveStaffEmail = (p) => {
     if (p.email) return p.email;
-    if (p.role === 'administrator' || p.role === 'admin' || p.id === '41aae6a4-79cf-432e-949b-faca92e18495') {
-      return env.SUPABASE_ADMIN_EMAIL || 'admin@janddbeachhouse.ph';
-    }
     if (p.id === req.user?.id && req.user?.email) {
       return req.user.email;
     }
-    if (p.role === 'receptionist') return 'frontdesk@janddbeachhouse.ph';
-    if (p.role === 'accounting') return 'finance@janddbeachhouse.ph';
-    if (p.role === 'staff') return 'staff@janddbeachhouse.ph';
     return '';
   };
 
@@ -93,8 +81,8 @@ r.get('/admin/customers', authenticate, requireAdmin, asyncH(async (req, res) =>
     let q = client.from('profiles').select('*, reservations(id, total_php, status), resort_orders(id, status)')
       .order('created_at', { ascending: false });
     
-    if (dbSearchTerm) {
-      q = q.or(`full_name.ilike.%${dbSearchTerm}%,phone.ilike.%${dbSearchTerm}%,first_name.ilike.%${dbSearchTerm}%,last_name.ilike.%${dbSearchTerm}%`);
+    if (query) {
+      q = q.or(`full_name.ilike.%${query}%,phone.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%`);
     }
     if (roleFilter) {
       q = q.eq('role', roleFilter);
@@ -117,8 +105,8 @@ r.get('/admin/customers', authenticate, requireAdmin, asyncH(async (req, res) =>
   // Resilient fallback: simple profiles select without joins
   try {
     let q = client.from('profiles').select('*').order('created_at', { ascending: false });
-    if (dbSearchTerm) {
-      q = q.or(`full_name.ilike.%${dbSearchTerm}%,phone.ilike.%${dbSearchTerm}%,first_name.ilike.%${dbSearchTerm}%,last_name.ilike.%${dbSearchTerm}%`);
+    if (query) {
+      q = q.or(`full_name.ilike.%${query}%,phone.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%`);
     }
     if (roleFilter) {
       q = q.eq('role', roleFilter);
