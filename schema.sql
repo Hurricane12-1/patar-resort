@@ -567,6 +567,25 @@ CREATE TRIGGER on_review_created
   AFTER INSERT OR UPDATE ON public.reviews
   FOR EACH ROW EXECUTE PROCEDURE public.sync_room_rating();
 
+-- Trigger 5: Automatic cleanup of temporary / unlinked guest chats
+-- Preserves all registered customer conversation history permanently in public.chat_messages
+CREATE OR REPLACE FUNCTION public.auto_purge_ephemeral_chats()
+RETURNS trigger AS $$
+BEGIN
+  -- Automatically purges anonymous/unlinked chats older than 24 hours
+  -- Customer chats (where profile_id IS NOT NULL) are strictly preserved permanently!
+  DELETE FROM public.chat_messages
+  WHERE profile_id IS NULL
+    AND created_at < now() - INTERVAL '24 hours';
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_auto_purge_ephemeral_chats ON public.chat_messages;
+CREATE TRIGGER trg_auto_purge_ephemeral_chats
+  AFTER INSERT ON public.chat_messages
+  FOR EACH STATEMENT EXECUTE PROCEDURE public.auto_purge_ephemeral_chats();
+
 -- ==============================================================================
 -- 7. Row Level Security (RLS) Enablement
 -- ==============================================================================

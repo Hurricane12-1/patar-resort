@@ -233,3 +233,21 @@ ON CONFLICT (id) DO UPDATE SET
   city = EXCLUDED.city,
   is_verified = true,
   updated_at = now();
+
+-- Step 9: Automatic cleanup of ephemeral/anonymous chats (Customer conversations are permanently preserved!)
+CREATE OR REPLACE FUNCTION public.auto_purge_ephemeral_chats()
+RETURNS trigger AS $$
+BEGIN
+  -- Automatically purges anonymous/unlinked chats older than 24 hours
+  -- Customer chats (where profile_id IS NOT NULL) are strictly preserved permanently!
+  DELETE FROM public.chat_messages
+  WHERE profile_id IS NULL
+    AND created_at < now() - INTERVAL '24 hours';
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_auto_purge_ephemeral_chats ON public.chat_messages;
+CREATE TRIGGER trg_auto_purge_ephemeral_chats
+  AFTER INSERT ON public.chat_messages
+  FOR EACH STATEMENT EXECUTE PROCEDURE public.auto_purge_ephemeral_chats();

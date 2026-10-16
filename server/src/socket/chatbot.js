@@ -404,12 +404,25 @@ async function answer(userId, text) {
 
 /**
  * Persist chat message exchange into Supabase chat_messages
+ * Registered customer chats are permanently preserved; unlinked ephemeral guest chats
+ * are automatically purged by database trigger once no longer needed.
  */
 function persist(userId, userText, botText) {
-  // Store both authenticated and guest interactions for customer insights
   const profileId = userId || null;
   admin.from('chat_messages').insert([
-    { profile_id: profileId, role: 'user', content: userText },
-    { profile_id: profileId, role: 'bot', content: botText },
+    {
+      profile_id: profileId,
+      role: 'user',
+      sender: profileId ? 'customer' : 'guest',
+      content: userText,
+      metadata: { is_customer: !!profileId, saved_at: new Date().toISOString() },
+    },
+    {
+      profile_id: profileId,
+      role: 'bot',
+      sender: 'concierge_ai',
+      content: botText,
+      metadata: { is_customer: !!profileId, saved_at: new Date().toISOString() },
+    },
   ]).then(() => {}).catch(() => {});
 }
