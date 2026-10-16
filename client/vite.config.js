@@ -20,6 +20,7 @@ export default defineConfig({
       },
       '/socket.io': {
         target: process.env.VITE_BACKEND_URL || 'https://localhost:8000',
+        changeOrigin: true,
         ws: true,
         secure: false,
       },

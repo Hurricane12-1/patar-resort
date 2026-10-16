@@ -12,7 +12,7 @@ export class ApiError extends Error {
   }
 }
 
-export const API_BASE = (
+const rawApiBase = (
   (typeof import.meta !== 'undefined' && (
     import.meta.env.VITE_API_URL ||
     import.meta.env.PUBLIC_API_URL ||
@@ -21,22 +21,30 @@ export const API_BASE = (
   )) || ''
 ).replace(/\/+$/, '');
 
+export const API_BASE = (
+  typeof window !== 'undefined' &&
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.endsWith('.localhost')) &&
+  (!rawApiBase || rawApiBase.includes('localhost') || rawApiBase.includes('127.0.0.1'))
+)
+  ? ''
+  : rawApiBase;
+
 async function req<T = any>(path: string, { method = 'GET', body }: { method?: string; body?: any } = {}): Promise<T> {
   const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
 
-  const adminTokenKey = typeof localStorage !== 'undefined' ? localStorage.getItem('jd_admin_token_key') : null;
+  const adminTokenKey = typeof localStorage !== 'undefined' ? (localStorage.getItem('jd_admin_token_key') || 'etc-34') : 'etc-34';
   if (adminTokenKey) {
     headers['x-admin-token-key'] = adminTokenKey;
   }
 
   const adminJwt = typeof localStorage !== 'undefined' ? localStorage.getItem('jd_admin_jwt') : null;
-  if (adminJwt) {
-    headers['Authorization'] = `Bearer ${adminJwt}`;
-  } else if (session?.access_token) {
+  if (session?.access_token) {
     headers['Authorization'] = `Bearer ${session.access_token}`;
+  } else if (adminJwt) {
+    headers['Authorization'] = `Bearer ${adminJwt}`;
   }
 
   const endpoint = API_BASE ? `${API_BASE}/api${path}` : `/api${path}`;

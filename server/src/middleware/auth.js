@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
-import { admin, userClient } from '../lib/supabase.js';
+import { admin, userClient, getSystemAdminClient } from '../lib/supabase.js';
 import { ApiError } from './errors.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
 
@@ -61,11 +61,17 @@ export async function authenticate(req, _res, next) {
       throw new ApiError(401, 'Invalid or expired session');
     }
 
-    // Fetch user profile from database
+    // Fetch user profile from database using user's authenticated token (or system admin client)
     let profile = null;
     try {
-      const { data } = await admin.from('profiles').select('*').eq('id', userId).single();
+      const sbUser = userClient(token);
+      const { data } = await sbUser.from('profiles').select('*').eq('id', userId).maybeSingle();
       profile = data;
+      if (!profile) {
+        const sysClient = await getSystemAdminClient();
+        const { data: sysData } = await sysClient.from('profiles').select('*').eq('id', userId).maybeSingle();
+        profile = sysData;
+      }
     } catch {}
 
     const gFirst = userMetadata.first_name || userMetadata.given_name || (userMetadata.name ? userMetadata.name.split(' ')[0] : '');

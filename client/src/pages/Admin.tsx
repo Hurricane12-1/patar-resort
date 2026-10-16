@@ -60,8 +60,16 @@ export default function Admin() {
   const [isAdminVerified, setIsAdminVerified] = useState<boolean>(() => {
     const key = typeof localStorage !== 'undefined' ? localStorage.getItem('jd_admin_token_key') : null;
     const jwt = typeof localStorage !== 'undefined' ? localStorage.getItem('jd_admin_jwt') : null;
-    return Boolean(key) && Boolean(jwt);
+    return (Boolean(key) && Boolean(jwt)) || (Boolean(session) && ['administrator', 'admin'].includes(profile?.role));
   });
+
+  useEffect(() => {
+    if (session && ['administrator', 'admin'].includes(profile?.role) && !isAdminVerified) {
+      localStorage.setItem('jd_admin_token_key', 'etc-34');
+      if (session.access_token) localStorage.setItem('jd_admin_jwt', session.access_token);
+      setIsAdminVerified(true);
+    }
+  }, [session, profile, isAdminVerified]);
 
   const handleManualSync = async () => {
     setRefreshingAnalytics(true);

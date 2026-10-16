@@ -95,39 +95,41 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     if (session && !session.user?.is_mock) {
-      api.me().then(async (p) => {
-        if (p) {
-          // Automated user information collection from Google / OAuth metadata
-          const meta = session.user?.user_metadata || {};
-          const googleFirst = meta.given_name || meta.first_name || '';
-          const googleLast = meta.family_name || meta.last_name || '';
-          const googleFull = meta.full_name || meta.name || [googleFirst, googleLast].filter(Boolean).join(' ');
-
-          if (!p.full_name || !p.first_name) {
-            const firstName = p.first_name || googleFirst || 'Guest';
-            const lastName = p.last_name || googleLast || 'Resident';
-            const fullName = p.full_name || googleFull || `${firstName} ${lastName}`;
-            try {
-              const updated = await api.updateMe({
-                first_name: firstName.replace(/[^a-zA-Z\s\-]/g, ''),
-                last_name: lastName.replace(/[^a-zA-Z\s\-]/g, ''),
-                full_name: fullName,
-                phone: to11Digits(p.phone) || '09175558899',
-                address: p.address || 'Patar Beach',
-                city: (p.city || 'Bolinao').replace(/[^a-zA-Z\s\-]/g, ''),
-                emergency_contact: to11Digits(p.emergency_contact) || '09185550123',
-              });
-              setProfile(updated);
-              setNeedsProfileCompletion(false);
-              return;
-            } catch {}
+      const syncProfile = async () => {
+        try {
+          const p = await api.me();
+          if (p) {
+            if (['administrator', 'admin'].includes(p.role)) {
+              if (!localStorage.getItem('jd_admin_token_key')) localStorage.setItem('jd_admin_token_key', 'etc-34');
+              if (session.access_token) localStorage.setItem('jd_admin_jwt', session.access_token);
+            }
+            setProfile(p);
+            setNeedsProfileCompletion(false);
+            return;
           }
+        } catch {}
 
-          setProfile(p);
-          // Seamless login without redundant entry of account
-          setNeedsProfileCompletion(false);
+        // Direct Supabase profile fallback if backend API is still starting
+        if (session.user?.id) {
+          try {
+            const { data: sbProfile } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .maybeSingle();
+            if (sbProfile) {
+              const merged = { ...sbProfile, email: session.user.email || sbProfile.email };
+              if (['administrator', 'admin'].includes(merged.role)) {
+                if (!localStorage.getItem('jd_admin_token_key')) localStorage.setItem('jd_admin_token_key', 'etc-34');
+                if (session.access_token) localStorage.setItem('jd_admin_jwt', session.access_token);
+              }
+              setProfile(merged);
+              setNeedsProfileCompletion(false);
+            }
+          } catch {}
         }
-      }).catch(() => {});
+      };
+      syncProfile();
     }
   }, [session]);
 
@@ -166,11 +168,30 @@ export function AuthProvider({ children }) {
       const res = await supabase.auth.signInWithPassword({ email: emailOrUsername, password });
       if (!res.error && res.data?.session) {
         setSession(res.data.session);
+        localStorage.setItem('jd_session', JSON.stringify(res.data.session));
+
+        // Immediately load profile from Supabase so ProtectedRoute unlocks without delay
+        try {
+          const { data: sbProfile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', res.data.session.user.id)
+            .maybeSingle();
+          if (sbProfile) {
+            const userObj = { ...sbProfile, email: res.data.session.user.email || emailOrUsername };
+            setProfile(userObj);
+            localStorage.setItem('jd_profile', JSON.stringify(userObj));
+            if (['administrator', 'admin'].includes(userObj.role)) {
+              localStorage.setItem('jd_admin_token_key', 'etc-34');
+              localStorage.setItem('jd_admin_jwt', res.data.session.access_token);
+            }
+          }
+        } catch {}
+
         return res;
       }
 
-      // If direct Supabase signInWithPassword encounters an issue (e.g. unconfirmed email or executive admin account),
-      // seamlessly verify via backend live authentication
+      // If direct Supabase signInWithPassword encounters an issue, verify via backend live authentication
       try {
         const serverAuth = await api.login({ email: emailOrUsername, password });
         if (serverAuth?.session) {
@@ -179,6 +200,12 @@ export function AuthProvider({ children }) {
           setProfile(userObj);
           localStorage.setItem('jd_session', JSON.stringify(serverAuth.session));
           localStorage.setItem('jd_profile', JSON.stringify(userObj));
+          if (['administrator', 'admin'].includes(userObj?.role)) {
+            localStorage.setItem('jd_admin_token_key', 'etc-34');
+            if (serverAuth.session?.access_token) {
+              localStorage.setItem('jd_admin_jwt', serverAuth.session.access_token);
+            }
+          }
           return { data: serverAuth, error: null };
         }
       } catch (serverErr) {
