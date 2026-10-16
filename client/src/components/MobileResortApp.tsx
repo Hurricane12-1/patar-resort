@@ -194,6 +194,7 @@ export default function MobileResortApp() {
   const today = toISO(new Date());
   const [checkIn, setCheckIn] = useState(addDays(today, 1));
   const [checkOut, setCheckOut] = useState(addDays(today, 3));
+  const [guests, setGuests] = useState('2 Guests');
   const [selectedRoom, setSelectedRoom] = useState(site.rooms.items[0]?.name ?? '');
   const [quote, setQuote] = useState<{ ok: boolean; text: string } | null>(null);
   const [rooms, setRooms] = useState<any[]>([]);
@@ -315,12 +316,12 @@ export default function MobileResortApp() {
     }
   }, []);
 
-  // When session is active and user is in auth screen, automatically advance to app
+  // When session is active, automatically advance to app so user is immediately in resort experience
   useEffect(() => {
-    if (session && stage === 'auth') {
+    if (session && (stage === 'auth' || stage === 'intro')) {
       setStage('app');
       const name = profile?.first_name || session?.user?.user_metadata?.full_name || session?.user?.email || 'Guest';
-      toast(`Signed in as ${name} ✦`);
+      toast(`Welcome back, ${name} ✦`);
     }
   }, [session, profile, stage]);
 
