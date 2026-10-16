@@ -1,10 +1,9 @@
 -- ==============================================================================
 -- J & D Beach House Resort Management System · Production PostgreSQL Schema
 -- Cloud Target: Supabase (PostgreSQL 15+)
--- Description: Complete production schema with Accounts, User Profiles,
---              User Confirmations/2FA, Chat Messages, Notifications,
---              Rooms Catalog, Reservations, Operations, Inventory, Reviews,
---              Triggers, Analytical Views, and Row Level Security (RLS) Policies.
+-- Architecture: Physically Separated Customer Accounts vs Staff/Admin Users,
+--               Unified Profile Linkage, Clean Storage Buckets & Table Titles,
+--               Automated Triggers, Analytical Views, and Complete RLS Policies.
 -- ==============================================================================
 
 -- 1. Enable Required Extensions
@@ -54,9 +53,53 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN null;
 END $$;
 
--- 3. Core Database Tables
+-- ==============================================================================
+-- 3. Core Database Tables (Physically Separated Accounts & Operations)
+-- ==============================================================================
 
--- A. Accounts & User Profiles (Linked to Supabase auth.users)
+-- A. Dedicated Customer & Guest Accounts Storage
+CREATE TABLE IF NOT EXISTS public.customers (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email TEXT,
+  first_name TEXT DEFAULT '',
+  middle_name TEXT DEFAULT '',
+  last_name TEXT DEFAULT '',
+  full_name TEXT DEFAULT '',
+  role public.user_role NOT NULL DEFAULT 'customer' CHECK (role = 'customer'),
+  phone TEXT DEFAULT '',
+  address TEXT DEFAULT '',
+  city TEXT DEFAULT '',
+  emergency_contact TEXT DEFAULT '',
+  avatar_url TEXT DEFAULT '',
+  provider TEXT DEFAULT 'email',
+  is_verified BOOLEAN DEFAULT false,
+  total_stays INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+COMMENT ON TABLE public.customers IS 'Resort Guest & Client Accounts Storage';
+
+-- B. Dedicated Staff & Executive Administrator Accounts Storage
+CREATE TABLE IF NOT EXISTS public.users (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email TEXT,
+  first_name TEXT DEFAULT '',
+  middle_name TEXT DEFAULT '',
+  last_name TEXT DEFAULT '',
+  full_name TEXT DEFAULT '',
+  role public.user_role NOT NULL DEFAULT 'staff' CHECK (role IN ('staff', 'receptionist', 'accounting', 'administrator', 'admin')),
+  position TEXT DEFAULT '',
+  department public.dept_name DEFAULT 'front_desk',
+  phone TEXT DEFAULT '',
+  emergency_contact TEXT DEFAULT '',
+  avatar_url TEXT DEFAULT '',
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+COMMENT ON TABLE public.users IS 'Resort Executive & Staff User Accounts Storage';
+
+-- C. Unified Profiles Storage (Relational Foreign Key Anchor for System Components)
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT,
@@ -76,8 +119,9 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
+COMMENT ON TABLE public.profiles IS 'Unified Identity & Relational Profile Linkage Storage';
 
--- B. User Confirmations & 2FA Tokens (Signup 2FA, OTP & Password Recovery)
+-- D. User Confirmations & 2FA Tokens (Signup 2FA, OTP & Verification Storage)
 CREATE TABLE IF NOT EXISTS public.user_confirmations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -92,8 +136,9 @@ CREATE TABLE IF NOT EXISTS public.user_confirmations (
   metadata JSONB DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ DEFAULT now()
 );
+COMMENT ON TABLE public.user_confirmations IS 'Security Verifications, 2FA OTP & Account Tokens Storage';
 
--- C. Accommodations Catalog (Rooms, Villas, Cottages)
+-- E. Accommodations & Villa Catalog Storage
 CREATE TABLE IF NOT EXISTS public.rooms (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
@@ -112,8 +157,9 @@ CREATE TABLE IF NOT EXISTS public.rooms (
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
+COMMENT ON TABLE public.rooms IS 'Accommodations, Cottages & Oceanfront Villas Catalog Storage';
 
--- D. Reservations & Bookings
+-- F. Reservations & Bookings Ledger Storage
 CREATE TABLE IF NOT EXISTS public.reservations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   guest_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -134,8 +180,9 @@ CREATE TABLE IF NOT EXISTS public.reservations (
   updated_at TIMESTAMPTZ DEFAULT now(),
   CONSTRAINT check_dates CHECK (check_out > check_in)
 );
+COMMENT ON TABLE public.reservations IS 'Guest Booking Ledger & Reservation Transactions Storage';
 
--- E. Resort Supplies & Stock Ledger (Inventory)
+-- G. Resort Supplies & Stock Inventory Storage
 CREATE TABLE IF NOT EXISTS public.resort_inventory (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   item_name TEXT NOT NULL,
@@ -149,8 +196,9 @@ CREATE TABLE IF NOT EXISTS public.resort_inventory (
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
+COMMENT ON TABLE public.resort_inventory IS 'Resort Supplies & Warehouse Stock Ledger Storage';
 
--- F. Resort Services Catalog (Dining, Tours, Amenities)
+-- H. Resort Services Catalog (Dining, Tours, Amenities) Storage
 CREATE TABLE IF NOT EXISTS public.resort_services (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
@@ -161,8 +209,9 @@ CREATE TABLE IF NOT EXISTS public.resort_services (
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT now()
 );
+COMMENT ON TABLE public.resort_services IS 'Guest Dining, Island Tours & Amenities Service Storage';
 
--- G. Guest Resort Orders (Room Service, Island Tours, Rentals)
+-- I. Guest Resort Orders (Room Service, Island Tours, Rentals) Storage
 CREATE TABLE IF NOT EXISTS public.resort_orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   guest_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -178,8 +227,9 @@ CREATE TABLE IF NOT EXISTS public.resort_orders (
   notes TEXT DEFAULT '',
   created_at TIMESTAMPTZ DEFAULT now()
 );
+COMMENT ON TABLE public.resort_orders IS 'Guest Room Service, Dining & Activity Orders Storage';
 
--- H. Department Operations Hub (Staff Tasks & Work Orders)
+-- J. Department Operations & Staff Work Orders Storage
 CREATE TABLE IF NOT EXISTS public.department_tasks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   department public.dept_name NOT NULL DEFAULT 'front_desk',
@@ -194,8 +244,9 @@ CREATE TABLE IF NOT EXISTS public.department_tasks (
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
+COMMENT ON TABLE public.department_tasks IS 'Department Operations, Maintenance & Work Orders Storage';
 
--- I. Guest Reviews & Ratings
+-- K. Guest Reviews & Ratings Storage
 CREATE TABLE IF NOT EXISTS public.reviews (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   reservation_id UUID REFERENCES public.reservations(id) ON DELETE CASCADE,
@@ -207,8 +258,9 @@ CREATE TABLE IF NOT EXISTS public.reviews (
   is_approved BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT now()
 );
+COMMENT ON TABLE public.reviews IS 'Guest Ratings, Feedback & Testimonials Storage';
 
--- J. Chat Messages (AI Concierge, Executive Desk & Live Guest Dialogue)
+-- L. Concierge & Guest Chat Transcripts Storage
 CREATE TABLE IF NOT EXISTS public.chat_messages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   profile_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -218,8 +270,9 @@ CREATE TABLE IF NOT EXISTS public.chat_messages (
   metadata JSONB DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ DEFAULT now()
 );
+COMMENT ON TABLE public.chat_messages IS 'Concierge Live Chat Transcripts & Guest Dialogue Storage';
 
--- K. Notifications System (Executive SMS, Email & In-App Alerts)
+-- M. Notifications System (Executive SMS & In-App Alerts Storage)
 CREATE TABLE IF NOT EXISTS public.notifications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   profile_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -237,8 +290,9 @@ CREATE TABLE IF NOT EXISTS public.notifications (
   metadata JSONB DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ DEFAULT now()
 );
+COMMENT ON TABLE public.notifications IS 'Executive SMS Alerts & Transactional Dispatch Storage';
 
--- L. Security & Audit Trail Auto-Logger
+-- N. System Security & Compliance Audit Trail Storage
 CREATE TABLE IF NOT EXISTS public.audit_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   actor_id TEXT DEFAULT '',
@@ -252,8 +306,11 @@ CREATE TABLE IF NOT EXISTS public.audit_logs (
   user_agent TEXT DEFAULT '',
   created_at TIMESTAMPTZ DEFAULT now()
 );
+COMMENT ON TABLE public.audit_logs IS 'System Security & Compliance Audit Trail Storage';
 
--- 4. Analytical Views (Safe Drop and Recreate to Avoid 42P16 Errors)
+-- ==============================================================================
+-- 4. Analytical Views
+-- ==============================================================================
 
 DROP VIEW IF EXISTS public.analytics_overview CASCADE;
 CREATE VIEW public.analytics_overview AS
@@ -261,11 +318,41 @@ SELECT
   (SELECT COUNT(*) FROM public.reservations WHERE status IN ('confirmed', 'checked_in')) AS active_bookings,
   (SELECT COUNT(*) FROM public.rooms WHERE is_active = true) AS active_rooms,
   (SELECT COALESCE(SUM(total_php), 0) FROM public.reservations WHERE status IN ('confirmed', 'checked_in', 'checked_out')) AS total_revenue_php,
-  (SELECT COUNT(*) FROM public.profiles WHERE role = 'customer') AS total_guests;
+  (SELECT COUNT(*) FROM public.customers) AS total_guests;
 
--- 5. Automations & Triggers
+-- ==============================================================================
+-- 5. Supabase Cloud Storage Buckets (File & Media Storage With Clean Titles)
+-- ==============================================================================
 
--- Trigger 1: Automatically sync and provision public.profiles upon auth.users signup
+DO $$ BEGIN
+  -- 1. Accommodations & Villa Gallery (Public)
+  INSERT INTO storage.buckets (id, name, public)
+  VALUES ('accommodations-showcase', 'Accommodations & Villa Gallery', true)
+  ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, public = EXCLUDED.public;
+
+  -- 2. Guest & Executive Profile Avatars (Public)
+  INSERT INTO storage.buckets (id, name, public)
+  VALUES ('guest-avatars', 'Guest & Executive Profile Avatars', true)
+  ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, public = EXCLUDED.public;
+
+  -- 3. Digital Passes & Booking Receipts (Private / Authenticated)
+  INSERT INTO storage.buckets (id, name, public)
+  VALUES ('resort-documents', 'Digital Passes & Booking Receipts', false)
+  ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, public = EXCLUDED.public;
+
+  -- 4. Resort Marketing & Brand Media (Public)
+  INSERT INTO storage.buckets (id, name, public)
+  VALUES ('resort-brand-media', 'Resort Marketing & Brand Media', true)
+  ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, public = EXCLUDED.public;
+EXCEPTION
+  WHEN undefined_table THEN null;
+END $$;
+
+-- ==============================================================================
+-- 6. Automations, Triggers & Multi-Table Synchronization
+-- ==============================================================================
+
+-- Trigger 1: Automatically route new auth.users into separated customers OR users table, and profiles
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 DECLARE
@@ -274,6 +361,12 @@ DECLARE
   v_middle TEXT;
   v_full TEXT;
   v_role public.user_role;
+  v_pos TEXT;
+  v_phone TEXT;
+  v_addr TEXT;
+  v_city TEXT;
+  v_emerg TEXT;
+  v_prov TEXT;
 BEGIN
   v_first := COALESCE(new.raw_user_meta_data->>'first_name', '');
   v_last := COALESCE(new.raw_user_meta_data->>'last_name', '');
@@ -285,25 +378,21 @@ BEGIN
     split_part(new.email, '@', 1)
   );
   v_role := COALESCE((new.raw_user_meta_data->>'role')::public.user_role, 'customer'::public.user_role);
+  v_pos := COALESCE(new.raw_user_meta_data->>'position', '');
+  v_phone := COALESCE(new.raw_user_meta_data->>'phone', '');
+  v_addr := COALESCE(new.raw_user_meta_data->>'address', '');
+  v_city := COALESCE(new.raw_user_meta_data->>'city', '');
+  v_emerg := COALESCE(new.raw_user_meta_data->>'emergency_contact', '');
+  v_prov := COALESCE(new.raw_user_meta_data->>'provider', 'email');
 
+  -- A. Insert into unified profiles table (Foreign Key Anchor)
   INSERT INTO public.profiles (
     id, email, first_name, middle_name, last_name, full_name,
     role, position, phone, address, city, emergency_contact, provider
   )
   VALUES (
-    new.id,
-    new.email,
-    v_first,
-    v_middle,
-    v_last,
-    v_full,
-    v_role,
-    COALESCE(new.raw_user_meta_data->>'position', ''),
-    COALESCE(new.raw_user_meta_data->>'phone', ''),
-    COALESCE(new.raw_user_meta_data->>'address', ''),
-    COALESCE(new.raw_user_meta_data->>'city', ''),
-    COALESCE(new.raw_user_meta_data->>'emergency_contact', ''),
-    COALESCE(new.raw_user_meta_data->>'provider', 'email')
+    new.id, new.email, v_first, v_middle, v_last, v_full,
+    v_role, v_pos, v_phone, v_addr, v_city, v_emerg, v_prov
   )
   ON CONFLICT (id) DO UPDATE SET
     email = EXCLUDED.email,
@@ -312,6 +401,44 @@ BEGIN
     full_name = CASE WHEN profiles.full_name = '' THEN EXCLUDED.full_name ELSE profiles.full_name END,
     phone = CASE WHEN profiles.phone = '' THEN EXCLUDED.phone ELSE profiles.phone END,
     updated_at = now();
+
+  -- B. Physical Separation: Route into customers OR users
+  IF v_role = 'customer' THEN
+    INSERT INTO public.customers (
+      id, email, first_name, middle_name, last_name, full_name,
+      role, phone, address, city, emergency_contact, provider
+    )
+    VALUES (
+      new.id, new.email, v_first, v_middle, v_last, v_full,
+      'customer', v_phone, v_addr, v_city, v_emerg, v_prov
+    )
+    ON CONFLICT (id) DO UPDATE SET
+      email = EXCLUDED.email,
+      first_name = CASE WHEN customers.first_name = '' THEN EXCLUDED.first_name ELSE customers.first_name END,
+      last_name = CASE WHEN customers.last_name = '' THEN EXCLUDED.last_name ELSE customers.last_name END,
+      full_name = CASE WHEN customers.full_name = '' THEN EXCLUDED.full_name ELSE customers.full_name END,
+      phone = CASE WHEN customers.phone = '' THEN EXCLUDED.phone ELSE customers.phone END,
+      updated_at = now();
+  ELSE
+    INSERT INTO public.users (
+      id, email, first_name, middle_name, last_name, full_name,
+      role, position, phone, emergency_contact
+    )
+    VALUES (
+      new.id, new.email, v_first, v_middle, v_last, v_full,
+      v_role, v_pos, v_phone, v_emerg
+    )
+    ON CONFLICT (id) DO UPDATE SET
+      email = EXCLUDED.email,
+      first_name = CASE WHEN users.first_name = '' THEN EXCLUDED.first_name ELSE users.first_name END,
+      last_name = CASE WHEN users.last_name = '' THEN EXCLUDED.last_name ELSE users.last_name END,
+      full_name = CASE WHEN users.full_name = '' THEN EXCLUDED.full_name ELSE users.full_name END,
+      role = EXCLUDED.role,
+      position = EXCLUDED.position,
+      phone = CASE WHEN users.phone = '' THEN EXCLUDED.phone ELSE users.phone END,
+      updated_at = now();
+  END IF;
+
   RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -321,7 +448,64 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 
--- Trigger 2: Automatic synchronization of notification text and phone fields
+-- Trigger 2: Sync profile updates to separated customers and users tables
+CREATE OR REPLACE FUNCTION public.sync_profile_to_separated_tables()
+RETURNS trigger AS $$
+BEGIN
+  IF NEW.role = 'customer' THEN
+    INSERT INTO public.customers (
+      id, email, first_name, middle_name, last_name, full_name,
+      role, phone, address, city, emergency_contact, provider, avatar_url, updated_at
+    )
+    VALUES (
+      NEW.id, NEW.email, NEW.first_name, NEW.middle_name, NEW.last_name, NEW.full_name,
+      'customer', NEW.phone, NEW.address, NEW.city, NEW.emergency_contact, NEW.provider, NEW.avatar_url, NEW.updated_at
+    )
+    ON CONFLICT (id) DO UPDATE SET
+      email = EXCLUDED.email,
+      first_name = EXCLUDED.first_name,
+      middle_name = EXCLUDED.middle_name,
+      last_name = EXCLUDED.last_name,
+      full_name = EXCLUDED.full_name,
+      phone = EXCLUDED.phone,
+      address = EXCLUDED.address,
+      city = EXCLUDED.city,
+      emergency_contact = EXCLUDED.emergency_contact,
+      provider = EXCLUDED.provider,
+      avatar_url = EXCLUDED.avatar_url,
+      updated_at = now();
+  ELSE
+    INSERT INTO public.users (
+      id, email, first_name, middle_name, last_name, full_name,
+      role, position, phone, emergency_contact, avatar_url, updated_at
+    )
+    VALUES (
+      NEW.id, NEW.email, NEW.first_name, NEW.middle_name, NEW.last_name, NEW.full_name,
+      NEW.role, NEW.position, NEW.phone, NEW.emergency_contact, NEW.avatar_url, NEW.updated_at
+    )
+    ON CONFLICT (id) DO UPDATE SET
+      email = EXCLUDED.email,
+      first_name = EXCLUDED.first_name,
+      middle_name = EXCLUDED.middle_name,
+      last_name = EXCLUDED.last_name,
+      full_name = EXCLUDED.full_name,
+      role = EXCLUDED.role,
+      position = EXCLUDED.position,
+      phone = EXCLUDED.phone,
+      emergency_contact = EXCLUDED.emergency_contact,
+      avatar_url = EXCLUDED.avatar_url,
+      updated_at = now();
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_sync_profile_to_separated_tables ON public.profiles;
+CREATE TRIGGER trg_sync_profile_to_separated_tables
+  AFTER INSERT OR UPDATE ON public.profiles
+  FOR EACH ROW EXECUTE PROCEDURE public.sync_profile_to_separated_tables();
+
+-- Trigger 3: Automatic synchronization of notification text and phone fields
 CREATE OR REPLACE FUNCTION public.sync_notification_fields()
 RETURNS trigger AS $$
 BEGIN
@@ -346,7 +530,7 @@ CREATE TRIGGER trg_sync_notification_fields
   BEFORE INSERT OR UPDATE ON public.notifications
   FOR EACH ROW EXECUTE PROCEDURE public.sync_notification_fields();
 
--- Trigger 3: Update room average rating upon review addition or change
+-- Trigger 4: Update room average rating upon review addition or change
 CREATE OR REPLACE FUNCTION public.sync_room_rating()
 RETURNS trigger AS $$
 BEGIN
@@ -364,7 +548,11 @@ CREATE TRIGGER on_review_created
   AFTER INSERT OR UPDATE ON public.reviews
   FOR EACH ROW EXECUTE PROCEDURE public.sync_room_rating();
 
--- 6. Row Level Security (RLS) Enablement
+-- ==============================================================================
+-- 7. Row Level Security (RLS) Enablement
+-- ==============================================================================
+ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_confirmations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.rooms ENABLE ROW LEVEL SECURITY;
@@ -378,9 +566,38 @@ ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 
--- 7. Row Level Security Policies
+-- ==============================================================================
+-- 8. Row Level Security Policies
+-- ==============================================================================
 
--- Profiles Policies
+-- Customers Table Policies
+DROP POLICY IF EXISTS "Customers can view own record" ON public.customers;
+CREATE POLICY "Customers can view own record" ON public.customers FOR SELECT USING (
+  auth.uid() = id OR
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('administrator', 'admin', 'staff', 'receptionist'))
+);
+
+DROP POLICY IF EXISTS "Customers can update own record" ON public.customers;
+CREATE POLICY "Customers can update own record" ON public.customers FOR UPDATE USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Admins can manage all customers" ON public.customers;
+CREATE POLICY "Admins can manage all customers" ON public.customers FOR ALL USING (
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('administrator', 'admin'))
+);
+
+-- Users Table Policies (Staff and Admins Only)
+DROP POLICY IF EXISTS "Staff can view staff users" ON public.users;
+CREATE POLICY "Staff can view staff users" ON public.users FOR SELECT USING (
+  auth.uid() = id OR
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('administrator', 'admin', 'staff', 'receptionist', 'accounting'))
+);
+
+DROP POLICY IF EXISTS "Admins can manage all staff users" ON public.users;
+CREATE POLICY "Admins can manage all staff users" ON public.users FOR ALL USING (
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('administrator', 'admin'))
+);
+
+-- Unified Profiles Policies
 DROP POLICY IF EXISTS "Public can view basic profiles" ON public.profiles;
 CREATE POLICY "Public can view basic profiles" ON public.profiles FOR SELECT USING (true);
 
@@ -392,7 +609,7 @@ CREATE POLICY "Admins can manage all profiles" ON public.profiles FOR ALL USING 
   EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('administrator', 'admin'))
 );
 
--- User Confirmations Policies (Secured: Users access own, Admins full access)
+-- User Confirmations Policies
 DROP POLICY IF EXISTS "Users can view own confirmations" ON public.user_confirmations;
 CREATE POLICY "Users can view own confirmations" ON public.user_confirmations FOR SELECT USING (
   auth.uid() = user_id OR
