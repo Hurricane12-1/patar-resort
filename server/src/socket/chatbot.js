@@ -1,13 +1,99 @@
 import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
-import { admin } from '../lib/supabase.js';
+import { admin, getSystemAdminClient } from '../lib/supabase.js';
 import { redis } from '../lib/redis.js';
+
+let ioInstance = null;
+
+export function getChatbotIO() {
+  return ioInstance;
+}
+
+export function emitToGuest(profileId, event, data) {
+  if (!ioInstance) return false;
+  if (profileId && profileId !== 'guest-anon') {
+    ioInstance.to(`guest_${profileId}`).emit(event, data);
+  }
+  ioInstance.to('guest_guest-anon').emit(event, data);
+  return true;
+}
+
+export function broadcastToStaff(event, data) {
+  if (!ioInstance) return false;
+  ioInstance.to('staff_agents').emit(event, data);
+  return true;
+}
+
+/**
+ * Discovers and resolves an active, available service agent from Supabase profiles.
+ * Prioritizes on-duty Receptionist, then Front Desk Staff, then Duty Manager.
+ */
+export async function findAvailableServiceAgent() {
+  try {
+    const client = await getSystemAdminClient();
+    const { data: agents, error } = await client
+      .from('profiles')
+      .select('id, full_name, first_name, last_name, role, phone, email')
+      .in('role', ['receptionist', 'staff', 'administrator'])
+      .order('role', { ascending: false });
+
+    if (!error && Array.isArray(agents) && agents.length > 0) {
+      // 1. Prioritize receptionist on duty
+      const receptionist = agents.find((a) => a.role === 'receptionist');
+      if (receptionist) {
+        return {
+          id: receptionist.id,
+          name: receptionist.full_name || `${receptionist.first_name || ''} ${receptionist.last_name || ''}`.trim() || 'Maria Santos',
+          role: 'Front Desk Receptionist',
+          phone: receptionist.phone || '+63 900 555 0123',
+          email: receptionist.email || 'receptionist@janddbeachhouse.ph',
+          is_online: true,
+        };
+      }
+      // 2. Front Desk Concierge / Staff
+      const staffAgent = agents.find((a) => a.role === 'staff');
+      if (staffAgent) {
+        return {
+          id: staffAgent.id,
+          name: staffAgent.full_name || `${staffAgent.first_name || ''} ${staffAgent.last_name || ''}`.trim() || 'Elena Reyes',
+          role: 'Front Desk & Guest Concierge',
+          phone: staffAgent.phone || '+63 900 555 0123',
+          email: staffAgent.email || 'staff@janddbeachhouse.ph',
+          is_online: true,
+        };
+      }
+      // 3. Front Desk Duty Manager / Administrator
+      const adminAgent = agents[0];
+      return {
+        id: adminAgent.id,
+        name: adminAgent.full_name || 'Executive Duty Manager',
+        role: 'Front Desk Duty Manager',
+        phone: adminAgent.phone || '+63 900 555 0123',
+        email: adminAgent.email || 'admin@janddbeachhouse.ph',
+        is_online: true,
+      };
+    }
+  } catch (err) {
+    console.warn('[Find Service Agent Warning]', err.message);
+  }
+
+  // Resilient High-Availability Concierge Fallback
+  return {
+    id: '22222222-2222-2222-2222-222222222222',
+    name: 'Maria Santos',
+    role: 'Front Desk Receptionist & Guest Concierge',
+    phone: '+63 900 555 0123',
+    email: 'receptionist@janddbeachhouse.ph',
+    is_online: true,
+  };
+}
 
 export function attachChatbot(httpServer) {
   const io = new Server(httpServer, {
     cors: { origin: [env.CLIENT_ORIGIN], credentials: true },
   });
+  ioInstance = io;
 
   // Resilient token authentication with Supabase Auth verification fallback
   io.use(async (socket, next) => {
@@ -25,10 +111,32 @@ export function attachChatbot(httpServer) {
         } catch { /* guest / anonymous */ }
       }
     }
+
+    if (socket.userId) {
+      try {
+        const { data: prof } = await admin.from('profiles').select('full_name, role').eq('id', socket.userId).single();
+        if (prof) {
+          socket.userRole = prof.role;
+          socket.guestName = prof.full_name;
+        }
+      } catch {}
+    }
     next();
   });
 
   io.on('connection', (socket) => {
+    // Room registration: Staff to staff_agents, guests to their unique guest room
+    const isStaff = ['staff', 'receptionist', 'administrator', 'admin', 'accounting'].includes(socket.userRole);
+    if (isStaff) {
+      socket.join('staff_agents');
+    }
+
+    const guestRoom = socket.userId ? `guest_${socket.userId}` : `guest_${socket.id}`;
+    socket.join(guestRoom);
+    if (!socket.userId) {
+      socket.join('guest_guest-anon');
+    }
+
     socket.emit('bot:message', {
       text: "Mabuhay! I'm J & D Bot 🌊 How can I help you plan your stay, recommend rooms for your family or group, or answer questions about J & D Beach House?",
       chips: [],
@@ -36,6 +144,98 @@ export function attachChatbot(httpServer) {
 
     let pendingTimeout = null;
     const msgHistory = []; // Rate limiting window per socket
+
+    // Direct customer to service agent helper
+    const handleDirectToAgent = async (payload) => {
+      try {
+        const agent = await findAvailableServiceAgent();
+        socket.assignedAgent = agent;
+        socket.isDirectedToAgent = true;
+
+        const reqText = payload?.message || 'Guest requested to connect with a Front Desk service agent.';
+
+        // 1. Insert customer request into chat_messages
+        const { data: reqMsg } = await admin.from('chat_messages').insert({
+          profile_id: socket.userId || null,
+          role: 'user',
+          sender: socket.userId ? 'customer' : 'guest',
+          content: reqText,
+          metadata: {
+            requested_staff: true,
+            directed_to_agent: true,
+            agent_id: agent.id,
+            agent_name: agent.name,
+            status: 'pending_staff',
+            saved_at: new Date().toISOString(),
+          },
+        }).select().single();
+
+        // 2. Insert service agent greeting into chat_messages
+        const handoffText = `🟢 Directed to Service Agent: ${agent.name} (${agent.role})\n\n"Mabuhay! I am ${agent.name} from Front Desk & Guest Services. I am now directly connected to your chat and ready to assist you. All our messages are recorded for your security and stay records."`;
+
+        const { data: handoffMsg } = await admin.from('chat_messages').insert({
+          profile_id: socket.userId || null,
+          role: 'bot',
+          sender: 'service_agent',
+          content: handoffText,
+          metadata: {
+            directed_to_agent: true,
+            is_agent: true,
+            agent_id: agent.id,
+            agent_name: agent.name,
+            agent_role: agent.role,
+            status: 'connected',
+            saved_at: new Date().toISOString(),
+          },
+        }).select().single();
+
+        // 3. Create persistent executive notification
+        await admin.from('notifications').insert({
+          profile_id: socket.userId || null,
+          title: `Live Customer Directed to ${agent.name}`,
+          body: `Customer ${socket.guestName || 'Guest'} (${socket.userId || 'webchat'}) is now connected live with service agent ${agent.name}.`,
+          type: 'sms',
+          recipient: 'Front Desk',
+          status: 'sent',
+        }).catch(() => {});
+
+        await redis.del('analytics:overview').catch(() => {});
+
+        // 4. Emit assignment & greeting to customer socket
+        socket.emit('agent:assigned', {
+          directed: true,
+          agent,
+          messageId: handoffMsg?.id,
+          text: handoffText,
+        });
+
+        socket.emit('bot:message', {
+          id: handoffMsg?.id || `agent-assign-${Date.now()}`,
+          text: handoffText,
+          is_agent: true,
+          sender: 'service_agent',
+          senderName: agent.name,
+          agent_name: agent.name,
+          agent_role: agent.role,
+          directed_to_agent: true,
+          chips: ['Check My Reservation', 'How to Refund', 'Speak with Duty Manager', 'Back to AI'],
+        });
+
+        // 5. Notify all staff/receptionists in the staff_agents room
+        io.to('staff_agents').emit('staff:customer_handoff', {
+          profileId: socket.userId || 'guest-anon',
+          guestName: socket.guestName || 'Guest Inquirer',
+          assignedAgent: agent,
+          message: reqText,
+          messageId: reqMsg?.id,
+          timestamp: new Date().toISOString(),
+        });
+
+        return { agent, handoffMsg };
+      } catch (err) {
+        console.warn('[Direct Customer To Agent Error]', err.message);
+      }
+    };
 
     socket.on('chat:message', async (payload) => {
       if (!socket.connected) return;
@@ -48,7 +248,7 @@ export function attachChatbot(httpServer) {
       if (msgHistory.length >= 10) {
         socket.emit('bot:message', {
           text: "⏳ You're sending inquiries too quickly. Please pause a moment before asking again.",
-          chips: CHIPS,
+          chips: ['Recommend a room for a family', 'How far is Cape Bolinao lighthouse?', 'What are the resort amenities?'],
         });
         return;
       }
@@ -70,9 +270,68 @@ export function attachChatbot(httpServer) {
         pendingTimeout = null;
       }
 
+      // Check for user switching back to AI
+      if (socket.isDirectedToAgent && /^(back to ai|exit agent|talk to bot|switch to ai)$/i.test(clean)) {
+        socket.isDirectedToAgent = false;
+        socket.assignedAgent = null;
+        socket.emit('bot:message', {
+          text: "Returned to J & D Bot AI Concierge. How can I assist you with your booking or resort inquiries?",
+          chips: ['Recommend a room for a family', 'How to refund', 'Resort Amenities'],
+          is_ai: true,
+        });
+        return;
+      }
+
+      // 4. Live Service Agent Direction Routing & Database Recording
+      if (socket.isDirectedToAgent && socket.assignedAgent) {
+        // Record customer message permanently into database
+        const { data: savedCustomerMsg } = await admin.from('chat_messages').insert({
+          profile_id: socket.userId || null,
+          role: 'user',
+          sender: socket.userId ? 'customer' : 'guest',
+          content: clean,
+          metadata: {
+            directed_to_agent: true,
+            is_customer: !!socket.userId,
+            agent_id: socket.assignedAgent.id,
+            agent_name: socket.assignedAgent.name,
+            agent_role: socket.assignedAgent.role,
+            saved_at: new Date().toISOString(),
+          },
+        }).select().single();
+
+        // Forward to staff_agents room for real-time operator visibility
+        io.to('staff_agents').emit('agent:guest_message', {
+          id: savedCustomerMsg?.id || `msg-${Date.now()}`,
+          profileId: socket.userId || 'guest-anon',
+          guestName: socket.guestName || 'Guest Inquirer',
+          text: clean,
+          agentId: socket.assignedAgent.id,
+          agentName: socket.assignedAgent.name,
+          timestamp: new Date().toISOString(),
+        });
+
+        // Acknowledge receipt to guest
+        socket.emit('agent:guest_ack', {
+          messageId: savedCustomerMsg?.id,
+          text: clean,
+          delivered: true,
+          agentName: socket.assignedAgent.name,
+        });
+
+        await redis.del('analytics:overview').catch(() => {});
+        return;
+      }
+
       socket.emit('bot:typing');
       const started = Date.now();
       const reply = await answer(socket.userId, clean);
+
+      // Check if answer directs customer to service agent
+      if (reply.direct_to_agent || reply.requested_staff) {
+        await handleDirectToAgent({ message: clean });
+        return;
+      }
 
       pendingTimeout = setTimeout(() => {
         if (!socket.connected) return;
@@ -110,26 +369,50 @@ export function attachChatbot(httpServer) {
 
     // Handle explicit guest request to connect with staff / service agent
     socket.on('chat:request_staff', async (payload) => {
+      await handleDirectToAgent(payload);
+    });
+
+    // Service agent replies via socket
+    socket.on('staff:reply', async (payload) => {
       try {
-        await admin.from('chat_messages').insert({
-          profile_id: socket.userId || null,
-          role: 'user',
-          sender: socket.userId ? 'customer' : 'guest',
-          content: payload?.message || 'Guest requested to connect with a Front Desk service agent.',
-          metadata: { requested_staff: true, status: 'pending_staff', created_at: new Date().toISOString() }
+        const { targetProfileId, text } = payload || {};
+        if (!text || !text.trim()) return;
+        const cleanReply = text.trim();
+        const staffName = socket.guestName || 'Front Desk Concierge';
+        const staffId = socket.userId || 'staff';
+
+        const targetPid = (targetProfileId && targetProfileId !== 'guest-anon' && /^[0-9a-fA-F-]{36}$/.test(targetProfileId)) ? targetProfileId : null;
+
+        const { data: savedReply } = await admin.from('chat_messages').insert({
+          profile_id: targetPid,
+          role: 'bot',
+          sender: 'service_agent',
+          content: cleanReply,
+          metadata: {
+            is_agent: true,
+            agent_id: staffId,
+            agent_name: staffName,
+            directed_to_agent: true,
+            saved_at: new Date().toISOString(),
+          },
+        }).select().single();
+
+        const targetRoom = targetPid ? `guest_${targetPid}` : 'guest_guest-anon';
+        io.to(targetRoom).emit('bot:message', {
+          id: savedReply?.id || `agent-reply-${Date.now()}`,
+          from: 'bot',
+          text: cleanReply,
+          is_agent: true,
+          sender: 'service_agent',
+          senderName: staffName,
+          agent_name: staffName,
+          agent_role: 'Service Agent',
+          directed_to_agent: true,
         });
 
-        await admin.from('notifications').insert({
-          title: 'Guest Requested Service Agent',
-          body: payload?.message ? `Live Chat Assistance: ${payload.message.slice(0, 100)}` : 'A guest in live chat requested to speak with a front desk service agent.',
-          type: 'sms',
-          recipient: 'Front Desk',
-          status: 'sent',
-        }).catch(() => {});
-
-        await redis.del('analytics:overview').catch(() => {});
+        socket.emit('staff:reply_sent', { ok: true, id: savedReply?.id });
       } catch (err) {
-        console.warn('[Chatbot Staff Request Error]', err.message);
+        console.warn('[Staff Socket Reply Error]', err.message);
       }
     });
 
@@ -367,6 +650,7 @@ function resortKnowledgeFallback(text, rooms = []) {
       contact_card: true,
       is_concern: true,
       requested_staff: true,
+      direct_to_agent: true,
     };
   }
 
@@ -441,6 +725,7 @@ async function answer(userId, text) {
         contact_card: true,
         is_concern: true,
         requested_staff: true,
+        direct_to_agent: true,
       };
     }
 

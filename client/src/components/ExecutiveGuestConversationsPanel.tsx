@@ -3,6 +3,7 @@ import { toast } from './Toasts.tsx';
 import { DefaultUserAvatar } from './AdminIcons.tsx';
 import { api } from '../lib/api.ts';
 import { animateTypewriterPrompt } from '../lib/wordPrompt.ts';
+import { getSocket } from '../lib/socket.ts';
 
 function getMessages(g) {
   if (!g) return [];
@@ -74,6 +75,80 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [selectedGuest]);
+
+  // Live Socket Listener for directed customer inquiries & real-time guest messages
+  useEffect(() => {
+    const s = getSocket();
+    if (!s) return;
+
+    const handleHandoff = (data: any) => {
+      const pid = data?.profileId;
+      toast(`🛎️ Customer Directed to Service Agent: ${data?.assignedAgent?.name || 'Receptionist'}!`);
+      api.conversations().then((convs) => {
+        if (Array.isArray(convs) && convs.length > 0) {
+          setGuestList(convs);
+          if (pid) {
+            const found = convs.find((c: any) => c.profile_id === pid || c.id === pid);
+            if (found) setSelectedGuest(found);
+          }
+        }
+      }).catch(() => {});
+    };
+
+    const handleGuestMessage = (data: any) => {
+      if (!data?.text) return;
+      const pid = data.profileId;
+      const newMsg = {
+        id: data.id || Date.now(),
+        sender: 'guest',
+        senderName: data.guestName || 'Guest',
+        text: data.text,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+
+      setGuestList((prev) => {
+        return prev.map((g) => {
+          if (g.profile_id === pid || g.id === pid) {
+            const msgs = getMessages(g);
+            return {
+              ...g,
+              lastMessage: data.text,
+              timeAgo: 'Just now',
+              messageCount: msgs.length + 1,
+              status: 'Directed to Agent',
+              is_directed_to_agent: true,
+              messages: [...msgs, newMsg],
+            };
+          }
+          return g;
+        });
+      });
+
+      setSelectedGuest((curr: any) => {
+        if (curr && (curr.profile_id === pid || curr.id === pid)) {
+          const msgs = getMessages(curr);
+          return {
+            ...curr,
+            lastMessage: data.text,
+            timeAgo: 'Just now',
+            messageCount: msgs.length + 1,
+            status: 'Directed to Agent',
+            is_directed_to_agent: true,
+            messages: [...msgs, newMsg],
+          };
+        }
+        return curr;
+      });
+    };
+
+    s.on('staff:customer_handoff', handleHandoff);
+    s.on('agent:guest_message', handleGuestMessage);
+
+    return () => {
+      s.off('staff:customer_handoff', handleHandoff);
+      s.off('agent:guest_message', handleGuestMessage);
+    };
+  }, []);
 
   const handleSendMessage = async (textToSend) => {
     const text = textToSend || inputText;
@@ -215,8 +290,20 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
                       <DefaultUserAvatar size={32} bg={isLightMode ? '#CBD5E1' : 'rgba(255, 255, 255, 0.15)'} iconColor={isLightMode ? '#475569' : '#FFFFFF'} />
                       <b style={{ fontSize: '.88rem', color: themeText }}>{g.name}</b>
                     </div>
-                    <span style={{ fontSize: '.68rem', color: g.status === 'Resolved' ? '#10B981' : '#6366F1', fontWeight: 700 }}>
-                      {g.status}
+                    <span
+                      style={{
+                        fontSize: '.68rem',
+                        color: g.status === 'Resolved' ? '#10B981' : (g.is_directed_to_agent || g.status === 'Directed to Agent' ? '#10B981' : '#6366F1'),
+                        fontWeight: 700,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                      }}
+                    >
+                      {(g.is_directed_to_agent || g.status === 'Directed to Agent') && (
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981' }} />
+                      )}
+                      {g.is_directed_to_agent || g.status === 'Directed to Agent' ? '🟢 Live with Agent' : g.status}
                     </span>
                   </div>
 
@@ -245,8 +332,23 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
                     <h3 style={{ margin: 0, fontSize: '1.2rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                       {selectedGuest.name}
                     </h3>
-                    <span style={{ fontSize: '.68rem', padding: '2px 8px', borderRadius: 10, background: selectedGuest.status === 'Resolved' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(99, 102, 241, 0.2)', color: selectedGuest.status === 'Resolved' ? '#10B981' : '#6366F1', fontWeight: 700 }}>
-                      {selectedGuest.status}
+                    <span
+                      style={{
+                        fontSize: '.68rem',
+                        padding: '2px 8px',
+                        borderRadius: 10,
+                        background: selectedGuest.status === 'Resolved'
+                          ? 'rgba(16, 185, 129, 0.2)'
+                          : (selectedGuest.is_directed_to_agent || selectedGuest.status === 'Directed to Agent' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(99, 102, 241, 0.2)'),
+                        color: selectedGuest.status === 'Resolved'
+                          ? '#10B981'
+                          : (selectedGuest.is_directed_to_agent || selectedGuest.status === 'Directed to Agent' ? '#10B981' : '#6366F1'),
+                        fontWeight: 700,
+                      }}
+                    >
+                      {selectedGuest.is_directed_to_agent || selectedGuest.status === 'Directed to Agent'
+                        ? '🟢 Live with Service Agent'
+                        : selectedGuest.status}
                     </span>
                   </div>
                   <span style={{ fontSize: '.76rem', color: themeMuted }}>

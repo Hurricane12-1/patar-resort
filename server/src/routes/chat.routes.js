@@ -7,6 +7,7 @@ import { getSystemAdminClient, admin } from '../lib/supabase.js';
 import { redis } from '../lib/redis.js';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
+import { findAvailableServiceAgent, emitToGuest, broadcastToStaff } from '../socket/chatbot.js';
 
 const r = Router();
 
@@ -19,7 +20,7 @@ r.get('/chat/conversations', authenticate, asyncH(async (req, res) => {
     const client = await getSystemAdminClient();
     const { data: messages, error } = await client
       .from('chat_messages')
-      .select('id, profile_id, role, content, created_at')
+      .select('id, profile_id, role, sender, content, metadata, created_at')
       .order('created_at', { ascending: false })
       .limit(200);
 
@@ -38,12 +39,16 @@ r.get('/chat/conversations', authenticate, asyncH(async (req, res) => {
 
       for (const msg of messages) {
         const pid = msg.profile_id || 'guest-anon';
+        const isAgent = msg.sender === 'service_agent' || !!msg.metadata?.is_agent;
         const formattedMsg = {
           id: msg.id,
           sender: msg.role === 'user' ? 'guest' : 'admin',
-          senderName: msg.role === 'user' ? 'Guest' : 'J & D Concierge',
+          senderName: msg.role === 'user' ? 'Guest' : (msg.metadata?.agent_name || (isAgent ? 'Service Agent' : 'J & D Concierge')),
           text: msg.content,
           time: msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
+          is_agent: isAgent,
+          agent_name: msg.metadata?.agent_name,
+          directed_to_agent: !!msg.metadata?.directed_to_agent,
         };
         if (!conversationMap.has(pid)) {
           conversationMap.set(pid, {
@@ -53,11 +58,17 @@ r.get('/chat/conversations', authenticate, asyncH(async (req, res) => {
             last_message_time: msg.created_at,
             role: msg.role,
             message_count: 1,
+            is_directed_to_agent: !!msg.metadata?.directed_to_agent,
+            assigned_agent_name: msg.metadata?.agent_name,
             messages: [formattedMsg],
           });
         } else {
           const entry = conversationMap.get(pid);
           entry.message_count += 1;
+          if (msg.metadata?.directed_to_agent) {
+            entry.is_directed_to_agent = true;
+            if (msg.metadata?.agent_name) entry.assigned_agent_name = msg.metadata.agent_name;
+          }
           entry.messages.unshift(formattedMsg);
         }
       }
@@ -96,7 +107,9 @@ r.get('/chat/conversations', authenticate, asyncH(async (req, res) => {
           lastMessage: conv.last_message,
           timeAgo: formatRelativeTime(conv.last_message_time),
           messageCount: conv.message_count,
-          status: 'Active',
+          status: conv.is_directed_to_agent ? 'Directed to Agent' : 'Active',
+          is_directed_to_agent: !!conv.is_directed_to_agent,
+          assigned_agent_name: conv.assigned_agent_name,
           messages: msgs,
           initialMessages: msgs,
         };
@@ -267,15 +280,43 @@ r.post('/chat/conversations/:profileId/messages', authenticate,
         ? profileId
         : null;
 
+      const staffName = req.user?.full_name || 'Front Desk Concierge';
+      const staffRole = req.user?.role || 'receptionist';
+      const staffId = req.user?.id || 'staff';
+
+      // 1. Strict database recording of service agent message
       const { data, error } = await client
         .from('chat_messages')
         .insert({
           profile_id: targetProfileId,
           role: 'bot',
+          sender: 'service_agent',
           content: content.trim(),
+          metadata: {
+            is_agent: true,
+            agent_id: staffId,
+            agent_name: staffName,
+            agent_role: staffRole,
+            directed_to_agent: true,
+            saved_at: new Date().toISOString(),
+          },
         })
         .select()
         .single();
+
+      // 2. Emit real-time message to customer socket room
+      emitToGuest(targetProfileId, 'bot:message', {
+        id: data?.id || `agent-reply-${Date.now()}`,
+        from: 'bot',
+        text: content.trim(),
+        is_agent: true,
+        sender: 'service_agent',
+        senderName: staffName,
+        agent_name: staffName,
+        agent_role: staffRole,
+        directed_to_agent: true,
+        created_at: new Date().toISOString(),
+      });
 
       if (!error && data) {
         return res.status(201).json(data);
@@ -292,7 +333,7 @@ r.post('/chat/conversations/:profileId/messages', authenticate,
           .maybeSingle();
 
         if (latestRes) {
-          const updatedNotes = `${latestRes.notes || ''}\n[Concierge]: ${content.trim()}`.trim();
+          const updatedNotes = `${latestRes.notes || ''}\n[${staffName}]: ${content.trim()}`.trim();
           await client
             .from('reservations')
             .update({ notes: updatedNotes })
@@ -304,7 +345,13 @@ r.post('/chat/conversations/:profileId/messages', authenticate,
         id: `msg-${Date.now()}`,
         profile_id: targetProfileId,
         role: 'bot',
+        sender: 'service_agent',
         content: content.trim(),
+        metadata: {
+          is_agent: true,
+          agent_name: staffName,
+          directed_to_agent: true,
+        },
         created_at: new Date().toISOString(),
       });
     } catch (err) {
@@ -343,31 +390,96 @@ r.post('/chat/feedback', asyncH(async (req, res) => {
 
 /**
  * POST /api/chat/request-staff
- * Requests live human service agent assistance and flags conversation for staff
+ * Requests live human service agent assistance, directs to available agent, and records in database.
  */
 r.post('/chat/request-staff', asyncH(async (req, res) => {
   const client = await getSystemAdminClient();
   const profileId = req.user?.id || null;
+  const agent = await findAvailableServiceAgent();
+  const reqText = req.body?.message || 'Guest requested to connect with a Front Desk service agent.';
 
-  await client.from('chat_messages').insert({
+  // 1. Insert customer request into chat_messages
+  const { data: userMsg } = await client.from('chat_messages').insert({
     profile_id: profileId,
     role: 'user',
     sender: profileId ? 'customer' : 'guest',
-    content: req.body?.message || 'Guest requested to connect with a Front Desk service agent.',
-    metadata: { requested_staff: true, status: 'pending_staff', created_at: new Date().toISOString() }
-  });
+    content: reqText,
+    metadata: {
+      requested_staff: true,
+      directed_to_agent: true,
+      agent_id: agent.id,
+      agent_name: agent.name,
+      status: 'pending_staff',
+      saved_at: new Date().toISOString(),
+    },
+  }).select().single();
+
+  // 2. Insert service agent greeting into chat_messages
+  const handoffContent = `🟢 Directed to Service Agent: ${agent.name} (${agent.role})\n\n"Mabuhay! I am ${agent.name} from Front Desk & Guest Services. I have joined your chat and am ready to assist you. All our messages are recorded for your security and stay records."`;
+
+  const { data: agentMsg } = await client.from('chat_messages').insert({
+    profile_id: profileId,
+    role: 'bot',
+    sender: 'service_agent',
+    content: handoffContent,
+    metadata: {
+      directed_to_agent: true,
+      is_agent: true,
+      agent_id: agent.id,
+      agent_name: agent.name,
+      agent_role: agent.role,
+      status: 'connected',
+      saved_at: new Date().toISOString(),
+    },
+  }).select().single();
 
   await client.from('notifications').insert({
-    title: 'Guest Requested Service Agent',
-    body: req.body?.message ? `Live Chat Assistance: ${req.body.message.slice(0, 100)}` : 'A guest in live chat is requesting Front Desk service agent assistance.',
+    profile_id: profileId,
+    title: `Live Customer Directed to ${agent.name}`,
+    body: reqText ? `Inquiry: ${reqText.slice(0, 100)}` : `Customer is now live with ${agent.name}`,
     type: 'sms',
     recipient: 'Front Desk',
     status: 'sent',
   }).catch(() => {});
 
+  // Emit real-time agent assigned event to customer
+  emitToGuest(profileId, 'agent:assigned', {
+    directed: true,
+    agent,
+    messageId: agentMsg?.id,
+    text: handoffContent,
+  });
+
+  emitToGuest(profileId, 'bot:message', {
+    id: agentMsg?.id || `agent-assign-${Date.now()}`,
+    text: handoffContent,
+    is_agent: true,
+    sender: 'service_agent',
+    senderName: agent.name,
+    agent_name: agent.name,
+    agent_role: agent.role,
+    directed_to_agent: true,
+    chips: ['Check My Reservation', 'How to Refund', 'Speak with Duty Manager', 'Back to AI'],
+  });
+
+  // Broadcast to staff dashboard
+  broadcastToStaff('staff:customer_handoff', {
+    profileId: profileId || 'guest-anon',
+    guestName: req.user?.full_name || 'Guest Inquirer',
+    assignedAgent: agent,
+    message: reqText,
+    timestamp: new Date().toISOString(),
+  });
+
   // Invalidate cached analytics so staff request line on evolution chart reflects immediately
   await redis.del('analytics:overview').catch(() => {});
-  res.json({ ok: true, message: 'Service agent request logged' });
+  res.json({
+    ok: true,
+    directed: true,
+    agent,
+    message: `Directed to service agent ${agent.name} (${agent.role})`,
+    chat_message_id: agentMsg?.id,
+  });
 }));
 
 /**
@@ -409,17 +521,24 @@ r.get('/chat/my-messages', asyncH(async (req, res) => {
   const { data: messages, error } = await query.limit(150);
   if (error || !messages) return res.json([]);
 
-  const formatted = messages.map((m) => ({
-    id: m.id,
-    from: m.role === 'user' ? 'user' : 'bot',
-    text: m.content,
-    is_ai: m.role !== 'user',
-    chips: m.metadata?.chips || [],
-    feedback: m.metadata?.feedback,
-    feedbackStage: m.metadata?.feedback === 'thumbs_up' ? 'recorded_up' : undefined,
-    contact_card: !!m.metadata?.requested_staff,
-    created_at: m.created_at,
-  }));
+  const formatted = messages.map((m) => {
+    const isAgent = m.sender === 'service_agent' || !!m.metadata?.is_agent;
+    return {
+      id: m.id,
+      from: m.role === 'user' ? 'user' : 'bot',
+      text: m.content,
+      is_ai: m.role !== 'user' && !isAgent,
+      is_agent: isAgent,
+      agent_name: m.metadata?.agent_name || (isAgent ? 'Front Desk Concierge' : undefined),
+      agent_role: m.metadata?.agent_role || (isAgent ? 'Service Agent' : undefined),
+      directed_to_agent: !!m.metadata?.directed_to_agent,
+      chips: m.metadata?.chips || [],
+      feedback: m.metadata?.feedback,
+      feedbackStage: m.metadata?.feedback === 'thumbs_up' ? 'recorded_up' : undefined,
+      contact_card: !!m.metadata?.requested_staff || !!m.metadata?.directed_to_agent,
+      created_at: m.created_at,
+    };
+  });
 
   return res.json(formatted);
 }));

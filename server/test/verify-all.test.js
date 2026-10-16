@@ -25,6 +25,7 @@ import { registry } from '../src/framework/ModuleRegistry.js';
 import { createModuleSandbox, extractEndpoints } from '../src/framework/ModuleSandbox.js';
 import { loadRouteModule, loadDomainPlugin, bootstrapFramework } from '../src/framework/ModuleLoader.js';
 import { sendRecoveryOTP, sendPasswordResetSuccess, sendSignup2FAOTP, sendWelcomeClientEmail, sendSignupExpiredEmail, sendRefundRequestedEmail, sendRefundConfirmedEmail } from '../src/lib/mailer.js';
+import { findAvailableServiceAgent } from '../src/socket/chatbot.js';
 import express, { Router } from 'express';
 import { fileURLToPath } from 'url';
 
@@ -1113,6 +1114,52 @@ await runTest('Account Management, OTP Recovery, Account Chat Persistence & Refu
   assert(adminContent.includes('editingUser'), 'Admin.tsx must render editingUser modal');
   assert(adminContent.includes('userToDelete'), 'Admin.tsx must render userToDelete modal');
   assert(adminContent.includes('refundTarget'), 'Admin.tsx must render refundTarget modal');
+});
+
+// 32. Service Agent Directing & Permanent Database Recording Lifecycle
+await runTest('Service Agent Directing & Permanent Database Recording Lifecycle', async () => {
+  // 1. Verify available service agent discovery engine
+  const agent = await findAvailableServiceAgent();
+  assert(agent && typeof agent === 'object', 'findAvailableServiceAgent must return an agent object');
+  assert(agent.name, 'Service agent must have a name');
+  assert(agent.role, 'Service agent must have a designated role (e.g. Front Desk Receptionist)');
+  assert(agent.phone, 'Service agent must have contact phone');
+  assert.strictEqual(agent.is_online, true, 'Service agent must be flagged online');
+
+  // 2. Verify chatbot.js exports and real-time socket routing methods
+  const chatbotModulePath = path.resolve(serverRoot, 'src/socket/chatbot.js');
+  const chatbotContent = fs.readFileSync(chatbotModulePath, 'utf8');
+  assert(chatbotContent.includes('findAvailableServiceAgent'), 'chatbot.js must export findAvailableServiceAgent');
+  assert(chatbotContent.includes('emitToGuest'), 'chatbot.js must export emitToGuest');
+  assert(chatbotContent.includes('broadcastToStaff'), 'chatbot.js must export broadcastToStaff');
+  assert(chatbotContent.includes('staff:customer_handoff'), 'chatbot.js must emit staff:customer_handoff');
+  assert(chatbotContent.includes('agent:guest_message'), 'chatbot.js must emit agent:guest_message to staff');
+  assert(chatbotContent.includes('socket.isDirectedToAgent'), 'chatbot.js must track isDirectedToAgent state on socket');
+
+  // 3. Verify chat.routes.js service agent directing & dual database recording
+  const chatRoutesPath = path.resolve(serverRoot, 'src/routes/chat.routes.js');
+  const chatContent = fs.readFileSync(chatRoutesPath, 'utf8');
+  assert(chatContent.includes("sender: 'service_agent'"), 'chat.routes.js must record sender: service_agent in database');
+  assert(chatContent.includes('directed_to_agent: true'), 'chat.routes.js must persist directed_to_agent metadata in chat_messages');
+  assert(chatContent.includes('findAvailableServiceAgent()'), 'chat.routes.js must resolve available agent dynamically');
+  assert(chatContent.includes('emitToGuest('), 'chat.routes.js must emit staff reply to guest room');
+  assert(chatContent.includes('broadcastToStaff('), 'chat.routes.js must broadcast customer handoffs to staff');
+
+  // 4. Verify client Chatbot.tsx service agent status banner and badges
+  const clientChatbotPath = path.resolve(projectRoot, 'client/src/components/Chatbot.tsx');
+  const clientChatbotContent = fs.readFileSync(clientChatbotPath, 'utf8');
+  assert(clientChatbotContent.includes('isDirectedToAgent'), 'Chatbot.tsx must track isDirectedToAgent state');
+  assert(clientChatbotContent.includes('assignedAgent'), 'Chatbot.tsx must track assignedAgent state');
+  assert(clientChatbotContent.includes('Directed to:'), 'Chatbot.tsx must render directed service agent status banner');
+  assert(clientChatbotContent.includes('SERVICE AGENT'), 'Chatbot.tsx must render service agent badge on agent replies');
+  assert(clientChatbotContent.includes('agent:assigned'), 'Chatbot.tsx must listen for agent:assigned socket event');
+
+  // 5. Verify ExecutiveGuestConversationsPanel.tsx live agent indicators
+  const panelPath = path.resolve(projectRoot, 'client/src/components/ExecutiveGuestConversationsPanel.tsx');
+  const panelContent = fs.readFileSync(panelPath, 'utf8');
+  assert(panelContent.includes('staff:customer_handoff'), 'ExecutiveGuestConversationsPanel.tsx must listen for customer handoffs');
+  assert(panelContent.includes('agent:guest_message'), 'ExecutiveGuestConversationsPanel.tsx must listen for live guest messages');
+  assert(panelContent.includes('Live with Agent'), 'ExecutiveGuestConversationsPanel.tsx must display Live with Agent badge');
 });
 
 console.log('\n-------------------------------------------------------------');

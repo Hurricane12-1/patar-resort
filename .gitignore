@@ -47,3 +47,7 @@ backups/snapshots/*.tar.gz
 
 # Helper scripts
 scripts/
+
+# Uploads
+server/uploads/*
+!server/uploads/.gitkeep

@@ -43,6 +43,8 @@ export default function Chatbot() {
   const [text, setText] = useState('');
   const [isTypingPrompt, setIsTypingPrompt] = useState(false);
   const [reloadingChat, setReloadingChat] = useState(false);
+  const [assignedAgent, setAssignedAgent] = useState<{ id: string; name: string; role: string; phone?: string } | null>(null);
+  const [isDirectedToAgent, setIsDirectedToAgent] = useState(false);
   const sockRef = useRef<any>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -58,6 +60,15 @@ export default function Chatbot() {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed) && parsed.length > 0) {
           setMsgs(parsed);
+          const agentMsg = parsed.slice().reverse().find((m: any) => m.is_agent || m.directed_to_agent);
+          if (agentMsg && agentMsg.agent_name) {
+            setAssignedAgent({
+              id: agentMsg.agent_id || 'staff',
+              name: agentMsg.agent_name,
+              role: agentMsg.agent_role || 'Front Desk Receptionist',
+            });
+            setIsDirectedToAgent(true);
+          }
         }
       }
 
@@ -67,6 +78,15 @@ export default function Chatbot() {
         if (Array.isArray(serverMsgs) && serverMsgs.length > 0) {
           setMsgs(serverMsgs);
           localStorage.setItem(storageKey, JSON.stringify(serverMsgs));
+          const agentMsg = serverMsgs.slice().reverse().find((m: any) => m.is_agent || m.directed_to_agent);
+          if (agentMsg && agentMsg.agent_name) {
+            setAssignedAgent({
+              id: agentMsg.agent_id || 'staff',
+              name: agentMsg.agent_name,
+              role: agentMsg.agent_role || 'Front Desk Receptionist',
+            });
+            setIsDirectedToAgent(true);
+          }
         }
       }
     } catch (err) {
@@ -240,9 +260,13 @@ export default function Chatbot() {
   // Contact Service Agent quick action
   const handleContactAgent = async () => {
     try {
-      await api.requestStaffAssistance({
+      const res: any = await api.requestStaffAssistance({
         message: 'Guest requested live service agent after chatbot answer',
       });
+      if (res?.agent) {
+        setAssignedAgent(res.agent);
+        setIsDirectedToAgent(true);
+      }
     } catch (e) {
       console.warn('[Staff Request Error]', e);
     }
@@ -252,19 +276,6 @@ export default function Chatbot() {
         message: 'Guest requested live service agent after chatbot answer',
       });
     }
-
-    setMsgs((prev) => [
-      ...prev,
-      {
-        id: `agent-req-${Date.now()}`,
-        from: 'bot',
-        text: '🛎️ Live Service Agent Requested: We have alerted our 24/7 Front Desk team and priority-flagged your conversation. An agent is reviewing your inquiry. In the meantime, you can reach out directly via our verified hotline:',
-        is_ai: true,
-        contact_card: true,
-        is_concern: true,
-        requested_staff: true,
-      },
-    ]);
   };
 
   useEffect(() => {
@@ -307,17 +318,42 @@ export default function Chatbot() {
       if (m.chips && m.chips.length > 0) {
         setChips(m.chips);
       }
+      if (m.directed_to_agent || m.is_agent) {
+        setIsDirectedToAgent(true);
+        if (m.agent_name) {
+          setAssignedAgent({
+            id: m.agent_id || 'staff',
+            name: m.agent_name,
+            role: m.agent_role || 'Front Desk Receptionist',
+          });
+        }
+      }
       setTyping(false);
     };
 
     const handleTyping = () => setTyping(true);
 
+    const handleAgentAssigned = (data: any) => {
+      if (data?.agent) {
+        setAssignedAgent(data.agent);
+        setIsDirectedToAgent(true);
+      }
+    };
+
+    const handleGuestAck = () => {
+      setTyping(false);
+    };
+
     s.on('bot:message', handleMessage);
     s.on('bot:typing', handleTyping);
+    s.on('agent:assigned', handleAgentAssigned);
+    s.on('agent:guest_ack', handleGuestAck);
 
     return () => {
       s.off('bot:message', handleMessage);
       s.off('bot:typing', handleTyping);
+      s.off('agent:assigned', handleAgentAssigned);
+      s.off('agent:guest_ack', handleGuestAck);
       sockRef.current = null;
     };
   }, [open, session?.access_token]);
@@ -432,6 +468,55 @@ export default function Chatbot() {
             </div>
           </div>
 
+          {/* Active Directed Service Agent Status Banner */}
+          {isDirectedToAgent && assignedAgent && (
+            <div
+              style={{
+                padding: '8px 14px',
+                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(6, 95, 70, 0.32))',
+                borderBottom: '1px solid rgba(16, 185, 129, 0.4)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 8,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+                <span className="live-dot" style={{ width: 8, height: 8, background: '#10B981', boxShadow: '0 0 10px #10B981', flexShrink: 0 }} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: '0.74rem', fontWeight: 800, color: '#34D399', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    🟢 Directed to: {assignedAgent.name}
+                  </div>
+                  <div style={{ fontSize: '0.64rem', color: '#A7F3D0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {assignedAgent.role || 'Front Desk & Guest Concierge'} · Logged in database
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDirectedToAgent(false);
+                  setAssignedAgent(null);
+                  send('back to ai');
+                }}
+                style={{
+                  fontSize: '0.66rem',
+                  color: '#BAE6FD',
+                  background: 'rgba(255, 255, 255, 0.12)',
+                  border: '1px solid rgba(255, 255, 255, 0.25)',
+                  borderRadius: 6,
+                  padding: '3px 8px',
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                  fontWeight: 600,
+                }}
+                title="Switch back to J & D Bot AI Concierge"
+              >
+                Back to AI
+              </button>
+            </div>
+          )}
+
           {/* Message List */}
           <div className="chat-msgs">
             {msgs.map((m, i) => (
@@ -478,8 +563,29 @@ export default function Chatbot() {
                   </div>
                 )}
 
+                {/* Service Agent Badge */}
+                {m.from === 'bot' && (m.is_agent || m.sender === 'service_agent') && (
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      marginBottom: 6,
+                      padding: '2px 8px',
+                      background: 'rgba(16, 185, 129, 0.15)',
+                      border: '1px solid rgba(16, 185, 129, 0.4)',
+                      borderRadius: 6,
+                      fontSize: '0.65rem',
+                      fontWeight: 800,
+                      color: '#34D399',
+                    }}
+                  >
+                    <span>🧑‍💼 {m.agent_name || m.senderName || 'Front Desk Concierge'} · SERVICE AGENT</span>
+                  </div>
+                )}
+
                 {/* Gemini AI Badge */}
-                {m.from === 'bot' && m.is_ai && !m.guardrail && (
+                {m.from === 'bot' && m.is_ai && !m.guardrail && !m.is_agent && m.sender !== 'service_agent' && (
                   <div
                     style={{
                       display: 'flex',
