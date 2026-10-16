@@ -281,24 +281,20 @@ await runTest('Cache Memory Leak Defense: LRU Eviction, Active TTL Sweep & On-De
   boundedCache.destroy();
 });
 
-// 12. Automated Patch Backup & Checksum Manifest Integrity Test
-runTest('Automated Patch Backup & Checksum Manifest Integrity', () => {
-  const v10ManifestPath = path.resolve(projectRoot, 'backups/patches/v1.0.0/patch_manifest.json');
-  const v11ManifestPath = path.resolve(projectRoot, 'backups/patches/v1.1.0/patch_manifest.json');
+// 12. Canonical Schema & Zero Duplicate SQL/System Files Integrity Test
+runTest('Canonical Schema & Zero Duplicate SQL/System Files Integrity', () => {
+  const canonicalSchemaPath = path.resolve(projectRoot, 'supabase/schema.sql');
+  assert.ok(fs.existsSync(canonicalSchemaPath), 'Canonical supabase/schema.sql must exist');
 
-  assert.ok(fs.existsSync(v10ManifestPath), 'v1.0.0 patch manifest is missing');
-  assert.ok(fs.existsSync(v11ManifestPath), 'v1.1.0 patch manifest is missing');
+  const oldMigrationSql = path.resolve(projectRoot, 'updates/migrations/001_initial_baseline.sql');
+  const oldProvisionSql = path.resolve(projectRoot, 'supabase/provision_production_accounts.sql');
+  const duplicateRootServer = path.resolve(projectRoot, 'server.js');
+  const duplicateSrcServer = path.resolve(projectRoot, 'server/src/server.js');
 
-  const v10 = JSON.parse(fs.readFileSync(v10ManifestPath, 'utf8'));
-  const v11 = JSON.parse(fs.readFileSync(v11ManifestPath, 'utf8'));
-
-  assert.strictEqual(v10.patch_version, '1.0.0');
-  assert.strictEqual(v11.patch_version, '1.1.0');
-  assert.strictEqual(v10.checksum_algorithm, 'SHA-256');
-  assert.strictEqual(v11.checksum_algorithm, 'SHA-256');
-  assert.ok(v10.files.length >= 10, 'v1.0.0 files manifest too small');
-  assert.ok(v11.files.length >= 12, 'v1.1.0 files manifest too small');
-  assert.ok(v11.files.every(f => f.sha256 && f.sha256.length === 64), 'Invalid SHA-256 hash in v1.1.0 manifest');
+  assert.strictEqual(fs.existsSync(oldMigrationSql), false, 'Old baseline SQL file should be removed');
+  assert.strictEqual(fs.existsSync(oldProvisionSql), false, 'Duplicate provision SQL file should be removed');
+  assert.strictEqual(fs.existsSync(duplicateRootServer), false, 'Duplicate root server.js should be removed');
+  assert.strictEqual(fs.existsSync(duplicateSrcServer), false, 'Duplicate server/src/server.js should be removed');
 });
 
 // 13. Account Recovery Validation & OTP Lifecycle Test

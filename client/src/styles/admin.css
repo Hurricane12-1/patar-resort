@@ -38,8 +38,20 @@
 }
 
 /* 2. EXECUTIVE SIDEBAR & NAVIGATION */
+.admin-portal aside.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  align-self: flex-start;
+  flex-shrink: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
 .admin-portal .sidebar-nav-item {
   transition: all 0.2s ease !important;
+  text-align: left !important;
+  white-space: nowrap !important;
 }
 
 .admin-portal .sidebar-nav-item.active {

@@ -20,7 +20,6 @@
     "server:test": "npm run test --prefix server",
     "verify": "node scripts/verify.js",
     "backup": "node scripts/backup.js",
-    "backup:patch": "node scripts/backup_patch.js",
     "test:1m-users": "node scripts/deploy_1m_fake_users.js",
     "test:limiter": "node scripts/test_load_balancer_and_limiter.js",
     "proxy:lb": "node scripts/proxy_load_balancer.js",

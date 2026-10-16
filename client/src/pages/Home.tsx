@@ -47,17 +47,19 @@ function Counter({ to, decimals = 0, suffix = '' }) {
 
 const SCENES = [
   { id: 'sunset', label: '01 · Sunset Cape', img: IMG.hero },
-  { id: 'suite', label: '02 · Sea Balcony', img: IMG.suite },
-  { id: 'nipa', label: '03 · Nipa Cove', img: IMG.cottage },
-  { id: 'island', label: '04 · Island Hopping', img: IMG.island },
+  { id: 'rock', label: '02 · Rock View', img: IMG.villa },
+  { id: 'suite', label: '03 · Sea Balcony', img: IMG.suite },
+  { id: 'nipa', label: '04 · Nipa Cove', img: IMG.cottage },
+  { id: 'island', label: '05 · Island Hopping', img: IMG.island },
 ];
 
-const RIBBON = ['white sand', 'warm lanterns', 'island hopping', 'sunset at the cape', 'fresh bangus', 'slow mornings', 'salt air'];
+const RIBBON = ['white sand', 'patar rock view', 'warm lanterns', 'island hopping', 'sunset at the cape', 'fresh bangus', 'slow mornings', 'salt air'];
 const EXP = [
-  ['01', 'Cape Bolinao Lighthouse', '10 min'],
-  ['02', 'Bolinao Falls', '15 min'],
-  ['03', 'Enchanted Cave', '20 min'],
-  ['04', 'Patar island hopping', '25 min'],
+  ['01', 'Patar Rock View Formations', '8 min'],
+  ['02', 'Cape Bolinao Lighthouse', '10 min'],
+  ['03', 'Bolinao Falls', '15 min'],
+  ['04', 'Enchanted Cave', '20 min'],
+  ['05', 'Patar island hopping', '25 min'],
 ];
 
 export default function Home() {

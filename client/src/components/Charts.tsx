@@ -521,15 +521,17 @@ export function AreaLineChart({ data = [], height = 180, onPointClick }) {
     );
   }
 
-  const max = Math.max(...data.map((d) => d.value), 1);
-  const min = Math.min(...data.map((d) => d.value));
+  const metricOf = (d) => (Number(d.revenue) > 0 ? Number(d.revenue) : Number(d.value) || 0);
+  const max = Math.max(...data.map(metricOf), 1);
+  const min = Math.min(...data.map(metricOf));
   const range = Math.max(1, max - min);
   const w = 480;
 
   const points = data.map((d, i) => {
+    const val = metricOf(d);
     const x = data.length > 1 ? (i / (data.length - 1)) * (w - 40) + 20 : w / 2;
-    const y = height - 30 - ((d.value - min) / range) * (height - 60);
-    return { x, y, label: d.label, value: d.value, raw: d };
+    const y = height - 30 - ((val - min) / range) * (height - 60);
+    return { x, y, label: d.label, value: d.value, revenue: val, raw: d };
   });
 
   // Construct smooth cubic bezier path
@@ -626,7 +628,7 @@ export function AreaLineChart({ data = [], height = 180, onPointClick }) {
         >
           <b style={{ color: '#38BDF8', display: 'block', marginBottom: 2 }}>{points[hoveredIdx].label}</b>
           <span style={{ color: '#F8FAFC', fontWeight: 700 }}>
-            Revenue: ₱{(points[hoveredIdx].value * 1000).toLocaleString()}
+            Revenue: ₱{Number(points[hoveredIdx].revenue || 0).toLocaleString()}
           </span>
           <div style={{ fontSize: '.68rem', color: '#94A3B8', marginTop: 2 }}>
             💡 Click to view revenue driver
@@ -650,18 +652,18 @@ export function MultiBarChart({ data = [], height = 180, onBarClick }) {
       </div>
     );
   }
-  const max = 100;
+  const max = Math.max(100, ...data.flatMap((d) => [Number(d.target) || 0, Number(d.paid) || 0, Number(d.pending) || 0]));
   const w = 480;
   const groupWidth = (w - 40) / data.length;
 
   return (
     <div style={{ position: 'relative', width: '100%' }}>
-      <svg viewBox={`0 0 ${w} ${height}`} width="100%">
+      <svg viewBox={`0 0 ${w} ${height}`} width="100%" style={{ overflow: 'hidden', display: 'block' }}>
         {data.map((group, i) => {
           const gx = i * groupWidth + 20;
-          const targetH = (group.target / max) * (height - 50);
-          const paidH = (group.paid / max) * (height - 50);
-          const pendingH = (group.pending / max) * (height - 50);
+          const targetH = Math.max(2, Math.min(height - 50, ((Number(group.target) || 0) / max) * (height - 50)));
+          const paidH = Math.max(2, Math.min(height - 50, ((Number(group.paid) || 0) / max) * (height - 50)));
+          const pendingH = Math.max(2, Math.min(height - 50, ((Number(group.pending) || 0) / max) * (height - 50)));
 
           return (
             <g 

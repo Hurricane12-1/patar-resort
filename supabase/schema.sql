@@ -316,6 +316,8 @@ create policy "reviews: own insert"            on reviews for insert
     and exists (select 1 from reservations r where r.id = reservation_id and r.guest_id = auth.uid()));
 
 create policy "notifications: own or admin"    on notifications for select using (profile_id = auth.uid() or is_admin_or_staff());
+create policy "chat: own or staff read"        on chat_messages for select using (profile_id = auth.uid() or profile_id is null or is_admin_or_staff());
+create policy "chat: own or staff insert"      on chat_messages for insert with check (profile_id = auth.uid() or profile_id is null or is_admin_or_staff());
 
 create policy "tasks: staff read write"        on department_tasks for all using (is_admin_or_staff()) with check (is_admin_or_staff());
 create policy "orders: own or staff read"      on resort_orders for select using (guest_id = auth.uid() or is_admin_or_staff());
@@ -330,4 +332,71 @@ create policy "services: staff write"           on resort_services for all using
 alter publication supabase_realtime add table reservations;
 alter publication supabase_realtime add table department_tasks;
 alter publication supabase_realtime add table resort_orders;
+
+-- ---------- PRODUCTION ACCOUNT PROVISIONING RPC ----------
+create or replace function public.provision_production_user(
+  p_email text,
+  p_password text,
+  p_first_name text,
+  p_last_name text,
+  p_role public.user_role default 'customer',
+  p_phone text default '',
+  p_address text default 'Brgy. Patar',
+  p_city text default 'Bolinao, Pangasinan'
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = auth, public, extensions
+as $$
+declare
+  v_user_id uuid;
+  v_encrypted_pw text;
+  v_full_name text;
+begin
+  if length(p_password) < 8 then
+    raise exception 'Password must be at least 8 characters long for production security.';
+  end if;
+
+  v_full_name := trim(concat(p_first_name, ' ', p_last_name));
+  v_encrypted_pw := extensions.crypt(p_password, extensions.gen_salt('bf', 10));
+
+  select id into v_user_id from auth.users where email = lower(trim(p_email));
+
+  if v_user_id is null then
+    v_user_id := gen_random_uuid();
+    insert into auth.users (
+      instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+      raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+      confirmation_token, email_change, email_change_token_new, recovery_token
+    ) values (
+      '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated',
+      lower(trim(p_email)), v_encrypted_pw, now(),
+      '{"provider": "email", "providers": ["email"]}'::jsonb,
+      jsonb_build_object('first_name', p_first_name, 'last_name', p_last_name, 'full_name', v_full_name, 'role', p_role, 'phone', p_phone),
+      now(), now(), '', '', '', ''
+    );
+  else
+    update auth.users
+    set encrypted_password = v_encrypted_pw,
+        email_confirmed_at = coalesce(email_confirmed_at, now()),
+        raw_user_meta_data = jsonb_build_object('first_name', p_first_name, 'last_name', p_last_name, 'full_name', v_full_name, 'role', p_role, 'phone', p_phone),
+        updated_at = now()
+    where id = v_user_id;
+  end if;
+
+  insert into public.profiles (id, first_name, last_name, full_name, phone, address, city, role, created_at)
+  values (v_user_id, p_first_name, p_last_name, v_full_name, p_phone, p_address, p_city, p_role, now())
+  on conflict (id) do update set
+    first_name = excluded.first_name,
+    last_name = excluded.last_name,
+    full_name = excluded.full_name,
+    phone = excluded.phone,
+    address = excluded.address,
+    city = excluded.city,
+    role = excluded.role;
+
+  return v_user_id;
+end;
+$$;
 

@@ -70,4 +70,18 @@ export const CANONICAL_ROOMS: CanonicalRoom[] = [
     rating_avg: 4.7,
     rating_count: 42,
   },
+  {
+    id: 'b9c46587-d8dc-4943-b699-9a3bf6ef63e1',
+    name: 'Patar Rock View Villa',
+    slug: 'patar-rock-view-villa',
+    category: 'Villa',
+    description: 'Sleeps 6 · Patar Rock View · Limestone Cliff & Sea Vista · Veranda',
+    capacity: 6,
+    units: 2,
+    rate_php: 7200,
+    amenities: ['Air Conditioning', 'Free Wi-Fi', 'Private Bath', 'Rock View', 'Private Veranda', 'Sea View'],
+    is_active: true,
+    rating_avg: 4.9,
+    rating_count: 31,
+  },
 ];

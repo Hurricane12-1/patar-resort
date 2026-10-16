@@ -13,7 +13,7 @@ const RESORT_COORDS = {
 const NEARBY_LANDMARKS = [
   { name: 'Patar White Sand Beach', dist: '0 km', time: '1 min walk', desc: 'Golden-white sand beach fronting the West Philippine Sea' },
   { name: 'Cape Bolinao Lighthouse', dist: '2.8 km', time: '6 mins drive', desc: 'Historic 1905 Spanish-era beacon standing atop Punta Piedra Point' },
-  { name: 'Patar Rock Formations', dist: '3.5 km', time: '8 mins drive', desc: 'Dramatic rugged limestone cliffs and coral sea arches' },
+  { name: 'Patar Rock View Formations', dist: '3.5 km', time: '8 mins drive', desc: 'Dramatic rugged limestone cliffs, rock view coves, and coral sea arches' },
   { name: 'Enchanted Cave', dist: '6.2 km', time: '12 mins drive', desc: 'Underground natural limestone cavern with subterranean freshwater pool' },
   { name: 'Bolinao Falls 1 & 2', dist: '14.2 km', time: '25 mins drive', desc: 'Cascading spring waterfalls surrounded by emerald nature' },
 ];
