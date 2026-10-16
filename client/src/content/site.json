@@ -55,32 +55,7 @@
   "rooms": {
     "eyebrow": "Accommodations",
     "title": "Private Coastal Living",
-    "items": [
-      {
-        "name": "Oceanfront Sunset Villa",
-        "price": 6500,
-        "meta": "Sleeps 4 · Ocean View · King Bed · Balcony",
-        "image": "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=900&q=80"
-      },
-      {
-        "name": "Deluxe Beach Cottage",
-        "price": 4200,
-        "meta": "Sleeps 2 · Garden Access · Queen Bed · Veranda",
-        "image": "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=900&q=80"
-      },
-      {
-        "name": "Family Coral Suite",
-        "price": 8500,
-        "meta": "Sleeps 6 · Two Bedrooms · Kitchenette · Terrace",
-        "image": "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=900&q=80"
-      },
-      {
-        "name": "Secluded Palms Studio",
-        "price": 3800,
-        "meta": "Sleeps 2 · Tropical Courtyard · Queen Bed",
-        "image": "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=900&q=80"
-      }
-    ]
+    "items": []
   },
   "experiences": {
     "eyebrow": "Curated Moments",

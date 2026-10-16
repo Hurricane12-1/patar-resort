@@ -63,7 +63,7 @@ const EXP = [
 ];
 
 export default function Home() {
-  const [rooms, setRooms] = useState(CANONICAL_ROOMS);
+  const [rooms, setRooms] = useState<any[]>([]);
   const [reviews, setReviews] = useState([]);
   const [pick, setPick] = useState(null);
   const [activeScene, setActiveScene] = useState(SCENES[0]);
@@ -73,7 +73,7 @@ export default function Home() {
 
   useEffect(() => {
     api.rooms().then((data) => {
-      if (Array.isArray(data) && data.length > 0) setRooms(data);
+      setRooms(Array.isArray(data) ? data : []);
     }).catch(() => {});
     api.recentReviews().then(setReviews).catch(() => {});
 

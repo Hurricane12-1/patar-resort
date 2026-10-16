@@ -12,7 +12,7 @@ export default function BookingFlow({ initialSlug }) {
   const [checkIn, setCheckIn] = useState(addDaysISO(today, 1));
   const [checkOut, setCheckOut] = useState(addDaysISO(today, 3));
   const [guests, setGuests] = useState(2);
-  const [catalog, setCatalog] = useState(CANONICAL_ROOMS);
+  const [catalog, setCatalog] = useState<any[]>([]);
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [stage, setStage] = useState('search');   // search | results | details | done

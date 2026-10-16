@@ -194,9 +194,22 @@ export default function MobileResortApp() {
   const today = toISO(new Date());
   const [checkIn, setCheckIn] = useState(addDays(today, 1));
   const [checkOut, setCheckOut] = useState(addDays(today, 3));
-  const [guests, setGuests] = useState('2 Guests');
   const [selectedRoom, setSelectedRoom] = useState(site.rooms.items[0]?.name ?? '');
   const [quote, setQuote] = useState<{ ok: boolean; text: string } | null>(null);
+  const [rooms, setRooms] = useState<any[]>([]);
+
+  useEffect(() => {
+    api.rooms().then((data) => {
+      if (Array.isArray(data)) {
+        setRooms(data);
+        if (data.length > 0 && !selectedRoom) {
+          setSelectedRoom(data[0].name);
+        }
+      }
+    }).catch(() => {});
+  }, []);
+
+  const displayRooms = rooms.length > 0 ? rooms : (site.rooms.items || []);
 
   const audioCtxRef = useRef<AudioContext | null>(null);
 
@@ -608,10 +621,12 @@ export default function MobileResortApp() {
         });
       }
     } catch (err: any) {
-      const room = site.rooms.items.find((r) => r.name === selectedRoom) ?? site.rooms.items[0];
+      const room = displayRooms.find((r) => r.name === selectedRoom) ?? displayRooms[0];
       setQuote({
-        ok: true,
-        text: `${room.name} · ${nights} night${nights > 1 ? 's' : ''} · ${guests} — est. ${peso(room.price * nights)}`,
+        ok: !!room,
+        text: room
+          ? `${room.name} · ${nights} night${nights > 1 ? 's' : ''} — est. ${peso((room.rate_php || room.price || 4200) * nights)}`
+          : 'Please select an available accommodation.',
       });
     } finally {
       setCheckingAvailability(false);
@@ -620,10 +635,15 @@ export default function MobileResortApp() {
 
   const openReservation = (roomName?: string) => {
     const targetName = roomName || selectedRoom;
-    const roomMeta = CANONICAL_ROOMS.find((r) => r.name.toLowerCase() === targetName.toLowerCase())
-      || site.rooms.items.find((r) => r.name.toLowerCase() === targetName.toLowerCase())
-      || CANONICAL_ROOMS[0];
+    const roomMeta = displayRooms.find((r) => r.name?.toLowerCase() === targetName.toLowerCase())
+      || displayRooms[0]
+      || null;
     
+    if (!roomMeta) {
+      toast('No accommodation available to book.', true);
+      return;
+    }
+
     setResRoom(roomMeta);
     setResConfirmed(null);
     setReservationModalOpen(true);
@@ -643,7 +663,11 @@ export default function MobileResortApp() {
       return;
     }
     const nights = Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000));
-    const targetRoomId = resRoom?.id || CANONICAL_ROOMS.find((c) => c.name.toLowerCase() === (resRoom?.name || '').toLowerCase())?.id || CANONICAL_ROOMS[0].id;
+    const targetRoomId = resRoom?.id || '';
+    if (!targetRoomId) {
+      toast('Please select an active accommodation to reserve.', true);
+      return;
+    }
     const rate = resRoom?.rate_php || resRoom?.price || 4200;
     const totalPhp = nights * rate;
     const downpaymentPhp = Math.round(totalPhp * 0.3);
@@ -817,28 +841,35 @@ export default function MobileResortApp() {
           <section className={`${WRAP} ${SECTION}`}>
             <Eyebrow>{site.rooms.eyebrow}</Eyebrow>
             <SectionTitle title={site.rooms.title} />
-            <div className={`${RAIL} mt-8 lg:grid-cols-4`}>
-              {site.rooms.items.map((room) => (
-                <article
-                  key={room.name}
-                  className="group relative h-72 w-[78%] shrink-0 snap-start overflow-hidden rounded-3xl border border-white/10 sm:w-[46%] lg:w-auto"
-                >
-                  <img
-                    src={room.image}
-                    alt={room.name}
-                    loading="lazy"
-                    className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/30 to-transparent" />
-                  <div className="absolute inset-x-0 bottom-0 p-5">
-                    <h3 className="font-serif text-2xl font-medium leading-tight text-white">{room.name}</h3>
-                    <p className="mt-1 font-serif text-lg text-cyan">
-                      {peso(room.price)} <span className="font-sans text-[11px] text-white/60">/ night</span>
-                    </p>
-                  </div>
-                </article>
-              ))}
-            </div>
+            {displayRooms.length === 0 ? (
+              <div className="mt-8 rounded-3xl border border-white/10 bg-white/[0.02] p-8 text-center text-white/60">
+                <p className="font-serif text-lg text-white">No Accommodations Published</p>
+                <p className="mt-1 text-sm font-light">Accommodations are currently being updated. Please check back shortly.</p>
+              </div>
+            ) : (
+              <div className={`${RAIL} mt-8 lg:grid-cols-4`}>
+                {displayRooms.map((room) => (
+                  <article
+                    key={room.id || room.name}
+                    className="group relative h-72 w-[78%] shrink-0 snap-start overflow-hidden rounded-3xl border border-white/10 sm:w-[46%] lg:w-auto"
+                  >
+                    <img
+                      src={room.image_url || room.image || (Array.isArray(room.images) && room.images[0]) || ''}
+                      alt={room.name}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/30 to-transparent" />
+                    <div className="absolute inset-x-0 bottom-0 p-5">
+                      <h3 className="font-serif text-2xl font-medium leading-tight text-white">{room.name}</h3>
+                      <p className="mt-1 font-serif text-lg text-cyan">
+                        {peso(room.rate_php || room.price || 0)} <span className="font-sans text-[11px] text-white/60">/ night</span>
+                      </p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
           </section>
 
           {/* AMENITIES */}
@@ -1346,11 +1377,15 @@ export default function MobileResortApp() {
                   }}
                   className="w-full truncate text-sm font-medium text-white outline-none"
                 >
-                  {site.rooms.items.map((r) => (
-                    <option key={r.name} value={r.name}>
-                      {r.name}
-                    </option>
-                  ))}
+                  {displayRooms.length === 0 ? (
+                    <option value="">No accommodations available</option>
+                  ) : (
+                    displayRooms.map((r) => (
+                      <option key={r.id || r.name} value={r.name}>
+                        {r.name}
+                      </option>
+                    ))
+                  )}
                 </select>
               </label>
 
@@ -1410,46 +1445,55 @@ export default function MobileResortApp() {
               <Eyebrow>{site.rooms.eyebrow}</Eyebrow>
               <SectionTitle title={site.rooms.title} />
             </div>
-            <span className="hidden text-[11px] uppercase tracking-[0.2em] text-white/40 sm:block lg:hidden">Swipe →</span>
+            {displayRooms.length > 0 && (
+              <span className="hidden text-[11px] uppercase tracking-[0.2em] text-white/40 sm:block lg:hidden">Swipe →</span>
+            )}
           </div>
 
-          <div className={`${RAIL} mt-8 lg:grid-cols-4 lg:gap-5`}>
-            {site.rooms.items.map((room) => (
-              <article
-                key={room.name}
-                className={`${CARD} group flex w-[80%] shrink-0 snap-start flex-col sm:w-[46%] lg:w-auto`}
-              >
-                <div className="relative h-56 overflow-hidden">
-                  <img
-                    src={room.image}
-                    alt={room.name}
-                    loading="lazy"
-                    className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                  />
-                  <span className="absolute bottom-3 left-3 rounded-full border border-white/10 bg-navy/85 px-3.5 py-1 font-serif text-sm text-cyan backdrop-blur-md">
-                    {peso(room.price)} <span className="font-sans text-[10px] text-white/60">/ night</span>
-                  </span>
-                </div>
-                <div className="flex flex-1 items-start justify-between gap-3 p-5">
-                  <div>
-                    <h3 className="font-serif text-xl font-medium leading-tight text-white">{room.name}</h3>
-                    <p className="mt-1.5 text-xs font-light leading-relaxed text-white/50">{room.meta}</p>
+          {displayRooms.length === 0 ? (
+            <div className="mt-8 rounded-3xl border border-white/10 bg-white/[0.02] p-8 text-center text-white/60">
+              <p className="font-serif text-lg text-white">No Accommodations Published</p>
+              <p className="mt-1 text-sm font-light">Accommodations are currently being updated. Please check back shortly.</p>
+            </div>
+          ) : (
+            <div className={`${RAIL} mt-8 lg:grid-cols-4 lg:gap-5`}>
+              {displayRooms.map((room) => (
+                <article
+                  key={room.id || room.name}
+                  className={`${CARD} group flex w-[80%] shrink-0 snap-start flex-col sm:w-[46%] lg:w-auto`}
+                >
+                  <div className="relative h-56 overflow-hidden">
+                    <img
+                      src={room.image_url || room.image || (Array.isArray(room.images) && room.images[0]) || ''}
+                      alt={room.name}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                    />
+                    <span className="absolute bottom-3 left-3 rounded-full border border-white/10 bg-navy/85 px-3.5 py-1 font-serif text-sm text-cyan backdrop-blur-md">
+                      {peso(room.rate_php || room.price || 0)} <span className="font-sans text-[10px] text-white/60">/ night</span>
+                    </span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedRoom(room.name);
-                      openReservation(room.name);
-                    }}
-                    aria-label={`Book ${room.name}`}
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-cyan/40 bg-cyan/15 text-cyan transition hover:bg-cyan hover:text-navy cursor-pointer"
-                  >
-                    →
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
+                  <div className="flex flex-1 items-start justify-between gap-3 p-5">
+                    <div>
+                      <h3 className="font-serif text-xl font-medium leading-tight text-white">{room.name}</h3>
+                      <p className="mt-1.5 text-xs font-light leading-relaxed text-white/50">{room.description || room.meta || ''}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedRoom(room.name);
+                        openReservation(room.name);
+                      }}
+                      aria-label={`Book ${room.name}`}
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-cyan/40 bg-cyan/15 text-cyan transition hover:bg-cyan hover:text-navy cursor-pointer"
+                    >
+                      →
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
         </section>
 
         {/* 7. EXPERIENCES (sand) */}

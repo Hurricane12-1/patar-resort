@@ -58,14 +58,14 @@ function RoomCardItem({ s, index }) {
 }
 
 export default function Rooms() {
-  const [all, setAll] = useState(CANONICAL_ROOMS);
-  const [loading, setLoading] = useState(false);
+  const [all, setAll] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [cat, setCat] = useState('All');
   const [q, setQ] = useState('');
 
   useEffect(() => {
     api.rooms().then((data) => {
-      if (Array.isArray(data) && data.length > 0) setAll(data);
+      setAll(Array.isArray(data) ? data : []);
     }).catch(() => {})
     .finally(() => setLoading(false));
   }, []);

@@ -920,6 +920,20 @@ export default function Admin() {
     }
   }
 
+  async function handleDeleteRoom(room) {
+    if (!room?.id) return;
+    const ok = window.confirm(`Permanently remove accommodation "${room.name}"? If there are no bookings referencing it, this will completely delete it from the system.`);
+    if (!ok) return;
+    try {
+      await api.deleteRoom(room.id, true);
+      setRoomsList((prev) => prev.filter((r) => r.id !== room.id));
+      if (editingRoom?.id === room.id) setEditingRoom(null);
+      toast(`🗑️ Accommodation "${room.name}" deleted successfully`);
+    } catch (err: any) {
+      toast(`Delete failed: ${err.message || 'Error deleting room'}`, true);
+    }
+  }
+
   async function handleCreateSupply(e) {
     e.preventDefault();
     try {
@@ -1995,7 +2009,16 @@ export default function Admin() {
                       .filter((r) => !inventorySearch || r.name?.toLowerCase().includes(inventorySearch.toLowerCase()) || r.description?.toLowerCase().includes(inventorySearch.toLowerCase()));
 
                     return filteredRooms.length === 0 ? (
-                      <p className="muted" style={{ padding: '30px 0', textAlign: 'center' }}>No accommodations found matching filters.</p>
+                      <div style={{ textAlign: 'center', padding: '48px 20px', background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.02)', borderRadius: 16, border: `1px dashed ${themeBorder}`, margin: '12px 0' }}>
+                        <div style={{ fontSize: '2.8rem', marginBottom: 12 }}>🏖️</div>
+                        <h4 style={{ margin: '0 0 6px', color: themeText, fontSize: '1.15rem', fontWeight: 800 }}>No Accommodations Added Yet</h4>
+                        <p style={{ margin: '0 auto 18px', maxWidth: 460, color: themeMuted, fontSize: '.86rem', lineHeight: 1.5 }}>
+                          All mock room data has been cleared. Click below to provision and publish your first custom room with photos and rates.
+                        </p>
+                        <button className="btn btn-sky btn-sm" onClick={() => setShowCreateRoomModal(true)} style={{ padding: '9px 18px', fontWeight: 700 }}>
+                          + Provision Your First Room
+                        </button>
+                      </div>
                     ) : (
                       <div className="admin-grid-3-col" style={{ gap: 16 }}>
                         {filteredRooms.map((room) => {
@@ -2082,25 +2105,42 @@ export default function Admin() {
                                 <div style={{ borderTop: `1px solid ${themeBorder}`, paddingTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                   <div>
                                     <span style={{ fontSize: '.72rem', color: themeMuted, display: 'block' }}>Rate per night</span>
-                                    <b style={{ fontSize: '1.15rem', color: '#10B981' }}>₱{money(room.rate_php)}</b>
+                                    <b style={{ fontSize: '1.15rem', color: '#10B981' }}>{money(room.rate_php)}</b>
                                   </div>
-                                  <button
-                                    className="btn btn-sky btn-sm"
-                                    onClick={() => {
-                                      const currentImgs = Array.isArray(room.images) && room.images.length > 0
-                                        ? [...room.images]
-                                        : (room.image_url ? [room.image_url] : []);
-                                      setEditingRoom({
-                                        ...room,
-                                        image_url: room.image_url || currentImgs[0] || '',
-                                        images: currentImgs,
-                                        amenities: Array.isArray(room.amenities) ? room.amenities.join(', ') : (room.amenities || ''),
-                                      });
-                                    }}
-                                    style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-                                  >
-                                    ✏️ Edit Room & Photos
-                                  </button>
+                                  <div style={{ display: 'flex', gap: 8 }}>
+                                    <button
+                                      className="btn btn-sky btn-sm"
+                                      onClick={() => {
+                                        const currentImgs = Array.isArray(room.images) && room.images.length > 0
+                                          ? [...room.images]
+                                          : (room.image_url ? [room.image_url] : []);
+                                        setEditingRoom({
+                                          ...room,
+                                          image_url: room.image_url || currentImgs[0] || '',
+                                          images: currentImgs,
+                                          amenities: Array.isArray(room.amenities) ? room.amenities.join(', ') : (room.amenities || ''),
+                                        });
+                                      }}
+                                      style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                                    >
+                                      ✏️ Edit
+                                    </button>
+                                    <button
+                                      className="btn btn-sm"
+                                      onClick={() => handleDeleteRoom(room)}
+                                      style={{
+                                        background: 'rgba(244,63,94,0.1)',
+                                        color: '#F43F5E',
+                                        border: '1px solid rgba(244,63,94,0.25)',
+                                        fontSize: '.82rem',
+                                        padding: '4px 8px',
+                                        cursor: 'pointer',
+                                      }}
+                                      title="Delete room"
+                                    >
+                                      🗑️
+                                    </button>
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -3873,13 +3913,23 @@ export default function Admin() {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 4 }}>
-                <button type="button" className="btn btn-sm" onClick={() => setEditingRoom(null)} style={{ border: `1px solid ${themeBorder}`, color: themeText }}>
-                  Cancel
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, borderTop: `1px solid ${themeBorder}`, paddingTop: 14 }}>
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  onClick={() => handleDeleteRoom(editingRoom)}
+                  style={{ background: 'rgba(244,63,94,0.12)', color: '#F43F5E', border: '1px solid rgba(244,63,94,0.3)', fontWeight: 700 }}
+                >
+                  🗑️ Delete Room Permanently
                 </button>
-                <button type="submit" className="btn btn-sky btn-sm" style={{ padding: '10px 20px', fontWeight: 800 }}>
-                  Save & Synchronize Accommodation ✦
-                </button>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button type="button" className="btn btn-sm" onClick={() => setEditingRoom(null)} style={{ border: `1px solid ${themeBorder}`, color: themeText }}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-sky btn-sm" style={{ padding: '10px 20px', fontWeight: 800 }}>
+                    Save & Synchronize Accommodation ✦
+                  </button>
+                </div>
               </div>
             </form>
           </div>
