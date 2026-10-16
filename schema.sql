@@ -124,6 +124,11 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 );
 COMMENT ON TABLE public.profiles IS 'Unified Identity & Relational Profile Linkage Storage';
 
+-- Ensure modern columns exist if tables were created previously
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS username TEXT UNIQUE;
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS username TEXT UNIQUE;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS username TEXT UNIQUE;
+
 -- D. User Confirmations & 2FA Tokens (Signup 2FA, OTP & Verification Storage)
 CREATE TABLE IF NOT EXISTS public.user_confirmations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

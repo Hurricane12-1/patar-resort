@@ -1,15 +1,58 @@
 -- ==============================================================================
--- J & D Beach House Resort · Production Cloud Seed Script (With Auto-Cleanup)
+-- J & D Beach House Resort · Production Cloud Seed Script (Safe Migration + Seeding)
 -- Cloud Target: Supabase Dashboard SQL Editor (PostgreSQL 15+)
 --
--- This script fixes "duplicate key value violates unique constraint" by first
--- cleaning up any existing conflicting accounts, then inserting fresh, working credentials.
+-- Fixes:
+--   1. Ensures "username" and all required columns exist in profiles, customers, and users.
+--   2. Deletes old conflicting auth records so no duplicate email/username errors occur.
+--   3. Inserts complete data for admin, receptionist, staff (accounting, housekeeping, kitchen), and guest.
 -- ==============================================================================
 
--- Step 1: Ensure cryptographic extension
+-- Step 1: Ensure required extensions
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- Step 2: Clean up any old duplicate auth records to guarantee a clean slate
+-- Step 2: Ensure columns exist on tables (Fixes: column "username" does not exist)
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS username TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS first_name TEXT DEFAULT '';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS middle_name TEXT DEFAULT '';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS last_name TEXT DEFAULT '';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS full_name TEXT DEFAULT '';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS role public.user_role DEFAULT 'customer';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS position TEXT DEFAULT '';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS phone TEXT DEFAULT '';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS address TEXT DEFAULT '';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS city TEXT DEFAULT '';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS emergency_contact TEXT DEFAULT '';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS provider TEXT DEFAULT 'email';
+
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS username TEXT;
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS first_name TEXT DEFAULT '';
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS middle_name TEXT DEFAULT '';
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS last_name TEXT DEFAULT '';
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS full_name TEXT DEFAULT '';
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS role public.user_role DEFAULT 'customer';
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS phone TEXT DEFAULT '';
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS address TEXT DEFAULT '';
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS city TEXT DEFAULT '';
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS emergency_contact TEXT DEFAULT '';
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS provider TEXT DEFAULT 'email';
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT false;
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS total_stays INTEGER DEFAULT 0;
+
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS username TEXT;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS first_name TEXT DEFAULT '';
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS middle_name TEXT DEFAULT '';
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS last_name TEXT DEFAULT '';
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS full_name TEXT DEFAULT '';
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS role public.user_role DEFAULT 'staff';
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS position TEXT DEFAULT '';
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS department public.dept_name DEFAULT 'front_desk';
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS phone TEXT DEFAULT '';
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS emergency_contact TEXT DEFAULT '';
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
+
+-- Step 3: Clean up any old duplicate auth records
 DELETE FROM auth.users 
 WHERE email IN (
   'admin@janddbeachhouse.ph',
@@ -20,7 +63,7 @@ WHERE email IN (
   'guest.juan@gmail.com'
 );
 
--- Step 3: Insert into Supabase Auth Core (auth.users)
+-- Step 4: Insert into Supabase Auth Core (auth.users)
 INSERT INTO auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
   raw_app_meta_data, raw_user_meta_data, created_at, updated_at
@@ -111,7 +154,7 @@ ON CONFLICT (id) DO UPDATE SET
   raw_user_meta_data = EXCLUDED.raw_user_meta_data,
   updated_at = now();
 
--- Step 4: Provision identities if auth.identities exists
+-- Step 5: Provision identities if auth.identities exists
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'auth' AND table_name = 'identities') THEN
@@ -128,7 +171,7 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
--- Step 5: Insert into Unified Identity Anchor (public.profiles)
+-- Step 6: Upsert into Unified Identity Anchor (public.profiles)
 INSERT INTO public.profiles (
   id, email, username, first_name, last_name, full_name, role, position, phone, updated_at
 )
@@ -150,7 +193,7 @@ ON CONFLICT (id) DO UPDATE SET
   phone = EXCLUDED.phone,
   updated_at = now();
 
--- Step 6: Insert into Dedicated Staff & Admin Storage (public.users)
+-- Step 7: Upsert into Dedicated Staff & Admin Storage (public.users)
 INSERT INTO public.users (
   id, email, username, first_name, last_name, full_name, role, position, department, phone, is_active, updated_at
 )
@@ -173,7 +216,7 @@ ON CONFLICT (id) DO UPDATE SET
   is_active = true,
   updated_at = now();
 
--- Step 7: Insert into Dedicated Customer & Guest Storage (public.customers)
+-- Step 8: Upsert into Dedicated Customer & Guest Storage (public.customers)
 INSERT INTO public.customers (
   id, email, username, first_name, last_name, full_name, role, phone, address, city, is_verified, total_stays, updated_at
 )
