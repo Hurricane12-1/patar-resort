@@ -364,15 +364,21 @@ export default function Admin() {
     }
   }, [isAdministrator, profile]);
 
-  useEffect(() => {
+  const fetchUsers = useCallback(() => {
     if (activeTab === 'accounts') {
       setSearchingUsers(true);
       api.adminCustomers(searchQuery, roleFilter)
-        .then(setUsers)
+        .then((data) => {
+          if (Array.isArray(data)) setUsers(data);
+        })
         .catch((e) => toast(e.message, true))
         .finally(() => setSearchingUsers(false));
     }
   }, [activeTab, searchQuery, roleFilter]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   // Live Audit Auto Logger Data Fetching
   const fetchAuditLogs = useCallback(() => {
@@ -2941,6 +2947,15 @@ export default function Admin() {
                     onChange={(e) => setSearchQuery(e.target.value)}
                     style={{ maxWidth: 260, background: isLightMode ? '#FFF' : undefined, color: themeText }}
                   />
+                  <button
+                    className="btn btn-sm"
+                    title="Reload live accounts from database"
+                    onClick={() => fetchUsers()}
+                    disabled={searchingUsers}
+                    style={{ border: `1px solid ${themeBorder}`, color: themeText, background: isLightMode ? '#FFF' : 'rgba(255,255,255,0.05)', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                  >
+                    🔄 {searchingUsers ? 'Loading…' : 'Refresh'}
+                  </button>
                   {accountsSubTab === 'staff' && (
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       <button

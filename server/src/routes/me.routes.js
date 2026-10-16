@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { asyncH, ApiError } from '../middleware/errors.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
-import { admin } from '../lib/supabase.js';
+import { admin, getSystemAdminClient } from '../lib/supabase.js';
 import { pingSMS } from '../lib/sms.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
 
@@ -67,7 +67,8 @@ r.patch('/me/password', authenticate,
 r.get('/admin/customers', authenticate, requireAdmin, asyncH(async (req, res) => {
   const query = String(req.query.q || '').trim();
   const roleFilter = String(req.query.role || '').trim();
-  const client = req.sb || admin;
+  const sysAdmin = await getSystemAdminClient().catch(() => null);
+  const client = sysAdmin || req.sb || admin;
 
   const resolveStaffEmail = (p) => {
     if (p.email) return p.email;
@@ -77,19 +78,20 @@ r.get('/admin/customers', authenticate, requireAdmin, asyncH(async (req, res) =>
     return '';
   };
 
+  // Tier 1: Unified profiles query with reservations and orders joins
   try {
     let q = client.from('profiles').select('*, reservations(id, total_php, status), resort_orders(id, status)')
       .order('created_at', { ascending: false });
     
     if (query) {
-      q = q.or(`full_name.ilike.%${query}%,phone.ilike.%${query}%,username.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%`);
+      q = q.or(`full_name.ilike.%${query}%,phone.ilike.%${query}%,username.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%,email.ilike.%${query}%`);
     }
     if (roleFilter) {
       q = q.eq('role', roleFilter);
     }
 
-    const { data, error } = await q.limit(60);
-    if (!error && data && data.length > 0) {
+    const { data, error } = await q.limit(100);
+    if (!error && Array.isArray(data) && data.length > 0) {
       return res.json(data.map((p) => ({
         ...p,
         email: resolveStaffEmail(p),
@@ -99,20 +101,20 @@ r.get('/admin/customers', authenticate, requireAdmin, asyncH(async (req, res) =>
       })));
     }
   } catch (err) {
-    console.warn('[Admin Customers] Join query notice:', err.message);
+    console.warn('[Admin Customers] Tier 1 query notice:', err.message);
   }
 
-  // Resilient fallback: simple profiles select without joins
+  // Tier 2: Resilient fallback: simple profiles select without joins
   try {
     let q = client.from('profiles').select('*').order('created_at', { ascending: false });
     if (query) {
-      q = q.or(`full_name.ilike.%${query}%,phone.ilike.%${query}%,username.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%`);
+      q = q.or(`full_name.ilike.%${query}%,phone.ilike.%${query}%,username.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%,email.ilike.%${query}%`);
     }
     if (roleFilter) {
       q = q.eq('role', roleFilter);
     }
-    const { data } = await q.limit(60);
-    if (data && data.length > 0) {
+    const { data, error } = await q.limit(100);
+    if (!error && Array.isArray(data) && data.length > 0) {
       return res.json(data.map((p) => ({
         ...p,
         email: resolveStaffEmail(p),
@@ -121,7 +123,48 @@ r.get('/admin/customers', authenticate, requireAdmin, asyncH(async (req, res) =>
         total_spent_php: 0,
       })));
     }
-  } catch {}
+  } catch (err) {
+    console.warn('[Admin Customers] Tier 2 query notice:', err.message);
+  }
+
+  // Tier 3: Physical separated tables fallback (users + customers)
+  try {
+    const fallbackClient = admin || client;
+    const [staffRes, custRes] = await Promise.all([
+      fallbackClient.from('users').select('*').order('created_at', { ascending: false }).limit(60).catch(() => ({ data: [] })),
+      fallbackClient.from('customers').select('*').order('created_at', { ascending: false }).limit(60).catch(() => ({ data: [] })),
+    ]);
+
+    const combined = [
+      ...(Array.isArray(staffRes.data) ? staffRes.data : []),
+      ...(Array.isArray(custRes.data) ? custRes.data : [])
+    ];
+
+    if (combined.length > 0) {
+      let filtered = combined;
+      if (roleFilter) {
+        filtered = filtered.filter(u => u.role === roleFilter);
+      }
+      if (query) {
+        const ql = query.toLowerCase();
+        filtered = filtered.filter(u =>
+          (u.full_name && u.full_name.toLowerCase().includes(ql)) ||
+          (u.email && u.email.toLowerCase().includes(ql)) ||
+          (u.username && u.username.toLowerCase().includes(ql)) ||
+          (u.phone && u.phone.toLowerCase().includes(ql))
+        );
+      }
+      return res.json(filtered.map((p) => ({
+        ...p,
+        email: resolveStaffEmail(p),
+        stays_count: p.total_stays || 0,
+        orders_count: 0,
+        total_spent_php: 0,
+      })));
+    }
+  } catch (err) {
+    console.warn('[Admin Customers] Tier 3 query notice:', err.message);
+  }
 
   return res.json([]);
 }));

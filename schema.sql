@@ -605,58 +605,97 @@ ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 
 -- ==============================================================================
--- 8. Row Level Security Policies
+-- 8. Row Level Security Policies & Role Helpers (Non-Recursive)
 -- ==============================================================================
+
+-- Security Definer Role Lookup Helpers (Bypasses RLS to prevent 42P17 recursion loops)
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles 
+    WHERE id = auth.uid() AND role IN ('administrator', 'admin')
+  );
+$$;
+
+CREATE OR REPLACE FUNCTION public.is_staff()
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles 
+    WHERE id = auth.uid() AND role IN ('administrator', 'admin', 'staff', 'receptionist', 'accounting')
+  );
+$$;
+
+GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated, anon;
+GRANT EXECUTE ON FUNCTION public.is_staff() TO authenticated, anon;
 
 -- Customers Table Policies
 DROP POLICY IF EXISTS "Customers can view own record" ON public.customers;
 CREATE POLICY "Customers can view own record" ON public.customers FOR SELECT USING (
-  auth.uid() = id OR
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('administrator', 'admin', 'staff', 'receptionist'))
+  auth.uid() = id OR public.is_staff()
 );
 
 DROP POLICY IF EXISTS "Customers can update own record" ON public.customers;
-CREATE POLICY "Customers can update own record" ON public.customers FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Customers can update own record" ON public.customers FOR UPDATE USING (
+  auth.uid() = id OR public.is_admin()
+);
 
 DROP POLICY IF EXISTS "Admins can manage all customers" ON public.customers;
 CREATE POLICY "Admins can manage all customers" ON public.customers FOR ALL USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('administrator', 'admin'))
+  public.is_admin()
 );
 
 -- Users Table Policies (Staff and Admins Only)
 DROP POLICY IF EXISTS "Staff can view staff users" ON public.users;
 CREATE POLICY "Staff can view staff users" ON public.users FOR SELECT USING (
-  auth.uid() = id OR
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('administrator', 'admin', 'staff', 'receptionist', 'accounting'))
+  auth.uid() = id OR public.is_staff()
 );
 
 DROP POLICY IF EXISTS "Admins can manage all staff users" ON public.users;
 CREATE POLICY "Admins can manage all staff users" ON public.users FOR ALL USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('administrator', 'admin'))
+  public.is_admin()
 );
 
--- Unified Profiles Policies
+-- Unified Profiles Policies (Clean & Non-Recursive)
 DROP POLICY IF EXISTS "Public can view basic profiles" ON public.profiles;
 CREATE POLICY "Public can view basic profiles" ON public.profiles FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
-CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
-
-DROP POLICY IF EXISTS "Admins can manage all profiles" ON public.profiles;
-CREATE POLICY "Admins can manage all profiles" ON public.profiles FOR ALL USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('administrator', 'admin'))
+CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (
+  auth.uid() = id OR public.is_admin()
 );
+
+DROP POLICY IF EXISTS "Users and admins can insert profiles" ON public.profiles;
+CREATE POLICY "Users and admins can insert profiles" ON public.profiles FOR INSERT WITH CHECK (
+  auth.uid() = id OR public.is_admin()
+);
+
+DROP POLICY IF EXISTS "Admins can delete profiles" ON public.profiles;
+CREATE POLICY "Admins can delete profiles" ON public.profiles FOR DELETE USING (
+  public.is_admin()
+);
+
+-- Drop the recursive ALL policy that previously triggered 42P17 infinite recursion
+DROP POLICY IF EXISTS "Admins can manage all profiles" ON public.profiles;
 
 -- User Confirmations Policies
 DROP POLICY IF EXISTS "Users can view own confirmations" ON public.user_confirmations;
 CREATE POLICY "Users can view own confirmations" ON public.user_confirmations FOR SELECT USING (
-  auth.uid() = user_id OR
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('administrator', 'admin'))
+  auth.uid() = user_id OR public.is_admin()
 );
 
 DROP POLICY IF EXISTS "System and admins manage confirmations" ON public.user_confirmations;
 CREATE POLICY "System and admins manage confirmations" ON public.user_confirmations FOR ALL USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('administrator', 'admin'))
+  public.is_admin()
 );
 
 -- Rooms Policies
@@ -665,14 +704,13 @@ CREATE POLICY "Anyone can view active rooms" ON public.rooms FOR SELECT USING (t
 
 DROP POLICY IF EXISTS "Staff and Admins can manage rooms" ON public.rooms;
 CREATE POLICY "Staff and Admins can manage rooms" ON public.rooms FOR ALL USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('administrator', 'admin', 'staff', 'receptionist'))
+  public.is_staff()
 );
 
 -- Reservations Policies
 DROP POLICY IF EXISTS "Users can view own reservations" ON public.reservations;
 CREATE POLICY "Users can view own reservations" ON public.reservations FOR SELECT USING (
-  auth.uid() = guest_id OR
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('administrator', 'admin', 'staff', 'receptionist', 'accounting'))
+  auth.uid() = guest_id OR public.is_staff()
 );
 
 DROP POLICY IF EXISTS "Users can create reservations" ON public.reservations;
@@ -680,7 +718,7 @@ CREATE POLICY "Users can create reservations" ON public.reservations FOR INSERT 
 
 DROP POLICY IF EXISTS "Staff and Admins can manage reservations" ON public.reservations;
 CREATE POLICY "Staff and Admins can manage reservations" ON public.reservations FOR ALL USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('administrator', 'admin', 'staff', 'receptionist', 'accounting'))
+  public.is_staff()
 );
 
 -- Reviews Policies
@@ -693,13 +731,13 @@ CREATE POLICY "Authenticated guests can create reviews" ON public.reviews FOR IN
 -- Department Tasks Policies
 DROP POLICY IF EXISTS "Staff can access tasks" ON public.department_tasks;
 CREATE POLICY "Staff can access tasks" ON public.department_tasks FOR ALL USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('administrator', 'admin', 'staff', 'receptionist', 'accounting'))
+  public.is_staff()
 );
 
 -- Resort Inventory Policies
 DROP POLICY IF EXISTS "Staff can access inventory" ON public.resort_inventory;
 CREATE POLICY "Staff can access inventory" ON public.resort_inventory FOR ALL USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('administrator', 'admin', 'staff', 'accounting'))
+  public.is_staff()
 );
 
 -- Services Policies
@@ -709,8 +747,7 @@ CREATE POLICY "Public can view services" ON public.resort_services FOR SELECT US
 -- Orders Policies
 DROP POLICY IF EXISTS "Guests can view own orders" ON public.resort_orders;
 CREATE POLICY "Guests can view own orders" ON public.resort_orders FOR SELECT USING (
-  auth.uid() = guest_id OR
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('administrator', 'admin', 'staff', 'receptionist', 'accounting'))
+  auth.uid() = guest_id OR public.is_staff()
 );
 
 DROP POLICY IF EXISTS "Guests can create orders" ON public.resort_orders;
@@ -719,19 +756,17 @@ CREATE POLICY "Guests can create orders" ON public.resort_orders FOR INSERT WITH
 -- Chat Messages Policies
 DROP POLICY IF EXISTS "Users can access own chat messages" ON public.chat_messages;
 CREATE POLICY "Users can access own chat messages" ON public.chat_messages FOR ALL USING (
-  auth.uid() = profile_id OR
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('administrator', 'admin', 'staff', 'receptionist'))
+  auth.uid() = profile_id OR public.is_staff()
 );
 
 -- Notifications Policies
 DROP POLICY IF EXISTS "Users can view own notifications" ON public.notifications;
 CREATE POLICY "Users can view own notifications" ON public.notifications FOR SELECT USING (
-  auth.uid() = profile_id OR
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('administrator', 'admin'))
+  auth.uid() = profile_id OR public.is_admin()
 );
 
 -- Audit Logs Policies
 DROP POLICY IF EXISTS "Admins can view audit logs" ON public.audit_logs;
 CREATE POLICY "Admins can view audit logs" ON public.audit_logs FOR SELECT USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('administrator', 'admin'))
+  public.is_admin()
 );
