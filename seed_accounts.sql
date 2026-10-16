@@ -2,10 +2,8 @@
 -- J & D Beach House Resort · Production Cloud Seed Script (Safe Migration + Seeding)
 -- Cloud Target: Supabase Dashboard SQL Editor (PostgreSQL 15+)
 --
--- Fixes:
---   1. Ensures "username" and all required columns exist in profiles, customers, and users.
---   2. Deletes old conflicting auth records so no duplicate email/username errors occur.
---   3. Inserts complete data for admin, receptionist, staff (accounting, housekeeping, kitchen), and guest.
+-- GoTrue Compatible: Sets provider_id = user_id::text and tokens = ''
+-- to prevent HTTP 500 error during GoTrue password authentication.
 -- ==============================================================================
 
 -- Step 1: Ensure required extensions
@@ -63,10 +61,11 @@ WHERE email IN (
   'guest.juan@gmail.com'
 );
 
--- Step 4: Insert into Supabase Auth Core (auth.users)
+-- Step 4: Ipasok sa auth.users (With full GoTrue token specifications)
 INSERT INTO auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
-  raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+  last_sign_in_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+  confirmation_token, email_change, email_change_token_new, recovery_token
 )
 VALUES
   (
@@ -77,10 +76,12 @@ VALUES
     'admin@janddbeachhouse.ph',
     crypt('AdminPassword2026!', gen_salt('bf', 10)),
     now(),
+    now(),
     '{"provider":"email","providers":["email"]}'::jsonb,
     '{"full_name":"Executive Director","username":"admin","role":"administrator"}'::jsonb,
     now(),
-    now()
+    now(),
+    '', '', '', ''
   ),
   (
     '00000000-0000-0000-0000-000000000000',
@@ -90,10 +91,12 @@ VALUES
     'receptionist@janddbeachhouse.ph',
     crypt('Receptionist2026!', gen_salt('bf', 10)),
     now(),
+    now(),
     '{"provider":"email","providers":["email"]}'::jsonb,
     '{"full_name":"Maria Santos","username":"receptionist","role":"receptionist"}'::jsonb,
     now(),
-    now()
+    now(),
+    '', '', '', ''
   ),
   (
     '00000000-0000-0000-0000-000000000000',
@@ -103,10 +106,12 @@ VALUES
     'accounting@janddbeachhouse.ph',
     crypt('Accounting2026!', gen_salt('bf', 10)),
     now(),
+    now(),
     '{"provider":"email","providers":["email"]}'::jsonb,
     '{"full_name":"Carlos Dalisay","username":"accountant","role":"accounting"}'::jsonb,
     now(),
-    now()
+    now(),
+    '', '', '', ''
   ),
   (
     '00000000-0000-0000-0000-000000000000',
@@ -116,10 +121,12 @@ VALUES
     'housekeeping@janddbeachhouse.ph',
     crypt('StaffPass2026!', gen_salt('bf', 10)),
     now(),
+    now(),
     '{"provider":"email","providers":["email"]}'::jsonb,
     '{"full_name":"Elena Reyes","username":"staff_housekeeping","role":"staff"}'::jsonb,
     now(),
-    now()
+    now(),
+    '', '', '', ''
   ),
   (
     '00000000-0000-0000-0000-000000000000',
@@ -129,10 +136,12 @@ VALUES
     'kitchen@janddbeachhouse.ph',
     crypt('StaffPass2026!', gen_salt('bf', 10)),
     now(),
+    now(),
     '{"provider":"email","providers":["email"]}'::jsonb,
     '{"full_name":"Ramon Bautista","username":"staff_kitchen","role":"staff"}'::jsonb,
     now(),
-    now()
+    now(),
+    '', '', '', ''
   ),
   (
     '00000000-0000-0000-0000-000000000000',
@@ -142,10 +151,12 @@ VALUES
     'guest.juan@gmail.com',
     crypt('GuestPass2026!', gen_salt('bf', 10)),
     now(),
+    now(),
     '{"provider":"email","providers":["email"]}'::jsonb,
     '{"full_name":"Juan Dela Cruz","username":"juan_delacruz","role":"customer"}'::jsonb,
     now(),
-    now()
+    now(),
+    '', '', '', ''
   )
 ON CONFLICT (id) DO UPDATE SET
   email = EXCLUDED.email,
@@ -154,18 +165,18 @@ ON CONFLICT (id) DO UPDATE SET
   raw_user_meta_data = EXCLUDED.raw_user_meta_data,
   updated_at = now();
 
--- Step 5: Provision identities if auth.identities exists
+-- Step 5: Ipasok sa auth.identities (provider_id = user_id::text para sa GoTrue)
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'auth' AND table_name = 'identities') THEN
     INSERT INTO auth.identities (id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at)
     VALUES
-      ('11111111-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111111', jsonb_build_object('sub', '11111111-1111-1111-1111-111111111111', 'email', 'admin@janddbeachhouse.ph'), 'email', 'admin@janddbeachhouse.ph', now(), now(), now()),
-      ('22222222-2222-2222-2222-222222222222', '22222222-2222-2222-2222-222222222222', jsonb_build_object('sub', '22222222-2222-2222-2222-222222222222', 'email', 'receptionist@janddbeachhouse.ph'), 'email', 'receptionist@janddbeachhouse.ph', now(), now(), now()),
-      ('33333333-3333-3333-3333-333333333333', '33333333-3333-3333-3333-333333333333', jsonb_build_object('sub', '33333333-3333-3333-3333-333333333333', 'email', 'accounting@janddbeachhouse.ph'), 'email', 'accounting@janddbeachhouse.ph', now(), now(), now()),
-      ('44444444-4444-4444-4444-444444444444', '44444444-4444-4444-4444-444444444444', jsonb_build_object('sub', '44444444-4444-4444-4444-444444444444', 'email', 'housekeeping@janddbeachhouse.ph'), 'email', 'housekeeping@janddbeachhouse.ph', now(), now(), now()),
-      ('55555555-5555-5555-5555-555555555555', '55555555-5555-5555-5555-555555555555', jsonb_build_object('sub', '55555555-5555-5555-5555-555555555555', 'email', 'kitchen@janddbeachhouse.ph'), 'email', 'kitchen@janddbeachhouse.ph', now(), now(), now()),
-      ('99999999-9999-9999-9999-999999999999', '99999999-9999-9999-9999-999999999999', jsonb_build_object('sub', '99999999-9999-9999-9999-999999999999', 'email', 'guest.juan@gmail.com'), 'email', 'guest.juan@gmail.com', now(), now(), now())
+      (gen_random_uuid(), '11111111-1111-1111-1111-111111111111', jsonb_build_object('sub', '11111111-1111-1111-1111-111111111111', 'email', 'admin@janddbeachhouse.ph'), 'email', '11111111-1111-1111-1111-111111111111', now(), now(), now()),
+      (gen_random_uuid(), '22222222-2222-2222-2222-222222222222', jsonb_build_object('sub', '22222222-2222-2222-2222-222222222222', 'email', 'receptionist@janddbeachhouse.ph'), 'email', '22222222-2222-2222-2222-222222222222', now(), now(), now()),
+      (gen_random_uuid(), '33333333-3333-3333-3333-333333333333', jsonb_build_object('sub', '33333333-3333-3333-3333-333333333333', 'email', 'accounting@janddbeachhouse.ph'), 'email', '33333333-3333-3333-3333-333333333333', now(), now(), now()),
+      (gen_random_uuid(), '44444444-4444-4444-4444-444444444444', jsonb_build_object('sub', '44444444-4444-4444-4444-444444444444', 'email', 'housekeeping@janddbeachhouse.ph'), 'email', '44444444-4444-4444-4444-444444444444', now(), now(), now()),
+      (gen_random_uuid(), '55555555-5555-5555-5555-555555555555', jsonb_build_object('sub', '55555555-5555-5555-5555-555555555555', 'email', 'kitchen@janddbeachhouse.ph'), 'email', '55555555-5555-5555-5555-555555555555', now(), now(), now()),
+      (gen_random_uuid(), '99999999-9999-9999-9999-999999999999', jsonb_build_object('sub', '99999999-9999-9999-9999-999999999999', 'email', 'guest.juan@gmail.com'), 'email', '99999999-9999-9999-9999-999999999999', now(), now(), now())
     ON CONFLICT DO NOTHING;
   END IF;
 EXCEPTION WHEN OTHERS THEN NULL;
