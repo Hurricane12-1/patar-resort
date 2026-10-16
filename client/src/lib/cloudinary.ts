@@ -3,6 +3,8 @@
  * Handles direct unsigned uploads, URL transformations, local fallback, and resort presets.
  */
 
+import { api } from './api.ts';
+
 export interface CloudinaryConfig {
   cloudName: string;
   uploadPreset: string;
@@ -13,8 +15,8 @@ export interface CloudinaryConfig {
 const STORAGE_KEY = 'jd_beach_house_cloudinary_config';
 
 export const DEFAULT_CLOUDINARY_CONFIG: CloudinaryConfig = {
-  cloudName: 'jd-beach-house',
-  uploadPreset: 'jd_beach_house_rooms',
+  cloudName: '',
+  uploadPreset: '',
   apiKey: '',
   imageUrl: '',
 };
@@ -64,8 +66,8 @@ export async function uploadImageToCloudinary(
 ): Promise<{ url: string; publicId?: string; source: 'cloudinary' | 'server' | 'local' }> {
   const cfg = { ...getCloudinaryConfig(), ...configOverride };
 
-  // 1. Attempt Direct Cloudinary Upload if cloudName and uploadPreset exist
-  if (cfg.cloudName && cfg.uploadPreset && !cfg.cloudName.includes('demo-')) {
+  // 1. Attempt Direct Cloudinary Upload if cloudName and uploadPreset are explicitly configured
+  if (cfg.cloudName && cfg.uploadPreset && !cfg.cloudName.includes('demo-') && cfg.cloudName !== 'jd-beach-house') {
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -94,32 +96,18 @@ export async function uploadImageToCloudinary(
     }
   }
 
-  // 2. Fallback: Upload to Anti-Backdoor Backend Server Uploads Endpoint
+  // 2. Reliable Backend Server Uploads Endpoint (/api/upload/image)
   try {
     const base64Data = await fileToBase64(file);
-    const serverUrl = window.location.origin.includes('5173') ? 'http://localhost:8000' : '';
-    const res = await fetch(`${serverUrl}/api/upload/image`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
-      },
-      body: JSON.stringify({
-        image_data: base64Data,
-        filename: file.name,
-      }),
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      if (data.url) {
-        const fullUrl = data.url.startsWith('http') ? data.url : `${serverUrl}${data.url}`;
-        return {
-          url: fullUrl,
-          publicId: data.filename,
-          source: 'server',
-        };
-      }
+    const data = await api.uploadImage(base64Data, file.name);
+    if (data?.url) {
+      const serverUrl = window.location.origin.includes('5173') ? 'http://localhost:8000' : '';
+      const fullUrl = data.url.startsWith('http') ? data.url : `${serverUrl}${data.url}`;
+      return {
+        url: fullUrl,
+        publicId: data.filename,
+        source: 'server',
+      };
     }
   } catch (err) {
     console.warn('[Server Image Upload] Backend upload notice, using local data URL:', err);

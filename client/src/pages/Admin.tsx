@@ -967,7 +967,7 @@ export default function Admin() {
 
     try {
       setUploadingRoomPhoto(true);
-      toast('☁️ Preparing Cloudinary CDN upload...');
+      toast('Uploading photo…');
       const uploaded = await uploadImageToCloudinary(file);
       const url = uploaded.url;
       const currentList = Array.isArray(editingRoom.images) ? [...editingRoom.images] : [];
@@ -980,10 +980,8 @@ export default function Admin() {
         images: currentList,
       });
 
-      toast(uploaded.source === 'cloudinary'
-        ? '☁️ Uploaded directly to Cloudinary Media CDN!'
-        : '✅ Uploaded room photo successfully!');
-    } catch (err) {
+      toast('✅ Room photo uploaded successfully!');
+    } catch (err: any) {
       toast(err.message || 'Failed to upload photo', true);
     } finally {
       setUploadingRoomPhoto(false);
@@ -4344,7 +4342,7 @@ export default function Admin() {
           <div style={{ width: '100%', maxWidth: 660, background: isLightMode ? '#FFFFFF' : '#0F172A', borderRadius: 20, border: `1px solid ${themeBorder}`, padding: 24, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', maxHeight: '92vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: `1px solid ${themeBorder}`, paddingBottom: 12 }}>
               <div>
-                <span style={{ fontSize: '.74rem', color: '#0EA5E9', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>ACCOMMODATION & CLOUDINARY MEDIA CDN</span>
+                <span style={{ fontSize: '.74rem', color: '#0EA5E9', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>ACCOMMODATION DETAILS & PHOTO MANAGEMENT</span>
                 <h3 style={{ margin: '4px 0 0', fontSize: '1.35rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>✏️ Edit {editingRoom.name}</h3>
               </div>
               <button onClick={() => setEditingRoom(null)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
@@ -4479,45 +4477,56 @@ export default function Admin() {
               </div>
 
               {/* SECTION B: CLOUDINARY MEDIA & AUTO-SCROLLING CAROUSEL */}
-              <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.6)', border: `1px solid ${themeBorder}`, borderRadius: 14, padding: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <div>
-                    <b style={{ fontSize: '.88rem', color: themeText, display: 'block' }}>☁️ Cloudinary Media & Auto-Scrolling Photos</b>
-                    <span style={{ fontSize: '.74rem', color: themeMuted }}>Upload to Cloudinary CDN, manage photo gallery, or select resort presets.</span>
-                  </div>
-                  <span className="pill" style={{ background: 'rgba(56,189,248,0.15)', color: '#0EA5E9', fontSize: '.7rem', fontWeight: 800 }}>
-                    ☁️ CLOUDINARY READY
-                  </span>
-                </div>
-
-                {/* LIVE AUTO-SCROLLING CAROUSEL PREVIEW */}
+              {/* SECTION B: ROOM PHOTOS & IMAGE UPLOAD */}
+              <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.6)', border: `1px solid ${themeBorder}`, borderRadius: 14, padding: 18 }}>
                 <div style={{ marginBottom: 14 }}>
-                  <RoomImageCarousel
-                    images={Array.isArray(editingRoom.images) && editingRoom.images.length > 0 ? editingRoom.images : (editingRoom.image_url ? [editingRoom.image_url] : [])}
-                    roomName={editingRoom.name}
-                    category={editingRoom.category}
-                    slug={editingRoom.slug}
-                    height={190}
-                    autoScroll={true}
-                    interval={3000}
-                    badge={
-                      <span className="pill" style={{ background: 'rgba(15,23,42,0.8)', color: '#38BDF8', fontSize: '.7rem', fontWeight: 800 }}>
-                        Previewing Live Auto-Cycle
-                      </span>
-                    }
-                  />
-                  <span style={{ fontSize: '.72rem', color: themeMuted, display: 'block', marginTop: 6, textAlign: 'center' }}>
-                    ✨ Auto-cycles every 3 seconds · Hover to pause · Drag/click controls to navigate
+                  <b style={{ fontSize: '.92rem', color: themeText, display: 'block' }}>📸 Room Photo / Upload Image</b>
+                  <span style={{ fontSize: '.75rem', color: themeMuted }}>Upload accommodation photos directly from your device (JPG, PNG, WebP up to 5MB).</span>
+                </div>
+
+                {/* UPLOAD DROPZONE / BUTTON */}
+                <input
+                  type="file"
+                  ref={roomFileInputRef}
+                  accept="image/*"
+                  onChange={handleRoomPhotoUpload}
+                  style={{ display: 'none' }}
+                />
+
+                <div
+                  onClick={() => !uploadingRoomPhoto && roomFileInputRef.current?.click()}
+                  style={{
+                    border: `2px dashed ${uploadingRoomPhoto ? '#0EA5E9' : themeBorder}`,
+                    borderRadius: 12,
+                    padding: '28px 16px',
+                    textAlign: 'center',
+                    cursor: uploadingRoomPhoto ? 'not-allowed' : 'pointer',
+                    background: isLightMode ? '#FFFFFF' : 'rgba(255,255,255,0.02)',
+                    marginBottom: 16,
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <div style={{ fontSize: '2.4rem', marginBottom: 8 }}>📷</div>
+                  <button
+                    type="button"
+                    disabled={uploadingRoomPhoto}
+                    className="btn btn-sky btn-sm"
+                    style={{ pointerEvents: 'none', fontWeight: 800, padding: '8px 22px', fontSize: '.85rem' }}
+                  >
+                    {uploadingRoomPhoto ? 'Uploading Image...' : '📁 Choose Image to Upload'}
+                  </button>
+                  <span style={{ fontSize: '.75rem', color: themeMuted, display: 'block', marginTop: 8 }}>
+                    Click here to browse and upload an image file
                   </span>
                 </div>
 
-                {/* CURRENT GALLERY LIST */}
-                {Array.isArray(editingRoom.images) && editingRoom.images.length > 0 && (
-                  <div style={{ marginBottom: 14 }}>
-                    <span style={{ fontSize: '.74rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 6 }}>
-                      ACTIVE GALLERY PHOTOS ({editingRoom.images.length})
+                {/* CURRENT UPLOADED PHOTOS GALLERY */}
+                {Array.isArray(editingRoom.images) && editingRoom.images.length > 0 ? (
+                  <div>
+                    <span style={{ fontSize: '.74rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 8, letterSpacing: '.04em', textTransform: 'uppercase' }}>
+                      Uploaded Room Photos ({editingRoom.images.length})
                     </span>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 8 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 10 }}>
                       {editingRoom.images.map((imgUrl, i) => {
                         const isPrimary = editingRoom.image_url === imgUrl || (!editingRoom.image_url && i === 0);
                         return (
@@ -4530,11 +4539,12 @@ export default function Admin() {
                               border: isPrimary ? '2px solid #0EA5E9' : `1px solid ${themeBorder}`,
                               background: '#0B132B',
                               aspectRatio: '16/10',
+                              boxShadow: isPrimary ? '0 0 0 2px rgba(14,165,233,0.3)' : 'none',
                             }}
                           >
                             <img src={imgUrl} alt={`Photo ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             {isPrimary && (
-                              <span style={{ position: 'absolute', top: 4, left: 4, background: '#0EA5E9', color: '#FFF', fontSize: '.6rem', fontWeight: 800, padding: '2px 5px', borderRadius: 4 }}>
+                              <span style={{ position: 'absolute', top: 4, left: 4, background: '#0EA5E9', color: '#FFF', fontSize: '.6rem', fontWeight: 800, padding: '2px 6px', borderRadius: 4 }}>
                                 ⭐ Primary
                               </span>
                             )}
@@ -4544,16 +4554,16 @@ export default function Admin() {
                                   type="button"
                                   onClick={() => handleSetPrimaryPhoto(imgUrl)}
                                   title="Set as primary showcase image"
-                                  style={{ background: 'rgba(0,0,0,0.65)', border: 'none', color: '#FFF', borderRadius: 4, padding: '2px 5px', fontSize: '.64rem', cursor: 'pointer' }}
+                                  style={{ background: 'rgba(0,0,0,0.7)', border: 'none', color: '#FFF', borderRadius: 4, padding: '2px 6px', fontSize: '.68rem', cursor: 'pointer' }}
                                 >
-                                  ⭐
+                                  ⭐ Set Primary
                                 </button>
                               )}
                               <button
                                 type="button"
                                 onClick={() => handleRemovePhoto(i)}
                                 title="Remove photo"
-                                style={{ background: 'rgba(239,68,68,0.8)', border: 'none', color: '#FFF', borderRadius: 4, padding: '2px 5px', fontSize: '.64rem', cursor: 'pointer' }}
+                                style={{ background: 'rgba(239,68,68,0.85)', border: 'none', color: '#FFF', borderRadius: 4, padding: '2px 6px', fontSize: '.68rem', cursor: 'pointer' }}
                               >
                                 ✕
                               </button>
@@ -4563,104 +4573,11 @@ export default function Admin() {
                       })}
                     </div>
                   </div>
-                )}
-
-                {/* CLOUDINARY UPLOAD BUTTON */}
-                <input
-                  type="file"
-                  ref={roomFileInputRef}
-                  accept="image/*"
-                  onChange={handleRoomPhotoUpload}
-                  style={{ display: 'none' }}
-                />
-
-                <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-                  <button
-                    type="button"
-                    disabled={uploadingRoomPhoto}
-                    onClick={() => roomFileInputRef.current?.click()}
-                    className="btn btn-sky btn-sm"
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}
-                  >
-                    <span>☁️</span>
-                    <span>{uploadingRoomPhoto ? 'Uploading to Cloudinary...' : 'Upload Photo to Cloudinary'}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const cfg = getCloudinaryConfig();
-                      toast(`☁️ Cloudinary Active: Cloud Name "${cfg.cloudName}", Preset "${cfg.uploadPreset}"`);
-                    }}
-                    style={{ fontSize: '.74rem', padding: '6px 12px', background: isLightMode ? '#FFF' : 'rgba(255,255,255,0.05)', border: `1px solid ${themeBorder}`, color: themeMuted, borderRadius: 8, cursor: 'pointer' }}
-                  >
-                    🔍 Verify Cloudinary
-                  </button>
-                </div>
-
-                {/* DIRECT URL INPUT */}
-                <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-                  <input
-                    type="text"
-                    value={newPhotoUrlInput}
-                    onChange={(e) => setNewPhotoUrlInput(e.target.value)}
-                    placeholder="Paste Cloudinary URL (https://res.cloudinary.com/...) or direct image URL"
-                    style={{ flex: 1, padding: '6px 10px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : 'rgba(255,255,255,0.05)', color: themeText, fontSize: '.78rem' }}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddPhotoUrl}
-                    style={{ padding: '6px 12px', background: '#0EA5E9', color: '#FFF', border: 'none', borderRadius: 8, fontSize: '.76rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
-                  >
-                    ➕ Add URL
-                  </button>
-                  {newPhotoUrlInput.includes('/image/upload/') && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const optimized = optimizeCloudinaryUrl(newPhotoUrlInput);
-                        setNewPhotoUrlInput(optimized);
-                        toast('✨ Injected Cloudinary auto-optimization: f_auto,q_auto');
-                      }}
-                      style={{ padding: '6px 10px', background: 'rgba(52,211,153,0.18)', color: '#10B981', border: '1px solid rgba(52,211,153,0.3)', borderRadius: 8, fontSize: '.72rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
-                    >
-                      ⚡ Auto-Optimize
-                    </button>
-                  )}
-                </div>
-
-                {/* 1-CLICK CURATED RESORT PRESETS */}
-                <div>
-                  <span style={{ fontSize: '.72rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 6 }}>
-                    OR 1-CLICK SELECT SCENIC PATAR RESORT PRESETS
-                  </span>
-                  <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
-                    {RESORT_PRESET_IMAGES.map((preset) => (
-                      <button
-                        key={preset.id}
-                        type="button"
-                        onClick={() => handleAddPresetPhoto(preset.url)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          padding: '4px 8px',
-                          borderRadius: 8,
-                          border: `1px solid ${themeBorder}`,
-                          background: isLightMode ? '#FFFFFF' : 'rgba(255,255,255,0.06)',
-                          color: themeText,
-                          fontSize: '.72rem',
-                          cursor: 'pointer',
-                          whiteSpace: 'nowrap',
-                          transition: 'all 0.15s ease',
-                        }}
-                      >
-                        <img src={preset.url} alt={preset.title} style={{ width: 20, height: 16, objectFit: 'cover', borderRadius: 3 }} />
-                        <span>{preset.title}</span>
-                      </button>
-                    ))}
+                ) : (
+                  <div style={{ padding: '14px', textAlign: 'center', background: isLightMode ? '#FFFFFF' : 'rgba(255,255,255,0.02)', borderRadius: 8, border: `1px dashed ${themeBorder}` }}>
+                    <small style={{ color: themeMuted }}>No images uploaded yet. Click the upload button above to add a photo.</small>
                   </div>
-                </div>
+                )}
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, borderTop: `1px solid ${themeBorder}`, paddingTop: 14 }}>
