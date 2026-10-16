@@ -1111,7 +1111,7 @@ export default function Admin() {
         {/* TOP EXECUTIVE HEADER CONTROL BAR WITH NOTIFICATIONS, PROFILE & THEME TOGGLE */}
         <header className="admin-header" style={{ background: themeHeaderBg, borderBottom: `1px solid ${themeBorder}` }}>
           {/* SIDEBAR TOGGLE, BREADCRUMB & SEARCH */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="admin-header-left">
             <button
               onClick={() => {
                 if (typeof window !== 'undefined' && window.innerWidth < 1024) {
@@ -1130,135 +1130,76 @@ export default function Admin() {
               </svg>
               <span className="sidebar-toggle-label">{sidebarHidden ? 'Show Menu' : 'Hide Menu'}</span>
             </button>
-            <span className="admin-header-title" style={{ fontSize: '.88rem', color: themeMuted, fontWeight: 600 }}>
-              Executive Control Center <span style={{ color: '#0EA5E9' }}>/ {sidebarItems.find(i => i.key === activeTab)?.label}</span>
+
+            <span className="admin-header-title">
+              <span className="admin-header-corp-prefix">Executive Control Center</span>
+              <span className="admin-header-tab-name"> / {sidebarItems.find(i => i.key === activeTab)?.label}</span>
             </span>
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+
+            <div className="admin-header-search-wrap">
               <input
                 className="search admin-header-search"
                 placeholder="Search analytics, guests, or stays…"
-                style={{ width: 240, maxWidth: '100%', padding: '6px 12px 6px 32px', fontSize: '.8rem', borderRadius: 20, background: isLightMode ? '#F1F5F9' : undefined, color: themeText, border: `1px solid ${themeBorder}` }}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
-              <span style={{ position: 'absolute', left: 10, display: 'flex', alignItems: 'center', color: themeMuted }}>
-                <IconSearch size={15} />
+              <span className="admin-header-search-icon">
+                <IconSearch size={14} />
               </span>
             </div>
           </div>
 
           {/* TOP RIGHT CONTROLS: SYNC LIVE, LIGHT/DARK THEME TOGGLE, NOTIFICATION BAR & AVATAR */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            {/* SENTINEL VERIFIED BADGE & LOCK GATE */}
-            <span style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 5,
-              padding: '5px 12px',
-              borderRadius: 20,
-              background: isLightMode ? '#ECFDF5' : 'rgba(16, 185, 129, 0.15)',
-              border: `1px solid ${isLightMode ? '#A7F3D0' : 'rgba(16, 185, 129, 0.3)'}`,
-              color: isLightMode ? '#059669' : '#10B981',
-              fontSize: '.74rem',
-              fontWeight: 800,
-              letterSpacing: '.04em',
-            }}>
+          <div className="admin-header-right">
+            {/* SENTINEL VERIFIED BADGE */}
+            <span className="admin-header-rbac">
               <IconShield size={13} color={isLightMode ? '#059669' : '#10B981'} />
-              <span>RBAC: admin (etc-34)</span>
+              <span>RBAC: admin<span className="rbac-token-key"> (etc-34)</span></span>
             </span>
 
+            {/* LOCK GATE BUTTON */}
             <button
               onClick={handleLockSentinelGate}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 5,
-                padding: '6px 12px',
-                borderRadius: 20,
-                border: '1px solid rgba(244, 63, 94, 0.35)',
-                background: isLightMode ? '#FFF1F2' : 'rgba(244, 63, 94, 0.1)',
-                color: isLightMode ? '#E11D48' : '#F43F5E',
-                fontSize: '.74rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-              }}
+              className="admin-header-btn admin-header-lock-btn"
               title="Lock Executive RBAC Sentinel Gate and clear security session"
             >
-              <span>🔒 Lock Gate</span>
+              <span>🔒</span>
+              <span className="btn-label">Lock Gate</span>
             </button>
 
             {/* SYNC LIVE ON-DEMAND BUTTON */}
             <button
               onClick={handleManualSync}
               disabled={refreshingAnalytics}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 7,
-                padding: '6px 14px',
-                borderRadius: 20,
-                border: isLightMode ? '1px solid #BAE6FD' : '1px solid rgba(14, 165, 233, 0.4)',
-                background: isLightMode ? '#F0F9FF' : 'rgba(14, 165, 233, 0.12)',
-                color: '#0284C7',
-                fontWeight: 700,
-                fontSize: '.8rem',
-                cursor: refreshingAnalytics ? 'wait' : 'pointer',
-                transition: 'all 0.2s ease',
-              }}
+              className="admin-header-btn admin-header-sync-btn"
               title="Synchronize live analytics and bookings with database"
             >
               <span style={{ display: 'inline-flex', animation: refreshingAnalytics ? 'spin 1s linear infinite' : 'none' }}>
                 <IconRefresh size={14} color="#0284C7" />
               </span>
-              <span>{refreshingAnalytics ? 'Syncing…' : 'Sync Live'}</span>
+              <span className="btn-label">{refreshingAnalytics ? 'Syncing…' : 'Sync Live'}</span>
             </button>
 
             {/* LIGHT MODE / DARK MODE TOGGLE BUTTON */}
             <button
               onClick={toggleThemeMode}
-              className="admin-theme-toggle-btn"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '6px 14px',
-                borderRadius: 20,
-                border: `1px solid ${themeBorder}`,
-                background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.08)',
-                color: themeText,
-                fontWeight: 700,
-                fontSize: '.8rem',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-              }}
+              className="admin-header-btn admin-theme-toggle-btn"
               title="Toggle Executive White / Dark Theme"
             >
-              {isLightMode ? <IconSun size={16} color="#F59E0B" /> : <IconMoon size={16} color="#38BDF8" />}
+              {isLightMode ? <IconSun size={15} color="#F59E0B" /> : <IconMoon size={15} color="#38BDF8" />}
               <span className="theme-btn-label">{isLightMode ? 'White Mode' : 'Dark Mode'}</span>
             </button>
 
             {/* NOTIFICATION BAR ICON & DROPDOWN */}
-            <div style={{ position: 'relative' }}>
+            <div className="admin-header-notif-wrap" style={{ position: 'relative' }}>
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
-                style={{
-                  background: isLightMode ? '#E2E8F0' : 'rgba(255,255,255,0.08)',
-                  border: `1px solid ${themeBorder}`,
-                  color: themeText,
-                  width: 38,
-                  height: 38,
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  position: 'relative',
-                }}
+                className="admin-header-icon-btn notif-bell-btn"
+                title="Executive Notifications"
               >
-                <IconBell size={18} color={themeText} />
+                <IconBell size={17} color={themeText} />
                 {notifications.length > 0 && (
-                  <span style={{ position: 'absolute', top: 2, right: 2, background: '#F43F5E', color: '#FFF', borderRadius: '50%', width: 16, height: 16, fontSize: '.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span className="notif-badge">
                     {notifications.length}
                   </span>
                 )}
@@ -1270,7 +1211,7 @@ export default function Admin() {
                   style={{
                     position: 'absolute',
                     right: 0,
-                    top: 48,
+                    top: 44,
                     width: 320,
                     maxWidth: 'calc(100vw - 28px)',
                     background: themeSidebarBg,
@@ -1299,18 +1240,18 @@ export default function Admin() {
               )}
             </div>
 
-            {/* ADMIN PROFILE AVATAR & BADGE WITH LIVE NAME & PICTURE SYNCHRONIZATION */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: isLightMode ? '#E2E8F0' : 'rgba(255,255,255,0.05)', padding: '4px 14px 4px 6px', borderRadius: 20, border: `1px solid ${themeBorder}` }}>
+            {/* ADMIN PROFILE AVATAR & BADGE */}
+            <div className="admin-header-profile" title={`Administrator: ${adminProfileState.fullName}`}>
               {adminProfileState.customAvatarUrl ? (
-                <img src={adminProfileState.customAvatarUrl} alt="Admin Avatar" style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }} />
+                <img src={adminProfileState.customAvatarUrl} alt="Admin Avatar" className="admin-profile-avatar" />
               ) : (
-                <span style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, #0EA5E9, #38BDF8)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF' }}>
-                  <IconCrown size={18} color="#FFF" />
+                <span className="admin-profile-avatar placeholder">
+                  <IconCrown size={15} color="#FFF" />
                 </span>
               )}
-              <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
-                <b style={{ fontSize: '.84rem', color: themeText }}>{adminProfileState.fullName.split(' ')[0]}</b>
-                <span style={{ fontSize: '.62rem', color: '#0EA5E9', fontWeight: 800, letterSpacing: '.05em' }}>ADMINISTRATOR</span>
+              <div className="admin-profile-info">
+                <b className="admin-profile-name">{adminProfileState.fullName.split(' ')[0]}</b>
+                <span className="admin-profile-role">ADMIN</span>
               </div>
             </div>
           </div>
@@ -2814,12 +2755,12 @@ export default function Admin() {
           {activeTab === 'accounts' && (
             <div className="panel" style={{ background: themeCardBg, border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 24, boxShadow: themeShadow }}>
               {/* Header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 14 }}>
+              <div className="admin-tab-header">
                 <div>
                   <h3 className="serif" style={{ fontSize: '1.5rem', margin: 0, color: themeText }}>Accounts Directory</h3>
-                  <p className="muted small">Manage staff credentials, customer profiles, and account recovery.</p>
+                  <p className="muted small" style={{ margin: '4px 0 0' }}>Manage staff credentials, customer profiles, and account recovery.</p>
                 </div>
-                <div style={{ display: 'flex', gap: 10 }}>
+                <div className="admin-tab-header-actions">
                   <input
                     className="search"
                     placeholder="Search by name or phone…"
@@ -2828,7 +2769,7 @@ export default function Admin() {
                     style={{ maxWidth: 260, background: isLightMode ? '#FFF' : undefined, color: themeText }}
                   />
                   {accountsSubTab === 'staff' && (
-                    <div style={{ display: 'flex', gap: 8 }}>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       <button
                         className="btn btn-sky btn-sm"
                         onClick={() => {
