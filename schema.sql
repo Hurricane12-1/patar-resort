@@ -217,7 +217,8 @@ CREATE TABLE IF NOT EXISTS public.audit_logs (
 
 -- 4. Analytical Views
 
-CREATE OR REPLACE VIEW public.analytics_overview AS
+DROP VIEW IF EXISTS public.analytics_overview CASCADE;
+CREATE VIEW public.analytics_overview AS
 SELECT
   (SELECT COUNT(*) FROM public.reservations WHERE status IN ('confirmed', 'checked_in')) AS active_bookings,
   (SELECT COUNT(*) FROM public.rooms WHERE is_active = true) AS active_rooms,
