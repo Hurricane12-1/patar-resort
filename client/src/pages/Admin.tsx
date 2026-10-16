@@ -1388,7 +1388,7 @@ export default function Admin() {
       {/* 2. MAIN EXECUTIVE RIGHT PANE WRAPPER */}
       <div className="admin-right-pane">
         {/* TOP EXECUTIVE HEADER CONTROL BAR WITH NOTIFICATIONS, PROFILE & THEME TOGGLE */}
-        <header className="admin-header" style={{ background: themeHeaderBg, borderBottom: `1px solid ${themeBorder}` }}>
+        <header className="admin-header" style={{ background: themeHeaderBg, borderBottom: `1px solid ${themeBorder}`, position: 'relative', zIndex: 100, overflow: 'visible' }}>
           {/* SIDEBAR TOGGLE, BREADCRUMB & SEARCH */}
           <div className="admin-header-left">
             <button
@@ -1455,7 +1455,7 @@ export default function Admin() {
             </button>
 
             {/* NOTIFICATION BAR ICON & DROPDOWN */}
-            <div className="admin-header-notif-wrap" style={{ position: 'relative' }}>
+            <div className="admin-header-notif-wrap" style={{ position: 'relative', zIndex: 102 }}>
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
                 className={`admin-header-btn admin-header-notif-btn ${unreadNotifsCount > 0 ? 'has-alerts' : ''}`}
@@ -1479,21 +1479,32 @@ export default function Admin() {
                 <>
                   <div
                     onClick={() => setShowNotifications(false)}
-                    style={{ position: 'fixed', inset: 0, zIndex: 199 }}
+                    style={{
+                      position: 'fixed',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      width: '100vw',
+                      height: '100vh',
+                      zIndex: 9998,
+                      background: 'rgba(0, 0, 0, 0.25)',
+                    }}
                   />
                   <div
                     style={{
                       position: 'absolute',
                       right: 0,
-                      top: 44,
-                      width: 360,
+                      top: 'calc(100% + 8px)',
+                      width: 380,
                       maxWidth: 'calc(100vw - 28px)',
-                      background: themeSidebarBg,
-                      border: `1px solid ${themeBorder}`,
+                      background: isLightMode ? '#FFFFFF' : '#0F172A',
+                      color: isLightMode ? '#0F172A' : '#F8FAFC',
+                      border: `1px solid ${isLightMode ? '#CBD5E1' : 'rgba(255,255,255,0.18)'}`,
                       borderRadius: 14,
-                      boxShadow: '0 10px 30px rgba(0,0,0,0.25)',
-                      padding: 14,
-                      zIndex: 200,
+                      boxShadow: isLightMode ? '0 16px 40px rgba(0,0,0,0.18)' : '0 20px 45px rgba(0,0,0,0.75)',
+                      padding: 16,
+                      zIndex: 9999,
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${themeBorder}`, paddingBottom: 8, marginBottom: 10 }}>

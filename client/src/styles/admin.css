@@ -141,6 +141,8 @@
 
 /* 5. TOP EXECUTIVE HEADER (ULTRA-RESPONSIVE ARCHITECTURE) */
 .admin-portal header.admin-header {
+  position: relative !important;
+  z-index: 100 !important;
   height: 64px;
   min-height: 64px;
   max-height: 64px;
@@ -151,11 +153,9 @@
   padding: 0 20px;
   background: rgba(255, 255, 255, 0.98);
   border-bottom: 1px solid #E2E8F0;
-  z-index: 40;
-  backdrop-filter: blur(12px);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
   box-sizing: border-box;
-  overflow: hidden !important; /* ABSOLUTE GUARANTEE: NEVER OVERFLOW VERTICALLY */
+  overflow: visible !important; /* CRITICAL: Must be visible so alert dropdowns and action menus float over dashboard content */
   gap: 10px;
 }
 
@@ -247,6 +247,13 @@
   gap: 8px;
   flex-shrink: 0;
   white-space: nowrap !important;
+  position: relative;
+  z-index: 101;
+}
+
+.admin-portal .admin-header-notif-wrap {
+  position: relative;
+  z-index: 102;
 }
 
 /* Header Action Buttons */
