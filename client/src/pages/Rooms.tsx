@@ -5,63 +5,34 @@ import { api } from '../lib/api.ts';
 import { money } from '../lib/format.ts';
 import { roomImg, roomGallery } from '../lib/images.ts';
 import Stars from '../components/Stars.tsx';
+import RoomImageCarousel from '../components/RoomImageCarousel.tsx';
 import { useReveal } from '../hooks/useReveal.ts';
 import { CANONICAL_ROOMS } from '../lib/canonicalRooms.ts';
 
 const CATS = ['All', 'Cottage', 'Garden', 'Suite', 'Villa', 'Dorm'];
 
 function RoomCardItem({ s, index }) {
-  const gallery = useMemo(() => {
-    const list = [s.image_url, ...roomGallery(s.slug)].filter(Boolean);
+  const images = useMemo(() => {
+    const list = [
+      s.image_url,
+      ...(Array.isArray(s.images) ? s.images : []),
+      ...roomGallery(s.slug),
+    ].filter(Boolean);
     return Array.from(new Set(list));
-  }, [s.slug, s.image_url]);
-  const [activeImg, setActiveImg] = useState(gallery[0]);
-
-  useEffect(() => {
-    setActiveImg(gallery[0]);
-  }, [gallery]);
+  }, [s.slug, s.image_url, s.images]);
 
   return (
     <div className="room-card reveal" style={{ transitionDelay: `${(index % 2) * 110}ms` }}>
-      {/* MAIN INTERCHANGEABLE DISPLAY IMAGE */}
-      <div className="im" style={{ position: 'relative' }}>
-        {activeImg ? (
-          <img src={activeImg} alt={s.name} loading="lazy" style={{ transition: 'opacity 0.3s ease' }} />
-        ) : (
-          <div style={{ width: '100%', height: 210, background: 'linear-gradient(135deg, rgba(2,132,199,0.18), rgba(14,165,233,0.06))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ fontSize: '3.5rem', fontWeight: 800, color: '#0EA5E9' }}>
-              {(s.name || 'Room')[0].toUpperCase()}
-            </span>
-          </div>
-        )}
-        
-        {/* INTERCHANGEABLE THUMBNAIL OVERLAY SWITCHER */}
-        {gallery.length > 1 && (
-          <div style={{ position: 'absolute', bottom: 10, right: 10, display: 'flex', gap: 6, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)', padding: 4, borderRadius: 8 }}>
-            {gallery.map((gUrl, gIdx) => (
-              <img
-                key={gIdx}
-                src={gUrl}
-                alt={`View ${gIdx + 1}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActiveImg(gUrl);
-                }}
-                style={{
-                  width: 28,
-                  height: 24,
-                  borderRadius: 4,
-                  objectFit: 'cover',
-                  cursor: 'pointer',
-                  border: activeImg === gUrl ? '2px solid #0EA5E9' : '1px solid rgba(255,255,255,0.4)',
-                  opacity: activeImg === gUrl ? 1 : 0.65,
-                  transition: 'all 0.2s ease',
-                }}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+      {/* AUTO-SCROLLING INTERACTIVE ROOM IMAGE CAROUSEL */}
+      <RoomImageCarousel
+        images={images}
+        roomName={s.name}
+        category={s.category}
+        slug={s.slug}
+        height={220}
+        autoScroll={true}
+        interval={3500}
+      />
 
       <div className="bd">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

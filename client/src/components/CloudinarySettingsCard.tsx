@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { getThemePalette, getCardStyles } from '../styles/modules/index.ts';
+import { getCloudinaryConfig, saveCloudinaryConfig } from '../lib/cloudinary.ts';
 
 export default function CloudinarySettingsCard({
   cloudinaryConfig = {},
@@ -7,11 +8,18 @@ export default function CloudinarySettingsCard({
   isLightMode = false,
   toast = () => {},
 }) {
-  const [cloudName, setCloudName] = useState(cloudinaryConfig.cloudName || '');
-  const [uploadPreset, setUploadPreset] = useState(cloudinaryConfig.uploadPreset || '');
-  const [apiKey, setApiKey] = useState(cloudinaryConfig.apiKey || '');
-  const [imageUrl, setImageUrl] = useState(cloudinaryConfig.imageUrl || '');
+  const initial = { ...getCloudinaryConfig(), ...cloudinaryConfig };
+  const [cloudName, setCloudName] = useState(initial.cloudName || '');
+  const [uploadPreset, setUploadPreset] = useState(initial.uploadPreset || '');
+  const [apiKey, setApiKey] = useState(initial.apiKey || '');
+  const [imageUrl, setImageUrl] = useState(initial.imageUrl || '');
   const [testing, setTesting] = useState(false);
+
+  useEffect(() => {
+    const fresh = getCloudinaryConfig();
+    if (!cloudName && fresh.cloudName) setCloudName(fresh.cloudName);
+    if (!uploadPreset && fresh.uploadPreset) setUploadPreset(fresh.uploadPreset);
+  }, []);
 
   const t = getThemePalette(isLightMode);
   const cs = getCardStyles(t);
@@ -23,7 +31,9 @@ export default function CloudinarySettingsCard({
         const parts = imageUrl.split('/image/upload/');
         const newUrl = `${parts[0]}/image/upload/${transformStr}/${parts[1].replace(/^[a-z0-9_,]+?\//i, '')}`;
         setImageUrl(newUrl);
-        onConfigChange({ cloudName, uploadPreset, apiKey, imageUrl: newUrl });
+        const updated = { cloudName, uploadPreset, apiKey, imageUrl: newUrl };
+        saveCloudinaryConfig(updated);
+        onConfigChange(updated);
         toast('✨ Applied Cloudinary dynamic URL transformation preset');
       } else {
         toast('ℹ️ Paste a valid Cloudinary URL to apply auto-transformations');
@@ -35,8 +45,10 @@ export default function CloudinarySettingsCard({
 
   const handleSave = (e) => {
     e?.preventDefault();
-    onConfigChange({ cloudName, uploadPreset, apiKey, imageUrl });
-    toast('☁️ Cloudinary CDN settings updated successfully');
+    const updated = { cloudName, uploadPreset, apiKey, imageUrl };
+    saveCloudinaryConfig(updated);
+    onConfigChange(updated);
+    toast('☁️ Cloudinary CDN settings updated and saved successfully');
   };
 
   const handleTestConnection = () => {

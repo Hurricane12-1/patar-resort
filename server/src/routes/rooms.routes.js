@@ -9,8 +9,77 @@ import { logAuditEvent } from '../lib/auditLogger.js';
 
 const r = Router();
 
+export function normalizeRoom(room) {
+  if (!room) return room;
+  const rawAmenities = Array.isArray(room.amenities) ? room.amenities : [];
+  const cleanAmenities = [];
+  const images = [];
+
+  for (const item of rawAmenities) {
+    if (typeof item === 'string' && (item.startsWith('__img__:') || item.startsWith('img:'))) {
+      const url = item.replace(/^(__img__|img):/, '').trim();
+      if (url && !images.includes(url)) images.push(url);
+    } else {
+      cleanAmenities.push(item);
+    }
+  }
+
+  const primaryImage = room.image_url || images[0] || '';
+  const allImages = Array.isArray(room.images) && room.images.length > 0
+    ? room.images
+    : (images.length > 0 ? images : (primaryImage ? [primaryImage] : []));
+
+  return {
+    ...room,
+    image_url: primaryImage,
+    images: allImages,
+    amenities: cleanAmenities,
+  };
+}
+
+export function packRoomPayload(body, existingRoom) {
+  const payload = { ...body };
+  const hasImagesField = 'images' in body;
+  const hasImageUrlField = 'image_url' in body;
+
+  if (hasImagesField || hasImageUrlField) {
+    const imagesToStore = [];
+    if (body.image_url && typeof body.image_url === 'string') {
+      imagesToStore.push(body.image_url.trim());
+    }
+    if (Array.isArray(body.images)) {
+      for (const img of body.images) {
+        if (typeof img === 'string' && img.trim() && !imagesToStore.includes(img.trim())) {
+          imagesToStore.push(img.trim());
+        }
+      }
+    }
+
+    const imageTags = imagesToStore.map(url => `__img__:${url}`);
+
+    let baseAmenities = [];
+    if (Array.isArray(body.amenities)) {
+      baseAmenities = body.amenities.filter(a => typeof a === 'string' && !a.startsWith('__img__:') && !a.startsWith('img:'));
+    } else if (existingRoom && Array.isArray(existingRoom.amenities)) {
+      baseAmenities = existingRoom.amenities.filter(a => typeof a === 'string' && !a.startsWith('__img__:') && !a.startsWith('img:'));
+    }
+
+    payload.amenities = [...baseAmenities, ...imageTags];
+  } else if (Array.isArray(body.amenities) && existingRoom) {
+    const existingImages = (existingRoom.amenities || []).filter(a => typeof a === 'string' && (a.startsWith('__img__:') || a.startsWith('img:')));
+    const cleanAmenities = body.amenities.filter(a => typeof a === 'string' && !a.startsWith('__img__:') && !a.startsWith('img:'));
+    payload.amenities = [...cleanAmenities, ...existingImages];
+  }
+
+  delete payload.image_url;
+  delete payload.images;
+
+  return payload;
+}
+
 r.get('/rooms', asyncH(async (req, res) => {
-  const cacheKey = `rooms:catalog:${req.query.category || 'all'}:${req.query.q || 'all'}`;
+  const includeAll = req.query.include_inactive === 'true';
+  const cacheKey = `rooms:catalog:${req.query.category || 'all'}:${req.query.q || 'all'}:${includeAll ? 'all' : 'active'}`;
   const cached = await redis.get(cacheKey);
   if (cached) {
     res.setHeader('X-Cache', 'HIT');
@@ -18,8 +87,11 @@ r.get('/rooms', asyncH(async (req, res) => {
     return res.json(cached);
   }
 
-  let q = admin.from('rooms').select('*').eq('is_active', true)
-    .order('rating_avg', { ascending: false });
+  let q = admin.from('rooms').select('*');
+  if (!includeAll) {
+    q = q.eq('is_active', true);
+  }
+  q = q.order('rating_avg', { ascending: false });
   if (req.query.category && req.query.category !== 'All') {
     q = q.ilike('category', req.query.category);
   }
@@ -32,7 +104,7 @@ r.get('/rooms', asyncH(async (req, res) => {
     if (error) {
       console.warn('[Rooms API] Supabase query notice:', error.message);
     } else {
-      result = data || [];
+      result = (data || []).map(normalizeRoom);
     }
   } catch (err) {
     console.warn('[Rooms API] Query exception:', err.message);
@@ -51,7 +123,7 @@ r.get('/rooms/:slug', asyncH(async (req, res) => {
   try {
     const { data, error } = await admin.from('rooms').select('*')
       .eq('slug', req.params.slug).single();
-    if (!error && data) room = data;
+    if (!error && data) room = normalizeRoom(data);
   } catch (err) {
     console.warn('[Rooms Slug API] Error fetching slug:', err?.message);
   }
@@ -151,6 +223,8 @@ r.post('/rooms', authenticate, requireAdmin,
     units: z.coerce.number().int().min(1).default(1),
     rate_php: z.coerce.number().int().min(100),
     amenities: z.array(z.string()).default([]),
+    image_url: z.string().optional(),
+    images: z.array(z.string()).optional(),
     is_active: z.boolean().default(true),
   })),
   asyncH(async (req, res) => {
@@ -158,11 +232,14 @@ r.post('/rooms', authenticate, requireAdmin,
     if (!slug) {
       slug = req.body.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `room-${Date.now()}`;
     }
-    const payload = { ...req.body, slug };
+    const packed = packRoomPayload(req.body, null);
+    const payload = { ...packed, slug };
     const client = req.sb || (await getSystemAdminClient());
     const { data, error } = await client.from('rooms').insert(payload).select().single();
     if (error) throw new ApiError(500, error.message);
     await redis.clear();
+
+    const normalized = normalizeRoom(data);
 
     await logAuditEvent({
       actor: req.user,
@@ -173,7 +250,7 @@ r.post('/rooms', authenticate, requireAdmin,
       req,
     });
 
-    return res.status(201).json(data);
+    return res.status(201).json(normalized);
   }));
 
 r.patch('/rooms/:id', authenticate, requireAdmin,
@@ -186,16 +263,29 @@ r.patch('/rooms/:id', authenticate, requireAdmin,
     units: z.coerce.number().int().min(1).optional(),
     rate_php: z.coerce.number().int().min(100).optional(),
     amenities: z.array(z.string()).optional(),
+    image_url: z.string().optional(),
+    images: z.array(z.string()).optional(),
     is_active: z.boolean().optional(),
   })),
   asyncH(async (req, res) => {
     const client = req.sb || (await getSystemAdminClient());
+
+    let existingRoom = null;
+    try {
+      const { data } = await client.from('rooms').select('*').eq('id', req.params.id).single();
+      existingRoom = data;
+    } catch {}
+
+    const payload = packRoomPayload(req.body, existingRoom);
+
     const { data, error } = await client.from('rooms')
-      .update(req.body)
+      .update(payload)
       .eq('id', req.params.id)
       .select().single();
     if (error) throw new ApiError(500, error.message);
     await redis.clear();
+
+    const normalized = normalizeRoom(data);
 
     await logAuditEvent({
       actor: req.user,
@@ -206,7 +296,7 @@ r.patch('/rooms/:id', authenticate, requireAdmin,
       req,
     });
 
-    return res.json(data);
+    return res.json(normalized);
   }));
 
 r.delete('/rooms/:id', authenticate, requireAdmin, asyncH(async (req, res) => {

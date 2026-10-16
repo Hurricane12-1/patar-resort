@@ -1039,3 +1039,25 @@
     padding: 6px 8px !important;
   }
 }
+
+/* 11. ROOM IMAGE CAROUSEL & AUTO-SCROLL ANIMATIONS */
+@keyframes roomCarouselFadeIn {
+  from {
+    opacity: 0.4;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.room-image-carousel {
+  position: relative;
+  transition: box-shadow 0.3s ease;
+}
+
+.room-image-carousel:hover {
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.4);
+}
+

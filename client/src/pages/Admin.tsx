@@ -15,6 +15,14 @@ import { api, API_BASE } from '../lib/api.ts';
 import { supabase } from '../lib/supabaseClient.ts';
 import { InterchangeableImagePicker } from '../components/InterchangeableImagePicker.tsx';
 import CloudinarySettingsCard from '../components/CloudinarySettingsCard.tsx';
+import RoomImageCarousel from '../components/RoomImageCarousel.tsx';
+import {
+  getCloudinaryConfig,
+  saveCloudinaryConfig,
+  uploadImageToCloudinary,
+  optimizeCloudinaryUrl,
+  RESORT_PRESET_IMAGES,
+} from '../lib/cloudinary.ts';
 import { ExecutiveGuestChatModal } from '../components/ExecutiveGuestChatModal.tsx';
 import { ExecutiveGuestConversationsPanel } from '../components/ExecutiveGuestConversationsPanel.tsx';
 import { AnalyticsGlossaryModal } from '../components/AnalyticsGlossaryModal.tsx';
@@ -320,6 +328,9 @@ export default function Admin() {
     amenities: 'Air Conditioning, Free Wi-Fi, Private Bath, Sea View',
   });
   const [editingRoom, setEditingRoom] = useState(null);
+  const [uploadingRoomPhoto, setUploadingRoomPhoto] = useState(false);
+  const [newPhotoUrlInput, setNewPhotoUrlInput] = useState('');
+  const roomFileInputRef = useRef(null);
 
   const [showCreateSupplyModal, setShowCreateSupplyModal] = useState(false);
   const [newSupply, setNewSupply] = useState({
@@ -333,7 +344,7 @@ export default function Admin() {
 
   const refreshRoomsAndInventory = useCallback(() => {
     setLoadingRoomsAndInv(true);
-    Promise.all([api.rooms(), api.departmentInventory()])
+    Promise.all([api.rooms(true), api.departmentInventory()])
       .then(([r, inv]) => {
         setRoomsList(Array.isArray(r) ? r : []);
         setInventoryList(Array.isArray(inv) ? inv : []);
@@ -782,6 +793,11 @@ export default function Admin() {
       const amenitiesArr = typeof editingRoom.amenities === 'string'
         ? editingRoom.amenities.split(',').map((s) => s.trim()).filter(Boolean)
         : (editingRoom.amenities || []);
+      const imagesArr = Array.isArray(editingRoom.images)
+        ? editingRoom.images.filter(Boolean)
+        : (editingRoom.image_url ? [editingRoom.image_url] : []);
+      const primaryImg = editingRoom.image_url || imagesArr[0] || '';
+
       const updated = await api.updateRoom(editingRoom.id, {
         name: editingRoom.name,
         category: editingRoom.category,
@@ -790,13 +806,105 @@ export default function Admin() {
         units: Number(editingRoom.units),
         rate_php: Number(editingRoom.rate_php),
         amenities: amenitiesArr,
+        image_url: primaryImg,
+        images: imagesArr,
       });
+
       setRoomsList((prev) => prev.map((r) => (r.id === editingRoom.id ? { ...r, ...updated } : r)));
       setEditingRoom(null);
-      toast(`✦ Accommodation "${editingRoom.name}" updated`);
+      toast(`✦ Accommodation "${editingRoom.name}" updated & synchronized live!`);
     } catch (err) {
       toast(err.message, true);
     }
+  }
+
+  async function handleRoomPhotoUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file || !editingRoom) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast('Please upload a valid image file (JPG, PNG, WebP).', true);
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast('Image file exceeds 5MB limit.', true);
+      return;
+    }
+
+    try {
+      setUploadingRoomPhoto(true);
+      toast('☁️ Preparing Cloudinary CDN upload...');
+      const uploaded = await uploadImageToCloudinary(file);
+      const url = uploaded.url;
+      const currentList = Array.isArray(editingRoom.images) ? [...editingRoom.images] : [];
+      if (!currentList.includes(url)) currentList.push(url);
+      const primaryUrl = editingRoom.image_url || url;
+
+      setEditingRoom({
+        ...editingRoom,
+        image_url: primaryUrl,
+        images: currentList,
+      });
+
+      toast(uploaded.source === 'cloudinary'
+        ? '☁️ Uploaded directly to Cloudinary Media CDN!'
+        : '✅ Uploaded room photo successfully!');
+    } catch (err) {
+      toast(err.message || 'Failed to upload photo', true);
+    } finally {
+      setUploadingRoomPhoto(false);
+      if (e.target) e.target.value = '';
+    }
+  }
+
+  function handleAddPhotoUrl() {
+    if (!editingRoom || !newPhotoUrlInput.trim()) return;
+    const cleanUrl = newPhotoUrlInput.trim();
+    const currentList = Array.isArray(editingRoom.images) ? [...editingRoom.images] : [];
+    if (!currentList.includes(cleanUrl)) currentList.push(cleanUrl);
+    setEditingRoom({
+      ...editingRoom,
+      image_url: editingRoom.image_url || cleanUrl,
+      images: currentList,
+    });
+    setNewPhotoUrlInput('');
+    toast('🖼️ Added photo to room gallery');
+  }
+
+  function handleAddPresetPhoto(presetUrl) {
+    if (!editingRoom) return;
+    const currentList = Array.isArray(editingRoom.images) ? [...editingRoom.images] : [];
+    if (!currentList.includes(presetUrl)) currentList.push(presetUrl);
+    setEditingRoom({
+      ...editingRoom,
+      image_url: editingRoom.image_url || presetUrl,
+      images: currentList,
+    });
+    toast('✨ Added scenic resort preset photo');
+  }
+
+  function handleRemovePhoto(indexToRemove) {
+    if (!editingRoom || !Array.isArray(editingRoom.images)) return;
+    const filtered = editingRoom.images.filter((_, idx) => idx !== indexToRemove);
+    const newPrimary = filtered.includes(editingRoom.image_url)
+      ? editingRoom.image_url
+      : (filtered[0] || '');
+    setEditingRoom({
+      ...editingRoom,
+      image_url: newPrimary,
+      images: filtered,
+    });
+    toast('🗑️ Removed photo from gallery');
+  }
+
+  function handleSetPrimaryPhoto(url) {
+    if (!editingRoom) return;
+    setEditingRoom({
+      ...editingRoom,
+      image_url: url,
+    });
+    toast('⭐ Set as primary showcase photo');
   }
 
   async function handleToggleRoomActive(room) {
@@ -1903,82 +2011,114 @@ export default function Admin() {
                       <p className="muted" style={{ padding: '30px 0', textAlign: 'center' }}>No accommodations found matching filters.</p>
                     ) : (
                       <div className="admin-grid-3-col" style={{ gap: 16 }}>
-                        {filteredRooms.map((room) => (
-                          <div
-                            key={room.id}
-                            style={{
-                              background: isLightMode ? '#FFFFFF' : 'rgba(15,23,42,0.85)',
-                              border: `1px solid ${themeBorder}`,
-                              borderRadius: 14,
-                              padding: 18,
-                              display: 'flex',
-                              flexDirection: 'column',
-                              justifyContent: 'space-between',
-                              boxShadow: themeShadow,
-                            }}
-                          >
-                            <div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                                <span className="pill" style={{ background: 'rgba(14,165,233,0.15)', color: '#0EA5E9', fontWeight: 800, fontSize: '.72rem' }}>
-                                  {room.category || 'Standard'}
-                                </span>
-                                <button
-                                  onClick={() => handleToggleRoomActive(room)}
-                                  style={{
-                                    border: 'none',
-                                    borderRadius: 12,
-                                    padding: '3px 10px',
-                                    fontSize: '.72rem',
-                                    fontWeight: 700,
-                                    cursor: 'pointer',
-                                    background: room.is_active ? 'rgba(16,185,129,0.15)' : 'rgba(244,63,94,0.15)',
-                                    color: room.is_active ? '#10B981' : '#F43F5E',
-                                  }}
-                                  title="Click to toggle Active vs Maintenance"
-                                >
-                                  {room.is_active ? '● Active' : '⏸ Maintenance'}
-                                </button>
-                              </div>
+                        {filteredRooms.map((room) => {
+                          const roomImages = Array.isArray(room.images) && room.images.length > 0
+                            ? room.images
+                            : (room.image_url ? [room.image_url] : []);
 
-                              <h4 style={{ margin: '0 0 6px', fontSize: '1.15rem', color: themeText }}>{room.name}</h4>
-                              <p style={{ margin: '0 0 12px', fontSize: '.82rem', color: themeMuted, lineHeight: 1.4, minHeight: 36 }}>
-                                {room.description || 'Patar beachfront accommodation with scenic sea vistas and resort amenities.'}
-                              </p>
+                          return (
+                            <div
+                              key={room.id}
+                              style={{
+                                background: isLightMode ? '#FFFFFF' : 'rgba(15,23,42,0.85)',
+                                border: `1px solid ${themeBorder}`,
+                                borderRadius: 14,
+                                overflow: 'hidden',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'space-between',
+                                boxShadow: themeShadow,
+                              }}
+                            >
+                              {/* AUTO-SCROLLING ROOM IMAGE SHOWCASE */}
+                              <RoomImageCarousel
+                                images={roomImages}
+                                roomName={room.name}
+                                category={room.category}
+                                slug={room.slug}
+                                height={185}
+                                autoScroll={true}
+                                interval={3500}
+                                badge={
+                                  <span className="pill" style={{ background: 'rgba(14,165,233,0.85)', color: '#FFFFFF', fontWeight: 800, fontSize: '.72rem', backdropFilter: 'blur(4px)' }}>
+                                    {room.category || 'Standard'}
+                                  </span>
+                                }
+                              />
 
-                              <div style={{ display: 'flex', gap: 14, marginBottom: 12, fontSize: '.84rem', color: themeText, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)', padding: '8px 12px', borderRadius: 10 }}>
-                                <div><span style={{ color: themeMuted, fontSize: '.72rem', display: 'block' }}>Capacity</span><b>Sleeps {room.capacity || 2}</b></div>
-                                <div><span style={{ color: themeMuted, fontSize: '.72rem', display: 'block' }}>Physical Units</span><b style={{ color: '#0EA5E9' }}>{room.units || 1} units</b></div>
-                                <div><span style={{ color: themeMuted, fontSize: '.72rem', display: 'block' }}>Rating</span><b>★ {room.rating_avg || 5.0}</b></div>
-                              </div>
+                              <div style={{ padding: 18, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                                <div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                    <h4 style={{ margin: 0, fontSize: '1.15rem', color: themeText }}>{room.name}</h4>
+                                    <button
+                                      onClick={() => handleToggleRoomActive(room)}
+                                      style={{
+                                        border: 'none',
+                                        borderRadius: 12,
+                                        padding: '3px 10px',
+                                        fontSize: '.72rem',
+                                        fontWeight: 700,
+                                        cursor: 'pointer',
+                                        background: room.is_active ? 'rgba(16,185,129,0.15)' : 'rgba(244,63,94,0.15)',
+                                        color: room.is_active ? '#10B981' : '#F43F5E',
+                                      }}
+                                      title="Click to toggle Active vs Maintenance"
+                                    >
+                                      {room.is_active ? '● Active' : '⏸ Maintenance'}
+                                    </button>
+                                  </div>
 
-                              {Array.isArray(room.amenities) && room.amenities.length > 0 && (
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 14 }}>
-                                  {room.amenities.slice(0, 4).map((a, i) => (
-                                    <span key={i} style={{ fontSize: '.68rem', padding: '2px 8px', borderRadius: 8, background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.05)', color: themeMuted }}>
-                                      {a}
-                                    </span>
-                                  ))}
-                                  {room.amenities.length > 4 && (
-                                    <span style={{ fontSize: '.68rem', padding: '2px 6px', borderRadius: 8, color: themeMuted }}>+{room.amenities.length - 4} more</span>
+                                  <p style={{ margin: '0 0 12px', fontSize: '.82rem', color: themeMuted, lineHeight: 1.4, minHeight: 36 }}>
+                                    {room.description || 'Patar beachfront accommodation with scenic sea vistas and resort amenities.'}
+                                  </p>
+
+                                  <div style={{ display: 'flex', gap: 14, marginBottom: 12, fontSize: '.84rem', color: themeText, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)', padding: '8px 12px', borderRadius: 10 }}>
+                                    <div><span style={{ color: themeMuted, fontSize: '.72rem', display: 'block' }}>Capacity</span><b>Sleeps {room.capacity || 2}</b></div>
+                                    <div><span style={{ color: themeMuted, fontSize: '.72rem', display: 'block' }}>Physical Units</span><b style={{ color: '#0EA5E9' }}>{room.units || 1} units</b></div>
+                                    <div><span style={{ color: themeMuted, fontSize: '.72rem', display: 'block' }}>Rating</span><b>★ {room.rating_avg || 5.0}</b></div>
+                                  </div>
+
+                                  {Array.isArray(room.amenities) && room.amenities.length > 0 && (
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 14 }}>
+                                      {room.amenities.slice(0, 4).map((a, i) => (
+                                        <span key={i} style={{ fontSize: '.68rem', padding: '2px 8px', borderRadius: 8, background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.05)', color: themeMuted }}>
+                                          {a}
+                                        </span>
+                                      ))}
+                                      {room.amenities.length > 4 && (
+                                        <span style={{ fontSize: '.68rem', padding: '2px 6px', borderRadius: 8, color: themeMuted }}>+{room.amenities.length - 4} more</span>
+                                      )}
+                                    </div>
                                   )}
                                 </div>
-                              )}
-                            </div>
 
-                            <div style={{ borderTop: `1px solid ${themeBorder}`, paddingTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <div>
-                                <span style={{ fontSize: '.72rem', color: themeMuted, display: 'block' }}>Rate per night</span>
-                                <b style={{ fontSize: '1.15rem', color: '#10B981' }}>₱{money(room.rate_php)}</b>
+                                <div style={{ borderTop: `1px solid ${themeBorder}`, paddingTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <div>
+                                    <span style={{ fontSize: '.72rem', color: themeMuted, display: 'block' }}>Rate per night</span>
+                                    <b style={{ fontSize: '1.15rem', color: '#10B981' }}>₱{money(room.rate_php)}</b>
+                                  </div>
+                                  <button
+                                    className="btn btn-sky btn-sm"
+                                    onClick={() => {
+                                      const currentImgs = Array.isArray(room.images) && room.images.length > 0
+                                        ? [...room.images]
+                                        : (room.image_url ? [room.image_url] : []);
+                                      setEditingRoom({
+                                        ...room,
+                                        image_url: room.image_url || currentImgs[0] || '',
+                                        images: currentImgs,
+                                        amenities: Array.isArray(room.amenities) ? room.amenities.join(', ') : (room.amenities || ''),
+                                      });
+                                    }}
+                                    style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                                  >
+                                    ✏️ Edit Room & Photos
+                                  </button>
+                                </div>
                               </div>
-                              <button
-                                className="btn btn-sky btn-sm"
-                                onClick={() => setEditingRoom({ ...room, amenities: Array.isArray(room.amenities) ? room.amenities.join(', ') : (room.amenities || '') })}
-                              >
-                                Edit Rates
-                              </button>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     );
                   })()}
@@ -2537,6 +2677,12 @@ export default function Admin() {
                       </button>
                     </div>
                   </div>
+
+                  {/* SECTION 4: CLOUDINARY MEDIA CDN & ASSET STORAGE */}
+                  <CloudinarySettingsCard
+                    isLightMode={isLightMode}
+                    toast={toast}
+                  />
 
                   {/* SAVE & SYNC BUTTON */}
                   <button className="btn btn-sky" style={{ width: '100%', justifyContent: 'center', padding: '16px 24px', fontWeight: 700, fontSize: '1.05rem', borderRadius: 14, marginTop: 10 }}>
@@ -3415,19 +3561,20 @@ export default function Admin() {
         </div>
       )}
 
-      {/* MODAL 6: EDIT ACCOMMODATION & RATES */}
+      {/* MODAL 6: EDIT ACCOMMODATION & CLOUDINARY MEDIA */}
       {editingRoom && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(2, 6, 23, 0.75)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={() => setEditingRoom(null)}>
-          <div style={{ width: '100%', maxWidth: 540, background: isLightMode ? '#FFFFFF' : '#0F172A', borderRadius: 20, border: `1px solid ${themeBorder}`, padding: 24, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', maxHeight: '90vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
+          <div style={{ width: '100%', maxWidth: 660, background: isLightMode ? '#FFFFFF' : '#0F172A', borderRadius: 20, border: `1px solid ${themeBorder}`, padding: 24, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', maxHeight: '92vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: `1px solid ${themeBorder}`, paddingBottom: 12 }}>
               <div>
-                <span style={{ fontSize: '.74rem', color: '#10B981', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>UPDATE ROOM RATES & UNITS</span>
+                <span style={{ fontSize: '.74rem', color: '#0EA5E9', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>ACCOMMODATION & CLOUDINARY MEDIA CDN</span>
                 <h3 style={{ margin: '4px 0 0', fontSize: '1.35rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>✏️ Edit {editingRoom.name}</h3>
               </div>
               <button onClick={() => setEditingRoom(null)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
             </div>
 
-            <form onSubmit={handleUpdateRoomSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <form onSubmit={handleUpdateRoomSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {/* SECTION A: ROOM DETAILS */}
               <div>
                 <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Room Name *</label>
                 <input
@@ -3451,7 +3598,7 @@ export default function Admin() {
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Available Units *</label>
+                  <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Available Physical Units *</label>
                   <input
                     required
                     type="number"
@@ -3480,10 +3627,11 @@ export default function Admin() {
                   </select>
                 </div>
                 <div>
-                  <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Sleeps Capacity</label>
+                  <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Sleeps Capacity (Guests)</label>
                   <input
                     type="number"
                     min={1}
+                    max={20}
                     style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
                     value={editingRoom.capacity}
                     onChange={(e) => setEditingRoom({ ...editingRoom, capacity: e.target.value })}
@@ -3494,7 +3642,7 @@ export default function Admin() {
               <div>
                 <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Description</label>
                 <textarea
-                  rows={3}
+                  rows={2}
                   style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
                   value={editingRoom.description || ''}
                   onChange={(e) => setEditingRoom({ ...editingRoom, description: e.target.value })}
@@ -3502,20 +3650,248 @@ export default function Admin() {
               </div>
 
               <div>
-                <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Amenities (comma separated)</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                  <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700 }}>Amenities</label>
+                  <span style={{ fontSize: '.72rem', color: themeMuted }}>Click to toggle popular amenities</span>
+                </div>
+
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                  {['Air Conditioning', 'Free Wi-Fi', 'Private Bath', 'Sea View', 'Balcony', 'Kitchenette', 'Garden Access', 'Rock View', 'Private Veranda'].map((amenity) => {
+                    const currentAmenities = typeof editingRoom.amenities === 'string'
+                      ? editingRoom.amenities.split(',').map((s) => s.trim()).filter(Boolean)
+                      : (Array.isArray(editingRoom.amenities) ? editingRoom.amenities : []);
+                    const isSelected = currentAmenities.some((a) => a.toLowerCase() === amenity.toLowerCase());
+
+                    return (
+                      <button
+                        key={amenity}
+                        type="button"
+                        onClick={() => {
+                          let nextList;
+                          if (isSelected) {
+                            nextList = currentAmenities.filter((a) => a.toLowerCase() !== amenity.toLowerCase());
+                          } else {
+                            nextList = [...currentAmenities, amenity];
+                          }
+                          setEditingRoom({ ...editingRoom, amenities: nextList.join(', ') });
+                        }}
+                        style={{
+                          fontSize: '.72rem',
+                          padding: '3px 9px',
+                          borderRadius: 8,
+                          border: isSelected ? '1px solid #0EA5E9' : `1px solid ${themeBorder}`,
+                          background: isSelected ? 'rgba(14,165,233,0.18)' : isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.05)',
+                          color: isSelected ? '#0EA5E9' : themeText,
+                          cursor: 'pointer',
+                          fontWeight: isSelected ? 700 : 500,
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        {isSelected ? '✓ ' : '+ '}{amenity}
+                      </button>
+                    );
+                  })}
+                </div>
+
                 <input
                   style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
                   value={editingRoom.amenities}
                   onChange={(e) => setEditingRoom({ ...editingRoom, amenities: e.target.value })}
+                  placeholder="e.g. Air Conditioning, Free Wi-Fi, Private Bath, Sea View"
                 />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 8 }}>
+              {/* SECTION B: CLOUDINARY MEDIA & AUTO-SCROLLING CAROUSEL */}
+              <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.6)', border: `1px solid ${themeBorder}`, borderRadius: 14, padding: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <div>
+                    <b style={{ fontSize: '.88rem', color: themeText, display: 'block' }}>☁️ Cloudinary Media & Auto-Scrolling Photos</b>
+                    <span style={{ fontSize: '.74rem', color: themeMuted }}>Upload to Cloudinary CDN, manage photo gallery, or select resort presets.</span>
+                  </div>
+                  <span className="pill" style={{ background: 'rgba(56,189,248,0.15)', color: '#0EA5E9', fontSize: '.7rem', fontWeight: 800 }}>
+                    ☁️ CLOUDINARY READY
+                  </span>
+                </div>
+
+                {/* LIVE AUTO-SCROLLING CAROUSEL PREVIEW */}
+                <div style={{ marginBottom: 14 }}>
+                  <RoomImageCarousel
+                    images={Array.isArray(editingRoom.images) && editingRoom.images.length > 0 ? editingRoom.images : (editingRoom.image_url ? [editingRoom.image_url] : [])}
+                    roomName={editingRoom.name}
+                    category={editingRoom.category}
+                    slug={editingRoom.slug}
+                    height={190}
+                    autoScroll={true}
+                    interval={3000}
+                    badge={
+                      <span className="pill" style={{ background: 'rgba(15,23,42,0.8)', color: '#38BDF8', fontSize: '.7rem', fontWeight: 800 }}>
+                        Previewing Live Auto-Cycle
+                      </span>
+                    }
+                  />
+                  <span style={{ fontSize: '.72rem', color: themeMuted, display: 'block', marginTop: 6, textAlign: 'center' }}>
+                    ✨ Auto-cycles every 3 seconds · Hover to pause · Drag/click controls to navigate
+                  </span>
+                </div>
+
+                {/* CURRENT GALLERY LIST */}
+                {Array.isArray(editingRoom.images) && editingRoom.images.length > 0 && (
+                  <div style={{ marginBottom: 14 }}>
+                    <span style={{ fontSize: '.74rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 6 }}>
+                      ACTIVE GALLERY PHOTOS ({editingRoom.images.length})
+                    </span>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 8 }}>
+                      {editingRoom.images.map((imgUrl, i) => {
+                        const isPrimary = editingRoom.image_url === imgUrl || (!editingRoom.image_url && i === 0);
+                        return (
+                          <div
+                            key={i}
+                            style={{
+                              position: 'relative',
+                              borderRadius: 8,
+                              overflow: 'hidden',
+                              border: isPrimary ? '2px solid #0EA5E9' : `1px solid ${themeBorder}`,
+                              background: '#0B132B',
+                              aspectRatio: '16/10',
+                            }}
+                          >
+                            <img src={imgUrl} alt={`Photo ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            {isPrimary && (
+                              <span style={{ position: 'absolute', top: 4, left: 4, background: '#0EA5E9', color: '#FFF', fontSize: '.6rem', fontWeight: 800, padding: '2px 5px', borderRadius: 4 }}>
+                                ⭐ Primary
+                              </span>
+                            )}
+                            <div style={{ position: 'absolute', bottom: 4, right: 4, display: 'flex', gap: 4 }}>
+                              {!isPrimary && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSetPrimaryPhoto(imgUrl)}
+                                  title="Set as primary showcase image"
+                                  style={{ background: 'rgba(0,0,0,0.65)', border: 'none', color: '#FFF', borderRadius: 4, padding: '2px 5px', fontSize: '.64rem', cursor: 'pointer' }}
+                                >
+                                  ⭐
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleRemovePhoto(i)}
+                                title="Remove photo"
+                                style={{ background: 'rgba(239,68,68,0.8)', border: 'none', color: '#FFF', borderRadius: 4, padding: '2px 5px', fontSize: '.64rem', cursor: 'pointer' }}
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* CLOUDINARY UPLOAD BUTTON */}
+                <input
+                  type="file"
+                  ref={roomFileInputRef}
+                  accept="image/*"
+                  onChange={handleRoomPhotoUpload}
+                  style={{ display: 'none' }}
+                />
+
+                <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    disabled={uploadingRoomPhoto}
+                    onClick={() => roomFileInputRef.current?.click()}
+                    className="btn btn-sky btn-sm"
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}
+                  >
+                    <span>☁️</span>
+                    <span>{uploadingRoomPhoto ? 'Uploading to Cloudinary...' : 'Upload Photo to Cloudinary'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const cfg = getCloudinaryConfig();
+                      toast(`☁️ Cloudinary Active: Cloud Name "${cfg.cloudName}", Preset "${cfg.uploadPreset}"`);
+                    }}
+                    style={{ fontSize: '.74rem', padding: '6px 12px', background: isLightMode ? '#FFF' : 'rgba(255,255,255,0.05)', border: `1px solid ${themeBorder}`, color: themeMuted, borderRadius: 8, cursor: 'pointer' }}
+                  >
+                    🔍 Verify Cloudinary
+                  </button>
+                </div>
+
+                {/* DIRECT URL INPUT */}
+                <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                  <input
+                    type="text"
+                    value={newPhotoUrlInput}
+                    onChange={(e) => setNewPhotoUrlInput(e.target.value)}
+                    placeholder="Paste Cloudinary URL (https://res.cloudinary.com/...) or direct image URL"
+                    style={{ flex: 1, padding: '6px 10px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : 'rgba(255,255,255,0.05)', color: themeText, fontSize: '.78rem' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddPhotoUrl}
+                    style={{ padding: '6px 12px', background: '#0EA5E9', color: '#FFF', border: 'none', borderRadius: 8, fontSize: '.76rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                  >
+                    ➕ Add URL
+                  </button>
+                  {newPhotoUrlInput.includes('/image/upload/') && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const optimized = optimizeCloudinaryUrl(newPhotoUrlInput);
+                        setNewPhotoUrlInput(optimized);
+                        toast('✨ Injected Cloudinary auto-optimization: f_auto,q_auto');
+                      }}
+                      style={{ padding: '6px 10px', background: 'rgba(52,211,153,0.18)', color: '#10B981', border: '1px solid rgba(52,211,153,0.3)', borderRadius: 8, fontSize: '.72rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                    >
+                      ⚡ Auto-Optimize
+                    </button>
+                  )}
+                </div>
+
+                {/* 1-CLICK CURATED RESORT PRESETS */}
+                <div>
+                  <span style={{ fontSize: '.72rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 6 }}>
+                    OR 1-CLICK SELECT SCENIC PATAR RESORT PRESETS
+                  </span>
+                  <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
+                    {RESORT_PRESET_IMAGES.map((preset) => (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => handleAddPresetPhoto(preset.url)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '4px 8px',
+                          borderRadius: 8,
+                          border: `1px solid ${themeBorder}`,
+                          background: isLightMode ? '#FFFFFF' : 'rgba(255,255,255,0.06)',
+                          color: themeText,
+                          fontSize: '.72rem',
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        <img src={preset.url} alt={preset.title} style={{ width: 20, height: 16, objectFit: 'cover', borderRadius: 3 }} />
+                        <span>{preset.title}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 4 }}>
                 <button type="button" className="btn btn-sm" onClick={() => setEditingRoom(null)} style={{ border: `1px solid ${themeBorder}`, color: themeText }}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-sky btn-sm">
-                  Save Changes ✦
+                <button type="submit" className="btn btn-sky btn-sm" style={{ padding: '10px 20px', fontWeight: 800 }}>
+                  Save & Synchronize Accommodation ✦
                 </button>
               </div>
             </form>

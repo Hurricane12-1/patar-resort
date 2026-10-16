@@ -66,6 +66,34 @@ async function req<T = any>(path: string, { method = 'GET', body }: { method?: s
   return res.json() as Promise<T>;
 }
 
+export function normalizeRoom(room: any) {
+  if (!room) return room;
+  const rawAmenities = Array.isArray(room.amenities) ? room.amenities : [];
+  const cleanAmenities: string[] = [];
+  const images: string[] = [];
+
+  for (const item of rawAmenities) {
+    if (typeof item === 'string' && (item.startsWith('__img__:') || item.startsWith('img:'))) {
+      const url = item.replace(/^(__img__|img):/, '').trim();
+      if (url && !images.includes(url)) images.push(url);
+    } else {
+      cleanAmenities.push(item);
+    }
+  }
+
+  const primaryImage = room.image_url || images[0] || '';
+  const allImages = Array.isArray(room.images) && room.images.length > 0
+    ? room.images
+    : (images.length > 0 ? images : (primaryImage ? [primaryImage] : []));
+
+  return {
+    ...room,
+    image_url: primaryImage,
+    images: allImages,
+    amenities: cleanAmenities,
+  };
+}
+
 export const api = {
   // Tri-API: Native GraphQL Query & Mutation Engine
   graphql: async <T = any>(query: string, variables: Record<string, any> = {}): Promise<T> => {
@@ -104,22 +132,26 @@ export const api = {
   sendStaffChatMessage: (profileId: string, content: string) => req(`/chat/conversations/${profileId}/messages`, { method: 'POST', body: { content } }),
 
   // Accommodations Catalog & Availability (Multi-Tier Resilient Architecture)
-  rooms: async () => {
+  rooms: async (includeInactive = false) => {
     try {
-      const data = await req('/rooms');
-      if (Array.isArray(data)) return data;
+      const data = await req(`/rooms${includeInactive ? '?include_inactive=true' : ''}`);
+      if (Array.isArray(data)) return data.map(normalizeRoom);
     } catch (err) {
       console.warn('[Rooms Catalog] Primary API route notice, falling back to direct Supabase query:', err);
     }
     try {
-      const { data: sbRooms, error } = await supabase.from('rooms').select('*').eq('is_active', true).order('rate_php', { ascending: true });
-      if (!error && Array.isArray(sbRooms)) return sbRooms;
+      let q = supabase.from('rooms').select('*');
+      if (!includeInactive) q = q.eq('is_active', true);
+      const { data: sbRooms, error } = await q.order('rate_php', { ascending: true });
+      if (!error && Array.isArray(sbRooms)) return sbRooms.map(normalizeRoom);
     } catch {}
     return [];
   },
   createRoom: (body: any) => req('/rooms', { method: 'POST', body }),
   updateRoom: (id: string, body: any) => req(`/rooms/${id}`, { method: 'PATCH', body }),
   deleteRoom: (id: string, hard = false) => req(`/rooms/${id}${hard ? '?hard=true' : ''}`, { method: 'DELETE' }),
+  uploadImage: (image_data: string, filename?: string) =>
+    req('/upload/image', { method: 'POST', body: { image_data, filename } }),
   availability: (check_in: string, check_out: string, guests: number) =>
     req(`/availability?check_in=${encodeURIComponent(check_in)}&check_out=${encodeURIComponent(check_out)}&guests=${guests}`),
 
