@@ -131,6 +131,7 @@ export default function Admin() {
   // Administrative Navigation Tabs, Sidebar & LIGHT/DARK THEME STATE
   const [activeTab, setActiveTab] = useState('overview'); // overview | food_sales | telemetry | accounts | settings | ledger | csv
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarHidden, setSidebarHidden] = useState(false);
   const [sidebarMobileOpen, setSidebarMobileOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showGlossaryModal, setShowGlossaryModal] = useState(false);
@@ -879,7 +880,7 @@ export default function Admin() {
   const themeShadow = isLightMode ? '0 4px 20px rgba(0, 0, 0, 0.05)' : 'none';
 
   return (
-    <div className={`admin-portal ${isLightMode ? 'light-mode' : 'dark-mode'}`} style={{ display: 'flex', minHeight: '100vh', width: '100%', background: themeBg, color: themeText, transition: 'background 0.3s ease, color 0.3s ease' }}>
+    <div className={`admin-portal ${isLightMode ? 'light-mode' : 'dark-mode'}`}>
       {/* MOBILE SIDEBAR BACKDROP OVERLAY */}
       {sidebarMobileOpen && (
         <div
@@ -897,30 +898,19 @@ export default function Admin() {
         />
       )}
 
-      {/* 1. VERTICAL EXECUTIVE SAAS SIDEBAR NAVIGATION BAR */}
+      {/* 1. VERTICAL EXECUTIVE SAAS SIDEBAR NAVIGATION BAR (FIXED DOCKED STATE) */}
       <aside
-        className={`sidebar ${sidebarMobileOpen ? 'mobile-open' : ''}`}
+        className={`sidebar ${sidebarMobileOpen ? 'mobile-open' : ''} ${sidebarHidden ? 'hidden' : ''}`}
         style={{
-          width: sidebarCollapsed ? 76 : 268,
-          minWidth: sidebarCollapsed ? 76 : 268,
-          flexShrink: 0,
-          alignSelf: 'flex-start',
+          width: sidebarHidden ? 0 : (sidebarCollapsed ? 76 : 268),
+          minWidth: sidebarHidden ? 0 : (sidebarCollapsed ? 76 : 268),
+          maxWidth: sidebarHidden ? 0 : (sidebarCollapsed ? 76 : 268),
           background: themeSidebarBg,
-          borderRight: `1px solid ${themeBorder}`,
-          display: 'flex',
-          flexDirection: 'column',
-          transition: 'all 0.25s ease',
-          zIndex: 1000,
-          position: 'sticky',
-          top: 0,
-          height: '100vh',
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          boxShadow: themeShadow,
+          borderRight: sidebarHidden ? 'none' : `1px solid ${themeBorder}`,
         }}
       >
-        {/* SIDEBAR LOGO BRANDING */}
-        <div style={{ padding: '18px 16px', display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'space-between', borderBottom: `1px solid ${themeBorder}` }}>
+        {/* SIDEBAR LOGO BRANDING & DOCK CONTROLS */}
+        <div style={{ padding: '16px 14px', display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'space-between', borderBottom: `1px solid ${themeBorder}` }}>
           <div
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             title="Click to toggle sidebar expand/collapse"
@@ -956,26 +946,26 @@ export default function Admin() {
             )}
           </div>
 
-          {!sidebarCollapsed && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <button
-              onClick={() => setSidebarCollapsed(true)}
-              style={{
-                background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.06)',
-                border: 'none',
-                color: themeMuted,
-                width: 28,
-                height: 28,
-                borderRadius: 8,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '.8rem',
-                cursor: 'pointer',
-              }}
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="sidebar-action-btn"
+              title={sidebarCollapsed ? "Expand sidebar menu" : "Collapse to icon rail"}
+              aria-label="Toggle compact sidebar"
             >
-              ◀
+              {sidebarCollapsed ? '▶' : '◀'}
             </button>
-          )}
+            {!sidebarCollapsed && (
+              <button
+                onClick={() => setSidebarHidden(true)}
+                className="sidebar-action-btn"
+                title="Hide sidebar menu completely"
+                aria-label="Hide sidebar menu"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
 
         {/* SIDEBAR MENU NAVIGATION ITEMS */}
@@ -1116,33 +1106,29 @@ export default function Admin() {
         </div>
       </aside>
 
-      {/* 2. MAIN EXECUTIVE CONTENT WRAPPER */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflowX: 'hidden' }}>
+      {/* 2. MAIN EXECUTIVE RIGHT PANE WRAPPER */}
+      <div className="admin-right-pane">
         {/* TOP EXECUTIVE HEADER CONTROL BAR WITH NOTIFICATIONS, PROFILE & THEME TOGGLE */}
-        <header
-          style={{
-            height: 64,
-            background: themeHeaderBg,
-            borderBottom: `1px solid ${themeBorder}`,
-            padding: '0 24px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            position: 'sticky',
-            top: 0,
-            zIndex: 90,
-            backdropFilter: 'blur(12px)',
-            boxShadow: themeShadow,
-          }}
-        >
-          {/* SEARCH & BREADCRUMB */}
+        <header className="admin-header" style={{ background: themeHeaderBg, borderBottom: `1px solid ${themeBorder}` }}>
+          {/* SIDEBAR TOGGLE, BREADCRUMB & SEARCH */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <button
-              onClick={() => setSidebarMobileOpen(!sidebarMobileOpen)}
-              className="mobile-menu-btn"
-              title="Toggle sidebar navigation"
+              onClick={() => {
+                if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+                  setSidebarMobileOpen(!sidebarMobileOpen);
+                } else {
+                  setSidebarHidden(!sidebarHidden);
+                }
+              }}
+              className="sidebar-toggle-btn"
+              title={sidebarHidden ? "Show sidebar menu" : "Hide sidebar menu"}
+              aria-label="Toggle navigation menu"
             >
-              ☰
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <line x1="9" y1="3" x2="9" y2="21" />
+              </svg>
+              <span className="sidebar-toggle-label">{sidebarHidden ? 'Show Menu' : 'Hide Menu'}</span>
             </button>
             <span className="admin-header-title" style={{ fontSize: '.88rem', color: themeMuted, fontWeight: 600 }}>
               Executive Control Center <span style={{ color: '#0EA5E9' }}>/ {sidebarItems.find(i => i.key === activeTab)?.label}</span>
@@ -1330,8 +1316,8 @@ export default function Admin() {
           </div>
         </header>
 
-        {/* 3. DASHBOARD MAIN TAB VIEW */}
-        <div className="admin-main-content" style={{ padding: '24px 24px 90px 24px', flex: 1, width: '100%', boxSizing: 'border-box' }}>
+        {/* 3. DASHBOARD MAIN TAB VIEW (ISOLATED INDEPENDENT SCROLL CONTAINER) */}
+        <div className="admin-main-content">
           {/* TAB 1: EXECUTIVE SAAS DASHBOARD (MATCHING 2026 REFERENCE SYSTEM) */}
           {activeTab === 'overview' && (
             <>
