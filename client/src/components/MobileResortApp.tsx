@@ -683,6 +683,9 @@ export default function MobileResortApp() {
         guests: parseInt(guests) || 2,
         notes: resNotes ? `${resNotes} [Payment: ${resPaymentMethod}]` : `Payment method: ${resPaymentMethod}`,
         phone: cleanPhone,
+        guest_name: (resName || profile?.full_name || '').trim(),
+        guest_email: profile?.email || '',
+        payment_method: resPaymentMethod,
       };
 
       const result = await api.createReservation(payload);

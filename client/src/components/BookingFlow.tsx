@@ -57,7 +57,14 @@ export default function BookingFlow({ initialSlug }) {
     setBusy(true);
     try {
       const stay = await api.createReservation({
-        roomId: room.room_id, check_in: checkIn, check_out: checkOut, guests, notes, phone,
+        roomId: room.room_id,
+        check_in: checkIn,
+        check_out: checkOut,
+        guests,
+        notes,
+        phone,
+        guest_name: (profile?.full_name || '').trim(),
+        guest_email: profile?.email || '',
       });
       setDone(stay); setStage('done');
       toast(`Reserved! SMS ping sent${phone ? ` to ${phone}` : ''} ✦`);

@@ -20,11 +20,35 @@ const createSchema = z.object({
   guests: z.coerce.number().int().min(1).max(12).default(1),
   notes: z.string().max(500).default(''),
   phone: z.string().max(20).optional(),
+  guest_name: z.string().max(200).optional(),
+  guestName: z.string().max(200).optional(),
+  guest_email: z.string().max(200).optional(),
+  total_php: z.coerce.number().optional(),
+  downpayment_php: z.coerce.number().optional(),
+  payment_method: z.string().max(50).optional(),
+  payment_status: z.string().max(50).optional(),
+  status: z.string().max(50).optional(),
 }).refine((d) => Boolean(d.roomId || d.room_id), { message: 'roomId or room_id is required' })
   .refine((d) => d.check_out > d.check_in, { message: 'Check-out must be after check-in' });
 
 r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), asyncH(async (req, res) => {
-  const { roomId, room_id, check_in, check_out, guests, notes, phone } = req.body;
+  const {
+    roomId,
+    room_id,
+    check_in,
+    check_out,
+    guests,
+    notes,
+    phone,
+    guest_name,
+    guestName,
+    guest_email,
+    total_php: customTotal,
+    downpayment_php: customDownpayment,
+    payment_method,
+    payment_status,
+    status: customStatus,
+  } = req.body;
   const targetRoomId = roomId || room_id;
 
   const today = new Date().toISOString().slice(0, 10);
@@ -73,20 +97,51 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
   const roomName = room.name;
   const roomRate = room.rate_php;
   const nights = Math.max(1, Math.round((new Date(check_out) - new Date(check_in)) / 86400000));
-  const total_php = nights * roomRate;
+  const calculatedTotal = nights * roomRate;
+  const total_php = customTotal && customTotal > 0 ? Number(customTotal) : calculatedTotal;
+  const downpayment_php = customDownpayment !== undefined ? Number(customDownpayment) : Math.round(total_php * 0.3);
 
-  const finalPhone = phone || req.user.phone;
-  if (phone && phone !== req.user.phone) {
-    try {
-      await (req.sb || sysClient).from('profiles').update({ phone }).eq('id', req.user.id);
-    } catch {}
+  const finalGuestName = (guest_name || guestName || req.user.full_name || req.user.name || '').trim();
+  const finalGuestEmail = (guest_email || req.user.email || '').trim();
+  const finalPhone = (phone || req.user.phone || '').trim();
+  const finalPaymentMethod = payment_method || 'GCash';
+
+  if (req.user?.id) {
+    const profileUpdates = {};
+    if (finalPhone && finalPhone !== req.user.phone) {
+      profileUpdates.phone = finalPhone;
+    }
+    if (finalGuestName && (!req.user.full_name || req.user.full_name === 'Resident Guest') && req.user.role === 'customer') {
+      profileUpdates.full_name = finalGuestName;
+    }
+    if (Object.keys(profileUpdates).length > 0) {
+      try {
+        await sysClient.from('profiles').update(profileUpdates).eq('id', req.user.id);
+      } catch {}
+    }
   }
 
   const client = req.sb || sysClient;
+  const insertPayload = {
+    guest_id: req.user.id,
+    room_id: targetRoomId,
+    check_in,
+    check_out,
+    guests,
+    notes,
+    total_php,
+    downpayment_php,
+    payment_method: finalPaymentMethod,
+    payment_status: payment_status || 'unpaid',
+    status: customStatus || 'confirmed',
+    guest_name: finalGuestName,
+    guest_email: finalGuestEmail,
+    phone: finalPhone,
+  };
+
   const { data: stay, error } = await client.from('reservations')
-    .insert({ guest_id: req.user.id, room_id: targetRoomId, check_in, check_out,
-              guests, notes, total_php, status: 'confirmed' })
-    .select('*, rooms(name)').single();
+    .insert(insertPayload)
+    .select('*, rooms(name), profiles(full_name, phone, email)').single();
   
   if (error) {
     const raced = ['23P01', '23505'].includes(error.code);
@@ -101,7 +156,7 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
     action: 'BOOKING_CREATE',
     resourceType: 'reservation',
     resourceId: stay.id,
-    details: { room: stay.rooms?.name || roomName, check_in, check_out, guests, total_php },
+    details: { room: stay.rooms?.name || roomName, check_in, check_out, guests, total_php, guest_name: finalGuestName },
     req,
   });
 
@@ -149,10 +204,11 @@ r.patch('/reservations/:id/cancel', authenticate, asyncH(async (req, res) => {
 
 // ---- staff & admin ----
 r.get('/reservations', authenticate, requireStaffOrAdmin, asyncH(async (req, res) => {
-  const client = req.sb || admin;
+  const sysClient = await getSystemAdminClient();
+  const client = req.sb || sysClient;
   const { data, error } = await client.from('reservations')
-    .select('*, profiles(full_name, phone), rooms(name)')
-    .order('check_in', { ascending: false }).limit(100);
+    .select('*, profiles(full_name, phone, email), rooms(name)')
+    .order('check_in', { ascending: false }).limit(200);
   if (error) throw new ApiError(500, error.message);
   return res.json(data || []);
 }));
@@ -161,10 +217,11 @@ r.patch('/reservations/:id/status', authenticate, requireStaffOrAdmin,
   validate(z.object({ status: z.enum(['pending','confirmed','checked_in','checked_out','cancelled','no_show']) })),
   asyncH(async (req, res) => {
     const { status } = req.body;
-    const client = req.sb || admin;
+    const sysClient = await getSystemAdminClient();
+    const client = req.sb || sysClient;
     const { data, error } = await client.from('reservations')
       .update({ status }).eq('id', req.params.id)
-      .select('*, profiles(id, phone, full_name), rooms(name)').single();
+      .select('*, profiles(id, phone, full_name, email), rooms(name)').single();
     if (error || !data) throw new ApiError(404, 'Reservation not found');
 
     await redis.clear();
@@ -174,7 +231,7 @@ r.patch('/reservations/:id/status', authenticate, requireStaffOrAdmin,
       action: 'BOOKING_STATUS_UPDATE',
       resourceType: 'reservation',
       resourceId: data.id,
-      details: { status, guest_name: data.profiles?.full_name, room: data.rooms?.name },
+      details: { status, guest_name: data.guest_name || data.profiles?.full_name, room: data.rooms?.name },
       req,
     });
 
@@ -182,8 +239,9 @@ r.patch('/reservations/:id/status', authenticate, requireStaffOrAdmin,
       status === 'checked_in'  ? `J & D Beach House: welcome! 🌊 Checked in to ${data.rooms?.name || 'your room'}. Enjoy Bolinao!` :
       status === 'checked_out' ? `J & D Beach House: safe travels ✦ Salamat for staying with us. Rate your stay in My Bookings!` :
       status === 'cancelled'   ? 'J & D Beach House: your reservation was cancelled by our team. Rebook anytime.' : null;
-    if (msg && data.profiles) pingSMS({ profileId: data.profiles.id, reservationId: data.id,
-      toPhone: data.profiles.phone, body: msg }).catch(() => {});
+    const toPhone = data.phone || data.profiles?.phone;
+    if (msg && toPhone) pingSMS({ profileId: data.guest_id || data.profiles?.id, reservationId: data.id,
+      toPhone, body: msg }).catch(() => {});
     return res.json(data);
   }));
 

@@ -1123,8 +1123,8 @@ export default function Admin() {
     if (reservationFilter !== 'all' && b.status !== reservationFilter) return false;
     if (reservationSearch.trim()) {
       const q = reservationSearch.toLowerCase();
-      const guestName = (b.profiles?.full_name || b.guest_name || '').toLowerCase();
-      const phone = (b.profiles?.phone || b.phone || '').toLowerCase();
+      const guestName = (b.guest_name || b.profiles?.full_name || '').toLowerCase();
+      const phone = (b.phone || b.profiles?.phone || '').toLowerCase();
       const room = (b.rooms?.name || '').toLowerCase();
       const id = (b.id || '').toLowerCase();
       if (!guestName.includes(q) && !phone.includes(q) && !room.includes(q) && !id.includes(q)) return false;
@@ -3590,11 +3590,11 @@ export default function Admin() {
                           <td>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                               <span style={{ width: 32, height: 32, borderRadius: '50%', background: isLightMode ? '#E2E8F0' : '#334155', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.8rem', fontWeight: 800 }}>
-                                {(b.profiles?.full_name || b.guest_name || 'G').charAt(0).toUpperCase()}
+                                {(b.guest_name || b.profiles?.full_name || 'G').charAt(0).toUpperCase()}
                               </span>
                               <div>
-                                <b>{b.profiles?.full_name || b.guest_name || 'Guest User'}</b>
-                                <small style={{ color: themeMuted, display: 'block' }}>{b.profiles?.phone || b.phone || 'No phone recorded'}</small>
+                                <b>{b.guest_name || b.profiles?.full_name || 'Guest User'}</b>
+                                <small style={{ color: themeMuted, display: 'block' }}>{b.phone || b.profiles?.phone || 'No phone recorded'}</small>
                               </div>
                             </div>
                           </td>
