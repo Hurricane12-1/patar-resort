@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { asyncH, ApiError } from '../middleware/errors.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
-import { getAuditLogs, logAuditEvent } from '../lib/auditLogger.js';
+import { getAuditLogs, logAuditEvent, clearAuditLogs } from '../lib/auditLogger.js';
 
 const r = Router();
 
@@ -19,6 +19,20 @@ r.get('/audit-logs', authenticate, requireAdmin, asyncH(async (req, res) => {
   const q = req.query.q || null;
 
   const result = await getAuditLogs({ limit, offset, action, resourceType, q });
+  return res.json(result);
+}));
+
+/**
+ * DELETE /api/audit-logs
+ * Clear all audit logs (Admin only)
+ */
+r.delete('/audit-logs', authenticate, requireAdmin, asyncH(async (_req, res) => {
+  const result = await clearAuditLogs();
+  return res.json(result);
+}));
+
+r.post('/audit-logs/clear', authenticate, requireAdmin, asyncH(async (_req, res) => {
+  const result = await clearAuditLogs();
   return res.json(result);
 }));
 

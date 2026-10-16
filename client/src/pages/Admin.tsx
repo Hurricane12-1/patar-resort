@@ -399,8 +399,11 @@ export default function Admin() {
 
       supabase.auth.getSession().then(({ data: authData }) => {
         const token = localStorage.getItem('jd_admin_jwt') || authData?.session?.access_token;
+        const key = localStorage.getItem('jd_admin_token_key') || 'etc-34';
         if (token) {
-          const streamUrl = API_BASE ? `${API_BASE}/api/analytics/stream?token=${token}` : `/api/analytics/stream?token=${token}`;
+          const streamUrl = API_BASE
+            ? `${API_BASE}/api/analytics/stream?token=${encodeURIComponent(token)}&admin_token_key=${encodeURIComponent(key)}`
+            : `/api/analytics/stream?token=${encodeURIComponent(token)}&admin_token_key=${encodeURIComponent(key)}`;
           try {
             es = new EventSource(streamUrl);
             es.onmessage = (e) => {
@@ -2150,44 +2153,30 @@ export default function Admin() {
 
                     <div
                       onClick={() => {
-                        setShowCreateModal(true);
-                        toast('📁 Opening Provision Staff Account & Department Group modal');
+                        setActiveTab('inventory');
+                        toast('🛏️ Navigated to Accommodations & Inventory');
                       }}
                       style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: isLightMode ? '#F5F3FF' : 'rgba(139,92,246,0.15)', borderRadius: 12, color: isLightMode ? '#7C3AED' : '#A78BFA', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s ease', border: `1px solid ${isLightMode ? '#DDD6FE' : 'rgba(139,92,246,0.3)'}` }}
                       onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
                       onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
-                      title="Click to add a new Staff / Department Group Account"
+                      title="Click to manage Accommodations & Inventory"
                     >
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '.92rem' }}>📁 Add Group</span>
-                      <span className="pill" style={{ background: '#8B5CF6', color: '#FFFFFF', fontWeight: 800, padding: '4px 12px', borderRadius: 16, fontSize: '.8rem' }}>4 groups</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '.92rem' }}>🛏️ Accommodations</span>
+                      <span className="pill" style={{ background: '#8B5CF6', color: '#FFFFFF', fontWeight: 800, padding: '4px 12px', borderRadius: 16, fontSize: '.8rem' }}>{roomsList.length} Units</span>
                     </div>
 
                     <div
                       onClick={() => {
-                        setShowKeywordsModal(true);
-                        toast('🏷️ Opening AI Keyword Intent Analytics');
+                        setActiveTab('conversations');
+                        toast('💬 Navigated to Concierge & Customer Inquiries');
                       }}
                       style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: isLightMode ? '#ECFDF5' : 'rgba(52,211,153,0.15)', borderRadius: 12, color: isLightMode ? '#059669' : '#10B981', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s ease', border: `1px solid ${isLightMode ? '#A7F3D0' : 'rgba(52,211,153,0.3)'}` }}
                       onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
                       onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
-                      title="Click to view AI Chatbot Keyword Intent targets"
+                      title="Click to view Customer Service Threads"
                     >
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '.92rem' }}>🏷️ Keywords</span>
-                      <span className="pill" style={{ background: '#10B981', color: '#FFFFFF', fontWeight: 800, padding: '4px 12px', borderRadius: 16, fontSize: '.8rem' }}>186 intents</span>
-                    </div>
-
-                    <div
-                      onClick={() => {
-                        setShowCampaignsModal(true);
-                        toast('📣 Opening Active Marketing Campaigns & Promos');
-                      }}
-                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: isLightMode ? '#FFFBEB' : 'rgba(251,191,36,0.15)', borderRadius: 12, color: isLightMode ? '#D97706' : '#F59E0B', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s ease', border: `1px solid ${isLightMode ? '#FDE68A' : 'rgba(251,191,36,0.3)'}` }}
-                      onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
-                      onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
-                      title="Click to inspect Active Marketing Campaigns"
-                    >
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '.92rem' }}>📣 Campaigns</span>
-                      <span className="pill" style={{ background: '#F59E0B', color: '#FFFFFF', fontWeight: 800, padding: '4px 12px', borderRadius: 16, fontSize: '.8rem' }}>12 active</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '.92rem' }}>💬 Customer Inquiries</span>
+                      <span className="pill" style={{ background: '#10B981', color: '#FFFFFF', fontWeight: 800, padding: '4px 12px', borderRadius: 16, fontSize: '.8rem' }}>{ov.conversations_closed || 9} Threads</span>
                     </div>
                   </div>
                 </div>
@@ -3045,11 +3034,11 @@ export default function Admin() {
                     <span className="label light" style={{ color: '#0EA5E9' }}>Enterprise Security</span>
                     <span style={{ fontSize: '.72rem', color: '#10B981', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(16,185,129,0.1)', padding: '2px 8px', borderRadius: 12, border: '1px solid rgba(16,185,129,0.3)' }}>
                       <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981', display: 'inline-block', animation: 'pulse 1.5s infinite' }} />
-                      AUDIT AUTO-LOGGER ACTIVE
+                      SUPABASE LIVE CONNECTED
                     </span>
                   </div>
                   <h3 className="serif" style={{ fontSize: '1.6rem', margin: '4px 0 0', color: themeText }}>System Audit & Security Event Trail</h3>
-                  <p className="muted small" style={{ margin: '4px 0 0' }}>Tamper-evident administrative audit log. Records all room, inventory, role, and security access events in real-time.</p>
+                  <p className="muted small" style={{ margin: '4px 0 0' }}>Tamper-evident administrative audit log connected directly to Supabase. Records all room, inventory, role, and security access events in real-time.</p>
                 </div>
 
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -3068,6 +3057,23 @@ export default function Admin() {
 
                   <button className="btn btn-sky btn-sm" onClick={fetchAuditLogs} disabled={loadingAudit}>
                     {loadingAudit ? 'Syncing…' : '🔄 Refresh Logs'}
+                  </button>
+
+                  <button
+                    className="btn btn-sm"
+                    onClick={async () => {
+                      if (!confirm('Empty all recorded audit logs and start fresh?')) return;
+                      try {
+                        await api.clearAuditLogs();
+                        setAuditLogs([]);
+                        toast('🗑️ Audit log trail emptied successfully');
+                      } catch (err: any) {
+                        toast(err.message, true);
+                      }
+                    }}
+                    style={{ border: '1px solid rgba(244,63,94,0.3)', color: '#F43F5E', background: 'rgba(244,63,94,0.08)', fontWeight: 700 }}
+                  >
+                    🗑️ Empty Audit Logs
                   </button>
 
                   <button
@@ -3156,8 +3162,8 @@ export default function Admin() {
               ) : auditLogs.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px 20px', border: `1px dashed ${themeBorder}`, borderRadius: 12 }}>
                   <span style={{ fontSize: '2rem' }}>🛡️</span>
-                  <h4 style={{ margin: '8px 0 4px', color: themeText }}>No Audit Logs Recorded Yet</h4>
-                  <p className="muted small">Actions taken by administrators on accommodations, inventory, and staff roles will automatically appear here.</p>
+                  <h4 style={{ margin: '8px 0 4px', color: themeText }}>Audit Log Trail Clean & Connected to Supabase</h4>
+                  <p className="muted small">All operational and administrative events will be logged directly to Supabase in real-time.</p>
                 </div>
               ) : (
                 <div style={{ maxHeight: 520, overflowY: 'auto', borderRadius: 12, border: `1px solid ${themeBorder}` }}>

@@ -195,6 +195,7 @@ export const api = {
   // Audit Auto Logger API
   auditLogs: (params = '') => req(`/audit-logs${params ? `?${params}` : ''}`),
   logAuditEvent: (body: any) => req('/audit-logs', { method: 'POST', body }),
+  clearAuditLogs: () => req('/audit-logs/clear', { method: 'POST' }),
 
   // Administrator & Staff Provisioning
   adminCreateUser: (body: any) => req('/admin/users', { method: 'POST', body }),
