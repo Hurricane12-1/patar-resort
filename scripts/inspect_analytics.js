@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { redis } from '../server/src/lib/redis.js';
-import { admin } from '../server/src/lib/supabase.js';
+import { getSystemAdminClient } from '../server/src/lib/supabase.js';
 import { isSupabaseConfigured } from '../server/src/config/env.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -16,6 +16,7 @@ async function inspect() {
   console.log('======================================================================\n');
 
   const t0 = Date.now();
+  const sysClient = await getSystemAdminClient();
 
   // 1. Inspect Cache Subsystem
   console.log('[1/4] Inspecting Redis Cache Subsystem...');
@@ -33,7 +34,7 @@ async function inspect() {
 
   // 2. Inspect Database Row Counts & Table Status
   console.log('\n[2/4] Inspecting Supabase Data Tables...');
-  const tables = ['analytics_overview', 'analytics_daily', 'analytics_top_rooms', 'reservations', 'resort_orders', 'rooms'];
+  const tables = ['analytics_overview', 'analytics_daily', 'analytics_top_rooms', 'reservations', 'resort_orders', 'department_tasks', 'reviews', 'profiles', 'rooms', 'resort_inventory', 'resort_services'];
   const tableStats = {};
 
   for (const t of tables) {
@@ -43,7 +44,7 @@ async function inspect() {
       continue;
     }
     try {
-      const { count, error } = await admin.from(t).select('*', { count: 'exact', head: true });
+      const { count, error } = await sysClient.from(t).select('*', { count: 'exact', head: true });
       tableStats[t] = error ? 'N/A' : (count || 0);
       console.log(`      Table [${t.padEnd(20)}]: ${error ? 'offline' : `${count || 0} rows`}`);
     } catch {

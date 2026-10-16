@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-09-21T10:08:59.373Z",
+  "timestamp": "2026-10-16T04:15:47.115Z",
   "cache": {
     "driver": "in-memory-lru",
     "status": "FALLBACK_READY",
-    "latency_ms": 0,
+    "latency_ms": 281,
     "keys": {
       "analytics:overview": "COLD",
       "analytics:full_dive:30d": "COLD",
@@ -11,17 +11,22 @@
     }
   },
   "database": {
-    "analytics_overview": "local-offline",
-    "analytics_daily": "local-offline",
-    "analytics_top_rooms": "local-offline",
-    "reservations": "local-offline",
-    "resort_orders": "local-offline",
-    "rooms": "local-offline"
+    "analytics_overview": 1,
+    "analytics_daily": 20,
+    "analytics_top_rooms": 5,
+    "reservations": 100,
+    "resort_orders": 40,
+    "department_tasks": 25,
+    "reviews": 13,
+    "profiles": 27,
+    "rooms": 13,
+    "resort_inventory": 7,
+    "resort_services": 8
   },
   "memory": {
-    "heap_used_mb": 19,
-    "heap_total_mb": 29,
-    "rss_mb": 76
+    "heap_used_mb": 15,
+    "heap_total_mb": 31,
+    "rss_mb": 73
   },
   "optimization_score": 70,
   "ready_for_10k_burst": false

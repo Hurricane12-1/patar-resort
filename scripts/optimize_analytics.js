@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { redis } from '../server/src/lib/redis.js';
-import { admin } from '../server/src/lib/supabase.js';
+import { admin, getSystemAdminClient } from '../server/src/lib/supabase.js';
 import { isSupabaseConfigured } from '../server/src/config/env.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -16,6 +16,7 @@ async function optimize() {
   console.log('======================================================================\n');
 
   const t0 = Date.now();
+  const sysClient = await getSystemAdminClient();
 
   // 1. Purge stale cache entries
   console.log('[1/4] Purging Stale & Fragmented Cache Keys...');
@@ -24,17 +25,17 @@ async function optimize() {
   await redis.del('rooms:catalog:all:all');
   console.log('      Stale cache keys purged.');
 
-  // 2. Pre-warm analytics overview
+  // 2. Pre-Warm analytics overview
   console.log('\n[2/4] Pre-Warming Analytics Overview Pipeline...');
   try {
     let payload;
     if (isSupabaseConfigured) {
       const [ovRes, dailyRes, topRes, resRes, ordersRes] = await Promise.all([
-        admin.from('analytics_overview').select('*').single(),
-        admin.from('analytics_daily').select('*'),
-        admin.from('analytics_top_rooms').select('*'),
-        admin.from('reservations').select('*, profiles(full_name, phone), rooms(name)').order('created_at', { ascending: false }).limit(25),
-        admin.from('resort_orders').select('category, price_php').limit(250),
+        sysClient.from('analytics_overview').select('*').single(),
+        sysClient.from('analytics_daily').select('*'),
+        sysClient.from('analytics_top_rooms').select('*'),
+        sysClient.from('reservations').select('*, profiles(full_name, phone), rooms(name)').order('created_at', { ascending: false }).limit(25),
+        sysClient.from('resort_orders').select('category, price_php').limit(250),
       ]);
 
       const overview = ovRes.data || {};
