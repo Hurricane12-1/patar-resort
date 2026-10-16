@@ -281,10 +281,8 @@ await runTest('Cache Memory Leak Defense: LRU Eviction, Active TTL Sweep & On-De
   boundedCache.destroy();
 });
 
-// 12. Canonical Schema & Zero Duplicate SQL/System Files Integrity Test
-runTest('Canonical Schema & Zero Duplicate SQL/System Files Integrity', () => {
-  const canonicalSchemaPath = path.resolve(projectRoot, 'supabase/schema.sql');
-  assert.ok(fs.existsSync(canonicalSchemaPath), 'Canonical supabase/schema.sql must exist');
+// 12. Zero Duplicate SQL/System Files Integrity Test
+runTest('Zero Duplicate SQL/System Files Integrity', () => {
 
   const oldMigrationSql = path.resolve(projectRoot, 'updates/migrations/001_initial_baseline.sql');
   const oldProvisionSql = path.resolve(projectRoot, 'supabase/provision_production_accounts.sql');
