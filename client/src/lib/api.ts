@@ -178,6 +178,8 @@ export const api = {
 
   // SMS & Notifications
   myNotifications: () => req('/notifications/mine'),
+  markNotificationRead: (id: string) => req(`/notifications/${id}/read`, { method: 'PATCH' }),
+  markAllNotificationsRead: () => req('/notifications/read-all', { method: 'POST' }),
 
   // Financial & Executive Analytics (Cached via Redis)
   analyticsOverview: () => req('/analytics/overview'),

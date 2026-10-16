@@ -46,12 +46,16 @@ export const resolvers = {
 
     const [ovRes, resDataRes, ordersRes] = await Promise.all([
       admin.from('analytics_overview').select('*').single(),
-      admin.from('reservations').select('total_php, status, nights').neq('status', 'cancelled'),
+      admin.from('reservations').select('total_php, status, check_in, check_out').neq('status', 'cancelled'),
       admin.from('resort_orders').select('price_php, category'),
     ]);
 
     const ov = ovRes.data || {};
-    const bookings = resDataRes.data || [];
+    const rawBookings = resDataRes.data || [];
+    const bookings = rawBookings.map(r => ({
+      ...r,
+      nights: Math.max(1, Math.round((new Date(r.check_out) - new Date(r.check_in)) / (1000 * 60 * 60 * 24))),
+    }));
     const orders = ordersRes.data || [];
 
     const roomRev = bookings.reduce((sum, r) => sum + (Number(r.total_php) || 0), 0);

@@ -65,7 +65,7 @@ r.get('/telemetry/predictions', authenticate, requireStaffOrAdmin, asyncH(async 
   // Fetch rooms and historical reservations from Supabase
   const [roomsRes, histRes] = await Promise.all([
     admin.from('rooms').select('rate_php, units, capacity').eq('is_active', true),
-    admin.from('reservations').select('check_in, check_out, guests, nights, total_php, status, room_id')
+    admin.from('reservations').select('check_in, check_out, guests, total_php, status, room_id')
       .in('status', ['confirmed', 'checked_in', 'checked_out'])
       .gte('check_in', new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10))
       .order('check_in', { ascending: false })
@@ -83,7 +83,7 @@ r.get('/telemetry/predictions', authenticate, requireStaffOrAdmin, asyncH(async 
   const dayOccupancy = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
   for (const h of history) {
     const checkIn = new Date(h.check_in);
-    const nights = h.nights || 1;
+    const nights = Math.max(1, Math.round((new Date(h.check_out) - new Date(h.check_in)) / 86400000));
     for (let n = 0; n < nights; n++) {
       const stayDay = new Date(checkIn.getTime() + n * 86400000);
       const dow = stayDay.getDay();

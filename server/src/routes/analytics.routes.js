@@ -19,14 +19,18 @@ r.get('/analytics/overview', authenticate, requireAdminSecurityBlock, asyncH(asy
     const client = await getSystemAdminClient();
     const [roomsRes, resRes, ordersRes, chatCountRes, reviewsRes] = await Promise.all([
       client.from('rooms').select('id, name, units, rate_php, rating_avg').eq('is_active', true).order('rate_php', { ascending: true }),
-      client.from('reservations').select('id, room_id, total_php, status, nights, check_in, check_out, notes, created_at, rooms(name), profiles(full_name)').order('check_in', { ascending: false }).limit(200),
+      client.from('reservations').select('id, room_id, total_php, status, check_in, check_out, notes, created_at, guest_name, phone, rooms(name), profiles(full_name, phone)').order('check_in', { ascending: false }).limit(200),
       client.from('resort_orders').select('item_name, category, price_php, status, created_at').limit(250),
       client.from('chat_messages').select('id', { count: 'exact', head: true }),
       client.from('reviews').select('rating, created_at'),
     ]);
 
     const activeRooms = roomsRes.data || [];
-    const bookings = resRes.data || [];
+    const rawBookings = resRes.data || [];
+    const bookings = rawBookings.map((b) => ({
+      ...b,
+      nights: Math.max(1, Math.round((new Date(b.check_out) - new Date(b.check_in)) / (1000 * 60 * 60 * 24))),
+    }));
     const orders = ordersRes.data || [];
     const reviews = reviewsRes.data || [];
     const totalChats = chatCountRes.count || 0;
@@ -206,14 +210,18 @@ async function computeFullDivePayload(range, client = admin) {
   const c = client || admin;
   const [roomsRes, resRes, ordersRes, tasksRes, notifsRes] = await Promise.all([
     c.from('rooms').select('id, name, units, rate_php, rating_avg').eq('is_active', true).order('name'),
-    c.from('reservations').select('id, room_id, total_php, status, nights, check_in, check_out, created_at, rooms(name), profiles(full_name)').order('created_at', { ascending: false }).limit(50),
+    c.from('reservations').select('id, room_id, total_php, status, check_in, check_out, created_at, guest_name, phone, rooms(name), profiles(full_name, phone)').order('created_at', { ascending: false }).limit(50),
     c.from('resort_orders').select('id, item_name, category, price_php, status, created_at, profiles:guest_id(full_name)').order('created_at', { ascending: false }).limit(20),
     c.from('department_tasks').select('id, department, title, room_name, status, created_at').order('created_at', { ascending: false }).limit(10),
     c.from('notifications').select('id, to_phone, body, status, created_at').order('created_at', { ascending: false }).limit(10),
   ]);
 
   const rooms = roomsRes.data || [];
-  const bookings = resRes.data || [];
+  const rawBookings = resRes.data || [];
+  const bookings = rawBookings.map((b) => ({
+    ...b,
+    nights: Math.max(1, Math.round((new Date(b.check_out) - new Date(b.check_in)) / (1000 * 60 * 60 * 24))),
+  }));
   const orders = ordersRes.data || [];
   const tasks = tasksRes.data || [];
   const notifs = notifsRes.data || [];
@@ -396,12 +404,16 @@ r.get('/analytics/export', authenticate, requireAdminSecurityBlock, asyncH(async
   const client = await getSystemAdminClient();
   const [roomsRes, resRes, ordersRes] = await Promise.all([
     client.from('rooms').select('id, name, units, rate_php').eq('is_active', true),
-    client.from('reservations').select('total_php, nights, status').neq('status', 'cancelled'),
+    client.from('reservations').select('total_php, check_in, check_out, status').neq('status', 'cancelled'),
     client.from('resort_orders').select('price_php, category'),
   ]);
 
   const activeRooms = roomsRes.data || [];
-  const bookings = resRes.data || [];
+  const rawBookings = resRes.data || [];
+  const bookings = rawBookings.map((b) => ({
+    ...b,
+    nights: Math.max(1, Math.round((new Date(b.check_out) - new Date(b.check_in)) / (1000 * 60 * 60 * 24))),
+  }));
   const orders = ordersRes.data || [];
 
   const roomRev = bookings.reduce((a, b) => a + (b.total_php || 0), 0);

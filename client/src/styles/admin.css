@@ -286,6 +286,30 @@
   background: #E2E8F0;
 }
 
+.admin-portal .admin-header-notif-btn {
+  border: 1px solid #E2E8F0;
+  background: #F1F5F9;
+  color: #0F172A;
+}
+.admin-portal .admin-header-notif-btn:hover {
+  background: #E2E8F0;
+}
+.admin-portal .admin-header-notif-btn.has-alerts {
+  border-color: #FDA4AF;
+  background: #FFF1F2;
+  color: #E11D48;
+}
+.admin-portal.dark-mode .admin-header-notif-btn {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #F8FAFC;
+}
+.admin-portal.dark-mode .admin-header-notif-btn.has-alerts {
+  border-color: rgba(244, 63, 94, 0.4);
+  background: rgba(244, 63, 94, 0.18);
+  color: #FDA4AF;
+}
+
 .admin-portal .admin-header-icon-btn {
   width: 34px;
   height: 34px;

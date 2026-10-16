@@ -66,12 +66,62 @@ export default function Admin() {
   // Live database profile role validation (Acquired automatically from database profile)
   const isAdministrator = Boolean(session && profile && ['administrator', 'admin'].includes(profile?.role));
 
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifFilter, setNotifFilter] = useState('all');
+  const [reservationsList, setReservationsList] = useState<any[]>([]);
+  const [loadingReservations, setLoadingReservations] = useState(false);
+  const [reservationFilter, setReservationFilter] = useState('all');
+  const [reservationSearch, setReservationSearch] = useState('');
+  const [showAddReservationModal, setShowAddReservationModal] = useState(false);
+  const [creatingReservation, setCreatingReservation] = useState(false);
+  const [newReservation, setNewReservation] = useState({
+    guest_name: '',
+    phone: '',
+    guest_email: '',
+    room_id: '',
+    check_in: new Date().toISOString().slice(0, 10),
+    check_out: new Date(Date.now() + 86400000).toISOString().slice(0, 10),
+    guests: 2,
+    total_php: 3500,
+    payment_method: 'GCash',
+    payment_status: 'confirmed',
+    notes: 'Direct Front Desk walk-in entry',
+  });
+
+  const refreshReservations = useCallback(async () => {
+    setLoadingReservations(true);
+    try {
+      const res = await api.allReservations();
+      if (Array.isArray(res)) {
+        setReservationsList(res.map((b: any) => ({
+          ...b,
+          nights: b.nights || Math.max(1, Math.round((new Date(b.check_out).getTime() - new Date(b.check_in).getTime()) / 86400000)),
+        })));
+      }
+    } catch (e: any) {
+      console.warn('Could not load allReservations:', e.message);
+    } finally {
+      setLoadingReservations(false);
+    }
+  }, []);
+
   const handleManualSync = async () => {
     setRefreshingAnalytics(true);
     try {
-      const fresh = await api.analyticsOverview();
+      const [fresh, res, notifs] = await Promise.all([
+        api.analyticsOverview(),
+        api.allReservations().catch(() => null),
+        api.myNotifications().catch(() => null),
+      ]);
       if (fresh) setData(fresh);
-      toast('Live Analytics & Ledger Synchronized ✦');
+      if (Array.isArray(res)) {
+        setReservationsList(res.map((b: any) => ({
+          ...b,
+          nights: b.nights || Math.max(1, Math.round((new Date(b.check_out).getTime() - new Date(b.check_in).getTime()) / 86400000)),
+        })));
+      }
+      if (Array.isArray(notifs)) setNotifications(notifs);
+      toast('Live Analytics, Ledger & Notifications Synchronized ✦');
     } catch (err: any) {
       toast(err.message || 'Sync failed', true);
     } finally {
@@ -99,13 +149,12 @@ export default function Admin() {
   };
 
   // Administrative Navigation Tabs, Sidebar & LIGHT/DARK THEME STATE
-  const [activeTab, setActiveTab] = useState('overview'); // overview | food_sales | telemetry | accounts | settings | ledger | csv
+  const [activeTab, setActiveTab] = useState('overview'); // overview | ledger | notifications | inventory | conversations | food_sales | accounts | audit | csv | settings
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarHidden, setSidebarHidden] = useState(false);
   const [sidebarMobileOpen, setSidebarMobileOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showGlossaryModal, setShowGlossaryModal] = useState(false);
-  const [notifications, setNotifications] = useState([]);
   const [isLightMode, setIsLightMode] = useState(() => {
     // Explicitly prioritize Executive White Theme as default
     const saved = localStorage.getItem('admin_theme_v2');
@@ -319,7 +368,16 @@ export default function Admin() {
     if (activeTab === 'inventory') {
       refreshRoomsAndInventory();
     }
-  }, [activeTab, refreshRoomsAndInventory]);
+    if (activeTab === 'ledger') {
+      refreshReservations();
+      if (roomsList.length === 0) {
+        api.rooms(true).then((r: any) => setRoomsList(Array.isArray(r) ? r : [])).catch(() => {});
+      }
+    }
+    if (activeTab === 'notifications') {
+      api.myNotifications().then((n: any) => Array.isArray(n) && setNotifications(n)).catch(() => {});
+    }
+  }, [activeTab, refreshRoomsAndInventory, refreshReservations, roomsList.length]);
 
   useEffect(() => {
     if (isAdministrator) {
@@ -330,6 +388,8 @@ export default function Admin() {
         .then((d) => live && setData(d))
         .catch((e) => toast(e.message, true))
         .finally(() => live && setLoading(false));
+
+      refreshReservations();
 
       api.myNotifications()
         .then((n) => live && setNotifications(n))
@@ -714,16 +774,81 @@ export default function Admin() {
     estimatedGuests: Math.round((d.nights_sold || 0) * 2.4),
   }));
 
-  async function updateStatus(id, status) {
+  async function updateStatus(id: string, status: string) {
     try {
       await api.setReservationStatus(id, status);
       toast(`Reservation marked as ${status.replace('_', ' ')}`);
+      setReservationsList((prev: any[]) => prev.map((b) => (b.id === id ? { ...b, status } : b)));
       setData((x) => ({
         ...x,
-        bookings: x.bookings.map((b) => (b.id === id ? { ...b, status } : b)),
+        bookings: (x.bookings || []).map((b: any) => (b.id === id ? { ...b, status } : b)),
       }));
-    } catch (e) { toast(e.message, true); }
+    } catch (e: any) { toast(e.message, true); }
   }
+
+  async function handleCreateReservation(e: React.FormEvent) {
+    e.preventDefault();
+    setCreatingReservation(true);
+    try {
+      if (!newReservation.room_id) {
+        throw new Error('Please select an accommodation / room.');
+      }
+      if (!newReservation.guest_name.trim()) {
+        throw new Error('Please enter guest full name.');
+      }
+      if (!newReservation.phone.trim()) {
+        throw new Error('Please enter guest mobile number for SMS notifications.');
+      }
+      await api.createReservation({
+        ...newReservation,
+        total_php: Number(newReservation.total_php),
+        guests: Number(newReservation.guests),
+      });
+      toast('✦ New reservation recorded and added to Ledger!');
+      setShowAddReservationModal(false);
+      setNewReservation({
+        guest_name: '',
+        phone: '',
+        guest_email: '',
+        room_id: '',
+        check_in: new Date().toISOString().slice(0, 10),
+        check_out: new Date(Date.now() + 86400000).toISOString().slice(0, 10),
+        guests: 2,
+        total_php: 3500,
+        payment_method: 'GCash',
+        payment_status: 'confirmed',
+        notes: 'Direct Front Desk walk-in entry',
+      });
+      refreshReservations();
+      handleManualSync();
+    } catch (err: any) {
+      toast(err.message || 'Failed to record reservation', true);
+    } finally {
+      setCreatingReservation(false);
+    }
+  }
+
+  const unreadNotifsCount = notifications.filter((n: any) => !n.is_read).length;
+
+  const handleMarkNotifRead = async (id: string) => {
+    try {
+      await api.markNotificationRead(id);
+      setNotifications((prev: any[]) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
+      toast('Notification marked as read');
+    } catch (err: any) {
+      console.warn(err);
+    }
+  };
+
+  const handleMarkAllNotifsRead = async () => {
+    try {
+      await api.markAllNotificationsRead();
+      setNotifications((prev: any[]) => prev.map((n) => ({ ...n, is_read: true })));
+      toast('All notifications marked as read');
+    } catch (err: any) {
+      console.warn(err);
+    }
+  };
 
   async function handleProvisionStaff(e) {
     e.preventDefault();
@@ -987,14 +1112,35 @@ export default function Admin() {
     }
   }
 
+  // Unified display bookings from either direct reservationsList or data.bookings
+  const rawDisplayBookings = reservationsList.length > 0 ? reservationsList : (data.bookings || []);
+  const allBookings = rawDisplayBookings.map((b: any) => ({
+    ...b,
+    nights: b.nights || Math.max(1, Math.round((new Date(b.check_out).getTime() - new Date(b.check_in).getTime()) / 86400000)),
+  }));
+
+  const filteredBookings = allBookings.filter((b: any) => {
+    if (reservationFilter !== 'all' && b.status !== reservationFilter) return false;
+    if (reservationSearch.trim()) {
+      const q = reservationSearch.toLowerCase();
+      const guestName = (b.profiles?.full_name || b.guest_name || '').toLowerCase();
+      const phone = (b.profiles?.phone || b.phone || '').toLowerCase();
+      const room = (b.rooms?.name || '').toLowerCase();
+      const id = (b.id || '').toLowerCase();
+      if (!guestName.includes(q) && !phone.includes(q) && !room.includes(q) && !id.includes(q)) return false;
+    }
+    return true;
+  });
+
   const sidebarItems = [
     { key: 'overview', label: 'Dashboard & Analytics', icon: <IconAnalytics size={19} /> },
+    { key: 'ledger', label: 'Reservations Ledger', icon: <IconLedger size={19} />, count: allBookings.length, badgeColor: '#0EA5E9' },
+    { key: 'notifications', label: 'Alerts & Notifications', icon: <IconBell size={19} />, count: unreadNotifsCount, badgeColor: '#F43F5E' },
     { key: 'inventory', label: 'Accommodations & Inventory', icon: <IconBuilding size={19} /> },
     { key: 'conversations', label: 'Customer Services', icon: <IconMessages size={19} /> },
     { key: 'food_sales', label: 'Dining Sales', icon: <IconDining size={19} /> },
     { key: 'accounts', label: 'Staff & Accounts', icon: <IconUsers size={19} /> },
     { key: 'audit', label: 'System Audit Logs', icon: <IconShield size={19} /> },
-    { key: 'ledger', label: 'Reservations Ledger', icon: <IconLedger size={19} /> },
     { key: 'csv', label: 'CSV Explorer', icon: <IconCsv size={19} /> },
     { key: 'settings', label: 'Profile & Settings', icon: <IconSettings size={19} /> },
   ];
@@ -1146,12 +1292,14 @@ export default function Admin() {
                 </div>
 
                 {/* NOTIFICATION BADGE / ACTIVE PILL DOT */}
-                {!sidebarCollapsed && (item.key === 'accounts' || item.key === 'conversations') && (
+                {!sidebarCollapsed && ((item as any).count !== undefined ? (item as any).count > 0 : (item.key === 'accounts' || item.key === 'conversations')) && (
                   <span
                     style={{
                       marginLeft: 8,
                       flexShrink: 0,
-                      background: item.key === 'conversations'
+                      background: (item as any).badgeColor
+                        ? (item as any).badgeColor
+                        : item.key === 'conversations'
                         ? 'linear-gradient(135deg, #6366F1, #4338CA)'
                         : 'linear-gradient(135deg, #F43F5E, #E11D48)',
                       color: '#FFFFFF',
@@ -1165,15 +1313,16 @@ export default function Admin() {
                       alignItems: 'center',
                       justifyContent: 'center',
                       lineHeight: 1,
-                      boxShadow: item.key === 'conversations'
-                        ? '0 2px 8px rgba(99, 102, 241, 0.45)'
-                        : '0 2px 8px rgba(244, 63, 94, 0.45)',
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.25)',
                       fontFamily: "'Plus Jakarta Sans', sans-serif",
                       border: '1px solid rgba(255, 255, 255, 0.2)',
                     }}
                   >
-                    {item.key === 'conversations' ? (guestConversations.length || 8) : (users.length || 4)}
+                    {(item as any).count !== undefined ? (item as any).count : (item.key === 'conversations' ? (guestConversations.length || 8) : (users.length || 4))}
                   </span>
+                )}
+                {sidebarCollapsed && (item as any).count > 0 && (
+                  <span style={{ position: 'absolute', top: 4, right: 4, width: 8, height: 8, borderRadius: '50%', background: (item as any).badgeColor || '#F43F5E' }} />
                 )}
                 {isActive && sidebarCollapsed && (
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#FFF' }} />
@@ -1309,15 +1458,20 @@ export default function Admin() {
             <div className="admin-header-notif-wrap" style={{ position: 'relative' }}>
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
-                className="admin-header-icon-btn notif-bell-btn"
-                title="Executive Notifications"
+                className={`admin-header-btn admin-header-notif-btn ${unreadNotifsCount > 0 ? 'has-alerts' : ''}`}
+                title="Executive Notifications & SMS Alerts"
               >
-                <IconBell size={17} color={themeText} />
-                {notifications.length > 0 && (
-                  <span className="notif-badge">
-                    {notifications.length}
-                  </span>
-                )}
+                <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+                  <IconBell size={16} color={unreadNotifsCount > 0 ? '#E11D48' : themeText} />
+                  {unreadNotifsCount > 0 && (
+                    <span className="notif-badge" style={{ position: 'absolute', top: -8, right: -10 }}>
+                      {unreadNotifsCount}
+                    </span>
+                  )}
+                </span>
+                <span className="btn-label" style={{ fontWeight: 700, color: unreadNotifsCount > 0 ? '#E11D48' : themeText }}>
+                  Alerts {notifications.length > 0 ? `(${notifications.length})` : ''}
+                </span>
               </button>
 
               {/* NOTIFICATION PANELS DROPDOWN */}
@@ -1327,7 +1481,7 @@ export default function Admin() {
                     position: 'absolute',
                     right: 0,
                     top: 44,
-                    width: 320,
+                    width: 360,
                     maxWidth: 'calc(100vw - 28px)',
                     background: themeSidebarBg,
                     border: `1px solid ${themeBorder}`,
@@ -1338,19 +1492,46 @@ export default function Admin() {
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${themeBorder}`, paddingBottom: 8, marginBottom: 10 }}>
-                    <b style={{ fontSize: '.88rem', color: themeText }}>Executive Notifications (SMS & System)</b>
-                    <small style={{ color: '#0EA5E9', fontSize: '.72rem' }}>Live SSE</small>
+                    <div>
+                      <b style={{ fontSize: '.88rem', color: themeText }}>Executive Notifications</b>
+                      <small style={{ color: '#0EA5E9', fontSize: '.72rem', display: 'block' }}>SMS & Live System Alerts</small>
+                    </div>
+                    {unreadNotifsCount > 0 && (
+                      <button
+                        onClick={handleMarkAllNotifsRead}
+                        style={{ background: 'transparent', border: 'none', color: '#0EA5E9', fontSize: '.74rem', cursor: 'pointer', fontWeight: 700 }}
+                      >
+                        Mark all read
+                      </button>
+                    )}
                   </div>
                   {notifications.length === 0 ? (
-                    <p className="muted small" style={{ margin: 0, padding: 10 }}>No new notifications.</p>
+                    <p className="muted small" style={{ margin: 0, padding: 16, textAlign: 'center' }}>No new notifications.</p>
                   ) : (
-                    notifications.map((n) => (
-                      <div key={n.id} style={{ padding: '8px 0', borderBottom: `1px solid ${themeBorder}`, fontSize: '.78rem' }}>
-                        <span className={`pill ${n.status}`}>{n.status}</span>{' '}
-                        <span style={{ color: themeMuted }}>{fmtTime(n.created_at)}</span> — {n.body}
-                      </div>
-                    ))
+                    <div style={{ maxHeight: 280, overflowY: 'auto' }}>
+                      {notifications.slice(0, 6).map((n: any) => (
+                        <div key={n.id} style={{ padding: '8px 0', borderBottom: `1px solid ${themeBorder}`, fontSize: '.78rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                            <span className={`pill ${n.status || 'sent'}`}>{n.status || 'sent'}</span>
+                            <span style={{ color: themeMuted, fontSize: '.72rem' }}>{fmtTime(n.created_at)}</span>
+                          </div>
+                          <span style={{ color: themeText, display: 'block', marginTop: 2 }}>{n.body || n.content}</span>
+                        </div>
+                      ))}
+                    </div>
                   )}
+                  <div style={{ borderTop: `1px solid ${themeBorder}`, paddingTop: 10, marginTop: 10 }}>
+                    <button
+                      onClick={() => {
+                        setActiveTab('notifications');
+                        setShowNotifications(false);
+                      }}
+                      className="btn btn-sky btn-sm"
+                      style={{ width: '100%', justifyContent: 'center' }}
+                    >
+                      Open Full Alerts Center ➔
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -1819,6 +2000,67 @@ export default function Admin() {
                 </div>
               </div>
 
+              {/* LIVE RESORT ALERTS & SMS STREAM FEED */}
+              <div className="panel panel-card" style={{ background: themeCardBg, border: `1px solid ${themeBorder}`, borderRadius: 16, padding: '18px 22px', boxShadow: themeShadow, marginBottom: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ width: 34, height: 34, borderRadius: 10, background: isLightMode ? '#FFF1F2' : 'rgba(244, 63, 94, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <IconBell size={18} color="#E11D48" />
+                    </span>
+                    <div>
+                      <h4 style={{ margin: 0, fontSize: '1.05rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700 }}>
+                        Live Resort Alerts & SMS Stream {unreadNotifsCount > 0 && <span className="notif-badge" style={{ position: 'static', display: 'inline-flex', marginLeft: 6 }}>{unreadNotifsCount}</span>}
+                      </h4>
+                      <small style={{ color: themeMuted }}>Real-time guest booking confirmations, stay operations and front-desk dispatches</small>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      className="btn btn-sky btn-sm"
+                      onClick={() => setActiveTab('notifications')}
+                      style={{ fontWeight: 700 }}
+                    >
+                      Open Alerts Center ➔
+                    </button>
+                    <button
+                      className="btn btn-sm"
+                      onClick={() => setActiveTab('ledger')}
+                      style={{ background: isLightMode ? '#F0F9FF' : 'rgba(14, 165, 233, 0.15)', color: '#0284C7', border: '1px solid #BAE6FD', fontWeight: 700 }}
+                    >
+                      Reservations Ledger ({allBookings.length}) ➔
+                    </button>
+                  </div>
+                </div>
+
+                {notifications.length === 0 ? (
+                  <p className="muted small" style={{ margin: 0, padding: '10px 0' }}>No active notifications recorded yet. Automated SMS alerts will stream here when guests book.</p>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 10 }}>
+                    {notifications.slice(0, 3).map((n: any) => (
+                      <div
+                        key={n.id}
+                        onClick={() => setActiveTab('notifications')}
+                        style={{
+                          padding: '12px 14px',
+                          borderRadius: 12,
+                          background: isLightMode ? '#F8FAFC' : 'rgba(255, 255, 255, 0.04)',
+                          border: `1px solid ${n.is_read ? themeBorder : '#6366F1'}`,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                          <span className={`pill ${n.status || 'sent'}`}>{n.status || 'sent'}</span>
+                          <span style={{ fontSize: '.72rem', color: themeMuted }}>{fmtTime(n.created_at)}</span>
+                        </div>
+                        <p style={{ margin: 0, fontSize: '.82rem', color: themeText, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {n.body || n.content}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {/* SECTION 4: BOTTOM THREE DIAGNOSTIC PANELS (RESPONSIVE 3-PANEL GRID) */}
               <div className="admin-grid-bottom-3">
                 {/* Panel 1: Summary Category Pills */}
@@ -1827,16 +2069,44 @@ export default function Admin() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     <div
                       onClick={() => {
+                        setActiveTab('ledger');
+                        toast('📋 Navigated to Live Guest Reservations Ledger');
+                      }}
+                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: isLightMode ? '#F0F9FF' : 'rgba(14,165,233,0.15)', borderRadius: 12, color: isLightMode ? '#0284C7' : '#38BDF8', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s ease', border: `1px solid ${isLightMode ? '#BAE6FD' : 'rgba(14,165,233,0.3)'}` }}
+                      onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+                      title="Click to view Reservations Ledger"
+                    >
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '.92rem' }}>📋 Reservations Ledger</span>
+                      <span className="pill" style={{ background: '#0EA5E9', color: '#FFFFFF', fontWeight: 800, padding: '4px 12px', borderRadius: 16, fontSize: '.8rem' }}>{allBookings.length} stays</span>
+                    </div>
+
+                    <div
+                      onClick={() => {
+                        setActiveTab('notifications');
+                        toast('🔔 Navigated to Executive Notifications & Alerts Center');
+                      }}
+                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: isLightMode ? '#FFF1F2' : 'rgba(244,63,94,0.15)', borderRadius: 12, color: isLightMode ? '#E11D48' : '#F43F5E', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s ease', border: `1px solid ${isLightMode ? '#FECDD3' : 'rgba(244,63,94,0.3)'}` }}
+                      onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+                      title="Click to view full Notification Center"
+                    >
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '.92rem' }}>🔔 Alert Center</span>
+                      <span className="pill" style={{ background: '#F43F5E', color: '#FFFFFF', fontWeight: 800, padding: '4px 12px', borderRadius: 16, fontSize: '.8rem' }}>{unreadNotifsCount > 0 ? `${unreadNotifsCount} new` : `${notifications.length} alerts`}</span>
+                    </div>
+
+                    <div
+                      onClick={() => {
                         setActiveTab('audit');
                         toast('🛡️ Switched to Live System Audit Logs');
                       }}
-                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: isLightMode ? '#F0F9FF' : 'rgba(56,189,248,0.15)', borderRadius: 12, color: isLightMode ? '#0284C7' : '#0EA5E9', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s ease', border: `1px solid ${isLightMode ? '#BAE6FD' : 'rgba(56,189,248,0.3)'}` }}
+                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', borderRadius: 12, color: themeText, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s ease', border: `1px solid ${themeBorder}` }}
                       onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
                       onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
                       title="Click to view full System Audit Trail"
                     >
                       <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '.92rem' }}>🛡️ Audit Trail</span>
-                      <span className="pill" style={{ background: '#0EA5E9', color: '#FFFFFF', fontWeight: 800, padding: '4px 12px', borderRadius: 16, fontSize: '.8rem' }}>Live Stream</span>
+                      <span className="pill" style={{ background: '#64748B', color: '#FFFFFF', fontWeight: 800, padding: '4px 12px', borderRadius: 16, fontSize: '.8rem' }}>Live Stream</span>
                     </div>
 
                     <div
@@ -1844,13 +2114,13 @@ export default function Admin() {
                         setShowCreateModal(true);
                         toast('📁 Opening Provision Staff Account & Department Group modal');
                       }}
-                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: isLightMode ? '#FFF1F2' : 'rgba(244,63,94,0.15)', borderRadius: 12, color: isLightMode ? '#E11D48' : '#F43F5E', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s ease', border: `1px solid ${isLightMode ? '#FECDD3' : 'rgba(244,63,94,0.3)'}` }}
+                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: isLightMode ? '#F5F3FF' : 'rgba(139,92,246,0.15)', borderRadius: 12, color: isLightMode ? '#7C3AED' : '#A78BFA', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s ease', border: `1px solid ${isLightMode ? '#DDD6FE' : 'rgba(139,92,246,0.3)'}` }}
                       onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
                       onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
                       title="Click to add a new Staff / Department Group Account"
                     >
                       <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '.92rem' }}>📁 Add Group</span>
-                      <span className="pill" style={{ background: '#F43F5E', color: '#FFFFFF', fontWeight: 800, padding: '4px 12px', borderRadius: 16, fontSize: '.8rem' }}>4 groups</span>
+                      <span className="pill" style={{ background: '#8B5CF6', color: '#FFFFFF', fontWeight: 800, padding: '4px 12px', borderRadius: 16, fontSize: '.8rem' }}>4 groups</span>
                     </div>
 
                     <div
@@ -3176,43 +3446,197 @@ export default function Admin() {
           {/* TAB 6: RESERVATIONS LEDGER */}
           {activeTab === 'ledger' && (
             <div className="panel" style={{ background: themeCardBg, border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 24, boxShadow: themeShadow }}>
-              <h3 className="serif" style={{ fontSize: '1.4rem', marginTop: 0, color: themeText }}>Live Guest Reservations Ledger</h3>
-              {bookings.length === 0 ? (
-                <p className="muted" style={{ padding: '24px 0' }}>No active or past reservations found.</p>
+              {/* Header & Quick Action Buttons */}
+              <div className="admin-tab-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+                <div>
+                  <span style={{ fontSize: '.76rem', color: '#0EA5E9', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>
+                    PHYSICAL & DIGITAL BOOKINGS FOLIO
+                  </span>
+                  <h3 className="serif" style={{ fontSize: '1.4rem', margin: '4px 0 0', color: themeText }}>
+                    📋 Guest Stay & Reservations Ledger
+                  </h3>
+                  <p className="muted small" style={{ margin: '4px 0 0' }}>
+                    Real-time guest folios, room assignments, physical logbook ingestion and check-in / check-out operations.
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <button
+                    className="btn btn-sky btn-sm"
+                    onClick={() => setShowAddReservationModal(true)}
+                    style={{ fontWeight: 700 }}
+                  >
+                    ➕ New Reservation (Walk-In / Phone)
+                  </button>
+                  <button
+                    className="btn btn-sm btn-ghost"
+                    onClick={refreshReservations}
+                    disabled={loadingReservations}
+                    style={{ color: themeText, border: `1px solid ${themeBorder}`, fontWeight: 600 }}
+                  >
+                    {loadingReservations ? 'Refreshing…' : '🔄 Refresh Ledger'}
+                  </button>
+                </div>
+              </div>
+
+              {/* 4 KPI Summary Cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14, marginBottom: 20 }}>
+                <div style={{ padding: '16px 18px', background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.04)', borderRadius: 14, border: `1px solid ${themeBorder}` }}>
+                  <small style={{ color: themeMuted, textTransform: 'uppercase', fontSize: '.7rem', fontWeight: 800, letterSpacing: '.06em' }}>Total Reservations</small>
+                  <b style={{ display: 'block', fontSize: '1.6rem', color: themeText, marginTop: 4 }}>{allBookings.length} stays</b>
+                  <span style={{ fontSize: '.74rem', color: '#0EA5E9' }}>All active & past folios</span>
+                </div>
+                <div style={{ padding: '16px 18px', background: isLightMode ? '#ECFDF5' : 'rgba(16,185,129,0.1)', borderRadius: 14, border: `1px solid ${isLightMode ? '#A7F3D0' : 'rgba(16,185,129,0.2)'}` }}>
+                  <small style={{ color: isLightMode ? '#047857' : '#34D399', textTransform: 'uppercase', fontSize: '.7rem', fontWeight: 800, letterSpacing: '.06em' }}>In-House / Checked In</small>
+                  <b style={{ display: 'block', fontSize: '1.6rem', color: isLightMode ? '#065F46' : '#10B981', marginTop: 4 }}>
+                    {allBookings.filter((b) => b.status === 'checked_in').length} guests
+                  </b>
+                  <span style={{ fontSize: '.74rem', color: '#10B981' }}>Currently staying in resort</span>
+                </div>
+                <div style={{ padding: '16px 18px', background: isLightMode ? '#EFF6FF' : 'rgba(59,130,246,0.1)', borderRadius: 14, border: `1px solid ${isLightMode ? '#BFDBFE' : 'rgba(59,130,246,0.2)'}` }}>
+                  <small style={{ color: isLightMode ? '#1D4ED8' : '#60A5FA', textTransform: 'uppercase', fontSize: '.7rem', fontWeight: 800, letterSpacing: '.06em' }}>Upcoming Confirmed</small>
+                  <b style={{ display: 'block', fontSize: '1.6rem', color: isLightMode ? '#1E40AF' : '#3B82F6', marginTop: 4 }}>
+                    {allBookings.filter((b) => b.status === 'confirmed').length} bookings
+                  </b>
+                  <span style={{ fontSize: '.74rem', color: '#3B82F6' }}>Awaiting arrival date</span>
+                </div>
+                <div style={{ padding: '16px 18px', background: isLightMode ? '#FFFBEB' : 'rgba(245,158,11,0.1)', borderRadius: 14, border: `1px solid ${isLightMode ? '#FDE68A' : 'rgba(245,158,11,0.2)'}` }}>
+                  <small style={{ color: isLightMode ? '#B45309' : '#FBBF24', textTransform: 'uppercase', fontSize: '.7rem', fontWeight: 800, letterSpacing: '.06em' }}>Gross Ledger Value</small>
+                  <b style={{ display: 'block', fontSize: '1.6rem', color: isLightMode ? '#92400E' : '#F59E0B', marginTop: 4 }}>
+                    {money(allBookings.filter((b) => b.status !== 'cancelled').reduce((acc, b) => acc + (b.total_php || 0), 0))}
+                  </b>
+                  <span style={{ fontSize: '.74rem', color: '#F59E0B' }}>Total booking revenue</span>
+                </div>
+              </div>
+
+              {/* Search Bar & Status Filter Pills */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {[
+                    { key: 'all', label: `All (${allBookings.length})` },
+                    { key: 'confirmed', label: `Confirmed (${allBookings.filter(b => b.status === 'confirmed').length})` },
+                    { key: 'checked_in', label: `In-House (${allBookings.filter(b => b.status === 'checked_in').length})` },
+                    { key: 'checked_out', label: `Checked Out (${allBookings.filter(b => b.status === 'checked_out').length})` },
+                    { key: 'pending', label: `Pending (${allBookings.filter(b => b.status === 'pending').length})` },
+                    { key: 'cancelled', label: `Cancelled (${allBookings.filter(b => b.status === 'cancelled').length})` },
+                  ].map((f) => (
+                    <button
+                      key={f.key}
+                      onClick={() => setReservationFilter(f.key)}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: 16,
+                        border: `1px solid ${reservationFilter === f.key ? '#0EA5E9' : themeBorder}`,
+                        background: reservationFilter === f.key ? (isLightMode ? '#E0F2FE' : 'rgba(14,165,233,0.25)') : 'transparent',
+                        color: reservationFilter === f.key ? '#0284C7' : themeText,
+                        fontSize: '.78rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div style={{ position: 'relative', width: 280, maxWidth: '100%' }}>
+                  <input
+                    className="search"
+                    placeholder="Search guest, room, phone, folio…"
+                    value={reservationSearch}
+                    onChange={(e) => setReservationSearch(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px 8px 32px',
+                      borderRadius: 14,
+                      border: `1px solid ${themeBorder}`,
+                      background: isLightMode ? '#FFFFFF' : 'rgba(15,23,42,0.6)',
+                      color: themeText,
+                      fontSize: '.82rem',
+                    }}
+                  />
+                  <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }}>
+                    <IconSearch size={14} />
+                  </span>
+                </div>
+              </div>
+
+              {/* Reservations Ledger Table */}
+              {loadingReservations && allBookings.length === 0 ? (
+                <div style={{ padding: '40px 0', textAlign: 'center', color: themeMuted }}>
+                  <p>Loading Guest Reservations Ledger…</p>
+                </div>
+              ) : filteredBookings.length === 0 ? (
+                <div style={{ padding: '40px 16px', textAlign: 'center', background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.02)', borderRadius: 14, border: `1px dashed ${themeBorder}` }}>
+                  <p className="muted" style={{ margin: '0 0 8px', fontSize: '1rem' }}>No reservations match your search or filter.</p>
+                  <small style={{ color: themeMuted }}>Click "New Reservation" above to record a guest booking.</small>
+                </div>
               ) : (
-                <div className="table-wrap" style={{ background: isLightMode ? '#FFFFFF' : 'rgba(15,23,42,0.85)', border: `1px solid ${themeBorder}` }}>
+                <div className="table-wrap" style={{ background: isLightMode ? '#FFFFFF' : 'rgba(15,23,42,0.85)', border: `1px solid ${themeBorder}`, borderRadius: 12 }}>
                   <table className="table" style={{ color: themeText }}>
                     <thead>
                       <tr style={{ background: isLightMode ? '#F1F5F9' : 'rgba(30,41,59,0.8)' }}>
-                        <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Guest</th>
-                        <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Room</th>
-                        <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Dates</th>
-                        <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Total</th>
+                        <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Guest Folio</th>
+                        <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Accommodation</th>
+                        <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Stay Dates</th>
+                        <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Party</th>
+                        <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Total Amount</th>
                         <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Status</th>
-                        <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Actions</th>
+                        <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Front Desk Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {bookings.map((b) => (
+                      {filteredBookings.map((b) => (
                         <tr key={b.id} style={{ borderBottom: `1px solid ${themeBorder}` }}>
                           <td>
-                            <b>{b.profiles?.full_name || 'Guest'}</b><br />
-                            <small style={{ color: themeMuted }}>{b.profiles?.phone || ''}</small>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <span style={{ width: 32, height: 32, borderRadius: '50%', background: isLightMode ? '#E2E8F0' : '#334155', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.8rem', fontWeight: 800 }}>
+                                {(b.profiles?.full_name || b.guest_name || 'G').charAt(0).toUpperCase()}
+                              </span>
+                              <div>
+                                <b>{b.profiles?.full_name || b.guest_name || 'Guest User'}</b>
+                                <small style={{ color: themeMuted, display: 'block' }}>{b.profiles?.phone || b.phone || 'No phone recorded'}</small>
+                              </div>
+                            </div>
                           </td>
-                          <td>{b.rooms?.name || 'Room'}</td>
-                          <td>{fmtDate(b.check_in)} → {fmtDate(b.check_out)}</td>
-                          <td><b>{money(b.total_php)}</b></td>
-                          <td><span className={`pill ${b.status}`}>{b.status.replace('_', ' ')}</span></td>
                           <td>
-                            {b.status === 'confirmed' && (
-                              <button className="act-btn" onClick={() => updateStatus(b.id, 'checked_in')}>Check-in</button>
-                            )}
-                            {b.status === 'checked_in' && (
-                              <button className="act-btn" onClick={() => updateStatus(b.id, 'checked_out')}>Check-out</button>
-                            )}
-                            {['pending', 'confirmed'].includes(b.status) && (
-                              <button className="act-btn" onClick={() => updateStatus(b.id, 'cancelled')}>Cancel</button>
-                            )}
+                            <b>{b.rooms?.name || 'Assigned Villa/Room'}</b>
+                          </td>
+                          <td>
+                            <div>
+                              <span>{fmtDate(b.check_in)} → {fmtDate(b.check_out)}</span>
+                              <span style={{ marginLeft: 6, fontSize: '.72rem', background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: 6, color: themeMuted }}>
+                                {b.nights || 1} {b.nights === 1 ? 'night' : 'nights'}
+                              </span>
+                            </div>
+                          </td>
+                          <td>
+                            <span style={{ fontSize: '.82rem' }}>{b.guests || 2} Guests</span>
+                          </td>
+                          <td>
+                            <b>{money(b.total_php)}</b>
+                            <small style={{ display: 'block', color: themeMuted, fontSize: '.72rem' }}>{b.payment_method || 'GCash'}</small>
+                          </td>
+                          <td>
+                            <span className={`pill ${b.status}`}>{b.status.replace('_', ' ')}</span>
+                          </td>
+                          <td>
+                            <div style={{ display: 'flex', gap: 6 }}>
+                              {['pending', 'confirmed'].includes(b.status) && (
+                                <button className="act-btn" onClick={() => updateStatus(b.id, 'checked_in')} style={{ color: '#10B981', borderColor: '#10B981' }}>
+                                  🛎️ Check-in
+                                </button>
+                              )}
+                              {b.status === 'checked_in' && (
+                                <button className="act-btn" onClick={() => updateStatus(b.id, 'checked_out')} style={{ color: '#6366F1', borderColor: '#6366F1' }}>
+                                  🔑 Check-out
+                                </button>
+                              )}
+                              {['pending', 'confirmed'].includes(b.status) && (
+                                <button className="act-btn" onClick={() => updateStatus(b.id, 'cancelled')} style={{ color: '#EF4444', borderColor: '#EF4444' }}>
+                                  ✕ Cancel
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -3220,6 +3644,317 @@ export default function Admin() {
                   </table>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* TAB: RESORT ALERTS & NOTIFICATIONS CENTER */}
+          {activeTab === 'notifications' && (
+            <div className="panel" style={{ background: themeCardBg, border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 24, boxShadow: themeShadow }}>
+              <div className="admin-tab-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+                <div>
+                  <span style={{ fontSize: '.76rem', color: '#E11D48', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>
+                    COMMUNICATIONS & AUDIT TRAIL
+                  </span>
+                  <h3 className="serif" style={{ fontSize: '1.4rem', margin: '4px 0 0', color: themeText }}>
+                    🔔 Executive Notifications & SMS Alert Center
+                  </h3>
+                  <p className="muted small" style={{ margin: '4px 0 0' }}>
+                    Live dispatch log of SMS guest alerts, role change verifications and automated reservation updates.
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  {unreadNotifsCount > 0 && (
+                    <button className="btn btn-sm btn-ghost" onClick={handleMarkAllNotifsRead} style={{ color: themeText, border: `1px solid ${themeBorder}`, fontWeight: 600 }}>
+                      ✓ Mark All Read
+                    </button>
+                  )}
+                  <button className="btn btn-sm btn-sky" onClick={() => api.myNotifications().then((n: any) => Array.isArray(n) && setNotifications(n))} style={{ fontWeight: 700 }}>
+                    🔄 Refresh Alerts
+                  </button>
+                </div>
+              </div>
+
+              {/* Filter Pills */}
+              <div style={{ display: 'flex', gap: 8, marginBottom: 18, flexWrap: 'wrap' }}>
+                {[
+                  { key: 'all', label: `All Alerts (${notifications.length})` },
+                  { key: 'unread', label: `Unread (${unreadNotifsCount})` },
+                  { key: 'sms', label: 'SMS Messages' },
+                  { key: 'system', label: 'System Logs' },
+                ].map((f) => (
+                  <button
+                    key={f.key}
+                    onClick={() => setNotifFilter(f.key)}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: 20,
+                      border: `1px solid ${notifFilter === f.key ? '#6366F1' : themeBorder}`,
+                      background: notifFilter === f.key ? (isLightMode ? '#EEF2FF' : 'rgba(99, 102, 241, 0.2)') : 'transparent',
+                      color: notifFilter === f.key ? '#6366F1' : themeText,
+                      fontWeight: 700,
+                      fontSize: '.82rem',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Notifications List */}
+              {notifications.length === 0 ? (
+                <div style={{ padding: '40px 20px', textAlign: 'center', color: themeMuted, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.02)', borderRadius: 14, border: `1px dashed ${themeBorder}` }}>
+                  <p style={{ fontSize: '1.1rem', margin: '0 0 6px' }}>📭 No alerts or notifications recorded.</p>
+                  <small>SMS confirmations and system dispatches will appear here in real time.</small>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {notifications
+                    .filter((n: any) => {
+                      if (notifFilter === 'unread') return !n.is_read;
+                      if (notifFilter === 'sms') return n.type === 'sms' || n.to_phone;
+                      if (notifFilter === 'system') return n.type !== 'sms';
+                      return true;
+                    })
+                    .map((n: any) => (
+                      <div
+                        key={n.id}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'flex-start',
+                          padding: '14px 18px',
+                          borderRadius: 14,
+                          border: `1px solid ${n.is_read ? themeBorder : '#6366F1'}`,
+                          background: !n.is_read ? (isLightMode ? '#F8FAFC' : 'rgba(99, 102, 241, 0.08)') : (isLightMode ? '#FFFFFF' : 'rgba(15,23,42,0.6)'),
+                          boxShadow: !n.is_read ? '0 2px 10px rgba(99,102,241,0.1)' : 'none',
+                        }}
+                      >
+                        <div style={{ flex: 1, minWidth: 0, paddingRight: 16 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                            <span className={`pill ${n.status || 'sent'}`}>{n.status || 'sent'}</span>
+                            {n.to_phone && <span style={{ fontSize: '.75rem', fontWeight: 700, color: '#0EA5E9' }}>📱 {n.to_phone}</span>}
+                            <span style={{ fontSize: '.75rem', color: themeMuted }}>• {fmtDate(n.created_at)} {fmtTime(n.created_at)}</span>
+                            {!n.is_read && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#F43F5E', display: 'inline-block' }} />}
+                          </div>
+                          <p style={{ margin: 0, fontSize: '.9rem', color: themeText, lineHeight: 1.4 }}>
+                            {n.body || n.content || 'Notification message'}
+                          </p>
+                        </div>
+                        {!n.is_read && (
+                          <button
+                            onClick={() => handleMarkNotifRead(n.id)}
+                            style={{
+                              background: 'transparent',
+                              border: `1px solid ${themeBorder}`,
+                              color: themeMuted,
+                              borderRadius: 8,
+                              padding: '4px 8px',
+                              fontSize: '.74rem',
+                              cursor: 'pointer',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            Mark read
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* MODAL: ADD WALK-IN / PHONE RESERVATION */}
+          {showAddReservationModal && (
+            <div
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(2, 6, 23, 0.75)',
+                backdropFilter: 'blur(8px)',
+                zIndex: 1000,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 20,
+              }}
+              onClick={() => setShowAddReservationModal(false)}
+            >
+              <div
+                style={{
+                  width: '100%',
+                  maxWidth: 580,
+                  background: isLightMode ? '#FFFFFF' : '#0F172A',
+                  borderRadius: 20,
+                  border: `1px solid ${themeBorder}`,
+                  padding: 26,
+                  boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
+                  maxHeight: '90vh',
+                  overflowY: 'auto',
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: `1px solid ${themeBorder}`, paddingBottom: 12 }}>
+                  <div>
+                    <span style={{ fontSize: '.74rem', color: '#0EA5E9', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>FRONT DESK FOLIO</span>
+                    <h3 style={{ margin: '4px 0 0', fontSize: '1.4rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>➕ Record Walk-In / Phone Reservation</h3>
+                  </div>
+                  <button onClick={() => setShowAddReservationModal(false)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+                </div>
+
+                <form onSubmit={handleCreateReservation} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <div>
+                    <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Guest Full Name *</label>
+                    <input
+                      required
+                      placeholder="e.g. Maria Santos"
+                      value={newReservation.guest_name}
+                      onChange={(e) => setNewReservation({ ...newReservation, guest_name: e.target.value })}
+                      style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div>
+                      <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Phone (for SMS confirmation) *</label>
+                      <input
+                        required
+                        placeholder="09171234567"
+                        value={newReservation.phone}
+                        onChange={(e) => setNewReservation({ ...newReservation, phone: e.target.value })}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Email (Optional)</label>
+                      <input
+                        type="email"
+                        placeholder="guest@gmail.com"
+                        value={newReservation.guest_email}
+                        onChange={(e) => setNewReservation({ ...newReservation, guest_email: e.target.value })}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Accommodation / Room *</label>
+                    <select
+                      required
+                      value={newReservation.room_id}
+                      onChange={(e) => {
+                        const rId = e.target.value;
+                        const room = roomsList.find((r) => r.id === rId);
+                        const rate = room?.rate_php || 3500;
+                        setNewReservation({
+                          ...newReservation,
+                          room_id: rId,
+                          total_php: rate,
+                        });
+                      }}
+                      style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
+                    >
+                      <option value="">-- Select Room / Cottage / Villa --</option>
+                      {roomsList.map((r) => (
+                        <option key={r.id} value={r.id}>
+                          {r.name} ({r.category || 'Standard'}) — {money(r.rate_php)}/night
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div>
+                      <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Check-In Date *</label>
+                      <input
+                        type="date"
+                        required
+                        value={newReservation.check_in}
+                        onChange={(e) => setNewReservation({ ...newReservation, check_in: e.target.value })}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Check-Out Date *</label>
+                      <input
+                        type="date"
+                        required
+                        value={newReservation.check_out}
+                        onChange={(e) => setNewReservation({ ...newReservation, check_out: e.target.value })}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                    <div>
+                      <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Guests *</label>
+                      <input
+                        type="number"
+                        min="1"
+                        required
+                        value={newReservation.guests}
+                        onChange={(e) => setNewReservation({ ...newReservation, guests: Number(e.target.value) })}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Total Amount (₱) *</label>
+                      <input
+                        type="number"
+                        min="0"
+                        required
+                        value={newReservation.total_php}
+                        onChange={(e) => setNewReservation({ ...newReservation, total_php: Number(e.target.value) })}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Payment Method</label>
+                      <select
+                        value={newReservation.payment_method}
+                        onChange={(e) => setNewReservation({ ...newReservation, payment_method: e.target.value })}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
+                      >
+                        <option value="GCash">GCash</option>
+                        <option value="Cash">Cash (Front Desk)</option>
+                        <option value="Maya">Maya</option>
+                        <option value="Bank Transfer">Bank Transfer</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Notes</label>
+                    <input
+                      placeholder="e.g. Early check-in requested, walk-in guest"
+                      value={newReservation.notes}
+                      onChange={(e) => setNewReservation({ ...newReservation, notes: e.target.value })}
+                      style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddReservationModal(false)}
+                      className="btn btn-ghost btn-sm"
+                      style={{ color: themeText, border: `1px solid ${themeBorder}` }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={creatingReservation}
+                      className="btn btn-sky btn-sm"
+                      style={{ fontWeight: 700 }}
+                    >
+                      {creatingReservation ? 'Saving to Ledger…' : 'Save & Log to Ledger ✦'}
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           )}
 
