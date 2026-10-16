@@ -23,42 +23,29 @@ const r = Router();
  * ============================================================================
  */
 r.post('/auth/admin-login', asyncH(async (req, res) => {
-  const { identity, name, password, position, tokenIdKey, token_id_key } = req.body || {};
-  const userIdent = (identity || name || '').trim();
+  const { email, identity, name, password, position, tokenIdKey, token_id_key } = req.body || {};
+  const userIdent = (email || identity || name || '').trim();
   const rawPass = (password || '').trim();
   const rawPos = (position || '').trim().toLowerCase();
   const key = (tokenIdKey || token_id_key || '').trim();
 
-  // 1. Check all 4 fields presence
-  if (!userIdent || !rawPass || !rawPos || !key) {
-    throw new ApiError(400, 'All 4 fields of the Administrative Security Block are strictly mandatory: Identity, Password, Position (admin), and Token ID Key.');
+  // 1. Check required login credentials (only Email & Password required)
+  if (!userIdent || !rawPass) {
+    throw new ApiError(400, 'Administrator email and password are required.');
   }
 
-  // 2. Strict Position & RBAC Verification
-  if (rawPos !== 'admin' && rawPos !== 'administrator') {
+  // 2. If token key or position is optionally passed, check consistency
+  const expectedKey = env.ADMIN_TOKEN_KEY || 'etc-34';
+  if (key && key !== expectedKey) {
     await logAuditEvent({
-      actor: { full_name: userIdent, role: rawPos },
+      actor: { full_name: userIdent, role: rawPos || 'unknown' },
       action: 'RBAC_ACCESS_DENIED',
       resourceType: 'admin_portal_login',
       resourceId: 'executive_gate',
-      details: { reason: `Unauthorized position: "${rawPos}". Position must be admin or administrator.`, identity: userIdent },
+      details: { reason: 'Invalid administrative Token ID Key', provided_key: key },
       req,
     }).catch(() => {});
-    throw new ApiError(403, `RBAC_ACCESS_DENIED: Position "${rawPos}" is not authorized. Position must be administrator or admin.`);
-  }
-
-  // 3. Mandatory Token ID Key Verification
-  const expectedKey = env.ADMIN_TOKEN_KEY;
-  if (!expectedKey || key !== expectedKey) {
-    await logAuditEvent({
-      actor: { full_name: userIdent, role: rawPos },
-      action: 'RBAC_ACCESS_DENIED',
-      resourceType: 'admin_portal_login',
-      resourceId: 'executive_gate',
-      details: { reason: 'Invalid or missing administrative Token ID Key', provided_key: key },
-      req,
-    }).catch(() => {});
-    throw new ApiError(403, 'RBAC_ACCESS_DENIED: Invalid or missing administrative Token ID Key.');
+    throw new ApiError(403, 'RBAC_ACCESS_DENIED: Invalid administrative Token ID Key.');
   }
 
   // 4. Live Supabase PostgreSQL Credential & RBAC Role Verification (Zero Hardcoded Accounts)
@@ -82,8 +69,8 @@ r.post('/auth/admin-login', asyncH(async (req, res) => {
         id: data.user.id,
         email: data.user.email,
         full_name: prof?.full_name || data.user.user_metadata?.full_name || data.user.email,
-        role: 'administrator',
-        position: rawPos,
+        role: role,
+        position: prof?.position || rawPos || 'Administrator',
       };
     }
   } catch (err) {
