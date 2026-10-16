@@ -5,7 +5,7 @@ import { getSystemAdminClient, admin } from '../lib/supabase.js';
 
 const r = Router();
 
-r.get('/notifications/mine', authenticate, asyncH(async (req, res) => {
+const fetchNotificationsHandler = asyncH(async (req, res) => {
   try {
     const isStaffOrAdmin = ['administrator', 'admin', 'staff', 'receptionist', 'accounting', 'housekeeping', 'kitchen'].includes(req.user?.role);
     const client = isStaffOrAdmin ? await getSystemAdminClient() : (req.sb || admin);
@@ -25,7 +25,10 @@ r.get('/notifications/mine', authenticate, asyncH(async (req, res) => {
   } catch {
     return res.json([]);
   }
-}));
+});
+
+r.get('/notifications/mine', authenticate, fetchNotificationsHandler);
+r.get('/notifications', authenticate, requireStaffOrAdmin, fetchNotificationsHandler);
 
 r.patch('/notifications/:id/read', authenticate, asyncH(async (req, res) => {
   try {
@@ -44,6 +47,19 @@ r.patch('/notifications/:id/read', authenticate, asyncH(async (req, res) => {
 }));
 
 r.post('/notifications/read-all', authenticate, asyncH(async (req, res) => {
+  try {
+    const client = await getSystemAdminClient();
+    await client
+      .from('notifications')
+      .update({ is_read: true })
+      .neq('status', 'cancelled');
+    res.json({ status: 'success' });
+  } catch (err) {
+    res.json({ status: 'ok' });
+  }
+}));
+
+r.patch('/notifications/read-all', authenticate, asyncH(async (req, res) => {
   try {
     const client = await getSystemAdminClient();
     await client

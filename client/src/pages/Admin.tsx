@@ -97,9 +97,10 @@ export default function Admin() {
           ...b,
           nights: b.nights || Math.max(1, Math.round((new Date(b.check_out).getTime() - new Date(b.check_in).getTime()) / 86400000)),
         })));
+        toast('✦ Reservations ledger synchronized with database!');
       }
     } catch (e: any) {
-      console.warn('Could not load allReservations:', e.message);
+      toast(`Could not load reservations: ${e.message}`, true);
     } finally {
       setLoadingReservations(false);
     }
@@ -121,7 +122,8 @@ export default function Admin() {
         })));
       }
       if (Array.isArray(notifs)) setNotifications(notifs);
-      toast('Live Analytics, Ledger & Notifications Synchronized ✦');
+      refreshRoomsAndInventory().catch(() => {});
+      toast('✦ Live Analytics, Ledger, Inventory & Alerts Synchronized!');
     } catch (err: any) {
       toast(err.message || 'Sync failed', true);
     } finally {
@@ -1446,10 +1448,10 @@ export default function Admin() {
             <button
               onClick={toggleThemeMode}
               className="admin-header-btn admin-theme-toggle-btn"
-              title="Toggle Executive White / Dark Theme"
+              title={isLightMode ? 'Switch to Dark Luxury Theme' : 'Switch to Executive White Theme'}
             >
-              {isLightMode ? <IconSun size={15} color="#F59E0B" /> : <IconMoon size={15} color="#38BDF8" />}
-              <span className="theme-btn-label">{isLightMode ? 'White Mode' : 'Dark Mode'}</span>
+              {isLightMode ? <IconMoon size={15} color="#6366F1" /> : <IconSun size={15} color="#F59E0B" />}
+              <span className="theme-btn-label">{isLightMode ? 'Dark Mode' : 'Light Mode'}</span>
             </button>
 
             {/* NOTIFICATION BAR ICON & DROPDOWN */}
@@ -1474,63 +1476,90 @@ export default function Admin() {
 
               {/* NOTIFICATION PANELS DROPDOWN */}
               {showNotifications && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    right: 0,
-                    top: 44,
-                    width: 360,
-                    maxWidth: 'calc(100vw - 28px)',
-                    background: themeSidebarBg,
-                    border: `1px solid ${themeBorder}`,
-                    borderRadius: 14,
-                    boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
-                    padding: 14,
-                    zIndex: 200,
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${themeBorder}`, paddingBottom: 8, marginBottom: 10 }}>
-                    <div>
-                      <b style={{ fontSize: '.88rem', color: themeText }}>Executive Notifications</b>
-                      <small style={{ color: '#0EA5E9', fontSize: '.72rem', display: 'block' }}>SMS & Live System Alerts</small>
+                <>
+                  <div
+                    onClick={() => setShowNotifications(false)}
+                    style={{ position: 'fixed', inset: 0, zIndex: 199 }}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      right: 0,
+                      top: 44,
+                      width: 360,
+                      maxWidth: 'calc(100vw - 28px)',
+                      background: themeSidebarBg,
+                      border: `1px solid ${themeBorder}`,
+                      borderRadius: 14,
+                      boxShadow: '0 10px 30px rgba(0,0,0,0.25)',
+                      padding: 14,
+                      zIndex: 200,
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${themeBorder}`, paddingBottom: 8, marginBottom: 10 }}>
+                      <div>
+                        <b style={{ fontSize: '.88rem', color: themeText }}>Executive Notifications</b>
+                        <small style={{ color: '#0EA5E9', fontSize: '.72rem', display: 'block' }}>SMS & Live System Alerts</small>
+                      </div>
+                      {unreadNotifsCount > 0 && (
+                        <button
+                          onClick={handleMarkAllNotifsRead}
+                          style={{ background: 'transparent', border: 'none', color: '#0EA5E9', fontSize: '.74rem', cursor: 'pointer', fontWeight: 700 }}
+                        >
+                          Mark all read
+                        </button>
+                      )}
                     </div>
-                    {unreadNotifsCount > 0 && (
-                      <button
-                        onClick={handleMarkAllNotifsRead}
-                        style={{ background: 'transparent', border: 'none', color: '#0EA5E9', fontSize: '.74rem', cursor: 'pointer', fontWeight: 700 }}
-                      >
-                        Mark all read
-                      </button>
-                    )}
-                  </div>
-                  {notifications.length === 0 ? (
-                    <p className="muted small" style={{ margin: 0, padding: 16, textAlign: 'center' }}>No new notifications.</p>
-                  ) : (
-                    <div style={{ maxHeight: 280, overflowY: 'auto' }}>
-                      {notifications.slice(0, 6).map((n: any) => (
-                        <div key={n.id} style={{ padding: '8px 0', borderBottom: `1px solid ${themeBorder}`, fontSize: '.78rem' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
-                            <span className={`pill ${n.status || 'sent'}`}>{n.status || 'sent'}</span>
-                            <span style={{ color: themeMuted, fontSize: '.72rem' }}>{fmtTime(n.created_at)}</span>
+                    {notifications.length === 0 ? (
+                      <p className="muted small" style={{ margin: 0, padding: 16, textAlign: 'center' }}>No new notifications.</p>
+                    ) : (
+                      <div style={{ maxHeight: 280, overflowY: 'auto' }}>
+                        {notifications.slice(0, 6).map((n: any) => (
+                          <div
+                            key={n.id}
+                            style={{
+                              padding: '8px 10px',
+                              borderRadius: 8,
+                              marginBottom: 4,
+                              background: !n.is_read ? (isLightMode ? '#F1F5F9' : 'rgba(99,102,241,0.12)') : 'transparent',
+                              borderBottom: `1px solid ${themeBorder}`,
+                              fontSize: '.78rem',
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                              <span className={`pill ${n.status || 'sent'}`}>{n.status || 'sent'}</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <span style={{ color: themeMuted, fontSize: '.72rem' }}>{fmtTime(n.created_at)}</span>
+                                {!n.is_read && (
+                                  <button
+                                    onClick={() => handleMarkNotifRead(n.id)}
+                                    title="Mark as read"
+                                    style={{ background: 'none', border: 'none', color: '#10B981', cursor: 'pointer', fontSize: '.75rem', padding: '0 4px', fontWeight: 800 }}
+                                  >
+                                    ✓
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            <span style={{ color: themeText, display: 'block', marginTop: 2 }}>{n.body || n.content}</span>
                           </div>
-                          <span style={{ color: themeText, display: 'block', marginTop: 2 }}>{n.body || n.content}</span>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
+                    )}
+                    <div style={{ borderTop: `1px solid ${themeBorder}`, paddingTop: 10, marginTop: 10 }}>
+                      <button
+                        onClick={() => {
+                          setActiveTab('notifications');
+                          setShowNotifications(false);
+                        }}
+                        className="btn btn-sky btn-sm"
+                        style={{ width: '100%', justifyContent: 'center' }}
+                      >
+                        Open Full Alerts Center ➔
+                      </button>
                     </div>
-                  )}
-                  <div style={{ borderTop: `1px solid ${themeBorder}`, paddingTop: 10, marginTop: 10 }}>
-                    <button
-                      onClick={() => {
-                        setActiveTab('notifications');
-                        setShowNotifications(false);
-                      }}
-                      className="btn btn-sky btn-sm"
-                      style={{ width: '100%', justifyContent: 'center' }}
-                    >
-                      Open Full Alerts Center ➔
-                    </button>
                   </div>
-                </div>
+                </>
               )}
             </div>
 
@@ -3845,10 +3874,11 @@ export default function Admin() {
                         const rId = e.target.value;
                         const room = roomsList.find((r) => r.id === rId);
                         const rate = room?.rate_php || 3500;
+                        const nights = Math.max(1, Math.round((new Date(newReservation.check_out).getTime() - new Date(newReservation.check_in).getTime()) / 86400000));
                         setNewReservation({
                           ...newReservation,
                           room_id: rId,
-                          total_php: rate,
+                          total_php: rate * nights,
                         });
                       }}
                       style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
@@ -3869,7 +3899,22 @@ export default function Admin() {
                         type="date"
                         required
                         value={newReservation.check_in}
-                        onChange={(e) => setNewReservation({ ...newReservation, check_in: e.target.value })}
+                        onChange={(e) => {
+                          const cin = e.target.value;
+                          let cout = newReservation.check_out;
+                          if (cin >= cout) {
+                            cout = new Date(new Date(cin).getTime() + 86400000).toISOString().slice(0, 10);
+                          }
+                          const nights = Math.max(1, Math.round((new Date(cout).getTime() - new Date(cin).getTime()) / 86400000));
+                          const room = roomsList.find((r) => r.id === newReservation.room_id);
+                          const rate = room?.rate_php || 3500;
+                          setNewReservation({
+                            ...newReservation,
+                            check_in: cin,
+                            check_out: cout,
+                            total_php: rate * nights,
+                          });
+                        }}
                         style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
                       />
                     </div>
@@ -3879,7 +3924,17 @@ export default function Admin() {
                         type="date"
                         required
                         value={newReservation.check_out}
-                        onChange={(e) => setNewReservation({ ...newReservation, check_out: e.target.value })}
+                        onChange={(e) => {
+                          const cout = e.target.value;
+                          const nights = Math.max(1, Math.round((new Date(cout).getTime() - new Date(newReservation.check_in).getTime()) / 86400000));
+                          const room = roomsList.find((r) => r.id === newReservation.room_id);
+                          const rate = room?.rate_php || 3500;
+                          setNewReservation({
+                            ...newReservation,
+                            check_out: cout,
+                            total_php: rate * nights,
+                          });
+                        }}
                         style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
                       />
                     </div>
