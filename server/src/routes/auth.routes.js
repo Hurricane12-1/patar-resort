@@ -9,6 +9,7 @@ import { redis } from '../lib/redis.js';
 import { pingSMS } from '../lib/sms.js';
 import { sendRecoveryOTP, sendPasswordResetSuccess, sendSignup2FAOTP, sendWelcomeClientEmail, sendSignupExpiredEmail } from '../lib/mailer.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
+import { checkBruteForceLockout, recordFailedAttempt, recordSuccessfulAttempt } from '../middleware/bruteForceGuard.js';
 
 const r = Router();
 
@@ -34,9 +35,16 @@ r.post('/auth/admin-login', asyncH(async (req, res) => {
     throw new ApiError(400, 'Administrator username or email, and password are required.');
   }
 
+  // 1b. Check Brute Force / Credential Stuffing Lockout
+  const lockout = checkBruteForceLockout(req.ip, userIdent);
+  if (lockout.locked) {
+    throw new ApiError(429, `Security Lockout Active: Too many failed administrative attempts. Access blocked for ${lockout.remainingSeconds} seconds.`);
+  }
+
   // 2. If token key or position is optionally passed, check consistency
   const expectedKey = env.ADMIN_TOKEN_KEY || 'etc-34';
   if (key && key !== expectedKey) {
+    await recordFailedAttempt(req.ip, userIdent, req);
     await logAuditEvent({
       actor: { full_name: userIdent, role: rawPos || 'unknown' },
       action: 'RBAC_ACCESS_DENIED',
@@ -96,11 +104,13 @@ r.post('/auth/admin-login', asyncH(async (req, res) => {
       };
     }
   } catch (err) {
+    await recordFailedAttempt(req.ip, userIdent, req);
     if (err instanceof ApiError) throw err;
     throw new ApiError(401, 'Invalid administrative credentials. Please sign in with your verified Supabase Administrator email and password.');
   }
 
   if (!verifiedUser) {
+    await recordFailedAttempt(req.ip, userIdent, req);
     throw new ApiError(401, 'Invalid administrative credentials. Authentication failed.');
   }
 
@@ -145,6 +155,9 @@ r.post('/auth/admin-login', asyncH(async (req, res) => {
     req,
   }).catch(() => {});
 
+  // Reset any previous failed attempts on successful executive login
+  recordSuccessfulAttempt(req.ip, userIdent);
+
   return res.json({
     success: true,
     session: {
@@ -169,6 +182,12 @@ r.post('/auth/login', asyncH(async (req, res) => {
   const userIdent = (username || login || identifier || email || '').trim();
   if (!userIdent || !password) {
     throw new ApiError(400, 'Username or email, and password are required.');
+  }
+
+  // Check Brute Force / Credential Stuffing Lockout
+  const lockout = checkBruteForceLockout(req.ip, userIdent);
+  if (lockout.locked) {
+    throw new ApiError(429, `Security Lockout Active: Too many failed login attempts. Access blocked for ${lockout.remainingSeconds} seconds.`);
   }
 
   let targetEmail = userIdent.toLowerCase();
@@ -218,6 +237,9 @@ r.post('/auth/login', asyncH(async (req, res) => {
         profile = prof;
       } catch {}
 
+      // Reset lockout counter on successful customer/user login
+      recordSuccessfulAttempt(req.ip, userIdent);
+
       return res.json({
         success: true,
         session: data.session,
@@ -226,9 +248,11 @@ r.post('/auth/login', asyncH(async (req, res) => {
       });
     }
   } catch (sbErr) {
+    await recordFailedAttempt(req.ip, userIdent, req);
     throw new ApiError(401, sbErr.message || 'Invalid login credentials. Please verify your username/email and password.');
   }
 
+  await recordFailedAttempt(req.ip, userIdent, req);
   throw new ApiError(401, 'Authentication failed. Please verify your credentials.');
 }));
 
@@ -779,6 +803,13 @@ r.post('/auth/verify-recovery-code',
   asyncH(async (req, res) => {
     const { email, code } = req.body;
     const cleanEmail = email.trim().toLowerCase();
+
+    // Check Brute Force / OTP enumeration lockout
+    const lockout = checkBruteForceLockout(req.ip, cleanEmail);
+    if (lockout.locked) {
+      throw new ApiError(429, `Security Lockout Active: Too many invalid recovery code attempts. Access blocked for ${lockout.remainingSeconds} seconds.`);
+    }
+
     const cacheKey = `recovery:${cleanEmail}`;
 
     const record = await redis.get(cacheKey);
@@ -788,6 +819,7 @@ r.post('/auth/verify-recovery-code',
 
     if (String(record.code) !== String(code).trim()) {
       record.attempts = (record.attempts || 0) + 1;
+      await recordFailedAttempt(req.ip, cleanEmail, req);
       if (record.attempts >= 5) {
         await redis.del(cacheKey);
         throw new ApiError(429, 'Too many invalid attempts. This recovery code has been invalidated for your security. Please request a new code.');
@@ -795,6 +827,8 @@ r.post('/auth/verify-recovery-code',
       await redis.set(cacheKey, record, 900);
       throw new ApiError(400, `Invalid verification code. ${5 - record.attempts} attempts remaining.`);
     }
+
+    recordSuccessfulAttempt(req.ip, cleanEmail);
 
     return res.json({
       success: true,

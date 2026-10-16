@@ -291,6 +291,11 @@ export default function Admin() {
   const [auditSearchQuery, setAuditSearchQuery] = useState('');
   const [auditAutoRefresh, setAuditAutoRefresh] = useState(true);
 
+  // Live Defense-in-Depth Security & Threat Quarantine State
+  const [securityPosture, setSecurityPosture] = useState<any>(null);
+  const [loadingSecurity, setLoadingSecurity] = useState(false);
+  const [unbanningIp, setUnbanningIp] = useState<string | null>(null);
+
   // Provision Administrator & Staff Modal State
   const [showAddAdminModal, setShowAddAdminModal] = useState(false);
   const [newAdminForm, setNewAdminForm] = useState({
@@ -465,14 +470,57 @@ export default function Admin() {
       .finally(() => setLoadingAudit(false));
   }, [auditActionFilter, auditSearchQuery]);
 
+  // Live Defense-in-Depth Security Posture Data Fetching
+  const fetchSecurityPosture = useCallback(() => {
+    setLoadingSecurity(true);
+    api.securityPosture()
+      .then((res) => {
+        if (res) setSecurityPosture(res);
+      })
+      .catch((err) => {
+        console.warn('[Security Posture] Fetch notice:', err.message);
+      })
+      .finally(() => setLoadingSecurity(false));
+  }, []);
+
+  const handleUnbanIp = async (ip: string) => {
+    setUnbanningIp(ip);
+    try {
+      await api.releaseQuarantinedIp(ip);
+      toast(`🟢 IP ${ip} successfully released from quarantine`);
+      fetchSecurityPosture();
+      fetchAuditLogs();
+    } catch (err: any) {
+      toast(err.message, true);
+    } finally {
+      setUnbanningIp(null);
+    }
+  };
+
+  const handleClearLockouts = async () => {
+    if (!confirm('Reset all active brute force lockouts?')) return;
+    try {
+      await api.clearLockouts();
+      toast('🔓 All brute force lockouts cleared');
+      fetchSecurityPosture();
+      fetchAuditLogs();
+    } catch (err: any) {
+      toast(err.message, true);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'audit') {
       fetchAuditLogs();
+      fetchSecurityPosture();
       if (!auditAutoRefresh) return;
-      const iv = setInterval(fetchAuditLogs, 5000);
+      const iv = setInterval(() => {
+        fetchAuditLogs();
+        fetchSecurityPosture();
+      }, 5000);
       return () => clearInterval(iv);
     }
-  }, [activeTab, auditActionFilter, auditSearchQuery, auditAutoRefresh, fetchAuditLogs]);
+  }, [activeTab, auditActionFilter, auditSearchQuery, auditAutoRefresh, fetchAuditLogs, fetchSecurityPosture]);
 
   const handleSaveSettings = (e) => {
     e.preventDefault();
@@ -3128,6 +3176,244 @@ export default function Admin() {
                     {auditLogs.some((l) => l.action?.includes('DENIED')) ? '⚠️ Breaches Blocked' : '🟢 0 Access Violations'}
                   </small>
                 </div>
+              </div>
+
+              {/* LIVE DEFENSE-IN-DEPTH POSTURE & THREAT QUARANTINE CENTER */}
+              <div style={{
+                background: isLightMode ? '#F8FAFC' : 'rgba(15,23,42,0.7)',
+                border: `1px solid ${themeBorder}`,
+                borderRadius: 14,
+                padding: 18,
+                marginBottom: 20,
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: '1.2rem' }}>🛡️</span>
+                    <div>
+                      <h4 style={{ margin: 0, fontSize: '1rem', color: themeText, fontWeight: 700 }}>
+                        Active Defense Telemetry & Perimeter Hardening
+                      </h4>
+                      <small style={{ color: themeMuted, fontSize: '.74rem' }}>
+                        Layer 7 NGWF Firewall • Brute Force Lockout Guard • TLS v1.3 SSL • Level 3 CSP Policy
+                      </small>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <span style={{
+                      fontSize: '.72rem',
+                      fontWeight: 700,
+                      padding: '3px 10px',
+                      borderRadius: 12,
+                      background: 'rgba(16,185,129,0.12)',
+                      color: '#10B981',
+                      border: '1px solid rgba(16,185,129,0.3)',
+                    }}>
+                      STATUS: {securityPosture?.status || 'OPTIMAL'}
+                    </span>
+                    <button
+                      className="btn btn-sm"
+                      onClick={fetchSecurityPosture}
+                      disabled={loadingSecurity}
+                      style={{ fontSize: '.75rem', padding: '4px 10px', border: `1px solid ${themeBorder}`, color: themeText }}
+                    >
+                      {loadingSecurity ? 'Refreshing…' : '🔄 Refresh Security'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* 4 ACTIVE DEFENSE TILES */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 14 }}>
+                  {/* TILE 1: LAYER 7 NGWF FIREWALL */}
+                  <div style={{
+                    background: isLightMode ? '#FFFFFF' : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${securityPosture?.firewall?.active_quarantines_count > 0 ? 'rgba(244,63,94,0.4)' : themeBorder}`,
+                    borderRadius: 12,
+                    padding: 12,
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                      <span style={{ fontSize: '.7rem', fontWeight: 800, color: '#0EA5E9', textTransform: 'uppercase' }}>NGWF FIREWALL</span>
+                      <span style={{ fontSize: '.68rem', color: '#10B981', fontWeight: 700 }}>🟢 ACTIVE</span>
+                    </div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: themeText }}>
+                      {securityPosture?.firewall?.total_threat_strikes ?? 0} <span style={{ fontSize: '.72rem', fontWeight: 500, color: themeMuted }}>Threat Probes Filtered</span>
+                    </div>
+                    <small style={{ fontSize: '.7rem', color: securityPosture?.firewall?.active_quarantines_count > 0 ? '#F43F5E' : themeMuted }}>
+                      {securityPosture?.firewall?.active_quarantines_count > 0
+                        ? `🚨 ${securityPosture.firewall.active_quarantines_count} IP(s) In Active Quarantine`
+                        : `3-Strike Threshold • Auto IP Quarantine`}
+                    </small>
+                  </div>
+
+                  {/* TILE 2: BRUTE FORCE & CREDENTIAL GUARD */}
+                  <div style={{
+                    background: isLightMode ? '#FFFFFF' : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${securityPosture?.brute_force_defense?.active_lockouts_count > 0 ? 'rgba(245,158,11,0.4)' : themeBorder}`,
+                    borderRadius: 12,
+                    padding: 12,
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                      <span style={{ fontSize: '.7rem', fontWeight: 800, color: '#8B5CF6', textTransform: 'uppercase' }}>BRUTE FORCE GUARD</span>
+                      <span style={{ fontSize: '.68rem', color: '#10B981', fontWeight: 700 }}>🟢 ACTIVE</span>
+                    </div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: themeText }}>
+                      {securityPosture?.brute_force_defense?.active_lockouts_count ?? 0} <span style={{ fontSize: '.72rem', fontWeight: 500, color: themeMuted }}>Active Lockouts</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
+                      <small style={{ fontSize: '.7rem', color: themeMuted }}>
+                        5 Strikes = 15m Lockout
+                      </small>
+                      {securityPosture?.brute_force_defense?.active_lockouts_count > 0 && (
+                        <button
+                          onClick={handleClearLockouts}
+                          style={{ fontSize: '.68rem', padding: '2px 6px', background: 'rgba(245,158,11,0.15)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 4, cursor: 'pointer', fontWeight: 700 }}
+                        >
+                          Clear Lockouts
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* TILE 3: TRANSPORT ENCRYPTION (TLS v1.3) */}
+                  <div style={{
+                    background: isLightMode ? '#FFFFFF' : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${themeBorder}`,
+                    borderRadius: 12,
+                    padding: 12,
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                      <span style={{ fontSize: '.7rem', fontWeight: 800, color: '#10B981', textTransform: 'uppercase' }}>TRANSPORT TLS</span>
+                      <span style={{ fontSize: '.68rem', color: '#10B981', fontWeight: 700 }}>🔒 HTTPS v1.3</span>
+                    </div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: themeText }}>
+                      TLS v1.3 <span style={{ fontSize: '.72rem', fontWeight: 500, color: themeMuted }}>ECDHE Hardened</span>
+                    </div>
+                    <small style={{ fontSize: '.7rem', color: '#10B981' }}>
+                      Status: {securityPosture?.tls?.status || 'Active & Valid'}
+                    </small>
+                  </div>
+
+                  {/* TILE 4: CONTENT SECURITY POLICY (CSP) */}
+                  <div style={{
+                    background: isLightMode ? '#FFFFFF' : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${themeBorder}`,
+                    borderRadius: 12,
+                    padding: 12,
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                      <span style={{ fontSize: '.7rem', fontWeight: 800, color: '#F59E0B', textTransform: 'uppercase' }}>CONTENT POLICY (CSP)</span>
+                      <span style={{ fontSize: '.68rem', color: '#10B981', fontWeight: 700 }}>🛡️ LEVEL 3</span>
+                    </div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: themeText }}>
+                      Strict CSP <span style={{ fontSize: '.72rem', fontWeight: 500, color: themeMuted }}>Directives</span>
+                    </div>
+                    <small style={{ fontSize: '.7rem', color: themeMuted }}>
+                      Anti-Clickjacking • Zero Plugin Exec
+                    </small>
+                  </div>
+                </div>
+
+                {/* QUARANTINED IPS MANAGEMENT SECTION */}
+                {securityPosture?.firewall?.quarantined_ips && securityPosture.firewall.quarantined_ips.length > 0 ? (
+                  <div style={{
+                    background: isLightMode ? '#FFF1F2' : 'rgba(244,63,94,0.08)',
+                    border: '1px solid rgba(244,63,94,0.25)',
+                    borderRadius: 10,
+                    padding: 14,
+                    marginTop: 10,
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ color: '#F43F5E', fontWeight: 800, fontSize: '.85rem' }}>🚨 ACTIVELY QUARANTINED ATTACKING IP ADDRESSES</span>
+                        <span style={{ fontSize: '.72rem', background: '#F43F5E', color: '#FFF', padding: '1px 7px', borderRadius: 10, fontWeight: 800 }}>
+                          {securityPosture.firewall.quarantined_ips.length}
+                        </span>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          if (!confirm('Pardon and release ALL quarantined IP addresses?')) return;
+                          try {
+                            await api.clearQuarantines();
+                            toast('🟢 All quarantined IPs released');
+                            fetchSecurityPosture();
+                            fetchAuditLogs();
+                          } catch (err: any) {
+                            toast(err.message, true);
+                          }
+                        }}
+                        style={{ fontSize: '.72rem', padding: '3px 8px', background: 'transparent', color: '#F43F5E', border: '1px solid rgba(244,63,94,0.4)', borderRadius: 6, cursor: 'pointer', fontWeight: 700 }}
+                      >
+                        Release All Quarantines
+                      </button>
+                    </div>
+
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', fontSize: '.78rem', borderCollapse: 'collapse', color: themeText }}>
+                        <thead>
+                          <tr style={{ borderBottom: `1px solid ${themeBorder}`, textAlign: 'left', color: themeMuted }}>
+                            <th style={{ padding: '6px 8px' }}>IP Address</th>
+                            <th style={{ padding: '6px 8px' }}>Strikes</th>
+                            <th style={{ padding: '6px 8px' }}>Quarantine Trigger / Reason</th>
+                            <th style={{ padding: '6px 8px' }}>Remaining Lockout</th>
+                            <th style={{ padding: '6px 8px', textAlign: 'right' }}>Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {securityPosture.firewall.quarantined_ips.map((q: any) => (
+                            <tr key={q.ip} style={{ borderBottom: `1px solid ${themeBorder}` }}>
+                              <td style={{ padding: '8px', fontFamily: 'monospace', fontWeight: 700, color: '#F43F5E' }}>
+                                {q.ip}
+                              </td>
+                              <td style={{ padding: '8px', fontWeight: 700 }}>
+                                {q.strikes} strikes
+                              </td>
+                              <td style={{ padding: '8px', color: themeMuted, maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {q.reason}
+                              </td>
+                              <td style={{ padding: '8px', color: themeMuted }}>
+                                {q.remaining_seconds}s
+                              </td>
+                              <td style={{ padding: '8px', textAlign: 'right' }}>
+                                <button
+                                  className="btn btn-sm btn-ghost"
+                                  disabled={unbanningIp === q.ip}
+                                  onClick={() => handleUnbanIp(q.ip)}
+                                  style={{
+                                    fontSize: '.72rem',
+                                    padding: '3px 9px',
+                                    border: '1px solid #10B981',
+                                    color: '#10B981',
+                                    borderRadius: 6,
+                                    cursor: 'pointer',
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  {unbanningIp === q.ip ? 'Releasing…' : '✓ Pardon / Unban'}
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '8px 12px',
+                    borderRadius: 8,
+                    background: isLightMode ? '#F0FDF4' : 'rgba(16,185,129,0.06)',
+                    border: '1px solid rgba(16,185,129,0.2)',
+                  }}>
+                    <span style={{ fontSize: '.75rem', color: '#10B981', fontWeight: 600 }}>
+                      🟢 Perimeter Secure: 0 quarantined IPs. Layer 7 firewall sentinel running continuously.
+                    </span>
+                    <span style={{ fontSize: '.7rem', color: themeMuted }}>
+                      Sliding Window: 10m • Lockout: 1h
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* FILTER CONTROLS & SEARCH */}

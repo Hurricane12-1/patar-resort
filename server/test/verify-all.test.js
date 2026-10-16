@@ -3,7 +3,9 @@ import http from 'http';
 import fs from 'fs';
 import path from 'path';
 import { antiXssSanitizer, cookieTokenizer, cspDirectives, securityHeaders, safeRedirect } from '../src/middleware/security.js';
-import { ngwfFirewall, pathNormalizer } from '../src/middleware/ngwfSecurity.js';
+import { ngwfFirewall, pathNormalizer, isIpQuarantined, quarantineIp, releaseQuarantinedIp, getQuarantineStats, clearAllQuarantines } from '../src/middleware/ngwfSecurity.js';
+import { checkBruteForceLockout, recordFailedAttempt, recordSuccessfulAttempt, getBruteForceStats, clearAllLockouts } from '../src/middleware/bruteForceGuard.js';
+import securityRoutes from '../src/routes/security.routes.js';
 import { getCertificateStatus } from '../src/config/cert.js';
 import { joiSchemas } from '../src/middleware/joiValidation.js';
 import { graphql } from 'graphql';
@@ -894,6 +896,137 @@ await runTest('Admin Control Center: Accommodations & Inventory Management Suite
   assert(adminContent.includes('editingRoom'), 'Admin.tsx must include editingRoom modal');
   assert(adminContent.includes('showCreateSupplyModal'), 'Admin.tsx must include showCreateSupplyModal');
   assert(adminContent.includes('API_BASE'), 'Admin.tsx must use API_BASE for SSE streaming');
+});
+
+// 29. Brute Force & Credential Stuffing Guard Engine
+await runTest('Brute Force Guard: Progressive Thresholds, Lockout Window & Audit Emission', async () => {
+  const testIp = '198.51.100.42';
+  const testUser = 'attacker@evilcorp.xyz';
+
+  process.env.ENFORCE_BRUTE_FORCE_TEST = 'true';
+  try {
+    clearAllLockouts();
+
+    // 1-4 failed attempts should record strikes without triggering lockout
+    for (let i = 1; i <= 4; i++) {
+      await recordFailedAttempt(testIp, testUser);
+      const status = checkBruteForceLockout(testIp, testUser);
+      assert.strictEqual(status.locked, false, `Strike ${i} should not lock out account`);
+      assert.strictEqual(status.attempts, i, `Strike count should be ${i}`);
+    }
+
+    // 5th attempt must trigger progressive lockout (15 minutes)
+    await recordFailedAttempt(testIp, testUser);
+    const lockedStatus = checkBruteForceLockout(testIp, testUser);
+    assert.strictEqual(lockedStatus.locked, true, '5th failed attempt must trigger lockout');
+    assert.ok(lockedStatus.remainingSeconds > 0, 'Remaining lockout seconds must be greater than 0');
+
+    // Stats reflection
+    const stats = getBruteForceStats();
+    assert.ok(stats.active_lockouts >= 1, 'Stats must reflect at least 1 active lockout');
+    assert.strictEqual(stats.max_threshold, 5, 'Max threshold must be 5');
+
+    // Successful attempt clears lockout
+    recordSuccessfulAttempt(testIp, testUser);
+    const resetStatus = checkBruteForceLockout(testIp, testUser);
+    assert.strictEqual(resetStatus.locked, false, 'Successful authentication must reset lockout state');
+  } finally {
+    delete process.env.ENFORCE_BRUTE_FORCE_TEST;
+    clearAllLockouts();
+  }
+});
+
+// 30. NGWF Active IP Quarantine & Defense Telemetry Center
+await runTest('NGWF Active IP Threat Quarantine & Security Telemetry Center', async () => {
+  const attackingIp = '203.0.113.88';
+  clearAllQuarantines();
+
+  // Strike 1: Malicious SQLi payload blocked with NGWF_THREAT_BLOCKED
+  let res1Status = 0;
+  let res1Data = null;
+  const mockRes1 = {
+    status(code) { res1Status = code; return { json(d) { res1Data = d; } }; },
+  };
+  ngwfFirewall({
+    ip: attackingIp,
+    originalUrl: '/api/rooms',
+    query: { filter: "1' UNION SELECT username, password FROM profiles--" },
+    body: {},
+    params: {},
+  }, mockRes1, () => {});
+
+  assert.strictEqual(res1Status, 403, 'Strike 1 must return 403');
+  assert.strictEqual(res1Data?.code, 'NGWF_THREAT_BLOCKED', 'Strike 1 code must be NGWF_THREAT_BLOCKED');
+  assert.strictEqual(res1Data?.strikes, 1, 'Strike count must be 1');
+
+  // Strike 2: Second malicious probe (blind SQLi)
+  let res2Data = null;
+  const mockRes2 = {
+    status() { return { json(d) { res2Data = d; } }; },
+  };
+  ngwfFirewall({
+    ip: attackingIp,
+    originalUrl: '/api/rooms',
+    query: { q: "WAITFOR DELAY '0:0:5'" },
+    body: {},
+    params: {},
+  }, mockRes2, () => {});
+  assert.strictEqual(res2Data?.strikes, 2, 'Strike count must be 2');
+
+  // Strike 3: Prototype pollution attempt -> Escalates to NGWF_IP_QUARANTINED
+  let res3Data = null;
+  const mockRes3 = {
+    status() { return { json(d) { res3Data = d; } }; },
+  };
+  ngwfFirewall({
+    ip: attackingIp,
+    originalUrl: '/api/feedback',
+    query: {},
+    body: JSON.parse('{"__proto__": {"admin": true}}'),
+    params: {},
+  }, mockRes3, () => {});
+
+  assert.strictEqual(res3Data?.code, 'NGWF_IP_QUARANTINED', 'Strike 3 must escalate to NGWF_IP_QUARANTINED');
+  assert.strictEqual(res3Data?.ip, attackingIp, 'Quarantine data must specify attacking IP');
+
+  // Any subsequent request from this IP (even a benign request) must be immediately blocked
+  let res4Data = null;
+  const mockRes4 = {
+    status(code) { assert.strictEqual(code, 403); return { json(d) { res4Data = d; } }; },
+  };
+  ngwfFirewall({
+    ip: attackingIp,
+    originalUrl: '/api/rooms',
+    query: {},
+    body: {},
+    params: {},
+  }, mockRes4, () => {});
+  assert.strictEqual(res4Data?.code, 'NGWF_IP_QUARANTINED', 'Subsequent benign requests from quarantined IP must be blocked');
+
+  // Verify Quarantine Telemetry
+  const qStats = getQuarantineStats();
+  assert.strictEqual(qStats.active_quarantines_count, 1, 'Quarantine stats must report 1 quarantined IP');
+  assert.strictEqual(qStats.active_quarantines[0].ip, attackingIp);
+
+  // Administrative unban / release
+  await releaseQuarantinedIp(attackingIp);
+  const postReleaseCheck = isIpQuarantined(attackingIp);
+  assert.strictEqual(postReleaseCheck.quarantined, false, 'IP must be released from quarantine');
+
+  // Verify security.routes.js module and client integration
+  assert(securityRoutes && typeof securityRoutes === 'function', 'security.routes.js must export an Express router');
+
+  const clientApiPath = path.resolve(projectRoot, 'client/src/lib/api.ts');
+  const clientApiContent = fs.readFileSync(clientApiPath, 'utf8');
+  assert(clientApiContent.includes('securityPosture:'), 'client api.ts must export securityPosture');
+  assert(clientApiContent.includes('releaseQuarantinedIp:'), 'client api.ts must export releaseQuarantinedIp');
+
+  const clientAdminPath = path.resolve(projectRoot, 'client/src/pages/Admin.tsx');
+  const clientAdminContent = fs.readFileSync(clientAdminPath, 'utf8');
+  assert(clientAdminContent.includes('Active Defense Telemetry & Perimeter Hardening'), 'Admin.tsx must render defense telemetry banner');
+  assert(clientAdminContent.includes('handleUnbanIp'), 'Admin.tsx must define handleUnbanIp action');
+
+  clearAllQuarantines();
 });
 
 console.log('\n-------------------------------------------------------------');

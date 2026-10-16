@@ -245,6 +245,14 @@ export const api = {
   createStaffAccount: (body: any) => req('/admin/users', { method: 'POST', body }),
   resetUserPassword: (id: string, new_password: string) => req(`/admin/users/${id}/reset-password`, { method: 'POST', body: { new_password } }),
 
+  // Defense-in-Depth Security & Quarantine Hub
+  securityPosture: () => req('/security/posture'),
+  quarantinedIps: () => req('/security/quarantined-ips'),
+  releaseQuarantinedIp: (ip: string) => req('/security/quarantine/release', { method: 'POST', body: { ip } }),
+  isolateIp: (ip: string, reason?: string, duration_minutes?: number) => req('/security/quarantine/isolate', { method: 'POST', body: { ip, reason, duration_minutes } }),
+  clearQuarantines: () => req('/security/quarantine/clear-all', { method: 'POST' }),
+  clearLockouts: () => req('/security/lockouts/clear', { method: 'POST' }),
+
   // CSV Operations
   csvSample: async (): Promise<string> => {
     const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
