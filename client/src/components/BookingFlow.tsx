@@ -87,17 +87,19 @@ export default function BookingFlow({ initialSlug }) {
       <div className="container">
         {/* ——— the reservation bar ——— */}
         <div className="reserve-bar">
-          <div className="rb-cell">
+          <div className="rb-cell" onClick={() => setShowCalendar(true)} style={{ cursor: 'pointer' }} title="Tap to select check-in date on marked calendar">
             <span className="rb-label">Check-in</span>
-            <input type="date" min={today} value={checkIn} onChange={(e) => {
-              const v = e.target.value; setCheckIn(v);
-              if (v >= checkOut) setCheckOut(addDaysISO(v, 1));
-            }} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#fff', fontSize: '0.9rem', fontWeight: 600, marginTop: 4 }}>
+              <span>{checkIn}</span>
+              <span style={{ fontSize: '0.8rem', color: '#38BDF8' }}>📅</span>
+            </div>
           </div>
-          <div className="rb-cell">
+          <div className="rb-cell" onClick={() => setShowCalendar(true)} style={{ cursor: 'pointer' }} title="Tap to select check-out date on marked calendar">
             <span className="rb-label">Check-out</span>
-            <input type="date" min={addDaysISO(checkIn, 1)} value={checkOut}
-              onChange={(e) => setCheckOut(e.target.value)} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#fff', fontSize: '0.9rem', fontWeight: 600, marginTop: 4 }}>
+              <span>{checkOut}</span>
+              <span style={{ fontSize: '0.8rem', color: '#38BDF8' }}>📅</span>
+            </div>
           </div>
           <div className="rb-cell rb-guests">
             <span className="rb-label">Guests</span>

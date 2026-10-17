@@ -684,7 +684,7 @@ export default function MobileResortApp() {
     }
   };
 
-  const openReservation = (roomName?: string, startWithCalendar = false) => {
+  const openReservation = (roomName?: string, startWithCalendar = true) => {
     const targetName = roomName || selectedRoom;
     const roomMeta = displayRooms.find((r) => r.name?.toLowerCase() === targetName.toLowerCase())
       || displayRooms[0]
@@ -1392,24 +1392,35 @@ export default function MobileResortApp() {
             </div>
 
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-[1fr_1fr_1fr_1.5fr_auto]">
-              {[
-                { label: site.booking.checkIn, value: checkIn, set: setCheckIn, min: today },
-                { label: site.booking.checkOut, value: checkOut, set: setCheckOut, min: addDays(checkIn, 1) },
-              ].map((f) => (
-                <label key={f.label} className="flex flex-col gap-1 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
-                  <span className={LABEL}>{f.label}</span>
-                  <input
-                    type="date"
-                    value={f.value}
-                    min={f.min}
-                    onChange={(e) => {
-                      f.set(e.target.value);
-                      setQuote(null);
-                    }}
-                    className="w-full text-sm font-medium text-white outline-none"
-                  />
-                </label>
-              ))}
+              <button
+                type="button"
+                onClick={() => setShowHeroCalendar((s) => !s)}
+                className={`flex flex-col text-left gap-1 rounded-2xl border px-4 py-3 transition cursor-pointer ${
+                  showHeroCalendar ? 'border-cyan bg-cyan/10' : 'border-white/10 bg-white/[0.04] hover:border-cyan/50'
+                }`}
+                title="Tap to select check-in date on marked calendar"
+              >
+                <span className={LABEL}>{site.booking.checkIn}</span>
+                <span className="text-sm font-semibold text-white flex items-center justify-between">
+                  {checkIn} <span className="text-xs text-cyan">📅</span>
+                </span>
+                <span className="text-[10px] text-cyan/70 font-medium">Tap for marked calendar</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowHeroCalendar((s) => !s)}
+                className={`flex flex-col text-left gap-1 rounded-2xl border px-4 py-3 transition cursor-pointer ${
+                  showHeroCalendar ? 'border-cyan bg-cyan/10' : 'border-white/10 bg-white/[0.04] hover:border-cyan/50'
+                }`}
+                title="Tap to select check-out date on marked calendar"
+              >
+                <span className={LABEL}>{site.booking.checkOut}</span>
+                <span className="text-sm font-semibold text-white flex items-center justify-between">
+                  {checkOut} <span className="text-xs text-cyan">📅</span>
+                </span>
+                <span className="text-[10px] text-cyan/70 font-medium">Tap for marked calendar</span>
+              </button>
 
               <label className="flex flex-col gap-1 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
                 <span className={LABEL}>{site.booking.guests}</span>
@@ -2685,48 +2696,65 @@ export default function MobileResortApp() {
                     {/* Interactive Date Adjuster Bar - 2 columns adapting cleanly to phone screens */}
                     <div className="pt-2.5 border-t border-white/10 flex flex-col gap-2">
                       <div className="grid grid-cols-2 gap-2 w-full">
-                        <label className="flex flex-col gap-1 min-w-0">
-                          <span className="text-[10px] uppercase tracking-wider text-white/50 font-medium">Check-In</span>
-                          <input
-                            type="date"
-                            value={checkIn}
-                            min={today}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              setCheckIn(val);
-                              if (val >= checkOut) {
-                                setCheckOut(addDays(val, 1));
-                              }
-                            }}
-                            className="w-full rounded-xl border border-white/15 bg-white/5 px-2.5 py-2 text-xs text-white outline-none focus:border-cyan transition"
-                            title="Check-in date"
-                          />
-                        </label>
-                        <label className="flex flex-col gap-1 min-w-0">
-                          <span className="text-[10px] uppercase tracking-wider text-white/50 font-medium">Check-Out</span>
-                          <input
-                            type="date"
-                            value={checkOut}
-                            min={addDays(checkIn, 1)}
-                            onChange={(e) => setCheckOut(e.target.value)}
-                            className="w-full rounded-xl border border-white/15 bg-white/5 px-2.5 py-2 text-xs text-white outline-none focus:border-cyan transition"
-                            title="Check-out date"
-                          />
-                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setShowModalCalendar(true)}
+                          className={`flex flex-col text-left gap-0.5 min-w-0 p-2.5 rounded-xl border transition cursor-pointer ${
+                            showModalCalendar ? 'border-cyan bg-cyan/15 ring-1 ring-cyan/40' : 'border-white/15 bg-white/5 hover:border-white/30'
+                          }`}
+                          title="Tap to select check-in date on marked calendar"
+                        >
+                          <span className="text-[10px] uppercase tracking-wider text-cyan font-bold flex items-center justify-between">
+                            Check-In <span>📅</span>
+                          </span>
+                          <span className="text-xs sm:text-sm font-semibold text-white truncate">
+                            {checkIn}
+                          </span>
+                          <span className="text-[9px] text-white/50">
+                            Tap to pick on calendar
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setShowModalCalendar(true)}
+                          className={`flex flex-col text-left gap-0.5 min-w-0 p-2.5 rounded-xl border transition cursor-pointer ${
+                            showModalCalendar ? 'border-cyan bg-cyan/15 ring-1 ring-cyan/40' : 'border-white/15 bg-white/5 hover:border-white/30'
+                          }`}
+                          title="Tap to select check-out date on marked calendar"
+                        >
+                          <span className="text-[10px] uppercase tracking-wider text-cyan font-bold flex items-center justify-between">
+                            Check-Out <span>📅</span>
+                          </span>
+                          <span className="text-xs sm:text-sm font-semibold text-white truncate">
+                            {checkOut}
+                          </span>
+                          <span className="text-[9px] text-white/50">
+                            Tap to pick on calendar
+                          </span>
+                        </button>
                       </div>
 
                       <button
                         type="button"
                         onClick={() => setShowModalCalendar((prev) => !prev)}
-                        className="w-full py-2 px-3 rounded-xl border border-cyan/40 bg-cyan/15 text-cyan hover:bg-cyan hover:text-navy text-xs font-semibold tracking-wide transition cursor-pointer flex items-center justify-center gap-1.5"
+                        className={`w-full py-2 px-3 rounded-xl border text-xs font-semibold tracking-wide transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                          showModalCalendar
+                            ? 'border-cyan/50 bg-cyan text-navy shadow-sm'
+                            : 'border-cyan/40 bg-cyan/15 text-cyan hover:bg-cyan hover:text-navy'
+                        }`}
                       >
-                        📅 {showModalCalendar ? 'Hide Availability Calendar' : 'View Calendar (Check Reserved vs Open)'}
+                        📅 {showModalCalendar ? 'Hide Marked Calendar' : 'View Marked Calendar (🔴 Reserved vs 🟢 Open)'}
                       </button>
                     </div>
 
                     {/* Visual Availability Calendar with Reserved / Available Markings */}
                     {showModalCalendar && (
                       <div className="mt-1 animate-fade-in overflow-hidden">
+                        <div className="mb-1.5 flex items-center justify-between px-1 text-[11px] font-medium text-cyan">
+                          <span>✦ Tap dates below to set stay dates:</span>
+                          <span className="text-[10px] text-white/70 font-normal">🔴 = Reserved · 🟢 = Open</span>
+                        </div>
                         <AvailabilityCalendar
                           selectedRoomId={resRoom?.id}
                           rooms={displayRooms}
