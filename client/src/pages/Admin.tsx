@@ -1,8 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useAuth, generateAccountEmail } from '../context/AuthContext.tsx';
 import '../styles/admin.css';
-import { getThemePalette, getAdminStyles } from '../styles/modules/index.ts';
-import { BarChart, AreaLineChart, MultiBarChart, DualLineChart, Sparkline, ReferrerCategoryBarChart, DonutChart } from '../components/Charts.tsx';
+import { AreaLineChart, MultiBarChart, Sparkline } from '../components/Charts.tsx';
 import CsvTableViewer from '../components/CsvTableViewer.tsx';
 import {
   IconDashboard, IconDining, IconUsers, IconTelemetry, IconLedger,
@@ -251,14 +250,6 @@ export default function Admin() {
           };
         });
       })()
-    : [];
-
-  const dualSalesData = (data.daily && data.daily.length > 0)
-    ? data.daily.slice(-12).map((d) => ({
-        month: d.date ? new Date(d.date + 'T00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '',
-        lineA: d.revenue_php || 0,
-        lineB: d.dining_revenue_php !== undefined ? d.dining_revenue_php : ((d.bookings || 0) * 850),
-      }))
     : [];
 
   // Guest Conversations & Live Messaging State
@@ -2314,168 +2305,6 @@ export default function Admin() {
                       <small style={{ fontSize: '.72rem', color: themeMuted }}>Click item to launch chat thread</small>
                     </div>
                   </div>
-                </div>
-              </div>
-
-              {/* LIVE RESORT ALERTS & SMS STREAM FEED */}
-              <div className="panel panel-card" style={{ background: themeCardBg, border: `1px solid ${themeBorder}`, borderRadius: 16, padding: '18px 22px', boxShadow: themeShadow, marginBottom: 20 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{ width: 34, height: 34, borderRadius: 10, background: isLightMode ? '#FFF1F2' : 'rgba(244, 63, 94, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <IconBell size={18} color="#E11D48" />
-                    </span>
-                    <div>
-                      <h4 style={{ margin: 0, fontSize: '1.05rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700 }}>
-                        Live Resort Alerts & SMS Stream {unreadNotifsCount > 0 && <span className="notif-badge" style={{ position: 'static', display: 'inline-flex', marginLeft: 6 }}>{unreadNotifsCount}</span>}
-                      </h4>
-                      <small style={{ color: themeMuted }}>Real-time guest booking confirmations, stay operations and front-desk dispatches</small>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button
-                      className="btn btn-sky btn-sm"
-                      onClick={() => setActiveTab('notifications')}
-                      style={{ fontWeight: 700 }}
-                    >
-                      Open Alerts Center ➔
-                    </button>
-                    <button
-                      className="btn btn-sm"
-                      onClick={() => setActiveTab('ledger')}
-                      style={{ background: isLightMode ? '#F0F9FF' : 'rgba(14, 165, 233, 0.15)', color: '#0284C7', border: '1px solid #BAE6FD', fontWeight: 700 }}
-                    >
-                      Reservations Ledger ({allBookings.length}) ➔
-                    </button>
-                  </div>
-                </div>
-
-                {notifications.length === 0 ? (
-                  <p className="muted small" style={{ margin: 0, padding: '10px 0' }}>No active notifications recorded yet. Automated SMS alerts will stream here when guests book.</p>
-                ) : (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 10 }}>
-                    {notifications.slice(0, 3).map((n: any) => (
-                      <div
-                        key={n.id}
-                        onClick={() => setActiveTab('notifications')}
-                        style={{
-                          padding: '12px 14px',
-                          borderRadius: 12,
-                          background: isLightMode ? '#F8FAFC' : 'rgba(255, 255, 255, 0.04)',
-                          border: `1px solid ${n.is_read ? themeBorder : '#6366F1'}`,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                          <span className={`pill ${n.status || 'sent'}`}>{n.status || 'sent'}</span>
-                          <span style={{ fontSize: '.72rem', color: themeMuted }}>{fmtTime(n.created_at)}</span>
-                        </div>
-                        <p style={{ margin: 0, fontSize: '.82rem', color: themeText, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {n.body || n.content}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* SECTION 4: BOTTOM THREE DIAGNOSTIC PANELS (RESPONSIVE 3-PANEL GRID) */}
-              <div className="admin-grid-bottom-3">
-                {/* Panel 1: Summary Category Pills */}
-                <div className="panel panel-card" style={{ background: themeCardBg, border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 20, boxShadow: themeShadow, minWidth: 0 }}>
-                  <h3 style={{ fontSize: '1.2rem', marginTop: 0, marginBottom: 14, color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700 }}>Summary</h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    <div
-                      onClick={() => {
-                        setActiveTab('ledger');
-                        toast('📋 Navigated to Live Guest Reservations Ledger');
-                      }}
-                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: isLightMode ? '#F0F9FF' : 'rgba(14,165,233,0.15)', borderRadius: 12, color: isLightMode ? '#0284C7' : '#38BDF8', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s ease', border: `1px solid ${isLightMode ? '#BAE6FD' : 'rgba(14,165,233,0.3)'}` }}
-                      onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
-                      onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
-                      title="Click to view Reservations Ledger"
-                    >
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '.92rem' }}>📋 Reservations Ledger</span>
-                      <span className="pill" style={{ background: '#0EA5E9', color: '#FFFFFF', fontWeight: 800, padding: '4px 12px', borderRadius: 16, fontSize: '.8rem' }}>{allBookings.length} stays</span>
-                    </div>
-
-                    <div
-                      onClick={() => {
-                        setActiveTab('notifications');
-                        toast('🔔 Navigated to Executive Notifications & Alerts Center');
-                      }}
-                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: isLightMode ? '#FFF1F2' : 'rgba(244,63,94,0.15)', borderRadius: 12, color: isLightMode ? '#E11D48' : '#F43F5E', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s ease', border: `1px solid ${isLightMode ? '#FECDD3' : 'rgba(244,63,94,0.3)'}` }}
-                      onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
-                      onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
-                      title="Click to view full Notification Center"
-                    >
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '.92rem' }}>🔔 Alert Center</span>
-                      <span className="pill" style={{ background: '#F43F5E', color: '#FFFFFF', fontWeight: 800, padding: '4px 12px', borderRadius: 16, fontSize: '.8rem' }}>{unreadNotifsCount > 0 ? `${unreadNotifsCount} new` : `${notifications.length} alerts`}</span>
-                    </div>
-
-                    <div
-                      onClick={() => {
-                        setActiveTab('audit');
-                        toast('🛡️ Switched to Live System Audit Logs');
-                      }}
-                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', borderRadius: 12, color: themeText, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s ease', border: `1px solid ${themeBorder}` }}
-                      onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
-                      onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
-                      title="Click to view full System Audit Trail"
-                    >
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '.92rem' }}>🛡️ Audit Trail</span>
-                      <span className="pill" style={{ background: '#64748B', color: '#FFFFFF', fontWeight: 800, padding: '4px 12px', borderRadius: 16, fontSize: '.8rem' }}>Live Stream</span>
-                    </div>
-
-                    <div
-                      onClick={() => {
-                        setActiveTab('inventory');
-                        toast('🛏️ Navigated to Accommodations & Inventory');
-                      }}
-                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: isLightMode ? '#F5F3FF' : 'rgba(139,92,246,0.15)', borderRadius: 12, color: isLightMode ? '#7C3AED' : '#A78BFA', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s ease', border: `1px solid ${isLightMode ? '#DDD6FE' : 'rgba(139,92,246,0.3)'}` }}
-                      onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
-                      onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
-                      title="Click to manage Accommodations & Inventory"
-                    >
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '.92rem' }}>🛏️ Accommodations</span>
-                      <span className="pill" style={{ background: '#8B5CF6', color: '#FFFFFF', fontWeight: 800, padding: '4px 12px', borderRadius: 16, fontSize: '.8rem' }}>{roomsList.length} Units</span>
-                    </div>
-
-                    <div
-                      onClick={() => {
-                        setActiveTab('conversations');
-                        toast('💬 Navigated to Concierge & Customer Inquiries');
-                      }}
-                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: isLightMode ? '#ECFDF5' : 'rgba(52,211,153,0.15)', borderRadius: 12, color: isLightMode ? '#059669' : '#10B981', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s ease', border: `1px solid ${isLightMode ? '#A7F3D0' : 'rgba(52,211,153,0.3)'}` }}
-                      onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
-                      onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
-                      title="Click to view Customer Service Threads"
-                    >
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '.92rem' }}>💬 Customer Inquiries</span>
-                      <span className="pill" style={{ background: '#10B981', color: '#FFFFFF', fontWeight: 800, padding: '4px 12px', borderRadius: 16, fontSize: '.8rem' }}>{ov.conversations_closed || 9} Threads</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Panel 2: Total Amount Referrer Category Bar Chart */}
-                <div className="panel panel-card" style={{ background: themeCardBg, border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 20, boxShadow: themeShadow, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
-                      <h3 style={{ fontSize: '1.2rem', margin: 0, color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700 }}>Total Amount</h3>
-                      <b style={{ color: '#0EA5E9', fontSize: '.9rem' }}>{money(data.overview?.total_revenue_php || 0)}</b>
-                    </div>
-                    <small style={{ color: themeMuted, display: 'block', marginBottom: 12 }}>By Referrer Category</small>
-                    <ReferrerCategoryBarChart isLightMode={isLightMode} totalAmount={data.overview?.total_revenue_php || 0} />
-                  </div>
-                </div>
-
-                {/* Panel 3: Total Sales Dual-Line Multi-Trend Curve Graph */}
-                <div className="panel panel-card" style={{ background: themeCardBg, border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 20, boxShadow: themeShadow, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', overflow: 'hidden' }}>
-                  <DualLineChart
-                    data={dualSalesData}
-                    height={150}
-                    isLightMode={isLightMode}
-                    onPointClick={(item) => toast(`📊 Total Sales ${item.month}: ₱${item.totalPhp.toLocaleString()} (Rooms: ₱${item.roomPhp.toLocaleString()}, Dining: ₱${item.diningPhp.toLocaleString()})`)}
-                  />
                 </div>
               </div>
             </>
