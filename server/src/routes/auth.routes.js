@@ -267,9 +267,7 @@ r.post('/auth/login', asyncH(async (req, res) => {
 
       const hasPassword = Boolean(
         (profile?.password && String(profile.password).trim() !== '') ||
-        (profile?.password_hash && String(profile.password_hash).trim() !== '') ||
         (employeeRecord?.password && String(employeeRecord.password).trim() !== '') ||
-        (employeeRecord?.password_hash && String(employeeRecord.password_hash).trim() !== '') ||
         true // Successfully authenticated with password
       );
       const passwordStatus = hasPassword ? 'Configured' : 'N/A';
@@ -289,7 +287,6 @@ r.post('/auth/login', asyncH(async (req, res) => {
         } : {}),
       };
       delete enrichedUser.password;
-      delete enrichedUser.password_hash;
 
       // Reset lockout counter on successful customer/user login
       recordSuccessfulAttempt(req.ip, userIdent);

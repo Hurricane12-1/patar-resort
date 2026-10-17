@@ -1,8 +1,9 @@
 -- ==============================================================================
 -- J & D BEACH HOUSE RESORT · SUPABASE POSTGRESQL MIGRATION
--- Task: 1. Add password column to public.profiles (and related account tables)
+-- Task: 1. Add encrypted password column to public.profiles (no redundant password_hash)
 --       2. Create dedicated, isolated public.employee_accounts collection/table
---       3. Set up automated bcrypt password hashing, triggers, RLS, and seed data
+--       3. Auto-encrypt plain passwords directly inside the `password` column
+--       4. Remove/Drop any legacy `password_hash` columns
 -- Target: Supabase Dashboard -> SQL Editor -> New Query -> Run
 -- ==============================================================================
 
@@ -10,46 +11,58 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
+-- Step 1.1: Ensure 'manager' is added to public.user_role ENUM if it exists
+DO $$ BEGIN
+  ALTER TYPE public.user_role ADD VALUE IF NOT EXISTS 'manager';
+EXCEPTION WHEN undefined_object THEN null;
+END $$;
+
+
 -- ==============================================================================
--- PART 1: ADD PASSWORD COLUMNS TO PROFILES (AND CUSTOMERS/USERS)
+-- PART 1: ENCRYPTED PASSWORD COLUMN SA PROFILES (DROP REDUNDANT PASSWORD_HASH)
 -- ==============================================================================
 
--- 1.1 Add password and password_hash to public.profiles
+-- 1.1 Add single encrypted password column to public.profiles
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS password TEXT DEFAULT '';
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS password_hash TEXT DEFAULT '';
-
-COMMENT ON COLUMN public.profiles.password IS 'Plain/initial password for user accounts';
-COMMENT ON COLUMN public.profiles.password_hash IS 'Encrypted/bcrypt hashed password for profile authentication';
-
--- 1.2 Also ensure customers and users tables have password columns for consistency
 ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS password TEXT DEFAULT '';
-ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS password_hash TEXT DEFAULT '';
-
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS password TEXT DEFAULT '';
-ALTER TABLE public.users ADD COLUMN IF NOT EXISTS password_hash TEXT DEFAULT '';
 
--- 1.3 Automatic password hashing trigger for public.profiles
-CREATE OR REPLACE FUNCTION public.handle_profile_password_hash()
+-- 1.2 I-drop ang lumang password_hash column dahil direktang encrypted na ang password column
+ALTER TABLE public.profiles DROP COLUMN IF EXISTS password_hash;
+ALTER TABLE public.customers DROP COLUMN IF EXISTS password_hash;
+ALTER TABLE public.users DROP COLUMN IF EXISTS password_hash;
+
+COMMENT ON COLUMN public.profiles.password IS 'Encrypted/bcrypt-hashed password for authentication';
+
+-- 1.3 Automatic password encryption trigger for public.profiles
+-- Kapag nag-insert o nag-update ng plain text password, kusa itong ine-encrypt
+-- gamit ang pgcrypto crypt (bcrypt) direkta sa loob ng password column mismo.
+CREATE OR REPLACE FUNCTION public.handle_profile_password_encryption()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF NEW.password IS NOT NULL AND NEW.password <> '' AND (TG_OP = 'INSERT' OR NEW.password IS DISTINCT FROM OLD.password) THEN
-    NEW.password_hash = crypt(NEW.password, gen_salt('bf', 10));
+  IF NEW.password IS NOT NULL AND TRIM(NEW.password) <> '' THEN
+    -- Kung hindi pa naka-encrypt bilang bcrypt hash (nagsisimula sa $2a$, $2b$, o $2y$)
+    IF NEW.password NOT LIKE '$2%' THEN
+      NEW.password = crypt(NEW.password, gen_salt('bf', 10));
+    END IF;
   END IF;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trg_profile_password_hash ON public.profiles;
-CREATE TRIGGER trg_profile_password_hash
+DROP TRIGGER IF EXISTS trg_profile_password_encryption ON public.profiles;
+
+CREATE TRIGGER trg_profile_password_encryption
   BEFORE INSERT OR UPDATE OF password ON public.profiles
-  FOR EACH ROW EXECUTE FUNCTION public.handle_profile_password_hash();
+  FOR EACH ROW EXECUTE FUNCTION public.handle_profile_password_encryption();
 
 
 -- ==============================================================================
 -- PART 2: DEDICATED ISOLATED EMPLOYEE ACCOUNTS COLLECTION / TABLE
 -- ==============================================================================
 
--- 2.1 Create the dedicated public.employee_accounts table
+-- 2.1 Create the dedicated public.employee_accounts table (walang password_hash column)
 CREATE TABLE IF NOT EXISTS public.employee_accounts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   auth_user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
@@ -59,8 +72,7 @@ CREATE TABLE IF NOT EXISTS public.employee_accounts (
   last_name TEXT NOT NULL DEFAULT '',
   full_name TEXT NOT NULL,
   email TEXT UNIQUE NOT NULL,
-  password TEXT DEFAULT '',
-  password_hash TEXT DEFAULT '',
+  password TEXT DEFAULT '',                               -- Dito na mismo naka-store ang encrypted password
   role TEXT NOT NULL DEFAULT 'staff' CHECK (role IN (
     'administrator', 'admin', 'manager', 'receptionist', 'frontdesk',
     'staff', 'accounting', 'housekeeping', 'kitchen', 'maintenance', 'security'
@@ -87,10 +99,12 @@ CREATE TABLE IF NOT EXISTS public.employee_accounts (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Kung dati nang nagawa ang table at may password_hash, i-drop ito:
+ALTER TABLE public.employee_accounts DROP COLUMN IF EXISTS password_hash;
+
 COMMENT ON TABLE public.employee_accounts IS 'Isolated Employee Accounts Collection for Staff, Management, and Executive Administration';
 COMMENT ON COLUMN public.employee_accounts.employee_id IS 'Unique company employee code (e.g. EMP-2026-001)';
-COMMENT ON COLUMN public.employee_accounts.password IS 'Plain/initial employee password';
-COMMENT ON COLUMN public.employee_accounts.password_hash IS 'Secure bcrypt hash of employee password';
+COMMENT ON COLUMN public.employee_accounts.password IS 'Encrypted/bcrypt password for employee operations';
 
 -- 2.2 Create indexes for fast lookup and filtering
 CREATE INDEX IF NOT EXISTS idx_employee_accounts_email ON public.employee_accounts(email);
@@ -100,14 +114,12 @@ CREATE INDEX IF NOT EXISTS idx_employee_accounts_department ON public.employee_a
 CREATE INDEX IF NOT EXISTS idx_employee_accounts_status ON public.employee_accounts(status);
 CREATE INDEX IF NOT EXISTS idx_employee_accounts_auth_user ON public.employee_accounts(auth_user_id);
 
--- 2.3 Automatic timestamp & password hashing trigger for employee_accounts
+-- 2.3 Automatic timestamp & direct password encryption trigger for employee_accounts
 CREATE OR REPLACE FUNCTION public.handle_employee_account_lifecycle()
 RETURNS TRIGGER AS $$
 BEGIN
-  -- Always keep updated_at in sync
   NEW.updated_at = now();
 
-  -- Auto-generate full_name if missing
   IF (NEW.full_name IS NULL OR TRIM(NEW.full_name) = '') THEN
     NEW.full_name = TRIM(CONCAT(NEW.first_name, ' ', NEW.middle_name, ' ', NEW.last_name));
     IF NEW.full_name = '' THEN
@@ -115,9 +127,11 @@ BEGIN
     END IF;
   END IF;
 
-  -- Auto-hash password if plain password is provided or modified
-  IF NEW.password IS NOT NULL AND NEW.password <> '' AND (TG_OP = 'INSERT' OR NEW.password IS DISTINCT FROM OLD.password) THEN
-    NEW.password_hash = crypt(NEW.password, gen_salt('bf', 10));
+  -- Awtomatikong ine-encrypt ang password direkta sa password column
+  IF NEW.password IS NOT NULL AND TRIM(NEW.password) <> '' THEN
+    IF NEW.password NOT LIKE '$2%' THEN
+      NEW.password = crypt(NEW.password, gen_salt('bf', 10));
+    END IF;
   END IF;
 
   RETURN NEW;
@@ -129,12 +143,6 @@ CREATE TRIGGER trg_employee_accounts_lifecycle
   BEFORE INSERT OR UPDATE ON public.employee_accounts
   FOR EACH ROW EXECUTE FUNCTION public.handle_employee_account_lifecycle();
 
-
--- Step 1.1: Ensure 'manager' is added to public.user_role ENUM if it exists
-DO $$ BEGIN
-  ALTER TYPE public.user_role ADD VALUE IF NOT EXISTS 'manager';
-EXCEPTION WHEN undefined_object THEN null;
-END $$;
 
 -- ==============================================================================
 -- PART 3: ROW LEVEL SECURITY (RLS) POLICIES
@@ -182,7 +190,7 @@ CREATE POLICY "Employee can view own record"
 
 
 -- ==============================================================================
--- PART 4: SEED STANDARD RESORT EMPLOYEE ACCOUNTS (READY TO MANAGE)
+-- PART 4: SEED STANDARD RESORT EMPLOYEE ACCOUNTS (AUTO-ENCRYPTED IN PASSWORD)
 -- ==============================================================================
 
 INSERT INTO public.employee_accounts (
@@ -290,7 +298,7 @@ ON CONFLICT (employee_id) DO UPDATE SET
   status = EXCLUDED.status,
   updated_at = now();
 
--- Also update existing profiles if they exist with the initial password
+-- Update existing profiles with initial password (which triggers auto-encryption)
 UPDATE public.profiles SET password = 'AdminPassword2026!' WHERE email = 'admin@janddbeachhouse.ph' AND (password IS NULL OR password = '');
 UPDATE public.profiles SET password = 'StaffPassword2026!' WHERE email = 'receptionist@janddbeachhouse.ph' AND (password IS NULL OR password = '');
 UPDATE public.profiles SET password = 'StaffPassword2026!' WHERE email = 'accounting@janddbeachhouse.ph' AND (password IS NULL OR password = '');
@@ -322,7 +330,6 @@ FROM public.employee_accounts
 WHERE status = 'active'
 ORDER BY department ASC, full_name ASC;
 
--- Success confirmation notice
 DO $$ BEGIN
-  RAISE NOTICE '✅ Migration complete: password columns added to profiles, and public.employee_accounts collection isolated successfully!';
+  RAISE NOTICE '✅ Migration complete: password encrypted directly in password column, password_hash dropped, and employee_accounts isolated!';
 END $$;

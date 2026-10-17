@@ -119,7 +119,6 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   avatar_url TEXT DEFAULT '',
   provider TEXT DEFAULT 'email',
   password TEXT DEFAULT '',
-  password_hash TEXT DEFAULT '',
   is_verified BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
@@ -137,7 +136,6 @@ CREATE TABLE IF NOT EXISTS public.employee_accounts (
   full_name TEXT NOT NULL,
   email TEXT UNIQUE NOT NULL,
   password TEXT DEFAULT '',
-  password_hash TEXT DEFAULT '',
   role TEXT NOT NULL DEFAULT 'staff' CHECK (role IN (
     'administrator', 'admin', 'manager', 'receptionist', 'frontdesk',
     'staff', 'accounting', 'housekeeping', 'kitchen', 'maintenance', 'security'
@@ -168,13 +166,10 @@ COMMENT ON TABLE public.employee_accounts IS 'Isolated Employee Accounts Collect
 -- Ensure modern columns exist if tables were created previously
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS username TEXT UNIQUE;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS password TEXT DEFAULT '';
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS password_hash TEXT DEFAULT '';
 ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS username TEXT UNIQUE;
 ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS password TEXT DEFAULT '';
-ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS password_hash TEXT DEFAULT '';
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS username TEXT UNIQUE;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS password TEXT DEFAULT '';
-ALTER TABLE public.users ADD COLUMN IF NOT EXISTS password_hash TEXT DEFAULT '';
 
 -- D. User Confirmations & 2FA Tokens (Signup 2FA, OTP & Verification Storage)
 CREATE TABLE IF NOT EXISTS public.user_confirmations (

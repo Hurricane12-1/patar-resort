@@ -69,7 +69,7 @@ export function AuthProvider({ children }) {
           if (!localStorage.getItem('jd_admin_token_key')) localStorage.setItem('jd_admin_token_key', 'etc-34');
         }
         if (parsed.password_status === undefined) {
-          parsed.has_password = Boolean(parsed.has_password || parsed.password || parsed.password_hash);
+          parsed.has_password = Boolean(parsed.has_password || parsed.password);
           parsed.password_status = parsed.has_password ? 'Configured' : 'N/A';
         }
         return parsed;
@@ -125,7 +125,7 @@ export function AuthProvider({ children }) {
               if (!localStorage.getItem('jd_admin_token_key')) localStorage.setItem('jd_admin_token_key', 'etc-34');
               if (session.access_token) localStorage.setItem('jd_admin_jwt', session.access_token);
             }
-            const hasPassword = Boolean(p.has_password || (p.password && String(p.password).trim() !== '') || (p.password_hash && String(p.password_hash).trim() !== ''));
+            const hasPassword = Boolean(p.has_password || (p.password && String(p.password).trim() !== ''));
             p.has_password = hasPassword;
             p.password_status = p.password_status || (hasPassword ? 'Configured' : 'N/A');
 
@@ -156,7 +156,6 @@ export function AuthProvider({ children }) {
 
               const hasPassword = Boolean(
                 (sbProfile.password && String(sbProfile.password).trim() !== '') ||
-                (sbProfile.password_hash && String(sbProfile.password_hash).trim() !== '') ||
                 Boolean(sbProfile.has_password)
               );
               const passwordStatus = hasPassword ? 'Configured' : 'N/A';

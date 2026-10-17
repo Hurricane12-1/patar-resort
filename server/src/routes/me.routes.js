@@ -64,7 +64,7 @@ r.patch('/me/password', authenticate,
         updated = true;
       }
 
-      // Synchronize password to profiles table (trigger trg_profile_password_hash will auto-hash it)
+      // Synchronize password to profiles table (trigger trg_profile_password_encryption will auto-encrypt it)
       const sysAdmin = await getSystemAdminClient().catch(() => null);
       const client = sysAdmin || admin;
       await client.from('profiles').update({ password }).eq('id', req.user.id).catch(() => {});

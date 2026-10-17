@@ -98,7 +98,7 @@ export async function authenticate(req, _res, next) {
         if (targetLookupEmail) filter.push(`email.eq.${targetLookupEmail}`);
         const { data: emp } = await db
           .from('employee_accounts')
-          .select('id, employee_id, department, position, shift, status, is_active, hire_date, password, password_hash')
+          .select('id, employee_id, department, position, shift, status, is_active, hire_date, password')
           .or(filter.join(','))
           .maybeSingle();
         empRecord = emp;
@@ -107,9 +107,7 @@ export async function authenticate(req, _res, next) {
 
     const hasPassword = Boolean(
       (profile?.password && String(profile.password).trim() !== '') ||
-      (profile?.password_hash && String(profile.password_hash).trim() !== '') ||
-      (empRecord?.password && String(empRecord.password).trim() !== '') ||
-      (empRecord?.password_hash && String(empRecord.password_hash).trim() !== '')
+      (empRecord?.password && String(empRecord.password).trim() !== '')
     );
     const passwordStatus = hasPassword ? 'Configured' : 'N/A';
 
@@ -168,7 +166,6 @@ export async function authenticate(req, _res, next) {
 
     // Sanitize profile object so sensitive password fields are never exposed in API payloads
     delete profile.password;
-    delete profile.password_hash;
 
     const isElevatedAdminEmail = (userEmail && (
       userEmail.toLowerCase() === 'admin@janddbeachhouse.ph' ||
