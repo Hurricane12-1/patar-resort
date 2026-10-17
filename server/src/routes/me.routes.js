@@ -252,6 +252,13 @@ r.patch('/admin/users/:id/role', authenticate, requireAdmin,
   asyncH(async (req, res) => {
     const { role } = req.body;
     const client = req.sb || admin;
+
+    // Disallow promoting customer accounts - new employees/hirees must be provisioned directly
+    const { data: existingProf } = await client.from('profiles').select('role, full_name').eq('id', req.params.id).maybeSingle();
+    if (existingProf && (existingProf.role === 'customer' || !existingProf.role) && role !== 'customer') {
+      throw new ApiError(400, 'Customer accounts cannot be promoted. To onboard new employees or hirees, please provision a new staff account directly.');
+    }
+
     const { data, error } = await client.from('profiles')
       .update({ role }).eq('id', req.params.id).select().single();
     if (error) throw new ApiError(500, error.message);
@@ -321,8 +328,14 @@ r.patch('/admin/users/:id', authenticate, requireAdmin,
     if (phone !== undefined) updates.phone = phone;
     if (role !== undefined) updates.role = role;
 
-    // Update profile in database
     const client = req.sb || admin;
+    if (role && role !== 'customer') {
+      const { data: targetProf } = await client.from('profiles').select('role').eq('id', userId).maybeSingle();
+      if (targetProf && (targetProf.role === 'customer' || !targetProf.role)) {
+        throw new ApiError(400, 'Customer accounts cannot be promoted. To onboard new employees or hirees, please provision a new staff account directly.');
+      }
+    }
+
     const { data, error } = await client.from('profiles').update(updates).eq('id', userId).select().single();
     if (error) throw new ApiError(500, error.message);
 
@@ -345,7 +358,7 @@ r.patch('/admin/users/:id', authenticate, requireAdmin,
     return res.json(data);
   }));
 
-// Helper: Cascading permanent deletion of user account across all tables
+// Helper: Permanent deletion of user account credentials while preserving prior business records
 export async function deleteUserPermanently(userId) {
   const sysAdmin = await getSystemAdminClient().catch(() => null);
   const client = sysAdmin || admin;
@@ -357,27 +370,34 @@ export async function deleteUserPermanently(userId) {
     prof = data;
   } catch {}
 
-  // 2. Cascade delete/nullify child tables with foreign keys referencing profiles(id) or auth.users(id)
+  // 2. Cascade delete authentication tokens and transient notifications
   try { await client.from('user_confirmations').delete().eq('user_id', userId); } catch (e) { console.warn('[Delete User] Confirmations notice:', e.message); }
   try { await client.from('chat_messages').delete().eq('profile_id', userId); } catch (e) { console.warn('[Delete User] Chat notice:', e.message); }
   try { await client.from('notifications').delete().eq('profile_id', userId); } catch (e) { console.warn('[Delete User] Notifications notice:', e.message); }
-  try { await client.from('reviews').delete().eq('guest_id', userId); } catch (e) { console.warn('[Delete User] Reviews notice:', e.message); }
-  try { await client.from('resort_orders').delete().eq('guest_id', userId); } catch (e) { console.warn('[Delete User] Orders notice:', e.message); }
-  try { await client.from('department_tasks').delete().eq('created_by', userId); } catch (e) { console.warn('[Delete User] Tasks notice:', e.message); }
 
-  // Cancel or clean up user's active/past reservations
+  // 3. PRIOR BUSINESS RECORDS ARE PRESERVED (Reservations, Orders, Reviews remain in ledger)
   try {
-    await client.from('reservations').delete().eq('guest_id', userId);
+    await client.from('reservations').update({ guest_id: null }).eq('guest_id', userId);
   } catch (e) {
-    console.warn('[Delete User] Reservations notice:', e.message);
+    console.warn('[Delete User] Preserve reservations notice:', e.message);
+  }
+  try {
+    await client.from('resort_orders').update({ guest_id: null }).eq('guest_id', userId);
+  } catch (e) {
+    console.warn('[Delete User] Preserve orders notice:', e.message);
+  }
+  try {
+    await client.from('reviews').update({ guest_id: null }).eq('guest_id', userId);
+  } catch (e) {
+    console.warn('[Delete User] Preserve reviews notice:', e.message);
   }
 
-  // 3. Delete from public entity tables: customers, users, profiles
+  // 4. Delete user account from identity and profile tables: customers, users, profiles
   try { await client.from('customers').delete().eq('id', userId); } catch (e) { console.warn('[Delete User] Customers notice:', e.message); }
   try { await client.from('users').delete().eq('id', userId); } catch (e) { console.warn('[Delete User] Users notice:', e.message); }
   try { await client.from('profiles').delete().eq('id', userId); } catch (e) { console.warn('[Delete User] Profiles notice:', e.message); }
 
-  // 4. Delete from Supabase Auth admin if available
+  // 5. Delete from Supabase Auth admin so credentials can no longer sign in
   try {
     await admin.auth.admin.deleteUser(userId);
   } catch (err) {

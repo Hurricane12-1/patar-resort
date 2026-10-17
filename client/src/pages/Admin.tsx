@@ -1110,6 +1110,7 @@ export default function Admin() {
     setSavingUser(true);
     try {
       const full_name = [editingUser.first_name, editingUser.middle_name, editingUser.last_name].filter(Boolean).join(' ') || editingUser.full_name;
+      const isCustomer = !editingUser.role || editingUser.role === 'customer';
       const payload = {
         full_name,
         first_name: editingUser.first_name,
@@ -1117,7 +1118,7 @@ export default function Admin() {
         last_name: editingUser.last_name,
         phone: editingUser.phone,
         username: editingUser.username,
-        role: editingUser.role,
+        role: isCustomer ? 'customer' : editingUser.role,
       };
       const updated = await api.adminUpdateUser(editingUser.id, payload);
       setUsers((prev) => prev.map((u) => (u.id === editingUser.id ? { ...u, ...updated, full_name } : u)));
@@ -5271,18 +5272,25 @@ export default function Admin() {
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Role</label>
-                  <select
-                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : '#1E293B', color: themeText }}
-                    value={editingUser.role || 'customer'}
-                    onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
-                  >
-                    <option value="customer">Customer / Guest</option>
-                    <option value="receptionist">Receptionist</option>
-                    <option value="accounting">Accounting</option>
-                    <option value="staff">Staff</option>
-                    <option value="administrator">Administrator</option>
-                  </select>
+                  <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>
+                    {(!editingUser.role || editingUser.role === 'customer') ? 'Account Classification' : 'Staff Role Assignment'}
+                  </label>
+                  {(!editingUser.role || editingUser.role === 'customer') ? (
+                    <div style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.05)', color: themeText, fontSize: '.84rem', fontWeight: 600 }}>
+                      👤 Customer / Guest (Fixed)
+                    </div>
+                  ) : (
+                    <select
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : '#1E293B', color: themeText }}
+                      value={editingUser.role || 'staff'}
+                      onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
+                    >
+                      <option value="receptionist">Receptionist</option>
+                      <option value="accounting">Accounting</option>
+                      <option value="staff">Staff</option>
+                      <option value="administrator">Administrator</option>
+                    </select>
+                  )}
                 </div>
               </div>
 
