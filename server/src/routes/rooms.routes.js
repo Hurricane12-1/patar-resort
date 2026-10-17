@@ -17,7 +17,10 @@ export function normalizeRoom(room) {
 
   for (const item of rawAmenities) {
     if (typeof item === 'string' && (item.startsWith('__img__:') || item.startsWith('img:'))) {
-      const url = item.replace(/^(__img__|img):/, '').trim();
+      let url = item.replace(/^(__img__|img):/, '').trim();
+      if (url.includes('/uploads/')) {
+        url = 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209701/jd_beach_house_accommodations/uploads/img_9146060b-5718-452f-a663-e04f109c8ab5_1792173695555.jpg';
+      }
       if (url && !images.includes(url)) images.push(url);
     } else {
       cleanAmenities.push(item);
@@ -34,7 +37,9 @@ export function normalizeRoom(room) {
   else if (cat.includes('dorm') || cat.includes('bunk') || slug.includes('dorm')) fallbackImage = 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209699/jd_beach_house_accommodations/bunk.jpg';
   else fallbackImage = 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209696/jd_beach_house_accommodations/cottage.jpg';
 
-  const primaryImage = (room.image_url && String(room.image_url).trim()) || images[0] || fallbackImage;
+  const rawImg = (room.image_url && String(room.image_url).trim()) || '';
+  const cleanImg = rawImg.includes('/uploads/') ? 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209701/jd_beach_house_accommodations/uploads/img_9146060b-5718-452f-a663-e04f109c8ab5_1792173695555.jpg' : rawImg;
+  const primaryImage = cleanImg || images[0] || fallbackImage;
   const allImages = Array.isArray(room.images) && room.images.length > 0
     ? room.images
     : (images.length > 0 ? images : [primaryImage]);
