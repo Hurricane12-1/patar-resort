@@ -59,15 +59,18 @@ export async function logAuditEvent({ actor, action, resourceType = 'system', re
   const reqActor = req?.user || actor || {};
   const ip = req?.headers?.['x-forwarded-for']?.split(',')[0]?.trim() || req?.socket?.remoteAddress || req?.ip || '127.0.0.1';
   const userAgent = req?.headers?.['user-agent'] || 'System Kernel';
+  const nowIso = new Date().toISOString();
 
   const entry = {
     id: `audit_${crypto.randomUUID()}`,
-    timestamp: new Date().toISOString(),
+    timestamp: nowIso,
+    created_at: nowIso,
     action: String(action || 'UNKNOWN_ACTION').toUpperCase(),
     actor_id: reqActor.id || 'system',
     actor_email: reqActor.email || 'system@janddbeachhouse.ph',
-    actor_name: reqActor.full_name || reqActor.name || (reqActor.first_name ? `${reqActor.first_name} ${reqActor.last_name || ''}`.trim() : 'System Administrator'),
+    actor_name: reqActor.full_name || reqActor.name || (reqActor.first_name ? `${reqActor.first_name} ${reqActor.last_name || ''}`.trim() : (reqActor.email ? reqActor.email.split('@')[0] : 'System Administrator')),
     role: reqActor.role || 'system',
+    actor_role: reqActor.role || 'system',
     resource_type: resourceType,
     resource_id: resourceId ? String(resourceId) : null,
     details: typeof details === 'object' ? details : { message: String(details) },
@@ -132,27 +135,61 @@ export async function clearAuditLogs() {
 }
 
 /**
- * Retrieve paginated audit logs with search and filtering directly from Supabase (with resilient local fallback)
+ * Retrieve paginated audit logs with search, specific day date filtering, and role filtering.
+ * First queries live Supabase audit logs; if empty or offline, seamlessly falls back to resilient local logs.
  */
-export async function getAuditLogs({ limit = 50, offset = 0, action = null, resourceType = null, q = null } = {}) {
+export async function getAuditLogs({
+  limit = 50,
+  offset = 0,
+  action = null,
+  resourceType = null,
+  q = null,
+  date = null,
+  startDate = null,
+  endDate = null,
+  role = null,
+} = {}) {
   // 1. Try Supabase live audit logs first
   try {
     const client = await getSystemAdminClient();
     let query = client.from('audit_logs').select('*', { count: 'exact' });
+
     if (action && action !== 'ALL') {
       query = query.ilike('action', `%${action}%`);
     }
+
     if (resourceType && resourceType !== 'ALL') {
       query = query.eq('resource_type', resourceType);
     }
+
+    if (role && role !== 'ALL') {
+      const rLower = role.toLowerCase();
+      if (rLower === 'customer') {
+        query = query.or('actor_role.eq.customer,action.eq.CUSTOMER_LOGIN');
+      } else if (rLower === 'staff') {
+        query = query.or('actor_role.eq.staff,actor_role.eq.receptionist,actor_role.eq.accounting,action.ilike.%STAFF%');
+      } else if (rLower === 'administrator' || rLower === 'admin') {
+        query = query.or('actor_role.eq.administrator,actor_role.eq.admin,actor_role.eq.system');
+      } else {
+        query = query.eq('actor_role', role);
+      }
+    }
+
+    if (startDate && endDate) {
+      query = query.gte('created_at', startDate).lte('created_at', endDate);
+    } else if (date && date !== 'ALL') {
+      query = query.gte('created_at', `${date}T00:00:00.000Z`).lte('created_at', `${date}T23:59:59.999Z`);
+    }
+
     if (q) {
       query = query.or(`action.ilike.%${q}%,actor_email.ilike.%${q}%,resource_type.ilike.%${q}%`);
     }
+
     const { data, count, error } = await query
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
-    if (!error && Array.isArray(data) && (data.length > 0 || inMemoryLogs.length === 0)) {
+    if (!error && Array.isArray(data) && data.length > 0) {
       const logs = data.map((l) => ({
         id: l.id,
         timestamp: l.created_at,
@@ -183,26 +220,62 @@ export async function getAuditLogs({ limit = 50, offset = 0, action = null, reso
     console.warn('[AuditLogger] Supabase audit fetch notice:', err.message);
   }
 
-  // 2. Fallback to local in-memory/file logs
+  // 2. Resilient fallback to local in-memory/file logs
+  if (inMemoryLogs.length === 0) {
+    loadPersistedLogs();
+  }
   let list = [...inMemoryLogs];
 
   if (action && action !== 'ALL') {
     const actUpper = action.toUpperCase();
-    list = list.filter((l) => l.action === actUpper || l.action.startsWith(actUpper));
+    list = list.filter((l) => l.action === actUpper || l.action.startsWith(actUpper) || l.action.includes(actUpper));
   }
 
   if (resourceType && resourceType !== 'ALL') {
     list = list.filter((l) => l.resource_type?.toLowerCase() === resourceType.toLowerCase());
   }
 
+  if (role && role !== 'ALL') {
+    const rLower = role.toLowerCase();
+    if (rLower === 'customer') {
+      list = list.filter((l) => l.role === 'customer' || l.actor_role === 'customer' || l.action === 'CUSTOMER_LOGIN');
+    } else if (rLower === 'staff') {
+      list = list.filter((l) => ['staff', 'receptionist', 'accounting', 'manager', 'cashier'].includes(l.role?.toLowerCase()) || ['staff', 'receptionist', 'accounting'].includes(l.actor_role?.toLowerCase()) || l.action?.includes('STAFF'));
+    } else if (rLower === 'administrator' || rLower === 'admin') {
+      list = list.filter((l) => ['administrator', 'admin', 'system'].includes(l.role?.toLowerCase()) || ['administrator', 'admin', 'system'].includes(l.actor_role?.toLowerCase()));
+    } else {
+      list = list.filter((l) => l.role?.toLowerCase() === rLower || l.actor_role?.toLowerCase() === rLower);
+    }
+  }
+
+  if (startDate && endDate) {
+    const startMs = new Date(startDate).getTime();
+    const endMs = new Date(endDate).getTime();
+    list = list.filter((l) => {
+      const t = new Date(l.timestamp || l.created_at).getTime();
+      return !isNaN(t) && t >= startMs && t <= endMs;
+    });
+  } else if (date && date !== 'ALL') {
+    list = list.filter((l) => {
+      const raw = l.timestamp || l.created_at || '';
+      if (raw.startsWith(date)) return true;
+      try {
+        const d = new Date(raw);
+        return !isNaN(d.getTime()) && (d.toISOString().slice(0, 10) === date || d.toLocaleDateString('en-CA') === date);
+      } catch {
+        return false;
+      }
+    });
+  }
+
   if (q) {
     const qLower = q.toLowerCase();
     list = list.filter((l) =>
-      l.action.toLowerCase().includes(qLower) ||
-      l.actor_email.toLowerCase().includes(qLower) ||
-      l.actor_name.toLowerCase().includes(qLower) ||
-      l.resource_type.toLowerCase().includes(qLower) ||
-      JSON.stringify(l.details).toLowerCase().includes(qLower)
+      l.action?.toLowerCase().includes(qLower) ||
+      l.actor_email?.toLowerCase().includes(qLower) ||
+      l.actor_name?.toLowerCase().includes(qLower) ||
+      l.resource_type?.toLowerCase().includes(qLower) ||
+      JSON.stringify(l.details || {}).toLowerCase().includes(qLower)
     );
   }
 

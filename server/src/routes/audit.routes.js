@@ -12,13 +12,17 @@ const r = Router();
  * Strictly mandatory RBAC: Only authenticated Administrators can inspect system audit logs.
  */
 r.get('/audit-logs', authenticate, requireAdmin, asyncH(async (req, res) => {
-  const limit = Math.min(200, Math.max(1, parseInt(req.query.limit, 10) || 50));
+  const limit = Math.min(500, Math.max(1, parseInt(req.query.limit, 10) || 100));
   const offset = Math.max(0, parseInt(req.query.offset, 10) || 0);
   const action = req.query.action || null;
   const resourceType = req.query.resource_type || null;
   const q = req.query.q || null;
+  const date = req.query.date || null;
+  const startDate = req.query.start_date || null;
+  const endDate = req.query.end_date || null;
+  const role = req.query.role || null;
 
-  const result = await getAuditLogs({ limit, offset, action, resourceType, q });
+  const result = await getAuditLogs({ limit, offset, action, resourceType, q, date, startDate, endDate, role });
   return res.json(result);
 }));
 

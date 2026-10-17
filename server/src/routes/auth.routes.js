@@ -240,6 +240,70 @@ r.post('/auth/login', asyncH(async (req, res) => {
       // Reset lockout counter on successful customer/user login
       recordSuccessfulAttempt(req.ip, userIdent);
 
+      const rawRole = (profile?.role || data.user.user_metadata?.role || 'customer').toLowerCase();
+      const isExecAdmin = ['administrator', 'admin'].includes(rawRole);
+      const isStaff = ['staff', 'receptionist', 'accounting', 'manager', 'cashier', 'inventory_manager'].includes(rawRole);
+      const actorName = profile?.full_name || data.user.user_metadata?.full_name || (data.user.email ? data.user.email.split('@')[0] : 'User');
+
+      if (isExecAdmin) {
+        await logAuditEvent({
+          actor: {
+            id: data.user.id,
+            email: data.user.email,
+            full_name: actorName,
+            role: 'administrator',
+          },
+          action: 'ADMIN_LOGIN',
+          resourceType: 'system_auth',
+          resourceId: data.user.id,
+          details: {
+            process: 'Executive Administrator Authentication',
+            message: `Administrator ${actorName} logged into the administration portal`,
+            login_method: 'credentials',
+          },
+          req,
+        }).catch(() => {});
+      } else if (isStaff) {
+        await logAuditEvent({
+          actor: {
+            id: data.user.id,
+            email: data.user.email,
+            full_name: actorName,
+            role: rawRole,
+          },
+          action: 'STAFF_LOGIN',
+          resourceType: 'system_auth',
+          resourceId: data.user.id,
+          details: {
+            process: 'Staff Operational Authentication',
+            message: `Staff member (${rawRole}) ${actorName} authenticated successfully`,
+            staff_role: rawRole,
+            login_method: 'credentials',
+          },
+          req,
+        }).catch(() => {});
+      } else {
+        // Customer login timestamp strictly recorded as requested
+        await logAuditEvent({
+          actor: {
+            id: data.user.id,
+            email: data.user.email,
+            full_name: actorName,
+            role: 'customer',
+          },
+          action: 'CUSTOMER_LOGIN',
+          resourceType: 'authentication',
+          resourceId: data.user.id,
+          details: {
+            process: 'Customer Login Timestamp',
+            message: `Customer ${actorName} logged in successfully`,
+            login_timestamp: new Date().toISOString(),
+            login_method: 'credentials',
+          },
+          req,
+        }).catch(() => {});
+      }
+
       return res.json({
         success: true,
         session: data.session,
@@ -601,6 +665,26 @@ r.post('/auth/signup/confirm-2fa',
       }).catch(() => {});
     }
 
+    // Auto-log customer registration login timestamp
+    await logAuditEvent({
+      actor: {
+        id: userId,
+        email: cleanEmail,
+        full_name,
+        role: 'customer',
+      },
+      action: 'CUSTOMER_LOGIN',
+      resourceType: 'authentication',
+      resourceId: userId,
+      details: {
+        process: 'Customer Account Finalization & Login',
+        message: `Customer ${full_name} completed 2FA verification and signed in`,
+        login_timestamp: new Date().toISOString(),
+        login_method: 'signup_2fa',
+      },
+      req,
+    }).catch(() => {});
+
     return res.status(201).json({
       success: true,
       finalized: true,
@@ -904,6 +988,24 @@ r.post('/auth/reset-password',
         body: 'J & D Beach House: Your account password has been successfully updated. You may now log in.',
       }).catch(() => {});
     }
+
+    // Auto-log security password reset event
+    await logAuditEvent({
+      actor: {
+        id: userId,
+        email: cleanEmail,
+        full_name: guestName,
+        role: 'customer',
+      },
+      action: 'PASSWORD_RESET',
+      resourceType: 'user_security',
+      resourceId: userId,
+      details: {
+        process: 'Account Password Reset',
+        message: `Password was successfully updated for account ${cleanEmail}`,
+      },
+      req,
+    }).catch(() => {});
 
     return res.json({
       success: true,

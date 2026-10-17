@@ -286,11 +286,14 @@ export default function Admin() {
   const [chartRange, setChartRange] = useState('30d');
 
   // Live Audit Auto Logger State
-  const [auditLogs, setAuditLogs] = useState([]);
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [loadingAudit, setLoadingAudit] = useState(false);
   const [auditActionFilter, setAuditActionFilter] = useState('ALL');
+  const [auditRoleFilter, setAuditRoleFilter] = useState('ALL');
+  const [auditDateFilter, setAuditDateFilter] = useState(new Date().toISOString().slice(0, 10));
   const [auditSearchQuery, setAuditSearchQuery] = useState('');
   const [auditAutoRefresh, setAuditAutoRefresh] = useState(true);
+  const [inspectAuditLog, setInspectAuditLog] = useState<any | null>(null);
 
   // Live Defense-in-Depth Security & Threat Quarantine State
   const [securityPosture, setSecurityPosture] = useState<any>(null);
@@ -481,8 +484,10 @@ export default function Admin() {
     setLoadingAudit(true);
     const params = new URLSearchParams();
     if (auditActionFilter !== 'ALL') params.append('action', auditActionFilter);
+    if (auditRoleFilter !== 'ALL') params.append('role', auditRoleFilter);
+    if (auditDateFilter && auditDateFilter !== 'ALL') params.append('date', auditDateFilter);
     if (auditSearchQuery.trim()) params.append('q', auditSearchQuery.trim());
-    params.append('limit', '80');
+    params.append('limit', '200');
 
     api.auditLogs(params.toString())
       .then((res) => {
@@ -494,7 +499,7 @@ export default function Admin() {
         console.warn('[Audit Logs] Fetch notice:', err.message);
       })
       .finally(() => setLoadingAudit(false));
-  }, [auditActionFilter, auditSearchQuery]);
+  }, [auditActionFilter, auditRoleFilter, auditDateFilter, auditSearchQuery]);
 
   // Live Defense-in-Depth Security Posture Data Fetching
   const fetchSecurityPosture = useCallback(() => {
@@ -546,7 +551,7 @@ export default function Admin() {
       }, 5000);
       return () => clearInterval(iv);
     }
-  }, [activeTab, auditActionFilter, auditSearchQuery, auditAutoRefresh, fetchAuditLogs, fetchSecurityPosture]);
+  }, [activeTab, auditActionFilter, auditRoleFilter, auditDateFilter, auditSearchQuery, auditAutoRefresh, fetchAuditLogs, fetchSecurityPosture]);
 
   const handleSaveSettings = (e) => {
     e.preventDefault();
@@ -3359,32 +3364,30 @@ export default function Admin() {
               {/* AUDIT KPIS ROW */}
               <div className="admin-grid-4-col" style={{ marginBottom: 20 }}>
                 <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.5)', border: `1px solid ${themeBorder}`, borderRadius: 12, padding: 16 }}>
-                  <span style={{ fontSize: '.72rem', color: themeMuted, fontWeight: 700 }}>TOTAL LOGGED EVENTS</span>
+                  <span style={{ fontSize: '.72rem', color: themeMuted, fontWeight: 700 }}>TOTAL ACTIONS RECORDED</span>
                   <b style={{ display: 'block', fontSize: '1.5rem', color: '#0EA5E9', marginTop: 4 }}>{auditLogs.length}</b>
-                  <small style={{ fontSize: '.7rem', color: '#10B981' }}>🟢 Ring Buffer Active</small>
+                  <small style={{ fontSize: '.7rem', color: '#10B981' }}>🟢 Database Ring Buffer Synced</small>
                 </div>
                 <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.5)', border: `1px solid ${themeBorder}`, borderRadius: 12, padding: 16 }}>
-                  <span style={{ fontSize: '.72rem', color: themeMuted, fontWeight: 700 }}>ROOM & INVENTORY ACTIONS</span>
-                  <b style={{ display: 'block', fontSize: '1.5rem', color: '#10B981', marginTop: 4 }}>
-                    {auditLogs.filter((l) => l.action?.startsWith('ROOM') || l.action?.startsWith('INVENTORY')).length}
-                  </b>
-                  <small style={{ fontSize: '.7rem', color: themeMuted }}>Inventory Mutations</small>
-                </div>
-                <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.5)', border: `1px solid ${themeBorder}`, borderRadius: 12, padding: 16 }}>
-                  <span style={{ fontSize: '.72rem', color: themeMuted, fontWeight: 700 }}>USER & ROLE MUTATIONS</span>
+                  <span style={{ fontSize: '.72rem', color: themeMuted, fontWeight: 700 }}>ADMINISTRATOR PROCESSES</span>
                   <b style={{ display: 'block', fontSize: '1.5rem', color: '#8B5CF6', marginTop: 4 }}>
-                    {auditLogs.filter((l) => l.action?.includes('PROVISIONED') || l.action?.includes('ROLE')).length}
+                    {auditLogs.filter((l) => ['administrator', 'admin', 'system'].includes(l.role?.toLowerCase()) || ['administrator', 'admin', 'system'].includes(l.actor_role?.toLowerCase())).length}
                   </b>
-                  <small style={{ fontSize: '.7rem', color: themeMuted }}>RBAC Provisioning</small>
+                  <small style={{ fontSize: '.7rem', color: '#8B5CF6' }}>👑 Executive Operations Recorded</small>
                 </div>
                 <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.5)', border: `1px solid ${themeBorder}`, borderRadius: 12, padding: 16 }}>
-                  <span style={{ fontSize: '.72rem', color: themeMuted, fontWeight: 700 }}>SECURITY AUDIT DENIALS</span>
-                  <b style={{ display: 'block', fontSize: '1.5rem', color: auditLogs.some((l) => l.action?.includes('DENIED')) ? '#F43F5E' : '#10B981', marginTop: 4 }}>
-                    {auditLogs.filter((l) => l.action?.includes('DENIED')).length}
+                  <span style={{ fontSize: '.72rem', color: themeMuted, fontWeight: 700 }}>STAFF OPERATIONAL ACTIONS</span>
+                  <b style={{ display: 'block', fontSize: '1.5rem', color: '#0EA5E9', marginTop: 4 }}>
+                    {auditLogs.filter((l) => ['staff', 'receptionist', 'accounting', 'manager', 'cashier'].includes(l.role?.toLowerCase()) || ['staff', 'receptionist', 'accounting'].includes(l.actor_role?.toLowerCase()) || l.action?.includes('STAFF') || l.action?.startsWith('INVENTORY')).length}
                   </b>
-                  <small style={{ fontSize: '.7rem', color: auditLogs.some((l) => l.action?.includes('DENIED')) ? '#F43F5E' : '#10B981' }}>
-                    {auditLogs.some((l) => l.action?.includes('DENIED')) ? '⚠️ Breaches Blocked' : '🟢 0 Access Violations'}
-                  </small>
+                  <small style={{ fontSize: '.7rem', color: '#0EA5E9' }}>👔 Front Desk & Inventory Processes</small>
+                </div>
+                <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.5)', border: `1px solid ${themeBorder}`, borderRadius: 12, padding: 16 }}>
+                  <span style={{ fontSize: '.72rem', color: themeMuted, fontWeight: 700 }}>CUSTOMER LOGIN TIMESTAMPS</span>
+                  <b style={{ display: 'block', fontSize: '1.5rem', color: '#10B981', marginTop: 4 }}>
+                    {auditLogs.filter((l) => l.action === 'CUSTOMER_LOGIN' || l.role === 'customer' || l.actor_role === 'customer').length}
+                  </b>
+                  <small style={{ fontSize: '.7rem', color: '#10B981' }}>👤 Verified Guest Access Timestamps</small>
                 </div>
               </div>
 
@@ -3626,34 +3629,158 @@ export default function Admin() {
                 )}
               </div>
 
-              {/* FILTER CONTROLS & SEARCH */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
-                <div className="chip-row">
+              {/* SPECIFIC DAY SELECTOR & COLLECTIONS CONTROLS */}
+              <div style={{
+                background: isLightMode ? '#F8FAFC' : 'rgba(15,23,42,0.6)',
+                border: `1px solid ${themeBorder}`,
+                borderRadius: 14,
+                padding: '16px 20px',
+                marginBottom: 18,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 14,
+              }}>
+                {/* Upper Row: Specific Day Selector & Quick Toggles */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '.84rem', fontWeight: 800, color: themeText, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span>📅</span> SELECT DAY:
+                    </span>
+                    <input
+                      type="date"
+                      value={auditDateFilter === 'ALL' ? '' : auditDateFilter}
+                      onChange={(e) => setAuditDateFilter(e.target.value || 'ALL')}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: 8,
+                        border: `1px solid ${themeBorder}`,
+                        background: isLightMode ? '#FFF' : 'rgba(30,41,59,0.9)',
+                        color: themeText,
+                        fontSize: '.85rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    />
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button
+                        type="button"
+                        onClick={() => setAuditDateFilter(new Date().toISOString().slice(0, 10))}
+                        className={`btn btn-sm ${auditDateFilter === new Date().toISOString().slice(0, 10) ? 'btn-sky' : 'btn-ghost'}`}
+                        style={{ fontSize: '.78rem', padding: '5px 12px', fontWeight: 700, borderRadius: 8 }}
+                      >
+                        Today
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const y = new Date();
+                          y.setDate(y.getDate() - 1);
+                          setAuditDateFilter(y.toISOString().slice(0, 10));
+                        }}
+                        className={`btn btn-sm ${auditDateFilter === new Date(Date.now() - 86400000).toISOString().slice(0, 10) ? 'btn-sky' : 'btn-ghost'}`}
+                        style={{ fontSize: '.78rem', padding: '5px 12px', fontWeight: 700, borderRadius: 8 }}
+                      >
+                        Yesterday
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAuditDateFilter('ALL')}
+                        className={`btn btn-sm ${auditDateFilter === 'ALL' ? 'btn-sky' : 'btn-ghost'}`}
+                        style={{ fontSize: '.78rem', padding: '5px 12px', fontWeight: 700, borderRadius: 8 }}
+                      >
+                        All Recorded Days
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{
+                      fontSize: '.76rem',
+                      fontWeight: 700,
+                      padding: '4px 12px',
+                      borderRadius: 20,
+                      background: auditDateFilter !== 'ALL' ? 'rgba(14,165,233,0.12)' : 'rgba(16,185,129,0.12)',
+                      color: auditDateFilter !== 'ALL' ? '#0EA5E9' : '#10B981',
+                      border: `1px solid ${auditDateFilter !== 'ALL' ? 'rgba(14,165,233,0.3)' : 'rgba(16,185,129,0.3)'}`,
+                    }}>
+                      {auditDateFilter !== 'ALL'
+                        ? `🗓️ Actions for ${new Date(auditDateFilter + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}`
+                        : '🗓️ All Recorded Days'}
+                    </span>
+                    <span style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700 }}>
+                      ({auditLogs.length} actions in day collection)
+                    </span>
+                  </div>
+                </div>
+
+                {/* Middle Row: Actor Role Scope Filtering */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, borderTop: `1px solid ${themeBorder}`, paddingTop: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '.74rem', fontWeight: 800, color: themeMuted, textTransform: 'uppercase' }}>
+                      ACTOR SCOPE:
+                    </span>
+                    {[
+                      { key: 'ALL', label: 'All Users', icon: '👥' },
+                      { key: 'administrator', label: '👑 Administrators (Processes)', icon: '👑' },
+                      { key: 'staff', label: '👔 Staff & Front Desk', icon: '👔' },
+                      { key: 'customer', label: '👤 Customers (Login Timestamps)', icon: '👤' },
+                    ].map((r) => (
+                      <button
+                        key={r.key}
+                        type="button"
+                        onClick={() => setAuditRoleFilter(r.key)}
+                        style={{
+                          padding: '5px 12px',
+                          borderRadius: 20,
+                          fontSize: '.76rem',
+                          fontWeight: 700,
+                          border: `1px solid ${auditRoleFilter === r.key ? '#0EA5E9' : themeBorder}`,
+                          background: auditRoleFilter === r.key ? 'rgba(14,165,233,0.15)' : 'transparent',
+                          color: auditRoleFilter === r.key ? '#0EA5E9' : themeText,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        {r.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Real-time search */}
+                  <input
+                    className="search"
+                    placeholder="Search by actor, action, IP, details…"
+                    value={auditSearchQuery}
+                    onChange={(e) => setAuditSearchQuery(e.target.value)}
+                    style={{ maxWidth: 280, height: 34, fontSize: '.8rem', background: isLightMode ? '#FFF' : undefined, color: themeText }}
+                  />
+                </div>
+
+                {/* Lower Row: Process Action Filters */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '.72rem', fontWeight: 700, color: themeMuted, marginRight: 4 }}>
+                    PROCESS TYPE:
+                  </span>
                   {[
-                    { key: 'ALL', label: 'ALL EVENTS' },
-                    { key: 'ROOM', label: 'ROOM ACTIONS' },
-                    { key: 'INVENTORY', label: 'INVENTORY' },
-                    { key: 'BOOKING', label: 'BOOKINGS' },
-                    { key: 'PROVISIONED', label: 'PROVISIONING' },
-                    { key: 'DENIED', label: 'SECURITY / DENIED' },
+                    { key: 'ALL', label: 'All Processes' },
+                    { key: 'LOGIN', label: '🔑 Logins & Timestamps' },
+                    { key: 'ROOM', label: '🏡 Rooms & Villas' },
+                    { key: 'BOOKING', label: '📅 Reservations & Stays' },
+                    { key: 'INVENTORY', label: '📦 Inventory Mutations' },
+                    { key: 'PROVISIONED', label: '👥 Staff Provisioning' },
+                    { key: 'SECURITY', label: '🛡️ Security Denials & Locks' },
                   ].map((f) => (
                     <button
                       key={f.key}
+                      type="button"
                       className={`chip ${auditActionFilter === f.key ? 'sel' : ''}`}
                       onClick={() => setAuditActionFilter(f.key)}
+                      style={{ fontSize: '.72rem', padding: '3px 10px' }}
                     >
                       {f.label}
                     </button>
                   ))}
                 </div>
-
-                <input
-                  className="search"
-                  placeholder="Search logs by actor, action, IP…"
-                  value={auditSearchQuery}
-                  onChange={(e) => setAuditSearchQuery(e.target.value)}
-                  style={{ maxWidth: 280, background: isLightMode ? '#FFF' : undefined, color: themeText }}
-                />
               </div>
 
               {/* AUDIT LOG TABLE */}
@@ -3661,28 +3788,238 @@ export default function Admin() {
                 <div className="skel" style={{ height: 260 }} />
               ) : auditLogs.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px 20px', border: `1px dashed ${themeBorder}`, borderRadius: 12 }}>
-                  <span style={{ fontSize: '2rem' }}>🛡️</span>
-                  <h4 style={{ margin: '8px 0 4px', color: themeText }}>Audit Log Trail Clean & Connected to Supabase</h4>
-                  <p className="muted small">All operational and administrative events will be logged directly to Supabase in real-time.</p>
+                  <span style={{ fontSize: '2.4rem' }}>🛡️</span>
+                  <h4 style={{ margin: '8px 0 4px', color: themeText }}>No Actions Recorded For Selected Criteria</h4>
+                  <p className="muted small">
+                    {auditDateFilter !== 'ALL'
+                      ? `No actions occurred on ${auditDateFilter}. Switch date or click "Today" / "All Recorded Days" to inspect other dates.`
+                      : 'All administrative, staff, and customer login actions are persisted directly to database in real-time.'}
+                  </p>
+                  <button
+                    className="btn btn-sky btn-sm"
+                    onClick={() => { setAuditDateFilter('ALL'); setAuditRoleFilter('ALL'); setAuditActionFilter('ALL'); setAuditSearchQuery(''); }}
+                    style={{ marginTop: 12 }}
+                  >
+                    Reset Filters & View All
+                  </button>
                 </div>
               ) : (
-                <div style={{ maxHeight: 520, overflowY: 'auto', borderRadius: 12, border: `1px solid ${themeBorder}` }}>
+                <div style={{ maxHeight: 560, overflowY: 'auto', borderRadius: 12, border: `1px solid ${themeBorder}` }}>
                   <table style={{ width: '100%', fontSize: '.8rem', borderCollapse: 'collapse', color: themeText }}>
                     <thead>
-                      <tr style={{ background: isLightMode ? '#F1F5F9' : 'rgba(30,41,59,0.8)', position: 'sticky', top: 0, zIndex: 10 }}>
-                        <th style={{ padding: '10px 14px', textAlign: 'left', color: themeMuted, fontWeight: 700, fontSize: '.72rem' }}>TIMESTAMP</th>
-                        <th style={{ padding: '10px 14px', textAlign: 'left', color: themeMuted, fontWeight: 700, fontSize: '.72rem' }}>ACTION</th>
-                        <th style={{ padding: '10px 14px', textAlign: 'left', color: themeMuted, fontWeight: 700, fontSize: '.72rem' }}>ACTOR</th>
-                        <th style={{ padding: '10px 14px', textAlign: 'left', color: themeMuted, fontWeight: 700, fontSize: '.72rem' }}>RESOURCE</th>
-                        <th style={{ padding: '10px 14px', textAlign: 'left', color: themeMuted, fontWeight: 700, fontSize: '.72rem' }}>DETAILS</th>
-                        <th style={{ padding: '10px 14px', textAlign: 'right', color: themeMuted, fontWeight: 700, fontSize: '.72rem' }}>IP / CLIENT</th>
+                      <tr style={{ background: isLightMode ? '#F1F5F9' : 'rgba(30,41,59,0.9)', position: 'sticky', top: 0, zIndex: 10 }}>
+                        <th style={{ padding: '12px 14px', textAlign: 'left', color: themeMuted, fontWeight: 700, fontSize: '.72rem' }}>DATE & TIME</th>
+                        <th style={{ padding: '12px 14px', textAlign: 'left', color: themeMuted, fontWeight: 700, fontSize: '.72rem' }}>ACTOR / USER</th>
+                        <th style={{ padding: '12px 14px', textAlign: 'left', color: themeMuted, fontWeight: 700, fontSize: '.72rem' }}>PROCESS & ACTION</th>
+                        <th style={{ padding: '12px 14px', textAlign: 'left', color: themeMuted, fontWeight: 700, fontSize: '.72rem' }}>TARGET RESOURCE</th>
+                        <th style={{ padding: '12px 14px', textAlign: 'left', color: themeMuted, fontWeight: 700, fontSize: '.72rem' }}>PROCESS DETAILS</th>
+                        <th style={{ padding: '12px 14px', textAlign: 'right', color: themeMuted, fontWeight: 700, fontSize: '.72rem' }}>IP / CLIENT</th>
                       </tr>
                     </thead>
                     <tbody>
                       {auditLogs.map((log) => {
-                        const isDanger = log.action?.includes('DELETE') || log.action?.includes('DENIED') || log.action?.includes('DEACTIVATE');
-                        const isSuccess = log.action?.includes('CREATE') || log.action?.includes('PROVISIONED');
-                        const isUpdate = log.action?.includes('UPDATE') || log.action?.includes('STATUS');
+                        const act = String(log.action || '').toUpperCase();
+                        const isCustomer = log.role === 'customer' || log.actor_role === 'customer' || act === 'CUSTOMER_LOGIN';
+                        const isAdmin = ['administrator', 'admin'].includes(log.role?.toLowerCase()) || ['administrator', 'admin'].includes(log.actor_role?.toLowerCase()) || act.startsWith('ADMIN');
+                        const isStaff = !isAdmin && !isCustomer;
+
+                        // Humanized process descriptions
+                        let processTitle = act.replace(/_/g, ' ');
+                        let processCategory = log.resource_type || 'System';
+                        let processColor = '#0EA5E9';
+                        let processBg = 'rgba(14,165,233,0.12)';
+                        let processBorder = 'rgba(14,165,233,0.3)';
+                        let processIcon = '⚡';
+                        let processSummary = typeof log.details === 'object' ? (log.details.message || JSON.stringify(log.details)) : String(log.details || '');
+
+                        if (act === 'CUSTOMER_LOGIN') {
+                          processTitle = 'Customer Sign-In';
+                          processCategory = 'Guest Authentication';
+                          processColor = '#10B981';
+                          processBg = 'rgba(16,185,129,0.15)';
+                          processBorder = 'rgba(16,185,129,0.35)';
+                          processIcon = '👤';
+                          processSummary = `Customer login timestamp recorded in database (credentials verified)`;
+                        } else if (act === 'ADMIN_LOGIN') {
+                          processTitle = 'Administrator Login';
+                          processCategory = 'Executive Portal';
+                          processColor = '#8B5CF6';
+                          processBg = 'rgba(139,92,246,0.15)';
+                          processBorder = 'rgba(139,92,246,0.35)';
+                          processIcon = '👑';
+                          processSummary = log.details?.message || 'Executive administrator logged into administration portal';
+                        } else if (act === 'ADMIN_SECURITY_VALIDATED') {
+                          processTitle = 'Executive Security Cleared';
+                          processCategory = 'Executive RBAC';
+                          processColor = '#8B5CF6';
+                          processBg = 'rgba(139,92,246,0.15)';
+                          processBorder = 'rgba(139,92,246,0.35)';
+                          processIcon = '🛡️';
+                          processSummary = '4-Block Security Block validated with physical cryptographic token';
+                        } else if (act === 'STAFF_LOGIN') {
+                          processTitle = 'Staff Member Authenticated';
+                          processCategory = 'Staff Operations';
+                          processColor = '#0EA5E9';
+                          processBg = 'rgba(14,165,233,0.15)';
+                          processBorder = 'rgba(14,165,233,0.35)';
+                          processIcon = '👔';
+                          processSummary = log.details?.message || `Staff member (${log.details?.staff_role || log.role || 'staff'}) signed into portal`;
+                        } else if (act === 'ROOM_CREATE') {
+                          processTitle = 'Created Accommodation';
+                          processCategory = 'Accommodations';
+                          processColor = '#10B981';
+                          processBg = 'rgba(16,185,129,0.15)';
+                          processBorder = 'rgba(16,185,129,0.35)';
+                          processIcon = '🏡';
+                          processSummary = log.details?.name ? `Created ${log.details.name} (₱${log.details.rate_php?.toLocaleString() || 0}/night, Cap: ${log.details.capacity || 2})` : 'New accommodation created in database';
+                        } else if (act === 'ROOM_UPDATE') {
+                          processTitle = 'Updated Room / Villa';
+                          processCategory = 'Accommodations';
+                          processColor = '#0EA5E9';
+                          processBg = 'rgba(14,165,233,0.15)';
+                          processBorder = 'rgba(14,165,233,0.35)';
+                          processIcon = '✏️';
+                          processSummary = typeof log.details === 'object' ? Object.keys(log.details).map((k) => `${k}: ${log.details[k]}`).slice(0, 3).join(', ') : String(log.details);
+                        } else if (act === 'ROOM_DEACTIVATE') {
+                          processTitle = 'Deactivated Room';
+                          processCategory = 'Accommodations';
+                          processColor = '#F43F5E';
+                          processBg = 'rgba(244,63,94,0.15)';
+                          processBorder = 'rgba(244,63,94,0.35)';
+                          processIcon = '⏸️';
+                          processSummary = 'Accommodation marked inactive and hidden from booking flow';
+                        } else if (act === 'ROOM_DELETE_PERMANENT') {
+                          processTitle = 'Permanently Purged Room';
+                          processCategory = 'Accommodations';
+                          processColor = '#F43F5E';
+                          processBg = 'rgba(244,63,94,0.15)';
+                          processBorder = 'rgba(244,63,94,0.35)';
+                          processIcon = '🗑️';
+                          processSummary = 'Room record permanently deleted from database';
+                        } else if (act === 'BOOKING_CREATE') {
+                          processTitle = 'Created Reservation / Walk-In';
+                          processCategory = 'Reservations';
+                          processColor = '#10B981';
+                          processBg = 'rgba(16,185,129,0.15)';
+                          processBorder = 'rgba(16,185,129,0.35)';
+                          processIcon = '📅';
+                          processSummary = log.details?.room ? `${log.details.room} • Guest: ${log.details.guest_name || 'Guest'} • ₱${log.details.total_php?.toLocaleString() || 0}` : 'Reservation booked into system';
+                        } else if (act === 'BOOKING_STATUS_UPDATE') {
+                          processTitle = `Booking: ${log.details?.status || 'Status Change'}`;
+                          processCategory = 'Reservations';
+                          processColor = '#0EA5E9';
+                          processBg = 'rgba(14,165,233,0.15)';
+                          processBorder = 'rgba(14,165,233,0.35)';
+                          processIcon = '🔄';
+                          processSummary = `Updated to ${log.details?.status || 'status'} for ${log.details?.guest_name || 'guest'} (${log.details?.room || 'room'})`;
+                        } else if (act === 'REFUND_REQUESTED') {
+                          processTitle = 'Refund Requested';
+                          processCategory = 'Financial';
+                          processColor = '#F59E0B';
+                          processBg = 'rgba(245,158,11,0.15)';
+                          processBorder = 'rgba(245,158,11,0.35)';
+                          processIcon = '💸';
+                          processSummary = `Refund of ₱${log.details?.amount?.toLocaleString() || 0} requested for ${log.details?.guest_name || 'guest'}`;
+                        } else if (act === 'REFUND_CONFIRMED') {
+                          processTitle = 'Refund Approved & Processed';
+                          processCategory = 'Financial';
+                          processColor = '#10B981';
+                          processBg = 'rgba(16,185,129,0.15)';
+                          processBorder = 'rgba(16,185,129,0.35)';
+                          processIcon = '✅';
+                          processSummary = `Refund of ₱${log.details?.amount?.toLocaleString() || 0} confirmed via ${log.details?.method || 'account'} (Ref: ${log.details?.ref || 'N/A'})`;
+                        } else if (act === 'INVENTORY_CREATE') {
+                          processTitle = 'Added Inventory Item';
+                          processCategory = 'Resort Inventory';
+                          processColor = '#10B981';
+                          processBg = 'rgba(16,185,129,0.15)';
+                          processBorder = 'rgba(16,185,129,0.35)';
+                          processIcon = '📦';
+                          processSummary = log.details?.item_name ? `Added ${log.details.item_name} (${log.details.quantity || 0} ${log.details.unit || 'units'})` : 'Created inventory item';
+                        } else if (act === 'INVENTORY_STOCK_UPDATE') {
+                          processTitle = 'Stock Level Adjusted';
+                          processCategory = 'Resort Inventory';
+                          processColor = '#0EA5E9';
+                          processBg = 'rgba(14,165,233,0.15)';
+                          processBorder = 'rgba(14,165,233,0.35)';
+                          processIcon = '📊';
+                          processSummary = log.details?.delta ? `Quantity modified by ${log.details.delta > 0 ? '+' : ''}${log.details.delta} (${log.details.reason || 'Restock'})` : 'Inventory quantity updated';
+                        } else if (act === 'INVENTORY_DELETE') {
+                          processTitle = 'Deleted Inventory Item';
+                          processCategory = 'Resort Inventory';
+                          processColor = '#F43F5E';
+                          processBg = 'rgba(244,63,94,0.15)';
+                          processBorder = 'rgba(244,63,94,0.35)';
+                          processIcon = '🗑️';
+                          processSummary = 'Item removed from inventory database';
+                        } else if (act === 'STAFF_PROVISIONED' || act === 'ADMIN_PROVISIONED') {
+                          processTitle = act === 'ADMIN_PROVISIONED' ? 'Provisioned Administrator' : 'Provisioned Staff Account';
+                          processCategory = 'Staff Directory';
+                          processColor = '#8B5CF6';
+                          processBg = 'rgba(139,92,246,0.15)';
+                          processBorder = 'rgba(139,92,246,0.35)';
+                          processIcon = '👥';
+                          processSummary = `Created credentials for ${log.details?.full_name || log.details?.email} (${log.details?.role || 'staff'})`;
+                        } else if (act === 'ROLE_UPDATE') {
+                          processTitle = 'Updated User Role';
+                          processCategory = 'Staff Directory';
+                          processColor = '#8B5CF6';
+                          processBg = 'rgba(139,92,246,0.15)';
+                          processBorder = 'rgba(139,92,246,0.35)';
+                          processIcon = '🔑';
+                          processSummary = `Role changed to ${log.details?.new_role} for ${log.details?.full_name || 'user'}`;
+                        } else if (act === 'PASSWORD_RESET') {
+                          processTitle = 'Password Reset Completed';
+                          processCategory = 'User Security';
+                          processColor = '#F59E0B';
+                          processBg = 'rgba(245,158,11,0.15)';
+                          processBorder = 'rgba(245,158,11,0.35)';
+                          processIcon = '🔐';
+                          processSummary = log.details?.message || 'Password successfully updated for user';
+                        } else if (act === 'IP_QUARANTINE_RELEASED') {
+                          processTitle = 'Quarantined IP Released';
+                          processCategory = 'Perimeter Defense';
+                          processColor = '#10B981';
+                          processBg = 'rgba(16,185,129,0.15)';
+                          processBorder = 'rgba(16,185,129,0.35)';
+                          processIcon = '🔓';
+                          processSummary = `Released quarantined IP ${log.resource_id || log.details?.ip || ''} from firewall`;
+                        } else if (act === 'IP_QUARANTINE_ACTIVATED') {
+                          processTitle = 'Malicious IP Quarantined';
+                          processCategory = 'Perimeter Defense';
+                          processColor = '#F43F5E';
+                          processBg = 'rgba(244,63,94,0.15)';
+                          processBorder = 'rgba(244,63,94,0.35)';
+                          processIcon = '🚨';
+                          processSummary = `Quarantined IP ${log.resource_id || ''}: ${log.details?.reason || 'threat probe'}`;
+                        } else if (act === 'BRUTE_FORCE_LOCKOUT_TRIGGERED') {
+                          processTitle = 'Brute Force Lockout Active';
+                          processCategory = 'Perimeter Defense';
+                          processColor = '#F59E0B';
+                          processBg = 'rgba(245,158,11,0.15)';
+                          processBorder = 'rgba(245,158,11,0.35)';
+                          processIcon = '⛔';
+                          processSummary = `5 failed attempts: IP ${log.ip_address || ''} locked out for 15 minutes`;
+                        } else if (act === 'RBAC_ACCESS_DENIED') {
+                          processTitle = 'Unauthorized Access Blocked';
+                          processCategory = 'Access Control';
+                          processColor = '#F43F5E';
+                          processBg = 'rgba(244,63,94,0.15)';
+                          processBorder = 'rgba(244,63,94,0.35)';
+                          processIcon = '🛑';
+                          processSummary = `Blocked probe on ${log.details?.endpoint || log.resource_type || 'endpoint'}`;
+                        }
+
+                        const rawTs = log.timestamp || log.created_at || '';
+                        let logDateStr = 'Recent';
+                        let logTimeStr = '';
+                        try {
+                          const d = new Date(rawTs);
+                          if (!isNaN(d.getTime())) {
+                            logDateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                            logTimeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+                          }
+                        } catch {}
 
                         return (
                           <tr
@@ -3691,48 +4028,99 @@ export default function Admin() {
                             onMouseEnter={(e) => (e.currentTarget.style.background = isLightMode ? '#F8FAFC' : 'rgba(56,189,248,0.04)')}
                             onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                           >
-                            <td style={{ padding: '10px 14px', whiteSpace: 'nowrap', fontFamily: 'monospace', fontSize: '.74rem', color: themeMuted }}>
-                              {log.timestamp ? new Date(log.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'Just now'}
+                            {/* 1. DATE & TIME */}
+                            <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
+                              <b style={{ display: 'block', fontSize: '.78rem', color: themeText }}>{logDateStr}</b>
+                              <span style={{ fontFamily: 'monospace', fontSize: '.72rem', color: themeMuted }}>{logTimeStr}</span>
                             </td>
-                            <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
-                              <span style={{
-                                padding: '3px 8px', borderRadius: 6, fontSize: '.68rem', fontWeight: 800,
-                                background: isDanger ? 'rgba(244,63,94,0.15)' : isSuccess ? 'rgba(16,185,129,0.15)' : isUpdate ? 'rgba(14,165,233,0.15)' : 'rgba(139,92,246,0.15)',
-                                color: isDanger ? '#F43F5E' : isSuccess ? '#10B981' : isUpdate ? '#0EA5E9' : '#8B5CF6',
-                                border: `1px solid ${isDanger ? 'rgba(244,63,94,0.3)' : isSuccess ? 'rgba(16,185,129,0.3)' : isUpdate ? 'rgba(14,165,233,0.3)' : 'rgba(139,92,246,0.3)'}`,
-                              }}>
-                                {log.action}
-                              </span>
-                            </td>
-                            <td style={{ padding: '10px 14px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+
+                            {/* 2. ACTOR & ROLE */}
+                            <td style={{ padding: '12px 14px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                 <div style={{
-                                  width: 24, height: 24, borderRadius: '50%',
-                                  background: 'linear-gradient(135deg, #0284C7, #0EA5E9)',
+                                  width: 28, height: 28, borderRadius: '50%',
+                                  background: isAdmin ? 'linear-gradient(135deg, #7C3AED, #9333EA)' : isCustomer ? 'linear-gradient(135deg, #059669, #10B981)' : 'linear-gradient(135deg, #0284C7, #0EA5E9)',
                                   color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  fontSize: '.7rem', fontWeight: 800,
+                                  fontSize: '.75rem', fontWeight: 800, flexShrink: 0,
                                 }}>
-                                  {(log.actor_name || log.actor_email || 'A')[0].toUpperCase()}
+                                  {isCustomer ? '👤' : isAdmin ? '👑' : '👔'}
                                 </div>
                                 <div>
-                                  <b style={{ display: 'block', fontSize: '.78rem', color: themeText }}>{log.actor_name || 'System Admin'}</b>
-                                  <span style={{ fontSize: '.7rem', color: themeMuted }}>{log.actor_email}</span>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <b style={{ fontSize: '.8rem', color: themeText }}>{log.actor_name || 'System User'}</b>
+                                    <span style={{
+                                      fontSize: '.65rem',
+                                      fontWeight: 800,
+                                      padding: '1px 6px',
+                                      borderRadius: 10,
+                                      background: isAdmin ? 'rgba(139,92,246,0.15)' : isCustomer ? 'rgba(16,185,129,0.15)' : 'rgba(14,165,233,0.15)',
+                                      color: isAdmin ? '#8B5CF6' : isCustomer ? '#10B981' : '#0EA5E9',
+                                      border: `1px solid ${isAdmin ? 'rgba(139,92,246,0.3)' : isCustomer ? 'rgba(16,185,129,0.3)' : 'rgba(14,165,233,0.3)'}`,
+                                    }}>
+                                      {isAdmin ? 'ADMIN' : isCustomer ? 'CUSTOMER' : (log.role || 'STAFF').toUpperCase()}
+                                    </span>
+                                  </div>
+                                  <span style={{ fontSize: '.7rem', color: themeMuted, display: 'block' }}>{log.actor_email}</span>
                                 </div>
                               </div>
                             </td>
-                            <td style={{ padding: '10px 14px' }}>
-                              <span style={{ fontWeight: 600, color: themeText }}>{log.resource_type || 'system'}</span>
-                              {log.resource_id && <small style={{ color: themeMuted, display: 'block', fontFamily: 'monospace' }}>#{String(log.resource_id).slice(0, 12)}</small>}
-                            </td>
-                            <td style={{ padding: '10px 14px', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              <span style={{ color: themeMuted, fontSize: '.74rem' }}>
-                                {typeof log.details === 'object' ? JSON.stringify(log.details) : String(log.details)}
+
+                            {/* 3. PROCESS & ACTION */}
+                            <td style={{ padding: '12px 14px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                                <span style={{
+                                  padding: '2px 8px', borderRadius: 6, fontSize: '.68rem', fontWeight: 800,
+                                  background: processBg, color: processColor, border: `1px solid ${processBorder}`,
+                                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                                }}>
+                                  <span>{processIcon}</span>
+                                  {act}
+                                </span>
+                              </div>
+                              <span style={{ fontSize: '.78rem', fontWeight: 700, color: themeText }}>
+                                {processTitle}
                               </span>
                             </td>
-                            <td style={{ padding: '10px 14px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+
+                            {/* 4. TARGET RESOURCE */}
+                            <td style={{ padding: '12px 14px' }}>
+                              <span style={{
+                                fontSize: '.72rem', fontWeight: 700, color: themeText,
+                                background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.06)',
+                                padding: '2px 8px', borderRadius: 4, border: `1px solid ${themeBorder}`,
+                                display: 'inline-block',
+                              }}>
+                                {log.resource_type || 'system'}
+                              </span>
+                              {log.resource_id && (
+                                <small style={{ color: themeMuted, display: 'block', fontFamily: 'monospace', fontSize: '.7rem', marginTop: 2 }}>
+                                  #{String(log.resource_id).slice(0, 16)}
+                                </small>
+                              )}
+                            </td>
+
+                            {/* 5. PROCESS DETAILS */}
+                            <td style={{ padding: '12px 14px', maxWidth: 320 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                                <span style={{ color: themeMuted, fontSize: '.76rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={processSummary}>
+                                  {processSummary}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => setInspectAuditLog(log)}
+                                  className="btn btn-ghost btn-sm"
+                                  style={{ fontSize: '.68rem', padding: '2px 8px', borderRadius: 6, flexShrink: 0, border: `1px solid ${themeBorder}` }}
+                                >
+                                  Inspect 🔍
+                                </button>
+                              </div>
+                            </td>
+
+                            {/* 6. IP & CLIENT */}
+                            <td style={{ padding: '12px 14px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                               <span style={{ fontFamily: 'monospace', fontSize: '.72rem', color: themeMuted, display: 'block' }}>{log.ip_address || '127.0.0.1'}</span>
                               <span style={{ fontSize: '.68rem', color: themeMuted, opacity: 0.8 }}>
-                                {log.user_agent ? (log.user_agent.length > 25 ? log.user_agent.slice(0, 25) + '…' : log.user_agent) : 'Client'}
+                                {log.user_agent ? (log.user_agent.length > 22 ? log.user_agent.slice(0, 22) + '…' : log.user_agent) : 'Browser Client'}
                               </span>
                             </td>
                           </tr>
@@ -3740,6 +4128,119 @@ export default function Admin() {
                       })}
                     </tbody>
                   </table>
+                </div>
+              )}
+
+              {/* AUDIT RECORD INSPECT MODAL */}
+              {inspectAuditLog && (
+                <div style={{
+                  position: 'fixed', inset: 0, zIndex: 99999,
+                  background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+                }}>
+                  <div style={{
+                    maxWidth: 620, width: '100%',
+                    background: isLightMode ? '#FFFFFF' : '#0B1426',
+                    border: `1px solid ${themeBorder}`, borderRadius: 18,
+                    padding: 24, boxShadow: '0 25px 60px -15px rgba(0,0,0,0.7)',
+                    maxHeight: '90vh', overflowY: 'auto',
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                      <div>
+                        <span style={{
+                          fontSize: '.7rem', fontWeight: 800, padding: '2px 8px', borderRadius: 6,
+                          background: 'rgba(14,165,233,0.15)', color: '#0EA5E9', border: '1px solid rgba(14,165,233,0.3)',
+                        }}>
+                          AUDIT RECORD INSPECTION
+                        </span>
+                        <h3 style={{ margin: '6px 0 2px', fontSize: '1.25rem', color: themeText }}>
+                          {inspectAuditLog.action}
+                        </h3>
+                        <span style={{ fontSize: '.75rem', color: themeMuted, fontFamily: 'monospace' }}>
+                          ID: {inspectAuditLog.id}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => setInspectAuditLog(null)}
+                        style={{ background: 'transparent', border: 'none', color: themeMuted, fontSize: '1.4rem', cursor: 'pointer' }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+                      <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)', padding: 10, borderRadius: 8, border: `1px solid ${themeBorder}` }}>
+                        <small style={{ fontSize: '.68rem', color: themeMuted, display: 'block', fontWeight: 700 }}>TIMESTAMP (LOCAL & UTC)</small>
+                        <b style={{ fontSize: '.8rem', color: themeText, display: 'block' }}>
+                          {new Date(inspectAuditLog.timestamp || inspectAuditLog.created_at).toLocaleString()}
+                        </b>
+                        <small style={{ fontSize: '.7rem', color: themeMuted, fontFamily: 'monospace' }}>
+                          {inspectAuditLog.timestamp || inspectAuditLog.created_at}
+                        </small>
+                      </div>
+                      <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)', padding: 10, borderRadius: 8, border: `1px solid ${themeBorder}` }}>
+                        <small style={{ fontSize: '.68rem', color: themeMuted, display: 'block', fontWeight: 700 }}>ACTOR & ROLE</small>
+                        <b style={{ fontSize: '.8rem', color: themeText, display: 'block' }}>
+                          {inspectAuditLog.actor_name} ({inspectAuditLog.role || inspectAuditLog.actor_role})
+                        </b>
+                        <small style={{ fontSize: '.72rem', color: themeMuted }}>
+                          {inspectAuditLog.actor_email}
+                        </small>
+                      </div>
+                      <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)', padding: 10, borderRadius: 8, border: `1px solid ${themeBorder}` }}>
+                        <small style={{ fontSize: '.68rem', color: themeMuted, display: 'block', fontWeight: 700 }}>TARGET RESOURCE</small>
+                        <b style={{ fontSize: '.8rem', color: themeText, display: 'block' }}>
+                          {inspectAuditLog.resource_type || 'system'}
+                        </b>
+                        <small style={{ fontSize: '.72rem', color: themeMuted, fontFamily: 'monospace' }}>
+                          #{inspectAuditLog.resource_id || 'N/A'}
+                        </small>
+                      </div>
+                      <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)', padding: 10, borderRadius: 8, border: `1px solid ${themeBorder}` }}>
+                        <small style={{ fontSize: '.68rem', color: themeMuted, display: 'block', fontWeight: 700 }}>CLIENT IP & AGENT</small>
+                        <b style={{ fontSize: '.8rem', color: themeText, display: 'block', fontFamily: 'monospace' }}>
+                          {inspectAuditLog.ip_address || '127.0.0.1'}
+                        </b>
+                        <small style={{ fontSize: '.7rem', color: themeMuted, overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
+                          {inspectAuditLog.user_agent || 'Client'}
+                        </small>
+                      </div>
+                    </div>
+
+                    <div style={{ marginBottom: 16 }}>
+                      <small style={{ fontSize: '.72rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 6 }}>
+                        PROCESS DETAILS (DATABASE PAYLOAD)
+                      </small>
+                      <pre style={{
+                        background: isLightMode ? '#F1F5F9' : '#030712',
+                        padding: 12, borderRadius: 8, fontSize: '.75rem',
+                        fontFamily: 'monospace', overflowX: 'auto',
+                        border: `1px solid ${themeBorder}`, color: isLightMode ? '#0F172A' : '#38BDF8',
+                      }}>
+                        {JSON.stringify(inspectAuditLog.details || {}, null, 2)}
+                      </pre>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(JSON.stringify(inspectAuditLog, null, 2));
+                          toast('📋 Full audit record copied to clipboard');
+                        }}
+                        className="btn btn-sm"
+                        style={{ border: `1px solid ${themeBorder}`, color: themeText, fontWeight: 700 }}
+                      >
+                        Copy JSON
+                      </button>
+                      <button
+                        onClick={() => setInspectAuditLog(null)}
+                        className="btn btn-sky btn-sm"
+                        style={{ fontWeight: 700 }}
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

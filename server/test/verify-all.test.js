@@ -26,6 +26,7 @@ import { createModuleSandbox, extractEndpoints } from '../src/framework/ModuleSa
 import { loadRouteModule, loadDomainPlugin, bootstrapFramework } from '../src/framework/ModuleLoader.js';
 import { sendRecoveryOTP, sendPasswordResetSuccess, sendSignup2FAOTP, sendWelcomeClientEmail, sendSignupExpiredEmail, sendRefundRequestedEmail, sendRefundConfirmedEmail } from '../src/lib/mailer.js';
 import { findAvailableServiceAgent } from '../src/socket/chatbot.js';
+import { logAuditEvent, getAuditLogs } from '../src/lib/auditLogger.js';
 import express, { Router } from 'express';
 import { fileURLToPath } from 'url';
 
@@ -1160,6 +1161,113 @@ await runTest('Service Agent Directing & Permanent Database Recording Lifecycle'
   assert(panelContent.includes('staff:customer_handoff'), 'ExecutiveGuestConversationsPanel.tsx must listen for customer handoffs');
   assert(panelContent.includes('agent:guest_message'), 'ExecutiveGuestConversationsPanel.tsx must listen for live guest messages');
   assert(panelContent.includes('Live with Agent'), 'ExecutiveGuestConversationsPanel.tsx must display Live with Agent badge');
+});
+
+// 33. System Security Audit Trail: Daily Action Collections, Role-Specific Filtering & Customer Login Logging
+await runTest('System Security Audit Trail: Daily Action Collections, Role Filtering & Customer Login Logging', async () => {
+  const todayDate = new Date().toISOString().slice(0, 10);
+
+  // 1. Log a customer login timestamp
+  const custEntry = await logAuditEvent({
+    actor: {
+      id: 'cust-uuid-1234',
+      email: 'customer.juan@gmail.com',
+      full_name: 'Juan Dela Cruz',
+      role: 'customer',
+    },
+    action: 'CUSTOMER_LOGIN',
+    resourceType: 'authentication',
+    resourceId: 'cust-uuid-1234',
+    details: {
+      process: 'Customer Login Timestamp',
+      message: 'Customer Juan Dela Cruz logged in successfully',
+      login_method: 'credentials',
+    },
+  });
+
+  assert.strictEqual(custEntry.action, 'CUSTOMER_LOGIN', 'Action must be CUSTOMER_LOGIN');
+  assert.strictEqual(custEntry.role, 'customer', 'Role must be customer');
+  assert.ok(custEntry.timestamp, 'Timestamp must exist');
+  assert.ok(custEntry.details.message, 'Message details must exist');
+
+  // 2. Log an admin process
+  const adminEntry = await logAuditEvent({
+    actor: {
+      id: 'admin-uuid-0001',
+      email: 'admin@janddbeachhouse.ph',
+      full_name: 'Executive Director',
+      role: 'administrator',
+    },
+    action: 'ROOM_UPDATE',
+    resourceType: 'room',
+    resourceId: 'room-deluxe-villa',
+    details: {
+      process: 'Updated Room Rates & Units',
+      rate_php: 5500,
+      units: 4,
+    },
+  });
+
+  assert.strictEqual(adminEntry.action, 'ROOM_UPDATE');
+  assert.strictEqual(adminEntry.role, 'administrator');
+
+  // 3. Log a staff operational action
+  const staffEntry = await logAuditEvent({
+    actor: {
+      id: 'staff-uuid-0042',
+      email: 'frontdesk@janddbeachhouse.ph',
+      full_name: 'Staff Frontdesk',
+      role: 'staff',
+    },
+    action: 'INVENTORY_STOCK_UPDATE',
+    resourceType: 'inventory',
+    resourceId: 'item-towels-01',
+    details: {
+      process: 'Restocked Beach Towels',
+      delta: 25,
+      reason: 'Delivery Restock',
+    },
+  });
+
+  assert.strictEqual(staffEntry.action, 'INVENTORY_STOCK_UPDATE');
+
+  // 4. Test specific day filtering in getAuditLogs
+  const dayResults = await getAuditLogs({ date: todayDate, limit: 100 });
+  assert.strictEqual(dayResults.success, true, 'getAuditLogs should succeed');
+  assert.ok(Array.isArray(dayResults.logs), 'logs should be an array');
+  assert.ok(dayResults.logs.length > 0, 'should return logs for today');
+  for (const l of dayResults.logs) {
+    const logDate = (l.timestamp || l.created_at || '').slice(0, 10);
+    assert.strictEqual(logDate, todayDate, `Log date ${logDate} should match filtered date ${todayDate}`);
+  }
+
+  // 5. Test role filtering for customer logins
+  const custResults = await getAuditLogs({ role: 'customer', limit: 50 });
+  assert.strictEqual(custResults.success, true);
+  assert.ok(custResults.logs.some((l) => l.action === 'CUSTOMER_LOGIN'), 'Must find CUSTOMER_LOGIN in customer audit logs');
+
+  // 6. Test role filtering for administrators
+  const adminResults = await getAuditLogs({ role: 'administrator', limit: 50 });
+  assert.strictEqual(adminResults.success, true);
+  assert.ok(adminResults.logs.some((l) => l.action === 'ROOM_UPDATE' || l.action.startsWith('ADMIN')), 'Must find admin actions in admin audit logs');
+
+  // 7. Verify routes and frontend integration
+  const authRoutesSrc = fs.readFileSync(path.resolve(serverRoot, 'src/routes/auth.routes.js'), 'utf8');
+  assert(authRoutesSrc.includes('CUSTOMER_LOGIN'), 'auth.routes.js must emit CUSTOMER_LOGIN audit event on login');
+  assert(authRoutesSrc.includes('ADMIN_LOGIN'), 'auth.routes.js must emit ADMIN_LOGIN audit event on admin login');
+  assert(authRoutesSrc.includes('STAFF_LOGIN'), 'auth.routes.js must emit STAFF_LOGIN audit event on staff login');
+
+  const auditRoutesSrc = fs.readFileSync(path.resolve(serverRoot, 'src/routes/audit.routes.js'), 'utf8');
+  assert(auditRoutesSrc.includes('date = req.query.date'), 'audit.routes.js must accept date query parameter');
+  assert(auditRoutesSrc.includes('role = req.query.role'), 'audit.routes.js must accept role query parameter');
+
+  const clientAdminSrc = fs.readFileSync(path.resolve(projectRoot, 'client/src/pages/Admin.tsx'), 'utf8');
+  assert(clientAdminSrc.includes('auditDateFilter'), 'Admin.tsx must maintain auditDateFilter state');
+  assert(clientAdminSrc.includes('auditRoleFilter'), 'Admin.tsx must maintain auditRoleFilter state');
+  assert(clientAdminSrc.includes('SELECT DAY:'), 'Admin.tsx must render specific day selection header');
+  assert(clientAdminSrc.includes('ACTOR SCOPE:'), 'Admin.tsx must render role scope pills');
+  assert(clientAdminSrc.includes('Customer Sign-In'), 'Admin.tsx must render humanized customer sign-in title');
+  assert(clientAdminSrc.includes('AUDIT RECORD INSPECTION'), 'Admin.tsx must provide audit record inspection modal');
 });
 
 console.log('\n-------------------------------------------------------------');
