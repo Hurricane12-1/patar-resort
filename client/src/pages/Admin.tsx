@@ -5211,12 +5211,59 @@ export default function Admin() {
                 />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 8 }}>
-                <button type="button" className="btn btn-sm" onClick={() => setShowCreateRoomModal(false)} style={{ border: `1px solid ${themeBorder}`, color: themeText }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 14, borderTop: `1px solid ${themeBorder}`, paddingTop: 16 }}>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateRoomModal(false)}
+                  style={{
+                    padding: '9px 18px',
+                    borderRadius: 10,
+                    fontSize: '.82rem',
+                    fontWeight: 600,
+                    color: themeMuted,
+                    background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.05)',
+                    border: `1px solid ${themeBorder}`,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = themeText;
+                    e.currentTarget.style.borderColor = isLightMode ? '#94A3B8' : '#64748B';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = themeMuted;
+                    e.currentTarget.style.borderColor = themeBorder;
+                  }}
+                >
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-sky btn-sm">
-                  Save Accommodation ✦
+                <button
+                  type="submit"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '9px 24px',
+                    borderRadius: 10,
+                    fontSize: '.82rem',
+                    fontWeight: 800,
+                    color: '#FFFFFF',
+                    background: 'linear-gradient(135deg, #0EA5E9, #0284C7)',
+                    border: 'none',
+                    boxShadow: '0 4px 14px rgba(14, 165, 233, 0.35)',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                    e.currentTarget.style.boxShadow = '0 6px 18px rgba(14, 165, 233, 0.45)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'none';
+                    e.currentTarget.style.boxShadow = '0 4px 14px rgba(14, 165, 233, 0.35)';
+                  }}
+                >
+                  💾 Save
                 </button>
               </div>
             </form>
@@ -5384,27 +5431,41 @@ export default function Admin() {
                 <div
                   onClick={() => !uploadingRoomPhoto && roomFileInputRef.current?.click()}
                   style={{
-                    border: `2px dashed ${uploadingRoomPhoto ? '#0EA5E9' : themeBorder}`,
-                    borderRadius: 12,
-                    padding: '28px 16px',
+                    border: `1.5px dashed ${uploadingRoomPhoto ? '#0EA5E9' : (isLightMode ? '#CBD5E1' : 'rgba(148, 163, 184, 0.25)')}`,
+                    borderRadius: 14,
+                    padding: '22px 18px',
                     textAlign: 'center',
                     cursor: uploadingRoomPhoto ? 'not-allowed' : 'pointer',
-                    background: isLightMode ? '#FFFFFF' : 'rgba(255,255,255,0.02)',
+                    background: isLightMode ? '#FFFFFF' : 'rgba(15, 23, 42, 0.5)',
                     marginBottom: 16,
                     transition: 'all 0.2s ease',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!uploadingRoomPhoto) {
+                      e.currentTarget.style.borderColor = '#0EA5E9';
+                      e.currentTarget.style.background = isLightMode ? '#F0F9FF' : 'rgba(14, 165, 233, 0.06)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!uploadingRoomPhoto) {
+                      e.currentTarget.style.borderColor = isLightMode ? '#CBD5E1' : 'rgba(148, 163, 184, 0.25)';
+                      e.currentTarget.style.background = isLightMode ? '#FFFFFF' : 'rgba(15, 23, 42, 0.5)';
+                    }
                   }}
                 >
-                  <div style={{ fontSize: '2.4rem', marginBottom: 8 }}>📷</div>
-                  <button
-                    type="button"
-                    disabled={uploadingRoomPhoto}
-                    className="btn btn-sky btn-sm"
-                    style={{ pointerEvents: 'none', fontWeight: 800, padding: '8px 22px', fontSize: '.85rem' }}
-                  >
-                    {uploadingRoomPhoto ? 'Uploading Image...' : '📁 Choose Image to Upload'}
-                  </button>
-                  <span style={{ fontSize: '.75rem', color: themeMuted, display: 'block', marginTop: 8 }}>
-                    Click here to browse and upload an image file
+                  <span style={{ fontSize: '1.8rem', display: 'block', marginBottom: 2 }}>☁️</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: '.86rem', fontWeight: 700, color: '#0EA5E9' }}>
+                      {uploadingRoomPhoto ? 'Uploading to Cloudinary CDN...' : '📁 Choose Image to Upload'}
+                    </span>
+                  </div>
+                  <span style={{ fontSize: '.74rem', color: themeMuted }}>
+                    Cloudinary CDN delivery • JPG, PNG, WebP up to 5MB
                   </span>
                 </div>
 
@@ -5478,21 +5539,86 @@ export default function Admin() {
                 )}
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, borderTop: `1px solid ${themeBorder}`, paddingTop: 14 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, borderTop: `1px solid ${themeBorder}`, paddingTop: 16 }}>
                 <button
                   type="button"
-                  className="btn btn-sm"
                   onClick={() => handleDeleteRoom(editingRoom)}
-                  style={{ background: 'rgba(244,63,94,0.12)', color: '#F43F5E', border: '1px solid rgba(244,63,94,0.3)', fontWeight: 700 }}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '9px 18px',
+                    borderRadius: 10,
+                    fontSize: '.82rem',
+                    fontWeight: 700,
+                    color: '#EF4444',
+                    background: isLightMode ? '#FEF2F2' : 'rgba(239, 68, 68, 0.12)',
+                    border: `1px solid ${isLightMode ? '#FECACA' : 'rgba(239, 68, 68, 0.3)'}`,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = isLightMode ? '#FEE2E2' : 'rgba(239, 68, 68, 0.22)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = isLightMode ? '#FEF2F2' : 'rgba(239, 68, 68, 0.12)';
+                  }}
                 >
-                  🗑️ Delete Room Permanently
+                  🗑️ Delete
                 </button>
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <button type="button" className="btn btn-sm" onClick={() => setEditingRoom(null)} style={{ border: `1px solid ${themeBorder}`, color: themeText }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <button
+                    type="button"
+                    onClick={() => setEditingRoom(null)}
+                    style={{
+                      padding: '9px 18px',
+                      borderRadius: 10,
+                      fontSize: '.82rem',
+                      fontWeight: 600,
+                      color: themeMuted,
+                      background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.05)',
+                      border: `1px solid ${themeBorder}`,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = themeText;
+                      e.currentTarget.style.borderColor = isLightMode ? '#94A3B8' : '#64748B';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = themeMuted;
+                      e.currentTarget.style.borderColor = themeBorder;
+                    }}
+                  >
                     Cancel
                   </button>
-                  <button type="submit" className="btn btn-sky btn-sm" style={{ padding: '10px 20px', fontWeight: 800 }}>
-                    Save & Synchronize Accommodation ✦
+                  <button
+                    type="submit"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '9px 24px',
+                      borderRadius: 10,
+                      fontSize: '.82rem',
+                      fontWeight: 800,
+                      color: '#FFFFFF',
+                      background: 'linear-gradient(135deg, #0EA5E9, #0284C7)',
+                      border: 'none',
+                      boxShadow: '0 4px 14px rgba(14, 165, 233, 0.35)',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                      e.currentTarget.style.boxShadow = '0 6px 18px rgba(14, 165, 233, 0.45)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'none';
+                      e.currentTarget.style.boxShadow = '0 4px 14px rgba(14, 165, 233, 0.35)';
+                    }}
+                  >
+                    💾 Save
                   </button>
                 </div>
               </div>
