@@ -68,6 +68,10 @@ export function AuthProvider({ children }) {
           parsed.role = 'administrator';
           if (!localStorage.getItem('jd_admin_token_key')) localStorage.setItem('jd_admin_token_key', 'etc-34');
         }
+        if (parsed.password_status === undefined) {
+          parsed.has_password = Boolean(parsed.has_password || parsed.password || parsed.password_hash);
+          parsed.password_status = parsed.has_password ? 'Configured' : 'N/A';
+        }
         return parsed;
       }
       return null;
@@ -121,6 +125,10 @@ export function AuthProvider({ children }) {
               if (!localStorage.getItem('jd_admin_token_key')) localStorage.setItem('jd_admin_token_key', 'etc-34');
               if (session.access_token) localStorage.setItem('jd_admin_jwt', session.access_token);
             }
+            const hasPassword = Boolean(p.has_password || (p.password && String(p.password).trim() !== '') || (p.password_hash && String(p.password_hash).trim() !== ''));
+            p.has_password = hasPassword;
+            p.password_status = p.password_status || (hasPassword ? 'Configured' : 'N/A');
+
             setProfile(p);
             setNeedsProfileCompletion(false);
             return;
@@ -136,7 +144,36 @@ export function AuthProvider({ children }) {
               .eq('id', session.user.id)
               .maybeSingle();
             if (sbProfile) {
-              const merged = { ...sbProfile, email: session.user.email || sbProfile.email };
+              let empRecord = null;
+              try {
+                const { data: emp } = await supabase
+                  .from('employee_accounts')
+                  .select('id, employee_id, department, position, shift, status, is_active, hire_date')
+                  .or(`auth_user_id.eq.${session.user.id},email.eq.${session.user.email || sbProfile.email}`)
+                  .maybeSingle();
+                empRecord = emp;
+              } catch {}
+
+              const hasPassword = Boolean(
+                (sbProfile.password && String(sbProfile.password).trim() !== '') ||
+                (sbProfile.password_hash && String(sbProfile.password_hash).trim() !== '') ||
+                Boolean(sbProfile.has_password)
+              );
+              const passwordStatus = hasPassword ? 'Configured' : 'N/A';
+
+              const merged = {
+                ...sbProfile,
+                email: session.user.email || sbProfile.email,
+                has_password: hasPassword,
+                password_status: passwordStatus,
+                ...(empRecord ? {
+                  employee_id: empRecord.employee_id,
+                  department: empRecord.department,
+                  shift: empRecord.shift,
+                  employee_status: empRecord.status,
+                  employee_record: empRecord,
+                } : {}),
+              };
               if (isSystemOwnerEmail(merged.email)) {
                 merged.role = 'administrator';
               }
@@ -204,7 +241,29 @@ export function AuthProvider({ children }) {
               .eq('id', res.data.session.user.id)
               .maybeSingle();
             if (sbProfile) {
-              const userObj = { ...sbProfile, email: res.data.session.user.email || cleanIdent };
+              let empRecord = null;
+              try {
+                const { data: emp } = await supabase
+                  .from('employee_accounts')
+                  .select('id, employee_id, department, position, shift, status, is_active, hire_date')
+                  .or(`auth_user_id.eq.${res.data.session.user.id},email.eq.${res.data.session.user.email || cleanIdent}`)
+                  .maybeSingle();
+                empRecord = emp;
+              } catch {}
+
+              const userObj = {
+                ...sbProfile,
+                email: res.data.session.user.email || cleanIdent,
+                has_password: true,
+                password_status: 'Configured',
+                ...(empRecord ? {
+                  employee_id: empRecord.employee_id,
+                  department: empRecord.department,
+                  shift: empRecord.shift,
+                  employee_status: empRecord.status,
+                  employee_record: empRecord,
+                } : {}),
+              };
               setProfile(userObj);
               localStorage.setItem('jd_profile', JSON.stringify(userObj));
               if (['administrator', 'admin'].includes(userObj.role)) {
@@ -297,6 +356,16 @@ export function AuthProvider({ children }) {
       setProfile(updated);
       localStorage.setItem('jd_profile', JSON.stringify(updated));
       return updated;
+    },
+    updatePassword: async (password: string) => {
+      const res = await api.updatePassword(password);
+      setProfile((prev) => {
+        if (!prev) return prev;
+        const updated = { ...prev, has_password: true, password_status: 'Configured' };
+        localStorage.setItem('jd_profile', JSON.stringify(updated));
+        return updated;
+      });
+      return res;
     },
     signOut: async () => {
       setSession(null);

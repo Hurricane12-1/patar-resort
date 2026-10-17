@@ -18,7 +18,7 @@ function to11Digits(val: string): string {
 }
 
 export default function ResortCustomer() {
-  const { session, profile, setAuthOpen, updateProfile } = useAuth();
+  const { session, profile, setAuthOpen, updateProfile, updatePassword } = useAuth();
   const [pass, setPass] = useState(null);
   const [services, setServices] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -121,8 +121,12 @@ export default function ResortCustomer() {
     if (!newPass) return;
     setUpdatingPass(true);
     try {
-      await api.updatePassword(newPass);
-      toast('Password Updated Successfully ✦');
+      if (updatePassword) {
+        await updatePassword(newPass);
+      } else {
+        await api.updatePassword(newPass);
+      }
+      toast(profile?.password_status === 'N/A' || !profile?.has_password ? 'Password Configured Successfully ✦' : 'Password Updated Successfully ✦');
       setNewPass('');
     } catch (err) { toast(err.message, true); }
     finally { setUpdatingPass(false); }
@@ -255,11 +259,28 @@ export default function ResortCustomer() {
 
             {/* PASSWORD SECURITY BOX */}
             <div className="panel">
-              <h3 className="serif" style={{ fontSize: '1.5rem', marginBottom: 6 }}>Account Security</h3>
-              <p className="muted small" style={{ marginBottom: 20 }}>Change your account password securely.</p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
+                <h3 className="serif" style={{ fontSize: '1.5rem', margin: 0 }}>Account Security</h3>
+                <span style={{
+                  fontSize: '0.74rem',
+                  fontWeight: 700,
+                  padding: '4px 10px',
+                  borderRadius: 20,
+                  background: profile?.password_status === 'N/A' || !profile?.has_password ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                  color: profile?.password_status === 'N/A' || !profile?.has_password ? '#F59E0B' : '#10B981',
+                  border: `1px solid ${profile?.password_status === 'N/A' || !profile?.has_password ? 'rgba(245, 158, 11, 0.35)' : 'rgba(16, 185, 129, 0.35)'}`,
+                }}>
+                  {profile?.password_status === 'N/A' || !profile?.has_password ? 'Status: N/A (Not Set)' : 'Status: Configured 🔒'}
+                </span>
+              </div>
+              <p className="muted small" style={{ marginBottom: 20 }}>
+                {profile?.password_status === 'N/A' || !profile?.has_password
+                  ? 'Your account currently has no password configured (logged in via direct session). You can set your password below to enable credential login anytime.'
+                  : 'Change your account password securely.'}
+              </p>
               <form onSubmit={handlePasswordUpdate}>
                 <div className="field">
-                  <label>NEW PASSWORD</label>
+                  <label>{profile?.password_status === 'N/A' || !profile?.has_password ? 'SET ACCOUNT PASSWORD (MIN. 6 CHARACTERS)' : 'NEW PASSWORD'}</label>
                   <input
                     type="password"
                     required
@@ -270,7 +291,7 @@ export default function ResortCustomer() {
                   />
                 </div>
                 <button className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center', marginTop: 8 }} disabled={updatingPass}>
-                  {updatingPass ? 'Updating Password…' : '🔑 Change Password'}
+                  {updatingPass ? 'Saving Password…' : (profile?.password_status === 'N/A' || !profile?.has_password ? '✦ Set Account Password' : '🔑 Change Password')}
                 </button>
               </form>
             </div>

@@ -63,8 +63,31 @@ r.patch('/me/password', authenticate,
         if (sbErr) throw sbErr;
         updated = true;
       }
+
+      // Synchronize password to profiles table (trigger trg_profile_password_hash will auto-hash it)
+      const sysAdmin = await getSystemAdminClient().catch(() => null);
+      const client = sysAdmin || admin;
+      await client.from('profiles').update({ password }).eq('id', req.user.id).catch(() => {});
+
+      // Synchronize password to employee_accounts table if user is linked to staff / management
+      const userEmail = req.user.email;
+      if (req.user.id || userEmail) {
+        const empFilter = [];
+        if (req.user.id) empFilter.push(`auth_user_id.eq.${req.user.id}`);
+        if (userEmail) empFilter.push(`email.eq.${userEmail}`);
+        await client.from('employee_accounts')
+          .update({ password, updated_at: new Date().toISOString() })
+          .or(empFilter.join(','))
+          .catch(() => {});
+      }
+
       pingSMS({ profileId: req.user.id, toPhone: req.user.phone, body: 'J & D Beach House: Your account password was updated successfully.' }).catch(() => {});
-      return res.json({ success: true, message: 'Password updated successfully' });
+      return res.json({
+        success: true,
+        message: 'Password updated successfully',
+        has_password: true,
+        password_status: 'Configured',
+      });
     } catch (err) {
       throw new ApiError(500, err.message);
     }

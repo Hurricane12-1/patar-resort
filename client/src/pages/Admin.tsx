@@ -51,7 +51,7 @@ const emptyAnalytics = {
 };
 
 export default function Admin() {
-  const { session, profile, signIn, signOut, deleteAccount, updateProfile } = useAuth();
+  const { session, profile, signIn, signOut, deleteAccount, updateProfile, updatePassword } = useAuth();
   const user = session?.user;
   const [data, setData] = useState(emptyAnalytics);
   const [loading, setLoading] = useState(false);
@@ -2926,9 +2926,29 @@ export default function Admin() {
 
                 {/* 2. Password Security Management */}
                 <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.5)', border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 22 }}>
-                  <b style={{ fontSize: '1rem', color: themeText, display: 'block', marginBottom: 14 }}>
-                    🔒 Password Security
-                  </b>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
+                    <b style={{ fontSize: '1rem', color: themeText }}>
+                      🔒 Password Security
+                    </b>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      {profile?.employee_id && (
+                        <span style={{ fontSize: '0.72rem', padding: '3px 8px', borderRadius: 12, background: 'rgba(56, 189, 248, 0.15)', color: '#38BDF8', border: '1px solid rgba(56, 189, 248, 0.35)', fontWeight: 600 }}>
+                          ID: {profile.employee_id} {profile.department ? `(${profile.department})` : ''}
+                        </span>
+                      )}
+                      <span style={{
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        padding: '3px 8px',
+                        borderRadius: 12,
+                        background: profile?.password_status === 'N/A' || !profile?.has_password ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                        color: profile?.password_status === 'N/A' || !profile?.has_password ? '#F59E0B' : '#10B981',
+                        border: `1px solid ${profile?.password_status === 'N/A' || !profile?.has_password ? 'rgba(245, 158, 11, 0.35)' : 'rgba(16, 185, 129, 0.35)'}`,
+                      }}>
+                        {profile?.password_status === 'N/A' || !profile?.has_password ? 'Password: N/A' : 'Password: Configured 🔒'}
+                      </span>
+                    </div>
+                  </div>
                   <div className="admin-grid-2-col" style={{ gap: 14 }}>
                     <div className="field">
                       <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700 }}>NEW PASSWORD</label>
@@ -2957,7 +2977,8 @@ export default function Admin() {
                       onClick={() => {
                         if (adminProfileState.newPassword.length < 6) return toast('Password must be at least 6 characters', true);
                         if (adminProfileState.newPassword !== adminProfileState.confirmPassword) return toast('Passwords do not match', true);
-                        api.updatePassword(adminProfileState.newPassword)
+                        const doUpdate = updatePassword || api.updatePassword;
+                        doUpdate(adminProfileState.newPassword)
                           .then(() => {
                             toast('🔒 Security password updated successfully!');
                             setAdminProfileState({ ...adminProfileState, currentPassword: '', newPassword: '', confirmPassword: '' });

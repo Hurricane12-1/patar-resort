@@ -86,6 +86,33 @@ export async function authenticate(req, _res, next) {
       }
     } catch {}
 
+    // Check isolated employee accounts collection for staff / management linkage
+    let empRecord = null;
+    try {
+      const sysClient = await getSystemAdminClient().catch(() => null);
+      const db = sysClient || admin;
+      const targetLookupEmail = userEmail || profile?.email;
+      if (userId || targetLookupEmail) {
+        const filter = [];
+        if (userId) filter.push(`auth_user_id.eq.${userId}`);
+        if (targetLookupEmail) filter.push(`email.eq.${targetLookupEmail}`);
+        const { data: emp } = await db
+          .from('employee_accounts')
+          .select('id, employee_id, department, position, shift, status, is_active, hire_date, password, password_hash')
+          .or(filter.join(','))
+          .maybeSingle();
+        empRecord = emp;
+      }
+    } catch {}
+
+    const hasPassword = Boolean(
+      (profile?.password && String(profile.password).trim() !== '') ||
+      (profile?.password_hash && String(profile.password_hash).trim() !== '') ||
+      (empRecord?.password && String(empRecord.password).trim() !== '') ||
+      (empRecord?.password_hash && String(empRecord.password_hash).trim() !== '')
+    );
+    const passwordStatus = hasPassword ? 'Configured' : 'N/A';
+
     const gFirst = userMetadata.first_name || userMetadata.given_name || (userMetadata.name ? userMetadata.name.split(' ')[0] : '');
     const gLast = userMetadata.last_name || userMetadata.family_name || (userMetadata.name ? userMetadata.name.split(' ').slice(1).join(' ') : '');
     const gFull = userMetadata.full_name || userMetadata.name || [gFirst, gLast].filter(Boolean).join(' ') || (userEmail ? userEmail.split('@')[0] : 'Guest User');
@@ -98,17 +125,21 @@ export async function authenticate(req, _res, next) {
         first_name: gFirst,
         last_name: gLast,
         full_name: gFull,
-        role: userMetadata.role || 'customer',
-        position: userMetadata.position || 'admin',
+        role: userMetadata.role || (empRecord?.role || 'customer'),
+        position: userMetadata.position || empRecord?.position || 'customer',
         admin_token_verified: userMetadata.admin_token_verified === true,
         admin_token_key: userMetadata.admin_token_key,
+        has_password: hasPassword,
+        password_status: passwordStatus,
         created_at: new Date().toISOString(),
       };
     } else {
+      profile.has_password = hasPassword;
+      profile.password_status = passwordStatus;
       if (userMetadata.role && userMetadata.role !== 'customer') {
         profile.role = userMetadata.role;
       }
-      profile.position = userMetadata.position || profile.position || 'admin';
+      profile.position = userMetadata.position || profile.position || (empRecord?.position || 'customer');
       profile.admin_token_verified = userMetadata.admin_token_verified === true;
       profile.admin_token_key = userMetadata.admin_token_key;
       if ((!profile.first_name || !profile.last_name) && (gFirst || gLast)) {
@@ -117,6 +148,27 @@ export async function authenticate(req, _res, next) {
         profile.full_name = profile.full_name || gFull;
       }
     }
+
+    if (empRecord) {
+      profile.employee_id = empRecord.employee_id || profile.employee_id;
+      profile.department = empRecord.department || profile.department;
+      profile.shift = empRecord.shift || profile.shift;
+      profile.employee_status = empRecord.status;
+      profile.employee_record = {
+        id: empRecord.id,
+        employee_id: empRecord.employee_id,
+        department: empRecord.department,
+        position: empRecord.position,
+        shift: empRecord.shift,
+        status: empRecord.status,
+        hire_date: empRecord.hire_date,
+        is_active: empRecord.is_active,
+      };
+    }
+
+    // Sanitize profile object so sensitive password fields are never exposed in API payloads
+    delete profile.password;
+    delete profile.password_hash;
 
     const isElevatedAdminEmail = (userEmail && (
       userEmail.toLowerCase() === 'admin@janddbeachhouse.ph' ||

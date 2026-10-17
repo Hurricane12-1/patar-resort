@@ -95,12 +95,30 @@ r.post('/auth/admin-login', asyncH(async (req, res) => {
         throw new ApiError(403, `Access denied: Role "${role}" is not authorized for administrative operations.`);
       }
 
+      let employeeRecord = null;
+      try {
+        const { data: emp } = await authedClient.from('employee_accounts')
+          .select('id, employee_id, department, position, shift, status, is_active, hire_date')
+          .or(`auth_user_id.eq.${data.user.id},email.eq.${targetEmail}`)
+          .maybeSingle();
+        employeeRecord = emp;
+      } catch {}
+
       verifiedUser = {
         id: data.user.id,
         email: data.user.email,
         full_name: prof?.full_name || data.user.user_metadata?.full_name || data.user.email,
         role: role,
         position: prof?.position || rawPos || 'Administrator',
+        has_password: true,
+        password_status: 'Configured',
+        ...(employeeRecord ? {
+          employee_id: employeeRecord.employee_id,
+          department: employeeRecord.department,
+          shift: employeeRecord.shift,
+          employee_status: employeeRecord.status,
+          employee_record: employeeRecord,
+        } : {}),
       };
     }
   } catch (err) {
@@ -237,13 +255,49 @@ r.post('/auth/login', asyncH(async (req, res) => {
         profile = prof;
       } catch {}
 
+      // Fetch isolated employee accounts record if existing
+      let employeeRecord = null;
+      try {
+        const { data: emp } = await admin.from('employee_accounts')
+          .select('id, employee_id, department, position, shift, status, is_active, hire_date')
+          .or(`auth_user_id.eq.${data.user.id},email.eq.${targetEmail}`)
+          .maybeSingle();
+        employeeRecord = emp;
+      } catch {}
+
+      const hasPassword = Boolean(
+        (profile?.password && String(profile.password).trim() !== '') ||
+        (profile?.password_hash && String(profile.password_hash).trim() !== '') ||
+        (employeeRecord?.password && String(employeeRecord.password).trim() !== '') ||
+        (employeeRecord?.password_hash && String(employeeRecord.password_hash).trim() !== '') ||
+        true // Successfully authenticated with password
+      );
+      const passwordStatus = hasPassword ? 'Configured' : 'N/A';
+
+      const enrichedUser = {
+        ...(profile || data.user),
+        id: data.user.id,
+        email: data.user.email || targetEmail,
+        has_password: hasPassword,
+        password_status: passwordStatus,
+        ...(employeeRecord ? {
+          employee_id: employeeRecord.employee_id,
+          department: employeeRecord.department,
+          shift: employeeRecord.shift,
+          employee_status: employeeRecord.status,
+          employee_record: employeeRecord,
+        } : {}),
+      };
+      delete enrichedUser.password;
+      delete enrichedUser.password_hash;
+
       // Reset lockout counter on successful customer/user login
       recordSuccessfulAttempt(req.ip, userIdent);
 
-      const rawRole = (profile?.role || data.user.user_metadata?.role || 'customer').toLowerCase();
+      const rawRole = (enrichedUser?.role || data.user.user_metadata?.role || 'customer').toLowerCase();
       const isExecAdmin = ['administrator', 'admin'].includes(rawRole);
       const isStaff = ['staff', 'receptionist', 'accounting', 'manager', 'cashier', 'inventory_manager'].includes(rawRole);
-      const actorName = profile?.full_name || data.user.user_metadata?.full_name || (data.user.email ? data.user.email.split('@')[0] : 'User');
+      const actorName = enrichedUser?.full_name || data.user.user_metadata?.full_name || (data.user.email ? data.user.email.split('@')[0] : 'User');
 
       if (isExecAdmin) {
         await logAuditEvent({
@@ -307,8 +361,8 @@ r.post('/auth/login', asyncH(async (req, res) => {
       return res.json({
         success: true,
         session: data.session,
-        user: profile || data.user,
-        profile: profile || data.user,
+        user: enrichedUser,
+        profile: enrichedUser,
       });
     }
   } catch (sbErr) {
