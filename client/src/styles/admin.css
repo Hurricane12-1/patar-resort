@@ -821,11 +821,89 @@
 
 .conversations-grid-layout {
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: 340px 1fr;
   gap: 20px;
-  min-height: 580px;
+  height: 680px;
+  max-height: calc(100vh - 200px);
+  min-height: 560px;
   width: 100%;
   box-sizing: border-box;
+  align-items: stretch;
+}
+
+.conversations-inbox-column {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+.conversations-scroll-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.conversations-chat-column {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.conversations-message-stream {
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.conversations-chat-adhered-box {
+  flex-shrink: 0;
+  margin-top: auto;
+  z-index: 2;
+}
+
+/* SLEEK SEMI-TRANSPARENT SCROLLBAR FOR CONVERSATIONS LIST & CHAT STREAM */
+.admin-portal .conversations-scroll-list,
+.admin-portal .conversations-message-stream {
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(99, 102, 241, 0.45) transparent !important;
+}
+
+.admin-portal .conversations-scroll-list::-webkit-scrollbar,
+.admin-portal .conversations-message-stream::-webkit-scrollbar {
+  display: block !important;
+  width: 6px !important;
+}
+
+.admin-portal .conversations-scroll-list::-webkit-scrollbar-track,
+.admin-portal .conversations-message-stream::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.admin-portal .conversations-scroll-list::-webkit-scrollbar-thumb,
+.admin-portal .conversations-message-stream::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.4) !important;
+  border-radius: 9999px !important;
+}
+
+.admin-portal .conversations-scroll-list::-webkit-scrollbar-thumb:hover,
+.admin-portal .conversations-message-stream::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.75) !important;
 }
 
 /* ==========================================================================
@@ -919,15 +997,22 @@
 @media (max-width: 860px) {
   .conversations-grid-layout {
     grid-template-columns: 1fr !important;
-    min-height: auto;
+    height: auto !important;
+    max-height: none !important;
+    min-height: auto !important;
+    gap: 16px !important;
   }
   .conversations-inbox-column {
     border-right: none !important;
     border-bottom: 1px solid rgba(148, 163, 184, 0.2);
     padding-right: 0 !important;
     padding-bottom: 16px;
-    max-height: 260px;
-    overflow-y: auto;
+    height: 320px !important;
+    max-height: 340px !important;
+  }
+  .conversations-chat-column {
+    height: 540px !important;
+    max-height: 80vh !important;
   }
   .admin-grid-dual-cards {
     grid-template-columns: 1fr;

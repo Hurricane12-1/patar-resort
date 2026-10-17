@@ -38,7 +38,8 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
   const [inputText, setInputText] = useState('');
   const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState('');
-  const chatEndRef = useRef(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const messageStreamRef = useRef<HTMLDivElement>(null);
 
   // Sync with prop conversations or fetch if empty
   useEffect(() => {
@@ -72,9 +73,20 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
     }
   }, [initialGuest]);
 
+  // Adhere chat to bottom on message updates or guest change
+  const currentMessages = getMessages(selectedGuest);
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [selectedGuest]);
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+  }, [selectedGuest?.id, currentMessages.length]);
+
+  // Immediate anchor on guest switch
+  useEffect(() => {
+    if (messageStreamRef.current) {
+      messageStreamRef.current.scrollTop = messageStreamRef.current.scrollHeight;
+    }
+  }, [selectedGuest?.id]);
 
   // Live Socket Listener for directed customer inquiries & real-time guest messages
   useEffect(() => {
@@ -223,108 +235,180 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
       </div>
 
       {/* 2-COLUMN RESPONSIVE PANEL LAYOUT */}
-      <div className="conversations-grid-layout">
-        {/* LEFT INBOX TICKET LIST */}
-        <div className="conversations-inbox-column" style={{ display: 'flex', flexDirection: 'column', gap: 14, borderRight: `1px solid ${themeBorder}`, paddingRight: 16 }}>
-          {/* SEARCH & FILTER */}
-          <input
-            type="text"
-            placeholder="🔍 Search guest or channel..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{
-              padding: '9px 14px',
-              borderRadius: 12,
-              border: `1px solid ${themeBorder}`,
-              background: isLightMode ? '#F1F5F9' : '#1E293B',
-              color: themeText,
-              fontSize: '.84rem',
-            }}
-          />
+      <div
+        className="conversations-grid-layout"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '340px 1fr',
+          gap: 20,
+          height: 680,
+          maxHeight: 'calc(100vh - 200px)',
+          minHeight: 560,
+          width: '100%',
+          boxSizing: 'border-box',
+          alignItems: 'stretch',
+        }}
+      >
+        {/* LEFT INBOX TICKET LIST (SCROLLABLE) */}
+        <div
+          className="conversations-inbox-column"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 12,
+            borderRight: `1px solid ${themeBorder}`,
+            paddingRight: 16,
+            height: '100%',
+            minHeight: 0,
+            boxSizing: 'border-box',
+          }}
+        >
+          {/* SEARCH & FILTER (PINNED HEADER) */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0 }}>
+            <input
+              type="text"
+              placeholder="🔍 Search guest or channel..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{
+                padding: '9px 14px',
+                borderRadius: 12,
+                border: `1px solid ${themeBorder}`,
+                background: isLightMode ? '#F1F5F9' : '#1E293B',
+                color: themeText,
+                fontSize: '.84rem',
+                outline: 'none',
+              }}
+            />
 
-          <div style={{ display: 'flex', gap: 6 }}>
-            {['All', 'Active', 'Resolved'].map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                style={{
-                  flex: 1,
-                  padding: '5px 8px',
-                  borderRadius: 8,
-                  border: filter === f ? '1px solid #6366F1' : `1px solid ${themeBorder}`,
-                  background: filter === f ? 'linear-gradient(135deg, #4338CA, #6366F1)' : 'transparent',
-                  color: filter === f ? '#FFF' : themeMuted,
-                  fontWeight: 700,
-                  fontSize: '.74rem',
-                  cursor: 'pointer',
-                }}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
-
-          {/* GUEST TICKET ITEMS */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, overflowY: 'auto', maxHeight: 460 }}>
-            {filteredGuests.map((g) => {
-              const isSel = selectedGuest?.id === g.id;
-              const gMsgs = getMessages(g);
-              const lastMsg = gMsgs.length > 0 ? gMsgs[gMsgs.length - 1] : null;
-
-              return (
-                <div
-                  key={g.id}
-                  onClick={() => setSelectedGuest(g)}
+            <div style={{ display: 'flex', gap: 6 }}>
+              {['All', 'Active', 'Resolved'].map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
                   style={{
-                    padding: 12,
-                    borderRadius: 14,
-                    border: isSel ? '1px solid #6366F1' : `1px solid ${themeBorder}`,
-                    background: isSel ? (isLightMode ? '#EEF2FF' : 'rgba(99, 102, 241, 0.15)') : themeCardBg,
+                    flex: 1,
+                    padding: '6px 8px',
+                    borderRadius: 8,
+                    border: filter === f ? '1px solid #6366F1' : `1px solid ${themeBorder}`,
+                    background: filter === f ? 'linear-gradient(135deg, #4338CA, #6366F1)' : 'transparent',
+                    color: filter === f ? '#FFF' : themeMuted,
+                    fontWeight: 700,
+                    fontSize: '.74rem',
                     cursor: 'pointer',
                     transition: 'all 0.2s ease',
-                    boxShadow: isSel ? '0 4px 14px rgba(99, 102, 241, 0.15)' : 'none',
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <DefaultUserAvatar size={32} bg={isLightMode ? '#CBD5E1' : 'rgba(255, 255, 255, 0.15)'} iconColor={isLightMode ? '#475569' : '#FFFFFF'} />
-                      <b style={{ fontSize: '.88rem', color: themeText }}>{g.name}</b>
+                  {f}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* GUEST TICKET ITEMS - FULLY SCROLLABLE */}
+          <div
+            className="conversations-scroll-list"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 10,
+              flex: '1 1 0%',
+              minHeight: 0,
+              overflowY: 'auto',
+              overflowX: 'hidden',
+              overscrollBehavior: 'contain',
+              paddingRight: 4,
+            }}
+          >
+            {filteredGuests.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '30px 10px', color: themeMuted, fontSize: '.84rem' }}>
+                No conversations found matching filters.
+              </div>
+            ) : (
+              filteredGuests.map((g) => {
+                const isSel = selectedGuest?.id === g.id;
+                const gMsgs = getMessages(g);
+                const lastMsg = gMsgs.length > 0 ? gMsgs[gMsgs.length - 1] : null;
+
+                return (
+                  <div
+                    key={g.id}
+                    onClick={() => setSelectedGuest(g)}
+                    style={{
+                      padding: 12,
+                      borderRadius: 14,
+                      border: isSel ? '1px solid #6366F1' : `1px solid ${themeBorder}`,
+                      background: isSel ? (isLightMode ? '#EEF2FF' : 'rgba(99, 102, 241, 0.15)') : themeCardBg,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      boxShadow: isSel ? '0 4px 14px rgba(99, 102, 241, 0.15)' : 'none',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <DefaultUserAvatar size={32} bg={isLightMode ? '#CBD5E1' : 'rgba(255, 255, 255, 0.15)'} iconColor={isLightMode ? '#475569' : '#FFFFFF'} />
+                        <b style={{ fontSize: '.88rem', color: themeText }}>{g.name}</b>
+                      </div>
+                      <span
+                        style={{
+                          fontSize: '.68rem',
+                          color: g.status === 'Resolved' ? '#10B981' : (g.is_directed_to_agent || g.status === 'Directed to Agent' ? '#10B981' : '#6366F1'),
+                          fontWeight: 700,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                        }}
+                      >
+                        {(g.is_directed_to_agent || g.status === 'Directed to Agent') && (
+                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981' }} />
+                        )}
+                        {g.is_directed_to_agent || g.status === 'Directed to Agent' ? '🟢 Live with Agent' : g.status}
+                      </span>
                     </div>
-                    <span
-                      style={{
-                        fontSize: '.68rem',
-                        color: g.status === 'Resolved' ? '#10B981' : (g.is_directed_to_agent || g.status === 'Directed to Agent' ? '#10B981' : '#6366F1'),
-                        fontWeight: 700,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 4,
-                      }}
-                    >
-                      {(g.is_directed_to_agent || g.status === 'Directed to Agent') && (
-                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981' }} />
-                      )}
-                      {g.is_directed_to_agent || g.status === 'Directed to Agent' ? '🟢 Live with Agent' : g.status}
+
+                    <span style={{ fontSize: '.72rem', color: themeMuted, display: 'block', marginBottom: 6 }}>
+                      {g.channel} · {g.timeAgo}
                     </span>
+
+                    <p style={{ margin: 0, fontSize: '.76rem', color: themeText, opacity: 0.85, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {lastMsg ? lastMsg.text : 'No messages'}
+                    </p>
                   </div>
-
-                  <span style={{ fontSize: '.72rem', color: themeMuted, display: 'block', marginBottom: 6 }}>
-                    {g.channel} · {g.timeAgo}
-                  </span>
-
-                  <p style={{ margin: 0, fontSize: '.76rem', color: themeText, opacity: 0.85, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {lastMsg ? lastMsg.text : 'No messages'}
-                  </p>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
 
-        {/* RIGHT CHAT DETAILS & COMPOSER PANEL */}
+        {/* RIGHT CHAT DETAILS & ADHERED COMPOSER PANEL */}
         {selectedGuest ? (
-          <div style={{ display: 'flex', flexDirection: 'column', background: themeCardBg, borderRadius: 16, border: `1px solid ${themeBorder}`, overflow: 'hidden' }}>
-            {/* CHAT PANEL HEADER */}
-            <div style={{ padding: '16px 20px', background: isLightMode ? '#FFFFFF' : '#1E293B', borderBottom: `1px solid ${themeBorder}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div
+            className="conversations-chat-column"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100%',
+              minHeight: 0,
+              background: themeCardBg,
+              borderRadius: 16,
+              border: `1px solid ${themeBorder}`,
+              overflow: 'hidden',
+              boxSizing: 'border-box',
+            }}
+          >
+            {/* CHAT PANEL HEADER (PINNED AT TOP) */}
+            <div
+              style={{
+                padding: '16px 20px',
+                background: isLightMode ? '#FFFFFF' : '#1E293B',
+                borderBottom: `1px solid ${themeBorder}`,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexShrink: 0,
+              }}
+            >
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <DefaultUserAvatar size={42} bg={isLightMode ? '#CBD5E1' : 'rgba(255, 255, 255, 0.15)'} iconColor={isLightMode ? '#475569' : '#FFFFFF'} />
                 <div>
@@ -352,7 +436,7 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
                     </span>
                   </div>
                   <span style={{ fontSize: '.76rem', color: themeMuted }}>
-                    Channel: <b>{selectedGuest.channel}</b> · Villa: <b>{selectedGuest.villa}</b>
+                    Channel: <b>{selectedGuest.channel}</b> · Villa: <b>{selectedGuest.villa || 'Standard'}</b>
                   </span>
                 </div>
               </div>
@@ -370,6 +454,7 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
                     fontSize: '.82rem',
                     cursor: 'pointer',
                     boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                    transition: 'all 0.2s ease',
                   }}
                 >
                   ✔️ Mark Resolved
@@ -377,9 +462,25 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
               )}
             </div>
 
-            {/* MESSAGE STREAM */}
-            <div style={{ flex: 1, padding: 20, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, minHeight: 320, background: isLightMode ? '#FAFAFD' : '#0F172A' }}>
-              {getMessages(selectedGuest).map((m) => {
+            {/* MESSAGE STREAM (SCROLLABLE, ADHERES TO BOTTOM) */}
+            <div
+              ref={messageStreamRef}
+              className="conversations-message-stream"
+              style={{
+                flex: '1 1 0%',
+                minHeight: 0,
+                padding: '20px 24px',
+                overflowY: 'auto',
+                overflowX: 'hidden',
+                overscrollBehavior: 'contain',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 12,
+                background: isLightMode ? '#FAFAFD' : '#0F172A',
+                scrollBehavior: 'smooth',
+              }}
+            >
+              {currentMessages.map((m) => {
                 const isAdmin = m.sender === 'admin';
                 const isBot = m.sender === 'bot';
 
@@ -403,6 +504,7 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
                         lineHeight: 1.45,
                         boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
                         border: `1px solid ${isAdmin ? 'transparent' : themeBorder}`,
+                        wordBreak: 'break-word',
                       }}
                     >
                       {m.text}
@@ -410,80 +512,102 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
                   </div>
                 );
               })}
-              <div ref={chatEndRef} />
+              <div ref={chatEndRef} style={{ height: 1 }} />
             </div>
 
-            {/* QUICK CANNED EXECUTIVE BUTTONS */}
-            <div style={{ padding: '10px 16px', background: isLightMode ? '#FFFFFF' : '#1E293B', borderTop: `1px solid ${themeBorder}`, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                onClick={() => animateTypewriterPrompt('✅ Early check-in at 11:00 AM is approved! Room is ready.', (s) => setInputText(s))}
-                className="btn btn-sm"
-                style={{ fontSize: '.74rem', padding: '5px 10px', background: 'rgba(16, 185, 129, 0.12)', color: '#10B981', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 12, cursor: 'pointer' }}
-                title="Click to type prompt into reply composer"
-              >
-                ✅ Approve Early Check-In
-              </button>
-              <button
-                type="button"
-                onClick={() => animateTypewriterPrompt('🍽️ Candlelight beachfront dinner confirmed for 2 guests at 7:00 PM.', (s) => setInputText(s))}
-                className="btn btn-sm"
-                style={{ fontSize: '.74rem', padding: '5px 10px', background: 'rgba(99, 102, 241, 0.12)', color: '#6366F1', border: '1px solid rgba(99, 102, 241, 0.3)', borderRadius: 12, cursor: 'pointer' }}
-                title="Click to type prompt into reply composer"
-              >
-                🍽️ Confirm Dining
-              </button>
-              <button
-                type="button"
-                onClick={() => animateTypewriterPrompt('🚐 Executive van pickup details sent to your SMS.', (s) => setInputText(s))}
-                className="btn btn-sm"
-                style={{ fontSize: '.74rem', padding: '5px 10px', background: 'rgba(56, 189, 248, 0.12)', color: '#0EA5E9', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: 12, cursor: 'pointer' }}
-                title="Click to type prompt into reply composer"
-              >
-                🚐 Send Van Details
-              </button>
-            </div>
-
-            {/* REPLY INPUT COMPOSER */}
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleSendMessage();
+            {/* CHAT BOX CONTAINER (ADHERED / PINNED TO BOTTOM) */}
+            <div
+              className="conversations-chat-adhered-box"
+              style={{
+                flexShrink: 0,
+                marginTop: 'auto',
+                background: isLightMode ? '#FFFFFF' : '#1E293B',
+                borderTop: `1px solid ${themeBorder}`,
               }}
-              style={{ padding: 14, background: isLightMode ? '#FFFFFF' : '#1E293B', borderTop: `1px solid ${themeBorder}`, display: 'flex', gap: 10 }}
             >
-              <input
-                type="text"
-                placeholder="Type executive response to guest..."
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
+              {/* QUICK CANNED EXECUTIVE BUTTONS */}
+              <div
                 style={{
-                  flex: 1,
                   padding: '10px 16px',
-                  borderRadius: 24,
-                  border: `1px solid ${themeBorder}`,
-                  background: isLightMode ? '#F1F5F9' : '#0F172A',
-                  color: themeText,
-                  fontSize: '.88rem',
-                }}
-              />
-              <button
-                type="submit"
-                style={{
-                  padding: '10px 22px',
-                  borderRadius: 24,
-                  background: 'linear-gradient(135deg, #4338CA, #6366F1)',
-                  color: '#FFF',
-                  border: 'none',
-                  fontWeight: 700,
-                  fontSize: '.88rem',
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 14px rgba(99, 102, 241, 0.35)',
+                  display: 'flex',
+                  gap: 8,
+                  flexWrap: 'wrap',
+                  borderBottom: `1px solid ${isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.06)'}`,
                 }}
               >
-                Send Reply ✦
-              </button>
-            </form>
+                <button
+                  type="button"
+                  onClick={() => animateTypewriterPrompt('✅ Early check-in at 11:00 AM is approved! Room is ready.', (s) => setInputText(s))}
+                  className="btn btn-sm"
+                  style={{ fontSize: '.74rem', padding: '5px 10px', background: 'rgba(16, 185, 129, 0.12)', color: '#10B981', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 12, cursor: 'pointer' }}
+                  title="Click to type prompt into reply composer"
+                >
+                  ✅ Approve Early Check-In
+                </button>
+                <button
+                  type="button"
+                  onClick={() => animateTypewriterPrompt('🍽️ Candlelight beachfront dinner confirmed for 2 guests at 7:00 PM.', (s) => setInputText(s))}
+                  className="btn btn-sm"
+                  style={{ fontSize: '.74rem', padding: '5px 10px', background: 'rgba(99, 102, 241, 0.12)', color: '#6366F1', border: '1px solid rgba(99, 102, 241, 0.3)', borderRadius: 12, cursor: 'pointer' }}
+                  title="Click to type prompt into reply composer"
+                >
+                  🍽️ Confirm Dining
+                </button>
+                <button
+                  type="button"
+                  onClick={() => animateTypewriterPrompt('🚐 Executive van pickup details sent to your SMS.', (s) => setInputText(s))}
+                  className="btn btn-sm"
+                  style={{ fontSize: '.74rem', padding: '5px 10px', background: 'rgba(56, 189, 248, 0.12)', color: '#0EA5E9', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: 12, cursor: 'pointer' }}
+                  title="Click to type prompt into reply composer"
+                >
+                  🚐 Send Van Details
+                </button>
+              </div>
+
+              {/* REPLY INPUT COMPOSER */}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSendMessage();
+                }}
+                style={{ padding: 14, display: 'flex', gap: 10, alignItems: 'center' }}
+              >
+                <input
+                  type="text"
+                  placeholder="Type executive response to guest..."
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  style={{
+                    flex: 1,
+                    padding: '10px 16px',
+                    borderRadius: 24,
+                    border: `1px solid ${themeBorder}`,
+                    background: isLightMode ? '#F1F5F9' : '#0F172A',
+                    color: themeText,
+                    fontSize: '.88rem',
+                    outline: 'none',
+                  }}
+                />
+                <button
+                  type="submit"
+                  style={{
+                    padding: '10px 22px',
+                    borderRadius: 24,
+                    background: 'linear-gradient(135deg, #4338CA, #6366F1)',
+                    color: '#FFF',
+                    border: 'none',
+                    fontWeight: 700,
+                    fontSize: '.88rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 14px rgba(99, 102, 241, 0.35)',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
+                  }}
+                >
+                  Send Reply ✦
+                </button>
+              </form>
+            </div>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 24px', background: themeCardBg, borderRadius: 16, border: `1px dashed ${themeBorder}`, textAlign: 'center', minHeight: 440 }}>
