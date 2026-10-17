@@ -928,22 +928,60 @@ export default function Admin() {
   }
 
   const unreadNotifsCount = notifications.filter((n: any) => !n.is_read).length;
+  const readNotifsCount = notifications.filter((n: any) => Boolean(n.is_read)).length;
+  const smsNotifsCount = notifications.filter((n: any) => n.type === 'sms' || Boolean(n.to_phone)).length;
+  const systemNotifsCount = notifications.filter((n: any) => n.type !== 'sms' && !n.to_phone).length;
 
   const handleMarkNotifRead = async (id: string) => {
+    setNotifications((prev: any[]) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
+    toast('✓ Notification marked as read');
     try {
       await api.markNotificationRead(id);
-      setNotifications((prev: any[]) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
-      toast('Notification marked as read');
     } catch (err: any) {
       console.warn(err);
     }
   };
 
   const handleMarkAllNotifsRead = async () => {
+    setNotifications((prev: any[]) => prev.map((n) => ({ ...n, is_read: true })));
+    toast('✓ All notifications moved to Read');
     try {
       await api.markAllNotificationsRead();
-      setNotifications((prev: any[]) => prev.map((n) => ({ ...n, is_read: true })));
-      toast('All notifications marked as read');
+    } catch (err: any) {
+      console.warn(err);
+    }
+  };
+
+  const handleDeleteNotif = async (id: string) => {
+    setNotifications((prev: any[]) => prev.filter((n) => n.id !== id));
+    toast('🗑️ Notification deleted');
+    try {
+      await api.deleteNotification(id);
+    } catch (err: any) {
+      console.warn(err);
+    }
+  };
+
+  const handleClearAllNotifs = async () => {
+    if (!notifications.length) return;
+    const ok = window.confirm('Are you sure you want to permanently clear all notifications?');
+    if (!ok) return;
+    setNotifications([]);
+    toast('🗑️ All notifications cleared');
+    try {
+      await api.clearAllNotifications();
+    } catch (err: any) {
+      console.warn(err);
+    }
+  };
+
+  const handleClearReadNotifs = async () => {
+    const readOnes = notifications.filter((n: any) => n.is_read);
+    if (!readOnes.length) return toast('No read notifications to clear');
+    setNotifications((prev: any[]) => prev.filter((n) => !n.is_read));
+    toast('🧹 Cleared all read notifications');
+    try {
+      await Promise.all(readOnes.map((n) => api.deleteNotification(n.id).catch(() => {})));
     } catch (err: any) {
       console.warn(err);
     }
@@ -1751,7 +1789,7 @@ export default function Admin() {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
                               <span className={`pill ${n.status || 'sent'}`}>{n.status || 'sent'}</span>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <span style={{ color: themeMuted, fontSize: '.72rem' }}>{fmtTime(n.created_at)}</span>
+                                <span style={{ color: themeMuted, fontSize: '.72rem' }}>{fmtDate(n.created_at)} {fmtTime(n.created_at)}</span>
                                 {!n.is_read && (
                                   <button
                                     onClick={() => handleMarkNotifRead(n.id)}
@@ -1761,6 +1799,13 @@ export default function Admin() {
                                     ✓
                                   </button>
                                 )}
+                                <button
+                                  onClick={() => handleDeleteNotif(n.id)}
+                                  title="Delete alert"
+                                  style={{ background: 'none', border: 'none', color: '#F43F5E', cursor: 'pointer', fontSize: '.75rem', padding: '0 4px' }}
+                                >
+                                  ✕
+                                </button>
                               </div>
                             </div>
                             <span style={{ color: themeText, display: 'block', marginTop: 2 }}>{n.body || n.content}</span>
@@ -4202,61 +4247,150 @@ export default function Admin() {
                     Live dispatch log of SMS guest alerts, role change verifications and automated reservation updates.
                   </p>
                 </div>
-                <div style={{ display: 'flex', gap: 10 }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                   {unreadNotifsCount > 0 && (
-                    <button className="btn btn-sm btn-ghost" onClick={handleMarkAllNotifsRead} style={{ color: themeText, border: `1px solid ${themeBorder}`, fontWeight: 600 }}>
+                    <button
+                      className="btn btn-sm"
+                      onClick={handleMarkAllNotifsRead}
+                      style={{
+                        background: isLightMode ? '#EEF2FF' : 'rgba(99, 102, 241, 0.15)',
+                        color: '#6366F1',
+                        border: '1px solid #6366F1',
+                        fontWeight: 700,
+                        borderRadius: 8,
+                        padding: '6px 14px',
+                        cursor: 'pointer',
+                      }}
+                      title="Mark all notifications as read"
+                    >
                       ✓ Mark All Read
                     </button>
                   )}
-                  <button className="btn btn-sm btn-sky" onClick={() => api.myNotifications().then((n: any) => Array.isArray(n) && setNotifications(n))} style={{ fontWeight: 700 }}>
+                  {readNotifsCount > 0 && (
+                    <button
+                      className="btn btn-sm btn-ghost"
+                      onClick={handleClearReadNotifs}
+                      style={{
+                        color: themeMuted,
+                        border: `1px solid ${themeBorder}`,
+                        fontWeight: 600,
+                        borderRadius: 8,
+                        padding: '6px 12px',
+                        cursor: 'pointer',
+                      }}
+                      title="Clear only read notifications"
+                    >
+                      🧹 Clear Read ({readNotifsCount})
+                    </button>
+                  )}
+                  {notifications.length > 0 && (
+                    <button
+                      className="btn btn-sm btn-ghost"
+                      onClick={handleClearAllNotifs}
+                      style={{
+                        color: '#F43F5E',
+                        border: '1px solid rgba(244, 63, 94, 0.3)',
+                        fontWeight: 600,
+                        borderRadius: 8,
+                        padding: '6px 12px',
+                        background: 'rgba(244, 63, 94, 0.05)',
+                        cursor: 'pointer',
+                      }}
+                      title="Clear all alerts permanently"
+                    >
+                      🗑️ Clear All
+                    </button>
+                  )}
+                  <button
+                    className="btn btn-sm btn-sky"
+                    onClick={() => {
+                      api.myNotifications().then((n: any) => {
+                        if (Array.isArray(n)) {
+                          setNotifications(n);
+                          toast('🔄 Alerts synchronized');
+                        }
+                      }).catch(() => toast('Could not refresh alerts', true));
+                    }}
+                    style={{ fontWeight: 700, borderRadius: 8, padding: '6px 14px' }}
+                  >
                     🔄 Refresh Alerts
                   </button>
                 </div>
               </div>
 
               {/* Filter Pills */}
-              <div style={{ display: 'flex', gap: 8, marginBottom: 18, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 18, flexWrap: 'wrap', alignItems: 'center' }}>
                 {[
                   { key: 'all', label: `All Alerts (${notifications.length})` },
                   { key: 'unread', label: `Unread (${unreadNotifsCount})` },
-                  { key: 'sms', label: 'SMS Messages' },
-                  { key: 'system', label: 'System Logs' },
-                ].map((f) => (
-                  <button
-                    key={f.key}
-                    onClick={() => setNotifFilter(f.key)}
-                    style={{
-                      padding: '6px 14px',
-                      borderRadius: 20,
-                      border: `1px solid ${notifFilter === f.key ? '#6366F1' : themeBorder}`,
-                      background: notifFilter === f.key ? (isLightMode ? '#EEF2FF' : 'rgba(99, 102, 241, 0.2)') : 'transparent',
-                      color: notifFilter === f.key ? '#6366F1' : themeText,
-                      fontWeight: 700,
-                      fontSize: '.82rem',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {f.label}
-                  </button>
-                ))}
+                  { key: 'read', label: `Read (${readNotifsCount})` },
+                  { key: 'sms', label: `SMS Messages (${smsNotifsCount})` },
+                  { key: 'system', label: `System Logs (${systemNotifsCount})` },
+                ].map((f) => {
+                  const isActive = notifFilter === f.key;
+                  return (
+                    <button
+                      key={f.key}
+                      onClick={() => setNotifFilter(f.key)}
+                      style={{
+                        padding: '7px 16px',
+                        borderRadius: 20,
+                        border: `1px solid ${isActive ? '#6366F1' : themeBorder}`,
+                        background: isActive
+                          ? (isLightMode ? '#EEF2FF' : 'rgba(99, 102, 241, 0.22)')
+                          : (isLightMode ? '#FFFFFF' : 'rgba(255,255,255,0.03)'),
+                        color: isActive ? '#6366F1' : themeText,
+                        fontWeight: isActive ? 800 : 600,
+                        fontSize: '.82rem',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                        boxShadow: isActive ? '0 2px 8px rgba(99, 102, 241, 0.15)' : 'none',
+                      }}
+                    >
+                      {f.label}
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Notifications List */}
-              {notifications.length === 0 ? (
-                <div style={{ padding: '40px 20px', textAlign: 'center', color: themeMuted, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.02)', borderRadius: 14, border: `1px dashed ${themeBorder}` }}>
-                  <p style={{ fontSize: '1.1rem', margin: '0 0 6px' }}>📭 No alerts or notifications recorded.</p>
-                  <small>SMS confirmations and system dispatches will appear here in real time.</small>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {notifications
-                    .filter((n: any) => {
-                      if (notifFilter === 'unread') return !n.is_read;
-                      if (notifFilter === 'sms') return n.type === 'sms' || n.to_phone;
-                      if (notifFilter === 'system') return n.type !== 'sms';
-                      return true;
-                    })
-                    .map((n: any) => (
+              {(() => {
+                const filtered = notifications.filter((n: any) => {
+                  if (notifFilter === 'unread') return !n.is_read;
+                  if (notifFilter === 'read') return Boolean(n.is_read);
+                  if (notifFilter === 'sms') return n.type === 'sms' || Boolean(n.to_phone);
+                  if (notifFilter === 'system') return n.type !== 'sms' && !n.to_phone;
+                  return true;
+                });
+
+                if (notifications.length === 0) {
+                  return (
+                    <div style={{ padding: '48px 20px', textAlign: 'center', color: themeMuted, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.02)', borderRadius: 14, border: `1px dashed ${themeBorder}` }}>
+                      <p style={{ fontSize: '1.2rem', margin: '0 0 6px' }}>📭 No alerts or notifications recorded.</p>
+                      <small>SMS confirmations and system dispatches will appear here in real time.</small>
+                    </div>
+                  );
+                }
+
+                if (filtered.length === 0) {
+                  return (
+                    <div style={{ padding: '40px 20px', textAlign: 'center', color: themeMuted, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.02)', borderRadius: 14, border: `1px dashed ${themeBorder}` }}>
+                      <p style={{ fontSize: '1.1rem', margin: '0 0 6px', color: themeText, fontWeight: 700 }}>
+                        {notifFilter === 'unread' && "🎉 You're all caught up! No unread notifications."}
+                        {notifFilter === 'read' && "📖 No read notifications found in history."}
+                        {notifFilter === 'sms' && "📱 No SMS dispatch messages found."}
+                        {notifFilter === 'system' && "⚙️ No system log alerts found."}
+                      </p>
+                      <small>
+                        {notifFilter === 'unread' ? 'All alerts have been marked as read. Switch to "Read" or "All Alerts" to view history.' : 'Check other filters or wait for upcoming alerts.'}
+                      </small>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {filtered.map((n: any) => (
                       <div
                         key={n.id}
                         style={{
@@ -4265,9 +4399,12 @@ export default function Admin() {
                           alignItems: 'flex-start',
                           padding: '14px 18px',
                           borderRadius: 14,
-                          border: `1px solid ${n.is_read ? themeBorder : '#6366F1'}`,
-                          background: !n.is_read ? (isLightMode ? '#F8FAFC' : 'rgba(99, 102, 241, 0.08)') : (isLightMode ? '#FFFFFF' : 'rgba(15,23,42,0.6)'),
+                          border: `1px solid ${!n.is_read ? '#6366F1' : themeBorder}`,
+                          background: !n.is_read
+                            ? (isLightMode ? '#F8FAFC' : 'rgba(99, 102, 241, 0.08)')
+                            : (isLightMode ? '#FFFFFF' : 'rgba(15,23,42,0.6)'),
                           boxShadow: !n.is_read ? '0 2px 10px rgba(99,102,241,0.1)' : 'none',
+                          transition: 'all 0.15s ease',
                         }}
                       >
                         <div style={{ flex: 1, minWidth: 0, paddingRight: 16 }}>
@@ -4275,33 +4412,60 @@ export default function Admin() {
                             <span className={`pill ${n.status || 'sent'}`}>{n.status || 'sent'}</span>
                             {n.to_phone && <span style={{ fontSize: '.75rem', fontWeight: 700, color: '#0EA5E9' }}>📱 {n.to_phone}</span>}
                             <span style={{ fontSize: '.75rem', color: themeMuted }}>• {fmtDate(n.created_at)} {fmtTime(n.created_at)}</span>
-                            {!n.is_read && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#F43F5E', display: 'inline-block' }} />}
+                            {!n.is_read ? (
+                              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#F43F5E', display: 'inline-block' }} title="Unread alert" />
+                            ) : (
+                              <span style={{ fontSize: '.72rem', color: '#10B981', fontWeight: 600 }}>✓ Read</span>
+                            )}
                           </div>
                           <p style={{ margin: 0, fontSize: '.9rem', color: themeText, lineHeight: 1.4 }}>
                             {n.body || n.content || 'Notification message'}
                           </p>
                         </div>
-                        {!n.is_read && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                          {!n.is_read && (
+                            <button
+                              onClick={() => handleMarkNotifRead(n.id)}
+                              style={{
+                                background: 'transparent',
+                                border: `1px solid ${themeBorder}`,
+                                color: '#6366F1',
+                                borderRadius: 8,
+                                padding: '5px 10px',
+                                fontSize: '.76rem',
+                                cursor: 'pointer',
+                                whiteSpace: 'nowrap',
+                                fontWeight: 700,
+                              }}
+                              title="Mark this alert as read"
+                            >
+                              ✓ Mark read
+                            </button>
+                          )}
                           <button
-                            onClick={() => handleMarkNotifRead(n.id)}
+                            onClick={() => handleDeleteNotif(n.id)}
                             style={{
                               background: 'transparent',
-                              border: `1px solid ${themeBorder}`,
-                              color: themeMuted,
+                              border: `1px solid ${isLightMode ? '#FEE2E2' : 'rgba(244, 63, 94, 0.25)'}`,
+                              color: '#F43F5E',
                               borderRadius: 8,
-                              padding: '4px 8px',
-                              fontSize: '.74rem',
+                              padding: '5px 9px',
+                              fontSize: '.76rem',
                               cursor: 'pointer',
-                              whiteSpace: 'nowrap',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
                             }}
+                            title="Delete this alert"
                           >
-                            Mark read
+                            🗑️
                           </button>
-                        )}
+                        </div>
                       </div>
                     ))}
-                </div>
-              )}
+                  </div>
+                );
+              })()}
             </div>
           )}
 

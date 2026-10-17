@@ -201,6 +201,8 @@ export const api = {
   myNotifications: () => req('/notifications/mine'),
   markNotificationRead: (id: string) => req(`/notifications/${id}/read`, { method: 'PATCH' }),
   markAllNotificationsRead: () => req('/notifications/read-all', { method: 'POST' }),
+  deleteNotification: (id: string) => req(`/notifications/${id}`, { method: 'DELETE' }),
+  clearAllNotifications: () => req('/notifications', { method: 'DELETE' }),
 
   // Financial & Executive Analytics (Cached via Redis)
   analyticsOverview: () => req('/analytics/overview'),
