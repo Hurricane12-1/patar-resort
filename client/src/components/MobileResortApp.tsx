@@ -2565,13 +2565,13 @@ export default function MobileResortApp() {
 
       {/* RESERVATION CHECKOUT & OFFICIAL VOUCHER MODAL */}
       {reservationModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy/85 backdrop-blur-md overflow-y-auto animate-fade-in">
-          <div className={`relative w-full ${showModalCalendar ? 'max-w-2xl' : 'max-w-lg'} rounded-3xl border border-white/10 bg-ink p-6 sm:p-8 shadow-2xl text-white my-8 max-h-[92vh] flex flex-col transition-all duration-300`}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-navy/85 backdrop-blur-md overflow-y-auto scrollbar-none animate-fade-in">
+          <div className={`relative w-full ${showModalCalendar ? 'max-w-2xl' : 'max-w-lg'} rounded-2xl sm:rounded-3xl border border-white/10 bg-ink p-4 sm:p-7 shadow-2xl text-white my-auto max-h-[94vh] flex flex-col transition-all duration-300`}>
             {/* Header */}
-            <div className="flex items-start justify-between gap-4 pb-4 border-b border-white/10">
-              <div>
-                <span className="text-[11px] font-medium uppercase tracking-[0.28em] text-cyan block">Direct Booking Sanctuary</span>
-                <h3 className="font-serif text-2xl sm:text-3xl font-medium text-white mt-1">
+            <div className="flex items-start justify-between gap-3 pb-3 sm:pb-4 border-b border-white/10">
+              <div className="min-w-0">
+                <span className="text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.25em] text-cyan block truncate">Direct Booking Sanctuary</span>
+                <h3 className="font-serif text-xl sm:text-2xl font-medium text-white mt-0.5 truncate">
                   {resConfirmed ? 'Official Booking Voucher' : 'Confirm Reservation'}
                 </h3>
               </div>
@@ -2589,51 +2589,51 @@ export default function MobileResortApp() {
             </div>
 
             {/* Modal Content */}
-            <div className="mt-5 overflow-y-auto pr-1 flex-1">
+            <div className="mt-3.5 sm:mt-4 overflow-y-auto scrollbar-none pr-0.5 flex-1">
               {resConfirmed ? (
                 /* OFFICIAL CONFIRMED VOUCHER */
                 <div className="flex flex-col gap-4 animate-fade-in">
-                  <div className="rounded-2xl border border-cyan/40 bg-gradient-to-b from-cyan/15 via-ink to-ink p-5 text-center relative overflow-hidden">
-                    <span className="font-serif text-4xl text-cyan block">✦</span>
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-cyan mt-1 block">J & D Beach House · Patar Bolinao</span>
-                    <h4 className="font-serif text-2xl font-medium text-white mt-1">Reservation Confirmed</h4>
-                    <div className="mt-3 inline-block rounded-full bg-cyan px-4 py-1 font-mono text-xs font-bold tracking-widest text-navy">
+                  <div className="rounded-2xl border border-cyan/40 bg-gradient-to-b from-cyan/15 via-ink to-ink p-4 sm:p-5 text-center relative overflow-hidden">
+                    <span className="font-serif text-3xl sm:text-4xl text-cyan block">✦</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-cyan mt-1 block">J & D Beach House · Patar Bolinao</span>
+                    <h4 className="font-serif text-xl sm:text-2xl font-medium text-white mt-1">Reservation Confirmed</h4>
+                    <div className="mt-2.5 inline-block rounded-full bg-cyan px-3.5 py-1 font-mono text-[11px] font-bold tracking-widest text-navy">
                       REF: JD-RES-{resConfirmed.id ? resConfirmed.id.slice(0, 8).toUpperCase() : 'GUARANTEED'}
                     </div>
 
-                    <div className="mt-5 grid grid-cols-2 gap-2 text-left text-xs bg-white/[0.03] p-3.5 rounded-xl border border-white/10">
+                    <div className="mt-4 grid grid-cols-2 gap-2 text-left text-xs bg-white/[0.03] p-3 rounded-xl border border-white/10">
                       <div>
-                        <span className="text-[10px] uppercase text-white/40 block">Guest Resident</span>
-                        <span className="font-medium text-white">{resConfirmed.guest_name}</span>
+                        <span className="text-[9px] uppercase text-white/40 block">Guest Resident</span>
+                        <span className="font-medium text-white truncate block">{resConfirmed.guest_name}</span>
                       </div>
                       <div>
-                        <span className="text-[10px] uppercase text-white/40 block">Accommodation</span>
-                        <span className="font-medium text-cyan">{resConfirmed.roomName}</span>
+                        <span className="text-[9px] uppercase text-white/40 block">Accommodation</span>
+                        <span className="font-medium text-cyan truncate block">{resConfirmed.roomName}</span>
                       </div>
                       <div>
-                        <span className="text-[10px] uppercase text-white/40 block">Check-in</span>
+                        <span className="text-[9px] uppercase text-white/40 block">Check-in</span>
                         <span className="font-medium text-white">{checkIn}</span>
                       </div>
                       <div>
-                        <span className="text-[10px] uppercase text-white/40 block">Check-out</span>
-                        <span className="font-medium text-white">{checkOut} ({resConfirmed.nights} Nights)</span>
+                        <span className="text-[9px] uppercase text-white/40 block">Check-out</span>
+                        <span className="font-medium text-white">{checkOut} ({resConfirmed.nights}N)</span>
                       </div>
                       <div>
-                        <span className="text-[10px] uppercase text-white/40 block">Total Est.</span>
+                        <span className="text-[9px] uppercase text-white/40 block">Total Est.</span>
                         <span className="font-medium text-white">{peso(resConfirmed.total_php)}</span>
                       </div>
                       <div>
-                        <span className="text-[10px] uppercase text-white/40 block">30% Downpayment</span>
+                        <span className="text-[9px] uppercase text-white/40 block">30% Downpayment</span>
                         <span className="font-medium text-cyan">{peso(resConfirmed.downpayment_php)}</span>
                       </div>
                     </div>
 
-                    <p className="mt-3 text-[11px] text-white/60">
+                    <p className="mt-3 text-[10px] sm:text-[11px] text-white/60 leading-relaxed">
                       We look forward to welcoming you! Present this digital voucher or SMS upon arrival at the Front Desk.
                     </p>
                   </div>
 
-                  <div className="flex gap-3">
+                  <div className="flex gap-2 sm:gap-3">
                     <button
                       type="button"
                       onClick={() => {
@@ -2660,69 +2660,73 @@ export default function MobileResortApp() {
                 </div>
               ) : (
                 /* RESERVATION CHECKOUT FORM */
-                <form onSubmit={handleConfirmReservation} className="flex flex-col gap-4">
+                <form onSubmit={handleConfirmReservation} className="flex flex-col gap-3.5 sm:gap-4">
                   {/* Selected Room Card Preview with Interactive Date Adjustment & Calendar */}
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 flex flex-col gap-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <span className="font-serif text-lg font-medium text-white block">
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 sm:p-4 flex flex-col gap-3">
+                    <div className="flex items-start sm:items-center justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <span className="font-serif text-lg sm:text-xl font-medium text-white block truncate">
                           {resRoom?.name || selectedRoom}
                         </span>
-                        <span className="text-xs text-white/50 block">
+                        <span className="text-[11px] sm:text-xs text-white/60 block mt-0.5">
                           {checkIn} → {checkOut} ({Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000))} Nights) · {guests}
                         </span>
                       </div>
                       <div className="text-right shrink-0">
-                        <span className="font-serif text-base text-cyan block font-semibold">
+                        <span className="font-serif text-base sm:text-lg text-cyan block font-semibold leading-tight">
                           {peso((resRoom?.rate_php || resRoom?.price || 4200) * Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000)))}
                         </span>
-                        <span className="text-[10px] text-white/40 block">
+                        <span className="text-[10px] text-white/40 block mt-0.5">
                           30% DP: {peso(Math.round((resRoom?.rate_php || resRoom?.price || 4200) * Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000)) * 0.3))}
                         </span>
                       </div>
                     </div>
 
-                    {/* Interactive Date Adjuster Bar & Calendar Toggle */}
-                    <div className="pt-3 border-t border-white/10 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
-                      <div className="flex items-center gap-2 text-xs flex-wrap">
-                        <span className="text-[11px] uppercase tracking-wider text-white/50 font-medium">Dates:</span>
-                        <input
-                          type="date"
-                          value={checkIn}
-                          min={today}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setCheckIn(val);
-                            if (val >= checkOut) {
-                              setCheckOut(addDays(val, 1));
-                            }
-                          }}
-                          className="rounded-xl border border-white/15 bg-white/5 px-2.5 py-1.5 text-xs text-white outline-none focus:border-cyan"
-                          title="Check-in date"
-                        />
-                        <span className="text-white/40 font-bold">→</span>
-                        <input
-                          type="date"
-                          value={checkOut}
-                          min={addDays(checkIn, 1)}
-                          onChange={(e) => setCheckOut(e.target.value)}
-                          className="rounded-xl border border-white/15 bg-white/5 px-2.5 py-1.5 text-xs text-white outline-none focus:border-cyan"
-                          title="Check-out date"
-                        />
+                    {/* Interactive Date Adjuster Bar - 2 columns adapting cleanly to phone screens */}
+                    <div className="pt-2.5 border-t border-white/10 flex flex-col gap-2">
+                      <div className="grid grid-cols-2 gap-2 w-full">
+                        <label className="flex flex-col gap-1 min-w-0">
+                          <span className="text-[10px] uppercase tracking-wider text-white/50 font-medium">Check-In</span>
+                          <input
+                            type="date"
+                            value={checkIn}
+                            min={today}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setCheckIn(val);
+                              if (val >= checkOut) {
+                                setCheckOut(addDays(val, 1));
+                              }
+                            }}
+                            className="w-full rounded-xl border border-white/15 bg-white/5 px-2.5 py-2 text-xs text-white outline-none focus:border-cyan transition"
+                            title="Check-in date"
+                          />
+                        </label>
+                        <label className="flex flex-col gap-1 min-w-0">
+                          <span className="text-[10px] uppercase tracking-wider text-white/50 font-medium">Check-Out</span>
+                          <input
+                            type="date"
+                            value={checkOut}
+                            min={addDays(checkIn, 1)}
+                            onChange={(e) => setCheckOut(e.target.value)}
+                            className="w-full rounded-xl border border-white/15 bg-white/5 px-2.5 py-2 text-xs text-white outline-none focus:border-cyan transition"
+                            title="Check-out date"
+                          />
+                        </label>
                       </div>
 
                       <button
                         type="button"
                         onClick={() => setShowModalCalendar((prev) => !prev)}
-                        className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-full border border-cyan/40 bg-cyan/15 text-cyan hover:bg-cyan hover:text-navy text-xs font-semibold uppercase tracking-wider transition cursor-pointer"
+                        className="w-full py-2 px-3 rounded-xl border border-cyan/40 bg-cyan/15 text-cyan hover:bg-cyan hover:text-navy text-xs font-semibold tracking-wide transition cursor-pointer flex items-center justify-center gap-1.5"
                       >
-                        📅 {showModalCalendar ? 'Hide Calendar' : 'View Calendar (Reserved Markings)'}
+                        📅 {showModalCalendar ? 'Hide Availability Calendar' : 'View Calendar (Check Reserved vs Open)'}
                       </button>
                     </div>
 
                     {/* Visual Availability Calendar with Reserved / Available Markings */}
                     {showModalCalendar && (
-                      <div className="mt-2 animate-fade-in">
+                      <div className="mt-1 animate-fade-in overflow-hidden">
                         <AvailabilityCalendar
                           selectedRoomId={resRoom?.id}
                           rooms={displayRooms}
@@ -2741,10 +2745,10 @@ export default function MobileResortApp() {
                   </div>
 
                   {!session && (
-                    <div className="rounded-2xl border border-gold/40 bg-gold/10 p-3.5 text-xs text-gold flex items-center justify-between gap-3">
-                      <div>
-                        <p className="font-semibold">Sign in required to confirm voucher</p>
-                        <p className="text-[11px] text-white/70">Register or log in to generate official resort voucher.</p>
+                    <div className="rounded-2xl border border-gold/40 bg-gold/10 p-3 text-xs text-gold flex items-center justify-between gap-2.5">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-xs leading-tight">Sign in required to confirm</p>
+                        <p className="text-[10px] text-white/70 mt-0.5 leading-tight">Register or log in to generate official voucher.</p>
                       </div>
                       <button
                         type="button"
@@ -2754,7 +2758,7 @@ export default function MobileResortApp() {
                         }}
                         className="shrink-0 px-3 py-1.5 rounded-full bg-cyan text-navy font-semibold text-[10px] uppercase tracking-wider hover:brightness-110 cursor-pointer"
                       >
-                        Sign In / Register
+                        Sign In
                       </button>
                     </div>
                   )}
@@ -2772,8 +2776,9 @@ export default function MobileResortApp() {
                     />
                   </label>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <label className="flex flex-col gap-1.5">
+                  {/* Mobile & Email - Stacks smoothly on phone without squishing */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <label className="flex flex-col gap-1.5 min-w-0">
                       <span className={LABEL}>Mobile Phone (11 Digits) *</span>
                       <input
                         required
@@ -2785,7 +2790,7 @@ export default function MobileResortApp() {
                         className={FIELD}
                       />
                     </label>
-                    <label className="flex flex-col gap-1.5">
+                    <label className="flex flex-col gap-1.5 min-w-0">
                       <span className={LABEL}>Email Address *</span>
                       <input
                         required
@@ -2801,20 +2806,25 @@ export default function MobileResortApp() {
                   {/* Payment Method Selector */}
                   <label className="flex flex-col gap-1.5">
                     <span className={LABEL}>Preferred Downpayment Method (30% Required)</span>
-                    <div className="grid grid-cols-2 gap-2 mt-1">
-                      {['GCash', 'Maya', 'Credit / Debit Card', 'Bank Transfer (BDO/BPI)'].map((pm) => (
+                    <div className="grid grid-cols-2 gap-2 mt-0.5">
+                      {[
+                        { name: 'GCash', tag: 'Fast / E-Wallet' },
+                        { name: 'Maya', tag: 'Fast / E-Wallet' },
+                        { name: 'Credit / Debit Card', tag: 'Visa / Mastercard' },
+                        { name: 'Bank Transfer (BDO/BPI)', tag: 'Direct Deposit' },
+                      ].map((pm) => (
                         <button
-                          key={pm}
+                          key={pm.name}
                           type="button"
-                          onClick={() => setResPaymentMethod(pm)}
-                          className={`p-2.5 rounded-xl text-xs font-medium text-left border transition cursor-pointer ${
-                            resPaymentMethod === pm
-                              ? 'border-cyan bg-cyan/15 text-white'
+                          onClick={() => setResPaymentMethod(pm.name)}
+                          className={`p-2 sm:p-2.5 rounded-xl text-left border transition cursor-pointer flex flex-col justify-between min-h-[52px] ${
+                            resPaymentMethod === pm.name
+                              ? 'border-cyan bg-cyan/15 text-white shadow-[0_0_15px_rgba(34,195,238,0.2)]'
                               : 'border-white/10 bg-white/[0.02] text-white/60 hover:border-white/20'
                           }`}
                         >
-                          <span className="block text-[11px] font-semibold">{pm}</span>
-                          <span className="text-[9px] text-white/40 block mt-0.5">30% Advance Downpayment</span>
+                          <span className="block text-[11px] font-semibold leading-tight truncate w-full">{pm.name}</span>
+                          <span className="text-[9px] text-white/40 block mt-0.5 truncate w-full">{pm.tag}</span>
                         </button>
                       ))}
                     </div>
@@ -2827,20 +2837,20 @@ export default function MobileResortApp() {
                       rows={2}
                       value={resNotes}
                       onChange={(e) => setResNotes(e.target.value)}
-                      placeholder="e.g. ETA 3:00 PM, extra beach towels, barbecue grill setup…"
+                      placeholder="e.g. ETA 3:00 PM, extra towels, barbecue grill setup…"
                       className="w-full rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-xs text-white outline-none focus:border-cyan/60 resize-none"
                     />
                   </label>
 
-                  <div className="pt-2">
+                  <div className="pt-1.5">
                     <button
                       type="submit"
                       disabled={resSubmitting}
-                      className={`${BTN_PRIMARY} w-full py-4 text-xs font-semibold uppercase tracking-[0.18em] cursor-pointer`}
+                      className={`${BTN_PRIMARY} w-full py-3.5 sm:py-4 text-xs font-semibold uppercase tracking-[0.18em] cursor-pointer`}
                     >
                       {resSubmitting ? 'Confirming Reservation…' : 'Confirm Stay & Generate Voucher ✦'}
                     </button>
-                    <p className="mt-2 text-center text-[10px] text-white/40">
+                    <p className="mt-1.5 text-center text-[10px] text-white/40">
                       No cancellation fee up to 48 hours before check-in. Instant confirmation.
                     </p>
                   </div>

@@ -244,45 +244,43 @@ export default function AvailabilityCalendar({
       }}
     >
       {/* Header with Title and Room Filter */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: '1.25rem' }}>📅</span>
-            <h3 style={{ margin: 0, fontSize: '1.2rem', color: textTitle, fontFamily: "'Cormorant Garamond', Georgia, serif" }}>
-              Resort Availability & Locked-In Calendar
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+        <div style={{ minWidth: 0, flex: '1 1 180px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: '1.1rem' }}>📅</span>
+            <h3 style={{ margin: 0, fontSize: '.95rem', color: textTitle, fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 700 }}>
+              Availability Calendar
             </h3>
           </div>
-          <p style={{ margin: '3px 0 0', fontSize: '.82rem', color: textMuted }}>
-            Real-time calendar view. Dates reserved by guests are locked in (taken) to guarantee zero overbooking.
+          <p style={{ margin: '1px 0 0', fontSize: '.72rem', color: textMuted }}>
+            Live status. Reserved dates are locked to prevent double-booking.
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
           {/* Accommodation Filter */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <label style={{ fontSize: '.78rem', color: textMuted, fontWeight: 700 }}>Villa / Room:</label>
-            <select
-              value={activeRoomId}
-              onChange={(e) => setActiveRoomId(e.target.value)}
-              style={{
-                padding: '6px 12px',
-                borderRadius: 10,
-                border: `1px solid ${borderCard}`,
-                background: isLightMode ? '#F8FAFC' : '#1E293B',
-                color: textTitle,
-                fontSize: '.82rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              <option value="all">Resort-Wide (All Accommodations)</option>
-              {rooms.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name} ({r.category || 'Cottage'})
-                </option>
-              ))}
-            </select>
-          </div>
+          <select
+            value={activeRoomId}
+            onChange={(e) => setActiveRoomId(e.target.value)}
+            style={{
+              padding: '4px 8px',
+              borderRadius: 8,
+              border: `1px solid ${borderCard}`,
+              background: isLightMode ? '#F8FAFC' : '#1E293B',
+              color: textTitle,
+              fontSize: '.74rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              maxWidth: 160,
+            }}
+          >
+            <option value="all">All Accommodations</option>
+            {rooms.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.name}
+              </option>
+            ))}
+          </select>
 
           {onClose && (
             <button
@@ -291,14 +289,14 @@ export default function AvailabilityCalendar({
                 background: 'transparent',
                 border: `1px solid ${borderCard}`,
                 color: textMuted,
-                borderRadius: 8,
-                padding: '5px 10px',
+                borderRadius: 6,
+                padding: '3px 8px',
                 cursor: 'pointer',
-                fontSize: '.8rem',
+                fontSize: '.72rem',
               }}
               title="Close calendar"
             >
-              ✕ Close
+              ✕
             </button>
           )}
         </div>
@@ -311,31 +309,31 @@ export default function AvailabilityCalendar({
           justifyContent: 'space-between',
           alignItems: 'center',
           flexWrap: 'wrap',
-          gap: 12,
-          padding: '10px 14px',
+          gap: 8,
+          padding: '8px 10px',
           background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)',
-          borderRadius: 12,
-          marginBottom: 16,
+          borderRadius: 10,
+          marginBottom: 10,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
             onClick={handlePrevMonth}
             style={{
               background: 'transparent',
               border: `1px solid ${borderCard}`,
               color: textTitle,
-              borderRadius: 8,
-              padding: '4px 10px',
+              borderRadius: 6,
+              padding: '2px 8px',
               cursor: 'pointer',
               fontWeight: 700,
-              fontSize: '.85rem',
+              fontSize: '.75rem',
             }}
             title="Previous month"
           >
             ◀
           </button>
-          <strong style={{ fontSize: '1rem', color: textTitle, minWidth: 140, textAlign: 'center' }}>
+          <strong style={{ fontSize: '.88rem', color: textTitle, minWidth: 110, textAlign: 'center' }}>
             {monthName}
           </strong>
           <button
@@ -344,32 +342,32 @@ export default function AvailabilityCalendar({
               background: 'transparent',
               border: `1px solid ${borderCard}`,
               color: textTitle,
-              borderRadius: 8,
-              padding: '4px 10px',
+              borderRadius: 6,
+              padding: '2px 8px',
               cursor: 'pointer',
               fontWeight: 700,
-              fontSize: '.85rem',
+              fontSize: '.75rem',
             }}
             title="Next month"
           >
             ▶
           </button>
-          {loading && <span style={{ fontSize: '.75rem', color: '#0EA5E9' }}>⏳ Syncing locks…</span>}
+          {loading && <span style={{ fontSize: '.7rem', color: '#0EA5E9' }}>⏳</span>}
         </div>
 
         {/* Legend */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: '.75rem', flexWrap: 'wrap' }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: isLightMode ? '#059669' : '#34D399', fontWeight: 600 }}>
-            <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#10B981', display: 'inline-block' }} />
-            🟢 Available (Open)
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '.68rem', flexWrap: 'wrap' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: isLightMode ? '#059669' : '#34D399', fontWeight: 600 }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#10B981', display: 'inline-block' }} />
+            Open
           </span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#F43F5E', fontWeight: 700 }}>
-            <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#F43F5E', display: 'inline-block' }} />
-            🔴 Reserved / Booked
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#F43F5E', fontWeight: 700 }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#F43F5E', display: 'inline-block' }} />
+            🔴 Reserved
           </span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#0284C7', fontWeight: 600 }}>
-            <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#0284C7', display: 'inline-block' }} />
-            🔵 Selected Stay Range
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#0284C7', fontWeight: 600 }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#0284C7', display: 'inline-block' }} />
+            Selected
           </span>
         </div>
       </div>
@@ -379,13 +377,13 @@ export default function AvailabilityCalendar({
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(7, 1fr)',
-          gap: 6,
+          gap: 3,
           textAlign: 'center',
-          marginBottom: 6,
+          marginBottom: 4,
         }}
       >
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-          <div key={day} style={{ fontSize: '.74rem', fontWeight: 700, color: textMuted, textTransform: 'uppercase', padding: '4px 0' }}>
+          <div key={day} style={{ fontSize: '.65rem', fontWeight: 700, color: textMuted, textTransform: 'uppercase', padding: '2px 0' }}>
             {day}
           </div>
         ))}
@@ -396,12 +394,12 @@ export default function AvailabilityCalendar({
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(7, 1fr)',
-          gap: 6,
+          gap: 3,
         }}
       >
         {/* Leading empty cells before the 1st of the month */}
         {Array.from({ length: firstDayOfWeek }).map((_, idx) => (
-          <div key={`empty-${idx}`} style={{ height: 62, background: 'transparent' }} />
+          <div key={`empty-${idx}`} style={{ minHeight: 46, background: 'transparent' }} />
         ))}
 
         {/* Actual day cells */}
@@ -430,8 +428,8 @@ export default function AvailabilityCalendar({
             cellCursor = 'not-allowed';
           } else if (status.isLocked) {
             // Locked In / Taken
-            cellBg = isLightMode ? '#FFF1F2' : 'rgba(244, 63, 94, 0.12)';
-            cellBorder = '1px solid rgba(244, 63, 94, 0.35)';
+            cellBg = isLightMode ? '#FFF1F2' : 'rgba(244, 63, 94, 0.15)';
+            cellBorder = '1px solid rgba(244, 63, 94, 0.4)';
             cellColor = '#E11D48';
           }
 
@@ -451,86 +449,90 @@ export default function AvailabilityCalendar({
               onClick={() => handleDayClick(dateStr)}
               onMouseEnter={() => setHoverDate(dateStr)}
               onMouseLeave={() => setHoverDate(null)}
+              className="calendar-day-cell group relative flex flex-col justify-between transition-all select-none"
               style={{
-                height: 64,
-                padding: '6px 8px',
-                borderRadius: 10,
+                minHeight: 46,
+                padding: '3px 3px',
+                borderRadius: 8,
                 background: cellBg,
                 border: cellBorder,
                 color: cellColor,
                 cursor: cellCursor,
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                transition: 'all 0.15s ease',
-                position: 'relative',
-                boxShadow: isCheckIn || isCheckOut ? '0 4px 12px rgba(2, 132, 199, 0.3)' : 'none',
+                boxShadow: isCheckIn || isCheckOut ? '0 3px 10px rgba(2, 132, 199, 0.3)' : 'none',
               }}
               title={
                 status.isPast
                   ? 'Past date'
                   : status.isLocked
-                  ? `Locked in / Taken: ${status.label}`
-                  : `Available: ${status.label}`
+                  ? `Reserved on ${dateStr}`
+                  : `Available on ${dateStr}`
               }
             >
               {/* Day Number and Today Indicator */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '.84rem', fontWeight: isToday || isCheckIn || isCheckOut ? 800 : 600 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', lineHeight: 1 }}>
+                <span style={{ fontSize: '.76rem', fontWeight: isToday || isCheckIn || isCheckOut ? 800 : 600 }}>
                   {dayNum}
                 </span>
                 {isToday && (
                   <span
                     style={{
-                      fontSize: '.62rem',
+                      fontSize: '.5rem',
                       fontWeight: 800,
                       background: isCheckIn ? '#FFFFFF' : '#0EA5E9',
                       color: isCheckIn ? '#0284C7' : '#FFFFFF',
-                      borderRadius: 4,
-                      padding: '1px 4px',
+                      borderRadius: 3,
+                      padding: '0 2px',
+                      lineHeight: 1.2,
                     }}
                   >
-                    Today
+                    •
                   </span>
                 )}
               </div>
 
               {/* Status / Lock Badge */}
-              <div style={{ textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div style={{ textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>
                 {isCheckIn && (
-                  <span style={{ fontSize: '.68rem', fontWeight: 800, color: '#FFFFFF' }}>Check-In</span>
+                  <span style={{ fontSize: '.58rem', fontWeight: 800, color: '#FFFFFF', textTransform: 'uppercase' }}>In</span>
                 )}
                 {isCheckOut && (
-                  <span style={{ fontSize: '.68rem', fontWeight: 800, color: '#FFFFFF' }}>Check-Out</span>
+                  <span style={{ fontSize: '.58rem', fontWeight: 800, color: '#FFFFFF', textTransform: 'uppercase' }}>Out</span>
                 )}
                 {!isCheckIn && !isCheckOut && (
                   <>
                     {status.isPast ? (
-                      <span style={{ fontSize: '.65rem', color: isLightMode ? '#94A3B8' : '#475569' }}>—</span>
+                      <span style={{ fontSize: '.55rem', color: isLightMode ? '#94A3B8' : '#475569' }}>—</span>
                     ) : status.isLocked ? (
                       <span
                         style={{
-                          fontSize: '.65rem',
+                          fontSize: '.56rem',
                           fontWeight: 800,
                           color: '#E11D48',
                           background: isLightMode ? 'rgba(244,63,94,0.1)' : 'rgba(244,63,94,0.25)',
-                          padding: '2px 5px',
-                          borderRadius: 4,
+                          padding: '1px 2px',
+                          borderRadius: 3,
                           display: 'inline-block',
-                          border: '1px solid rgba(244,63,94,0.4)',
+                          border: '1px solid rgba(244,63,94,0.3)',
+                          maxWidth: '100%',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
                         }}
                       >
-                        🔴 Reserved
+                        🔴 Booked
                       </span>
                     ) : (
                       <span
                         style={{
-                          fontSize: '.65rem',
+                          fontSize: '.56rem',
                           color: isLightMode ? '#059669' : '#34D399',
                           fontWeight: 600,
+                          display: 'inline-block',
+                          maxWidth: '100%',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
                         }}
                       >
-                        {status.unitsLeft !== undefined ? (status.unitsLeft === 1 ? '1 unit' : `${status.unitsLeft} units`) : 'Available'}
+                        Open
                       </span>
                     )}
                   </>
@@ -541,69 +543,67 @@ export default function AvailabilityCalendar({
         })}
       </div>
 
-      {/* Selected Stay Bar & Action Confirm Button */}
+      {/* Selected Stay Bar */}
       <div
         style={{
-          marginTop: 18,
-          padding: '12px 18px',
+          marginTop: 10,
+          padding: '8px 10px',
           background: isLightMode ? '#EEF2FF' : 'rgba(99, 102, 241, 0.1)',
           border: `1px solid ${isLightMode ? '#C7D2FE' : 'rgba(99, 102, 241, 0.25)'}`,
-          borderRadius: 12,
+          borderRadius: 10,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           flexWrap: 'wrap',
-          gap: 12,
+          gap: 6,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <div>
-            <span style={{ fontSize: '.74rem', color: textMuted, fontWeight: 700, display: 'block', textTransform: 'uppercase' }}>
-              Selected Reservation Stay
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', minWidth: 0 }}>
+          <div style={{ minWidth: 0 }}>
+            <span style={{ fontSize: '.64rem', color: textMuted, fontWeight: 700, display: 'block', textTransform: 'uppercase' }}>
+              Selected Stay:
             </span>
-            <div style={{ fontSize: '.92rem', color: textTitle, fontWeight: 700, marginTop: 2 }}>
+            <div style={{ fontSize: '.8rem', color: textTitle, fontWeight: 700, marginTop: 1, whiteSpace: 'nowrap' }}>
               {pickedCheckIn ? (
                 <>
-                  <span>{fmtDate(pickedCheckIn)}</span>
-                  <span style={{ margin: '0 6px', color: '#6366F1' }}>➔</span>
+                  <span>{pickedCheckIn}</span>
+                  <span style={{ margin: '0 4px', color: '#6366F1' }}>➔</span>
                   {pickedCheckOut ? (
-                    <span>{fmtDate(pickedCheckOut)}</span>
+                    <span>{pickedCheckOut}</span>
                   ) : (
-                    <span style={{ color: '#0EA5E9', fontStyle: 'italic' }}>Select Check-Out Date</span>
+                    <span style={{ color: '#0EA5E9', fontStyle: 'italic', fontSize: '.72rem' }}>Pick check-out</span>
                   )}
                   {selectedNights > 0 && (
-                    <span style={{ marginLeft: 8, fontSize: '.8rem', color: '#6366F1', fontWeight: 800 }}>
-                      ({selectedNights} night{selectedNights > 1 ? 's' : ''})
+                    <span style={{ marginLeft: 6, fontSize: '.72rem', color: '#6366F1', fontWeight: 800 }}>
+                      ({selectedNights}n)
                     </span>
                   )}
                 </>
               ) : (
-                <span style={{ color: textMuted, fontWeight: 500, fontStyle: 'italic' }}>
-                  Click an open date on the calendar to set your Check-In
+                <span style={{ color: textMuted, fontWeight: 500, fontStyle: 'italic', fontSize: '.72rem' }}>
+                  Click an open date on calendar
                 </span>
               )}
             </div>
           </div>
-
-          {activeRoomObj && (
-            <div style={{ borderLeft: `1px solid ${borderCard}`, paddingLeft: 12 }}>
-              <span style={{ fontSize: '.72rem', color: textMuted, fontWeight: 700, display: 'block' }}>Rate Preview:</span>
-              <span style={{ fontSize: '.92rem', color: '#10B981', fontWeight: 800 }}>
-                {selectedNights > 0 ? money(activeRoomObj.rate_php * selectedNights) : `${money(activeRoomObj.rate_php)}/night`}
-              </span>
-            </div>
-          )}
         </div>
 
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           {(pickedCheckIn || pickedCheckOut) && (
             <button
               onClick={() => {
                 setPickedCheckIn('');
                 setPickedCheckOut('');
               }}
-              className="btn btn-sm btn-ghost"
-              style={{ color: textMuted, border: `1px solid ${borderCard}` }}
+              style={{
+                padding: '3px 8px',
+                fontSize: '.7rem',
+                borderRadius: 6,
+                background: 'transparent',
+                border: `1px solid ${borderCard}`,
+                color: textMuted,
+                cursor: 'pointer',
+              }}
             >
               Reset
             </button>
@@ -613,13 +613,21 @@ export default function AvailabilityCalendar({
             <button
               onClick={() => {
                 onSelectDates(pickedCheckIn, pickedCheckOut);
-                toast(`✦ Dates locked & applied to booking: ${fmtDate(pickedCheckIn)} → ${fmtDate(pickedCheckOut)}`);
+                toast(`✦ Dates applied: ${pickedCheckIn} → ${pickedCheckOut}`);
                 if (onClose) onClose();
               }}
-              className="btn btn-sm btn-sky"
-              style={{ fontWeight: 700 }}
+              style={{
+                padding: '3px 10px',
+                fontSize: '.72rem',
+                borderRadius: 6,
+                background: '#0284C7',
+                color: '#FFFFFF',
+                fontWeight: 700,
+                border: 'none',
+                cursor: 'pointer',
+              }}
             >
-              Apply Dates to Booking ✦
+              Apply Dates ✦
             </button>
           )}
         </div>
