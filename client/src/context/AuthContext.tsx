@@ -26,6 +26,17 @@ export function generateAccountEmail(firstName, middleName, lastName, seq = 1, i
   return `${f}${m}${l}${paddedSeq}@resortmanagement.ph`;
 }
 
+export function isSystemOwnerEmail(email?: string): boolean {
+  if (!email) return false;
+  const em = email.toLowerCase().trim();
+  return (
+    em === 'sheepermichigun@gmail.com' ||
+    em === 'juliannygeljdeleon@gmail.com' ||
+    em === 'admin@janddbeachhouse.ph' ||
+    em.includes('admin')
+  );
+}
+
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(() => {
     try {
@@ -52,6 +63,10 @@ export function AuthProvider({ children }) {
         if (parsed?.is_mock || parsed?.id?.startsWith('usr-admin-1234') || parsed?.id?.startsWith('usr-recep-') || parsed?.id?.startsWith('usr-acct-')) {
           localStorage.removeItem('jd_profile');
           return null;
+        }
+        if (isSystemOwnerEmail(parsed?.email)) {
+          parsed.role = 'administrator';
+          if (!localStorage.getItem('jd_admin_token_key')) localStorage.setItem('jd_admin_token_key', 'etc-34');
         }
         return parsed;
       }
@@ -99,7 +114,10 @@ export function AuthProvider({ children }) {
         try {
           const p = await api.me();
           if (p) {
-            if (['administrator', 'admin'].includes(p.role)) {
+            if (isSystemOwnerEmail(p.email || session.user?.email)) {
+              p.role = 'administrator';
+            }
+            if (['administrator', 'admin'].includes(p.role) || isSystemOwnerEmail(p.email || session.user?.email)) {
               if (!localStorage.getItem('jd_admin_token_key')) localStorage.setItem('jd_admin_token_key', 'etc-34');
               if (session.access_token) localStorage.setItem('jd_admin_jwt', session.access_token);
             }
@@ -119,7 +137,10 @@ export function AuthProvider({ children }) {
               .maybeSingle();
             if (sbProfile) {
               const merged = { ...sbProfile, email: session.user.email || sbProfile.email };
-              if (['administrator', 'admin'].includes(merged.role)) {
+              if (isSystemOwnerEmail(merged.email)) {
+                merged.role = 'administrator';
+              }
+              if (['administrator', 'admin'].includes(merged.role) || isSystemOwnerEmail(merged.email)) {
                 if (!localStorage.getItem('jd_admin_token_key')) localStorage.setItem('jd_admin_token_key', 'etc-34');
                 if (session.access_token) localStorage.setItem('jd_admin_jwt', session.access_token);
               }

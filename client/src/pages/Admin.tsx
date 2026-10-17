@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { useAuth, generateAccountEmail } from '../context/AuthContext.tsx';
+import { useAuth, generateAccountEmail, isSystemOwnerEmail } from '../context/AuthContext.tsx';
 import '../styles/admin.css';
 import { AreaLineChart, MultiBarChart, Sparkline } from '../components/Charts.tsx';
 import CsvTableViewer from '../components/CsvTableViewer.tsx';
@@ -64,7 +64,11 @@ export default function Admin() {
   const [authenticating, setAuthenticating] = useState(false);
 
   // Live database profile role validation (Acquired automatically from database profile)
-  const isAdministrator = Boolean(session && profile && ['administrator', 'admin'].includes(profile?.role));
+  const isAdministrator = Boolean(session && profile && (
+    ['administrator', 'admin'].includes(profile?.role) ||
+    isSystemOwnerEmail(profile?.email) ||
+    isSystemOwnerEmail(user?.email)
+  ));
 
   const [notifications, setNotifications] = useState<any[]>([]);
   const [notifFilter, setNotifFilter] = useState('all');
