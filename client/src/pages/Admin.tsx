@@ -51,10 +51,12 @@ const emptyAnalytics = {
 };
 
 export default function Admin() {
-  const { session, profile, signIn, signOut } = useAuth();
+  const { session, profile, signIn, signOut, deleteAccount } = useAuth();
   const user = session?.user;
   const [data, setData] = useState(emptyAnalytics);
   const [loading, setLoading] = useState(false);
+  const [confirmDeleteSelf, setConfirmDeleteSelf] = useState(false);
+  const [deletingSelf, setDeletingSelf] = useState(false);
 
   // Automatic Database Clearance & Clean Auth State
   const [adminEmail, setAdminEmail] = useState('');
@@ -2924,370 +2926,212 @@ export default function Admin() {
             </div>
           )}
 
-          {/* TAB 3: EXECUTIVE PROFILE & SYSTEM SETTINGS (FACEBOOK STYLE) */}
+          {/* TAB 3: EXECUTIVE PROFILE & ACCOUNT SETTINGS */}
           {activeTab === 'settings' && (
-            <div className="panel" style={{ background: themeCardBg, border: `1px solid ${themeBorder}`, borderRadius: 20, padding: 0, boxShadow: themeShadow, overflow: 'hidden' }}>
-
-              {/* 1. FACEBOOK COVER PHOTO & PROFILE HEADER BAND */}
-              <div style={{ position: 'relative', width: '100%', minHeight: 210, background: 'linear-gradient(135deg, #1E1B4B, #312E81, #1E3A8A)', padding: '24px 28px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', boxSizing: 'border-box' }}>
-                {/* Cover Decorative Overlay */}
-                <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle at 80% 20%, rgba(56, 189, 248, 0.25), transparent 50%), radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.3), transparent 50%)', pointerEvents: 'none' }} />
-
-                {/* Top Banner Quick Badges */}
-                <div style={{ position: 'absolute', top: 18, right: 22, display: 'flex', gap: 10, alignItems: 'center' }}>
-                  <span style={{ fontSize: '.74rem', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.25)', color: '#FFF', padding: '5px 14px', borderRadius: 20, fontWeight: 700 }}>
-                    🛡️ Verified Executive Account
+            <div className="panel" style={{ background: themeCardBg, border: `1px solid ${themeBorder}`, borderRadius: 20, padding: 28, boxShadow: themeShadow }}>
+              {/* Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, borderBottom: `1px solid ${themeBorder}`, paddingBottom: 16 }}>
+                <div>
+                  <span style={{ fontSize: '.76rem', color: '#0EA5E9', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em' }}>
+                    ADMINISTRATIVE PROFILE
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => toast('📷 Cover photo updated to J & D Oceanfront Vista')}
-                    style={{ fontSize: '.74rem', background: '#3B82F6', color: '#FFF', border: 'none', padding: '6px 14px', borderRadius: 18, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(59,130,246,0.4)' }}
-                  >
-                    📷 Edit Cover Photo
-                  </button>
+                  <h3 className="serif" style={{ fontSize: '1.6rem', margin: '4px 0 0', color: themeText }}>
+                    Account Profile & Settings
+                  </h3>
+                  <p className="muted small" style={{ margin: '4px 0 0' }}>
+                    Update your administrative credentials, contact information, and security password.
+                  </p>
                 </div>
-
-                {/* Profile Avatar + Name + Bio Row */}
-                <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'flex-end', gap: 22, flexWrap: 'wrap', marginTop: 35 }}>
-                  {/* Avatar Container with Camera Badge */}
-                  <div style={{ position: 'relative', width: 96, height: 96 }}>
-                    {adminProfileState.customAvatarUrl && !adminProfileState.customAvatarUrl.startsWith('initials:') && !adminProfileState.customAvatarUrl.startsWith('svg:') ? (
-                      <img
-                        src={adminProfileState.customAvatarUrl}
-                        alt="Executive Avatar"
-                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                        style={{ width: 96, height: 96, borderRadius: '50%', objectFit: 'cover', border: '4px solid #FFFFFF', boxShadow: '0 8px 24px rgba(0,0,0,0.35)' }}
-                      />
-                    ) : (
-                      <div
-                        style={{
-                          width: 96,
-                          height: 96,
-                          borderRadius: '50%',
-                          background: 'linear-gradient(135deg, #0284C7, #0EA5E9)',
-                          color: '#FFFFFF',
-                          display: 'grid',
-                          placeItems: 'center',
-                          fontSize: '2.2rem',
-                          fontWeight: 800,
-                          border: '4px solid #FFFFFF',
-                          boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
-                        }}
-                      >
-                        {adminProfileState.customAvatarUrl?.startsWith('initials:')
-                          ? adminProfileState.customAvatarUrl.replace('initials:', '')
-                          : (adminProfileState.displayName || profile?.full_name || 'Admin')[0].toUpperCase()}
-                      </div>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const url = prompt('Enter new Profile Picture Image URL:', adminProfileState.customAvatarUrl || '');
-                        if (url !== null && url.trim() !== '') {
-                          setAdminProfileState({ ...adminProfileState, customAvatarUrl: url.trim() });
-                          toast('📸 Profile picture updated successfully!');
-                        }
-                      }}
-                      title="Update Profile Picture"
-                      style={{
-                        position: 'absolute', bottom: 4, right: 4, width: 32, height: 32, borderRadius: '50%',
-                        background: '#3B82F6', border: '2px solid #FFF', color: '#FFF', display: 'flex',
-                        alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.3)', fontSize: '.85rem'
-                      }}
-                    >
-                      📷
-                    </button>
-                  </div>
-
-                  {/* Name & Executive Title & Bio */}
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <h2 style={{ fontSize: '1.75rem', color: '#FFFFFF', margin: 0, fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800 }}>
-                        {adminProfileState.fullName}
-                      </h2>
-                      <span style={{ fontSize: '1.1rem', color: '#38BDF8' }} title="Verified Executive Badge">✔️</span>
-                    </div>
-
-                    <b style={{ color: '#93C5FD', fontSize: '.92rem', display: 'block', margin: '3px 0 6px' }}>
-                      {adminProfileState.title} · {adminProfileState.department}
-                    </b>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '.78rem', color: '#E2E8F0', background: 'rgba(255,255,255,0.14)', padding: '4px 12px', borderRadius: 16, border: '1px solid rgba(255,255,255,0.2)' }}>
-                        🟢 ONLINE · {adminProfileState.statusBio}
-                      </span>
-                      <span style={{ fontSize: '.76rem', color: '#CBD5E1' }}>
-                        📍 {adminProfileState.location}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                <span style={{ fontSize: '.76rem', color: '#10B981', fontWeight: 700, background: 'rgba(16, 185, 129, 0.1)', padding: '4px 14px', borderRadius: 20, border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+                  👑 {profile?.role?.toUpperCase() || 'ADMINISTRATOR'}
+                </span>
               </div>
 
-              {/* 2. MAIN SETTINGS FORM BODY - SINGLE COLUMN VERTICAL SCROLLABLE FLOW */}
-              <div style={{ padding: 26 }}>
-                <form onSubmit={handleSaveSettings} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 24 }}>
-
-                  {/* SECTION 1: EXECUTIVE PROFILE INFORMATION */}
-                  <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.5)', border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 24 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: `1px solid ${themeBorder}`, paddingBottom: 12 }}>
-                      <div>
-                        <b style={{ fontSize: '1.1rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                          👤 Executive Profile Information
-                        </b>
-                        <span style={{ fontSize: '.76rem', color: themeMuted, display: 'block', marginTop: 2 }}>Manage your executive identity, bio message, and recovery contact details</span>
-                      </div>
-                      <span style={{ fontSize: '.74rem', color: '#3B82F6', fontWeight: 700, background: 'rgba(59, 130, 246, 0.1)', padding: '4px 12px', borderRadius: 16, border: '1px solid rgba(59, 130, 246, 0.2)' }}>Facebook Profile Sync</span>
+              <form onSubmit={handleSaveSettings} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 20 }}>
+                {/* 1. Identity & Contact Information */}
+                <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.5)', border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 22 }}>
+                  <b style={{ fontSize: '1rem', color: themeText, display: 'block', marginBottom: 14 }}>
+                    👤 Profile Details
+                  </b>
+                  <div className="admin-grid-2-col" style={{ gap: 14 }}>
+                    <div className="field">
+                      <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700 }}>FULL NAME *</label>
+                      <input
+                        type="text"
+                        required
+                        style={{ background: isLightMode ? '#FFF' : undefined, color: themeText }}
+                        value={adminProfileState.fullName}
+                        onChange={(e) => setAdminProfileState({ ...adminProfileState, fullName: e.target.value })}
+                      />
                     </div>
-
-                    <div className="admin-grid-2-col" style={{ marginBottom: 16 }}>
-                      <div className="field" style={{ gridColumn: 'span 2' }}>
-                        <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700 }}>EXECUTIVE BIO / STATUS MESSAGE</label>
-                        <input
-                          type="text"
-                          style={{ background: isLightMode ? '#FFF' : undefined, color: themeText }}
-                          value={adminProfileState.statusBio}
-                          onChange={(e) => setAdminProfileState({ ...adminProfileState, statusBio: e.target.value })}
-                        />
-                      </div>
-
-                      <div className="field">
-                        <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700 }}>FULL NAME</label>
-                        <input
-                          type="text"
-                          required
-                          style={{ background: isLightMode ? '#FFF' : undefined, color: themeText }}
-                          value={adminProfileState.fullName}
-                          onChange={(e) => setAdminProfileState({ ...adminProfileState, fullName: e.target.value })}
-                        />
-                      </div>
-
-                      <div className="field">
-                        <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700 }}>EXECUTIVE TITLE / ROLE</label>
-                        <input
-                          type="text"
-                          required
-                          style={{ background: isLightMode ? '#FFF' : undefined, color: themeText }}
-                          value={adminProfileState.title}
-                          onChange={(e) => setAdminProfileState({ ...adminProfileState, title: e.target.value })}
-                        />
-                      </div>
-
-                      <div className="field">
-                        <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700 }}>EMAIL ADDRESS</label>
-                        <input
-                          type="email"
-                          required
-                          style={{ background: isLightMode ? '#FFF' : undefined, color: themeText }}
-                          value={adminProfileState.email}
-                          onChange={(e) => setAdminProfileState({ ...adminProfileState, email: e.target.value })}
-                        />
-                      </div>
-
-                      <div className="field">
-                        <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700 }}>MOBILE PHONE (SMS RECOVERY)</label>
-                        <input
-                          type="text"
-                          required
-                          style={{ background: isLightMode ? '#FFF' : undefined, color: themeText }}
-                          value={adminProfileState.phone}
-                          onChange={(e) => setAdminProfileState({ ...adminProfileState, phone: e.target.value })}
-                        />
-                      </div>
+                    <div className="field">
+                      <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700 }}>TITLE / POSITION *</label>
+                      <input
+                        type="text"
+                        required
+                        style={{ background: isLightMode ? '#FFF' : undefined, color: themeText }}
+                        value={adminProfileState.title}
+                        onChange={(e) => setAdminProfileState({ ...adminProfileState, title: e.target.value })}
+                      />
+                    </div>
+                    <div className="field">
+                      <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700 }}>EMAIL ADDRESS *</label>
+                      <input
+                        type="email"
+                        required
+                        style={{ background: isLightMode ? '#FFF' : undefined, color: themeText }}
+                        value={adminProfileState.email}
+                        onChange={(e) => setAdminProfileState({ ...adminProfileState, email: e.target.value })}
+                      />
+                    </div>
+                    <div className="field">
+                      <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700 }}>MOBILE PHONE (11-DIGIT PH)</label>
+                      <input
+                        type="tel"
+                        maxLength={11}
+                        style={{ background: isLightMode ? '#FFF' : undefined, color: themeText }}
+                        value={adminProfileState.phone}
+                        onChange={(e) => setAdminProfileState({ ...adminProfileState, phone: e.target.value.replace(/\D/g, '').slice(0, 11) })}
+                      />
                     </div>
                   </div>
+                </div>
 
-                  {/* SECTION 2: ACCOUNT SECURITY & PASSWORD MANAGEMENT (FACEBOOK STYLE) */}
-                  <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.5)', border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 24 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: `1px solid ${themeBorder}`, paddingBottom: 12 }}>
-                      <div>
-                        <b style={{ fontSize: '1.1rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                          🔒 Password & Account Security
-                        </b>
-                        <span style={{ fontSize: '.76rem', color: themeMuted, display: 'block', marginTop: 2 }}>Update security credentials and manage active sessions</span>
-                      </div>
-                      <span style={{ fontSize: '.74rem', color: '#10B981', fontWeight: 700, background: 'rgba(16, 185, 129, 0.1)', padding: '4px 12px', borderRadius: 16, border: '1px solid rgba(16, 185, 129, 0.2)' }}>2FA Protected</span>
+                {/* 2. Password Security Management */}
+                <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.5)', border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 22 }}>
+                  <b style={{ fontSize: '1rem', color: themeText, display: 'block', marginBottom: 14 }}>
+                    🔒 Password Security
+                  </b>
+                  <div className="admin-grid-2-col" style={{ gap: 14 }}>
+                    <div className="field">
+                      <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700 }}>NEW PASSWORD</label>
+                      <input
+                        type="password"
+                        placeholder="••••••••••••"
+                        style={{ background: isLightMode ? '#FFF' : undefined, color: themeText }}
+                        value={adminProfileState.newPassword || ''}
+                        onChange={(e) => setAdminProfileState({ ...adminProfileState, newPassword: e.target.value })}
+                      />
                     </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 16 }}>
-                      <div className="field">
-                        <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700 }}>CURRENT PASSWORD</label>
-                        <input
-                          type="password"
-                          placeholder="••••••••••••"
-                          style={{ background: isLightMode ? '#FFF' : undefined, color: themeText }}
-                          value={adminProfileState.currentPassword || ''}
-                          onChange={(e) => setAdminProfileState({ ...adminProfileState, currentPassword: e.target.value })}
-                        />
-                      </div>
-
-                      <div className="admin-grid-2-col" style={{ gap: 14 }}>
-                        <div className="field">
-                          <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700 }}>NEW PASSWORD</label>
-                          <input
-                            type="password"
-                            placeholder="New strong password"
-                            style={{ background: isLightMode ? '#FFF' : undefined, color: themeText }}
-                            value={adminProfileState.newPassword || ''}
-                            onChange={(e) => setAdminProfileState({ ...adminProfileState, newPassword: e.target.value })}
-                          />
-                        </div>
-                        <div className="field">
-                          <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700 }}>CONFIRM NEW PASSWORD</label>
-                          <input
-                            type="password"
-                            placeholder="Repeat new password"
-                            style={{ background: isLightMode ? '#FFF' : undefined, color: themeText }}
-                            value={adminProfileState.confirmPassword || ''}
-                            onChange={(e) => setAdminProfileState({ ...adminProfileState, confirmPassword: e.target.value })}
-                          />
-                        </div>
-                      </div>
+                    <div className="field">
+                      <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700 }}>CONFIRM NEW PASSWORD</label>
+                      <input
+                        type="password"
+                        placeholder="••••••••••••"
+                        style={{ background: isLightMode ? '#FFF' : undefined, color: themeText }}
+                        value={adminProfileState.confirmPassword || ''}
+                        onChange={(e) => setAdminProfileState({ ...adminProfileState, confirmPassword: e.target.value })}
+                      />
                     </div>
-
+                  </div>
+                  {adminProfileState.newPassword && (
                     <button
                       type="button"
                       onClick={() => {
-                        if (adminProfileState.newPassword && adminProfileState.newPassword === adminProfileState.confirmPassword) {
-                          toast('🔒 Password updated successfully!');
-                          setAdminProfileState({ ...adminProfileState, currentPassword: '', newPassword: '', confirmPassword: '' });
-                        } else if (adminProfileState.newPassword !== adminProfileState.confirmPassword) {
-                          toast('⚠️ New passwords do not match!', true);
-                        } else {
-                          toast('⚠️ Please enter a new password.', true);
-                        }
+                        if (adminProfileState.newPassword.length < 6) return toast('Password must be at least 6 characters', true);
+                        if (adminProfileState.newPassword !== adminProfileState.confirmPassword) return toast('Passwords do not match', true);
+                        api.updatePassword(adminProfileState.newPassword)
+                          .then(() => {
+                            toast('🔒 Security password updated successfully!');
+                            setAdminProfileState({ ...adminProfileState, currentPassword: '', newPassword: '', confirmPassword: '' });
+                          })
+                          .catch((e) => toast(e.message, true));
                       }}
                       className="btn btn-sky btn-sm"
-                      style={{ padding: '10px 20px', fontWeight: 700, borderRadius: 10 }}
+                      style={{ marginTop: 12, fontWeight: 700 }}
                     >
-                      🔒 Update Security Password
+                      Update Password Now
                     </button>
+                  )}
+                </div>
 
-                    {/* Active Login Sessions */}
-                    <div style={{ marginTop: 20, paddingTop: 16, borderTop: `1px solid ${themeBorder}` }}>
-                      <span style={{ fontSize: '.76rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 10 }}>WHERE YOU'RE LOGGED IN</span>
-                      <div className="admin-grid-2-col" style={{ gap: 12 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: isLightMode ? '#FFFFFF' : 'rgba(255,255,255,0.04)', borderRadius: 12, border: `1px solid ${themeBorder}` }}>
-                          <div style={{ fontSize: '.84rem', color: themeText }}>
-                            💻 <b>Windows PC</b> · Manila, PH
-                            <span style={{ fontSize: '.72rem', color: '#10B981', display: 'block', marginTop: 2 }}>Active Session Now</span>
-                          </div>
-                          <span style={{ fontSize: '.72rem', color: themeMuted, fontWeight: 600 }}>This Device</span>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: isLightMode ? '#FFFFFF' : 'rgba(255,255,255,0.04)', borderRadius: 12, border: `1px solid ${themeBorder}` }}>
-                          <div style={{ fontSize: '.84rem', color: themeText }}>
-                            📱 <b>iPhone 15 Pro</b> · Bolinao, PH
-                            <span style={{ fontSize: '.72rem', color: themeMuted, display: 'block', marginTop: 2 }}>Active 2 hours ago</span>
-                          </div>
-                          <button type="button" onClick={() => toast('📱 Remote session revoked')} style={{ background: 'none', border: 'none', color: '#F43F5E', fontSize: '.76rem', cursor: 'pointer', fontWeight: 700 }}>Log Out</button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* SECTION 3: SYSTEM CONTROLS & AUDIT PREFERENCES */}
-                  <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.5)', border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 24 }}>
-                    <div style={{ marginBottom: 16, borderBottom: `1px solid ${themeBorder}`, paddingBottom: 12 }}>
-                      <b style={{ fontSize: '1.1rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                        ⚡ System Controls & Live Audit Preferences
-                      </b>
-                      <span style={{ fontSize: '.76rem', color: themeMuted, display: 'block', marginTop: 2 }}>Configure real-time audit refresh intervals, auto-lock security, and Twilio SMS triggers</span>
-                    </div>
-
-                    <div className="admin-grid-2-col" style={{ marginBottom: 18 }}>
-                      <div className="field">
-                        <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700 }}>AUDIT STREAM INTERVAL</label>
-                        <select
-                          style={{ background: isLightMode ? '#FFF' : undefined, color: themeText }}
-                          value={adminProfileState.refreshRate}
-                          onChange={(e) => setAdminProfileState({ ...adminProfileState, refreshRate: e.target.value })}
-                        >
-                          <option value="5">Realtime (5 Seconds)</option>
-                          <option value="15">Balanced (15 Seconds)</option>
-                          <option value="30">Eco Mode (30 Seconds)</option>
-                        </select>
-                      </div>
-                      <div className="field">
-                        <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700 }}>SECURITY AUTO-LOCK</label>
-                        <select
-                          style={{ background: isLightMode ? '#FFF' : undefined, color: themeText }}
-                          value={adminProfileState.sessionTimeout}
-                          onChange={(e) => setAdminProfileState({ ...adminProfileState, sessionTimeout: e.target.value })}
-                        >
-                          <option value="15">Auto Lock after 15 Minutes</option>
-                          <option value="30">Auto Lock after 30 Minutes</option>
-                          <option value="60">Auto Lock after 1 Hour</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '.86rem', color: themeText, cursor: 'pointer' }}>
-                        <input
-                          type="checkbox"
-                          checked={adminProfileState.smsNotifications}
-                          onChange={(e) => setAdminProfileState({ ...adminProfileState, smsNotifications: e.target.checked })}
-                        />
-                        Enable Instant Twilio SMS Alerts on Guest Bookings & Staff Role Modifications
-                      </label>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '.86rem', color: themeText, cursor: 'pointer' }}>
-                        <input
-                          type="checkbox"
-                          checked={adminProfileState.twoFactorAuth}
-                          onChange={(e) => setAdminProfileState({ ...adminProfileState, twoFactorAuth: e.target.checked })}
-                        />
-                        Require Two-Factor 2FA SMS Security Keycode on Portal Sign-In
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* SECTION 4: DATA MAINTENANCE & SYSTEM BACKUPS */}
-                  <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.5)', border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 24 }}>
-                    <div style={{ marginBottom: 16, borderBottom: `1px solid ${themeBorder}`, paddingBottom: 12 }}>
-                      <b style={{ fontSize: '1.1rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                        💾 Data Maintenance & System Backups
-                      </b>
-                      <span style={{ fontSize: '.76rem', color: themeMuted, display: 'block', marginTop: 2 }}>Export full resort data snapshots or purge temporary client storage</span>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+                {/* 3. Action Buttons: SAVE, DELETE, CANCEL */}
+                {confirmDeleteSelf ? (
+                  <div style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: 16, padding: 20, textAlign: 'center' }}>
+                    <b style={{ color: '#F87171', display: 'block', fontSize: '1.05rem', marginBottom: 6 }}>
+                      ⚠️ Permanently Delete This Administrative Account?
+                    </b>
+                    <p style={{ color: '#FECACA', fontSize: '.84rem', margin: '0 0 16px', maxWidth: 480, marginLeft: 'auto', marginRight: 'auto' }}>
+                      This action will permanently purge your profile and administrative credentials from the database. You will be signed out immediately.
+                    </p>
+                    <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
                       <button
                         type="button"
-                        onClick={() => {
-                          const blob = new Blob([JSON.stringify(adminProfileState, null, 2)], { type: 'application/json' });
-                          const url = URL.createObjectURL(blob);
-                          const a = document.createElement('a');
-                          a.href = url;
-                          a.download = 'jd_beach_house_system_backup.json';
-                          a.click();
-                          toast('💾 Operational system backup exported cleanly');
-                        }}
-                        className="btn btn-sky"
-                        style={{ padding: '12px 20px', fontWeight: 700, borderRadius: 10 }}
-                      >
-                        📥 Export System Backup (JSON)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          localStorage.removeItem('jd_beach_house_cache');
-                          localStorage.removeItem('alon_resort_cache');
-                          toast('🧹 Local storage cache reset successfully');
+                        disabled={deletingSelf}
+                        onClick={async () => {
+                          setDeletingSelf(true);
+                          try {
+                            if (deleteAccount) await deleteAccount();
+                            window.location.href = '/';
+                          } catch (err: any) {
+                            toast(err.message, true);
+                          } finally {
+                            setDeletingSelf(false);
+                            setConfirmDeleteSelf(false);
+                          }
                         }}
                         className="btn"
-                        style={{ padding: '12px 20px', background: isLightMode ? '#E2E8F0' : 'rgba(255,255,255,0.08)', color: themeText, fontWeight: 700, borderRadius: 10 }}
+                        style={{ background: '#EF4444', color: '#FFF', fontWeight: 800, padding: '10px 24px', borderRadius: 10 }}
                       >
-                        🧹 Reset Local Cache
+                        {deletingSelf ? 'Deleting Account…' : 'Yes, Delete My Account'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDeleteSelf(false)}
+                        className="btn btn-ghost"
+                        style={{ border: `1px solid ${themeBorder}`, color: themeText, padding: '10px 24px', borderRadius: 10 }}
+                      >
+                        Cancel
                       </button>
                     </div>
                   </div>
-
-                  {/* SAVE & SYNC BUTTON */}
-                  <button className="btn btn-sky" style={{ width: '100%', justifyContent: 'center', padding: '16px 24px', fontWeight: 700, fontSize: '1.05rem', borderRadius: 14, marginTop: 10 }}>
-                    Save & Sync Profile Settings ✦
-                  </button>
-                </form>
-              </div>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginTop: 10 }}>
+                    <button
+                      type="submit"
+                      className="btn btn-sky"
+                      style={{ justifyContent: 'center', padding: '14px 20px', fontWeight: 800, fontSize: '.95rem', borderRadius: 12 }}
+                    >
+                      💾 Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDeleteSelf(true)}
+                      className="btn"
+                      style={{
+                        background: 'rgba(239, 68, 68, 0.15)',
+                        border: '1px solid rgba(239, 68, 68, 0.4)',
+                        color: '#F87171',
+                        justifyContent: 'center',
+                        padding: '14px 20px',
+                        fontWeight: 800,
+                        fontSize: '.95rem',
+                        borderRadius: 12,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      🗑️ Delete
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('overview')}
+                      className="btn btn-ghost"
+                      style={{
+                        border: `1px solid ${themeBorder}`,
+                        color: themeText,
+                        justifyContent: 'center',
+                        padding: '14px 20px',
+                        fontWeight: 800,
+                        fontSize: '.95rem',
+                        borderRadius: 12,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      ✕ Cancel
+                    </button>
+                  </div>
+                )}
+              </form>
             </div>
           )}
 
@@ -4458,7 +4302,6 @@ export default function Admin() {
                               <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Stays</th>
                               <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Orders</th>
                               <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Total Spent (₱)</th>
-                              <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Promote</th>
                               <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Account Actions</th>
                             </tr>
                           </thead>
@@ -4471,19 +4314,6 @@ export default function Admin() {
                                 <td><b style={{ color: '#0EA5E9' }}>{u.stays_count || 0}</b></td>
                                 <td>{u.orders_count || 0}</td>
                                 <td><b style={{ color: '#F59E0B' }}>{money(u.total_spent_php || 0)}</b></td>
-                                <td>
-                                  <select
-                                    value={u.role || 'customer'}
-                                    style={{ fontSize: '.75rem', padding: '4px 8px', borderRadius: 6, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#0F172A', color: themeText }}
-                                    onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                                  >
-                                    <option value="customer">Customer</option>
-                                    <option value="receptionist">Receptionist</option>
-                                    <option value="accounting">Accounting</option>
-                                    <option value="staff">Staff</option>
-                                    <option value="administrator">Administrator</option>
-                                  </select>
-                                </td>
                                 <td>
                                   <div style={{ display: 'flex', gap: 6 }}>
                                     <button className="act-btn" style={{ color: '#38BDF8', borderColor: '#38BDF8' }}
@@ -5353,42 +5183,7 @@ export default function Admin() {
         </div>
       )}
 
-      {/* MODAL 2: ACTIVE MARKETING CAMPAIGNS */}
-      {showCampaignsModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(2, 6, 23, 0.75)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={() => setShowCampaignsModal(false)}>
-          <div style={{ width: '100%', maxWidth: 580, background: isLightMode ? '#FFFFFF' : '#0F172A', borderRadius: 20, border: `1px solid ${themeBorder}`, padding: 24, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: `1px solid ${themeBorder}`, paddingBottom: 12 }}>
-              <div>
-                <span style={{ fontSize: '.74rem', color: '#F59E0B', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>PROMOTIONAL PERFORMANCE</span>
-                <h3 style={{ margin: '4px 0 0', fontSize: '1.4rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>📣 12 Active Campaigns</h3>
-              </div>
-              <button onClick={() => setShowCampaignsModal(false)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
-            </div>
 
-            <p style={{ fontSize: '.84rem', color: themeMuted, margin: '0 0 16px' }}>Performance metrics for active marketing promotions driving guest bookings & dining revenue:</p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 320, overflowY: 'auto' }}>
-              {[
-                { title: '🌴 Patar Beach Festival Promo 2026', revenue: '₱92,400', bookings: '38 Villa Bookings', status: 'Active' },
-                { title: '🌅 Sunset Cocktail Hour Offer', revenue: '₱39,240', bookings: '218 Orders', status: 'Active' },
-                { title: '🚤 Hundred Islands Outrigger Bundle', revenue: '₱55,900', bookings: '86 Guests', status: 'Active' },
-                { title: '💑 Romantic Oceanfront Escapes', revenue: '₱42,500', bookings: '34 Guests', status: 'Active' },
-              ].map((c) => (
-                <div key={c.title} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.04)', borderRadius: 12, border: `1px solid ${themeBorder}` }}>
-                  <div>
-                    <b style={{ color: themeText, fontSize: '.92rem' }}>{c.title}</b>
-                    <span style={{ fontSize: '.74rem', color: themeMuted, display: 'block' }}>Conversion: {c.bookings}</span>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <b style={{ color: '#F59E0B', fontSize: '.95rem' }}>{c.revenue}</b>
-                    <span style={{ fontSize: '.72rem', color: '#10B981', fontWeight: 700, display: 'block' }}>● {c.status}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* MODAL 3: PROVISION STAFF ACCOUNT */}
       {showCreateModal && (

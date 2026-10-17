@@ -167,10 +167,10 @@ export default function BookingFlow({ initialSlug }) {
             {!searching && results.length === 0 && (
               <div style={{ textAlign: 'center', padding: '30px 16px', background: 'rgba(255,255,255,0.03)', borderRadius: 14, border: '1px dashed rgba(255,255,255,0.15)' }}>
                 <p className="empty" style={{ margin: '0 0 10px', fontSize: '1.05rem', color: '#F43F5E' }}>
-                  🔒 All accommodations are locked in / taken for those dates.
+                  🔒 All accommodations are taken / locked in until checkout for those dates.
                 </p>
                 <p className="muted small" style={{ margin: '0 0 14px' }}>
-                  A reservation was already secured for this date range. Try shifting your stay dates using our interactive calendar.
+                  Rooms are locked exclusively once reserved by a guest and remain locked until their checkout date. Check the calendar for open dates.
                 </p>
                 <button
                   className="btn btn-sky btn-sm"
@@ -219,7 +219,7 @@ export default function BookingFlow({ initialSlug }) {
                           fontWeight: 800,
                         }}
                       >
-                        🔒 Locked In / Taken
+                        🔒 Taken Until Checkout
                       </span>
                     ) : r.units_left <= 2 ? (
                       <span className="units-left">Only {r.units_left} left</span>
@@ -238,7 +238,7 @@ export default function BookingFlow({ initialSlug }) {
                             color: '#F43F5E',
                             border: '1px solid rgba(244, 63, 94, 0.4)',
                           }}
-                          title="Already reserved by another guest for these dates"
+                          title="Reserved by another guest until checkout"
                         >
                           🔒 Taken
                         </button>

@@ -338,6 +338,73 @@ r.patch('/admin/users/:id', authenticate, requireAdmin,
     return res.json(data);
   }));
 
+// Helper: Cascading permanent deletion of user account across all tables
+export async function deleteUserPermanently(userId) {
+  const sysAdmin = await getSystemAdminClient().catch(() => null);
+  const client = sysAdmin || admin;
+
+  // 1. Fetch user profile for audit & record
+  let prof = null;
+  try {
+    const { data } = await client.from('profiles').select('id, full_name, email, role').eq('id', userId).maybeSingle();
+    prof = data;
+  } catch {}
+
+  // 2. Cascade delete/nullify child tables with foreign keys referencing profiles(id) or auth.users(id)
+  try { await client.from('user_confirmations').delete().eq('user_id', userId); } catch (e) { console.warn('[Delete User] Confirmations notice:', e.message); }
+  try { await client.from('chat_messages').delete().eq('profile_id', userId); } catch (e) { console.warn('[Delete User] Chat notice:', e.message); }
+  try { await client.from('notifications').delete().eq('profile_id', userId); } catch (e) { console.warn('[Delete User] Notifications notice:', e.message); }
+  try { await client.from('reviews').delete().eq('guest_id', userId); } catch (e) { console.warn('[Delete User] Reviews notice:', e.message); }
+  try { await client.from('resort_orders').delete().eq('guest_id', userId); } catch (e) { console.warn('[Delete User] Orders notice:', e.message); }
+  try { await client.from('department_tasks').delete().eq('created_by', userId); } catch (e) { console.warn('[Delete User] Tasks notice:', e.message); }
+
+  // Cancel or clean up user's active/past reservations
+  try {
+    await client.from('reservations').delete().eq('guest_id', userId);
+  } catch (e) {
+    console.warn('[Delete User] Reservations notice:', e.message);
+  }
+
+  // 3. Delete from public entity tables: customers, users, profiles
+  try { await client.from('customers').delete().eq('id', userId); } catch (e) { console.warn('[Delete User] Customers notice:', e.message); }
+  try { await client.from('users').delete().eq('id', userId); } catch (e) { console.warn('[Delete User] Users notice:', e.message); }
+  try { await client.from('profiles').delete().eq('id', userId); } catch (e) { console.warn('[Delete User] Profiles notice:', e.message); }
+
+  // 4. Delete from Supabase Auth admin if available
+  try {
+    await admin.auth.admin.deleteUser(userId);
+  } catch (err) {
+    console.warn('[Delete User] Auth admin notice:', err.message);
+  }
+
+  return prof || { id: userId };
+}
+
+// Self-Service Account Deletion (Guest or Staff permanently deletes own account)
+r.delete('/me', authenticate, asyncH(async (req, res) => {
+  const userId = req.user.id;
+  const deletedInfo = await deleteUserPermanently(userId);
+
+  await logAuditEvent({
+    actor: req.user,
+    action: 'USER_ACCOUNT_SELF_DELETED',
+    resourceType: 'user',
+    resourceId: userId,
+    details: {
+      deleted_user: deletedInfo?.full_name || req.user.full_name || userId,
+      email: deletedInfo?.email || req.user.email,
+      role: deletedInfo?.role || req.user.role,
+      self_service: true,
+    },
+    req,
+  });
+
+  return res.json({
+    success: true,
+    message: 'Your account and associated profile data have been permanently deleted.'
+  });
+}));
+
 // Administrative Account Deletion
 r.delete('/admin/users/:id', authenticate, requireAdmin, asyncH(async (req, res) => {
   const userId = req.params.id;
@@ -345,29 +412,25 @@ r.delete('/admin/users/:id', authenticate, requireAdmin, asyncH(async (req, res)
     throw new ApiError(400, 'Cannot delete currently signed-in administrative account.');
   }
 
-  const client = req.sb || admin;
-  const { data: prof } = await client.from('profiles').select('full_name, email, role').eq('id', userId).maybeSingle();
-
-  // 1. Delete from profiles
-  await client.from('profiles').delete().eq('id', userId).catch(() => {});
-
-  // 2. Delete from Supabase Auth
-  try {
-    await admin.auth.admin.deleteUser(userId);
-  } catch (err) {
-    console.warn('[Admin Delete User] Auth delete notice:', err.message);
-  }
+  const deletedInfo = await deleteUserPermanently(userId);
 
   await logAuditEvent({
     actor: req.user,
     action: 'USER_DELETED',
     resourceType: 'user',
     resourceId: userId,
-    details: { deleted_user: prof?.full_name || userId, email: prof?.email, role: prof?.role },
+    details: {
+      deleted_user: deletedInfo?.full_name || userId,
+      email: deletedInfo?.email,
+      role: deletedInfo?.role
+    },
     req,
   });
 
-  return res.json({ success: true, message: `Account for ${prof?.full_name || userId} has been permanently deleted.` });
+  return res.json({
+    success: true,
+    message: `Account for ${deletedInfo?.full_name || deletedInfo?.email || userId} has been permanently deleted.`
+  });
 }));
 
 export default r;

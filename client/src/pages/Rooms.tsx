@@ -6,12 +6,13 @@ import { money } from '../lib/format.ts';
 import { roomImg, roomGallery } from '../lib/images.ts';
 import Stars from '../components/Stars.tsx';
 import RoomImageCarousel from '../components/RoomImageCarousel.tsx';
+import AvailabilityCalendar from '../components/AvailabilityCalendar.tsx';
 import { useReveal } from '../hooks/useReveal.ts';
 import { CANONICAL_ROOMS } from '../lib/canonicalRooms.ts';
 
 const CATS = ['All', 'Cottage', 'Garden', 'Suite', 'Villa', 'Dorm'];
 
-function RoomCardItem({ s, index }) {
+function RoomCardItem({ s, index, onOpenCalendar }) {
   const images = useMemo(() => {
     const list = [
       s.image_url,
@@ -21,8 +22,11 @@ function RoomCardItem({ s, index }) {
     return Array.from(new Set(list));
   }, [s.slug, s.image_url, s.images]);
 
+  const isLockedNow = Boolean(s.is_locked_now || (s.units_available_now !== undefined && s.units_available_now <= 0));
+  const unitsOpen = s.units_available_now !== undefined ? s.units_available_now : Number(s.units || 1);
+
   return (
-    <div className="room-card reveal" style={{ transitionDelay: `${(index % 2) * 110}ms` }}>
+    <div className="room-card reveal" style={{ transitionDelay: `${(index % 2) * 110}ms`, border: isLockedNow ? '1px solid rgba(244, 63, 94, 0.35)' : undefined }}>
       {/* AUTO-SCROLLING INTERACTIVE ROOM IMAGE CAROUSEL */}
       <RoomImageCarousel
         images={images}
@@ -36,7 +40,18 @@ function RoomCardItem({ s, index }) {
 
       <div className="bd">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span className="label">{s.category}</span>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <span className="label">{s.category}</span>
+            {isLockedNow ? (
+              <span style={{ fontSize: '.72rem', background: 'rgba(244, 63, 94, 0.15)', color: '#F43F5E', border: '1px solid rgba(244, 63, 94, 0.35)', padding: '2px 8px', borderRadius: 12, fontWeight: 800 }}>
+                🔒 Occupied Until Checkout
+              </span>
+            ) : (
+              <span style={{ fontSize: '.72rem', background: 'rgba(16, 185, 129, 0.15)', color: '#10B981', border: '1px solid rgba(16, 185, 129, 0.35)', padding: '2px 8px', borderRadius: 12, fontWeight: 700 }}>
+                🟢 {unitsOpen} {unitsOpen === 1 ? 'Unit' : 'Units'} Open Today
+              </span>
+            )}
+          </div>
           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <Stars value={Number(s.rating_avg)} size={13} />
             <small className="muted">{Number(s.rating_avg).toFixed(1)} ({s.rating_count || 12})</small>
@@ -47,11 +62,29 @@ function RoomCardItem({ s, index }) {
         <div style={{ margin: '14px 0' }}>{s.amenities?.map((a) => <span key={a} className="tag">{a}</span>)}</div>
         <div className="rate-line">
           <span className="serif">{money(s.rate_php)}<small className="muted" style={{ fontFamily: 'var(--font-sans)' }}> /night</small></span>
-          <span className="muted small">sleeps {s.capacity} · {s.units} units</span>
+          <span className="muted small">
+            sleeps {s.capacity} · {isLockedNow ? '0 open now (locked until checkout)' : `${unitsOpen} of ${s.units} units open`}
+          </span>
         </div>
-        <Link to="/" state={{ book: s.slug }} className="btn btn-sky" style={{ width: '100%', justifyContent: 'center' }}>
-          Reserve Room
-        </Link>
+        {isLockedNow ? (
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              type="button"
+              onClick={() => onOpenCalendar && onOpenCalendar(s.id)}
+              className="btn btn-ghost"
+              style={{ flex: 1, justifyContent: 'center', borderColor: '#38BDF8', color: '#38BDF8', fontWeight: 700 }}
+            >
+              📅 View Free Dates
+            </button>
+            <Link to="/" state={{ book: s.slug }} className="btn btn-sky btn-sm" style={{ justifyContent: 'center' }}>
+              Advance Book
+            </Link>
+          </div>
+        ) : (
+          <Link to="/" state={{ book: s.slug }} className="btn btn-sky" style={{ width: '100%', justifyContent: 'center' }}>
+            Reserve Room
+          </Link>
+        )}
       </div>
     </div>
   );
@@ -62,6 +95,8 @@ export default function Rooms() {
   const [loading, setLoading] = useState(true);
   const [cat, setCat] = useState('All');
   const [q, setQ] = useState('');
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [selectedRoomId, setSelectedRoomId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     api.rooms().then((data) => {
@@ -86,6 +121,43 @@ export default function Rooms() {
           </div>
           <input className="search" placeholder="Search rooms…" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
+
+        {/* Availability Calendar Toggle Bar */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+          <button
+            type="button"
+            className="btn btn-sm btn-ghost"
+            onClick={() => { setSelectedRoomId(undefined); setShowCalendar((s) => !s); }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              border: `1px solid ${showCalendar ? '#0EA5E9' : 'rgba(255,255,255,0.2)'}`,
+              background: showCalendar ? 'rgba(14, 165, 233, 0.12)' : 'rgba(255,255,255,0.03)',
+              color: showCalendar ? '#38BDF8' : '#E2E8F0',
+              padding: '8px 20px',
+              borderRadius: 24,
+              fontSize: '.85rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            📅 {showCalendar ? 'Hide Resort Calendar' : 'View Resort Calendar (Check Occupied & Open Dates)'}
+          </button>
+        </div>
+
+        {showCalendar && (
+          <div style={{ marginBottom: 30 }}>
+            <AvailabilityCalendar
+              rooms={all}
+              selectedRoomId={selectedRoomId}
+              isLightMode={false}
+              onClose={() => setShowCalendar(false)}
+            />
+          </div>
+        )}
+
         <div className="chip-row">
           {CATS.map((c) => (
             <button key={c} className={`chip ${cat === c ? 'sel' : ''}`} onClick={() => setCat(c)}>{c}</button>
@@ -93,7 +165,16 @@ export default function Rooms() {
         </div>
         <div className="rooms-grid">
           {list.map((s, i) => (
-            <RoomCardItem key={s.id || s.slug} s={s} index={i} />
+            <RoomCardItem
+              key={s.id || s.slug}
+              s={s}
+              index={i}
+              onOpenCalendar={(roomId) => {
+                setSelectedRoomId(roomId);
+                setShowCalendar(true);
+                window.scrollTo({ top: 120, behavior: 'smooth' });
+              }}
+            />
           ))}
         </div>
         {!loading && all.length === 0 && (

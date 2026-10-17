@@ -224,6 +224,10 @@ export default function MobileResortApp() {
   const signIn = auth?.signIn;
   const signUp = auth?.signUp;
   const signOut = auth?.signOut;
+  const deleteAccount = auth?.deleteAccount;
+
+  const [confirmDeleteProf, setConfirmDeleteProf] = useState(false);
+  const [deletingProf, setDeletingProf] = useState(false);
 
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
@@ -2252,26 +2256,64 @@ export default function MobileResortApp() {
                     />
                   </label>
 
-                  <div className="pt-2 flex gap-3">
-                    <button
-                      type="submit"
-                      disabled={profSaving}
-                      className={`${BTN_PRIMARY} flex-1 py-3.5 cursor-pointer`}
-                    >
-                      {profSaving ? 'Saving & Syncing…' : 'Save Manifest & Sync ✦'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        if (signOut) await signOut();
-                        setProfileModalOpen(false);
-                        toast('Signed out ✦');
-                      }}
-                      className={`${BTN_GHOST} px-4 py-3.5 cursor-pointer text-white/60 hover:text-white`}
-                    >
-                      Sign Out
-                    </button>
-                  </div>
+                  {confirmDeleteProf ? (
+                    <div className="pt-2 p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-center">
+                      <b className="block text-sm text-rose-400 mb-1">⚠️ Permanently Delete Account?</b>
+                      <p className="text-[11px] text-rose-200/80 mb-3">All your reservations, manifest profile, and account data will be permanently wiped.</p>
+                      <div className="flex gap-2 justify-center">
+                        <button
+                          type="button"
+                          disabled={deletingProf}
+                          onClick={async () => {
+                            setDeletingProf(true);
+                            try {
+                              if (deleteAccount) await deleteAccount();
+                              setProfileModalOpen(false);
+                            } catch (err: any) {
+                              toast(err.message, true);
+                            } finally {
+                              setDeletingProf(false);
+                              setConfirmDeleteProf(false);
+                            }
+                          }}
+                          className="bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs px-4 py-2 rounded-xl cursor-pointer"
+                        >
+                          {deletingProf ? 'Deleting…' : 'Yes, Delete Account'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDeleteProf(false)}
+                          className="border border-white/20 text-white/80 hover:text-white text-xs px-4 py-2 rounded-xl cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="pt-2 grid grid-cols-3 gap-2">
+                      <button
+                        type="submit"
+                        disabled={profSaving}
+                        className={`${BTN_PRIMARY} py-3 text-center justify-center cursor-pointer text-xs font-semibold`}
+                      >
+                        {profSaving ? 'Saving…' : '💾 Save'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDeleteProf(true)}
+                        className="rounded-2xl border border-rose-500/40 bg-rose-500/15 text-rose-400 hover:bg-rose-500/25 py-3 text-center font-semibold text-xs transition cursor-pointer"
+                      >
+                        🗑️ Delete
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setProfileModalOpen(false)}
+                        className={`${BTN_GHOST} py-3 text-center justify-center cursor-pointer text-white/70 hover:text-white text-xs font-semibold`}
+                      >
+                        ✕ Cancel
+                      </button>
+                    </div>
+                  )}
                 </form>
               )}
 

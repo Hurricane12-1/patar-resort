@@ -1270,6 +1270,50 @@ await runTest('System Security Audit Trail: Daily Action Collections, Role Filte
   assert(clientAdminSrc.includes('AUDIT RECORD INSPECTION'), 'Admin.tsx must provide audit record inspection modal');
 });
 
+// 34. Account Deletion Lifecycle, Promotion Removal & Real-Time Room Locking Until Checkout
+await runTest('Account Deletion Lifecycle, Promotion Removal & Real-Time Room Locking Until Checkout', async () => {
+  const meRoutesSrc = fs.readFileSync(path.resolve(serverRoot, 'src/routes/me.routes.js'), 'utf8');
+  assert(meRoutesSrc.includes('deleteUserPermanently'), 'me.routes.js must export deleteUserPermanently helper');
+  assert(meRoutesSrc.includes("r.delete('/me'"), 'me.routes.js must provide self-service DELETE /me route');
+  assert(meRoutesSrc.includes("r.delete('/admin/users/:id'"), 'me.routes.js must provide administrative DELETE /admin/users/:id route');
+  assert(meRoutesSrc.includes('USER_ACCOUNT_SELF_DELETED'), 'me.routes.js must log USER_ACCOUNT_SELF_DELETED audit event');
+
+  const apiSrc = fs.readFileSync(path.resolve(projectRoot, 'client/src/lib/api.ts'), 'utf8');
+  assert(apiSrc.includes("deleteMe: () => req('/me', { method: 'DELETE' })"), 'api.ts must export deleteMe method');
+
+  const authCtxSrc = fs.readFileSync(path.resolve(projectRoot, 'client/src/context/AuthContext.tsx'), 'utf8');
+  assert(authCtxSrc.includes('deleteAccount: async () =>'), 'AuthContext.tsx must export deleteAccount method');
+
+  // Verify "Save | Delete | Cancel" pattern across user profile settings
+  const myBookingsSrc = fs.readFileSync(path.resolve(projectRoot, 'client/src/pages/MyBookings.tsx'), 'utf8');
+  assert(myBookingsSrc.includes('💾 Save'), 'MyBookings.tsx must render Save button');
+  assert(myBookingsSrc.includes('🗑️ Delete'), 'MyBookings.tsx must render Delete button');
+  assert(myBookingsSrc.includes('✕ Cancel'), 'MyBookings.tsx must render Cancel button');
+  assert(myBookingsSrc.includes('confirmDeleteProf'), 'MyBookings.tsx must require confirmation before account deletion');
+
+  const mobileAppSrc = fs.readFileSync(path.resolve(projectRoot, 'client/src/components/MobileResortApp.tsx'), 'utf8');
+  assert(mobileAppSrc.includes('💾 Save'), 'MobileResortApp.tsx must render Save button');
+  assert(mobileAppSrc.includes('🗑️ Delete'), 'MobileResortApp.tsx must render Delete button');
+  assert(mobileAppSrc.includes('✕ Cancel'), 'MobileResortApp.tsx must render Cancel button');
+
+  const adminSrc = fs.readFileSync(path.resolve(projectRoot, 'client/src/pages/Admin.tsx'), 'utf8');
+  assert(adminSrc.includes('💾 Save'), 'Admin.tsx must render Save button');
+  assert(adminSrc.includes('🗑️ Delete'), 'Admin.tsx must render Delete button');
+  assert(adminSrc.includes('✕ Cancel'), 'Admin.tsx must render Cancel button');
+  assert(!adminSrc.includes('<th style={{ color: isLightMode ? \'#475569\' : themeMuted }}>Promote</th>'), 'Admin.tsx must remove Promote column from customer accounts table');
+  assert(!adminSrc.includes('🌴 Patar Beach Festival Promo 2026'), 'Admin.tsx must remove marketing campaigns modal');
+
+  // Verify Real-Time Room Locking Until Checkout
+  const roomsRoutesSrc = fs.readFileSync(path.resolve(serverRoot, 'src/routes/rooms.routes.js'), 'utf8');
+  assert(roomsRoutesSrc.includes('is_locked_now'), 'rooms.routes.js must compute is_locked_now based on active stay dates');
+  assert(roomsRoutesSrc.includes('units_available_now'), 'rooms.routes.js must compute units_available_now');
+  assert(roomsRoutesSrc.includes('unavailable_until_checkout'), 'rooms.routes.js must designate unavailable_until_checkout status');
+
+  const roomsSrc = fs.readFileSync(path.resolve(projectRoot, 'client/src/pages/Rooms.tsx'), 'utf8');
+  assert(roomsSrc.includes('Occupied Until Checkout'), 'Rooms.tsx must display Occupied Until Checkout status');
+  assert(roomsSrc.includes('AvailabilityCalendar'), 'Rooms.tsx must integrate AvailabilityCalendar');
+});
+
 console.log('\n-------------------------------------------------------------');
 console.log(` 🏆 GREEN SUITE VERIFICATION RESULT: ${passedTests}/${totalTests} TESTS PASSED 🟢`);
 console.log('=============================================================\n');

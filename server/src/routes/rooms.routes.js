@@ -119,7 +119,33 @@ r.get('/rooms', asyncH(async (req, res) => {
     if (error) {
       console.warn('[Rooms API] Supabase query notice:', error.message);
     } else {
-      result = (data || []).map(normalizeRoom);
+      const normalized = (data || []).map(normalizeRoom);
+
+      // Query active reservations occupying rooms today until checkout
+      const today = new Date().toISOString().slice(0, 10);
+      let activeBookings = [];
+      try {
+        const { data: resData } = await admin.from('reservations')
+          .select('id, room_id, check_in, check_out, status')
+          .in('status', ['pending', 'confirmed', 'checked_in'])
+          .lte('check_in', today)
+          .gt('check_out', today);
+        if (Array.isArray(resData)) activeBookings = resData;
+      } catch {}
+
+      result = normalized.map((r) => {
+        const occupied = activeBookings.filter((b) => b.room_id === r.id).length;
+        const totalUnits = Number(r.units) || 1;
+        const unitsAvailableNow = Math.max(0, totalUnits - occupied);
+        const isLockedNow = unitsAvailableNow <= 0;
+        return {
+          ...r,
+          occupied_units_now: occupied,
+          units_available_now: unitsAvailableNow,
+          is_locked_now: isLockedNow,
+          availability_status: isLockedNow ? 'unavailable_until_checkout' : 'available_now',
+        };
+      });
     }
   } catch (err) {
     console.warn('[Rooms API] Query exception:', err.message);

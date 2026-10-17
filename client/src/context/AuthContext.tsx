@@ -286,6 +286,18 @@ export function AuthProvider({ children }) {
       localStorage.removeItem('alon_profile');
       await supabase.auth.signOut().catch(() => {});
     },
+    deleteAccount: async () => {
+      await api.deleteMe();
+      setSession(null);
+      setProfile(null);
+      localStorage.removeItem('jd_session');
+      localStorage.removeItem('jd_profile');
+      localStorage.removeItem('alon_session');
+      localStorage.removeItem('alon_profile');
+      localStorage.removeItem('jd_admin_jwt');
+      await supabase.auth.signOut().catch(() => {});
+      toast('Your account has been permanently deleted ✦');
+    },
   };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

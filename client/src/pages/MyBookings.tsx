@@ -18,7 +18,7 @@ function to11Digits(val: string): string {
 }
 
 export default function MyBookings() {
-  const { session, profile, setAuthOpen, updateProfile } = useAuth();
+  const { session, profile, setAuthOpen, updateProfile, deleteAccount } = useAuth();
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [revModal, setRevModal] = useState(null);
@@ -27,6 +27,9 @@ export default function MyBookings() {
 
   // Profile Edit Modal State
   const [profOpen, setProfOpen] = useState(false);
+  const [savingProf, setSavingProf] = useState(false);
+  const [confirmDeleteProf, setConfirmDeleteProf] = useState(false);
+  const [deletingProf, setDeletingProf] = useState(false);
   const [profForm, setProfForm] = useState({
     first_name: '',
     middle_name: '',
@@ -36,7 +39,6 @@ export default function MyBookings() {
     city: '',
     emergency_contact: '',
   });
-  const [savingProf, setSavingProf] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -576,9 +578,87 @@ export default function MyBookings() {
                 </div>
               </div>
 
-              <button className="btn btn-sky" disabled={savingProf} style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: '.94rem', fontWeight: 700, marginTop: 4 }}>
-                {savingProf ? 'Saving Manifest…' : 'Save Profile Changes ✦'}
-              </button>
+              {confirmDeleteProf ? (
+                <div style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: 12, padding: 14, textAlign: 'center', marginTop: 10 }}>
+                  <b style={{ color: '#F87171', display: 'block', fontSize: '.92rem', marginBottom: 4 }}>
+                    ⚠️ Permanently Delete Account?
+                  </b>
+                  <p style={{ color: '#FECACA', fontSize: '.78rem', margin: '0 0 12px' }}>
+                    This action is permanent and cannot be undone. All your profile info and stay history will be deleted.
+                  </p>
+                  <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+                    <button
+                      type="button"
+                      disabled={deletingProf}
+                      onClick={async () => {
+                        setDeletingProf(true);
+                        try {
+                          await deleteAccount();
+                          setProfOpen(false);
+                        } catch (err: any) {
+                          toast(err.message, true);
+                        } finally {
+                          setDeletingProf(false);
+                          setConfirmDeleteProf(false);
+                        }
+                      }}
+                      className="btn"
+                      style={{ background: '#EF4444', color: '#FFF', fontWeight: 700, padding: '8px 18px', borderRadius: 8 }}
+                    >
+                      {deletingProf ? 'Deleting…' : 'Yes, Delete Account'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDeleteProf(false)}
+                      className="btn btn-ghost"
+                      style={{ border: '1px solid rgba(255,255,255,0.2)', padding: '8px 18px', borderRadius: 8 }}
+                    >
+                      No, Keep It
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginTop: 10 }}>
+                  <button
+                    type="submit"
+                    className="btn btn-sky"
+                    disabled={savingProf}
+                    style={{ justifyContent: 'center', padding: '12px', fontSize: '.92rem', fontWeight: 700 }}
+                  >
+                    {savingProf ? 'Saving…' : '💾 Save'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDeleteProf(true)}
+                    className="btn"
+                    style={{
+                      background: 'rgba(239, 68, 68, 0.15)',
+                      border: '1px solid rgba(239, 68, 68, 0.4)',
+                      color: '#F87171',
+                      justifyContent: 'center',
+                      padding: '12px',
+                      fontSize: '.92rem',
+                      fontWeight: 700,
+                    }}
+                  >
+                    🗑️ Delete
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setProfOpen(false)}
+                    className="btn btn-ghost"
+                    style={{
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      justifyContent: 'center',
+                      padding: '12px',
+                      fontSize: '.92rem',
+                      fontWeight: 700,
+                    }}
+                  >
+                    ✕ Cancel
+                  </button>
+                </div>
+              )}
             </form>
           </div>
         </div>

@@ -139,6 +139,7 @@ export const api = {
   me: () => req('/me'),
   updateMe: (body: any) => req('/me', { method: 'PATCH', body }),
   updatePassword: (password: string) => req('/me/password', { method: 'PATCH', body: { password } }),
+  deleteMe: () => req('/me', { method: 'DELETE' }),
 
   // Account Recovery (OTP & Password Reset)
   forgotPassword: (email: string) => req('/auth/forgot-password', { method: 'POST', body: { email } }),
