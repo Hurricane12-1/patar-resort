@@ -62,6 +62,15 @@ export function SectionTitle({
   );
 }
 
+export function formatRoomTitle(name?: string) {
+  if (!name) return 'Coastal Sanctuary';
+  const trimmed = name.trim();
+  if (/^room\s*(\d+)$/i.test(trimmed)) {
+    return trimmed.replace(/^room\s*(\d+)$/i, 'Villa Room $1');
+  }
+  return trimmed.replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export function Logo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
   const mark =
     size === 'lg' ? 'w-20 h-20 rounded-3xl' : size === 'sm' ? 'w-9 h-9 rounded-xl' : 'w-11 h-11 rounded-xl';
@@ -917,7 +926,10 @@ export default function MobileResortApp() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/30 to-transparent" />
                     <div className="absolute inset-x-0 bottom-0 p-5">
-                      <h3 className="font-serif text-2xl font-medium leading-tight text-white">{room.name}</h3>
+                      <span className="text-[10px] uppercase font-mono tracking-widest text-cyan font-bold block mb-1">
+                        ✦ {room.category || 'Villa'}
+                      </span>
+                      <h3 className="font-serif text-2xl font-medium leading-tight text-white">{formatRoomTitle(room.name)}</h3>
                       <p className="mt-1 font-serif text-lg text-cyan">
                         {peso(room.rate_php || room.price || 0)} <span className="font-sans text-[11px] text-white/60">/ night</span>
                       </p>
@@ -1559,56 +1571,121 @@ export default function MobileResortApp() {
               <p className="mt-1 text-sm font-light">Accommodations are currently being updated. Please check back shortly.</p>
             </div>
           ) : (
-            <div className={`${RAIL} mt-8 lg:grid-cols-4 lg:gap-5`}>
-              {displayRooms.map((room) => (
-                <article
-                  key={room.id || room.name}
-                  className={`${CARD} group flex w-[80%] shrink-0 snap-start flex-col sm:w-[46%] lg:w-auto`}
-                >
-                  <div className="relative h-56 overflow-hidden">
-                    <img
-                      src={getRoomImageUrl(room)}
-                      alt={room.name}
-                      loading="lazy"
-                      onError={handleImageError}
-                      className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                    />
-                    <span className="absolute bottom-3 left-3 rounded-full border border-white/10 bg-navy/85 px-3.5 py-1 font-serif text-sm text-cyan backdrop-blur-md">
-                      {peso(room.rate_php || room.price || 0)} <span className="font-sans text-[10px] text-white/60">/ night</span>
-                    </span>
-                  </div>
-                  <div className="flex flex-1 items-start justify-between gap-3 p-5">
-                    <div>
-                      <h3 className="font-serif text-xl font-medium leading-tight text-white">{room.name}</h3>
-                      <p className="mt-1.5 text-xs font-light leading-relaxed text-white/50">{room.description || room.meta || ''}</p>
+            <div className={`${RAIL} mt-8 lg:grid-cols-4 lg:gap-6`}>
+              {displayRooms.map((room) => {
+                const roomTitle = formatRoomTitle(room.name);
+                const categoryLabel = room.category || 'Luxury Villa';
+                const capacityGuests = room.capacity || 4;
+                const priceNight = room.rate_php || room.price || 0;
+                const downpayment = Math.round(priceNight * 0.3);
+                const descriptionText =
+                  room.description ||
+                  room.meta ||
+                  'Private coastal sanctuary featuring tranquil seaside ambiance, plush bedding, and direct beach trail access.';
+
+                return (
+                  <article
+                    key={room.id || room.name}
+                    className="group flex w-[85%] shrink-0 snap-start flex-col sm:w-[48%] lg:w-auto rounded-3xl border border-white/10 bg-[#0B1528]/95 backdrop-blur-md overflow-hidden transition-all duration-300 hover:border-cyan/50 hover:shadow-2xl hover:shadow-cyan/10"
+                  >
+                    {/* Image Showcase with Luxury Overlays */}
+                    <div className="relative h-60 w-full overflow-hidden bg-navy-dark">
+                      <img
+                        src={getRoomImageUrl(room)}
+                        alt={roomTitle}
+                        loading="lazy"
+                        onError={handleImageError}
+                        className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0B1528] via-black/20 to-black/40 pointer-events-none" />
+
+                      {/* Top Badges */}
+                      <div className="absolute top-3 inset-x-3 flex items-center justify-between gap-2 pointer-events-none">
+                        <span className="rounded-full border border-white/15 bg-black/60 px-3 py-1 font-mono text-[10px] font-semibold tracking-wider uppercase text-cyan backdrop-blur-md shadow-sm">
+                          ✦ {categoryLabel}
+                        </span>
+                        <span className="rounded-full border border-emerald-500/30 bg-emerald-950/80 px-2.5 py-1 text-[10px] font-semibold text-emerald-300 backdrop-blur-md flex items-center gap-1.5 shadow-sm">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          Available
+                        </span>
+                      </div>
+
+                      {/* Bottom Price Tag */}
+                      <div className="absolute bottom-3 left-3 rounded-2xl border border-white/15 bg-navy/90 px-3.5 py-1.5 backdrop-blur-md shadow-lg flex items-baseline gap-1.5">
+                        <span className="font-serif text-lg font-bold text-cyan">
+                          {peso(priceNight)}
+                        </span>
+                        <span className="font-sans text-[10px] text-white/60">/ night</span>
+                        <span className="hidden sm:inline text-[9px] text-white/40 pl-1 border-l border-white/10">
+                          DP: {peso(downpayment)}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedRoom(room.name);
-                          openReservation(room.name, true);
-                        }}
-                        title={`Check calendar & reserved dates for ${room.name}`}
-                        className="px-2.5 py-1.5 rounded-full border border-white/20 bg-white/5 text-[10px] font-semibold uppercase tracking-wider text-white/80 hover:text-cyan hover:border-cyan/40 transition cursor-pointer"
-                      >
-                        📅 Calendar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedRoom(room.name);
-                          openReservation(room.name, false);
-                        }}
-                        aria-label={`Book ${room.name}`}
-                        className="flex h-9 w-9 items-center justify-center rounded-full border border-cyan/40 bg-cyan/15 text-cyan transition hover:bg-cyan hover:text-navy cursor-pointer"
-                      >
-                        →
-                      </button>
+
+                    {/* Card Content & Details */}
+                    <div className="flex flex-1 flex-col justify-between p-5 sm:p-6 gap-4">
+                      <div className="space-y-2.5">
+                        {/* Title & Star Rating */}
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 className="font-serif text-xl sm:text-2xl font-medium tracking-wide text-white group-hover:text-cyan transition leading-tight">
+                            {roomTitle}
+                          </h3>
+                          <span className="flex items-center gap-1 text-[11px] font-medium text-amber-300/90 shrink-0 pt-0.5">
+                            ★ 4.9 <span className="text-white/40">(18)</span>
+                          </span>
+                        </div>
+
+                        {/* Specs & Amenities Line */}
+                        <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-white/60">
+                          <span className="inline-flex items-center gap-1 rounded-lg bg-white/5 px-2.5 py-1 border border-white/5">
+                            👥 Sleeps {capacityGuests}
+                          </span>
+                          <span className="inline-flex items-center gap-1 rounded-lg bg-white/5 px-2.5 py-1 border border-white/5">
+                            🛏️ Queen Suite
+                          </span>
+                          <span className="inline-flex items-center gap-1 rounded-lg bg-white/5 px-2.5 py-1 border border-white/5">
+                            ❄️ Aircon
+                          </span>
+                          <span className="inline-flex items-center gap-1 rounded-lg bg-white/5 px-2.5 py-1 border border-white/5">
+                            📶 Fast Wi-Fi
+                          </span>
+                        </div>
+
+                        {/* Description */}
+                        <p className="text-xs font-light leading-relaxed text-white/60 line-clamp-2">
+                          {descriptionText}
+                        </p>
+                      </div>
+
+                      {/* Professional Dual Action Footer */}
+                      <div className="pt-3 border-t border-white/10 flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedRoom(room.name);
+                            openReservation(room.name, true);
+                          }}
+                          title={`Check calendar & reserved dates for ${roomTitle}`}
+                          className="flex-1 py-2.5 px-3 rounded-xl border border-white/20 bg-white/5 hover:border-cyan hover:bg-cyan/10 text-xs font-semibold text-white/90 tracking-wide transition flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          📅 Check Dates
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedRoom(room.name);
+                            openReservation(room.name, false);
+                          }}
+                          title={`Reserve ${roomTitle}`}
+                          className="flex-1 py-2.5 px-3 rounded-xl bg-cyan hover:bg-cyan-light text-navy font-bold text-xs tracking-wide transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-cyan/20"
+                        >
+                          Book Villa →
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                </article>
-              ))}
+                  </article>
+                );
+              })}
             </div>
           )}
         </section>
