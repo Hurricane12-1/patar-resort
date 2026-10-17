@@ -8,7 +8,7 @@ import {
   IconCsv, IconSettings, IconSignOut, IconSearch, IconBell,
   IconSun, IconMoon, IconCrown, IconTrendingUp, IconCreditCard,
   IconWallet, IconBuilding, IconShield, IconBriefcase, DefaultUserAvatar,
-  IconMessages, IconAnalytics, IconRefresh
+  IconMessages, IconAnalytics
 } from '../components/AdminIcons.tsx';
 import { api, API_BASE } from '../lib/api.ts';
 import { supabase } from '../lib/supabaseClient.ts';
@@ -62,7 +62,6 @@ export default function Admin() {
   const [adminPass, setAdminPass] = useState('');
   const [authError, setAuthError] = useState('');
   const [authenticating, setAuthenticating] = useState(false);
-  const [refreshingAnalytics, setRefreshingAnalytics] = useState(false);
 
   // Live database profile role validation (Acquired automatically from database profile)
   const isAdministrator = Boolean(session && profile && ['administrator', 'admin'].includes(profile?.role));
@@ -107,31 +106,6 @@ export default function Admin() {
       setLoadingReservations(false);
     }
   }, []);
-
-  const handleManualSync = async () => {
-    setRefreshingAnalytics(true);
-    try {
-      const [fresh, res, notifs] = await Promise.all([
-        api.analyticsOverview(),
-        api.allReservations().catch(() => null),
-        api.myNotifications().catch(() => null),
-      ]);
-      if (fresh) setData(fresh);
-      if (Array.isArray(res)) {
-        setReservationsList(res.map((b: any) => ({
-          ...b,
-          nights: b.nights || Math.max(1, Math.round((new Date(b.check_out).getTime() - new Date(b.check_in).getTime()) / 86400000)),
-        })));
-      }
-      if (Array.isArray(notifs)) setNotifications(notifs);
-      refreshRoomsAndInventory().catch(() => {});
-      toast('✦ Live Analytics, Ledger, Inventory & Alerts Synchronized!');
-    } catch (err: any) {
-      toast(err.message || 'Sync failed', true);
-    } finally {
-      setRefreshingAnalytics(false);
-    }
-  };
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -455,6 +429,43 @@ export default function Admin() {
       setLoading(false);
     }
   }, [isAdministrator, profile]);
+
+  // Periodic background auto-reload every 20 seconds (silent, zero disruption)
+  const autoReloadLive = useCallback(async () => {
+    if (!isAdministrator) return;
+    try {
+      const [freshAnalytics, freshReservations, freshNotifs, freshRooms, freshInv, freshConvs] = await Promise.all([
+        api.analyticsOverview().catch(() => null),
+        api.allReservations().catch(() => null),
+        api.myNotifications().catch(() => null),
+        api.rooms(true).catch(() => null),
+        api.departmentInventory().catch(() => null),
+        api.conversations().catch(() => null),
+      ]);
+
+      if (freshAnalytics) setData(freshAnalytics);
+      if (Array.isArray(freshReservations)) {
+        setReservationsList(freshReservations.map((b: any) => ({
+          ...b,
+          nights: b.nights || Math.max(1, Math.round((new Date(b.check_out).getTime() - new Date(b.check_in).getTime()) / 86400000)),
+        })));
+      }
+      if (Array.isArray(freshNotifs)) setNotifications(freshNotifs);
+      if (Array.isArray(freshRooms)) setRoomsList(freshRooms);
+      if (Array.isArray(freshInv)) setInventoryList(freshInv);
+      if (Array.isArray(freshConvs)) setGuestConversations(freshConvs);
+    } catch {
+      // Silent background catch
+    }
+  }, [isAdministrator]);
+
+  useEffect(() => {
+    if (!isAdministrator) return;
+    const interval = setInterval(() => {
+      autoReloadLive();
+    }, 20000); // 20-second auto reload
+    return () => clearInterval(interval);
+  }, [isAdministrator, autoReloadLive]);
 
   const fetchUsers = useCallback(() => {
     if (activeTab === 'accounts') {
@@ -943,7 +954,7 @@ export default function Admin() {
         notes: 'Direct Front Desk walk-in entry',
       });
       refreshReservations();
-      handleManualSync();
+      autoReloadLive();
     } catch (err: any) {
       toast(err.message || 'Failed to record reservation', true);
     } finally {
@@ -1701,21 +1712,8 @@ export default function Admin() {
             </div>
           </div>
 
-          {/* TOP RIGHT CONTROLS: SYNC LIVE, LIGHT/DARK THEME TOGGLE, NOTIFICATION BAR & AVATAR */}
+          {/* TOP RIGHT CONTROLS: LIGHT/DARK THEME TOGGLE, NOTIFICATION BAR & AVATAR */}
           <div className="admin-header-right">
-
-            {/* SYNC LIVE ON-DEMAND BUTTON */}
-            <button
-              onClick={handleManualSync}
-              disabled={refreshingAnalytics}
-              className="admin-header-btn admin-header-sync-btn"
-              title="Synchronize live analytics and bookings with database"
-            >
-              <span style={{ display: 'inline-flex', animation: refreshingAnalytics ? 'spin 1s linear infinite' : 'none' }}>
-                <IconRefresh size={14} color="#0284C7" />
-              </span>
-              <span className="btn-label">{refreshingAnalytics ? 'Syncing…' : 'Sync Live'}</span>
-            </button>
 
             {/* LIGHT MODE / DARK MODE TOGGLE BUTTON */}
             <button
