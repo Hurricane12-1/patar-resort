@@ -40,6 +40,15 @@ export default function AvailabilityCalendar({
     if (selectedRoomId) setActiveRoomId(selectedRoomId);
   }, [selectedRoomId]);
 
+  // Sync initial dates from parent when they change
+  useEffect(() => {
+    if (initialCheckIn) setPickedCheckIn(initialCheckIn);
+  }, [initialCheckIn]);
+
+  useEffect(() => {
+    if (initialCheckOut) setPickedCheckOut(initialCheckOut);
+  }, [initialCheckOut]);
+
   // Fetch calendar availability data from live backend
   useEffect(() => {
     let active = true;
@@ -118,7 +127,7 @@ export default function AvailabilityCalendar({
         return {
           isPast: false,
           isLocked,
-          label: isLocked ? '🔒 Locked' : `${roomStatus.units_left} left`,
+          label: isLocked ? '🔴 Reserved' : `${roomStatus.units_left} left`,
           unitsLeft: roomStatus.units_left,
           totalUnits: roomStatus.total_units,
         };
@@ -129,7 +138,7 @@ export default function AvailabilityCalendar({
       return {
         isPast: false,
         isLocked: isResortLocked,
-        label: isResortLocked ? '🔒 Fully Booked' : `${unitsLeft} open`,
+        label: isResortLocked ? '🔴 Fully Reserved' : `${unitsLeft} open`,
         unitsLeft,
         totalUnits: dayInfo.total_units,
       };
@@ -162,7 +171,7 @@ export default function AvailabilityCalendar({
     if (status.isLocked) {
       const roomObj = rooms.find((r) => r.id === activeRoomId);
       const targetName = roomObj?.name || 'This accommodation';
-      toast(`🔒 ${targetName} is already locked in / taken on ${fmtDate(dateStr)}. Please select an open date.`, true);
+      toast(`🔴 ${targetName} is already reserved on ${fmtDate(dateStr)}. Please select an open date.`, true);
       return;
     }
 
@@ -349,18 +358,18 @@ export default function AvailabilityCalendar({
         </div>
 
         {/* Legend */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: '.75rem', flexWrap: 'wrap' }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: textMuted }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: '.75rem', flexWrap: 'wrap' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: isLightMode ? '#059669' : '#34D399', fontWeight: 600 }}>
             <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#10B981', display: 'inline-block' }} />
-            Available
+            🟢 Available (Open)
           </span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: '#F43F5E', fontWeight: 600 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#F43F5E', fontWeight: 700 }}>
             <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#F43F5E', display: 'inline-block' }} />
-            🔒 Locked In (Taken)
+            🔴 Reserved / Booked
           </span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: '#0284C7', fontWeight: 600 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#0284C7', fontWeight: 600 }}>
             <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#0284C7', display: 'inline-block' }} />
-            Selected Stay
+            🔵 Selected Stay Range
           </span>
         </div>
       </div>
@@ -504,13 +513,14 @@ export default function AvailabilityCalendar({
                           fontSize: '.65rem',
                           fontWeight: 800,
                           color: '#E11D48',
-                          background: isLightMode ? 'rgba(244,63,94,0.1)' : 'rgba(244,63,94,0.2)',
+                          background: isLightMode ? 'rgba(244,63,94,0.1)' : 'rgba(244,63,94,0.25)',
                           padding: '2px 5px',
                           borderRadius: 4,
                           display: 'inline-block',
+                          border: '1px solid rgba(244,63,94,0.4)',
                         }}
                       >
-                        🔒 Taken
+                        🔴 Reserved
                       </span>
                     ) : (
                       <span
@@ -520,7 +530,7 @@ export default function AvailabilityCalendar({
                           fontWeight: 600,
                         }}
                       >
-                        {status.label}
+                        {status.unitsLeft !== undefined ? (status.unitsLeft === 1 ? '1 unit' : `${status.unitsLeft} units`) : 'Available'}
                       </span>
                     )}
                   </>

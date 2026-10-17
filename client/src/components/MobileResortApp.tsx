@@ -5,6 +5,7 @@ import { api } from '../lib/api.ts';
 import { CANONICAL_ROOMS } from '../lib/canonicalRooms.ts';
 import { toast } from './Toasts.tsx';
 import { getRoomImageUrl, handleImageError } from '../lib/images.ts';
+import AvailabilityCalendar from './AvailabilityCalendar.tsx';
 
 // ==========================================================================
 // LAYOUT TOKENS
@@ -275,6 +276,8 @@ export default function MobileResortApp() {
   const [resPaymentMethod, setResPaymentMethod] = useState('GCash');
   const [resSubmitting, setResSubmitting] = useState(false);
   const [resConfirmed, setResConfirmed] = useState<any | null>(null);
+  const [showModalCalendar, setShowModalCalendar] = useState(false);
+  const [showHeroCalendar, setShowHeroCalendar] = useState(false);
 
   // Sync profile fields whenever profile/session changes
   useEffect(() => {
@@ -681,7 +684,7 @@ export default function MobileResortApp() {
     }
   };
 
-  const openReservation = (roomName?: string) => {
+  const openReservation = (roomName?: string, startWithCalendar = false) => {
     const targetName = roomName || selectedRoom;
     const roomMeta = displayRooms.find((r) => r.name?.toLowerCase() === targetName.toLowerCase())
       || displayRooms[0]
@@ -694,6 +697,7 @@ export default function MobileResortApp() {
 
     setResRoom(roomMeta);
     setResConfirmed(null);
+    setShowModalCalendar(startWithCalendar);
     setReservationModalOpen(true);
   };
 
@@ -1462,6 +1466,38 @@ export default function MobileResortApp() {
               </button>
             </div>
 
+            {/* Calendar Exploration Bar */}
+            <div className="mt-3.5 flex items-center justify-between flex-wrap gap-2 pt-3 border-t border-white/10">
+              <span className="text-xs text-white/60">
+                Want to check reserved dates across rooms?
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowHeroCalendar((prev) => !prev)}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-cyan hover:text-white transition cursor-pointer"
+              >
+                📅 {showHeroCalendar ? 'Hide Availability Calendar' : 'View Calendar (Check Reserved vs Open Dates)'}
+              </button>
+            </div>
+
+            {showHeroCalendar && (
+              <div className="mt-4 animate-fade-in">
+                <AvailabilityCalendar
+                  rooms={displayRooms}
+                  initialCheckIn={checkIn}
+                  initialCheckOut={checkOut}
+                  isLightMode={false}
+                  onSelectDates={(newIn, newOut) => {
+                    setCheckIn(newIn);
+                    setCheckOut(newOut);
+                    setQuote(null);
+                    toast(`✦ Dates selected: ${newIn} → ${newOut}`);
+                  }}
+                  onClose={() => setShowHeroCalendar(false)}
+                />
+              </div>
+            )}
+
             {quote && (
               <div
                 role="status"
@@ -1535,17 +1571,30 @@ export default function MobileResortApp() {
                       <h3 className="font-serif text-xl font-medium leading-tight text-white">{room.name}</h3>
                       <p className="mt-1.5 text-xs font-light leading-relaxed text-white/50">{room.description || room.meta || ''}</p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedRoom(room.name);
-                        openReservation(room.name);
-                      }}
-                      aria-label={`Book ${room.name}`}
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-cyan/40 bg-cyan/15 text-cyan transition hover:bg-cyan hover:text-navy cursor-pointer"
-                    >
-                      →
-                    </button>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedRoom(room.name);
+                          openReservation(room.name, true);
+                        }}
+                        title={`Check calendar & reserved dates for ${room.name}`}
+                        className="px-2.5 py-1.5 rounded-full border border-white/20 bg-white/5 text-[10px] font-semibold uppercase tracking-wider text-white/80 hover:text-cyan hover:border-cyan/40 transition cursor-pointer"
+                      >
+                        📅 Calendar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedRoom(room.name);
+                          openReservation(room.name, false);
+                        }}
+                        aria-label={`Book ${room.name}`}
+                        className="flex h-9 w-9 items-center justify-center rounded-full border border-cyan/40 bg-cyan/15 text-cyan transition hover:bg-cyan hover:text-navy cursor-pointer"
+                      >
+                        →
+                      </button>
+                    </div>
                   </div>
                 </article>
               ))}
@@ -2517,7 +2566,7 @@ export default function MobileResortApp() {
       {/* RESERVATION CHECKOUT & OFFICIAL VOUCHER MODAL */}
       {reservationModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy/85 backdrop-blur-md overflow-y-auto animate-fade-in">
-          <div className="relative w-full max-w-lg rounded-3xl border border-white/10 bg-ink p-6 sm:p-8 shadow-2xl text-white my-8 max-h-[92vh] flex flex-col">
+          <div className={`relative w-full ${showModalCalendar ? 'max-w-2xl' : 'max-w-lg'} rounded-3xl border border-white/10 bg-ink p-6 sm:p-8 shadow-2xl text-white my-8 max-h-[92vh] flex flex-col transition-all duration-300`}>
             {/* Header */}
             <div className="flex items-start justify-between gap-4 pb-4 border-b border-white/10">
               <div>
@@ -2612,24 +2661,83 @@ export default function MobileResortApp() {
               ) : (
                 /* RESERVATION CHECKOUT FORM */
                 <form onSubmit={handleConfirmReservation} className="flex flex-col gap-4">
-                  {/* Selected Room Card Preview */}
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 flex items-center justify-between gap-3">
-                    <div>
-                      <span className="font-serif text-lg font-medium text-white block">
-                        {resRoom?.name || selectedRoom}
-                      </span>
-                      <span className="text-xs text-white/50 block">
-                        {checkIn} → {checkOut} ({Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000))} Nights) · {guests}
-                      </span>
+                  {/* Selected Room Card Preview with Interactive Date Adjustment & Calendar */}
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 flex flex-col gap-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <span className="font-serif text-lg font-medium text-white block">
+                          {resRoom?.name || selectedRoom}
+                        </span>
+                        <span className="text-xs text-white/50 block">
+                          {checkIn} → {checkOut} ({Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000))} Nights) · {guests}
+                        </span>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="font-serif text-base text-cyan block font-semibold">
+                          {peso((resRoom?.rate_php || resRoom?.price || 4200) * Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000)))}
+                        </span>
+                        <span className="text-[10px] text-white/40 block">
+                          30% DP: {peso(Math.round((resRoom?.rate_php || resRoom?.price || 4200) * Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000)) * 0.3))}
+                        </span>
+                      </div>
                     </div>
-                    <div className="text-right shrink-0">
-                      <span className="font-serif text-base text-cyan block font-semibold">
-                        {peso((resRoom?.rate_php || resRoom?.price || 4200) * Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000)))}
-                      </span>
-                      <span className="text-[10px] text-white/40 block">
-                        30% DP: {peso(Math.round((resRoom?.rate_php || resRoom?.price || 4200) * Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000)) * 0.3))}
-                      </span>
+
+                    {/* Interactive Date Adjuster Bar & Calendar Toggle */}
+                    <div className="pt-3 border-t border-white/10 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                      <div className="flex items-center gap-2 text-xs flex-wrap">
+                        <span className="text-[11px] uppercase tracking-wider text-white/50 font-medium">Dates:</span>
+                        <input
+                          type="date"
+                          value={checkIn}
+                          min={today}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setCheckIn(val);
+                            if (val >= checkOut) {
+                              setCheckOut(addDays(val, 1));
+                            }
+                          }}
+                          className="rounded-xl border border-white/15 bg-white/5 px-2.5 py-1.5 text-xs text-white outline-none focus:border-cyan"
+                          title="Check-in date"
+                        />
+                        <span className="text-white/40 font-bold">→</span>
+                        <input
+                          type="date"
+                          value={checkOut}
+                          min={addDays(checkIn, 1)}
+                          onChange={(e) => setCheckOut(e.target.value)}
+                          className="rounded-xl border border-white/15 bg-white/5 px-2.5 py-1.5 text-xs text-white outline-none focus:border-cyan"
+                          title="Check-out date"
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowModalCalendar((prev) => !prev)}
+                        className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-full border border-cyan/40 bg-cyan/15 text-cyan hover:bg-cyan hover:text-navy text-xs font-semibold uppercase tracking-wider transition cursor-pointer"
+                      >
+                        📅 {showModalCalendar ? 'Hide Calendar' : 'View Calendar (Reserved Markings)'}
+                      </button>
                     </div>
+
+                    {/* Visual Availability Calendar with Reserved / Available Markings */}
+                    {showModalCalendar && (
+                      <div className="mt-2 animate-fade-in">
+                        <AvailabilityCalendar
+                          selectedRoomId={resRoom?.id}
+                          rooms={displayRooms}
+                          initialCheckIn={checkIn}
+                          initialCheckOut={checkOut}
+                          isLightMode={false}
+                          onSelectDates={(newIn, newOut) => {
+                            setCheckIn(newIn);
+                            setCheckOut(newOut);
+                            toast(`✦ Stay dates adjusted: ${newIn} → ${newOut}`);
+                          }}
+                          onClose={() => setShowModalCalendar(false)}
+                        />
+                      </div>
+                    )}
                   </div>
 
                   {!session && (
