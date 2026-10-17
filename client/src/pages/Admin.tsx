@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useAuth, generateAccountEmail } from '../context/AuthContext.tsx';
 import '../styles/admin.css';
 import { getThemePalette, getAdminStyles } from '../styles/modules/index.ts';
-import { BarChart, AreaLineChart, MultiBarChart, DualLineChart, Sparkline, ReferrerCategoryBarChart, DonutChart, DualSplineWaveChart } from '../components/Charts.tsx';
+import { BarChart, AreaLineChart, MultiBarChart, DualLineChart, Sparkline, ReferrerCategoryBarChart, DonutChart } from '../components/Charts.tsx';
 import CsvTableViewer from '../components/CsvTableViewer.tsx';
 import {
   IconDashboard, IconDining, IconUsers, IconTelemetry, IconLedger,
@@ -1999,19 +1999,8 @@ export default function Admin() {
 
               {/* MAIN 2-COLUMN SPLIT VIEW (RESPONSIVE SPLIT) */}
               <div className="admin-grid-split-2">
-                {/* LEFT COLUMN: CONVERSATIONS EVOLUTION & SALES / PERFORMANCE ROW */}
+                {/* LEFT COLUMN: SALES / PERFORMANCE ROW */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                  {/* CONVERSATIONS EVOLUTION (DUAL WAVE CHART) */}
-                  {/* CONVERSATIONS EVOLUTION (DUAL WAVE CHART WITH INTERACTIVE ANALYTICAL BREAKDOWN) */}
-                  <div className="panel panel-card" style={{ background: themeCardBg, border: `1px solid ${themeBorder}`, borderRadius: 18, padding: 22, boxShadow: themeShadow, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                    <DualSplineWaveChart
-                      height={220}
-                      isLightMode={isLightMode}
-                      totalChats={ov.conversations_closed || guestConversations.length || 0}
-                      dynamicData={data?.conversations_evolution || ov.conversations_evolution}
-                      onPointClick={(item: any) => toast(`📊 Inspection for ${item.periodLabel}: ${item.total} total chats (${item.auto} AI, ${item.staff} staff)`)}
-                    />
-                  </div>
 
                   {/* SALES OVERVIEW & PERFORMANCE DUAL ROW */}
                   <div className="admin-grid-dual-cards">
