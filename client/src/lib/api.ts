@@ -91,14 +91,14 @@ export function normalizeRoom(room: any) {
   }
 
   // Guaranteed resort fallback image based on room category / slug
-  let fallbackImage = '/img/cottage.jpg';
+  let fallbackImage = 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209696/jd_beach_house_accommodations/cottage.jpg';
   const cat = String(room.category || '').toLowerCase();
   const slug = String(room.slug || '').toLowerCase();
-  if (cat.includes('villa') || slug.includes('villa')) fallbackImage = '/img/villa.jpg';
-  else if (cat.includes('suite') || slug.includes('suite') || slug.includes('gel')) fallbackImage = '/img/suite.jpg';
-  else if (cat.includes('garden') || slug.includes('garden')) fallbackImage = '/img/garden.jpg';
-  else if (cat.includes('dorm') || cat.includes('bunk') || slug.includes('dorm')) fallbackImage = '/img/bunk.jpg';
-  else fallbackImage = '/img/cottage.jpg';
+  if (cat.includes('villa') || slug.includes('villa')) fallbackImage = 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209697/jd_beach_house_accommodations/villa.jpg';
+  else if (cat.includes('suite') || slug.includes('suite') || slug.includes('gel')) fallbackImage = 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209695/jd_beach_house_accommodations/suite.jpg';
+  else if (cat.includes('garden') || slug.includes('garden')) fallbackImage = 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209698/jd_beach_house_accommodations/garden.jpg';
+  else if (cat.includes('dorm') || cat.includes('bunk') || slug.includes('dorm')) fallbackImage = 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209699/jd_beach_house_accommodations/bunk.jpg';
+  else fallbackImage = 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209696/jd_beach_house_accommodations/cottage.jpg';
 
   const primaryImage = (room.image_url && String(room.image_url).trim()) || images[0] || fallbackImage;
   const allImages = Array.isArray(room.images) && room.images.length > 0

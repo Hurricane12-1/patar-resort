@@ -1,11 +1,11 @@
 export const IMG = {
-  hero: '/img/hero.jpg',
-  suite: '/img/suite.jpg',
-  cottage: '/img/cottage.jpg',
-  villa: '/img/villa.jpg',
-  garden: '/img/garden.jpg',
-  bunk: '/img/bunk.jpg',
-  island: '/img/island.jpg',
+  hero: 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209694/jd_beach_house_accommodations/hero.jpg',
+  suite: 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209695/jd_beach_house_accommodations/suite.jpg',
+  cottage: 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209696/jd_beach_house_accommodations/cottage.jpg',
+  villa: 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209697/jd_beach_house_accommodations/villa.jpg',
+  garden: 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209698/jd_beach_house_accommodations/garden.jpg',
+  bunk: 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209699/jd_beach_house_accommodations/bunk.jpg',
+  island: 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209700/jd_beach_house_accommodations/island.jpg',
 };
 
 export const roomImg = (slug?: string) => {

@@ -38,7 +38,7 @@ r.get('/cloudinary/config', (req, res) => {
   res.json({
     configured: Boolean(env.CLOUDINARY_CLOUD_NAME),
     cloud_name: env.CLOUDINARY_CLOUD_NAME || '',
-    api_key: env.CLOUDINARY_API_KEY || '574761323936344',
+    api_key: env.CLOUDINARY_API_KEY || '551438838453596',
     has_secret: Boolean(env.CLOUDINARY_API_SECRET),
   });
 });
@@ -96,8 +96,8 @@ r.post('/upload/image', authenticate, asyncH(async (req, res) => {
 
   // 1. Attempt Cloudinary Upload if cloud_name is available
   const effectiveCloudName = reqCloudName || env.CLOUDINARY_CLOUD_NAME;
-  const effectiveApiKey = env.CLOUDINARY_API_KEY || '574761323936344';
-  const effectiveApiSecret = env.CLOUDINARY_API_SECRET || 'zCCxnvdWw5LNwXo4bJjdMcgZ40g';
+  const effectiveApiKey = env.CLOUDINARY_API_KEY || '551438838453596';
+  const effectiveApiSecret = env.CLOUDINARY_API_SECRET || 'uvBrutAEgFxT8Ek6fBFuvNh7uDk';
 
   if (effectiveCloudName && effectiveApiKey && effectiveApiSecret) {
     try {

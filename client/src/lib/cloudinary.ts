@@ -15,9 +15,9 @@ export interface CloudinaryConfig {
 const STORAGE_KEY = 'jd_beach_house_cloudinary_config';
 
 export const DEFAULT_CLOUDINARY_CONFIG: CloudinaryConfig = {
-  cloudName: '',
+  cloudName: 'juynm9ab',
   uploadPreset: '',
-  apiKey: '574761323936344',
+  apiKey: '551438838453596',
   imageUrl: '',
 };
 
@@ -26,7 +26,7 @@ export function getCloudinaryConfig(): CloudinaryConfig {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      return { ...DEFAULT_CLOUDINARY_CONFIG, ...parsed, apiKey: parsed.apiKey || '574761323936344' };
+      return { ...DEFAULT_CLOUDINARY_CONFIG, ...parsed, apiKey: parsed.apiKey || '551438838453596' };
     }
   } catch {}
   return { ...DEFAULT_CLOUDINARY_CONFIG };
@@ -101,7 +101,7 @@ export async function uploadImageToCloudinary(
     const base64Data = await fileToBase64(file);
     const data = await api.uploadImage(base64Data, file.name, {
       cloud_name: cfg.cloudName,
-      api_key: cfg.apiKey || '574761323936344',
+      api_key: cfg.apiKey || '551438838453596',
     });
     if (data?.url) {
       const isCloudinary = data.source === 'cloudinary' || data.url.includes('cloudinary.com');
@@ -145,49 +145,49 @@ export const RESORT_PRESET_IMAGES = [
     id: 'preset-villa',
     title: 'Oceanfront Sunset Villa',
     category: 'Villa',
-    url: '/img/villa.jpg',
+    url: 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209697/jd_beach_house_accommodations/villa.jpg',
     description: 'Patar beachfront panoramic sunset balcony and private sundeck.',
   },
   {
     id: 'preset-suite',
     title: 'Family Coral Suite',
     category: 'Suite',
-    url: '/img/suite.jpg',
+    url: 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209695/jd_beach_house_accommodations/suite.jpg',
     description: 'Spacious 2-bedroom suite with coastal living quarters.',
   },
   {
     id: 'preset-cottage',
     title: 'Deluxe Beach Cottage',
     category: 'Cottage',
-    url: '/img/cottage.jpg',
+    url: 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209696/jd_beach_house_accommodations/cottage.jpg',
     description: 'Traditional native cottage with veranda and lush coconut grove.',
   },
   {
     id: 'preset-garden',
     title: 'Tropical Garden Haven',
     category: 'Garden',
-    url: '/img/garden.jpg',
+    url: 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209698/jd_beach_house_accommodations/garden.jpg',
     description: 'Private botanical garden oasis surrounded by native flora.',
   },
   {
     id: 'preset-rockview',
     title: 'Patar Rock View Villa',
     category: 'Villa',
-    url: '/img/hero.jpg',
+    url: 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209694/jd_beach_house_accommodations/hero.jpg',
     description: 'Dramatic limestone coastal cliff and Patar beach vistas.',
   },
   {
     id: 'preset-island',
     title: 'Coastal Horizon Deck',
     category: 'Suite',
-    url: '/img/island.jpg',
+    url: 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209700/jd_beach_house_accommodations/island.jpg',
     description: 'Open-air sea terrace facing the turquoise West Philippine Sea.',
   },
   {
     id: 'preset-bunk',
     title: 'Ocean Bunk Quarters',
     category: 'Dorm',
-    url: '/img/bunk.jpg',
+    url: 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209699/jd_beach_house_accommodations/bunk.jpg',
     description: 'Modern beachside dormitory for group surf and travel squads.',
   },
 ];

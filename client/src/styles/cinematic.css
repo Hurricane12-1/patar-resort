@@ -688,7 +688,7 @@ h1, h2, h3, h4, .serif {
   position: relative;
   color: #FFFFFF;
   padding: 64px 0;
-  background: linear-gradient(rgba(7, 13, 27, 0.7), rgba(7, 13, 27, 0.85)), url('/img/island.jpg') center/cover fixed;
+  background: linear-gradient(rgba(7, 13, 27, 0.7), rgba(7, 13, 27, 0.85)), url('https://res.cloudinary.com/juynm9ab/image/upload/v1792209700/jd_beach_house_accommodations/island.jpg') center/cover fixed;
 }
 
 .exp h2 {
@@ -789,7 +789,7 @@ h1, h2, h3, h4, .serif {
   text-align: center;
   padding: 80px 0;
   overflow: hidden;
-  background: url('/img/cottage.jpg') center/cover;
+  background: url('https://res.cloudinary.com/juynm9ab/image/upload/v1792209696/jd_beach_house_accommodations/cottage.jpg') center/cover;
 }
 
 .cine-cta .scrim {
