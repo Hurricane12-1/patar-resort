@@ -28,6 +28,7 @@ import AvailabilityCalendar from '../components/AvailabilityCalendar.tsx';
 import { money, fmtDate, fmtTime } from '../lib/format.ts';
 import { toast } from '../components/Toasts.tsx';
 import { dispatchWordPrompt } from '../lib/wordPrompt.ts';
+import { getRoomImageUrl } from '../lib/images.ts';
 
 const emptyAnalytics = {
   overview: {
@@ -78,6 +79,7 @@ export default function Admin() {
   const [reservationSearch, setReservationSearch] = useState('');
   const [showAddReservationModal, setShowAddReservationModal] = useState(false);
   const [showLedgerCalendar, setShowLedgerCalendar] = useState(false);
+  const [showWalkInCalendar, setShowWalkInCalendar] = useState(false);
   const [creatingReservation, setCreatingReservation] = useState(false);
   const [newReservation, setNewReservation] = useState({
     guest_name: '',
@@ -4302,7 +4304,18 @@ export default function Admin() {
                   </button>
                   <button
                     className="btn btn-sky btn-sm"
-                    onClick={() => setShowAddReservationModal(true)}
+                    onClick={() => {
+                      if (!newReservation.room_id && roomsList.length > 0) {
+                        const firstRoom = roomsList[0];
+                        const nights = Math.max(1, Math.round((new Date(newReservation.check_out).getTime() - new Date(newReservation.check_in).getTime()) / 86400000));
+                        setNewReservation((prev) => ({
+                          ...prev,
+                          room_id: firstRoom.id,
+                          total_php: (firstRoom.rate_php || 3500) * nights,
+                        }));
+                      }
+                      setShowAddReservationModal(true);
+                    }}
                     style={{ fontWeight: 700 }}
                   >
                     ➕ New Reservation (Walk-In / Phone)
@@ -4326,7 +4339,15 @@ export default function Admin() {
                     isLightMode={isLightMode}
                     onClose={() => setShowLedgerCalendar(false)}
                     onSelectDates={(cin, cout) => {
-                      setNewReservation((prev) => ({ ...prev, check_in: cin, check_out: cout }));
+                      const activeRoom = roomsList.find((r) => r.id === newReservation.room_id) || roomsList[0];
+                      const nights = Math.max(1, Math.round((new Date(cout).getTime() - new Date(cin).getTime()) / 86400000));
+                      setNewReservation((prev) => ({
+                        ...prev,
+                        room_id: prev.room_id || activeRoom?.id || '',
+                        check_in: cin,
+                        check_out: cout,
+                        total_php: (activeRoom?.rate_php || 3500) * nights,
+                      }));
                       setShowAddReservationModal(true);
                       toast(`✦ Check-in (${fmtDate(cin)}) and Check-out (${fmtDate(cout)}) set in New Reservation modal`);
                     }}
@@ -4786,242 +4807,518 @@ export default function Admin() {
               style={{
                 position: 'fixed',
                 inset: 0,
-                background: 'rgba(2, 6, 23, 0.75)',
+                background: 'rgba(2, 6, 23, 0.78)',
                 backdropFilter: 'blur(8px)',
                 zIndex: 1000,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: 20,
+                padding: '16px 12px',
               }}
               onClick={() => setShowAddReservationModal(false)}
             >
-              <div
-                style={{
-                  width: '100%',
-                  maxWidth: 580,
-                  background: isLightMode ? '#FFFFFF' : '#0F172A',
-                  borderRadius: 20,
-                  border: `1px solid ${themeBorder}`,
-                  padding: 26,
-                  boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
-                  maxHeight: '90vh',
-                  overflowY: 'auto',
-                }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: `1px solid ${themeBorder}`, paddingBottom: 12 }}>
-                  <div>
-                    <span style={{ fontSize: '.74rem', color: '#0EA5E9', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>FRONT DESK FOLIO</span>
-                    <h3 style={{ margin: '4px 0 0', fontSize: '1.4rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>➕ Record Walk-In / Phone Reservation</h3>
-                  </div>
-                  <button onClick={() => setShowAddReservationModal(false)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
-                </div>
+              {(() => {
+                const activeWalkInRoom = roomsList.find((r) => r.id === newReservation.room_id) || roomsList[0];
+                const activeRoomImage = getRoomImageUrl(activeWalkInRoom);
+                const computedNights = Math.max(1, Math.round((new Date(newReservation.check_out).getTime() - new Date(newReservation.check_in).getTime()) / 86400000));
 
-                <form onSubmit={handleCreateReservation} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  <div>
-                    <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Guest Full Name *</label>
-                    <input
-                      required
-                      placeholder="e.g. Maria Santos"
-                      value={newReservation.guest_name}
-                      onChange={(e) => setNewReservation({ ...newReservation, guest_name: e.target.value })}
-                      style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
-                    />
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                    <div>
-                      <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Phone (for SMS confirmation) *</label>
-                      <input
-                        required
-                        placeholder="09171234567"
-                        value={newReservation.phone}
-                        onChange={(e) => setNewReservation({ ...newReservation, phone: e.target.value })}
-                        style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Email (Optional)</label>
-                      <input
-                        type="email"
-                        placeholder="guest@gmail.com"
-                        value={newReservation.guest_email}
-                        onChange={(e) => setNewReservation({ ...newReservation, guest_email: e.target.value })}
-                        style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Accommodation / Room *</label>
-                    <select
-                      required
-                      value={newReservation.room_id}
-                      onChange={(e) => {
-                        const rId = e.target.value;
-                        const room = roomsList.find((r) => r.id === rId);
-                        const rate = room?.rate_php || 3500;
-                        const nights = Math.max(1, Math.round((new Date(newReservation.check_out).getTime() - new Date(newReservation.check_in).getTime()) / 86400000));
-                        setNewReservation({
-                          ...newReservation,
-                          room_id: rId,
-                          total_php: rate * nights,
-                        });
-                      }}
-                      style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
-                    >
-                      <option value="">-- Select Room / Cottage / Villa --</option>
-                      {roomsList.map((r) => (
-                        <option key={r.id} value={r.id}>
-                          {r.name} ({r.category || 'Standard'}) — {money(r.rate_php)}/night
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                    <div>
-                      <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Check-In Date *</label>
-                      <input
-                        type="date"
-                        required
-                        value={newReservation.check_in}
-                        onChange={(e) => {
-                          const cin = e.target.value;
-                          let cout = newReservation.check_out;
-                          if (cin >= cout) {
-                            cout = new Date(new Date(cin).getTime() + 86400000).toISOString().slice(0, 10);
-                          }
-                          const nights = Math.max(1, Math.round((new Date(cout).getTime() - new Date(cin).getTime()) / 86400000));
-                          const room = roomsList.find((r) => r.id === newReservation.room_id);
-                          const rate = room?.rate_php || 3500;
-                          setNewReservation({
-                            ...newReservation,
-                            check_in: cin,
-                            check_out: cout,
-                            total_php: rate * nights,
-                          });
-                        }}
-                        style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Check-Out Date *</label>
-                      <input
-                        type="date"
-                        required
-                        value={newReservation.check_out}
-                        onChange={(e) => {
-                          const cout = e.target.value;
-                          const nights = Math.max(1, Math.round((new Date(cout).getTime() - new Date(newReservation.check_in).getTime()) / 86400000));
-                          const room = roomsList.find((r) => r.id === newReservation.room_id);
-                          const rate = room?.rate_php || 3500;
-                          setNewReservation({
-                            ...newReservation,
-                            check_out: cout,
-                            total_php: rate * nights,
-                          });
-                        }}
-                        style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
-                      />
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-                    <div>
-                      <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Guests *</label>
-                      <input
-                        type="number"
-                        min="1"
-                        required
-                        value={newReservation.guests}
-                        onChange={(e) => setNewReservation({ ...newReservation, guests: Number(e.target.value) })}
-                        style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Total Amount (₱) *</label>
-                      <input
-                        type="number"
-                        min="0"
-                        required
-                        value={newReservation.total_php}
-                        onChange={(e) => setNewReservation({ ...newReservation, total_php: Number(e.target.value) })}
-                        style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Payment Method</label>
-                      <select
-                        value={newReservation.payment_method}
-                        onChange={(e) => setNewReservation({ ...newReservation, payment_method: e.target.value })}
-                        style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
-                      >
-                        <option value="GCash">GCash</option>
-                        <option value="Cash">Cash (Front Desk)</option>
-                        <option value="Maya">Maya</option>
-                        <option value="Bank Transfer">Bank Transfer</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Notes</label>
-                    <input
-                      placeholder="e.g. Early check-in requested, walk-in guest"
-                      value={newReservation.notes}
-                      onChange={(e) => setNewReservation({ ...newReservation, notes: e.target.value })}
-                      style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
-                    />
-                  </div>
-
-                  {isModalRoomLocked && (
+                return (
+                  <div
+                    style={{
+                      width: '100%',
+                      maxWidth: 620,
+                      background: isLightMode ? '#FFFFFF' : '#0F172A',
+                      borderRadius: 22,
+                      border: `1px solid ${themeBorder}`,
+                      boxShadow: '0 25px 60px -12px rgba(0,0,0,0.6)',
+                      maxHeight: '92vh',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      overflow: 'hidden',
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* DYNAMIC ROOM IMAGE HERO AT TOP */}
                     <div
                       style={{
-                        padding: '12px 16px',
-                        borderRadius: 12,
-                        background: isLightMode ? '#FFF1F2' : 'rgba(244, 63, 94, 0.14)',
-                        border: '1px solid rgba(244, 63, 94, 0.4)',
-                        color: '#E11D48',
-                        fontSize: '.82rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 10,
+                        position: 'relative',
+                        width: '100%',
+                        height: 175,
+                        background: '#0B1120',
+                        overflow: 'hidden',
+                        flexShrink: 0,
                       }}
                     >
-                      <span style={{ fontSize: '1.2rem' }}>🔒</span>
-                      <div>
-                        <strong>Overbooking Guard:</strong> This accommodation is already locked in / taken by another reservation for these dates. Overlapping bookings are blocked. Please select another accommodation or shift the dates.
+                      <img
+                        key={activeWalkInRoom?.id || 'room-hero'}
+                        src={activeRoomImage}
+                        alt={activeWalkInRoom?.name || 'Selected Room'}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          filter: 'brightness(0.82)',
+                          transition: 'opacity 0.35s ease, transform 0.4s ease',
+                        }}
+                      />
+                      {/* Gradient Protection Layer */}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          background: 'linear-gradient(180deg, rgba(15,23,42,0.45) 0%, rgba(15,23,42,0.88) 100%)',
+                          pointerEvents: 'none',
+                        }}
+                      />
+
+                      {/* Top Bar inside Banner: Folio pill & Close button */}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: 14,
+                          left: 16,
+                          right: 16,
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          zIndex: 3,
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          <span
+                            style={{
+                              padding: '4px 10px',
+                              borderRadius: 20,
+                              background: 'rgba(14, 165, 233, 0.95)',
+                              color: '#FFFFFF',
+                              fontSize: '.68rem',
+                              fontWeight: 800,
+                              letterSpacing: '.06em',
+                              textTransform: 'uppercase',
+                              backdropFilter: 'blur(6px)',
+                              boxShadow: '0 2px 8px rgba(14, 165, 233, 0.4)',
+                            }}
+                          >
+                            ✦ FRONT DESK FOLIO
+                          </span>
+                          <span
+                            style={{
+                              padding: '4px 10px',
+                              borderRadius: 20,
+                              background: 'rgba(15, 23, 42, 0.75)',
+                              color: '#F8FAFC',
+                              fontSize: '.68rem',
+                              fontWeight: 700,
+                              backdropFilter: 'blur(6px)',
+                              border: '1px solid rgba(255,255,255,0.22)',
+                            }}
+                          >
+                            {activeWalkInRoom?.category || 'Accommodation'}
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setShowAddReservationModal(false)}
+                          aria-label="Close"
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: '50%',
+                            background: 'rgba(15, 23, 42, 0.75)',
+                            border: '1px solid rgba(255, 255, 255, 0.3)',
+                            color: '#FFFFFF',
+                            fontSize: '1rem',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'all 0.2s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            (e.currentTarget as HTMLButtonElement).style.background = 'rgba(239, 68, 68, 0.9)';
+                          }}
+                          onMouseLeave={(e) => {
+                            (e.currentTarget as HTMLButtonElement).style.background = 'rgba(15, 23, 42, 0.75)';
+                          }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+
+                      {/* Bottom Room Info inside Dynamic Banner */}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          bottom: 12,
+                          left: 18,
+                          right: 18,
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'flex-end',
+                          zIndex: 3,
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontSize: '.7rem', color: '#94A3B8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.05em' }}>
+                            Selected Accommodation
+                          </div>
+                          <h3
+                            style={{
+                              margin: '2px 0 0',
+                              fontSize: '1.3rem',
+                              fontWeight: 800,
+                              color: '#FFFFFF',
+                              fontFamily: "'Plus Jakarta Sans', sans-serif",
+                              textShadow: '0 2px 6px rgba(0,0,0,0.6)',
+                            }}
+                          >
+                            {activeWalkInRoom?.name || 'Walk-In Reservation'}
+                          </h3>
+                          <div style={{ fontSize: '.74rem', color: '#CBD5E1', marginTop: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span>👥 Up to {activeWalkInRoom?.capacity || 4} Guests</span>
+                            <span>•</span>
+                            <span>🏷️ {activeWalkInRoom?.units || 1} Total Unit{Number(activeWalkInRoom?.units || 1) > 1 ? 's' : ''}</span>
+                          </div>
+                        </div>
+
+                        <div style={{ textAlign: 'right' }}>
+                          <div
+                            style={{
+                              padding: '5px 12px',
+                              borderRadius: 12,
+                              background: 'rgba(16, 185, 129, 0.9)',
+                              color: '#FFFFFF',
+                              fontWeight: 800,
+                              fontSize: '.88rem',
+                              backdropFilter: 'blur(6px)',
+                              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.35)',
+                              border: '1px solid rgba(255,255,255,0.25)',
+                              display: 'inline-block',
+                            }}
+                          >
+                            {money(activeWalkInRoom?.rate_php || 3500)} <span style={{ fontSize: '.68rem', fontWeight: 600 }}>/ night</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  )}
 
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
-                    <button
-                      type="button"
-                      onClick={() => setShowAddReservationModal(false)}
-                      className="btn btn-ghost btn-sm"
-                      style={{ color: themeText, border: `1px solid ${themeBorder}` }}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={creatingReservation || isModalRoomLocked}
-                      className="btn btn-sky btn-sm"
+                    {/* MODAL BODY (SCROLLBAR HIDDEN, SMOOTH VERTICAL SCROLL) */}
+                    <div
+                      className="scrollbar-none no-scrollbar"
                       style={{
-                        fontWeight: 700,
-                        background: isModalRoomLocked ? '#94A3B8' : undefined,
-                        cursor: isModalRoomLocked ? 'not-allowed' : 'pointer',
-                        borderColor: isModalRoomLocked ? '#94A3B8' : undefined,
+                        padding: '20px 24px',
+                        overflowY: 'auto',
+                        scrollbarWidth: 'none',
+                        msOverflowStyle: 'none',
+                        flex: 1,
                       }}
                     >
-                      {creatingReservation ? 'Saving to Ledger…' : isModalRoomLocked ? '🔒 Dates Taken / Locked' : 'Save & Log to Ledger ✦'}
-                    </button>
+                      <form onSubmit={handleCreateReservation} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                        <div>
+                          <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Guest Full Name *</label>
+                          <input
+                            required
+                            placeholder="e.g. Maria Santos"
+                            value={newReservation.guest_name}
+                            onChange={(e) => setNewReservation({ ...newReservation, guest_name: e.target.value })}
+                            style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
+                          />
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+                          <div>
+                            <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Phone (for SMS confirmation) *</label>
+                            <input
+                              required
+                              placeholder="09171234567"
+                              value={newReservation.phone}
+                              onChange={(e) => setNewReservation({ ...newReservation, phone: e.target.value })}
+                              style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Email (Optional)</label>
+                            <input
+                              type="email"
+                              placeholder="guest@gmail.com"
+                              value={newReservation.guest_email}
+                              onChange={(e) => setNewReservation({ ...newReservation, guest_email: e.target.value })}
+                              style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* ACCOMMODATION / ROOM SELECTOR (CHANGES TOP IMAGE IN REAL TIME) */}
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                            <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, margin: 0 }}>Accommodation / Room *</label>
+                            <span style={{ fontSize: '.7rem', color: '#0EA5E9', fontWeight: 600 }}>
+                              🖼️ Changing selection updates photo at top
+                            </span>
+                          </div>
+                          <select
+                            required
+                            value={newReservation.room_id || activeWalkInRoom?.id || ''}
+                            onChange={(e) => {
+                              const rId = e.target.value;
+                              const room = roomsList.find((r) => r.id === rId);
+                              const rate = room?.rate_php || 3500;
+                              const nights = Math.max(1, Math.round((new Date(newReservation.check_out).getTime() - new Date(newReservation.check_in).getTime()) / 86400000));
+                              setNewReservation({
+                                ...newReservation,
+                                room_id: rId,
+                                total_php: rate * nights,
+                              });
+                            }}
+                            style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText, fontWeight: 600 }}
+                          >
+                            <option value="">-- Select Room / Cottage / Villa --</option>
+                            {roomsList.map((r) => (
+                              <option key={r.id} value={r.id}>
+                                {r.name} ({r.category || 'Standard'}) — {money(r.rate_php)}/night
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* STAY DATES & INTERACTIVE VISUAL CALENDAR */}
+                        <div style={{ borderRadius: 12, border: `1px solid ${isModalRoomLocked ? '#F43F5E' : themeBorder}`, padding: 12, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.02)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+                            <div>
+                              <div style={{ fontSize: '.78rem', fontWeight: 700, color: themeText, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <span>📅 Stay Dates & Calendar</span>
+                                <span
+                                  style={{
+                                    fontSize: '.68rem',
+                                    padding: '2px 8px',
+                                    borderRadius: 6,
+                                    background: isModalRoomLocked ? '#FFF1F2' : '#ECFDF5',
+                                    color: isModalRoomLocked ? '#E11D48' : '#059669',
+                                    fontWeight: 700,
+                                    border: `1px solid ${isModalRoomLocked ? 'rgba(244,63,94,0.3)' : 'rgba(16,185,129,0.3)'}`,
+                                  }}
+                                >
+                                  {isModalRoomLocked ? '🔴 Conflicting Dates' : '🟢 Dates Available'}
+                                </span>
+                              </div>
+                              <span style={{ fontSize: '.72rem', color: themeMuted }}>
+                                {computedNights} night{computedNights > 1 ? 's' : ''}: {fmtDate(newReservation.check_in)} → {fmtDate(newReservation.check_out)}
+                              </span>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => setShowWalkInCalendar((prev) => !prev)}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                padding: '5px 12px',
+                                borderRadius: 8,
+                                border: `1px solid ${showWalkInCalendar ? '#0EA5E9' : themeBorder}`,
+                                background: showWalkInCalendar ? (isLightMode ? '#E0F2FE' : 'rgba(14,165,233,0.18)') : (isLightMode ? '#FFFFFF' : '#1E293B'),
+                                color: showWalkInCalendar ? '#0EA5E9' : themeText,
+                                fontSize: '.75rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                              }}
+                            >
+                              <span>📆</span>
+                              <span>{showWalkInCalendar ? 'Hide Visual Calendar' : 'Show Availability Calendar'}</span>
+                            </button>
+                          </div>
+
+                          {/* EXPANDABLE VISUAL AVAILABILITY CALENDAR */}
+                          {showWalkInCalendar && (
+                            <div
+                              style={{
+                                marginBottom: 12,
+                                borderRadius: 12,
+                                overflow: 'hidden',
+                                border: `1px solid ${isLightMode ? '#BAE6FD' : 'rgba(14,165,233,0.35)'}`,
+                              }}
+                            >
+                              <AvailabilityCalendar
+                                selectedRoomId={newReservation.room_id || activeWalkInRoom?.id || 'all'}
+                                rooms={roomsList}
+                                initialCheckIn={newReservation.check_in}
+                                initialCheckOut={newReservation.check_out}
+                                isLightMode={isLightMode}
+                                onSelectDates={(cin, cout) => {
+                                  const room = roomsList.find((r) => r.id === newReservation.room_id) || activeWalkInRoom;
+                                  const rate = room?.rate_php || 3500;
+                                  const nights = Math.max(1, Math.round((new Date(cout).getTime() - new Date(cin).getTime()) / 86400000));
+                                  setNewReservation((prev) => ({
+                                    ...prev,
+                                    check_in: cin,
+                                    check_out: cout,
+                                    total_php: rate * nights,
+                                  }));
+                                }}
+                                onRoomChange={(roomId) => {
+                                  const room = roomsList.find((r) => r.id === roomId);
+                                  const rate = room?.rate_php || 3500;
+                                  const nights = Math.max(1, Math.round((new Date(newReservation.check_out).getTime() - new Date(newReservation.check_in).getTime()) / 86400000));
+                                  setNewReservation((prev) => ({
+                                    ...prev,
+                                    room_id: roomId,
+                                    total_php: rate * nights,
+                                  }));
+                                }}
+                                onClose={() => setShowWalkInCalendar(false)}
+                              />
+                            </div>
+                          )}
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                            <div>
+                              <label style={{ fontSize: '.74rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Check-In Date *</label>
+                              <input
+                                type="date"
+                                required
+                                value={newReservation.check_in}
+                                onChange={(e) => {
+                                  const cin = e.target.value;
+                                  let cout = newReservation.check_out;
+                                  if (cin >= cout) {
+                                    cout = new Date(new Date(cin).getTime() + 86400000).toISOString().slice(0, 10);
+                                  }
+                                  const nights = Math.max(1, Math.round((new Date(cout).getTime() - new Date(cin).getTime()) / 86400000));
+                                  const room = roomsList.find((r) => r.id === newReservation.room_id) || activeWalkInRoom;
+                                  const rate = room?.rate_php || 3500;
+                                  setNewReservation({
+                                    ...newReservation,
+                                    check_in: cin,
+                                    check_out: cout,
+                                    total_php: rate * nights,
+                                  });
+                                }}
+                                style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
+                              />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '.74rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Check-Out Date *</label>
+                              <input
+                                type="date"
+                                required
+                                value={newReservation.check_out}
+                                onChange={(e) => {
+                                  const cout = e.target.value;
+                                  const nights = Math.max(1, Math.round((new Date(cout).getTime() - new Date(newReservation.check_in).getTime()) / 86400000));
+                                  const room = roomsList.find((r) => r.id === newReservation.room_id) || activeWalkInRoom;
+                                  const rate = room?.rate_php || 3500;
+                                  setNewReservation({
+                                    ...newReservation,
+                                    check_out: cout,
+                                    total_php: rate * nights,
+                                  });
+                                }}
+                                style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12 }}>
+                          <div>
+                            <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Guests *</label>
+                            <input
+                              type="number"
+                              min="1"
+                              max={activeWalkInRoom?.capacity || 20}
+                              required
+                              value={newReservation.guests}
+                              onChange={(e) => setNewReservation({ ...newReservation, guests: Number(e.target.value) })}
+                              style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Total Amount (₱) *</label>
+                            <input
+                              type="number"
+                              min="0"
+                              required
+                              value={newReservation.total_php}
+                              onChange={(e) => setNewReservation({ ...newReservation, total_php: Number(e.target.value) })}
+                              style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Payment Method</label>
+                            <select
+                              value={newReservation.payment_method}
+                              onChange={(e) => setNewReservation({ ...newReservation, payment_method: e.target.value })}
+                              style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
+                            >
+                              <option value="GCash">GCash</option>
+                              <option value="Cash">Cash (Front Desk)</option>
+                              <option value="Maya">Maya</option>
+                              <option value="Bank Transfer">Bank Transfer</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Notes</label>
+                          <input
+                            placeholder="e.g. Early check-in requested, walk-in guest"
+                            value={newReservation.notes}
+                            onChange={(e) => setNewReservation({ ...newReservation, notes: e.target.value })}
+                            style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
+                          />
+                        </div>
+
+                        {isModalRoomLocked && (
+                          <div
+                            style={{
+                              padding: '12px 16px',
+                              borderRadius: 12,
+                              background: isLightMode ? '#FFF1F2' : 'rgba(244, 63, 94, 0.14)',
+                              border: '1px solid rgba(244, 63, 94, 0.4)',
+                              color: '#E11D48',
+                              fontSize: '.82rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 10,
+                            }}
+                          >
+                            <span style={{ fontSize: '1.2rem' }}>🔒</span>
+                            <div>
+                              <strong>Overbooking Guard:</strong> This accommodation is already locked in / taken by another reservation for these dates. Overlapping bookings are blocked. Please select another accommodation or shift the dates in the calendar above.
+                            </div>
+                          </div>
+                        )}
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
+                          <button
+                            type="button"
+                            onClick={() => setShowAddReservationModal(false)}
+                            className="btn btn-ghost btn-sm"
+                            style={{ color: themeText, border: `1px solid ${themeBorder}` }}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={creatingReservation || isModalRoomLocked}
+                            className="btn btn-sky btn-sm"
+                            style={{
+                              fontWeight: 700,
+                              background: isModalRoomLocked ? '#94A3B8' : undefined,
+                              cursor: isModalRoomLocked ? 'not-allowed' : 'pointer',
+                              borderColor: isModalRoomLocked ? '#94A3B8' : undefined,
+                            }}
+                          >
+                            {creatingReservation ? 'Saving to Ledger…' : isModalRoomLocked ? '🔒 Dates Taken / Locked' : 'Save & Log to Ledger ✦'}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
                   </div>
-                </form>
-              </div>
+                );
+              })()}
             </div>
           )}
 

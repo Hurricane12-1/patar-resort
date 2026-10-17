@@ -9,6 +9,7 @@ interface AvailabilityCalendarProps {
   initialCheckIn?: string;
   initialCheckOut?: string;
   onSelectDates?: (checkIn: string, checkOut: string) => void;
+  onRoomChange?: (roomId: string) => void;
   isLightMode?: boolean;
   onClose?: () => void;
 }
@@ -19,6 +20,7 @@ export default function AvailabilityCalendar({
   initialCheckIn,
   initialCheckOut,
   onSelectDates,
+  onRoomChange,
   isLightMode = true,
   onClose,
 }: AvailabilityCalendarProps) {
@@ -261,7 +263,13 @@ export default function AvailabilityCalendar({
           {/* Accommodation Filter */}
           <select
             value={activeRoomId}
-            onChange={(e) => setActiveRoomId(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              setActiveRoomId(val);
+              if (onRoomChange && val !== 'all') {
+                onRoomChange(val);
+              }
+            }}
             style={{
               padding: '4px 8px',
               borderRadius: 8,
