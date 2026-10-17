@@ -130,6 +130,12 @@ CREATE TRIGGER trg_employee_accounts_lifecycle
   FOR EACH ROW EXECUTE FUNCTION public.handle_employee_account_lifecycle();
 
 
+-- Step 1.1: Ensure 'manager' is added to public.user_role ENUM if it exists
+DO $$ BEGIN
+  ALTER TYPE public.user_role ADD VALUE IF NOT EXISTS 'manager';
+EXCEPTION WHEN undefined_object THEN null;
+END $$;
+
 -- ==============================================================================
 -- PART 3: ROW LEVEL SECURITY (RLS) POLICIES
 -- ==============================================================================
@@ -153,14 +159,14 @@ CREATE POLICY "Admins can manage all employee_accounts"
     EXISTS (
       SELECT 1 FROM public.profiles
       WHERE profiles.id = auth.uid()
-        AND profiles.role IN ('administrator', 'admin', 'manager')
+        AND profiles.role::text IN ('administrator', 'admin', 'manager')
     )
   )
   WITH CHECK (
     EXISTS (
       SELECT 1 FROM public.profiles
       WHERE profiles.id = auth.uid()
-        AND profiles.role IN ('administrator', 'admin', 'manager')
+        AND profiles.role::text IN ('administrator', 'admin', 'manager')
     )
   );
 
