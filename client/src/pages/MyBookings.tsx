@@ -25,6 +25,14 @@ export default function MyBookings() {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
 
+  // Guest Refund Modal State
+  const [refundModal, setRefundModal] = useState<any>(null);
+  const [refundReason, setRefundReason] = useState('Change of travel schedule / personal emergency');
+  const [refundAmount, setRefundAmount] = useState('');
+  const [refundPayoutMethod, setRefundPayoutMethod] = useState('GCash');
+  const [refundAccountDetails, setRefundAccountDetails] = useState('');
+  const [submittingRefund, setSubmittingRefund] = useState(false);
+
   // Profile Edit Modal State
   const [profOpen, setProfOpen] = useState(false);
   const [savingProf, setSavingProf] = useState(false);
@@ -87,6 +95,27 @@ export default function MyBookings() {
       toast('Reservation cancelled successfully.');
       setList((x) => x.map((b) => (b.id === id ? { ...b, status: 'cancelled' } : b)));
     } catch (e) { toast(e.message, true); }
+  }
+
+  async function submitGuestRefund(e: React.FormEvent) {
+    e.preventDefault();
+    if (!refundModal) return;
+    setSubmittingRefund(true);
+    try {
+      const amountNum = Number(refundAmount) || refundModal.downpayment_php || refundModal.total_php || 0;
+      const fullReason = `${refundReason} (Payout via ${refundPayoutMethod}: ${refundAccountDetails || 'As registered on booking'})`.trim();
+      const res = await api.requestRefund(refundModal.id, fullReason, amountNum);
+      toast(res.message || 'Refund request registered! Automated confirmation email dispatched ✦');
+      setList((prev: any[]) => prev.map((x) => x.id === refundModal.id ? { ...x, payment_status: 'refund_pending' } : x));
+      setRefundModal(null);
+      setRefundReason('Change of travel schedule / personal emergency');
+      setRefundAmount('');
+      setRefundAccountDetails('');
+    } catch (err: any) {
+      toast(err.message, true);
+    } finally {
+      setSubmittingRefund(false);
+    }
   }
 
   async function submitReview(e) {
@@ -383,14 +412,41 @@ export default function MyBookings() {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span className={`pill ${b.status}`} style={{ textTransform: 'capitalize' }}>
-                    {b.status.replace('_', ' ')}
-                  </span>
-                  <div>
-                    {['pending', 'confirmed'].includes(b.status) && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
+                    <span className={`pill ${b.status}`} style={{ textTransform: 'capitalize' }}>
+                      {b.status.replace('_', ' ')}
+                    </span>
+                    {b.payment_status === 'refund_pending' && (
+                      <span className="pill" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#F59E0B', border: '1px solid rgba(245, 158, 11, 0.35)', fontSize: '.72rem', fontWeight: 700 }}>
+                        ⏳ Refund In Process
+                      </span>
+                    )}
+                    {b.payment_status === 'refunded' && (
+                      <span className="pill" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#10B981', border: '1px solid rgba(16, 185, 129, 0.35)', fontSize: '.72rem', fontWeight: 700 }}>
+                        ✅ Refunded
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                    {['pending', 'confirmed'].includes(b.status) && b.payment_status !== 'refund_pending' && b.payment_status !== 'refunded' && (
                       <button className="act-btn" style={{ padding: '6px 14px', borderRadius: 8, fontSize: '.82rem' }} onClick={() => cancel(b.id)}>
                         Cancel
+                      </button>
+                    )}
+                    {b.payment_status !== 'refund_pending' && b.payment_status !== 'refunded' && (
+                      <button
+                        className="act-btn"
+                        style={{ padding: '6px 14px', borderRadius: 8, fontSize: '.82rem', borderColor: '#F59E0B', color: '#F59E0B', background: 'rgba(245, 158, 11, 0.08)' }}
+                        onClick={() => {
+                          setRefundModal(b);
+                          setRefundAmount(b.downpayment_php || b.total_php || '');
+                          setRefundPayoutMethod(b.payment_method || 'GCash');
+                          setRefundAccountDetails(profile?.phone || '');
+                        }}
+                        title="Submit refund claim for this reservation"
+                      >
+                        💰 Request Refund
                       </button>
                     )}
                     {b.status === 'checked_out' && !b.reviews && (
@@ -659,6 +715,132 @@ export default function MyBookings() {
                   </button>
                 </div>
               )}
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* GUEST REFUND REQUEST MODAL */}
+      {refundModal && (
+        <div className="modal-overlay" onClick={() => setRefundModal(null)}>
+          <div
+            className="modal"
+            style={{
+              maxWidth: 540,
+              borderRadius: 20,
+              overflow: 'hidden',
+              border: '1.5px solid rgba(245, 158, 11, 0.45)',
+              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.7)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="modal-head"
+              style={{
+                background: 'linear-gradient(135deg, rgba(217, 119, 6, 0.95), rgba(245, 158, 11, 0.9))',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '20px 24px',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.15)',
+              }}
+            >
+              <div>
+                <span style={{ fontSize: '.72rem', letterSpacing: '.12em', color: '#FEF3C7', fontWeight: 800, textTransform: 'uppercase' }}>
+                  Accounting & Guest Refund Office
+                </span>
+                <h3 className="serif" style={{ fontSize: '1.45rem', color: '#FFFFFF', margin: '4px 0 0' }}>
+                  💰 Request a Booking Refund
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRefundModal(null)}
+                style={{ background: 'none', border: 'none', color: '#FFFFFF', fontSize: '1.4rem', cursor: 'pointer', lineHeight: 1 }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ padding: '14px 24px', background: 'rgba(245, 158, 11, 0.1)', borderBottom: '1px solid rgba(245, 158, 11, 0.2)', fontSize: '.82rem', color: '#FDE68A' }}>
+              Folio: <b>{refundModal.rooms?.name || 'Beachfront Unit'}</b> ({fmtDate(refundModal.check_in)} → {fmtDate(refundModal.check_out)}) · Booking Total: <b>{money(refundModal.total_php)}</b>
+            </div>
+
+            <form className="modal-body" onSubmit={submitGuestRefund} style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.08)', fontSize: '.78rem', color: '#94A3B8', lineHeight: 1.45 }}>
+                ℹ️ <strong>J & D Refund Guidelines:</strong> Cancellations made 7+ days prior are eligible for 100% refund. Within 3–6 days are eligible for 50%. Free full refund or rebooking applies under official storm/force majeure advisories.
+              </div>
+
+              <div className="field">
+                <label style={{ fontSize: '.76rem', color: '#94A3B8', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4, display: 'block' }}>Refund Amount (₱) *</label>
+                <input
+                  type="number"
+                  required
+                  min="1"
+                  max={refundModal.total_php || 50000}
+                  value={refundAmount}
+                  onChange={(e) => setRefundAmount(e.target.value)}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 10, background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#FFFFFF', fontSize: '.95rem' }}
+                />
+              </div>
+
+              <div className="grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="field">
+                  <label style={{ fontSize: '.76rem', color: '#94A3B8', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4, display: 'block' }}>Payout Channel *</label>
+                  <select
+                    value={refundPayoutMethod}
+                    onChange={(e) => setRefundPayoutMethod(e.target.value)}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: 10, background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#FFFFFF', fontSize: '.88rem' }}
+                  >
+                    <option value="GCash">GCash</option>
+                    <option value="Maya">Maya</option>
+                    <option value="Bank Transfer">BDO / BPI / UnionBank</option>
+                    <option value="Cash at Front Desk">Cash at Front Desk</option>
+                  </select>
+                </div>
+                <div className="field">
+                  <label style={{ fontSize: '.76rem', color: '#94A3B8', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4, display: 'block' }}>Account / Mobile Number *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. 0917XXXXXXX or Account #"
+                    value={refundAccountDetails}
+                    onChange={(e) => setRefundAccountDetails(e.target.value)}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: 10, background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#FFFFFF', fontSize: '.88rem' }}
+                  />
+                </div>
+              </div>
+
+              <div className="field">
+                <label style={{ fontSize: '.76rem', color: '#94A3B8', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4, display: 'block' }}>Reason for Refund *</label>
+                <textarea
+                  rows={2}
+                  required
+                  value={refundReason}
+                  onChange={(e) => setRefundReason(e.target.value)}
+                  placeholder="e.g. Habagat heavy rain, personal medical emergency, schedule conflict..."
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 10, background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#FFFFFF', fontSize: '.85rem' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 8 }}>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setRefundModal(null)}
+                  disabled={submittingRefund}
+                >
+                  ✕ Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-sky btn-sm"
+                  disabled={submittingRefund}
+                  style={{ background: '#F59E0B', borderColor: '#D97706', color: '#FFFFFF', fontWeight: 700 }}
+                >
+                  {submittingRefund ? 'Submitting…' : '💾 Submit Refund Request'}
+                </button>
+              </div>
             </form>
           </div>
         </div>

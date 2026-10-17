@@ -170,19 +170,35 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
 }));
 
 r.get('/reservations/mine', authenticate, asyncH(async (req, res) => {
-  const { data, error } = await req.sb.from('reservations')
+  const sysClient = await getSystemAdminClient();
+  let query = sysClient.from('reservations')
     .select('*, rooms(name, slug, capacity), reviews(id, rating)')
     .order('check_in', { ascending: false });
+
+  if (!['administrator', 'admin'].includes(req.user.role)) {
+    if (req.user.email) {
+      query = query.or(`guest_id.eq.${req.user.id},guest_email.eq.${req.user.email}`);
+    } else {
+      query = query.eq('guest_id', req.user.id);
+    }
+  }
+
+  const { data, error } = await query;
   if (error) throw new ApiError(500, error.message);
   return res.json(data || []);
 }));
 
 r.patch('/reservations/:id/cancel', authenticate, asyncH(async (req, res) => {
-  const { data: b } = await req.sb.from('reservations').select('*').eq('id', req.params.id).single();
+  const sysClient = await getSystemAdminClient();
+  const { data: b } = await sysClient.from('reservations').select('*').eq('id', req.params.id).single();
   if (!b) throw new ApiError(404, 'Reservation not found');
+  const isOwner = b.guest_id === req.user.id ||
+    Boolean(req.user.email && b.guest_email && b.guest_email.toLowerCase() === req.user.email.toLowerCase());
+  const isStaff = ['administrator', 'staff', 'accounting', 'receptionist', 'admin'].includes(req.user.role);
+  if (!isOwner && !isStaff) throw new ApiError(403, 'Unauthorized to cancel this booking');
   if (!['pending', 'confirmed'].includes(b.status))
     throw new ApiError(409, 'Only upcoming stays can be cancelled.');
-  const { data, error } = await req.sb.from('reservations')
+  const { data, error } = await sysClient.from('reservations')
     .update({ status: 'cancelled' }).eq('id', b.id)
     .select('*, rooms(name)').single();
   if (error) throw new ApiError(500, error.message);
@@ -261,8 +277,10 @@ r.post('/reservations/:id/refund-request', authenticate,
       .single();
     if (error || !b) throw new ApiError(404, 'Reservation not found');
 
-    const isOwner = b.guest_id === req.user.id;
-    const isStaff = ['administrator', 'staff', 'accounting', 'receptionist'].includes(req.user.role);
+    const isOwner = b.guest_id === req.user.id ||
+      Boolean(req.user.email && b.guest_email && b.guest_email.toLowerCase() === req.user.email.toLowerCase()) ||
+      Boolean(b.profiles?.email && req.user.email && b.profiles.email.toLowerCase() === req.user.email.toLowerCase());
+    const isStaff = ['administrator', 'staff', 'accounting', 'receptionist', 'admin'].includes(req.user.role);
     if (!isOwner && !isStaff) {
       throw new ApiError(403, 'Unauthorized to request a refund for this booking');
     }
@@ -303,23 +321,27 @@ r.post('/reservations/:id/refund-request', authenticate,
       }).catch((e) => console.warn('[Refund Request Mail Warning]', e.message));
     }
 
-    await sysClient.from('notifications').insert([
-      {
-        profile_id: b.guest_id || req.user.id,
-        title: 'Refund Request In Process',
-        body: `Your refund request for ${roomName} (₱${refundAmount.toLocaleString()}) has been received and is being processed.`,
-        type: 'sms',
-        recipient: guestName,
-        status: 'sent',
-      },
-      {
-        title: 'Guest Refund Requested',
-        body: `Guest ${guestName} requested refund of ₱${refundAmount.toLocaleString()} for ${roomName} (#${b.id.slice(0, 8)}).`,
-        type: 'sms',
-        recipient: 'Accounting Desk',
-        status: 'sent',
-      }
-    ]).catch(() => {});
+    try {
+      await sysClient.from('notifications').insert([
+        {
+          profile_id: b.guest_id || req.user.id,
+          title: 'Refund Request In Process',
+          body: `Your refund request for ${roomName} (₱${refundAmount.toLocaleString()}) has been received and is being processed.`,
+          type: 'sms',
+          recipient: guestName,
+          status: 'sent',
+        },
+        {
+          title: 'Guest Refund Requested',
+          body: `Guest ${guestName} requested refund of ₱${refundAmount.toLocaleString()} for ${roomName} (#${b.id.slice(0, 8)}).`,
+          type: 'sms',
+          recipient: 'Accounting Desk',
+          status: 'sent',
+        }
+      ]);
+    } catch (notifErr) {
+      console.warn('[Notification Insert Warning]', notifErr?.message);
+    }
 
     await logAuditEvent({
       actor: req.user,
@@ -401,14 +423,18 @@ r.post('/reservations/:id/refund-confirm', authenticate, requireStaffOrAdmin,
       }).catch(() => {});
     }
 
-    await sysClient.from('notifications').insert({
-      profile_id: b.guest_id || null,
-      title: 'Refund Approved & Processed',
-      body: `Refund of ₱${refundAmount.toLocaleString()} has been sent to your account via ${refundMethod}. Ref: ${refNum}.`,
-      type: 'sms',
-      recipient: guestName,
-      status: 'sent',
-    }).catch(() => {});
+    try {
+      await sysClient.from('notifications').insert({
+        profile_id: b.guest_id || null,
+        title: 'Refund Approved & Processed',
+        body: `Refund of ₱${refundAmount.toLocaleString()} has been sent to your account via ${refundMethod}. Ref: ${refNum}.`,
+        type: 'sms',
+        recipient: guestName,
+        status: 'sent',
+      });
+    } catch (notifErr) {
+      console.warn('[Notification Insert Warning]', notifErr?.message);
+    }
 
     await logAuditEvent({
       actor: req.user,

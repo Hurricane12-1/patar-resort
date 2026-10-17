@@ -1160,7 +1160,13 @@ export default function Admin() {
       setRefundReason('');
       setRefundAmount('');
       setRefundRefNum('');
+      setReservationsList((prev) => prev.map((r) => r.id === refundTarget.id ? {
+        ...r,
+        payment_status: refundMode === 'confirm' ? 'refunded' : 'refund_pending',
+        status: refundMode === 'confirm' ? 'cancelled' : r.status,
+      } : r));
       refreshReservations();
+      autoReloadLive();
     } catch (err) {
       toast(err.message, true);
     } finally {
