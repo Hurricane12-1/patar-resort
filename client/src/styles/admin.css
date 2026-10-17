@@ -419,40 +419,24 @@
   -webkit-overflow-scrolling: touch;
 }
 
-/* ISOLATED SLEEK SAAS SCROLLBARS */
-.admin-portal .admin-main-content::-webkit-scrollbar,
-.admin-portal aside.sidebar::-webkit-scrollbar,
-.admin-portal .table-wrap::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-.admin-portal .admin-main-content::-webkit-scrollbar-track,
-.admin-portal aside.sidebar::-webkit-scrollbar-track,
-.admin-portal .table-wrap::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.admin-portal .admin-main-content::-webkit-scrollbar-thumb,
-.admin-portal aside.sidebar::-webkit-scrollbar-thumb,
-.admin-portal .table-wrap::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
-  border-radius: 99px;
-  transition: background 0.2s ease;
-}
-
-.admin-portal .admin-main-content::-webkit-scrollbar-thumb:hover,
-.admin-portal aside.sidebar::-webkit-scrollbar-thumb:hover,
-.admin-portal .table-wrap::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
-}
-
-/* Firefox scrollbar styling */
+/* ISOLATED SLEEK SAAS: HIDE SCROLLBARS GLOBALLY ACROSS ADMIN */
+.admin-portal,
+.admin-portal *,
 .admin-portal .admin-main-content,
 .admin-portal aside.sidebar,
 .admin-portal .table-wrap {
-  scrollbar-width: thin;
-  scrollbar-color: #CBD5E1 transparent;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.admin-portal::-webkit-scrollbar,
+.admin-portal *::-webkit-scrollbar,
+.admin-portal .admin-main-content::-webkit-scrollbar,
+.admin-portal aside.sidebar::-webkit-scrollbar,
+.admin-portal .table-wrap::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 /* 7. PREMIER EXECUTIVE CARDS, PANELS & GLASSMORPHISM */
@@ -760,22 +744,17 @@
   background: rgba(255, 255, 255, 0.04) !important;
 }
 
-.admin-portal.dark-mode .admin-main-content,
-.admin-portal.dark-mode aside.sidebar,
-.admin-portal.dark-mode .table-wrap {
-  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+.admin-portal.dark-mode,
+.admin-portal.dark-mode * {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
 }
 
-.admin-portal.dark-mode .admin-main-content::-webkit-scrollbar-thumb,
-.admin-portal.dark-mode aside.sidebar::-webkit-scrollbar-thumb,
-.admin-portal.dark-mode .table-wrap::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.admin-portal.dark-mode .admin-main-content::-webkit-scrollbar-thumb:hover,
-.admin-portal.dark-mode aside.sidebar::-webkit-scrollbar-thumb:hover,
-.admin-portal.dark-mode .table-wrap::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.4);
+.admin-portal.dark-mode::-webkit-scrollbar,
+.admin-portal.dark-mode *::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 /* 13. RESPONSIVE EXECUTIVE GRID SYSTEM */

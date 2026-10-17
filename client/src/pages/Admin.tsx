@@ -1815,25 +1815,29 @@ export default function Admin() {
                     }}
                   />
                   <div
+                    className="scrollbar-none no-scrollbar"
                     style={{
                       position: 'absolute',
                       right: 0,
                       top: 'calc(100% + 8px)',
-                      width: 380,
-                      maxWidth: 'calc(100vw - 28px)',
+                      width: 400,
+                      maxWidth: 'calc(100vw - 24px)',
                       background: isLightMode ? '#FFFFFF' : '#0F172A',
                       color: isLightMode ? '#0F172A' : '#F8FAFC',
                       border: `1px solid ${isLightMode ? '#CBD5E1' : 'rgba(255,255,255,0.18)'}`,
-                      borderRadius: 14,
-                      boxShadow: isLightMode ? '0 16px 40px rgba(0,0,0,0.18)' : '0 20px 45px rgba(0,0,0,0.75)',
-                      padding: 16,
+                      borderRadius: 16,
+                      boxShadow: isLightMode ? '0 20px 48px rgba(0,0,0,0.16)' : '0 25px 60px rgba(0,0,0,0.85)',
+                      padding: '16px 16px 14px 16px',
                       zIndex: 9999,
+                      overflow: 'hidden',
+                      scrollbarWidth: 'none',
+                      msOverflowStyle: 'none',
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${themeBorder}`, paddingBottom: 8, marginBottom: 10 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${themeBorder}`, paddingBottom: 10, marginBottom: 10 }}>
                       <div>
-                        <b style={{ fontSize: '.88rem', color: themeText }}>Executive Notifications</b>
-                        <small style={{ color: '#0EA5E9', fontSize: '.72rem', display: 'block' }}>SMS & Live System Alerts</small>
+                        <b style={{ fontSize: '.9rem', color: themeText, letterSpacing: '.01em' }}>Executive Notifications</b>
+                        <small style={{ color: '#0EA5E9', fontSize: '.72rem', display: 'block', fontWeight: 600 }}>SMS & Live System Alerts</small>
                       </div>
                       {unreadNotifsCount > 0 && (
                         <button
@@ -1845,30 +1849,60 @@ export default function Admin() {
                       )}
                     </div>
                     {notifications.length === 0 ? (
-                      <p className="muted small" style={{ margin: 0, padding: 16, textAlign: 'center' }}>No new notifications.</p>
+                      <p className="muted small" style={{ margin: 0, padding: '24px 16px', textAlign: 'center' }}>No new notifications.</p>
                     ) : (
-                      <div style={{ maxHeight: 280, overflowY: 'auto' }}>
+                      <div
+                        className="scrollbar-none no-scrollbar"
+                        style={{
+                          maxHeight: 320,
+                          overflowY: 'auto',
+                          overflowX: 'hidden',
+                          scrollbarWidth: 'none',
+                          msOverflowStyle: 'none',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 6,
+                          paddingRight: 1,
+                        }}
+                      >
                         {notifications.slice(0, 6).map((n: any) => (
                           <div
                             key={n.id}
                             style={{
-                              padding: '8px 10px',
-                              borderRadius: 8,
-                              marginBottom: 4,
-                              background: !n.is_read ? (isLightMode ? '#F1F5F9' : 'rgba(99,102,241,0.12)') : 'transparent',
-                              borderBottom: `1px solid ${themeBorder}`,
+                              padding: '10px 12px',
+                              borderRadius: 10,
+                              background: !n.is_read ? (isLightMode ? '#F1F5F9' : 'rgba(99,102,241,0.14)') : (isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)'),
+                              border: isLightMode ? '1px solid #E2E8F0' : '1px solid rgba(255,255,255,0.07)',
                               fontSize: '.78rem',
+                              overflow: 'hidden',
+                              boxSizing: 'border-box',
                             }}
                           >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
-                              <span className={`pill ${n.status || 'sent'}`}>{n.status || 'sent'}</span>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <span style={{ color: themeMuted, fontSize: '.72rem' }}>{fmtDate(n.created_at)} {fmtTime(n.created_at)}</span>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6, marginBottom: 4, flexWrap: 'wrap' }}>
+                              <span
+                                style={{
+                                  fontSize: '.66rem',
+                                  fontWeight: 800,
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '.06em',
+                                  padding: '2px 7px',
+                                  borderRadius: 6,
+                                  background: n.status === 'failed' ? 'rgba(244,63,94,0.15)' : 'rgba(16,185,129,0.15)',
+                                  color: n.status === 'failed' ? '#F43F5E' : '#10B981',
+                                  border: `1px solid ${n.status === 'failed' ? 'rgba(244,63,94,0.3)' : 'rgba(16,185,129,0.3)'}`,
+                                }}
+                              >
+                                {n.status || 'SENT'}
+                              </span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
+                                <span style={{ color: themeMuted, fontSize: '.7rem', whiteSpace: 'nowrap' }}>
+                                  {fmtDate(n.created_at)} {fmtTime(n.created_at)}
+                                </span>
                                 {!n.is_read && (
                                   <button
                                     onClick={() => handleMarkNotifRead(n.id)}
                                     title="Mark as read"
-                                    style={{ background: 'none', border: 'none', color: '#10B981', cursor: 'pointer', fontSize: '.75rem', padding: '0 4px', fontWeight: 800 }}
+                                    style={{ background: 'rgba(16,185,129,0.12)', border: 'none', color: '#10B981', cursor: 'pointer', fontSize: '.72rem', width: 20, height: 20, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}
                                   >
                                     ✓
                                   </button>
@@ -1876,13 +1910,25 @@ export default function Admin() {
                                 <button
                                   onClick={() => handleDeleteNotif(n.id)}
                                   title="Delete alert"
-                                  style={{ background: 'none', border: 'none', color: '#F43F5E', cursor: 'pointer', fontSize: '.75rem', padding: '0 4px' }}
+                                  style={{ background: 'rgba(244,63,94,0.12)', border: 'none', color: '#F43F5E', cursor: 'pointer', fontSize: '.72rem', width: 20, height: 20, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                 >
                                   ✕
                                 </button>
                               </div>
                             </div>
-                            <span style={{ color: themeText, display: 'block', marginTop: 2 }}>{n.body || n.content}</span>
+                            <p
+                              style={{
+                                margin: 0,
+                                color: themeText,
+                                fontSize: '.78rem',
+                                lineHeight: 1.45,
+                                wordBreak: 'break-word',
+                                overflowWrap: 'anywhere',
+                                whiteSpace: 'normal',
+                              }}
+                            >
+                              {(n.body || n.content || '').replace(/\broom1\b/gi, 'Villa Room 1')}
+                            </p>
                           </div>
                         ))}
                       </div>
@@ -1894,7 +1940,7 @@ export default function Admin() {
                           setShowNotifications(false);
                         }}
                         className="btn btn-sky btn-sm"
-                        style={{ width: '100%', justifyContent: 'center' }}
+                        style={{ width: '100%', justifyContent: 'center', padding: '9px 16px', fontWeight: 700, fontSize: '.8rem' }}
                       >
                         Open Full Alerts Center ➔
                       </button>
