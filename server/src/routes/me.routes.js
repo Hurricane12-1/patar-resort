@@ -17,21 +17,28 @@ r.patch('/me', authenticate,
     middle_name: z.string().max(80).optional(),
     last_name: z.string().max(80).optional(),
     full_name: z.string().max(160).optional(),
+    position: z.string().max(80).optional(),
+    title: z.string().max(80).optional(),
     phone: z.string().max(25).optional(),
     address: z.string().max(150).optional(),
     city: z.string().max(80).optional(),
     emergency_contact: z.string().max(100).optional(),
   })),
   asyncH(async (req, res) => {
-    const allowedFields = ['first_name', 'middle_name', 'last_name', 'full_name', 'phone', 'address', 'city', 'emergency_contact'];
+    const allowedFields = ['first_name', 'middle_name', 'last_name', 'full_name', 'position', 'phone', 'address', 'city', 'emergency_contact'];
     const updatePayload = {};
     for (const key of allowedFields) {
       if (req.body[key] !== undefined) updatePayload[key] = req.body[key];
     }
+    if (req.body.title !== undefined && updatePayload.position === undefined) {
+      updatePayload.position = req.body.title;
+    }
     if (!updatePayload.full_name && (updatePayload.first_name || updatePayload.last_name)) {
       updatePayload.full_name = [updatePayload.first_name, updatePayload.middle_name, updatePayload.last_name].filter(Boolean).join(' ');
     }
-    const { data, error } = await req.sb.from('profiles')
+    const sysAdmin = await getSystemAdminClient().catch(() => null);
+    const client = sysAdmin || req.sb || admin;
+    const { data, error } = await client.from('profiles')
       .update(updatePayload).eq('id', req.user.id).select().single();
     if (error) throw new ApiError(500, error.message);
     res.json(data);

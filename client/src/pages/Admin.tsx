@@ -50,7 +50,7 @@ const emptyAnalytics = {
 };
 
 export default function Admin() {
-  const { session, profile, signIn, signOut, deleteAccount } = useAuth();
+  const { session, profile, signIn, signOut, deleteAccount, updateProfile } = useAuth();
   const user = session?.user;
   const [data, setData] = useState(emptyAnalytics);
   const [loading, setLoading] = useState(false);
@@ -561,9 +561,50 @@ export default function Admin() {
     }
   }, [activeTab, auditActionFilter, auditRoleFilter, auditDateFilter, auditSearchQuery, auditAutoRefresh, fetchAuditLogs, fetchSecurityPosture]);
 
-  const handleSaveSettings = (e) => {
+  const [savingSettings, setSavingSettings] = useState(false);
+
+  const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast('⚙️ Executive Profile & Control Settings Live Synced ✦');
+    setSavingSettings(true);
+    try {
+      if (!adminProfileState.fullName?.trim()) {
+        throw new Error('Please enter your full name.');
+      }
+      const updatePayload = {
+        full_name: adminProfileState.fullName.trim(),
+        title: adminProfileState.title.trim(),
+        phone: adminProfileState.phone.trim(),
+      };
+
+      if (updateProfile) {
+        await updateProfile(updatePayload);
+      } else {
+        await api.updateMe(updatePayload);
+      }
+
+      // If new password was entered, update it cleanly
+      if (adminProfileState.newPassword) {
+        if (adminProfileState.newPassword.length < 6) {
+          throw new Error('New password must be at least 6 characters.');
+        }
+        if (adminProfileState.newPassword !== adminProfileState.confirmPassword) {
+          throw new Error('New passwords do not match.');
+        }
+        await api.updatePassword(adminProfileState.newPassword);
+        setAdminProfileState((prev) => ({
+          ...prev,
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: '',
+        }));
+      }
+
+      toast('⚙️ Executive Profile & Control Settings saved to database! ✦');
+    } catch (err: any) {
+      toast(err.message || 'Could not save profile settings', true);
+    } finally {
+      setSavingSettings(false);
+    }
   };
 
   // GUARD CHECK: Live database administrator verification
@@ -1630,7 +1671,7 @@ export default function Admin() {
         <div style={{ padding: 14, borderTop: `1px solid ${themeBorder}`, display: 'flex', flexDirection: 'column', gap: 10 }}>
           {/* FLOATING HELP BUTTON MATCHING REFERENCE UI */}
           <button
-            onClick={() => toast('❓ Help & Support Center: Contacting Executive AI Assistant')}
+            onClick={() => setShowGlossaryModal(true)}
             style={{
               width: sidebarCollapsed ? 44 : '100%',
               height: 40,
@@ -2926,10 +2967,11 @@ export default function Admin() {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginTop: 10 }}>
                     <button
                       type="submit"
+                      disabled={savingSettings}
                       className="btn btn-sky"
                       style={{ justifyContent: 'center', padding: '14px 20px', fontWeight: 800, fontSize: '.95rem', borderRadius: 12 }}
                     >
-                      💾 Save
+                      {savingSettings ? '💾 Saving to Database…' : '💾 Save Profile'}
                     </button>
                     <button
                       type="button"
