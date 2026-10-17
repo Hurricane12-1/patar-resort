@@ -224,6 +224,13 @@ export default function MobileResortApp() {
   const displayRooms = rooms.length > 0 ? rooms : (site.rooms.items || []);
 
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const roomsRailRef = useRef<HTMLDivElement>(null);
+
+  const scrollRoomsRail = (direction: 'left' | 'right') => {
+    if (!roomsRailRef.current) return;
+    const offset = direction === 'left' ? -380 : 380;
+    roomsRailRef.current.scrollBy({ left: offset, behavior: 'smooth' });
+  };
 
   // Real Authentication Integration via AuthContext
   const auth = (useAuth ? useAuth() : null) as any;
@@ -1561,7 +1568,29 @@ export default function MobileResortApp() {
               <SectionTitle title={site.rooms.title} />
             </div>
             {displayRooms.length > 0 && (
-              <span className="hidden text-[11px] uppercase tracking-[0.2em] text-white/40 sm:block lg:hidden">Swipe →</span>
+              <div className="flex items-center gap-2">
+                <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.2em] text-white/50 font-medium">
+                  ✦ Swipe to explore
+                </span>
+                <button
+                  type="button"
+                  onClick={() => scrollRoomsRail('left')}
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/5 text-white/80 transition hover:border-cyan hover:bg-cyan/15 hover:text-cyan cursor-pointer active:scale-95 shadow-sm"
+                  aria-label="Scroll left"
+                  title="Scroll left"
+                >
+                  ◀
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scrollRoomsRail('right')}
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/5 text-white/80 transition hover:border-cyan hover:bg-cyan/15 hover:text-cyan cursor-pointer active:scale-95 shadow-sm"
+                  aria-label="Scroll right"
+                  title="Scroll right"
+                >
+                  ▶
+                </button>
+              </div>
             )}
           </div>
 
@@ -1571,7 +1600,15 @@ export default function MobileResortApp() {
               <p className="mt-1 text-sm font-light">Accommodations are currently being updated. Please check back shortly.</p>
             </div>
           ) : (
-            <div className={`${RAIL} mt-8 lg:grid-cols-4 lg:gap-6`}>
+            <div
+              ref={roomsRailRef}
+              className="mt-8 flex gap-5 overflow-x-auto snap-x snap-mandatory pb-4 pt-1 -mx-5 px-5 sm:-mx-8 sm:px-8 scrollbar-none no-scrollbar"
+              style={{
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+                WebkitOverflowScrolling: 'touch',
+              }}
+            >
               {displayRooms.map((room) => {
                 const roomTitle = formatRoomTitle(room.name);
                 const categoryLabel = room.category || 'Luxury Villa';
@@ -1586,7 +1623,7 @@ export default function MobileResortApp() {
                 return (
                   <article
                     key={room.id || room.name}
-                    className="group flex w-[85%] shrink-0 snap-start flex-col sm:w-[48%] lg:w-auto rounded-3xl border border-white/10 bg-[#0B1528]/95 backdrop-blur-md overflow-hidden transition-all duration-300 hover:border-cyan/50 hover:shadow-2xl hover:shadow-cyan/10"
+                    className="group flex w-[88vw] max-w-[360px] sm:w-[380px] md:w-[410px] shrink-0 snap-start flex-col rounded-3xl border border-white/10 bg-[#0B1528]/95 backdrop-blur-md overflow-hidden transition-all duration-300 hover:border-cyan/50 hover:shadow-2xl hover:shadow-cyan/10"
                   >
                     {/* Image Showcase with Luxury Overlays */}
                     <div className="relative h-60 w-full overflow-hidden bg-navy-dark">
@@ -1658,7 +1695,7 @@ export default function MobileResortApp() {
                       </div>
 
                       {/* Professional Dual Action Footer */}
-                      <div className="pt-3 border-t border-white/10 flex items-center gap-2">
+                      <div className="pt-3 border-t border-white/10 flex items-center gap-2.5">
                         <button
                           type="button"
                           onClick={() => {
@@ -1666,7 +1703,7 @@ export default function MobileResortApp() {
                             openReservation(room.name, true);
                           }}
                           title={`Check calendar & reserved dates for ${roomTitle}`}
-                          className="flex-1 py-2.5 px-3 rounded-xl border border-white/20 bg-white/5 hover:border-cyan hover:bg-cyan/10 text-xs font-semibold text-white/90 tracking-wide transition flex items-center justify-center gap-1.5 cursor-pointer"
+                          className="flex-1 py-2.5 px-3.5 rounded-xl border border-white/20 bg-white/5 hover:border-cyan hover:bg-cyan/10 text-xs font-semibold text-white/90 tracking-wide transition flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
                         >
                           📅 Check Dates
                         </button>
@@ -1677,7 +1714,7 @@ export default function MobileResortApp() {
                             openReservation(room.name, false);
                           }}
                           title={`Reserve ${roomTitle}`}
-                          className="flex-1 py-2.5 px-3 rounded-xl bg-cyan hover:bg-cyan-light text-navy font-bold text-xs tracking-wide transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-cyan/20"
+                          className="flex-1 py-2.5 px-3.5 rounded-xl bg-cyan hover:bg-cyan-light text-navy font-bold text-xs tracking-wide transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-cyan/20 whitespace-nowrap"
                         >
                           Book Villa →
                         </button>
