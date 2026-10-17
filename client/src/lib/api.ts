@@ -185,6 +185,13 @@ export const api = {
   saveCloudinaryConfig: (body: any) => req('/cloudinary/config', { method: 'POST', body }),
   availability: (check_in: string, check_out: string, guests: number) =>
     req(`/availability?check_in=${encodeURIComponent(check_in)}&check_out=${encodeURIComponent(check_out)}&guests=${guests}`),
+  availabilityCalendar: (params?: { room_id?: string; from?: string; to?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.room_id) q.append('room_id', params.room_id);
+    if (params?.from) q.append('from', params.from);
+    if (params?.to) q.append('to', params.to);
+    return req(`/availability/calendar${q.toString() ? `?${q.toString()}` : ''}`);
+  },
 
   // Reservations Management
   createReservation: (body: any) => req('/reservations', { method: 'POST', body }),

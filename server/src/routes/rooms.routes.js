@@ -217,6 +217,9 @@ r.get('/availability', validate(rangeSchema, 'query'), asyncH(async (req, res) =
         capacity: r.capacity,
         rate_php: r.rate_php,
         units_left: unitsLeft,
+        total_units: totalUnits,
+        occupied_units: peakBusy,
+        is_locked: unitsLeft <= 0,
         rating_avg: Number(r.rating_avg) || 0,
       };
     })
@@ -226,6 +229,112 @@ r.get('/availability', validate(rangeSchema, 'query'), asyncH(async (req, res) =
   res.setHeader('X-Cache', 'MISS');
   res.setHeader('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
   return res.json(list);
+}));
+
+r.get('/availability/calendar', asyncH(async (req, res) => {
+  const { room_id, from, to } = req.query;
+  const today = new Date().toISOString().slice(0, 10);
+  const startDate = (from && /^\d{4}-\d{2}-\d{2}$/.test(from)) ? from : today;
+  const defaultEnd = new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10);
+  const endDate = (to && /^\d{4}-\d{2}-\d{2}$/.test(to) && to > startDate) ? to : defaultEnd;
+
+  const cacheKey = `calendar:${room_id || 'all'}:${startDate}:${endDate}`;
+  const cached = await redis.get(cacheKey);
+  if (cached) {
+    res.setHeader('X-Cache', 'HIT');
+    return res.json(cached);
+  }
+
+  const sysClient = await getSystemAdminClient();
+
+  // 1. Fetch active rooms
+  let rooms = [];
+  try {
+    let q = sysClient.from('rooms').select('id, name, slug, category, capacity, units, rate_php, is_active').eq('is_active', true);
+    if (room_id) q = q.eq('id', room_id);
+    const { data } = await q;
+    if (data) rooms = data;
+  } catch (err) {
+    console.warn('[Calendar API] Rooms notice:', err.message);
+  }
+
+  // 2. Query overlapping active reservations
+  let reservations = [];
+  try {
+    let q = sysClient.from('reservations')
+      .select('id, room_id, check_in, check_out, status, guests, rooms(id, name, units)')
+      .in('status', ['pending', 'confirmed', 'checked_in'])
+      .lt('check_in', endDate)
+      .gt('check_out', startDate);
+    if (room_id) q = q.eq('room_id', room_id);
+    const { data } = await q;
+    if (data) reservations = data;
+  } catch (err) {
+    console.warn('[Calendar API] Reservations notice:', err.message);
+  }
+
+  // 3. Build daily map: date -> room availability & lock status
+  const dailyStatus = {};
+  const datesList = [];
+  let cur = new Date(startDate);
+  const end = new Date(endDate);
+  while (cur < end) {
+    datesList.push(cur.toISOString().slice(0, 10));
+    cur.setDate(cur.getDate() + 1);
+  }
+
+  for (const night of datesList) {
+    let totalResortUnits = 0;
+    let totalResortOccupied = 0;
+    const roomMap = {};
+
+    for (const r of rooms) {
+      const roomUnits = Number(r.units) || 1;
+      totalResortUnits += roomUnits;
+
+      const roomBookings = reservations.filter((b) => b.room_id === r.id && b.check_in <= night && b.check_out > night);
+      const occupied = roomBookings.length;
+      totalResortOccupied += occupied;
+      const isLocked = occupied >= roomUnits;
+      const unitsLeft = Math.max(0, roomUnits - occupied);
+
+      roomMap[r.id] = {
+        name: r.name,
+        category: r.category,
+        total_units: roomUnits,
+        occupied_units: occupied,
+        units_left: unitsLeft,
+        is_locked: isLocked,
+      };
+    }
+
+    dailyStatus[night] = {
+      date: night,
+      total_units: totalResortUnits,
+      total_occupied: totalResortOccupied,
+      resort_fully_booked: totalResortUnits > 0 && totalResortOccupied >= totalResortUnits,
+      rooms: roomMap,
+    };
+  }
+
+  const payload = {
+    start_date: startDate,
+    end_date: endDate,
+    rooms,
+    booked_ranges: reservations.map((b) => ({
+      id: b.id,
+      room_id: b.room_id,
+      room_name: b.rooms?.name,
+      check_in: b.check_in,
+      check_out: b.check_out,
+      status: b.status,
+    })),
+    daily_status: dailyStatus,
+  };
+
+  await redis.set(cacheKey, payload, 30);
+  res.setHeader('X-Cache', 'MISS');
+  return res.json(payload);
 }));
 
 r.post('/rooms', authenticate, requireAdmin,

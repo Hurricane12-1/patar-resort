@@ -5,6 +5,7 @@ import { money, fmtDate, addDaysISO } from '../lib/format.ts';
 import { roomImg, getRoomImageUrl, handleImageError } from '../lib/images.ts';
 import { toast } from './Toasts.tsx';
 import { CANONICAL_ROOMS } from '../lib/canonicalRooms.ts';
+import AvailabilityCalendar from './AvailabilityCalendar.tsx';
 
 export default function BookingFlow({ initialSlug }) {
   const { session, profile, setAuthOpen } = useAuth();
@@ -21,6 +22,7 @@ export default function BookingFlow({ initialSlug }) {
   const [phone, setPhone] = useState('');
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(null);
+  const [showCalendar, setShowCalendar] = useState(false);
   const preferred = useRef(null);
   const resultsRef = useRef(null);
 
@@ -30,19 +32,21 @@ export default function BookingFlow({ initialSlug }) {
   const nights = Math.max(1, Math.round((new Date(checkOut) - new Date(checkIn)) / 86400000));
   const meta = (r) => catalog.find((c) => c.id === r.room_id);
 
-  async function search(slug) {
+  async function search(slug?: string, overrideCin?: string, overrideCout?: string) {
     if (slug) preferred.current = slug;
+    const targetCin = overrideCin || checkIn;
+    const targetCout = overrideCout || checkOut;
     setSearching(true); setStage('results'); setRoom(null);
     try {
-      const list = await api.availability(checkIn, checkOut, guests);
+      const list = await api.availability(targetCin, targetCout, guests);
       setResults(list);
       setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
       const want = slug || preferred.current;
       if (want) {
         const hit = list.find((x) => catalog.find((c) => c.id === x.room_id)?.slug === want);
-        if (hit) { setRoom(hit); setStage('details'); }
+        if (hit && !hit.is_locked && hit.units_left > 0) { setRoom(hit); setStage('details'); }
       }
-    } catch (e) { toast(e.message, true); setResults([]); }
+    } catch (e: any) { toast(e.message, true); setResults([]); }
     finally { setSearching(false); }
   }
 
@@ -50,6 +54,10 @@ export default function BookingFlow({ initialSlug }) {
 
   async function confirm() {
     if (!session) { setAuthOpen(true); return; }
+    if (room?.is_locked || room?.units_left <= 0) {
+      toast('This accommodation is already locked in / taken for those dates. Please check the calendar for available dates.', true);
+      return;
+    }
     if (phone && phone.length !== 11) {
       toast('Phone number must be strictly an 11-digit number (e.g. 09XXXXXXXXX).', true);
       return;
@@ -68,7 +76,7 @@ export default function BookingFlow({ initialSlug }) {
       });
       setDone(stay); setStage('done');
       toast(`Reserved! SMS ping sent${phone ? ` to ${phone}` : ''} ✦`);
-    } catch (e) { toast(e.message, true); }
+    } catch (e: any) { toast(e.message, true); }
     finally { setBusy(false); }
   }
 
@@ -105,6 +113,48 @@ export default function BookingFlow({ initialSlug }) {
           </button>
         </div>
 
+        {/* Visual Calendar Toggle Bar */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10, marginBottom: 14 }}>
+          <button
+            type="button"
+            className="btn btn-sm btn-ghost"
+            onClick={() => setShowCalendar((s) => !s)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              border: `1px solid ${showCalendar ? '#0EA5E9' : 'rgba(255,255,255,0.2)'}`,
+              background: showCalendar ? 'rgba(14, 165, 233, 0.12)' : 'rgba(255,255,255,0.03)',
+              color: showCalendar ? '#38BDF8' : '#E2E8F0',
+              padding: '6px 16px',
+              borderRadius: 20,
+              fontSize: '.82rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            📅 {showCalendar ? 'Hide Availability Calendar' : 'View Calendar & Locked-In (Taken) Dates'}
+          </button>
+        </div>
+
+        {/* Interactive Month Availability Calendar */}
+        {showCalendar && (
+          <AvailabilityCalendar
+            rooms={catalog}
+            selectedRoomId={room?.room_id}
+            initialCheckIn={checkIn}
+            initialCheckOut={checkOut}
+            isLightMode={false}
+            onSelectDates={(cin, cout) => {
+              setCheckIn(cin);
+              setCheckOut(cout);
+              search(undefined, cin, cout);
+            }}
+            onClose={() => setShowCalendar(false)}
+          />
+        )}
+
         {/* ——— available rooms ——— */}
         {stage === 'results' && (
           <div ref={resultsRef} className="results">
@@ -115,12 +165,35 @@ export default function BookingFlow({ initialSlug }) {
             {searching && [...Array(2)].map((_, i) =>
               <div key={i} className="skel" style={{ height: 170, marginBottom: 16 }} />)}
             {!searching && results.length === 0 && (
-              <p className="empty">Fully booked for those dates — try shifting your stay.</p>
+              <div style={{ textAlign: 'center', padding: '30px 16px', background: 'rgba(255,255,255,0.03)', borderRadius: 14, border: '1px dashed rgba(255,255,255,0.15)' }}>
+                <p className="empty" style={{ margin: '0 0 10px', fontSize: '1.05rem', color: '#F43F5E' }}>
+                  🔒 All accommodations are locked in / taken for those dates.
+                </p>
+                <p className="muted small" style={{ margin: '0 0 14px' }}>
+                  A reservation was already secured for this date range. Try shifting your stay dates using our interactive calendar.
+                </p>
+                <button
+                  className="btn btn-sky btn-sm"
+                  onClick={() => setShowCalendar(true)}
+                  style={{ fontWeight: 700 }}
+                >
+                  📅 Browse Open Dates on Calendar
+                </button>
+              </div>
             )}
-            {!searching && results.map((r) => {
+            {!searching && results.map((r: any) => {
               const m = meta(r);
+              const isLocked = Boolean(r.is_locked || r.units_left <= 0);
+
               return (
-                <div className="room-option" key={r.room_id}>
+                <div
+                  className="room-option"
+                  key={r.room_id}
+                  style={{
+                    opacity: isLocked ? 0.72 : 1,
+                    border: isLocked ? '1px solid rgba(244, 63, 94, 0.3)' : undefined,
+                  }}
+                >
                   <div className="im">
                     <img
                       src={getRoomImageUrl(m || r)}
@@ -136,11 +209,67 @@ export default function BookingFlow({ initialSlug }) {
                   </div>
                   <div className="ro-right">
                     <span className="rate serif">{money(r.rate_php)}<small> /night</small></span>
-                    {r.units_left <= 2
-                      ? <span className="units-left">Only {r.units_left} left</span>
-                      : <span className="muted small">{r.units_left} units left</span>}
-                    <button className="btn btn-sky btn-sm"
-                      onClick={() => { setRoom(r); setStage('details'); }}>Select</button>
+                    {isLocked ? (
+                      <span
+                        className="units-left"
+                        style={{
+                          background: 'rgba(244, 63, 94, 0.15)',
+                          color: '#F43F5E',
+                          border: '1px solid #F43F5E',
+                          fontWeight: 800,
+                        }}
+                      >
+                        🔒 Locked In / Taken
+                      </span>
+                    ) : r.units_left <= 2 ? (
+                      <span className="units-left">Only {r.units_left} left</span>
+                    ) : (
+                      <span className="muted small">{r.units_left} units left</span>
+                    )}
+
+                    {isLocked ? (
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          disabled
+                          style={{
+                            opacity: 0.6,
+                            cursor: 'not-allowed',
+                            color: '#F43F5E',
+                            border: '1px solid rgba(244, 63, 94, 0.4)',
+                          }}
+                          title="Already reserved by another guest for these dates"
+                        >
+                          🔒 Taken
+                        </button>
+                        <button
+                          className="btn btn-sm"
+                          onClick={() => {
+                            setShowCalendar(true);
+                            window.scrollTo({ top: 380, behavior: 'smooth' });
+                          }}
+                          style={{
+                            fontSize: '.74rem',
+                            padding: '4px 8px',
+                            background: 'transparent',
+                            border: '1px solid rgba(56,189,248,0.4)',
+                            color: '#38BDF8',
+                            cursor: 'pointer',
+                            borderRadius: 6,
+                          }}
+                          title="View calendar to see which dates are available"
+                        >
+                          📅 View Free Dates
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        className="btn btn-sky btn-sm"
+                        onClick={() => { setRoom(r); setStage('details'); }}
+                      >
+                        Select
+                      </button>
+                    )}
                   </div>
                 </div>
               );

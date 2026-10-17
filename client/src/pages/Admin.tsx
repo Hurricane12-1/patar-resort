@@ -25,6 +25,7 @@ import {
 import { ExecutiveGuestChatModal } from '../components/ExecutiveGuestChatModal.tsx';
 import { ExecutiveGuestConversationsPanel } from '../components/ExecutiveGuestConversationsPanel.tsx';
 import { AnalyticsGlossaryModal } from '../components/AnalyticsGlossaryModal.tsx';
+import AvailabilityCalendar from '../components/AvailabilityCalendar.tsx';
 import { money, fmtDate, fmtTime } from '../lib/format.ts';
 import { toast } from '../components/Toasts.tsx';
 import { dispatchWordPrompt } from '../lib/wordPrompt.ts';
@@ -72,6 +73,7 @@ export default function Admin() {
   const [reservationFilter, setReservationFilter] = useState('all');
   const [reservationSearch, setReservationSearch] = useState('');
   const [showAddReservationModal, setShowAddReservationModal] = useState(false);
+  const [showLedgerCalendar, setShowLedgerCalendar] = useState(false);
   const [creatingReservation, setCreatingReservation] = useState(false);
   const [newReservation, setNewReservation] = useState({
     guest_name: '',
@@ -885,12 +887,36 @@ export default function Admin() {
     } catch (e: any) { toast(e.message, true); }
   }
 
+  const isModalRoomLocked = (() => {
+    if (!newReservation.room_id || !newReservation.check_in || !newReservation.check_out) return false;
+    const room = roomsList.find((r) => r.id === newReservation.room_id);
+    const totalUnits = Number(room?.units) || 1;
+    const overlapping = reservationsList.filter((b: any) =>
+      b.room_id === newReservation.room_id &&
+      ['pending', 'confirmed', 'checked_in'].includes(b.status) &&
+      b.check_in < newReservation.check_out &&
+      b.check_out > newReservation.check_in
+    );
+    let cur = new Date(newReservation.check_in);
+    const end = new Date(newReservation.check_out);
+    while (cur < end) {
+      const night = cur.toISOString().slice(0, 10);
+      const busy = overlapping.filter((b: any) => b.check_in <= night && b.check_out > night).length;
+      if (busy >= totalUnits) return true;
+      cur.setDate(cur.getDate() + 1);
+    }
+    return false;
+  })();
+
   async function handleCreateReservation(e: React.FormEvent) {
     e.preventDefault();
     setCreatingReservation(true);
     try {
       if (!newReservation.room_id) {
         throw new Error('Please select an accommodation / room.');
+      }
+      if (isModalRoomLocked) {
+        throw new Error('This accommodation is already locked in / taken for those dates. Overbooking is strictly prevented.');
       }
       if (!newReservation.guest_name.trim()) {
         throw new Error('Please enter guest full name.');
@@ -4006,6 +4032,18 @@ export default function Admin() {
                 </div>
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                   <button
+                    className="btn btn-sm btn-ghost"
+                    onClick={() => setShowLedgerCalendar((prev) => !prev)}
+                    style={{
+                      color: showLedgerCalendar ? '#0EA5E9' : themeText,
+                      border: `1px solid ${showLedgerCalendar ? '#0EA5E9' : themeBorder}`,
+                      background: showLedgerCalendar ? (isLightMode ? '#EFF6FF' : 'rgba(14, 165, 233, 0.15)') : 'transparent',
+                      fontWeight: 700,
+                    }}
+                  >
+                    📅 {showLedgerCalendar ? 'Hide Calendar' : 'Visual Availability & Lock Calendar'}
+                  </button>
+                  <button
                     className="btn btn-sky btn-sm"
                     onClick={() => setShowAddReservationModal(true)}
                     style={{ fontWeight: 700 }}
@@ -4022,6 +4060,22 @@ export default function Admin() {
                   </button>
                 </div>
               </div>
+
+              {/* Visual Availability Calendar (Expandable in Ledger) */}
+              {showLedgerCalendar && (
+                <div style={{ marginBottom: 20 }}>
+                  <AvailabilityCalendar
+                    rooms={roomsList}
+                    isLightMode={isLightMode}
+                    onClose={() => setShowLedgerCalendar(false)}
+                    onSelectDates={(cin, cout) => {
+                      setNewReservation((prev) => ({ ...prev, check_in: cin, check_out: cout }));
+                      setShowAddReservationModal(true);
+                      toast(`✦ Check-in (${fmtDate(cin)}) and Check-out (${fmtDate(cout)}) set in New Reservation modal`);
+                    }}
+                  />
+                </div>
+              )}
 
               {/* 4 KPI Summary Cards */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14, marginBottom: 20 }}>
@@ -4665,6 +4719,27 @@ export default function Admin() {
                     />
                   </div>
 
+                  {isModalRoomLocked && (
+                    <div
+                      style={{
+                        padding: '12px 16px',
+                        borderRadius: 12,
+                        background: isLightMode ? '#FFF1F2' : 'rgba(244, 63, 94, 0.14)',
+                        border: '1px solid rgba(244, 63, 94, 0.4)',
+                        color: '#E11D48',
+                        fontSize: '.82rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                      }}
+                    >
+                      <span style={{ fontSize: '1.2rem' }}>🔒</span>
+                      <div>
+                        <strong>Overbooking Guard:</strong> This accommodation is already locked in / taken by another reservation for these dates. Overlapping bookings are blocked. Please select another accommodation or shift the dates.
+                      </div>
+                    </div>
+                  )}
+
                   <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
                     <button
                       type="button"
@@ -4676,11 +4751,16 @@ export default function Admin() {
                     </button>
                     <button
                       type="submit"
-                      disabled={creatingReservation}
+                      disabled={creatingReservation || isModalRoomLocked}
                       className="btn btn-sky btn-sm"
-                      style={{ fontWeight: 700 }}
+                      style={{
+                        fontWeight: 700,
+                        background: isModalRoomLocked ? '#94A3B8' : undefined,
+                        cursor: isModalRoomLocked ? 'not-allowed' : 'pointer',
+                        borderColor: isModalRoomLocked ? '#94A3B8' : undefined,
+                      }}
                     >
-                      {creatingReservation ? 'Saving to Ledger…' : 'Save & Log to Ledger ✦'}
+                      {creatingReservation ? 'Saving to Ledger…' : isModalRoomLocked ? '🔒 Dates Taken / Locked' : 'Save & Log to Ledger ✦'}
                     </button>
                   </div>
                 </form>
