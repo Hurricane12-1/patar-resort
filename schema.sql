@@ -118,16 +118,63 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   emergency_contact TEXT DEFAULT '',
   avatar_url TEXT DEFAULT '',
   provider TEXT DEFAULT 'email',
+  password TEXT DEFAULT '',
+  password_hash TEXT DEFAULT '',
   is_verified BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 COMMENT ON TABLE public.profiles IS 'Unified Identity & Relational Profile Linkage Storage';
 
+-- Dedicated Isolated Employee Accounts Storage
+CREATE TABLE IF NOT EXISTS public.employee_accounts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  auth_user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  employee_id TEXT UNIQUE NOT NULL,
+  first_name TEXT NOT NULL DEFAULT '',
+  middle_name TEXT DEFAULT '',
+  last_name TEXT NOT NULL DEFAULT '',
+  full_name TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  password TEXT DEFAULT '',
+  password_hash TEXT DEFAULT '',
+  role TEXT NOT NULL DEFAULT 'staff' CHECK (role IN (
+    'administrator', 'admin', 'manager', 'receptionist', 'frontdesk',
+    'staff', 'accounting', 'housekeeping', 'kitchen', 'maintenance', 'security'
+  )),
+  department TEXT NOT NULL DEFAULT 'front_desk' CHECK (department IN (
+    'front_desk', 'housekeeping', 'kitchen', 'tours', 'maintenance',
+    'accounting', 'management', 'security'
+  )),
+  position TEXT NOT NULL DEFAULT 'Staff',
+  phone TEXT DEFAULT '',
+  emergency_contact TEXT DEFAULT '',
+  avatar_url TEXT DEFAULT '',
+  salary_rate_php NUMERIC DEFAULT 0 CHECK (salary_rate_php >= 0),
+  hire_date DATE DEFAULT CURRENT_DATE,
+  shift TEXT DEFAULT 'Day Shift' CHECK (shift IN (
+    'Day Shift', 'Night Shift', 'Graveyard Shift', 'Rotating', 'On Call'
+  )),
+  is_active BOOLEAN DEFAULT true,
+  status TEXT DEFAULT 'active' CHECK (status IN (
+    'active', 'on_leave', 'suspended', 'resigned', 'terminated'
+  )),
+  notes TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+COMMENT ON TABLE public.employee_accounts IS 'Isolated Employee Accounts Collection for Staff, Management, and Executive Administration';
+
 -- Ensure modern columns exist if tables were created previously
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS username TEXT UNIQUE;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS password TEXT DEFAULT '';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS password_hash TEXT DEFAULT '';
 ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS username TEXT UNIQUE;
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS password TEXT DEFAULT '';
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS password_hash TEXT DEFAULT '';
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS username TEXT UNIQUE;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS password TEXT DEFAULT '';
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS password_hash TEXT DEFAULT '';
 
 -- D. User Confirmations & 2FA Tokens (Signup 2FA, OTP & Verification Storage)
 CREATE TABLE IF NOT EXISTS public.user_confirmations (
