@@ -14,7 +14,6 @@ import {
 import { api, API_BASE } from '../lib/api.ts';
 import { supabase } from '../lib/supabaseClient.ts';
 import { InterchangeableImagePicker } from '../components/InterchangeableImagePicker.tsx';
-import CloudinarySettingsCard from '../components/CloudinarySettingsCard.tsx';
 import RoomImageCarousel from '../components/RoomImageCarousel.tsx';
 import {
   getCloudinaryConfig,
@@ -3206,12 +3205,6 @@ export default function Admin() {
                       </button>
                     </div>
                   </div>
-
-                  {/* SECTION 4: CLOUDINARY MEDIA CDN & ASSET STORAGE */}
-                  <CloudinarySettingsCard
-                    isLightMode={isLightMode}
-                    toast={toast}
-                  />
 
                   {/* SAVE & SYNC BUTTON */}
                   <button className="btn btn-sky" style={{ width: '100%', justifyContent: 'center', padding: '16px 24px', fontWeight: 700, fontSize: '1.05rem', borderRadius: 14, marginTop: 10 }}>
