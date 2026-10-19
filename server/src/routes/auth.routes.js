@@ -373,6 +373,37 @@ r.post('/auth/login', asyncH(async (req, res) => {
 
 /**
  * ============================================================================
+ * COMPLETE SESSION TERMINATION & LOGOUT PURGE
+ * Clears all server-side authentication cookies, tokens, and records audit trail.
+ * ============================================================================
+ */
+r.post('/auth/logout', asyncH(async (req, res) => {
+  const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+  };
+  res.clearCookie('session_token', cookieOptions);
+  res.clearCookie('access_token', cookieOptions);
+  res.clearCookie('csrf_token', { ...cookieOptions, httpOnly: false });
+  res.clearCookie('x-admin-token-key', cookieOptions);
+  res.clearCookie('refreshToken', cookieOptions);
+
+  await logAuditEvent({
+    actor: req.user || { role: 'guest', full_name: 'Logged Out User' },
+    action: 'USER_LOGOUT',
+    resourceType: 'system_auth',
+    resourceId: req.user?.id || 'session-terminated',
+    details: { message: 'User signed out; credentials and session cookies cleared completely.' },
+    req,
+  }).catch(() => {});
+
+  return res.json({ success: true, message: 'Session terminated and credentials purged successfully.' });
+}));
+
+/**
+ * ============================================================================
  * CLIENT USER ACCOUNT REGISTRATION WITH 2FA & SOCIAL AUTO SIGN-UP
  * ============================================================================
  */

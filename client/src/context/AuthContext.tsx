@@ -1,9 +1,9 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabaseClient.ts';
-import { api } from '../lib/api.ts';
+import { api, resetApiSecurityTokens } from '../lib/api.ts';
 import { toast } from '../components/Toasts.tsx';
 
-const Ctx = createContext(null);
+const Ctx = createContext<any>(null);
 
 export function to11Digits(val: string): string {
   if (!val) return '';
@@ -38,19 +38,20 @@ export function isSystemOwnerEmail(email?: string): boolean {
 }
 
 export function AuthProvider({ children }) {
-  const [session, setSession] = useState(() => {
+  // ─────────────────────────────────────────────────────────────
+  // 1. CUSTOMER SCOPE (Public Website View, Guest Stays & Bookings)
+  // ─────────────────────────────────────────────────────────────
+  const [customerSession, setCustomerSession] = useState<any>(() => {
     try {
       if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('jd_customer_session');
         localStorage.removeItem('jd_session');
-        localStorage.removeItem('alon_session');
       }
-      const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_session') : null;
+      const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_customer_session') : null;
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Clear any old mock sessions from previous sessions
         if (parsed?.user?.is_mock) {
-          sessionStorage.removeItem('jd_session');
-          sessionStorage.removeItem('jd_profile');
+          sessionStorage.removeItem('jd_customer_session');
           return null;
         }
         return parsed;
@@ -58,32 +59,56 @@ export function AuthProvider({ children }) {
       return null;
     } catch { return null; }
   });
-  
-  const [profile, setProfile] = useState(() => {
+
+  const [customerProfile, setCustomerProfile] = useState<any>(() => {
     try {
       if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('jd_customer_profile');
         localStorage.removeItem('jd_profile');
-        localStorage.removeItem('alon_profile');
       }
-      const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_profile') : null;
+      const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_customer_profile') : null;
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed?.is_mock || parsed?.id?.startsWith('usr-admin-1234') || parsed?.id?.startsWith('usr-recep-') || parsed?.id?.startsWith('usr-acct-')) {
-          sessionStorage.removeItem('jd_profile');
+        if (parsed?.is_mock) {
+          sessionStorage.removeItem('jd_customer_profile');
+          return null;
+        }
+        parsed.role = 'customer';
+        return parsed;
+      }
+      return null;
+    } catch { return null; }
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // 2. ADMINISTRATOR & STAFF SCOPE (Executive Control & Portals)
+  // ─────────────────────────────────────────────────────────────
+  const [adminSession, setAdminSession] = useState<any>(() => {
+    try {
+      const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_session') : null;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.user?.is_mock) {
+          sessionStorage.removeItem('jd_admin_session');
+          return null;
+        }
+        return parsed;
+      }
+      return null;
+    } catch { return null; }
+  });
+
+  const [adminProfile, setAdminProfile] = useState<any>(() => {
+    try {
+      const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_profile') : null;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.is_mock) {
+          sessionStorage.removeItem('jd_admin_profile');
           return null;
         }
         if (isSystemOwnerEmail(parsed?.email)) {
           parsed.role = 'administrator';
-          if (typeof sessionStorage !== 'undefined' && !sessionStorage.getItem('jd_admin_token_key')) {
-            sessionStorage.setItem('jd_admin_token_key', 'etc-34');
-          }
-          if (typeof localStorage !== 'undefined') {
-            localStorage.removeItem('jd_admin_token_key');
-          }
-        }
-        if (parsed.password_status === undefined) {
-          parsed.has_password = Boolean(parsed.has_password || parsed.password);
-          parsed.password_status = parsed.has_password ? 'Configured' : 'N/A';
         }
         return parsed;
       }
@@ -94,157 +119,201 @@ export function AuthProvider({ children }) {
   const [authOpen, setAuthOpen] = useState(false);
   const [needsProfileCompletion, setNeedsProfileCompletion] = useState(false);
 
+  // Synchronize Customer Session & Profile with sessionStorage
   useEffect(() => {
     if (typeof sessionStorage !== 'undefined') {
-      if (session) {
-        sessionStorage.setItem('jd_session', JSON.stringify(session));
+      if (customerSession) {
+        sessionStorage.setItem('jd_customer_session', JSON.stringify(customerSession));
+        if (customerSession.access_token) {
+          sessionStorage.setItem('jd_customer_jwt', customerSession.access_token);
+        }
       } else {
-        sessionStorage.removeItem('jd_session');
+        sessionStorage.removeItem('jd_customer_session');
+        sessionStorage.removeItem('jd_customer_jwt');
       }
     }
-    if (typeof localStorage !== 'undefined') {
-      localStorage.removeItem('jd_session');
-      localStorage.removeItem('alon_session');
-    }
-  }, [session]);
+  }, [customerSession]);
 
   useEffect(() => {
     if (typeof sessionStorage !== 'undefined') {
-      if (profile) {
-        sessionStorage.setItem('jd_profile', JSON.stringify(profile));
+      if (customerProfile) {
+        sessionStorage.setItem('jd_customer_profile', JSON.stringify(customerProfile));
       } else {
-        sessionStorage.removeItem('jd_profile');
+        sessionStorage.removeItem('jd_customer_profile');
       }
     }
-    if (typeof localStorage !== 'undefined') {
-      localStorage.removeItem('jd_profile');
-      localStorage.removeItem('alon_profile');
+  }, [customerProfile]);
+
+  // Synchronize Admin Session & Profile with sessionStorage
+  useEffect(() => {
+    if (typeof sessionStorage !== 'undefined') {
+      if (adminSession) {
+        sessionStorage.setItem('jd_admin_session', JSON.stringify(adminSession));
+        if (adminSession.access_token) {
+          sessionStorage.setItem('jd_admin_jwt', adminSession.access_token);
+        }
+        sessionStorage.setItem('jd_admin_token_key', 'etc-34');
+      } else {
+        sessionStorage.removeItem('jd_admin_session');
+        sessionStorage.removeItem('jd_admin_jwt');
+        sessionStorage.removeItem('jd_admin_token_key');
+      }
     }
-  }, [profile]);
+  }, [adminSession]);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data?.session) {
-        setSession(data.session);
+    if (typeof sessionStorage !== 'undefined') {
+      if (adminProfile) {
+        sessionStorage.setItem('jd_admin_profile', JSON.stringify(adminProfile));
+      } else {
+        sessionStorage.removeItem('jd_admin_profile');
       }
-    }).catch(() => {});
+    }
+  }, [adminProfile]);
 
-    const { data } = supabase.auth.onAuthStateChange((_e, s) => {
-      if (s) setSession(s);
-    });
-    return () => data?.subscription?.unsubscribe();
+  // Clean any old localStorage legacy keys immediately
+  useEffect(() => {
+    if (typeof localStorage !== 'undefined') {
+      ['jd_session', 'jd_profile', 'alon_session', 'alon_profile', 'jd_admin_token_key'].forEach((k) => {
+        localStorage.removeItem(k);
+      });
+    }
   }, []);
 
+  // Supabase Auth listener (for OAuth callbacks like Google/Facebook)
   useEffect(() => {
-    if (session && !session.user?.is_mock) {
-      const syncProfile = async () => {
+    const { data } = supabase.auth.onAuthStateChange(async (event, s) => {
+      if (!s) return;
+      if (event === 'SIGNED_IN' && !customerSession && !adminSession) {
         try {
-          const p = await api.me();
-          if (p) {
-            if (isSystemOwnerEmail(p.email || session.user?.email)) {
-              p.role = 'administrator';
-            }
-            if (['administrator', 'admin'].includes(p.role) || isSystemOwnerEmail(p.email || session.user?.email)) {
-              if (typeof sessionStorage !== 'undefined') {
-                if (!sessionStorage.getItem('jd_admin_token_key')) sessionStorage.setItem('jd_admin_token_key', 'etc-34');
-                if (session.access_token) sessionStorage.setItem('jd_admin_jwt', session.access_token);
-              }
-              if (typeof localStorage !== 'undefined') {
-                localStorage.removeItem('jd_admin_token_key');
-              }
-            }
-            const hasPassword = Boolean(p.has_password || (p.password && String(p.password).trim() !== ''));
-            p.has_password = hasPassword;
-            p.password_status = p.password_status || (hasPassword ? 'Configured' : 'N/A');
-
-            setProfile(p);
-            setNeedsProfileCompletion(false);
-            return;
+          const { data: prof } = await supabase.from('profiles').select('*').eq('id', s.user.id).maybeSingle();
+          const role = prof?.role || s.user.user_metadata?.role || 'customer';
+          if (['administrator', 'admin'].includes(role) && window.location.pathname.startsWith('/admin')) {
+            setAdminSession(s);
+            setAdminProfile({ ...prof, role: 'administrator' });
+          } else {
+            // Customer public website login
+            setCustomerSession(s);
+            setCustomerProfile({ ...prof, role: 'customer' });
           }
-        } catch {}
-
-        // Direct Supabase profile fallback if backend API is still starting
-        if (session.user?.id) {
-          try {
-            const { data: sbProfile } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .maybeSingle();
-            if (sbProfile) {
-              let empRecord = null;
-              try {
-                const { data: emp } = await supabase
-                  .from('employee_accounts')
-                  .select('id, employee_id, department, position, shift, status, is_active, hire_date')
-                  .or(`auth_user_id.eq.${session.user.id},email.eq.${session.user.email || sbProfile.email}`)
-                  .maybeSingle();
-                empRecord = emp;
-              } catch {}
-
-              const hasPassword = Boolean(
-                (sbProfile.password && String(sbProfile.password).trim() !== '') ||
-                Boolean(sbProfile.has_password)
-              );
-              const passwordStatus = hasPassword ? 'Configured' : 'N/A';
-
-              const merged = {
-                ...sbProfile,
-                email: session.user.email || sbProfile.email,
-                has_password: hasPassword,
-                password_status: passwordStatus,
-                ...(empRecord ? {
-                  employee_id: empRecord.employee_id,
-                  department: empRecord.department,
-                  shift: empRecord.shift,
-                  employee_status: empRecord.status,
-                  employee_record: empRecord,
-                } : {}),
-              };
-              if (isSystemOwnerEmail(merged.email)) {
-                merged.role = 'administrator';
-              }
-              if (['administrator', 'admin'].includes(merged.role) || isSystemOwnerEmail(merged.email)) {
-                if (typeof sessionStorage !== 'undefined') {
-                  if (!sessionStorage.getItem('jd_admin_token_key')) sessionStorage.setItem('jd_admin_token_key', 'etc-34');
-                  if (session.access_token) sessionStorage.setItem('jd_admin_jwt', session.access_token);
-                }
-                if (typeof localStorage !== 'undefined') {
-                  localStorage.removeItem('jd_admin_token_key');
-                }
-              }
-              setProfile(merged);
-              setNeedsProfileCompletion(false);
-            }
-          } catch {}
+        } catch {
+          setCustomerSession(s);
         }
-      };
-      syncProfile();
+      }
+    });
+    return () => data?.subscription?.unsubscribe();
+  }, [customerSession, adminSession]);
+
+  // ─────────────────────────────────────────────────────────────
+  // 3. COMPLETE DEEP PURGE SIGN-OUT (Removes ALL User Credentials)
+  // ─────────────────────────────────────────────────────────────
+  const signOut = useCallback(async () => {
+    // 1. Reset all in-memory React states
+    setCustomerSession(null);
+    setCustomerProfile(null);
+    setAdminSession(null);
+    setAdminProfile(null);
+    setNeedsProfileCompletion(false);
+
+    // 2. Clear entire sessionStorage
+    if (typeof sessionStorage !== 'undefined') {
+      try {
+        sessionStorage.clear();
+      } catch {}
     }
-  }, [session]);
+
+    // 3. Clear all auth & profile data from localStorage
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const keysToRemove = [
+          'jd_session', 'jd_profile', 'jd_customer_session', 'jd_customer_profile', 'jd_customer_jwt',
+          'jd_admin_session', 'jd_admin_profile', 'jd_admin_jwt', 'jd_admin_token_key',
+          'alon_session', 'alon_profile', 'sb-access-token', 'sb-refresh-token',
+          'customer_profile', 'guest_manifest', 'rockview_booking_draft',
+        ];
+        keysToRemove.forEach((k) => localStorage.removeItem(k));
+
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const key = localStorage.key(i);
+          if (key && (
+            key.startsWith('sb-') ||
+            key.startsWith('supabase.') ||
+            key.startsWith('jd_') ||
+            key.startsWith('alon_') ||
+            key.includes('token') ||
+            key.includes('session') ||
+            key.includes('profile')
+          )) {
+            localStorage.removeItem(key);
+          }
+        }
+      } catch {}
+    }
+
+    // 4. Wipe all browser cookies
+    if (typeof document !== 'undefined') {
+      try {
+        const cookies = document.cookie.split(';');
+        for (const cookie of cookies) {
+          const eqPos = cookie.indexOf('=');
+          const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+          if (name) {
+            document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+            document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${window.location.hostname}`;
+          }
+        }
+      } catch {}
+    }
+
+    // 5. Invalidate server-side cookies & write audit event
+    try {
+      await api.logout();
+    } catch {}
+
+    // 6. Sign out from Supabase Auth
+    try {
+      await supabase.auth.signOut({ scope: 'global' });
+    } catch {}
+
+    // 7. Reset in-memory CSRF & security tokens
+    resetApiSecurityTokens();
+
+    toast('✦ Successfully signed out. All sessions, keys, and credentials have been purged.');
+  }, []);
+
+  const signOutScope = useCallback(async (scope: 'customer' | 'admin') => {
+    if (scope === 'customer') {
+      setCustomerSession(null);
+      setCustomerProfile(null);
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.removeItem('jd_customer_session');
+        sessionStorage.removeItem('jd_customer_profile');
+        sessionStorage.removeItem('jd_customer_jwt');
+      }
+      toast('✦ Customer session terminated.');
+    } else {
+      setAdminSession(null);
+      setAdminProfile(null);
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.removeItem('jd_admin_session');
+        sessionStorage.removeItem('jd_admin_profile');
+        sessionStorage.removeItem('jd_admin_jwt');
+        sessionStorage.removeItem('jd_admin_token_key');
+      }
+      toast('✦ Administrator session terminated.');
+    }
+  }, []);
 
   // 40-Minute Inactivity Auto-Logout Effect
   useEffect(() => {
-    if (!session) return;
+    if (!customerSession && !adminSession) return;
     const INACTIVITY_LIMIT_MS = 40 * 60 * 1000;
-    let timeoutId;
+    let timeoutId: any;
 
     const resetTimer = () => {
       if (timeoutId) clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
-        setSession(null);
-        setProfile(null);
-        if (typeof sessionStorage !== 'undefined') {
-          sessionStorage.removeItem('jd_session');
-          sessionStorage.removeItem('jd_profile');
-        }
-        if (typeof localStorage !== 'undefined') {
-          localStorage.removeItem('jd_session');
-          localStorage.removeItem('jd_profile');
-          localStorage.removeItem('alon_session');
-          localStorage.removeItem('alon_profile');
-        }
-        supabase.auth.signOut().catch(() => {});
+        signOut();
         toast('Session expired after 40 minutes of inactivity.', true);
       }, INACTIVITY_LIMIT_MS);
     };
@@ -257,75 +326,43 @@ export function AuthProvider({ children }) {
       if (timeoutId) clearTimeout(timeoutId);
       events.forEach((evt) => window.removeEventListener(evt, resetTimer));
     };
-  }, [session]);
+  }, [customerSession, adminSession, signOut]);
 
-  const signIn = async (emailOrUsername, password) => {
+  // ─────────────────────────────────────────────────────────────
+  // 4. CUSTOMER AUTHENTICATION (Customer / Client Scope Only)
+  // ─────────────────────────────────────────────────────────────
+  const customerSignIn = async (emailOrUsername: string, password: string) => {
     try {
       const cleanIdent = (emailOrUsername || '').trim();
-      let res = null;
 
-      // 1. If it contains '@', attempt Supabase Auth directly first
+      // 1. Direct Supabase Auth
       if (cleanIdent.includes('@')) {
-        res = await supabase.auth.signInWithPassword({ email: cleanIdent, password });
+        const res = await supabase.auth.signInWithPassword({ email: cleanIdent, password });
         if (!res.error && res.data?.session) {
-          setSession(res.data.session);
-          if (typeof sessionStorage !== 'undefined') {
-            sessionStorage.setItem('jd_session', JSON.stringify(res.data.session));
-          }
+          const s = res.data.session;
+          setCustomerSession(s);
 
-          // Immediately load profile from Supabase so ProtectedRoute unlocks without delay
+          let sbProfile = null;
           try {
-            const { data: sbProfile } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', res.data.session.user.id)
-              .maybeSingle();
-            if (sbProfile) {
-              let empRecord = null;
-              try {
-                const { data: emp } = await supabase
-                  .from('employee_accounts')
-                  .select('id, employee_id, department, position, shift, status, is_active, hire_date')
-                  .or(`auth_user_id.eq.${res.data.session.user.id},email.eq.${res.data.session.user.email || cleanIdent}`)
-                  .maybeSingle();
-                empRecord = emp;
-              } catch {}
-
-              const userObj = {
-                ...sbProfile,
-                email: res.data.session.user.email || cleanIdent,
-                has_password: true,
-                password_status: 'Configured',
-                ...(empRecord ? {
-                  employee_id: empRecord.employee_id,
-                  department: empRecord.department,
-                  shift: empRecord.shift,
-                  employee_status: empRecord.status,
-                  employee_record: empRecord,
-                } : {}),
-              };
-              setProfile(userObj);
-              if (typeof sessionStorage !== 'undefined') {
-                sessionStorage.setItem('jd_profile', JSON.stringify(userObj));
-              }
-              if (['administrator', 'admin'].includes(userObj.role)) {
-                if (typeof sessionStorage !== 'undefined') {
-                  sessionStorage.setItem('jd_admin_token_key', 'etc-34');
-                  sessionStorage.setItem('jd_admin_jwt', res.data.session.access_token);
-                }
-                if (typeof localStorage !== 'undefined') {
-                  localStorage.removeItem('jd_admin_token_key');
-                }
-              }
-            }
+            const { data } = await supabase.from('profiles').select('*').eq('id', s.user.id).maybeSingle();
+            sbProfile = data;
           } catch {}
 
+          const custUser = {
+            ...sbProfile,
+            id: s.user.id,
+            email: s.user.email || cleanIdent,
+            role: 'customer',
+            has_password: true,
+            password_status: 'Configured',
+          };
+          setCustomerProfile(custUser);
+          setNeedsProfileCompletion(false);
           return res;
         }
       }
 
-      // 2. If it's a username (no '@') OR direct Supabase Auth returned an error,
-      // authenticate via backend live authentication which resolves username to email
+      // 2. Server Auth endpoint /auth/login
       try {
         const serverAuth = await api.login({
           email: cleanIdent.includes('@') ? cleanIdent : undefined,
@@ -333,58 +370,168 @@ export function AuthProvider({ children }) {
           identifier: cleanIdent,
           password,
         });
+
         if (serverAuth?.session) {
-          setSession(serverAuth.session);
-          const userObj = serverAuth.user || serverAuth.profile;
-          setProfile(userObj);
-          if (typeof sessionStorage !== 'undefined') {
-            sessionStorage.setItem('jd_session', JSON.stringify(serverAuth.session));
-            sessionStorage.setItem('jd_profile', JSON.stringify(userObj));
-          }
-          if (['administrator', 'admin'].includes(userObj?.role)) {
-            if (typeof sessionStorage !== 'undefined') {
-              sessionStorage.setItem('jd_admin_token_key', 'etc-34');
-              if (serverAuth.session?.access_token) {
-                sessionStorage.setItem('jd_admin_jwt', serverAuth.session.access_token);
-              }
-            }
-            if (typeof localStorage !== 'undefined') {
-              localStorage.removeItem('jd_admin_token_key');
-            }
-          }
+          setCustomerSession(serverAuth.session);
+          const userObj = {
+            ...(serverAuth.user || serverAuth.profile),
+            role: 'customer',
+          };
+          setCustomerProfile(userObj);
+          setNeedsProfileCompletion(false);
           return { data: serverAuth, error: null };
         }
       } catch (serverErr) {
-        if (res?.error) return { data: null, error: res.error };
         return { data: null, error: serverErr };
       }
 
-      return { data: null, error: res?.error || new Error('Authentication failed. Please verify your username/email and password.') };
+      return { data: null, error: new Error('Customer sign-in failed. Please verify your credentials.') };
     } catch (err) {
       return { data: null, error: err };
     }
   };
 
-  const switchActiveRole = (roleKey) => {
-    if (profile && ['administrator', 'staff', 'receptionist', 'accounting'].includes(profile.role)) {
-      const updated = { ...profile, activeViewRole: roleKey };
-      setProfile(updated);
-      if (typeof sessionStorage !== 'undefined') {
-        sessionStorage.setItem('jd_profile', JSON.stringify(updated));
+  // ─────────────────────────────────────────────────────────────
+  // 5. ADMINISTRATOR AUTHENTICATION (Admin Scope Only)
+  // ─────────────────────────────────────────────────────────────
+  const adminSignIn = async (emailOrUsername: string, password: string, tokenIdKey?: string) => {
+    try {
+      const cleanIdent = (emailOrUsername || '').trim();
+      const key = tokenIdKey || 'etc-34';
+
+      // 1. Executive Admin Login route
+      try {
+        const adminAuthRes = await api.adminLogin({
+          identifier: cleanIdent,
+          password,
+          tokenIdKey: key,
+          position: 'administrator',
+        });
+
+        if (adminAuthRes?.session) {
+          const userObj = {
+            ...(adminAuthRes.user || adminAuthRes.profile),
+            role: 'administrator',
+          };
+          setAdminSession(adminAuthRes.session);
+          setAdminProfile(userObj);
+          return { data: adminAuthRes, error: null };
+        }
+      } catch (adminApiErr: any) {
+        // Fallback: direct Supabase authentication with strict role check
+        if (cleanIdent.includes('@')) {
+          const sbRes = await supabase.auth.signInWithPassword({ email: cleanIdent, password });
+          if (sbRes.error) throw sbRes.error;
+          if (sbRes.data?.session) {
+            const { data: prof } = await supabase.from('profiles').select('*').eq('id', sbRes.data.session.user.id).single();
+            const role = prof?.role || sbRes.data.session.user.user_metadata?.role;
+            if (!['administrator', 'admin'].includes(role) && !isSystemOwnerEmail(prof?.email || cleanIdent)) {
+              await supabase.auth.signOut().catch(() => {});
+              throw new Error('Access denied: Account is not authorized for executive administrator portal.');
+            }
+
+            const adminObj = {
+              ...prof,
+              role: 'administrator',
+              email: sbRes.data.session.user.email || cleanIdent,
+              has_password: true,
+              password_status: 'Configured',
+            };
+            setAdminSession(sbRes.data.session);
+            setAdminProfile(adminObj);
+            return { data: { session: sbRes.data.session, profile: adminObj }, error: null };
+          }
+        }
+        return { data: null, error: adminApiErr };
       }
+
+      return { data: null, error: new Error('Administrator authentication failed.') };
+    } catch (err: any) {
+      return { data: null, error: err };
+    }
+  };
+
+  const switchActiveRole = (roleKey: string) => {
+    if (adminProfile && ['administrator', 'staff', 'receptionist', 'accounting'].includes(adminProfile.role)) {
+      const updated = { ...adminProfile, activeViewRole: roleKey };
+      setAdminProfile(updated);
       toast(`Switched portal view to ${roleKey.toUpperCase()} ✦`);
     } else {
       toast(`Sign in with administrative credentials to access staff views.`, true);
     }
   };
 
+  const updateProfile = async (fields: any) => {
+    const currentProf = customerProfile || adminProfile;
+    const first = fields.first_name !== undefined ? fields.first_name : (currentProf?.first_name || '');
+    const middle = fields.middle_name !== undefined ? fields.middle_name : (currentProf?.middle_name || '');
+    const last = fields.last_name !== undefined ? fields.last_name : (currentProf?.last_name || '');
+    const full_name = fields.full_name || [first, middle, last].filter(Boolean).join(' ') || currentProf?.full_name || '';
+    const updatedFields = { ...fields, full_name };
+
+    const updated = await api.updateMe(updatedFields);
+    if (customerProfile) {
+      setCustomerProfile((prev: any) => ({ ...prev, ...updated, role: 'customer' }));
+    }
+    if (adminProfile) {
+      setAdminProfile((prev: any) => ({ ...prev, ...updated }));
+    }
+    return updated;
+  };
+
+  const updatePassword = async (password: string) => {
+    const res = await api.updatePassword(password);
+    if (customerProfile) {
+      setCustomerProfile((prev: any) => prev ? { ...prev, has_password: true, password_status: 'Configured' } : prev);
+    }
+    if (adminProfile) {
+      setAdminProfile((prev: any) => prev ? { ...prev, has_password: true, password_status: 'Configured' } : prev);
+    }
+    return res;
+  };
+
+  const deleteAccount = async () => {
+    await api.deleteMe();
+    await signOut();
+    toast('Your account has been permanently deleted ✦');
+  };
+
   const value = {
-    session, profile, authOpen, setAuthOpen,
-    needsProfileCompletion, setNeedsProfileCompletion,
-    signIn,
+    // Customer Scope (Default for public website view: Navbar, Home, Rooms, MyBookings, BookingFlow)
+    session: customerSession,
+    profile: customerProfile,
+    customerSession,
+    customerProfile,
+    isCustomerAuthenticated: Boolean(customerSession && customerProfile),
+    customerSignIn,
+    signOutCustomer: () => signOutScope('customer'),
+
+    // Administrator & Staff Scope (For administrative & staff portals: Admin, Receptionist, Accounting, Department)
+    adminSession,
+    adminProfile,
+    isAdminAuthenticated: Boolean(adminSession && adminProfile && ['administrator', 'admin'].includes(adminProfile.role)),
+    isStaffAuthenticated: Boolean(adminSession && adminProfile && ['administrator', 'admin', 'receptionist', 'accounting', 'staff'].includes(adminProfile.role)),
+    adminSignIn,
+    signOutAdmin: () => signOutScope('admin'),
+
+    // Universal / Backward-compatible methods
+    signIn: customerSignIn,
+    signOut,
+    signOutAll: signOut,
+    deleteAccount: async () => {
+      await api.deleteMe();
+      await signOut();
+      toast('Your account has been permanently deleted ✦');
+    },
+    updateProfile,
+    updatePassword,
     switchActiveRole,
     switchMockRole: switchActiveRole,
-    signUp: (email, password, meta) => supabase.auth.signUp({ email, password, options: { data: meta } }),
+    authOpen,
+    setAuthOpen,
+    needsProfileCompletion,
+    setNeedsProfileCompletion,
+    signUp: (email: string, password: string, meta: any) => supabase.auth.signUp({ email, password, options: { data: meta } }),
     signInWithGoogle: async () => {
       const res = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -400,72 +547,6 @@ export function AuthProvider({ children }) {
       });
       if (res.error) throw res.error;
       return res.data;
-    },
-    updateProfile: async (fields) => {
-      const first = fields.first_name !== undefined ? fields.first_name : (profile?.first_name || '');
-      const middle = fields.middle_name !== undefined ? fields.middle_name : (profile?.middle_name || '');
-      const last = fields.last_name !== undefined ? fields.last_name : (profile?.last_name || '');
-      const full_name = fields.full_name || [first, middle, last].filter(Boolean).join(' ') || profile?.full_name || '';
-      const updatedFields = { ...fields, full_name };
-
-      const updated = await api.updateMe(updatedFields);
-      setProfile(updated);
-      if (typeof sessionStorage !== 'undefined') {
-        sessionStorage.setItem('jd_profile', JSON.stringify(updated));
-      }
-      return updated;
-    },
-    updatePassword: async (password: string) => {
-      const res = await api.updatePassword(password);
-      setProfile((prev) => {
-        if (!prev) return prev;
-        const updated = { ...prev, has_password: true, password_status: 'Configured' };
-        if (typeof sessionStorage !== 'undefined') {
-          sessionStorage.setItem('jd_profile', JSON.stringify(updated));
-        }
-        return updated;
-      });
-      return res;
-    },
-    signOut: async () => {
-      setSession(null);
-      setProfile(null);
-      if (typeof localStorage !== 'undefined') {
-        localStorage.removeItem('jd_session');
-        localStorage.removeItem('jd_profile');
-        localStorage.removeItem('alon_session');
-        localStorage.removeItem('alon_profile');
-        localStorage.removeItem('jd_admin_jwt');
-        localStorage.removeItem('jd_admin_token_key');
-      }
-      if (typeof sessionStorage !== 'undefined') {
-        sessionStorage.removeItem('jd_session');
-        sessionStorage.removeItem('jd_profile');
-        sessionStorage.removeItem('jd_admin_jwt');
-        sessionStorage.removeItem('jd_admin_token_key');
-      }
-      await supabase.auth.signOut().catch(() => {});
-    },
-    deleteAccount: async () => {
-      await api.deleteMe();
-      setSession(null);
-      setProfile(null);
-      if (typeof localStorage !== 'undefined') {
-        localStorage.removeItem('jd_session');
-        localStorage.removeItem('jd_profile');
-        localStorage.removeItem('alon_session');
-        localStorage.removeItem('alon_profile');
-        localStorage.removeItem('jd_admin_jwt');
-        localStorage.removeItem('jd_admin_token_key');
-      }
-      if (typeof sessionStorage !== 'undefined') {
-        sessionStorage.removeItem('jd_session');
-        sessionStorage.removeItem('jd_profile');
-        sessionStorage.removeItem('jd_admin_jwt');
-        sessionStorage.removeItem('jd_admin_token_key');
-      }
-      await supabase.auth.signOut().catch(() => {});
-      toast('Your account has been permanently deleted ✦');
     },
   };
 

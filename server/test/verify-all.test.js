@@ -1428,6 +1428,71 @@ await runTest('Debit & Credit Ledger: Chart of Accounts, Double-Entry Pairs, Tri
   assert.ok(adminSrc.includes('Record Journal Voucher'), 'Admin.tsx must render Journal Voucher modal');
 });
 
+// 36. Complete Signout Purge, Session Storage Isolation & Strict Admin vs Customer Persona Partitioning
+await runTest('Complete Signout Purge, Session Storage Isolation & Strict Admin vs Customer Persona Partitioning', async () => {
+  // 1. Backend Unauthenticated Access & Elevation Prevention
+  const { authenticate } = await import('../src/middleware/auth.js');
+  let authError = null;
+  let nextCalled = false;
+  const mockNext = (err) => {
+    if (err) authError = err;
+    else nextCalled = true;
+  };
+
+  // Case A: Missing token without headers must throw 401
+  authError = null; nextCalled = false;
+  try {
+    await authenticate({ headers: {}, cookies: {} }, {}, mockNext);
+  } catch (err) { authError = err; }
+  assert.strictEqual(authError?.statusCode, 401, 'Unauthenticated request must be rejected with 401');
+
+  // Case B: Wild unauthenticated request with x-admin-token-key alone must NOT elevate to admin
+  authError = null; nextCalled = false;
+  try {
+    await authenticate({ headers: { 'x-admin-token-key': 'etc-34' }, cookies: {} }, {}, mockNext);
+  } catch (err) { authError = err; }
+  assert.strictEqual(authError?.statusCode, 401, 'Missing token with x-admin-token-key must NOT elevate without valid token');
+
+  // 2. Server Logout Endpoint Verification
+  const authRoutesSrc = fs.readFileSync(path.resolve(serverRoot, 'src/routes/auth.routes.js'), 'utf8');
+  assert.ok(authRoutesSrc.includes("r.post('/auth/logout'"), 'auth.routes.js must provide /auth/logout endpoint');
+  assert.ok(authRoutesSrc.includes("res.clearCookie('session_token'"), 'auth.routes.js logout must clear session_token cookie');
+  assert.ok(authRoutesSrc.includes("res.clearCookie('access_token'"), 'auth.routes.js logout must clear access_token cookie');
+  assert.ok(authRoutesSrc.includes("res.clearCookie('x-admin-token-key'"), 'auth.routes.js logout must clear x-admin-token-key cookie');
+
+  // 3. Client api.ts Verification
+  const apiSrc = fs.readFileSync(path.resolve(projectRoot, 'client/src/lib/api.ts'), 'utf8');
+  assert.ok(!apiSrc.includes("|| 'etc-34'"), 'api.ts must not have hardcoded etc-34 fallback for unauthenticated requests');
+  assert.ok(apiSrc.includes('resetApiSecurityTokens'), 'api.ts must export resetApiSecurityTokens');
+  assert.ok(apiSrc.includes("logout: () => req<{ success: boolean; message: string }>('/auth/logout'"), 'api.ts must define logout method');
+
+  // 4. Client AuthContext.tsx Scope Partitioning & Complete Purge
+  const authCtxSrc = fs.readFileSync(path.resolve(projectRoot, 'client/src/context/AuthContext.tsx'), 'utf8');
+  assert.ok(authCtxSrc.includes('customerSession'), 'AuthContext.tsx must maintain customerSession');
+  assert.ok(authCtxSrc.includes('customerProfile'), 'AuthContext.tsx must maintain customerProfile');
+  assert.ok(authCtxSrc.includes('adminSession'), 'AuthContext.tsx must maintain adminSession');
+  assert.ok(authCtxSrc.includes('adminProfile'), 'AuthContext.tsx must maintain adminProfile');
+  assert.ok(authCtxSrc.includes('customerSignIn'), 'AuthContext.tsx must provide customerSignIn');
+  assert.ok(authCtxSrc.includes('adminSignIn'), 'AuthContext.tsx must provide adminSignIn');
+  assert.ok(authCtxSrc.includes('sessionStorage.clear()'), 'AuthContext.tsx signOut must thoroughly clear sessionStorage');
+  assert.ok(authCtxSrc.includes('resetApiSecurityTokens()'), 'AuthContext.tsx signOut must reset API security tokens');
+  assert.ok(authCtxSrc.includes("supabase.auth.signOut({ scope: 'global' })"), 'AuthContext.tsx signOut must invoke global Supabase signOut');
+
+  // 5. Navbar & UI Separation Verification
+  const navbarSrc = fs.readFileSync(path.resolve(projectRoot, 'client/src/components/Navbar.tsx'), 'utf8');
+  assert.ok(navbarSrc.includes('adminSession'), 'Navbar.tsx must inspect adminSession');
+  assert.ok(navbarSrc.includes('Admin Console'), 'Navbar.tsx must link to Admin Console when adminSession is active');
+  assert.ok(navbarSrc.includes('signOutCustomer'), 'Navbar.tsx must provide dedicated customer signout');
+
+  // 6. ProtectedRoute & App Routing Partitioning
+  const protectedRouteSrc = fs.readFileSync(path.resolve(projectRoot, 'client/src/components/ProtectedRoute.tsx'), 'utf8');
+  assert.ok(protectedRouteSrc.includes('isCustomerOnly'), 'ProtectedRoute.tsx must differentiate customer-only routes');
+  assert.ok(protectedRouteSrc.includes('isStaffRoute'), 'ProtectedRoute.tsx must differentiate staff routes');
+
+  const appSrc = fs.readFileSync(path.resolve(projectRoot, 'client/src/App.tsx'), 'utf8');
+  assert.ok(appSrc.includes("<ProtectedRoute allowedRoles={['customer']} portalTitle=\"My Bookings\">"), 'App.tsx must strictly restrict My Bookings to customer role');
+});
+
 console.log('\n-------------------------------------------------------------');
 console.log(` 🏆 GREEN SUITE VERIFICATION RESULT: ${passedTests}/${totalTests} TESTS PASSED 🟢`);
 console.log('=============================================================\n');

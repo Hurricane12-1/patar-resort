@@ -52,25 +52,30 @@ async function getOrFetchCsrfToken(): Promise<string> {
   return '';
 }
 
+export function resetApiSecurityTokens() {
+  inMemoryCsrfToken = '';
+}
+
 async function req<T = any>(path: string, { method = 'GET', body }: { method?: string; body?: any } = {}): Promise<T> {
   const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
 
-  const adminTokenKey = (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_token_key') : null)
-    || (typeof localStorage !== 'undefined' ? localStorage.getItem('jd_admin_token_key') : null)
-    || 'etc-34';
+  // Strictly attach admin token key ONLY when authenticated admin session exists in sessionStorage
+  const adminTokenKey = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_token_key') : null;
   if (adminTokenKey) {
     headers['x-admin-token-key'] = adminTokenKey;
   }
 
-  const adminJwt = (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_jwt') : null)
-    || (typeof localStorage !== 'undefined' ? localStorage.getItem('jd_admin_jwt') : null);
+  const adminJwt = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_jwt') : null;
+  const customerJwt = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_customer_jwt') : null;
   if (session?.access_token) {
     headers['Authorization'] = `Bearer ${session.access_token}`;
   } else if (adminJwt) {
     headers['Authorization'] = `Bearer ${adminJwt}`;
+  } else if (customerJwt) {
+    headers['Authorization'] = `Bearer ${customerJwt}`;
   }
 
   // Double-Submit CSRF Token Protection Header
@@ -167,6 +172,7 @@ export const api = {
     req('/auth/login', { method: 'POST', body: credentials }),
   adminLogin: (credentials: { email?: string; username?: string; identifier?: string; identity?: string; password: string; tokenIdKey?: string; position?: string }) =>
     req('/auth/admin-login', { method: 'POST', body: credentials }),
+  logout: () => req<{ success: boolean; message: string }>('/auth/logout', { method: 'POST' }).catch(() => ({ success: true, message: 'Session purged' })),
   me: () => req('/me'),
   updateMe: (body: any) => req('/me', { method: 'PATCH', body }),
   updatePassword: (password: string) => req('/me/password', { method: 'PATCH', body: { password } }),

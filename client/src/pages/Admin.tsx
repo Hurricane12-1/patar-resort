@@ -51,8 +51,15 @@ const emptyAnalytics = {
 };
 
 export default function Admin() {
-  const { session, profile, signIn, signOut, deleteAccount, updateProfile, updatePassword } = useAuth();
-  const user = session?.user;
+  const {
+    session, profile,
+    adminSession, adminProfile,
+    adminSignIn, signOut, signOutAdmin,
+    deleteAccount, updateProfile, updatePassword
+  } = useAuth();
+  const currentAdminSession = adminSession || session;
+  const currentAdminProfile = adminProfile || profile;
+  const user = currentAdminSession?.user;
   const [data, setData] = useState(emptyAnalytics);
   const [loading, setLoading] = useState(false);
   const [confirmDeleteSelf, setConfirmDeleteSelf] = useState(false);
@@ -65,9 +72,9 @@ export default function Admin() {
   const [authenticating, setAuthenticating] = useState(false);
 
   // Live database profile role validation (Acquired automatically from database profile)
-  const isAdministrator = Boolean(session && profile && (
-    ['administrator', 'admin'].includes(profile?.role) ||
-    isSystemOwnerEmail(profile?.email) ||
+  const isAdministrator = Boolean(currentAdminSession && currentAdminProfile && (
+    ['administrator', 'admin'].includes(currentAdminProfile?.role) ||
+    isSystemOwnerEmail(currentAdminProfile?.email) ||
     isSystemOwnerEmail(user?.email)
   ));
 
@@ -243,7 +250,7 @@ export default function Admin() {
       if (!adminEmail.trim() || !adminPass) {
         throw new Error('Please enter administrator username or email, and password.');
       }
-      const res = await signIn(adminEmail.trim(), adminPass);
+      const res = await adminSignIn(adminEmail.trim(), adminPass);
       if (res?.error) throw res.error;
       toast('✦ Administrator credentials verified. Loading control center…');
     } catch (err: any) {

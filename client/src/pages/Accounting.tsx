@@ -7,7 +7,8 @@ import { money, fmtDate } from '../lib/format.ts';
 import { toast } from '../components/Toasts.tsx';
 
 export default function Accounting() {
-  const { profile, signIn } = useAuth();
+  const { profile, adminProfile, signIn, adminSignIn } = useAuth();
+  const currentProf = adminProfile || profile;
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState('');
@@ -15,7 +16,7 @@ export default function Accounting() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (profile && ['accounting', 'administrator', 'admin'].includes(profile.role)) {
+    if (currentProf && ['accounting', 'administrator', 'admin'].includes(currentProf.role)) {
       api.analyticsOverview()
         .then(setData)
         .catch((e) => toast(e.message, true))
@@ -23,14 +24,14 @@ export default function Accounting() {
     } else {
       setLoading(false);
     }
-  }, [profile]);
+  }, [currentProf]);
 
   async function handleAccountingLogin(e) {
     e.preventDefault();
     setBusy(true);
     try {
-      const { error } = await signIn(email, password);
-      if (error) throw error;
+      const res = adminSignIn ? await adminSignIn(email, password) : await signIn(email, password);
+      if (res?.error) throw res.error;
       toast('Accounting Portal Authenticated ✦');
     } catch (err) {
       toast(err.message, true);
@@ -40,7 +41,7 @@ export default function Accounting() {
   }
 
   // DEDICATED SEPARATE ACCOUNTING LOGIN PORTAL
-  if (!profile || !['accounting', 'administrator', 'admin'].includes(profile.role)) {
+  if (!currentProf || !['accounting', 'administrator', 'admin'].includes(currentProf.role)) {
     return (
       <div className="container section">
         <div className="gate" style={{ maxWidth: 460, borderTop: '5px solid var(--amber)' }}>

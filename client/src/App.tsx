@@ -38,7 +38,7 @@ function MainAppShell() {
           <Route path="/rooms" element={<Rooms />} />
 
           <Route path="/my-bookings" element={
-            <ProtectedRoute allowedRoles={['customer', 'administrator', 'receptionist', 'accounting', 'staff']} portalTitle="My Bookings">
+            <ProtectedRoute allowedRoles={['customer']} portalTitle="My Bookings">
               <MyBookings />
             </ProtectedRoute>
           } />

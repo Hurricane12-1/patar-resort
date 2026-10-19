@@ -42,7 +42,12 @@ function Particles({ count = 30, color = 'rgba(56,189,248,0.15)' }) {
 }
 
 export default function ProtectedRoute({ children, allowedRoles = [], portalTitle = 'Restricted Portal' }) {
-  const { session, profile, signIn } = useAuth();
+  const {
+    session, profile,
+    customerSession, customerProfile,
+    adminSession, adminProfile,
+    customerSignIn, adminSignIn,
+  } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -51,16 +56,29 @@ export default function ProtectedRoute({ children, allowedRoles = [], portalTitl
 
   useEffect(() => { setMounted(true); }, []);
 
-  const isAuthenticated = Boolean(session && profile);
-  const isAuthorized = isAuthenticated && (
-    allowedRoles.length === 0 ||
-    allowedRoles.includes(profile.role) ||
-    ['administrator', 'admin'].includes(profile.role)
-  );
+  const isCustomerOnly = allowedRoles.length > 0 && allowedRoles.every((r: string) => r === 'customer');
+  const isStaffRoute = allowedRoles.some((r: string) => ['administrator', 'admin', 'receptionist', 'accounting', 'staff'].includes(r));
+
+  let isAuthorized = false;
+  if (isCustomerOnly) {
+    isAuthorized = Boolean(customerSession && customerProfile);
+  } else if (isStaffRoute) {
+    isAuthorized = Boolean(
+      adminSession && adminProfile && (
+        allowedRoles.includes(adminProfile.role) ||
+        ['administrator', 'admin'].includes(adminProfile.role)
+      )
+    );
+  } else {
+    isAuthorized = Boolean(
+      (customerSession && customerProfile) ||
+      (adminSession && adminProfile)
+    );
+  }
 
   if (isAuthorized) return children;
 
-  const isCustomer = allowedRoles.length > 0 && allowedRoles[0] === 'customer';
+  const isCustomer = isCustomerOnly;
   const isAdmin = allowedRoles.includes('administrator');
 
   const handleGateLogin = async (e) => {
@@ -73,7 +91,9 @@ export default function ProtectedRoute({ children, allowedRoles = [], portalTitl
         return;
       }
       const targetEmail = email.trim();
-      const res = await signIn(targetEmail, password);
+      const res = isCustomerOnly
+        ? await customerSignIn(targetEmail, password)
+        : await adminSignIn(targetEmail, password);
       if (res?.error) throw res.error;
       toast(`Welcome to ${portalTitle} ✦`);
     } catch (err) {

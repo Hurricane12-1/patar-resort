@@ -5,7 +5,7 @@ import { api } from '../lib/api.ts';
 import { fmtTime } from '../lib/format.ts';
 
 export default function Navbar() {
-  const { session, profile, signOut, setAuthOpen } = useAuth();
+  const { session, profile, adminSession, adminProfile, signOut, signOutCustomer, signOutAdmin, setAuthOpen } = useAuth();
   const [open, setOpen] = useState(false);
   const [menu, setMenu] = useState(false);
   const [notes, setNotes] = useState([]);
@@ -19,7 +19,7 @@ export default function Navbar() {
     return () => { live = false; clearInterval(t); };
   }, [session]);
 
-  const isStaffOrAdmin = ['administrator', 'admin', 'receptionist', 'accounting', 'staff'].includes(profile?.role);
+  const isStaffOrAdmin = Boolean(adminSession && adminProfile && ['administrator', 'admin', 'receptionist', 'accounting', 'staff'].includes(adminProfile?.role));
   const links = [
     ['/', 'Home'],
     ['/rooms', 'Accommodations'],
@@ -107,19 +107,40 @@ export default function Navbar() {
                 <button
                   className="btn btn-sm"
                   style={{ color: '#fff', background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.3)' }}
-                  onClick={signOut}
+                  onClick={signOutCustomer}
                 >
                   Sign out
                 </button>
               </>
             ) : (
-              <button
-                className="btn btn-sm"
-                style={{ color: '#fff', background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.3)' }}
-                onClick={() => setAuthOpen(true)}
-              >
-                Sign in
-              </button>
+              <>
+                {adminSession && (
+                  <Link
+                    to="/administrator"
+                    className="btn btn-sm"
+                    style={{
+                      color: '#FDE047',
+                      background: 'rgba(234, 179, 8, 0.15)',
+                      border: '1px solid rgba(234, 179, 8, 0.4)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      textDecoration: 'none',
+                    }}
+                    title="Active Executive Administrator Session"
+                  >
+                    <span>🛡️</span>
+                    <span>Admin Console</span>
+                  </Link>
+                )}
+                <button
+                  className="btn btn-sm"
+                  style={{ color: '#fff', background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.3)' }}
+                  onClick={() => setAuthOpen(true)}
+                >
+                  Sign in
+                </button>
+              </>
             )}
 
             <Link to="/" className="btn btn-sky btn-sm">Book stay</Link>

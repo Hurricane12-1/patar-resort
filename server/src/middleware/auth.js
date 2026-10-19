@@ -8,16 +8,18 @@ export async function authenticate(req, _res, next) {
   try {
     const token = req.headers.authorization?.replace(/^Bearer\s+/i, '') || req.cookies?.session_token || req.cookies?.access_token;
     if (!token) {
-      const expectedAdminKey = process.env.ADMIN_TOKEN_KEY || 'etc-34';
-      const providedKey = req.headers['x-admin-token-key'] || req.query.admin_token_key;
-      if (providedKey === expectedAdminKey) {
-        const sysClient = await getSystemAdminClient();
-        const { data: adminUser } = await sysClient.from('profiles').select('*').eq('role', 'administrator').limit(1).maybeSingle();
-        if (adminUser) {
-          req.user = { ...adminUser, admin_token_verified: true, admin_token_key: expectedAdminKey };
-          req.token = 'admin-system-session';
-          req.sb = sysClient;
-          return next();
+      if (process.env.NODE_ENV === 'test' && req.headers['x-test-internal-bypass'] === 'true') {
+        const expectedAdminKey = process.env.ADMIN_TOKEN_KEY || 'etc-34';
+        const providedKey = req.headers['x-admin-token-key'] || req.query.admin_token_key;
+        if (providedKey === expectedAdminKey) {
+          const sysClient = await getSystemAdminClient();
+          const { data: adminUser } = await sysClient.from('profiles').select('*').eq('role', 'administrator').limit(1).maybeSingle();
+          if (adminUser) {
+            req.user = { ...adminUser, admin_token_verified: true, admin_token_key: expectedAdminKey };
+            req.token = 'admin-system-session';
+            req.sb = sysClient;
+            return next();
+          }
         }
       }
       if (/^jd-benchmark-concurrency/.test(req.headers['x-benchmark-bypass'] || '') || (process.env.BENCHMARK_MODE === 'true' && req.headers['x-benchmark-test'])) {

@@ -16,7 +16,8 @@ const DEPTS = [
 ];
 
 export default function ResortDepartment() {
-  const { session, setAuthOpen } = useAuth();
+  const { session, adminSession, setAuthOpen } = useAuth();
+  const currentSession = adminSession || session;
   const [activeDept, setActiveDept] = useState('all');
   const [tasks, setTasks] = useState([]);
   const [roomsStatus, setRoomsStatus] = useState([]);
@@ -27,7 +28,7 @@ export default function ResortDepartment() {
   const [subTab, setSubTab] = useState('tasks'); // tasks | inventory | rooms
 
   useEffect(() => {
-    if (!session) { setLoading(false); return; }
+    if (!currentSession) { setLoading(false); return; }
     let live = true;
     Promise.all([api.departmentTasks(), api.departmentRoomStatus(), api.departmentInventory()])
       .then(([t, r, inv]) => {
@@ -39,11 +40,11 @@ export default function ResortDepartment() {
       .catch((e) => toast(e.message, true))
       .finally(() => live && setLoading(false));
     return () => { live = false; };
-  }, [session]);
+  }, [currentSession]);
 
   useReveal(!loading);
 
-  if (!session) return (
+  if (!currentSession) return (
     <div className="container">
       <div className="gate">
         <span className="label">Staff Portal</span>
