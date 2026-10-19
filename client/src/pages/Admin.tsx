@@ -323,15 +323,22 @@ export default function Admin() {
   };
 
   // TWEAKABLE ADVANCED ADMIN PROFILE STATE (LIVE SYNCHRONIZED)
+  const defaultAdminName = currentAdminProfile?.full_name || [currentAdminProfile?.first_name, currentAdminProfile?.last_name].filter(Boolean).join(' ') || user?.user_metadata?.full_name || user?.user_metadata?.name || 'Julian Nygel De Leon';
+  const defaultAdminTitle = currentAdminProfile?.title || currentAdminProfile?.position || 'General Manager & System Administrator';
+  const defaultAdminDomain = currentAdminProfile?.domain_account || (currentAdminProfile?.email?.endsWith('@janddbeachhouse.ph') ? currentAdminProfile.email : 'admin@janddbeachhouse.ph');
+  const defaultAdminAvatar = currentAdminProfile?.avatar_url || currentAdminProfile?.picture || user?.user_metadata?.avatar_url || user?.user_metadata?.picture || '';
+
   const [adminProfileState, setAdminProfileState] = useState({
-    fullName: currentAdminProfile?.full_name || '',
-    title: currentAdminProfile?.title || currentAdminProfile?.position || '',
+    fullName: defaultAdminName,
+    title: defaultAdminTitle,
     avatarKey: 'crown',
-    customAvatarUrl: currentAdminProfile?.avatar_url || '',
-    email: currentAdminProfile?.email || user?.email || '',
-    phone: currentAdminProfile?.phone || '',
-    department: currentAdminProfile?.department || '',
-    statusBio: currentAdminProfile?.status_bio || '',
+    customAvatarUrl: defaultAdminAvatar,
+    email: currentAdminProfile?.email || user?.email || 'admin@janddbeachhouse.ph',
+    domainAccount: defaultAdminDomain,
+    phone: currentAdminProfile?.phone || user?.user_metadata?.phone || '09171234567',
+    department: currentAdminProfile?.department || 'Executive Operations & IT',
+    employeeId: currentAdminProfile?.employee_id || 'JD-ADM-001',
+    statusBio: currentAdminProfile?.status_bio || 'Executive resort administration & active defense security.',
     location: 'Brgy. Patar, Bolinao, Pangasinan',
     refreshRate: '5',
     smsNotifications: true,
@@ -343,17 +350,25 @@ export default function Admin() {
     confirmPassword: '',
   });
 
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
   useEffect(() => {
     if (currentAdminProfile) {
+      const resolvedName = currentAdminProfile.full_name || [currentAdminProfile.first_name, currentAdminProfile.last_name].filter(Boolean).join(' ') || user?.user_metadata?.full_name || user?.user_metadata?.name;
+      const resolvedTitle = currentAdminProfile.title || currentAdminProfile.position;
+      const resolvedAvatar = currentAdminProfile.avatar_url || currentAdminProfile.picture || user?.user_metadata?.avatar_url || user?.user_metadata?.picture;
+      const resolvedDomain = currentAdminProfile.domain_account || (currentAdminProfile.email?.endsWith('@janddbeachhouse.ph') ? currentAdminProfile.email : 'admin@janddbeachhouse.ph');
       setAdminProfileState((prev) => ({
         ...prev,
-        fullName: currentAdminProfile.full_name || prev.fullName,
-        title: currentAdminProfile.title || currentAdminProfile.position || prev.title,
+        fullName: resolvedName || prev.fullName,
+        title: resolvedTitle || prev.title,
         avatarKey: prev.avatarKey || 'crown',
-        customAvatarUrl: currentAdminProfile.avatar_url || prev.customAvatarUrl,
+        customAvatarUrl: resolvedAvatar || prev.customAvatarUrl,
         email: currentAdminProfile.email || user?.email || prev.email,
+        domainAccount: resolvedDomain || prev.domainAccount,
         phone: currentAdminProfile.phone || prev.phone,
         department: currentAdminProfile.department || prev.department,
+        employeeId: currentAdminProfile.employee_id || prev.employeeId,
         statusBio: currentAdminProfile.status_bio || prev.statusBio,
       }));
     }
@@ -366,18 +381,74 @@ export default function Admin() {
     // Also live-sync from api.me directly on mount
     api.me().then((fresh) => {
       if (fresh && fresh.id) {
+        const freshName = fresh.full_name || [fresh.first_name, fresh.last_name].filter(Boolean).join(' ');
+        const freshDomain = fresh.domain_account || (fresh.email?.endsWith('@janddbeachhouse.ph') ? fresh.email : 'admin@janddbeachhouse.ph');
         setAdminProfileState((prev) => ({
           ...prev,
-          fullName: fresh.full_name || prev.fullName,
+          fullName: freshName || prev.fullName,
           title: fresh.title || fresh.position || prev.title,
+          customAvatarUrl: fresh.avatar_url || prev.customAvatarUrl,
           email: fresh.email || prev.email,
+          domainAccount: freshDomain || prev.domainAccount,
           phone: fresh.phone || prev.phone,
           department: fresh.department || prev.department,
+          employeeId: fresh.employee_id || prev.employeeId,
           statusBio: fresh.status_bio || prev.statusBio,
         }));
       }
     }).catch(() => {});
   }, [refreshProfile]);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast('Please select an image file (JPG, PNG, WebP)', true);
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      toast('Image file exceeds 8MB maximum size limit', true);
+      return;
+    }
+    setUploadingAvatar(true);
+    try {
+      toast('Uploading executive avatar to Cloudinary CDN...');
+      const uploaded = await uploadImageToCloudinary(file);
+      if (uploaded?.url) {
+        setAdminProfileState((prev) => ({ ...prev, customAvatarUrl: uploaded.url }));
+        if (updateProfile) {
+          await updateProfile({ avatar_url: uploaded.url });
+        } else {
+          await api.updateMe({ avatar_url: uploaded.url });
+        }
+        toast('📸 Executive profile picture uploaded to Cloudinary CDN & saved! ✦');
+      } else {
+        throw new Error('Upload returned empty image URL');
+      }
+    } catch (err: any) {
+      toast(`Avatar upload failed: ${err.message || 'Error uploading photo'}`, true);
+    } finally {
+      setUploadingAvatar(false);
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    setUploadingAvatar(true);
+    try {
+      setAdminProfileState((prev) => ({ ...prev, customAvatarUrl: '' }));
+      if (updateProfile) {
+        await updateProfile({ avatar_url: '' });
+      } else {
+        await api.updateMe({ avatar_url: '' });
+      }
+      toast('Profile picture removed successfully');
+    } catch (err: any) {
+      toast(`Remove failed: ${err.message || 'Error removing photo'}`, true);
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   const avatarOptions = [
     { label: 'Executive Crown', key: 'crown', icon: <IconCrown size={22} color="#F59E0B" /> },
@@ -772,10 +843,11 @@ export default function Admin() {
       if (!adminProfileState.fullName?.trim()) {
         throw new Error('Please enter your full name.');
       }
-      const updatePayload = {
+      const updatePayload: any = {
         full_name: adminProfileState.fullName.trim(),
         title: adminProfileState.title.trim(),
         phone: adminProfileState.phone.trim(),
+        avatar_url: adminProfileState.customAvatarUrl || '',
       };
 
       if (updateProfile) {
@@ -2199,16 +2271,25 @@ export default function Admin() {
             </div>
 
             {/* ADMIN PROFILE AVATAR & BADGE */}
-            <div className="admin-header-profile" title={`Administrator: ${adminProfileState.fullName}`}>
+            <div
+              className="admin-header-profile"
+              onClick={() => setActiveTab('settings')}
+              style={{ cursor: 'pointer' }}
+              title={`Administrator: ${adminProfileState.fullName} (${adminProfileState.domainAccount}) - Click to edit profile`}
+            >
               {adminProfileState.customAvatarUrl ? (
-                <img src={adminProfileState.customAvatarUrl} alt="Admin Avatar" className="admin-profile-avatar" />
+                <img
+                  src={optimizeCloudinaryUrl(adminProfileState.customAvatarUrl, 'f_auto,q_auto,c_fill,w_80,h_80')}
+                  alt="Admin Avatar"
+                  className="admin-profile-avatar"
+                />
               ) : (
                 <span className="admin-profile-avatar placeholder">
                   <IconCrown size={15} color="#FFF" />
                 </span>
               )}
               <div className="admin-profile-info">
-                <b className="admin-profile-name">{adminProfileState.fullName.split(' ')[0]}</b>
+                <b className="admin-profile-name">{adminProfileState.fullName.split(' ')[0] || 'Admin'}</b>
                 <span className="admin-profile-role">ADMIN</span>
               </div>
             </div>
@@ -2222,32 +2303,306 @@ export default function Admin() {
             <>
               {/* TOP BANNER & PERFORMANCE BAND (RESPONSIVE GRID) */}
               <div className="admin-grid-top-banner">
-                {/* Left Card: Welcome Back Banner Card */}
+                {/* Left Card: Executive Profile & Operational Telemetry Perspective Hub (Cloudinary Connected) */}
                 <div
-                  className="panel-card"
+                  className="panel-card executive-telemetry-card"
                   style={{
-                    background: isLightMode ? '#FFFFFF' : 'linear-gradient(135deg, #4338CA, #6366F1)',
-                    border: isLightMode ? `1px solid ${themeBorder}` : 'none',
-                    borderRadius: 18,
-                    padding: '24px 28px',
+                    background: isLightMode
+                      ? 'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)'
+                      : 'linear-gradient(135deg, #1E1B4B 0%, #0F172A 100%)',
+                    border: isLightMode ? `1px solid ${themeBorder}` : '1px solid rgba(99, 102, 241, 0.35)',
+                    borderRadius: 22,
+                    padding: '22px 26px',
                     color: isLightMode ? '#0F172A' : '#FFFFFF',
-                    boxShadow: isLightMode ? themeShadow : '0 10px 25px rgba(99, 102, 241, 0.3)',
+                    boxShadow: isLightMode ? themeShadow : '0 12px 30px rgba(15, 23, 42, 0.45)',
                     display: 'flex',
                     flexDirection: 'column',
-                    justifyContent: 'center',
+                    justifyContent: 'space-between',
+                    position: 'relative',
+                    overflow: 'hidden',
                   }}
                 >
-                  <span style={{ fontSize: '.78rem', color: isLightMode ? '#64748B' : 'rgba(255,255,255,0.85)', textTransform: 'uppercase', letterSpacing: '.08em', fontWeight: 700 }}>
-                    Date range: last 30 days
-                  </span>
-                  <h2 style={{ fontSize: '1.7rem', margin: '6px 0 8px', color: isLightMode ? '#0F172A' : '#FFFFFF', fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800 }}>
-                    Welcome back <br />
-                    {adminProfileState.fullName}!
-                  </h2>
-                  <p style={{ margin: 0, fontSize: '.9rem', color: isLightMode ? '#334155' : 'rgba(255,255,255,0.95)', lineHeight: 1.4 }}>
-                    You've solved <b style={{ textDecoration: 'underline', color: isLightMode ? '#0F172A' : '#FFFFFF' }}>80% of resort operations & guest inquiries</b> this month!
-                    Keep it up and improve your performance!
-                  </p>
+                  {/* Top Perspective Header */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                      {/* Cloudinary Profile Photo Container with Upload Trigger */}
+                      <div style={{ position: 'relative', flexShrink: 0 }}>
+                        <div
+                          style={{
+                            width: 66,
+                            height: 66,
+                            borderRadius: '50%',
+                            overflow: 'hidden',
+                            border: '3px solid #6366F1',
+                            boxShadow: '0 6px 16px rgba(99, 102, 241, 0.35)',
+                            background: isLightMode ? '#EEF2FF' : '#312E81',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          {adminProfileState.customAvatarUrl ? (
+                            <img
+                              src={optimizeCloudinaryUrl(adminProfileState.customAvatarUrl, 'f_auto,q_auto,c_fill,w_160,h_160')}
+                              alt={adminProfileState.fullName}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            />
+                          ) : (
+                            <span style={{ fontSize: '1.6rem', color: '#818CF8', fontWeight: 800 }}>
+                              {adminProfileState.fullName ? adminProfileState.fullName.charAt(0).toUpperCase() : <i className="fas fa-user-tie" />}
+                            </span>
+                          )}
+                        </div>
+                        {/* Cloudinary Camera Overlay Upload Button */}
+                        <label
+                          htmlFor="cloudinary-avatar-upload"
+                          style={{
+                            position: 'absolute',
+                            bottom: -2,
+                            right: -2,
+                            width: 26,
+                            height: 26,
+                            borderRadius: '50%',
+                            background: '#6366F1',
+                            color: '#FFF',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                            fontSize: '.72rem',
+                            border: '2px solid #FFF',
+                            transition: 'all 0.2s ease',
+                          }}
+                          title="Change executive profile photo via Cloudinary CDN"
+                        >
+                          {uploadingAvatar ? (
+                            <i className="fas fa-spinner fa-spin" />
+                          ) : (
+                            <i className="fas fa-camera" />
+                          )}
+                          <input
+                            id="cloudinary-avatar-upload"
+                            type="file"
+                            accept="image/*"
+                            style={{ display: 'none' }}
+                            onChange={handleAvatarUpload}
+                            disabled={uploadingAvatar}
+                          />
+                        </label>
+                      </div>
+
+                      {/* Identity & Enterprise Domain Info */}
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          <h2
+                            style={{
+                              fontSize: '1.4rem',
+                              margin: 0,
+                              color: isLightMode ? '#0F172A' : '#FFFFFF',
+                              fontFamily: "'Plus Jakarta Sans', sans-serif",
+                              fontWeight: 800,
+                              lineHeight: 1.2,
+                            }}
+                          >
+                            {adminProfileState.fullName || 'Executive Administrator'}
+                          </h2>
+                          <span
+                            style={{
+                              fontSize: '.68rem',
+                              fontWeight: 800,
+                              padding: '3px 10px',
+                              borderRadius: 9999,
+                              background: 'rgba(16, 185, 129, 0.15)',
+                              color: '#10B981',
+                              border: '1px solid rgba(16, 185, 129, 0.35)',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                            }}
+                          >
+                            <i className="fas fa-shield-halved" /> TIER-1 ADMIN
+                          </span>
+                        </div>
+
+                        <div style={{ fontSize: '.84rem', color: isLightMode ? '#475569' : '#94A3B8', marginTop: 4, fontWeight: 600 }}>
+                          {adminProfileState.title || 'General Manager & System Administrator'}
+                        </div>
+
+                        {/* Domain Account Badge */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
+                          <span
+                            style={{
+                              fontSize: '.74rem',
+                              fontWeight: 700,
+                              color: isLightMode ? '#1E40AF' : '#60A5FA',
+                              background: isLightMode ? '#EFF6FF' : 'rgba(59, 130, 246, 0.12)',
+                              padding: '2px 9px',
+                              borderRadius: 9999,
+                              border: `1px solid ${isLightMode ? '#BFDBFE' : 'rgba(59, 130, 246, 0.3)'}`,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 5,
+                            }}
+                          >
+                            <i className="fas fa-globe" style={{ fontSize: '.7rem' }} />
+                            {adminProfileState.domainAccount || 'admin@janddbeachhouse.ph'}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: '.72rem',
+                              fontWeight: 700,
+                              color: isLightMode ? '#64748B' : '#94A3B8',
+                              background: isLightMode ? '#F1F5F9' : 'rgba(255, 255, 255, 0.06)',
+                              padding: '2px 8px',
+                              borderRadius: 9999,
+                              border: `1px solid ${themeBorder}`,
+                            }}
+                          >
+                            ID: {adminProfileState.employeeId || 'JD-ADM-001'}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: '.72rem',
+                              fontWeight: 700,
+                              color: '#10B981',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                            }}
+                          >
+                            <i className="fas fa-circle-check" /> Active Directory
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Telemetry Strip & Quick Perspective Access */}
+                  <div
+                    style={{
+                      marginTop: 16,
+                      paddingTop: 12,
+                      borderTop: `1px solid ${isLightMode ? '#E2E8F0' : 'rgba(255, 255, 255, 0.1)'}`,
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: 10,
+                    }}
+                  >
+                    {/* Perspective Telemetry Status Pills */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                      <div
+                        style={{
+                          fontSize: '.72rem',
+                          fontWeight: 700,
+                          color: isLightMode ? '#0F172A' : '#E2E8F0',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 5,
+                        }}
+                      >
+                        <i className="fas fa-clock" style={{ color: '#0EA5E9' }} />
+                        <span>Operations: <b style={{ color: '#10B981' }}>99.98% High-Avail</b></span>
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '.72rem',
+                          fontWeight: 700,
+                          color: isLightMode ? '#0F172A' : '#E2E8F0',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 5,
+                        }}
+                      >
+                        <i className="fas fa-lock" style={{ color: '#8B5CF6' }} />
+                        <span>TLS 1.3 · 2FA Enforced</span>
+                      </div>
+                      {adminProfileState.customAvatarUrl && (
+                        <div
+                          style={{
+                            fontSize: '.72rem',
+                            fontWeight: 700,
+                            color: '#0284C7',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 5,
+                          }}
+                        >
+                          <i className="fas fa-cloud-arrow-up" />
+                          <span>Cloudinary CDN Synced</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Direct Perspective GUI Access Buttons (Smooth Rounded Pills) */}
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('settings')}
+                        style={{
+                          borderRadius: 9999,
+                          padding: '7px 14px',
+                          fontSize: '.78rem',
+                          fontWeight: 700,
+                          background: isLightMode ? '#FFFFFF' : 'rgba(255, 255, 255, 0.08)',
+                          color: isLightMode ? '#0F172A' : '#FFFFFF',
+                          border: `1px solid ${isLightMode ? '#CBD5E1' : 'rgba(255, 255, 255, 0.2)'}`,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 5,
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        <i className="fas fa-user-gear" style={{ color: '#6366F1' }} />
+                        Profile Settings
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('audit')}
+                        style={{
+                          borderRadius: 9999,
+                          padding: '7px 14px',
+                          fontSize: '.78rem',
+                          fontWeight: 700,
+                          background: isLightMode ? '#FFFFFF' : 'rgba(255, 255, 255, 0.08)',
+                          color: isLightMode ? '#0F172A' : '#FFFFFF',
+                          border: `1px solid ${isLightMode ? '#CBD5E1' : 'rgba(255, 255, 255, 0.2)'}`,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 5,
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        <i className="fas fa-shield-alt" style={{ color: '#10B981' }} />
+                        System Logs
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('notifications')}
+                        style={{
+                          borderRadius: 9999,
+                          padding: '7px 14px',
+                          fontSize: '.78rem',
+                          fontWeight: 700,
+                          background: isLightMode ? '#FFFFFF' : 'rgba(255, 255, 255, 0.08)',
+                          color: isLightMode ? '#0F172A' : '#FFFFFF',
+                          border: `1px solid ${isLightMode ? '#CBD5E1' : 'rgba(255, 255, 255, 0.2)'}`,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 5,
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        <i className="fas fa-bell" style={{ color: '#F59E0B' }} />
+                        Notifications
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Right Card: Dark Midnight Metric Box */}
@@ -2687,26 +3042,102 @@ export default function Admin() {
                 </div>
               </div>
 
-              {/* STAT SUMMARY BAND */}
+              {/* STAT SUMMARY BAND (CLICKABLE INTERACTIVE TELEMETRY CARDS) */}
               <div className="admin-grid-4-col" style={{ gap: 12, marginBottom: 20 }}>
-                <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)', border: `1px solid ${themeBorder}`, borderRadius: 12, padding: 14 }}>
-                  <span style={{ fontSize: '.72rem', color: themeMuted, textTransform: 'uppercase', fontWeight: 700 }}>Accommodations</span>
+                <div
+                  className="kpi-card-clickable"
+                  onClick={() => {
+                    setInventorySubTab('accommodations');
+                    setInventoryRoomFilter('all');
+                    toast('Displaying all resort accommodation categories');
+                  }}
+                  style={{
+                    background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${inventorySubTab === 'accommodations' && inventoryRoomFilter === 'all' ? '#0EA5E9' : themeBorder}`,
+                    borderRadius: 16,
+                    padding: 14,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                  title="Click to view all accommodations"
+                >
+                  <span style={{ fontSize: '.72rem', color: themeMuted, textTransform: 'uppercase', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span>Accommodations</span>
+                    <i className="fas fa-arrow-up-right-from-square" style={{ fontSize: '.68rem', color: '#0EA5E9' }} />
+                  </span>
                   <div style={{ fontSize: '1.4rem', fontWeight: 800, color: themeText, marginTop: 4 }}>{roomsList.length} Categories</div>
                 </div>
-                <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)', border: `1px solid ${themeBorder}`, borderRadius: 12, padding: 14 }}>
-                  <span style={{ fontSize: '.72rem', color: themeMuted, textTransform: 'uppercase', fontWeight: 700 }}>Total Units</span>
+
+                <div
+                  className="kpi-card-clickable"
+                  onClick={() => {
+                    setInventorySubTab('accommodations');
+                    toast(`Total Resort Capacity: ${roomsList.reduce((acc, r) => acc + (r.units || 0), 0)} Physical Rooms across Patar coastline`);
+                  }}
+                  style={{
+                    background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${themeBorder}`,
+                    borderRadius: 16,
+                    padding: 14,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                  title="Click to inspect total unit inventory"
+                >
+                  <span style={{ fontSize: '.72rem', color: themeMuted, textTransform: 'uppercase', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span>Total Units</span>
+                    <i className="fas fa-bed" style={{ fontSize: '.68rem', color: '#38BDF8' }} />
+                  </span>
                   <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#38BDF8', marginTop: 4 }}>
                     {roomsList.reduce((acc, r) => acc + (r.units || 0), 0)} Physical Rooms
                   </div>
                 </div>
-                <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)', border: `1px solid ${themeBorder}`, borderRadius: 12, padding: 14 }}>
-                  <span style={{ fontSize: '.72rem', color: themeMuted, textTransform: 'uppercase', fontWeight: 700 }}>Resort Supplies</span>
+
+                <div
+                  className="kpi-card-clickable"
+                  onClick={() => {
+                    setInventorySubTab('supplies');
+                    toast('Switched view to Resort Supplies Ledger');
+                  }}
+                  style={{
+                    background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${inventorySubTab === 'supplies' ? '#10B981' : themeBorder}`,
+                    borderRadius: 16,
+                    padding: 14,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                  title="Click to view resort department supplies"
+                >
+                  <span style={{ fontSize: '.72rem', color: themeMuted, textTransform: 'uppercase', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span>Resort Supplies</span>
+                    <i className="fas fa-boxes-stacked" style={{ fontSize: '.68rem', color: '#10B981' }} />
+                  </span>
                   <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#10B981', marginTop: 4 }}>
                     {inventoryList.length} Tracked Items
                   </div>
                 </div>
-                <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)', border: `1px solid ${themeBorder}`, borderRadius: 12, padding: 14 }}>
-                  <span style={{ fontSize: '.72rem', color: themeMuted, textTransform: 'uppercase', fontWeight: 700 }}>Reorder Alerts</span>
+
+                <div
+                  className="kpi-card-clickable"
+                  onClick={() => {
+                    setInventorySubTab('supplies');
+                    toast('Filtered view to low stock and reorder supply items');
+                  }}
+                  style={{
+                    background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${inventoryList.filter(i => (i.stock_qty || 0) <= (i.reorder_at || 10)).length > 0 ? 'rgba(244, 63, 94, 0.4)' : themeBorder}`,
+                    borderRadius: 16,
+                    padding: 14,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                  title="Click to inspect reorder alerts"
+                >
+                  <span style={{ fontSize: '.72rem', color: themeMuted, textTransform: 'uppercase', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span>Reorder Alerts</span>
+                    <i className="fas fa-bell" style={{ fontSize: '.68rem', color: inventoryList.filter(i => (i.stock_qty || 0) <= (i.reorder_at || 10)).length > 0 ? '#F43F5E' : '#10B981' }} />
+                  </span>
                   <div style={{ fontSize: '1.4rem', fontWeight: 800, color: inventoryList.filter(i => (i.stock_qty || 0) <= (i.reorder_at || 10)).length > 0 ? '#F43F5E' : '#10B981', marginTop: 4 }}>
                     {inventoryList.filter(i => (i.stock_qty || 0) <= (i.reorder_at || 10)).length} Items Low
                   </div>
@@ -2926,13 +3357,23 @@ export default function Admin() {
                               </div>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                                 {[
-                                  { label: 'Beachfront Cottages', pct: Math.min(100, occupancyPct + 6), color: '#0EA5E9' },
-                                  { label: 'Executive Family Villas', pct: Math.min(100, occupancyPct + 14), color: '#8B5CF6' },
-                                  { label: 'Standard Beach Suites', pct: Math.max(30, occupancyPct - 12), color: '#10B981' },
+                                  { label: 'Beachfront Cottages', filter: 'Cottage', pct: Math.min(100, occupancyPct + 6), color: '#0EA5E9' },
+                                  { label: 'Executive Family Villas', filter: 'Villa', pct: Math.min(100, occupancyPct + 14), color: '#8B5CF6' },
+                                  { label: 'Standard Beach Suites', filter: 'Suite', pct: Math.max(30, occupancyPct - 12), color: '#10B981' },
                                 ].map((cat) => (
-                                  <div key={cat.label}>
+                                  <div
+                                    key={cat.label}
+                                    onClick={() => {
+                                      setInventoryRoomFilter(cat.filter);
+                                      toast(`Filtered accommodations by ${cat.label}`);
+                                    }}
+                                    style={{ cursor: 'pointer', padding: '2px 4px', borderRadius: 6, transition: 'background 0.2s ease' }}
+                                    title={`Click to filter by ${cat.label}`}
+                                  >
                                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.68rem', color: themeMuted, marginBottom: 2 }}>
-                                      <span>{cat.label}</span>
+                                      <span style={{ fontWeight: inventoryRoomFilter.toLowerCase() === cat.filter.toLowerCase() ? 800 : 500, color: inventoryRoomFilter.toLowerCase() === cat.filter.toLowerCase() ? cat.color : undefined }}>
+                                        {cat.label} {inventoryRoomFilter.toLowerCase() === cat.filter.toLowerCase() ? '✦' : ''}
+                                      </span>
                                       <b style={{ color: cat.color }}>{cat.pct}%</b>
                                     </div>
                                     <div style={{ height: 5, borderRadius: 4, background: isLightMode ? '#E2E8F0' : 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
@@ -2987,17 +3428,55 @@ export default function Admin() {
                     );
                   })()}
 
-                  {/* Category Filter Chips */}
-                  <div className="chip-row" style={{ marginBottom: 16 }}>
-                    {['all', 'Cottage', 'Villa', 'Suite', 'Garden', 'Dorm'].map((cat) => (
-                      <button
-                        key={cat}
-                        className={`chip ${inventoryRoomFilter === cat ? 'sel' : ''}`}
-                        onClick={() => setInventoryRoomFilter(cat)}
+                  {/* SIMPLIFIED CATEGORY FILTER DROPDOWN & ACTIVE FILTER BADGE */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <i className="fas fa-filter" style={{ color: '#0EA5E9' }} /> Filter Category:
+                      </span>
+                      <select
+                        value={inventoryRoomFilter}
+                        onChange={(e) => setInventoryRoomFilter(e.target.value)}
+                        style={{
+                          padding: '8px 18px',
+                          borderRadius: 9999,
+                          border: `1px solid ${themeBorder}`,
+                          background: isLightMode ? '#FFFFFF' : '#0F172A',
+                          color: themeText,
+                          fontSize: '.84rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          minWidth: 200,
+                        }}
                       >
-                        {cat === 'all' ? 'ALL CATEGORIES' : cat.toUpperCase()}
+                        <option value="all">All Categories ({roomsList.filter((r) => r.is_active !== false).length})</option>
+                        <option value="Cottage">Cottages ({roomsList.filter((r) => r.is_active !== false && r.category?.toLowerCase() === 'cottage').length})</option>
+                        <option value="Villa">Villas ({roomsList.filter((r) => r.is_active !== false && r.category?.toLowerCase() === 'villa').length})</option>
+                        <option value="Suite">Suites ({roomsList.filter((r) => r.is_active !== false && r.category?.toLowerCase() === 'suite').length})</option>
+                        <option value="Garden">Garden Rooms ({roomsList.filter((r) => r.is_active !== false && r.category?.toLowerCase() === 'garden').length})</option>
+                        <option value="Dorm">Dormitories ({roomsList.filter((r) => r.is_active !== false && r.category?.toLowerCase() === 'dorm').length})</option>
+                      </select>
+                    </div>
+
+                    {inventoryRoomFilter !== 'all' && (
+                      <button
+                        type="button"
+                        onClick={() => setInventoryRoomFilter('all')}
+                        className="btn btn-ghost btn-sm"
+                        style={{
+                          borderRadius: 9999,
+                          fontSize: '.75rem',
+                          fontWeight: 700,
+                          color: '#0EA5E9',
+                          borderColor: 'rgba(14, 165, 233, 0.4)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                        }}
+                      >
+                        <i className="fas fa-times" /> Reset Category Filter
                       </button>
-                    ))}
+                    )}
                   </div>
 
                   {loadingRoomsAndInv ? (
@@ -3134,8 +3613,8 @@ export default function Admin() {
                                         border: '1px solid rgba(239, 68, 68, 0.3)',
                                         fontSize: '.8rem',
                                         fontWeight: 700,
-                                        padding: '6px 12px',
-                                        borderRadius: 8,
+                                        padding: '6px 14px',
+                                        borderRadius: 9999,
                                         cursor: 'pointer',
                                         display: 'inline-flex',
                                         alignItems: 'center',
@@ -3384,6 +3863,105 @@ export default function Admin() {
               </div>
 
               <form onSubmit={handleSaveSettings} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 20 }}>
+                {/* 0. Cloudinary Executive Avatar & Identity Management */}
+                <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.5)', border: `1px solid ${themeBorder}`, borderRadius: 18, padding: 22, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+                    <div style={{ position: 'relative' }}>
+                      <div
+                        style={{
+                          width: 80,
+                          height: 80,
+                          borderRadius: '50%',
+                          overflow: 'hidden',
+                          border: '3px solid #6366F1',
+                          boxShadow: '0 8px 20px rgba(99, 102, 241, 0.3)',
+                          background: isLightMode ? '#EEF2FF' : '#312E81',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        {adminProfileState.customAvatarUrl ? (
+                          <img
+                            src={optimizeCloudinaryUrl(adminProfileState.customAvatarUrl, 'f_auto,q_auto,c_fill,w_200,h_200')}
+                            alt="Profile Avatar"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                        ) : (
+                          <span style={{ fontSize: '2rem', color: '#818CF8', fontWeight: 800 }}>
+                            {adminProfileState.fullName ? adminProfileState.fullName.charAt(0).toUpperCase() : <i className="fas fa-user-tie" />}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <b style={{ fontSize: '1.05rem', color: themeText, display: 'block' }}>
+                        Executive Profile Picture
+                      </b>
+                      <p style={{ margin: '4px 0 8px', fontSize: '.8rem', color: themeMuted }}>
+                        Hosted on Cloudinary High-Performance CDN with auto-formatting & facial focus.
+                      </p>
+                      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                        <label
+                          htmlFor="settings-avatar-upload"
+                          className="btn btn-sky btn-sm"
+                          style={{
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            borderRadius: 9999,
+                            fontWeight: 700,
+                            padding: '6px 16px',
+                          }}
+                        >
+                          {uploadingAvatar ? <i className="fas fa-spinner fa-spin" /> : <i className="fas fa-cloud-arrow-up" />}
+                          {uploadingAvatar ? 'Uploading to Cloudinary…' : 'Upload Photo'}
+                          <input
+                            id="settings-avatar-upload"
+                            type="file"
+                            accept="image/*"
+                            style={{ display: 'none' }}
+                            onChange={handleAvatarUpload}
+                            disabled={uploadingAvatar}
+                          />
+                        </label>
+                        {adminProfileState.customAvatarUrl && (
+                          <button
+                            type="button"
+                            onClick={handleRemoveAvatar}
+                            disabled={uploadingAvatar}
+                            className="btn btn-ghost btn-sm"
+                            style={{
+                              borderRadius: 9999,
+                              color: '#EF4444',
+                              borderColor: 'rgba(239, 68, 68, 0.4)',
+                              fontWeight: 700,
+                              padding: '6px 16px',
+                            }}
+                          >
+                            Remove Photo
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Enterprise Domain Account Badge */}
+                  <div style={{ background: isLightMode ? '#EFF6FF' : 'rgba(59, 130, 246, 0.1)', border: `1px solid ${isLightMode ? '#BFDBFE' : 'rgba(59, 130, 246, 0.3)'}`, borderRadius: 14, padding: '12px 18px', textAlign: 'right' }}>
+                    <small style={{ fontSize: '.68rem', color: isLightMode ? '#1E40AF' : '#93C5FD', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em', display: 'block' }}>
+                      ENTERPRISE DOMAIN IDENTITY
+                    </small>
+                    <span style={{ fontSize: '.9rem', fontWeight: 800, color: isLightMode ? '#1E3A8A' : '#BFDBFE', display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                      <i className="fas fa-shield-halved" style={{ color: '#10B981' }} />
+                      {adminProfileState.domainAccount || 'admin@janddbeachhouse.ph'}
+                    </span>
+                    <span style={{ fontSize: '.72rem', color: isLightMode ? '#475569' : '#94A3B8', marginTop: 2, display: 'block' }}>
+                      Security Clearance: Tier-1 Master Access
+                    </span>
+                  </div>
+                </div>
+
                 {/* 1. Identity & Contact Information */}
                 <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.5)', border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 22 }}>
                   <b style={{ fontSize: '1rem', color: themeText, display: 'block', marginBottom: 14 }}>
@@ -3502,11 +4080,11 @@ export default function Admin() {
                   )}
                 </div>
 
-                {/* 3. Action Buttons: SAVE, DELETE, CANCEL */}
+                {/* 3. Action Buttons: SAVE, REMOVE, CANCEL */}
                 {confirmDeleteSelf ? (
-                  <div style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: 16, padding: 20, textAlign: 'center' }}>
+                  <div style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: 18, padding: 20, textAlign: 'center' }}>
                     <b style={{ color: '#F87171', display: 'block', fontSize: '1.05rem', marginBottom: 6 }}>
-                      ⚠️ Permanently Delete This Administrative Account?
+                      ⚠️ Remove This Administrative Account?
                     </b>
                     <p style={{ color: '#FECACA', fontSize: '.84rem', margin: '0 0 16px', maxWidth: 480, marginLeft: 'auto', marginRight: 'auto' }}>
                       This action will permanently purge your profile and administrative credentials from the database. You will be signed out immediately.
@@ -3528,15 +4106,15 @@ export default function Admin() {
                           }
                         }}
                         className="btn"
-                        style={{ background: '#EF4444', color: '#FFF', fontWeight: 800, padding: '10px 24px', borderRadius: 10 }}
+                        style={{ background: '#EF4444', color: '#FFF', fontWeight: 800, padding: '10px 24px', borderRadius: 9999 }}
                       >
-                        {deletingSelf ? 'Deleting Account…' : 'Yes, Delete My Account'}
+                        {deletingSelf ? 'Removing Account…' : 'Yes, Remove My Account'}
                       </button>
                       <button
                         type="button"
                         onClick={() => setConfirmDeleteSelf(false)}
                         className="btn btn-ghost"
-                        style={{ border: `1px solid ${themeBorder}`, color: themeText, padding: '10px 24px', borderRadius: 10 }}
+                        style={{ border: `1px solid ${themeBorder}`, color: themeText, padding: '10px 24px', borderRadius: 9999 }}
                       >
                         Cancel
                       </button>
@@ -3548,7 +4126,7 @@ export default function Admin() {
                       type="submit"
                       disabled={savingSettings}
                       className="btn btn-sky"
-                      style={{ justifyContent: 'center', padding: '14px 20px', fontWeight: 800, fontSize: '.95rem', borderRadius: 12 }}
+                      style={{ justifyContent: 'center', padding: '14px 20px', fontWeight: 800, fontSize: '.95rem', borderRadius: 9999 }}
                     >
                       {savingSettings ? '💾 Saving to Database…' : '💾 Save Profile'}
                     </button>
@@ -3564,11 +4142,11 @@ export default function Admin() {
                         padding: '14px 20px',
                         fontWeight: 800,
                         fontSize: '.95rem',
-                        borderRadius: 12,
+                        borderRadius: 9999,
                         cursor: 'pointer',
                       }}
                     >
-                      🗑️ Delete
+                      Remove Account
                     </button>
                     <button
                       type="button"
@@ -3581,11 +4159,11 @@ export default function Admin() {
                         padding: '14px 20px',
                         fontWeight: 800,
                         fontSize: '.95rem',
-                        borderRadius: 12,
+                        borderRadius: 9999,
                         cursor: 'pointer',
                       }}
                     >
-                      ✕ Cancel
+                      Cancel
                     </button>
                   </div>
                 )}
@@ -8135,7 +8713,7 @@ export default function Admin() {
                     alignItems: 'center',
                     gap: 6,
                     padding: '9px 18px',
-                    borderRadius: 10,
+                    borderRadius: 9999,
                     fontSize: '.82rem',
                     fontWeight: 700,
                     color: '#EF4444',
@@ -8160,7 +8738,7 @@ export default function Admin() {
                     onClick={() => setEditingRoom(null)}
                     style={{
                       padding: '9px 18px',
-                      borderRadius: 10,
+                      borderRadius: 9999,
                       fontSize: '.82rem',
                       fontWeight: 600,
                       color: themeMuted,
@@ -8187,7 +8765,7 @@ export default function Admin() {
                       alignItems: 'center',
                       gap: 6,
                       padding: '9px 24px',
-                      borderRadius: 10,
+                      borderRadius: 9999,
                       fontSize: '.82rem',
                       fontWeight: 800,
                       color: '#FFFFFF',

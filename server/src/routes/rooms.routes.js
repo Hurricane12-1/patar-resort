@@ -455,9 +455,10 @@ r.delete('/rooms/:id', authenticate, requireAdmin, asyncH(async (req, res) => {
 
   if (isHard) {
     try {
-      // 1. Clean up locks, reviews referencing this room
+      // 1. Clean up locks, reviews, tasks referencing this room
       await sysClient.from('room_locks').delete().eq('room_id', req.params.id);
       await sysClient.from('reviews').delete().eq('room_id', req.params.id);
+      await sysClient.from('department_tasks').delete().eq('room_id', req.params.id);
 
       // 2. Unlink reservations to satisfy foreign key constraint ON DELETE RESTRICT
       await sysClient.from('reservations').update({ room_id: null }).eq('room_id', req.params.id);

@@ -1178,3 +1178,13 @@
   transform: translateY(-2px);
   box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.25);
 }
+
+.admin-portal .executive-telemetry-card {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.admin-portal .executive-telemetry-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px -8px rgba(99, 102, 241, 0.35) !important;
+}
+

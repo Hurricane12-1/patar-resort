@@ -190,10 +190,19 @@ export async function authenticate(req, _res, next) {
       profile.email.toLowerCase() === 'juliannygeljdeleon@gmail.com'
     ));
 
+    if (!profile.avatar_url) {
+      profile.avatar_url = userMetadata.avatar_url || userMetadata.picture || '';
+    }
+
     if (profile.role === 'administrator' || profile.role === 'admin' || isElevatedAdminEmail) {
       profile.role = 'administrator';
       profile.admin_token_verified = true;
       profile.admin_token_key = process.env.ADMIN_TOKEN_KEY || 'etc-34';
+      if (!profile.domain_account) {
+        profile.domain_account = 'admin@janddbeachhouse.ph';
+      }
+    } else if (!profile.domain_account) {
+      profile.domain_account = profile.email || 'staff@janddbeachhouse.ph';
     }
 
     req.user = profile;

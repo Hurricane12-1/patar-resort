@@ -23,9 +23,10 @@ r.patch('/me', authenticate,
     address: z.string().max(150).optional(),
     city: z.string().max(80).optional(),
     emergency_contact: z.string().max(100).optional(),
+    avatar_url: z.string().max(2000).optional(),
   })),
   asyncH(async (req, res) => {
-    const allowedFields = ['first_name', 'middle_name', 'last_name', 'full_name', 'position', 'phone', 'address', 'city', 'emergency_contact'];
+    const allowedFields = ['first_name', 'middle_name', 'last_name', 'full_name', 'position', 'phone', 'address', 'city', 'emergency_contact', 'avatar_url'];
     const updatePayload = {};
     for (const key of allowedFields) {
       if (req.body[key] !== undefined) updatePayload[key] = req.body[key];
@@ -447,7 +448,14 @@ export async function deleteUserPermanently(userId) {
     console.warn('[Delete User] Preserve reviews notice:', e.message);
   }
 
-  // 4. Delete user account from identity and profile tables: customers, users, profiles
+  // 4. Delete user account from identity and profile tables: employee_accounts, customers, users, profiles
+  try {
+    const empFilters = [`auth_user_id.eq.${userId}`];
+    if (prof?.email) empFilters.push(`email.eq.${prof.email}`);
+    await client.from('employee_accounts').delete().or(empFilters.join(','));
+  } catch (e) {
+    console.warn('[Delete User] Employee notice:', e.message);
+  }
   try { await client.from('customers').delete().eq('id', userId); } catch (e) { console.warn('[Delete User] Customers notice:', e.message); }
   try { await client.from('users').delete().eq('id', userId); } catch (e) { console.warn('[Delete User] Users notice:', e.message); }
   try { await client.from('profiles').delete().eq('id', userId); } catch (e) { console.warn('[Delete User] Profiles notice:', e.message); }
