@@ -796,8 +796,8 @@ export default function Admin() {
               flexDirection: 'column',
               gap: 8,
             }}>
-              <div><strong style={{ color: '#94A3B8' }}>Account Name:</strong> <span style={{ color: '#FFF' }}>{profile.full_name || 'User'}</span></div>
-              <div><strong style={{ color: '#94A3B8' }}>Email:</strong> <span style={{ color: '#FFF' }}>{profile.email || user?.email}</span></div>
+              <div><strong style={{ color: '#94A3B8' }}>Account Name:</strong> <span style={{ color: '#FFF' }}>{profile?.full_name || 'User'}</span></div>
+              <div><strong style={{ color: '#94A3B8' }}>Email:</strong> <span style={{ color: '#FFF' }}>{profile?.email || user?.email}</span></div>
               <div>
                 <strong style={{ color: '#94A3B8' }}>Database Role:</strong>{' '}
                 <span style={{
@@ -808,7 +808,7 @@ export default function Admin() {
                   fontWeight: 700,
                   fontSize: '.78rem',
                 }}>
-                  {profile.role || 'customer'}
+                  {profile?.role || 'customer'}
                 </span>
               </div>
             </div>

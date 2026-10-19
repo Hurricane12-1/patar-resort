@@ -59,6 +59,10 @@ export default function ProtectedRoute({ children, allowedRoles = [], portalTitl
   const isCustomerOnly = allowedRoles.length > 0 && allowedRoles.every((r: string) => r === 'customer');
   const isStaffRoute = allowedRoles.some((r: string) => ['administrator', 'admin', 'receptionist', 'accounting', 'staff'].includes(r));
 
+  const activeSession = isCustomerOnly ? customerSession : (adminSession || customerSession);
+  const activeProfile = isCustomerOnly ? customerProfile : (adminProfile || customerProfile);
+  const isAuthenticated = Boolean(activeSession && activeProfile);
+
   let isAuthorized = false;
   if (isCustomerOnly) {
     isAuthorized = Boolean(customerSession && customerProfile);
@@ -191,7 +195,7 @@ export default function ProtectedRoute({ children, allowedRoles = [], portalTitl
             </h2>
             <p style={{ color: '#94A3B8', fontSize: '.88rem', lineHeight: 1.55, margin: 0 }}>
               {isAuthenticated
-                ? `Signed in as ${profile.full_name || profile.role} (${profile.role}). You need ${allowedRoles.join(' or ')} authorization.`
+                ? `Signed in as ${activeProfile?.full_name || activeProfile?.role || 'User'} (${activeProfile?.role || 'guest'}). You need ${allowedRoles.join(' or ')} authorization.`
                 : isCustomer
                 ? 'Sign in with your registered account to access your resort bookings, services, and digital room pass.'
                 : 'Enter authorized credentials to access this management portal.'}

@@ -51,17 +51,8 @@ function MainAppShell() {
             </ProtectedRoute>
           } />
 
-          <Route path="/administrator" element={
-            <ProtectedRoute allowedRoles={['administrator']} portalTitle="Administrator Control Center">
-              <Admin />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/admin" element={
-            <ProtectedRoute allowedRoles={['administrator']} portalTitle="Administrator Control Center">
-              <Admin />
-            </ProtectedRoute>
-          } />
+          <Route path="/administrator" element={<Admin />} />
+          <Route path="/admin" element={<Admin />} />
 
           <Route path="/accounting" element={
             <ProtectedRoute allowedRoles={['accounting', 'administrator']} portalTitle="Accounting Audit & Ledger">
