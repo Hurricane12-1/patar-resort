@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
 
 const rootPkgInit = JSON.parse(fs.readFileSync(path.join(rootDir, 'package.json'), 'utf8'));
-const EXPECTED_VERSION = process.env.TARGET_VERSION || rootPkgInit.version || '1.5.0';
+const EXPECTED_VERSION = process.env.TARGET_VERSION || rootPkgInit.version || '1.5.1';
 
 console.log('\n======================================================================');
 console.log(` 🛡️ J & D BEACH HOUSE · RELEASE GATEKEEPER v${EXPECTED_VERSION} 🛡️`);

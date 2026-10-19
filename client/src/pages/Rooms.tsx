@@ -10,7 +10,7 @@ import AvailabilityCalendar from '../components/AvailabilityCalendar.tsx';
 import { useReveal } from '../hooks/useReveal.ts';
 import { CANONICAL_ROOMS } from '../lib/canonicalRooms.ts';
 
-const CATS = ['All', 'Cottage', 'Garden', 'Suite', 'Villa', 'Dorm'];
+const CATS = ['All', 'Room'];
 
 function RoomCardItem({ s, index, onOpenCalendar }) {
   const images = useMemo(() => {
@@ -31,7 +31,7 @@ function RoomCardItem({ s, index, onOpenCalendar }) {
       <RoomImageCarousel
         images={images}
         roomName={s.name}
-        category={s.category}
+        category="Room"
         slug={s.slug}
         height={220}
         autoScroll={true}
@@ -40,8 +40,11 @@ function RoomCardItem({ s, index, onOpenCalendar }) {
 
       <div className="bd">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <span className="label">{s.category}</span>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+            <span className="label">Room</span>
+            <span style={{ fontSize: '.72rem', background: 'rgba(56, 189, 248, 0.15)', color: '#38BDF8', border: '1px solid rgba(56, 189, 248, 0.35)', padding: '2px 8px', borderRadius: 12, fontWeight: 700 }}>
+              🏊 Pool Add-on
+            </span>
             {isLockedNow ? (
               <span style={{ fontSize: '.72rem', background: 'rgba(244, 63, 94, 0.15)', color: '#F43F5E', border: '1px solid rgba(244, 63, 94, 0.35)', padding: '2px 8px', borderRadius: 12, fontWeight: 800 }}>
                 🔒 Occupied Until Checkout
@@ -108,7 +111,7 @@ export default function Rooms() {
   useReveal(all);
 
   const list = useMemo(() => all.filter((s) =>
-    (cat === 'All' || s.category === cat) &&
+    (cat === 'All' || cat === 'Room' || s.category === cat) &&
     (q === '' || s.name.toLowerCase().includes(q.toLowerCase()))), [all, cat, q]);
 
   return (

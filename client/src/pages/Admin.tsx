@@ -50,6 +50,13 @@ const emptyAnalytics = {
   bookings: [],
 };
 
+const POOL_ADDON_OPTIONS = [
+  { id: 'none', label: 'Room Only (No Swimming Pool Access) — ₱0', shortName: 'Room Only', pricePerGuest: 0 },
+  { id: 'day_pool', label: 'Day Swimming Pool Pass (8:00 AM – 5:00 PM) — +₱150 / guest', shortName: 'Day Pool Pass', pricePerGuest: 150 },
+  { id: 'night_pool', label: 'Night Swimming Pool Pass (6:00 PM – 10:00 PM) — +₱200 / guest', shortName: 'Night Pool Pass', pricePerGuest: 200 },
+  { id: 'unlimited_pool', label: 'All-Day Unlimited Swimming Pool Pass (Day & Night) — +₱300 / guest', shortName: 'Unlimited Pool Pass', pricePerGuest: 300 },
+];
+
 export default function Admin() {
   const {
     session, profile,
@@ -92,6 +99,7 @@ export default function Admin() {
   const [showLedgerCalendar, setShowLedgerCalendar] = useState(false);
   const [showWalkInCalendar, setShowWalkInCalendar] = useState(false);
   const [creatingReservation, setCreatingReservation] = useState(false);
+  const [walkInPoolAddon, setWalkInPoolAddon] = useState('none');
   const [newReservation, setNewReservation] = useState({
     guest_name: '',
     phone: '',
@@ -1794,7 +1802,6 @@ export default function Admin() {
     { key: 'notifications', label: 'Notifications', icon: <i className="fas fa-bell" style={{ fontSize: 17 }} />, count: unreadNotifsCount, badgeColor: '#F43F5E' },
     { key: 'inventory', label: 'Room Management', icon: <i className="fas fa-bed" style={{ fontSize: 17 }} /> },
     { key: 'conversations', label: 'Customer Services', icon: <i className="fas fa-comments" style={{ fontSize: 17 }} /> },
-    { key: 'food_sales', label: 'Dining Sales', icon: <i className="fas fa-utensils" style={{ fontSize: 17 }} /> },
     { key: 'accounts', label: 'Staff & Accounts', icon: <i className="fas fa-users-gear" style={{ fontSize: 17 }} /> },
     { key: 'audit', label: 'System Audit Logs', icon: <i className="fas fa-shield-halved" style={{ fontSize: 17 }} /> },
     { key: 'csv', label: 'Backup & Data Explorer', icon: <i className="fas fa-database" style={{ fontSize: 17 }} /> },
@@ -3773,73 +3780,7 @@ export default function Admin() {
             />
           )}
 
-          {/* TAB 3: DINING & KITCHEN SALES TREND ANALYTICS */}
-          {activeTab === 'food_sales' && (
-            <div className="panel" style={{ background: themeCardBg, border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 24, boxShadow: themeShadow }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <div>
-                  <span className="label light">Kitchen & Dining Operations</span>
-                  <h3 className="serif" style={{ fontSize: '1.6rem', margin: '4px 0 0', color: themeText }}>Food & Beverage Sales & Popularity Trends</h3>
-                </div>
-                <span style={{ fontSize: '.84rem', color: '#D97706', background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', padding: '6px 14px', borderRadius: 20 }}>
-                  {food_sales.length > 0
-                    ? `🔥 Top Earner: ${food_sales[0].name} (${money(food_sales[0].revenue_php)})`
-                    : '🍳 Kitchen & Dining Operations Active'}
-                </span>
-              </div>
 
-              <div className="table-wrap" style={{ background: isLightMode ? '#FFFFFF' : 'rgba(15,23,42,0.85)', border: `1px solid ${themeBorder}` }}>
-                <table className="table" style={{ background: isLightMode ? '#FFFFFF' : undefined, color: themeText }}>
-                  <thead>
-                    <tr style={{ background: isLightMode ? '#F1F5F9' : 'rgba(30,41,59,0.8)' }}>
-                      <th style={{ background: isLightMode ? '#F1F5F9' : undefined, color: isLightMode ? '#475569' : themeMuted }}>Dish / Beverage Item</th>
-                      <th style={{ background: isLightMode ? '#F1F5F9' : undefined, color: isLightMode ? '#475569' : themeMuted }}>Category</th>
-                      <th style={{ background: isLightMode ? '#F1F5F9' : undefined, color: isLightMode ? '#475569' : themeMuted }}>Orders Sold</th>
-                      <th style={{ background: isLightMode ? '#F1F5F9' : undefined, color: isLightMode ? '#475569' : themeMuted }}>Total Revenue (₱)</th>
-                      <th style={{ background: isLightMode ? '#F1F5F9' : undefined, color: isLightMode ? '#475569' : themeMuted }}>Trend Direction</th>
-                      <th style={{ background: isLightMode ? '#F1F5F9' : undefined, color: isLightMode ? '#475569' : themeMuted }}>Popularity Meter</th>
-                    </tr>
-                  </thead>
-                  <tbody style={{ background: isLightMode ? '#FFFFFF' : undefined }}>
-                    {food_sales.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} style={{ textAlign: 'center', padding: '36px 16px', color: themeMuted }}>
-                          No food & beverage orders recorded yet this billing period.
-                        </td>
-                      </tr>
-                    ) : (
-                      food_sales.map((item) => (
-                        <tr key={item.id} style={{ background: isLightMode ? '#FFFFFF' : undefined, borderBottom: `1px solid ${themeBorder}` }}>
-                          <td style={{ background: isLightMode ? '#FFFFFF' : undefined }}><b style={{ color: themeText }}>{item.name}</b></td>
-                          <td style={{ background: isLightMode ? '#FFFFFF' : undefined }}><span className="pill" style={{ background: 'rgba(56,189,248,0.15)', color: '#0EA5E9', border: '1px solid rgba(56,189,248,0.3)' }}>{item.category}</span></td>
-                          <td style={{ background: isLightMode ? '#FFFFFF' : undefined }}><b style={{ fontSize: '1.05rem', color: '#0EA5E9' }}>{item.orders} orders</b></td>
-                          <td style={{ background: isLightMode ? '#FFFFFF' : undefined }}><b style={{ fontSize: '1.05rem', color: '#D97706' }}>{money(item.revenue_php)}</b></td>
-                          <td style={{ background: isLightMode ? '#FFFFFF' : undefined }}>
-                            <span style={{
-                              color: item.trend === 'popular' ? '#10B981' : item.trend === 'trending' ? '#F59E0B' : themeMuted,
-                              fontWeight: 700,
-                              fontSize: '.88rem'
-                            }}>
-                              {item.trend === 'popular' ? `🔥 Best Seller (${item.growth})` : item.trend === 'trending' ? `📈 Trending Up (${item.growth})` : `❄️ Steady (${item.growth})`}
-                            </span>
-                          </td>
-                          <td>
-                            <div className="hbar" style={{ height: 10, background: isLightMode ? '#E2E8F0' : 'rgba(255,255,255,0.08)', borderRadius: 5, width: 140 }}>
-                              <span style={{
-                                width: `${Math.min(100, (item.orders / Math.max(1, (food_sales[0]?.orders || 1))) * 100)}%`,
-                                background: item.trend === 'popular' ? 'linear-gradient(90deg, #F59E0B, #FBBF24)' : 'linear-gradient(90deg, #0EA5E9, #38BDF8)',
-                                borderRadius: 5
-                              }} />
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
 
           {/* TAB 3: EXECUTIVE PROFILE & ACCOUNT SETTINGS */}
           {activeTab === 'settings' && (
@@ -5990,7 +5931,16 @@ export default function Admin() {
                                 </div>
                               </td>
                               <td>
-                                <b>{b.rooms?.name || 'Assigned Villa/Room'}</b>
+                                <b>{b.rooms?.name || 'Assigned Room'}</b>
+                                {b.notes && (b.notes.toLowerCase().includes('pool') || b.notes.toLowerCase().includes('swimming')) ? (
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 4, fontSize: '.7rem', background: 'rgba(56,189,248,0.15)', color: '#0EA5E9', border: '1px solid rgba(56,189,248,0.35)', padding: '1px 6px', borderRadius: 8, fontWeight: 700 }}>
+                                    🏊 Pool Pass
+                                  </span>
+                                ) : (
+                                  <span style={{ display: 'block', marginTop: 2, fontSize: '.68rem', color: themeMuted }}>
+                                    Room Only
+                                  </span>
+                                )}
                               </td>
                               <td>
                                 <div>
@@ -6812,6 +6762,47 @@ export default function Admin() {
                           </div>
                         </div>
 
+                        {/* SWIMMING POOL ADD-ON DROPDOWN (FRONT DESK WALK-IN) */}
+                        <div style={{ marginTop: 6, marginBottom: 8 }}>
+                          <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                            <span>🏊 Swimming Pool Add-on Options</span>
+                            {walkInPoolAddon !== 'none' && (
+                              <span style={{ color: '#10B981', fontWeight: 800 }}>
+                                +₱{(((POOL_ADDON_OPTIONS.find((o) => o.id === walkInPoolAddon)?.pricePerGuest || 0) * (Number(newReservation.guests) || 1))).toLocaleString()} adjustment
+                              </span>
+                            )}
+                          </label>
+                          <select
+                            value={walkInPoolAddon}
+                            onChange={(e) => {
+                              const pId = e.target.value;
+                              setWalkInPoolAddon(pId);
+                              const opt = POOL_ADDON_OPTIONS.find((o) => o.id === pId);
+                              const poolCost = (opt?.pricePerGuest || 0) * (Number(newReservation.guests) || 1);
+                              const baseRoom = (activeWalkInRoom?.rate_php || 3500) * computedNights;
+                              const cleanNotes = (newReservation.notes || '').replace(/\[Pool Add-on:[^\]]+\]\s*/g, '').trim();
+                              setNewReservation({
+                                ...newReservation,
+                                total_php: baseRoom + poolCost,
+                                notes: opt && opt.pricePerGuest > 0
+                                  ? `[Pool Add-on: ${opt.shortName} (+₱${poolCost.toLocaleString()})] ${cleanNotes}`.trim()
+                                  : cleanNotes,
+                              });
+                            }}
+                            style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1.5px solid ${walkInPoolAddon !== 'none' ? '#0EA5E9' : themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
+                          >
+                            {POOL_ADDON_OPTIONS.map((opt) => (
+                              <option key={opt.id} value={opt.id}>{opt.label}</option>
+                            ))}
+                          </select>
+                          <small style={{ color: themeMuted, fontSize: '.72rem', display: 'block', marginTop: 3 }}>
+                            Base Room: ₱{((activeWalkInRoom?.rate_php || 3500) * computedNights).toLocaleString()} ({computedNights} night{computedNights > 1 ? 's' : ''})
+                            {walkInPoolAddon !== 'none' && (
+                              <span style={{ color: '#0EA5E9', fontWeight: 700 }}> • Pool Add-on adjustment active</span>
+                            )}
+                          </small>
+                        </div>
+
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12 }}>
                           <div>
                             <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Guests *</label>
@@ -6821,7 +6812,21 @@ export default function Admin() {
                               max={activeWalkInRoom?.capacity || 20}
                               required
                               value={newReservation.guests}
-                              onChange={(e) => setNewReservation({ ...newReservation, guests: Number(e.target.value) })}
+                              onChange={(e) => {
+                                const gCount = Number(e.target.value) || 1;
+                                const opt = POOL_ADDON_OPTIONS.find((o) => o.id === walkInPoolAddon);
+                                const poolCost = (opt?.pricePerGuest || 0) * gCount;
+                                const baseRoom = (activeWalkInRoom?.rate_php || 3500) * computedNights;
+                                const cleanNotes = (newReservation.notes || '').replace(/\[Pool Add-on:[^\]]+\]\s*/g, '').trim();
+                                setNewReservation({
+                                  ...newReservation,
+                                  guests: gCount,
+                                  total_php: baseRoom + poolCost,
+                                  notes: opt && opt.pricePerGuest > 0
+                                    ? `[Pool Add-on: ${opt.shortName} (+₱${poolCost.toLocaleString()})] ${cleanNotes}`.trim()
+                                    : cleanNotes,
+                                });
+                              }}
                               style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText }}
                             />
                           </div>
@@ -9065,6 +9070,23 @@ export default function Admin() {
         const folioId = `FOLIO-2026-${String(receiptModalBooking.id || '010101').slice(0, 6).toUpperCase()}`;
         const ledgerRef = receiptModalBooking.ledger_voucher || ('LED-2026-' + String(receiptModalBooking.id || '010101').slice(0, 6).toUpperCase());
 
+        // Parse swimming pool add-on from reservation notes if present
+        const notesStr = String(receiptModalBooking.notes || '');
+        const hasPoolAddon = notesStr.includes('Pool Add-on:');
+        let poolPassName = 'Swimming Pool Pass Add-on';
+        let poolAmount = 0;
+        if (hasPoolAddon) {
+          const match = notesStr.match(/\[Pool Add-on:\s*([^(\]]+)(?:\s*\(\+₱([0-9,]+)\))?\]/);
+          if (match) {
+            poolPassName = `Swimming Pool: ${match[1].trim()}`;
+            if (match[2]) {
+              poolAmount = Number(match[2].replace(/,/g, '')) || 0;
+            }
+          }
+        }
+        const roomBaseTotal = Math.max(0, totalAmt - poolAmount);
+        const baseRatePerNight = Math.round(roomBaseTotal / diffDays);
+
         return (
           <div
             style={{
@@ -9191,15 +9213,28 @@ export default function Admin() {
                   <tbody>
                     <tr style={{ borderBottom: '1px solid #E2E8F0' }}>
                       <td style={{ padding: '12px' }}>
-                        <b>{receiptModalBooking.room || 'Beachfront Villa Room'}</b>
+                        <b>{receiptModalBooking.room || receiptModalBooking.rooms?.name || 'Beachfront Villa Room'}</b>
                         <small style={{ display: 'block', color: '#64748B', fontSize: '.74rem' }}>
-                          Standard check-in privileges with resort amenities & swimming pool access
+                          Standard check-in privileges with resort amenities
                         </small>
                       </td>
                       <td style={{ padding: '12px', textAlign: 'center', fontWeight: 600 }}>{diffDays}</td>
-                      <td style={{ padding: '12px', textAlign: 'right' }}>₱{ratePerNight.toLocaleString()}</td>
-                      <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700 }}>₱{totalAmt.toLocaleString()}</td>
+                      <td style={{ padding: '12px', textAlign: 'right' }}>₱{(hasPoolAddon && poolAmount > 0 ? baseRatePerNight : ratePerNight).toLocaleString()}</td>
+                      <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700 }}>₱{(hasPoolAddon && poolAmount > 0 ? roomBaseTotal : totalAmt).toLocaleString()}</td>
                     </tr>
+                    {hasPoolAddon && poolAmount > 0 && (
+                      <tr style={{ borderBottom: '1px solid #E2E8F0', background: '#F0FDF4' }}>
+                        <td style={{ padding: '12px' }}>
+                          <b style={{ color: '#047857' }}>🏊 {poolPassName}</b>
+                          <small style={{ display: 'block', color: '#059669', fontSize: '.74rem' }}>
+                            Resort swimming pool privileges for {receiptModalBooking.guests || 2} guest(s)
+                          </small>
+                        </td>
+                        <td style={{ padding: '12px', textAlign: 'center', fontWeight: 600, color: '#047857' }}>{receiptModalBooking.guests || 2}</td>
+                        <td style={{ padding: '12px', textAlign: 'right', color: '#047857' }}>₱{Math.round(poolAmount / Math.max(1, receiptModalBooking.guests || 2)).toLocaleString()}</td>
+                        <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700, color: '#047857' }}>₱{poolAmount.toLocaleString()}</td>
+                      </tr>
+                    )}
                     <tr style={{ borderBottom: '1px solid #E2E8F0' }}>
                       <td style={{ padding: '12px' }}>
                         <b>Environmental & Tourism Municipal Fee</b>

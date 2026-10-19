@@ -140,8 +140,8 @@ export default function Accounting() {
 
             <div className="bk-row">
               <div className="bk-main">
-                <h4>In-Room Dining & Kitchen</h4>
-                <p className="muted small">Fresh Bangus & Seafood Orders</p>
+                <h4>Swimming Pool & Resort Amenities</h4>
+                <p className="muted small">Day & Night Pool Access Add-ons</p>
               </div>
               <b className="serif" style={{ fontSize: '1.2rem', color: 'var(--blue)' }}>{money(ov.dining_revenue_php || 0)}</b>
             </div>

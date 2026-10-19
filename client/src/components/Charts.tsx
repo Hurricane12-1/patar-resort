@@ -714,9 +714,9 @@ export function MultiBarChart({ data = [], height = 180, onBarClick }) {
 // Dual Line Spline Comparison Graph (Matching "Total Sales" in reference UI)
 export function DualLineChart({ data = [], height = 170, isLightMode = false, onPointClick }) {
   const [timeRange, setTimeRange] = useState('This Year'); // 'This Year' | 'This Month' | 'This Week'
-  const [viewMode, setViewMode] = useState('Summary'); // 'Summary' | 'Room vs Dining' | 'Growth Rate'
+  const [viewMode, setViewMode] = useState('Summary'); // 'Summary' | 'Growth Rate'
   const [showRoom, setShowRoom] = useState(true);
-  const [showDining, setShowDining] = useState(true);
+  const [showDining, setShowDining] = useState(false);
   const [hoveredIdx, setHoveredIdx] = useState(null);
   const [selectedPoint, setSelectedPoint] = useState(null);
 
@@ -830,7 +830,6 @@ export function DualLineChart({ data = [], height = 170, isLightMode = false, on
             }}
           >
             <option value="Summary">Summary ▾</option>
-            <option value="Room vs Dining">Room vs Dining ▾</option>
             <option value="Growth Rate">Growth Rate ▾</option>
           </select>
         </div>
@@ -841,19 +840,10 @@ export function DualLineChart({ data = [], height = 170, isLightMode = false, on
         <span
           onClick={() => setShowRoom(!showRoom)}
           style={{ color: showRoom ? colorRoom : themeMuted, cursor: 'pointer', opacity: showRoom ? 1 : 0.4, display: 'flex', alignItems: 'center', gap: 6, userSelect: 'none' }}
-          title="Toggle Room & Villa Sales curve"
+          title="Toggle Room Sales curve"
         >
           <span style={{ width: 10, height: 3, background: colorRoom, borderRadius: 2, display: 'inline-block' }} />
-          Room & Villa Sales
-        </span>
-
-        <span
-          onClick={() => setShowDining(!showDining)}
-          style={{ color: showDining ? colorDining : themeMuted, cursor: 'pointer', opacity: showDining ? 1 : 0.4, display: 'flex', alignItems: 'center', gap: 6, userSelect: 'none' }}
-          title="Toggle Kitchen & Dining Sales curve"
-        >
-          <span style={{ width: 10, height: 3, background: colorDining, borderRadius: 2, display: 'inline-block' }} />
-          Kitchen & Dining Sales
+          Room Accommodations
         </span>
       </div>
 

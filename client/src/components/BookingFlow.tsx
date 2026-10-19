@@ -7,12 +7,20 @@ import { toast } from './Toasts.tsx';
 import { CANONICAL_ROOMS } from '../lib/canonicalRooms.ts';
 import AvailabilityCalendar from './AvailabilityCalendar.tsx';
 
+export const POOL_ADDON_OPTIONS = [
+  { id: 'none', label: 'Room Only (No Swimming Pool Access) — ₱0', shortName: 'Room Only', pricePerGuest: 0 },
+  { id: 'day_pool', label: 'Day Swimming Pool Pass (8:00 AM – 5:00 PM) — +₱150 / guest', shortName: 'Day Pool Pass', pricePerGuest: 150 },
+  { id: 'night_pool', label: 'Night Swimming Pool Pass (6:00 PM – 10:00 PM) — +₱200 / guest', shortName: 'Night Pool Pass', pricePerGuest: 200 },
+  { id: 'unlimited_pool', label: 'All-Day Unlimited Swimming Pool Pass (Day & Night) — +₱300 / guest', shortName: 'Unlimited Pool Pass', pricePerGuest: 300 },
+];
+
 export default function BookingFlow({ initialSlug }) {
   const { session, profile, setAuthOpen } = useAuth();
   const today = new Date().toISOString().slice(0, 10);
   const [checkIn, setCheckIn] = useState(addDaysISO(today, 1));
   const [checkOut, setCheckOut] = useState(addDaysISO(today, 3));
   const [guests, setGuests] = useState(2);
+  const [poolAddonId, setPoolAddonId] = useState('none');
   const [catalog, setCatalog] = useState<any[]>([]);
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
@@ -31,6 +39,11 @@ export default function BookingFlow({ initialSlug }) {
 
   const nights = Math.max(1, Math.round((new Date(checkOut) - new Date(checkIn)) / 86400000));
   const meta = (r) => catalog.find((c) => c.id === r.room_id);
+
+  const selectedPoolOption = POOL_ADDON_OPTIONS.find((o) => o.id === poolAddonId) || POOL_ADDON_OPTIONS[0];
+  const poolAdjustment = selectedPoolOption.pricePerGuest * guests;
+  const baseRoomTotal = (room?.rate_php || 0) * nights;
+  const totalWithAdjustments = baseRoomTotal + poolAdjustment;
 
   async function search(slug?: string, overrideCin?: string, overrideCout?: string) {
     if (slug) preferred.current = slug;
@@ -64,13 +77,18 @@ export default function BookingFlow({ initialSlug }) {
     }
     setBusy(true);
     try {
+      const fullNotes = poolAdjustment > 0
+        ? `[Pool Add-on: ${selectedPoolOption.shortName} (+₱${poolAdjustment.toLocaleString()})] ${notes}`.trim()
+        : notes;
+
       const stay = await api.createReservation({
         roomId: room.room_id,
         check_in: checkIn,
         check_out: checkOut,
         guests,
-        notes,
+        notes: fullNotes,
         phone,
+        total_php: totalWithAdjustments,
         guest_name: (profile?.full_name || '').trim(),
         guest_email: profile?.email || '',
       });
@@ -80,7 +98,7 @@ export default function BookingFlow({ initialSlug }) {
     finally { setBusy(false); }
   }
 
-  function reset() { setStage('search'); setDone(null); setRoom(null); setResults([]); }
+  function reset() { setStage('search'); setDone(null); setRoom(null); setResults([]); setPoolAddonId('none'); }
 
   return (
     <section id="reserve" className="reserve">
@@ -287,9 +305,29 @@ export default function BookingFlow({ initialSlug }) {
               <h3 className="serif">{meta(room)?.name || room.name}</h3>
               <p className="dates serif">{fmtDate(checkIn)} → {fmtDate(checkOut)}</p>
               <p className="muted" style={{ color: '#BFD8F2' }}>{nights} night{nights > 1 ? 's' : ''} · {guests} guest{guests > 1 ? 's' : ''}</p>
-              <div className="total">
-                <span className="label light">Total</span>
-                <b className="serif">{money(room.rate_php * nights)}</b>
+              
+              <div className="total" style={{ display: 'flex', flexDirection: 'column', gap: 6, borderTop: '1px solid rgba(255,255,255,0.12)', paddingTop: 12, marginTop: 14 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.84rem', color: '#CBD5E1' }}>
+                  <span>Room Accommodation ({nights} night{nights > 1 ? 's' : ''}):</span>
+                  <b>{money(baseRoomTotal)}</b>
+                </div>
+
+                {poolAdjustment > 0 ? (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.84rem', color: '#38BDF8', background: 'rgba(56, 189, 248, 0.12)', padding: '5px 10px', borderRadius: 8, border: '1px solid rgba(56, 189, 248, 0.3)' }}>
+                    <span>🏊 Pool Add-on ({selectedPoolOption.shortName}):</span>
+                    <b>+{money(poolAdjustment)}</b>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.78rem', color: '#94A3B8' }}>
+                    <span>🏊 Pool Access:</span>
+                    <span>Room Only (₱0)</span>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                  <span className="label light" style={{ fontSize: '.85rem' }}>Adjusted Total</span>
+                  <b className="serif" style={{ fontSize: '1.45rem', color: '#10B981' }}>{money(totalWithAdjustments)}</b>
+                </div>
               </div>
             </div>
             <div>
@@ -312,6 +350,48 @@ export default function BookingFlow({ initialSlug }) {
                   </span>
                 </div>
               )}
+
+              {/* SWIMMING POOL ADD-ON DROPDOWN SELECTION */}
+              <div className="field">
+                <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span>🏊 SWIMMING POOL ADD-ON OPTIONS</span>
+                    <span style={{ fontSize: '.7rem', background: 'rgba(56, 189, 248, 0.15)', color: '#38BDF8', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '2px 8px', borderRadius: 10, fontWeight: 700 }}>
+                      Optional Dropdown
+                    </span>
+                  </span>
+                  {poolAdjustment > 0 && (
+                    <span style={{ color: '#10B981', fontSize: '0.76rem', fontWeight: 700 }}>
+                      +₱{poolAdjustment.toLocaleString()} ({guests} guest{guests > 1 ? 's' : ''})
+                    </span>
+                  )}
+                </label>
+                <select
+                  value={poolAddonId}
+                  onChange={(e) => setPoolAddonId(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '11px 14px',
+                    borderRadius: 10,
+                    background: 'rgba(15, 23, 42, 0.85)',
+                    border: '1.5px solid rgba(56, 189, 248, 0.45)',
+                    color: '#FFFFFF',
+                    fontSize: '0.9rem',
+                    cursor: 'pointer',
+                    outline: 'none',
+                  }}
+                >
+                  {POOL_ADDON_OPTIONS.map((opt) => (
+                    <option key={opt.id} value={opt.id} style={{ background: '#0F172A', color: '#FFF' }}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+                <small className="muted" style={{ display: 'block', marginTop: 4, fontSize: '.76rem', color: '#94A3B8' }}>
+                  💡 Select swimming pool pass if you wish to add pool privileges to this room reservation.
+                </small>
+              </div>
+
               <div className="field">
                 <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span>PHONE FOR SMS PINGS (11-DIGIT NUMBER ONLY)</span>
@@ -349,7 +429,12 @@ export default function BookingFlow({ initialSlug }) {
           <div className="done-cine">
             <span className="label">Confirmed</span>
             <h3 className="serif">Mabuhay — see you on the sand.</h3>
-            <p>{done.rooms?.name} · {fmtDate(done.check_in)} → {fmtDate(done.check_out)} · {money(done.total_php)}</p>
+            <p>{done.rooms?.name || 'Room'} · {fmtDate(done.check_in)} → {fmtDate(done.check_out)} · {money(done.total_php)}</p>
+            {selectedPoolOption.pricePerGuest > 0 && (
+              <p style={{ color: '#38BDF8', fontSize: '0.9rem', fontWeight: 700, margin: '8px 0' }}>
+                🏊 Swimming Pool Privileges: {selectedPoolOption.shortName} (+₱{poolAdjustment.toLocaleString()})
+              </p>
+            )}
             <p className="muted">📟 SMS ping sent{phone ? ` to ${phone}` : ''} · check-in 2:00 PM</p>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 26 }}>
               <button className="btn btn-ghost btn-sm" onClick={reset}>Book another stay</button>
