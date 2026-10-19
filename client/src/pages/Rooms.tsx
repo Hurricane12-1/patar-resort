@@ -180,7 +180,7 @@ export default function Rooms() {
         {!loading && all.length === 0 && (
           <div className="reveal" style={{ padding: '60px 24px', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: 16, border: '1px dashed rgba(255,255,255,0.15)', margin: '30px 0 60px' }}>
             <div style={{ fontSize: '3rem', marginBottom: 12 }}>🏖️</div>
-            <h3 className="serif" style={{ fontSize: '1.6rem', margin: '0 0 8px' }}>Accommodations Awaiting Provisioning</h3>
+            <h3 className="serif" style={{ fontSize: '1.6rem', margin: '0 0 8px' }}>Rooms Awaiting Provisioning</h3>
             <p className="muted" style={{ maxWidth: 540, margin: '0 auto 20px', fontSize: '.92rem', lineHeight: 1.6 }}>
               Resort management is currently updating our active beachfront inventory. Villas, suites, and cottages will be published here upon provisioning.
             </p>
@@ -188,7 +188,7 @@ export default function Rooms() {
           </div>
         )}
         {!loading && all.length > 0 && list.length === 0 && (
-          <p className="empty">No accommodations found matching "{cat !== 'All' ? cat : q}". Adjust your filter or search query.</p>
+          <p className="empty">No rooms found matching "{cat !== 'All' ? cat : q}". Adjust your filter or search query.</p>
         )}
       </div>
     </section>

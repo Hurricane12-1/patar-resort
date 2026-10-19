@@ -43,7 +43,7 @@
     "checkIn": "Check-in",
     "checkOut": "Check-out",
     "guests": "Guests",
-    "room": "Accommodation",
+    "room": "Room",
     "cta": "Check Availability & Book",
     "note": "Instant SMS confirmation · Zero booking fees · Direct resort rates"
   },
@@ -53,7 +53,7 @@
     { "value": "2016", "label": "Welcoming Guests" }
   ],
   "rooms": {
-    "eyebrow": "Accommodations",
+    "eyebrow": "Rooms & Suites",
     "title": "Private Coastal Living",
     "items": []
   },
@@ -251,7 +251,7 @@
     "columns": [
       {
         "title": "Explore",
-        "items": ["Accommodations", "Patar Beachfront", "Cape Lighthouse", "Dining & Grill", "Exclusive Offers"]
+        "items": ["Rooms & Suites", "Patar Beachfront", "Cape Lighthouse", "Dining & Grill", "Exclusive Offers"]
       },
       {
         "title": "Resort Info",

@@ -1241,10 +1241,10 @@ export default function Admin() {
     setCreatingReservation(true);
     try {
       if (!newReservation.room_id) {
-        throw new Error('Please select an accommodation / room.');
+        throw new Error('Please select a room.');
       }
       if (isModalRoomLocked) {
-        throw new Error('This accommodation is already locked in / taken for those dates. Overbooking is strictly prevented.');
+        throw new Error('This room is already reserved / locked in for those dates. Overbooking is strictly prevented.');
       }
       if (!newReservation.guest_name.trim()) {
         throw new Error('Please enter guest full name.');
@@ -1521,7 +1521,7 @@ export default function Admin() {
         rate_php: 3500,
         amenities: 'Air Conditioning, Free Wi-Fi, Private Bath, Sea View',
       });
-      toast(`✦ Accommodation "${created.name}" created successfully`);
+      toast(`✦ Room "${created.name}" created successfully`);
     } catch (err) {
       toast(err.message, true);
     }
@@ -1553,7 +1553,7 @@ export default function Admin() {
 
       setRoomsList((prev) => prev.map((r) => (r.id === editingRoom.id ? { ...r, ...updated } : r)));
       setEditingRoom(null);
-      toast(`✦ Accommodation "${editingRoom.name}" updated & synchronized live!`);
+      toast(`✦ Room "${editingRoom.name}" updated & synchronized live!`);
     } catch (err) {
       toast(err.message, true);
     }
@@ -1668,7 +1668,7 @@ export default function Admin() {
       await api.deleteRoom(roomToRemove.id, true);
       setRoomsList((prev) => prev.filter((r) => r.id !== roomToRemove.id));
       if (editingRoom?.id === roomToRemove.id) setEditingRoom(null);
-      toast(`Accommodation "${roomToRemove.name}" removed successfully`);
+      toast(`Room "${roomToRemove.name}" removed successfully`);
       setRoomToRemove(null);
     } catch (err: any) {
       toast(`Remove failed: ${err.message || 'Error removing room'}`, true);
@@ -1709,13 +1709,13 @@ export default function Admin() {
 
   async function handleDeleteRoom(room) {
     if (!room?.id) return;
-    const ok = window.confirm(`Permanently remove accommodation "${room.name}"? If there are no bookings referencing it, this will completely delete it from the system.`);
+    const ok = window.confirm(`Permanently remove room "${room.name}"? If there are no bookings referencing it, this will completely delete it from the system.`);
     if (!ok) return;
     try {
       await api.deleteRoom(room.id, true);
       setRoomsList((prev) => prev.filter((r) => r.id !== room.id));
       if (editingRoom?.id === room.id) setEditingRoom(null);
-      toast(`🗑️ Accommodation "${room.name}" deleted successfully`);
+      toast(`Room "${room.name}" deleted successfully`);
     } catch (err: any) {
       toast(`Delete failed: ${err.message || 'Error deleting room'}`, true);
     }
@@ -1789,16 +1789,16 @@ export default function Admin() {
   });
 
   const sidebarItems = [
-    { key: 'overview', label: 'Dashboard & Analytics', icon: <IconAnalytics size={19} /> },
-    { key: 'ledger', label: 'Bookings & Reservations', icon: <IconLedger size={19} />, count: allBookings.length, badgeColor: '#0EA5E9' },
-    { key: 'notifications', label: 'Alerts & Notifications', icon: <IconBell size={19} />, count: unreadNotifsCount, badgeColor: '#F43F5E' },
-    { key: 'inventory', label: 'Accommodations & Inventory', icon: <IconBuilding size={19} /> },
-    { key: 'conversations', label: 'Customer Services', icon: <IconMessages size={19} /> },
-    { key: 'food_sales', label: 'Dining Sales', icon: <IconDining size={19} /> },
-    { key: 'accounts', label: 'Staff & Accounts', icon: <IconUsers size={19} /> },
-    { key: 'audit', label: 'System Audit Logs', icon: <IconShield size={19} /> },
-    { key: 'csv', label: 'Backup & Data Explorer', icon: <IconCsv size={19} /> },
-    { key: 'settings', label: 'Profile & Settings', icon: <IconSettings size={19} /> },
+    { key: 'overview', label: 'Dashboard & Analytics', icon: <i className="fas fa-chart-line" style={{ fontSize: 17 }} /> },
+    { key: 'ledger', label: 'Reservations', icon: <i className="fas fa-calendar-check" style={{ fontSize: 17 }} />, count: allBookings.length, badgeColor: '#0EA5E9' },
+    { key: 'notifications', label: 'Notifications', icon: <i className="fas fa-bell" style={{ fontSize: 17 }} />, count: unreadNotifsCount, badgeColor: '#F43F5E' },
+    { key: 'inventory', label: 'Room Management', icon: <i className="fas fa-bed" style={{ fontSize: 17 }} /> },
+    { key: 'conversations', label: 'Customer Services', icon: <i className="fas fa-comments" style={{ fontSize: 17 }} /> },
+    { key: 'food_sales', label: 'Dining Sales', icon: <i className="fas fa-utensils" style={{ fontSize: 17 }} /> },
+    { key: 'accounts', label: 'Staff & Accounts', icon: <i className="fas fa-users-gear" style={{ fontSize: 17 }} /> },
+    { key: 'audit', label: 'System Audit Logs', icon: <i className="fas fa-shield-halved" style={{ fontSize: 17 }} /> },
+    { key: 'csv', label: 'Backup & Data Explorer', icon: <i className="fas fa-database" style={{ fontSize: 17 }} /> },
+    { key: 'settings', label: 'Profile & Settings', icon: <i className="fas fa-sliders" style={{ fontSize: 17 }} /> },
   ];
 
   // THEME COLOR PALETTE TOKENS
@@ -3009,14 +3009,14 @@ export default function Admin() {
             </>
           )}
 
-          {/* TAB 2: ACCOMMODATIONS & INVENTORY MANAGEMENT */}
+          {/* TAB 2: ROOM MANAGEMENT & INVENTORY */}
           {activeTab === 'inventory' && (
             <div className="panel" style={{ background: themeCardBg, border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 24, boxShadow: themeShadow }}>
               {/* Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 14 }}>
                 <div>
                   <span className="label light">Resort Infrastructure & Assets</span>
-                  <h3 className="serif" style={{ fontSize: '1.6rem', margin: '4px 0 0', color: themeText }}>Accommodations & Inventory Hub</h3>
+                  <h3 className="serif" style={{ fontSize: '1.6rem', margin: '4px 0 0', color: themeText }}>Room Management Hub</h3>
                   <p className="muted small" style={{ margin: '4px 0 0' }}>Live control of room rates, unit inventory, availability, and resort department stock supplies.</p>
                 </div>
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -3032,7 +3032,7 @@ export default function Admin() {
                   </button>
                   {inventorySubTab === 'accommodations' ? (
                     <button className="btn btn-sky btn-sm" onClick={() => setShowCreateRoomModal(true)}>
-                      + Provision Room
+                      + Add Room
                     </button>
                   ) : (
                     <button className="btn btn-sky btn-sm" onClick={() => setShowCreateSupplyModal(true)}>
@@ -3049,7 +3049,7 @@ export default function Admin() {
                   onClick={() => {
                     setInventorySubTab('accommodations');
                     setInventoryRoomFilter('all');
-                    toast('Displaying all resort accommodation categories');
+                    toast('Displaying all resort rooms');
                   }}
                   style={{
                     background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)',
@@ -3059,10 +3059,10 @@ export default function Admin() {
                     cursor: 'pointer',
                     transition: 'all 0.2s ease',
                   }}
-                  title="Click to view all accommodations"
+                  title="Click to view all rooms"
                 >
                   <span style={{ fontSize: '.72rem', color: themeMuted, textTransform: 'uppercase', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span>Accommodations</span>
+                    <span>Rooms</span>
                     <i className="fas fa-arrow-up-right-from-square" style={{ fontSize: '.68rem', color: '#0EA5E9' }} />
                   </span>
                   <div style={{ fontSize: '1.4rem', fontWeight: 800, color: themeText, marginTop: 4 }}>{roomsList.length} Categories</div>
@@ -3147,8 +3147,8 @@ export default function Admin() {
               {/* SUBTAB SWITCHER */}
               <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.04)', borderRadius: 12, padding: 4 }}>
                 {[
-                  { key: 'accommodations', label: '🏡 Accommodations & Rates', count: roomsList.filter((r) => r.is_active !== false).length },
-                  { key: 'supplies', label: '📦 Resort Supplies Ledger', count: inventoryList.length },
+                  { key: 'accommodations', label: '🏡 Rooms & Rates', count: roomsList.filter((r) => r.is_active !== false).length },
+                  { key: 'supplies', label: '📦 Room Supplies & Amenities', count: inventoryList.length },
                 ].map((tab) => (
                   <button
                     key={tab.key}
@@ -3168,10 +3168,10 @@ export default function Admin() {
                 ))}
               </div>
 
-              {/* SUBTAB 1: ACCOMMODATIONS & ROOM RATES */}
+              {/* SUBTAB 1: ROOMS & RATES */}
               {inventorySubTab === 'accommodations' && (
                 <>
-                  {/* ACCOMMODATIONS DATA ANALYTICS & CIRCLES TELEMETRY CURVE SPHERE */}
+                  {/* ROOMS DATA ANALYTICS & CIRCLES TELEMETRY CURVE SPHERE */}
                   {(() => {
                     const now = new Date();
                     const currentMonth = now.getMonth();
@@ -3223,7 +3223,7 @@ export default function Admin() {
                             <div>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                 <h4 style={{ margin: 0, fontSize: '1.05rem', color: themeText, fontWeight: 800 }}>
-                                  Accommodations Occupancy Telemetry & Predictive Intelligence
+                                  Room Occupancy Telemetry & Predictive Analytics
                                 </h4>
                                 <span style={{
                                   fontSize: '.68rem', fontWeight: 800, padding: '2px 8px', borderRadius: 12,
@@ -3365,7 +3365,7 @@ export default function Admin() {
                                     key={cat.label}
                                     onClick={() => {
                                       setInventoryRoomFilter(cat.filter);
-                                      toast(`Filtered accommodations by ${cat.label}`);
+                                      toast(`Filtered rooms by ${cat.label}`);
                                     }}
                                     style={{ cursor: 'pointer', padding: '2px 4px', borderRadius: 6, transition: 'background 0.2s ease' }}
                                     title={`Click to filter by ${cat.label}`}
@@ -3490,12 +3490,12 @@ export default function Admin() {
                     return filteredRooms.length === 0 ? (
                       <div style={{ textAlign: 'center', padding: '48px 20px', background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.02)', borderRadius: 16, border: `1px dashed ${themeBorder}`, margin: '12px 0' }}>
                         <div style={{ fontSize: '2.8rem', marginBottom: 12 }}>🏖️</div>
-                        <h4 style={{ margin: '0 0 6px', color: themeText, fontSize: '1.15rem', fontWeight: 800 }}>No Accommodations Added Yet</h4>
+                        <h4 style={{ margin: '0 0 6px', color: themeText, fontSize: '1.15rem', fontWeight: 800 }}>No Rooms Added Yet</h4>
                         <p style={{ margin: '0 auto 18px', maxWidth: 460, color: themeMuted, fontSize: '.86rem', lineHeight: 1.5 }}>
                           All mock room data has been cleared. Click below to provision and publish your first custom room with photos and rates.
                         </p>
                         <button className="btn btn-sky btn-sm" onClick={() => setShowCreateRoomModal(true)} style={{ padding: '9px 18px', fontWeight: 700 }}>
-                          + Provision Your First Room
+                          + Add Your First Room
                         </button>
                       </div>
                     ) : (
@@ -3558,7 +3558,7 @@ export default function Admin() {
                                   </div>
 
                                   <p style={{ margin: '0 0 12px', fontSize: '.82rem', color: themeMuted, lineHeight: 1.4, minHeight: 36 }}>
-                                    {room.description || 'Patar beachfront accommodation with scenic sea vistas and resort amenities.'}
+                                    {room.description || 'Patar beachfront room with scenic sea vistas and resort amenities.'}
                                   </p>
 
                                   <div style={{ display: 'flex', gap: 14, marginBottom: 12, fontSize: '.84rem', color: themeText, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)', padding: '8px 12px', borderRadius: 10 }}>
@@ -3619,7 +3619,7 @@ export default function Admin() {
                                         display: 'inline-flex',
                                         alignItems: 'center',
                                       }}
-                                      title="Remove accommodation"
+                                      title="Remove room"
                                     >
                                       Remove
                                     </button>
@@ -4434,9 +4434,9 @@ export default function Admin() {
                   {[
                     { key: 'ALL', label: 'All Actions', icon: 'fa-layer-group' },
                     { key: 'LOGIN', label: 'Logins', icon: 'fa-right-to-bracket' },
-                    { key: 'ROOM', label: 'Accommodations', icon: 'fa-hotel' },
+                    { key: 'ROOM', label: 'Rooms', icon: 'fa-bed' },
                     { key: 'BOOKING', label: 'Reservations', icon: 'fa-calendar-check' },
-                    { key: 'INVENTORY', label: 'Inventory', icon: 'fa-boxes-stacked' },
+                    { key: 'INVENTORY', label: 'Supplies', icon: 'fa-boxes-stacked' },
                     { key: 'PROVISIONED', label: 'Accounts', icon: 'fa-user-plus' },
                   ].map((f) => (
                     <button
@@ -4525,7 +4525,7 @@ export default function Admin() {
                           processFaIcon = 'fa-user-tie';
                           processSummary = log.details?.message || `Staff member (${log.details?.staff_role || log.role || 'staff'}) signed in`;
                         } else if (act === 'ROOM_CREATE') {
-                          processTitle = 'Created Accommodation';
+                          processTitle = 'Created Room';
                           processColor = '#10B981';
                           processBg = 'rgba(16,185,129,0.15)';
                           processBorder = 'rgba(16,185,129,0.35)';
@@ -4544,7 +4544,7 @@ export default function Admin() {
                           processBg = 'rgba(244,63,94,0.15)';
                           processBorder = 'rgba(244,63,94,0.35)';
                           processFaIcon = 'fa-ban';
-                          processSummary = 'Accommodation marked inactive and hidden from booking';
+                          processSummary = 'Room marked inactive and hidden from booking';
                         } else if (act === 'BOOKING_CREATE') {
                           processTitle = 'Created Reservation';
                           processColor = '#10B981';
@@ -5148,22 +5148,22 @@ export default function Admin() {
               <div className="admin-tab-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, flexWrap: 'wrap', gap: 14 }}>
                 <div>
                   <span style={{ fontSize: '.76rem', color: '#0EA5E9', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>
-                    ROCK VIEW BEACH RESORT · BOOKINGS & RESERVATIONS OPERATIONS
+                    ROCK VIEW BEACH RESORT · RESERVATIONS OPERATIONS
                   </span>
                   <h3 className="serif" style={{ fontSize: '1.45rem', margin: '4px 0 0', color: themeText, display: 'flex', alignItems: 'center', gap: 8 }}>
                     {ledgerSubView === 'stay_folios' && (
                       <>
-                        <span>📋</span> Bookings & Guest Stay Folios
+                        <span>📋</span> Guest Stay Folios
                       </>
                     )}
                     {ledgerSubView === 'availability' && (
                       <>
-                        <span>📅</span> Bookings & Visual Room Lock Calendar
+                        <span>📅</span> Visual Room Lock & Availability Calendar
                       </>
                     )}
                     {ledgerSubView === 'debit_credit' && (
                       <>
-                        <span>⚖️</span> Booking Financial Ledger (General Ledger (Debit & Credit System))
+                        <span>⚖️</span> Reservation Financial Ledger (General Ledger (Debit & Credit System))
                       </>
                     )}
                   </h3>
@@ -5396,7 +5396,7 @@ export default function Admin() {
                   }}
                 >
                   <span style={{ fontSize: '1.05rem' }}>📋</span>
-                  <span>Guest Stay Folios & Bookings</span>
+                  <span>Guest Stay Folios</span>
                   <span
                     style={{
                       fontSize: '.72rem',
@@ -5440,7 +5440,7 @@ export default function Admin() {
                   }}
                 >
                   <span style={{ fontSize: '1.05rem' }}>📅</span>
-                  <span>Visual Availability & Lock Calendar</span>
+                  <span>Visual Room Lock & Calendar</span>
                 </button>
 
                 {/* Button 3: Debit & Credit General Ledger */}
@@ -5472,7 +5472,7 @@ export default function Admin() {
                   }}
                 >
                   <span style={{ fontSize: '1.05rem' }}>⚖️</span>
-                  <span>Booking Financial Ledger</span>
+                  <span>Reservation Financial Ledger</span>
                   <span
                     style={{
                       fontSize: '.72rem',
@@ -5888,7 +5888,7 @@ export default function Admin() {
                         {money(allBookings.filter((b) => b.status !== 'cancelled').reduce((acc, b) => acc + (b.total_php || 0), 0))}
                       </b>
                       <span style={{ fontSize: '.74rem', color: '#F59E0B', display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
-                        <i className="fas fa-sack-dollar" style={{ fontSize: '.7rem' }} /> Total booking accommodations
+                        <i className="fas fa-sack-dollar" style={{ fontSize: '.7rem' }} /> Total booking revenue
                       </span>
                     </div>
                   </div>
@@ -5967,7 +5967,7 @@ export default function Admin() {
                         <thead>
                           <tr style={{ background: isLightMode ? '#F1F5F9' : 'rgba(30,41,59,0.8)' }}>
                             <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Guest Folio</th>
-                            <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Accommodation</th>
+                            <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Room</th>
                             <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Stay Dates</th>
                             <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Party</th>
                             <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Total Amount</th>
@@ -6640,10 +6640,10 @@ export default function Admin() {
                           </div>
                         </div>
 
-                        {/* ACCOMMODATION / ROOM SELECTOR (CHANGES TOP IMAGE IN REAL TIME) */}
+                        {/* ROOM SELECTOR (CHANGES TOP IMAGE IN REAL TIME) */}
                         <div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                            <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, margin: 0 }}>Accommodation / Room *</label>
+                            <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, margin: 0 }}>Room *</label>
                             <span style={{ fontSize: '.7rem', color: '#0EA5E9', fontWeight: 600 }}>
                               🖼️ Changing selection updates photo at top
                             </span>
@@ -6877,7 +6877,7 @@ export default function Admin() {
                           >
                             <span style={{ fontSize: '1.2rem' }}>🔒</span>
                             <div>
-                              <strong>Overbooking Guard:</strong> This accommodation is already locked in / taken by another reservation for these dates. Overlapping bookings are blocked. Please select another accommodation or shift the dates in the calendar above.
+                              <strong>Overbooking Guard:</strong> This room is already reserved / locked in by another reservation for these dates. Overlapping bookings are blocked. Please select another room or shift the dates in the calendar above.
                             </div>
                           </div>
                         )}
@@ -7952,19 +7952,19 @@ export default function Admin() {
         </div>
       )}
 
-      {/* MODAL: REMOVE ACCOMMODATION CONFIRMATION */}
+      {/* MODAL: REMOVE ROOM CONFIRMATION */}
       {roomToRemove && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(2, 6, 23, 0.75)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={() => setRoomToRemove(null)}>
           <div style={{ width: '100%', maxWidth: 440, background: isLightMode ? '#FFFFFF' : '#0F172A', borderRadius: 20, border: '1px solid rgba(239, 68, 68, 0.4)', padding: 24, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-              <span style={{ fontSize: '.74rem', color: '#EF4444', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>REMOVE ACCOMMODATION</span>
+              <span style={{ fontSize: '.74rem', color: '#EF4444', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>REMOVE ROOM</span>
               <button onClick={() => setRoomToRemove(null)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
             </div>
             <h3 style={{ margin: '0 0 10px', fontSize: '1.25rem', color: '#EF4444', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
               Remove "{roomToRemove.name}"?
             </h3>
             <p style={{ fontSize: '.86rem', color: themeText, lineHeight: 1.5, margin: '0 0 16px' }}>
-              Are you sure you want to remove accommodation <strong>{roomToRemove.name}</strong> ({roomToRemove.category || 'Cottage'})? This will permanently remove it from the resort catalog and inventory.
+              Are you sure you want to remove room <strong>{roomToRemove.name}</strong> ({roomToRemove.category || 'Cottage'})? This will permanently remove it from the resort catalog and inventory.
             </p>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
               <button type="button" className="btn btn-sm" onClick={() => setRoomToRemove(null)} style={{ border: `1px solid ${themeBorder}`, color: themeText }}>
@@ -7977,7 +7977,7 @@ export default function Admin() {
                 disabled={removingRoom}
                 style={{ background: '#EF4444', color: '#FFF', fontWeight: 700 }}
               >
-                {removingRoom ? 'Removing…' : 'Remove Accommodation'}
+                {removingRoom ? 'Removing…' : 'Remove Room'}
               </button>
             </div>
           </div>
@@ -8278,8 +8278,8 @@ export default function Admin() {
           <div style={{ width: '100%', maxWidth: 540, background: isLightMode ? '#FFFFFF' : '#0F172A', borderRadius: 20, border: `1px solid ${themeBorder}`, padding: 24, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', maxHeight: '90vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: `1px solid ${themeBorder}`, paddingBottom: 12 }}>
               <div>
-                <span style={{ fontSize: '.74rem', color: '#0EA5E9', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>ACCOMMODATION CATALOG</span>
-                <h3 style={{ margin: '4px 0 0', fontSize: '1.35rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>🏡 Add New Accommodation</h3>
+                <span style={{ fontSize: '.74rem', color: '#0EA5E9', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>ROOM CATALOG</span>
+                <h3 style={{ margin: '4px 0 0', fontSize: '1.35rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>🏡 Add New Room</h3>
               </div>
               <button onClick={() => setShowCreateRoomModal(false)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
             </div>
@@ -8438,7 +8438,7 @@ export default function Admin() {
           <div style={{ width: '100%', maxWidth: 660, background: isLightMode ? '#FFFFFF' : '#0F172A', borderRadius: 20, border: `1px solid ${themeBorder}`, padding: 24, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', maxHeight: '92vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: `1px solid ${themeBorder}`, paddingBottom: 12 }}>
               <div>
-                <span style={{ fontSize: '.74rem', color: '#0EA5E9', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>ACCOMMODATION DETAILS & PHOTO MANAGEMENT</span>
+                <span style={{ fontSize: '.74rem', color: '#0EA5E9', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>ROOM DETAILS & PHOTO MANAGEMENT</span>
                 <h3 style={{ margin: '4px 0 0', fontSize: '1.35rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>✏️ Edit {editingRoom.name}</h3>
               </div>
               <button onClick={() => setEditingRoom(null)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
@@ -8577,7 +8577,7 @@ export default function Admin() {
               <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.6)', border: `1px solid ${themeBorder}`, borderRadius: 14, padding: 18 }}>
                 <div style={{ marginBottom: 14 }}>
                   <b style={{ fontSize: '.92rem', color: themeText, display: 'block' }}>📸 Room Photo / Upload Image</b>
-                  <span style={{ fontSize: '.75rem', color: themeMuted }}>Upload accommodation photos directly from your device (JPG, PNG, WebP up to 5MB).</span>
+                  <span style={{ fontSize: '.75rem', color: themeMuted }}>Upload room photos directly from your device (JPG, PNG, WebP up to 5MB).</span>
                 </div>
 
                 {/* UPLOAD DROPZONE / BUTTON */}
@@ -9164,7 +9164,7 @@ export default function Admin() {
                   <div>
                     <span style={{ fontSize: '.68rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '.05em' }}>STAY SUMMARY</span>
                     <b style={{ display: 'block', fontSize: '.95rem', color: '#0EA5E9', marginTop: 3 }}>
-                      {receiptModalBooking.room || receiptModalBooking.rooms?.name || 'Beachfront Villa Accommodation'}
+                      {receiptModalBooking.room || receiptModalBooking.rooms?.name || 'Beachfront Villa Room'}
                     </b>
                     <span style={{ display: 'block', fontSize: '.78rem', color: '#475569', marginTop: 2 }}>
                       <b>Check-In:</b> {checkIn.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} (2:00 PM)
@@ -9191,7 +9191,7 @@ export default function Admin() {
                   <tbody>
                     <tr style={{ borderBottom: '1px solid #E2E8F0' }}>
                       <td style={{ padding: '12px' }}>
-                        <b>{receiptModalBooking.room || 'Beachfront Villa Accommodation'}</b>
+                        <b>{receiptModalBooking.room || 'Beachfront Villa Room'}</b>
                         <small style={{ display: 'block', color: '#64748B', fontSize: '.74rem' }}>
                           Standard check-in privileges with resort amenities & swimming pool access
                         </small>

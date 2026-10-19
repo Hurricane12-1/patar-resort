@@ -193,7 +193,7 @@ export default function Home() {
         <div className="container">
           <div className="sec-head reveal" style={{ marginBottom: 36 }}>
             <div>
-              <span className="label">Accommodations</span>
+              <span className="label">Resort Rooms</span>
               <h2 className="serif" style={{ fontSize: 'clamp(2rem,4vw,3.2rem)' }}>Featured Rooms & Spreads</h2>
             </div>
             <Link to="/rooms" className="btn btn-ghost btn-sm">All rooms →</Link>
@@ -202,7 +202,7 @@ export default function Home() {
           {displayRooms.length === 0 ? (
             <div className="reveal" style={{ padding: '48px 24px', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: 16, border: '1px dashed rgba(255,255,255,0.15)', margin: '20px 0 40px' }}>
               <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🏖️</div>
-              <h3 className="serif" style={{ fontSize: '1.5rem', margin: '0 0 8px' }}>Accommodations Awaiting Provisioning</h3>
+              <h3 className="serif" style={{ fontSize: '1.5rem', margin: '0 0 8px' }}>Rooms Awaiting Provisioning</h3>
               <p className="muted" style={{ maxWidth: 520, margin: '0 auto 20px', fontSize: '.9rem', lineHeight: 1.6 }}>
                 Resort management is currently updating our active beachfront inventory. Villas, suites, and cottages will be published here upon provisioning.
               </p>
@@ -365,7 +365,7 @@ export default function Home() {
           <div className="modal" style={{ maxWidth: 540 }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <span className="label light">{previewRoom.category} Accommodations</span>
+                <span className="label light">{previewRoom.category} Room</span>
                 <h3 className="serif" style={{ fontSize: '1.8rem', marginTop: 2 }}>{previewRoom.name}</h3>
               </div>
               <button style={{ color: '#fff', fontSize: '1.8rem', border: 'none', background: 'none', cursor: 'pointer' }}

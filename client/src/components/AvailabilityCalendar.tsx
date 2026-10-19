@@ -271,8 +271,8 @@ export default function AvailabilityCalendar({
               }
             }}
             style={{
-              padding: '4px 8px',
-              borderRadius: 8,
+              padding: '4px 12px',
+              borderRadius: 9999,
               border: `1px solid ${borderCard}`,
               background: isLightMode ? '#F8FAFC' : '#1E293B',
               color: textTitle,
@@ -282,7 +282,7 @@ export default function AvailabilityCalendar({
               maxWidth: 160,
             }}
           >
-            <option value="all">All Accommodations</option>
+            <option value="all">All Rooms</option>
             {rooms.map((r) => (
               <option key={r.id} value={r.id}>
                 {r.name}

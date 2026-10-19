@@ -374,7 +374,7 @@ export default function MyBookings() {
             Ready for white sand, salt air, and sunset at Cape Bolinao? Discover our beachfront cottages, group villas, and sea-view suites.
           </p>
           <Link to="/rooms" className="btn btn-sky" style={{ display: 'inline-flex', padding: '12px 24px', fontSize: '0.92rem' }}>
-            Browse Accommodations ✦
+            Browse Rooms ✦
           </Link>
         </div>
       ) : (

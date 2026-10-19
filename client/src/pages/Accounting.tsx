@@ -132,7 +132,7 @@ export default function Accounting() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div className="bk-row">
               <div className="bk-main">
-                <h4>Room Accommodations</h4>
+                <h4>Room Stays & Lodging</h4>
                 <p className="muted small">Suite, Villa & Cottage Night Stays</p>
               </div>
               <b className="serif" style={{ fontSize: '1.2rem', color: 'var(--blue)' }}>{money(ov.room_revenue_php || 0)}</b>

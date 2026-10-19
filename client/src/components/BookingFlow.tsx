@@ -55,7 +55,7 @@ export default function BookingFlow({ initialSlug }) {
   async function confirm() {
     if (!session) { setAuthOpen(true); return; }
     if (room?.is_locked || room?.units_left <= 0) {
-      toast('This accommodation is already locked in / taken for those dates. Please check the calendar for available dates.', true);
+      toast('This room is already reserved / locked in for those dates. Please check the calendar for available dates.', true);
       return;
     }
     if (phone && phone.length !== 11) {
@@ -169,7 +169,7 @@ export default function BookingFlow({ initialSlug }) {
             {!searching && results.length === 0 && (
               <div style={{ textAlign: 'center', padding: '30px 16px', background: 'rgba(255,255,255,0.03)', borderRadius: 14, border: '1px dashed rgba(255,255,255,0.15)' }}>
                 <p className="empty" style={{ margin: '0 0 10px', fontSize: '1.05rem', color: '#F43F5E' }}>
-                  🔒 All accommodations are taken / locked in until checkout for those dates.
+                  🔒 All rooms are reserved / locked in until checkout for those dates.
                 </p>
                 <p className="muted small" style={{ margin: '0 0 14px' }}>
                   Rooms are locked exclusively once reserved by a guest and remain locked until their checkout date. Check the calendar for open dates.

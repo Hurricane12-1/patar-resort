@@ -22,7 +22,7 @@ export default function Navbar() {
   const isStaffOrAdmin = Boolean(adminSession && adminProfile && ['administrator', 'admin', 'receptionist', 'accounting', 'staff'].includes(adminProfile?.role));
   const links = [
     ['/', 'Home'],
-    ['/rooms', 'Accommodations'],
+    ['/rooms', 'Rooms'],
     ['/my-bookings', 'My Bookings'],
     ...(isStaffOrAdmin ? [['/administrator', 'Admin Console'], ['/resort-department', 'Operations']] : []),
   ];

@@ -185,7 +185,7 @@ export default function HomeMenuDashboard({ isOpen, onClose, currentScene = 0, o
           </span>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10 }}>
             {[
-              ['/rooms', '🏨 Accommodations', 'Suites & Cottages'],
+              ['/rooms', '🏨 Rooms & Suites', 'Cottages, Villas & Suites'],
               ['/my-bookings', '📅 My Bookings', 'Digital Keycodes'],
               ['/administrator', '🛡️ Administration', 'Control Center & Telemetry'],
             ].map(([path, title, desc]) => (

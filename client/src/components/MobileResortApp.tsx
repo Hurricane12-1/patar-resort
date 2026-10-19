@@ -739,7 +739,7 @@ export default function MobileResortApp() {
         ok: !!room,
         text: room
           ? `${room.name} · ${nights} night${nights > 1 ? 's' : ''} — est. ${peso((room.rate_php || room.price || 4200) * nights)}`
-          : 'Please select an available accommodation.',
+          : 'Please select an available room.',
       });
     } finally {
       setCheckingAvailability(false);
@@ -753,7 +753,7 @@ export default function MobileResortApp() {
       || null;
     
     if (!roomMeta) {
-      toast('No accommodation available to book.', true);
+      toast('No room available to book.', true);
       return;
     }
 
@@ -779,7 +779,7 @@ export default function MobileResortApp() {
     const nights = Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000));
     const targetRoomId = resRoom?.id || '';
     if (!targetRoomId) {
-      toast('Please select an active accommodation to reserve.', true);
+      toast('Please select an active room to reserve.', true);
       return;
     }
     const rate = resRoom?.rate_php || resRoom?.price || 4200;
@@ -960,8 +960,8 @@ export default function MobileResortApp() {
             <SectionTitle title={site.rooms.title} />
             {displayRooms.length === 0 ? (
               <div className="mt-8 rounded-3xl border border-white/10 bg-white/[0.02] p-8 text-center text-white/60">
-                <p className="font-serif text-lg text-white">No Accommodations Published</p>
-                <p className="mt-1 text-sm font-light">Accommodations are currently being updated. Please check back shortly.</p>
+                <p className="font-serif text-lg text-white">No Rooms Published</p>
+                <p className="mt-1 text-sm font-light">Rooms are currently being updated. Please check back shortly.</p>
               </div>
             ) : (
               <div className={`${RAIL} mt-8 lg:grid-cols-4`}>
@@ -1514,7 +1514,7 @@ export default function MobileResortApp() {
                   className="w-full truncate text-sm font-medium text-white outline-none"
                 >
                   {displayRooms.length === 0 ? (
-                    <option value="">No accommodations available</option>
+                    <option value="">No rooms available</option>
                   ) : (
                     displayRooms.map((r) => (
                       <option key={r.id || r.name} value={r.name}>
@@ -1642,8 +1642,8 @@ export default function MobileResortApp() {
 
           {displayRooms.length === 0 ? (
             <div className="mt-8 rounded-3xl border border-white/10 bg-white/[0.02] p-8 text-center text-white/60">
-              <p className="font-serif text-lg text-white">No Accommodations Published</p>
-              <p className="mt-1 text-sm font-light">Accommodations are currently being updated. Please check back shortly.</p>
+              <p className="font-serif text-lg text-white">No Rooms Published</p>
+              <p className="mt-1 text-sm font-light">Rooms are currently being updated. Please check back shortly.</p>
             </div>
           ) : (
             <div
@@ -2012,7 +2012,7 @@ export default function MobileResortApp() {
                               window.dispatchEvent(new CustomEvent('app:open-chat'));
                             } else if (it === 'Direct Booking FAQ') {
                               scrollTo('faq-section');
-                            } else if (it === 'Accommodations') {
+                            } else if (it === 'Accommodations' || it === 'Rooms' || it === 'Rooms & Suites') {
                               scrollTo('rooms-section');
                             } else if (it === 'Dining & Grill') {
                               scrollTo('dining-section');
@@ -2546,7 +2546,7 @@ export default function MobileResortApp() {
                         }}
                         className={`${BTN_PRIMARY} mt-5 py-2.5 px-6 text-[10px] cursor-pointer`}
                       >
-                        Explore Accommodations →
+                        Explore Rooms →
                       </button>
                     </div>
                   ) : (
@@ -2556,7 +2556,7 @@ export default function MobileResortApp() {
                           <div className="flex items-start justify-between gap-2">
                             <div>
                               <span className="font-serif text-base font-medium text-white block">
-                                {b.rooms?.name || 'Beachfront Accommodation'}
+                                {b.rooms?.name || 'Beachfront Room'}
                               </span>
                               <span className="text-[10px] uppercase tracking-wider text-cyan block mt-0.5">
                                 Ref: JD-RES-{b.id?.slice(0, 8).toUpperCase()}
@@ -2753,7 +2753,7 @@ export default function MobileResortApp() {
                         <span className="font-medium text-white truncate block">{resConfirmed.guest_name}</span>
                       </div>
                       <div>
-                        <span className="text-[9px] uppercase text-white/40 block">Accommodation</span>
+                        <span className="text-[9px] uppercase text-white/40 block">Room</span>
                         <span className="font-medium text-cyan truncate block">{resConfirmed.roomName}</span>
                       </div>
                       <div>
