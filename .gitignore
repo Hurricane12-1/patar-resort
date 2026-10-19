@@ -42,6 +42,8 @@ server/src/db/*.json
 Thumbs.db
 
 # Backup Archives (Large binaries)
+*.zip
+*.tar.gz
 backups/snapshots/*.zip
 backups/snapshots/*.tar.gz
 
