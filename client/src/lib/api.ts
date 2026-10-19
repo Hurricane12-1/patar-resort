@@ -312,6 +312,38 @@ export const api = {
   clearQuarantines: () => req('/security/quarantine/clear-all', { method: 'POST' }),
   clearLockouts: () => req('/security/lockouts/clear', { method: 'POST' }),
 
+  // Debit & Credit General Ledger & Adaptive PostgreSQL Backup
+  ledgerEntries: (params: { account_code?: string; category?: string; entry_type?: string; search?: string; limit?: number; offset?: number; sort?: string } = {}) => {
+    const q = new URLSearchParams();
+    if (params.account_code) q.append('account_code', params.account_code);
+    if (params.category) q.append('category', params.category);
+    if (params.entry_type) q.append('entry_type', params.entry_type);
+    if (params.search) q.append('search', params.search);
+    if (params.limit) q.append('limit', String(params.limit));
+    if (params.offset) q.append('offset', String(params.offset));
+    if (params.sort) q.append('sort', params.sort);
+    return req(`/ledger/entries${q.toString() ? `?${q.toString()}` : ''}`);
+  },
+  createLedgerEntry: (body: any) => req('/ledger/entries', { method: 'POST', body }),
+  reconcileLedger: () => req('/ledger/reconcile', { method: 'POST' }),
+  ledgerTrialBalance: () => req('/ledger/trial-balance'),
+  exportLedgerBackupUrl: (format = 'sql', download = true) => {
+    const endpoint = API_BASE ? `${API_BASE}/api/ledger/backup/export` : '/api/ledger/backup/export';
+    return `${endpoint}?format=${format}${download ? '&download=true' : ''}`;
+  },
+  fetchLedgerBackupText: async (format = 'sql'): Promise<string> => {
+    const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
+    const headers: Record<string, string> = {};
+    if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+    const endpoint = API_BASE ? `${API_BASE}/api/ledger/backup/export?format=${format}` : `/api/ledger/backup/export?format=${format}`;
+    const res = await fetch(endpoint, { headers, credentials: 'include' });
+    if (!res.ok) throw new ApiError(res.status, 'Failed to export ledger backup');
+    return res.text();
+  },
+  importLedgerBackup: (content: string, mode: 'append' | 'overwrite' = 'append') =>
+    req('/ledger/backup/import', { method: 'POST', body: { content, mode } }),
+  clearLedger: () => req('/ledger/clear', { method: 'POST' }),
+
   // CSV Operations
   csvSample: async (): Promise<string> => {
     const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));

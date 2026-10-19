@@ -113,6 +113,128 @@ export default function Admin() {
     }
   }, []);
 
+  // Debit & Credit General Ledger States
+  const [ledgerEntriesList, setLedgerEntriesList] = useState<any[]>([]);
+  const [loadingLedger, setLoadingLedger] = useState(false);
+  const [trialBalance, setTrialBalance] = useState<any>(null);
+  const [chartOfAccounts, setChartOfAccounts] = useState<any[]>([]);
+  const [ledgerSubView, setLedgerSubView] = useState<'debit_credit' | 'stay_folios' | 'availability'>('debit_credit');
+  const [ledgerAccountFilter, setLedgerAccountFilter] = useState('');
+  const [ledgerCategoryFilter, setLedgerCategoryFilter] = useState('');
+  const [ledgerTypeFilter, setLedgerTypeFilter] = useState<'all' | 'debit' | 'credit'>('all');
+  const [ledgerSearch, setLedgerSearch] = useState('');
+
+  // Modals: New Journal Entry & PostgreSQL Backup
+  const [showAddJournalModal, setShowAddJournalModal] = useState(false);
+  const [postingJournal, setPostingJournal] = useState(false);
+  const [journalForm, setJournalForm] = useState({
+    mode: 'pair', // 'pair' for double-entry (Debit + Credit) or 'single'
+    debit_account_code: '1010',
+    credit_account_code: '4010',
+    amount_php: 1000,
+    particulars: '',
+    category: 'REVENUE',
+    reference_id: '',
+  });
+
+  const [showBackupModal, setShowBackupModal] = useState(false);
+  const [backupTab, setBackupTab] = useState<'export' | 'import'>('export');
+  const [exportFormat, setExportFormat] = useState<'sql' | 'json' | 'csv'>('sql');
+  const [previewSqlText, setPreviewSqlText] = useState('');
+  const [loadingPreviewSql, setLoadingPreviewSql] = useState(false);
+  const [importContent, setImportContent] = useState('');
+  const [importMode, setImportMode] = useState<'append' | 'overwrite'>('append');
+  const [importingBackup, setImportingBackup] = useState(false);
+  const [reconcilingLedger, setReconcilingLedger] = useState(false);
+
+  const refreshLedgerEntries = useCallback(async () => {
+    setLoadingLedger(true);
+    try {
+      const res = await api.ledgerEntries({
+        account_code: ledgerAccountFilter || undefined,
+        category: ledgerCategoryFilter || undefined,
+        entry_type: ledgerTypeFilter !== 'all' ? ledgerTypeFilter : undefined,
+        search: ledgerSearch || undefined,
+      });
+      if (res?.data && Array.isArray(res.data)) {
+        setLedgerEntriesList(res.data);
+      }
+      if (res?.trial_balance) {
+        setTrialBalance(res.trial_balance);
+      }
+      if (res?.chart_of_accounts && Array.isArray(res.chart_of_accounts)) {
+        setChartOfAccounts(res.chart_of_accounts);
+      }
+    } catch (err: any) {
+      console.warn('Failed to load ledger entries:', err);
+    } finally {
+      setLoadingLedger(false);
+    }
+  }, [ledgerAccountFilter, ledgerCategoryFilter, ledgerTypeFilter, ledgerSearch]);
+
+  const handleReconcileLedger = async () => {
+    setReconcilingLedger(true);
+    try {
+      const res = await api.reconcileLedger();
+      const count = res?.data?.new_entries_posted || 0;
+      toast(`✦ Reconciliation complete: ${count} journal entries posted & synchronized!`);
+      await refreshLedgerEntries();
+    } catch (err: any) {
+      toast(`Reconciliation error: ${err.message}`, true);
+    } finally {
+      setReconcilingLedger(false);
+    }
+  };
+
+  const handlePostJournalEntry = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPostingJournal(true);
+    try {
+      if (!journalForm.particulars.trim()) {
+        throw new Error('Please enter particulars / description for the journal entry.');
+      }
+      if (!journalForm.amount_php || Number(journalForm.amount_php) <= 0) {
+        throw new Error('Transaction amount must be greater than zero.');
+      }
+      await api.createLedgerEntry(journalForm);
+      toast('✦ Double-entry journal voucher recorded in General Ledger!');
+      setShowAddJournalModal(false);
+      setJournalForm({
+        mode: 'pair',
+        debit_account_code: '1010',
+        credit_account_code: '4010',
+        amount_php: 1000,
+        particulars: '',
+        category: 'REVENUE',
+        reference_id: '',
+      });
+      await refreshLedgerEntries();
+    } catch (err: any) {
+      toast(err.message, true);
+    } finally {
+      setPostingJournal(false);
+    }
+  };
+
+  const handleExecuteImport = async () => {
+    if (!importContent.trim()) {
+      toast('Please upload a file or paste content to import.', true);
+      return;
+    }
+    setImportingBackup(true);
+    try {
+      const res = await api.importLedgerBackup(importContent, importMode);
+      toast(`✦ Successfully imported ${res.data.imported_count} records via adaptive ${String(res.data.detected_format).toUpperCase()} engine!`);
+      setImportContent('');
+      setShowBackupModal(false);
+      await refreshLedgerEntries();
+    } catch (err: any) {
+      toast(`Import failed: ${err.message}`, true);
+    } finally {
+      setImportingBackup(false);
+    }
+  };
+
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthenticating(true);
@@ -379,6 +501,7 @@ export default function Admin() {
     }
     if (activeTab === 'ledger') {
       refreshReservations();
+      refreshLedgerEntries();
       if (roomsList.length === 0) {
         api.rooms(true).then((r: any) => setRoomsList(Array.isArray(r) ? r : [])).catch(() => {});
       }
@@ -386,7 +509,7 @@ export default function Admin() {
     if (activeTab === 'notifications') {
       api.myNotifications().then((n: any) => Array.isArray(n) && setNotifications(n)).catch(() => {});
     }
-  }, [activeTab, refreshRoomsAndInventory, refreshReservations, roomsList.length]);
+  }, [activeTab, refreshRoomsAndInventory, refreshReservations, refreshLedgerEntries, roomsList.length]);
 
   useEffect(() => {
     if (isAdministrator) {
@@ -1472,7 +1595,7 @@ export default function Admin() {
 
   const sidebarItems = [
     { key: 'overview', label: 'Dashboard & Analytics', icon: <IconAnalytics size={19} /> },
-    { key: 'ledger', label: 'Reservations Ledger', icon: <IconLedger size={19} />, count: allBookings.length, badgeColor: '#0EA5E9' },
+    { key: 'ledger', label: 'General Ledger (Debit & Credit)', icon: <IconLedger size={19} />, count: (ledgerEntriesList.length > 0 ? ledgerEntriesList.length : allBookings.length), badgeColor: '#0EA5E9' },
     { key: 'notifications', label: 'Alerts & Notifications', icon: <IconBell size={19} />, count: unreadNotifsCount, badgeColor: '#F43F5E' },
     { key: 'inventory', label: 'Accommodations & Inventory', icon: <IconBuilding size={19} /> },
     { key: 'conversations', label: 'Customer Services', icon: <IconMessages size={19} /> },
@@ -4294,71 +4417,661 @@ export default function Admin() {
             </div>
           )}
 
-          {/* TAB 6: RESERVATIONS LEDGER */}
+          {/* TAB 6: DOUBLE-ENTRY GENERAL LEDGER (DEBIT & CREDIT) */}
           {activeTab === 'ledger' && (
             <div className="panel" style={{ background: themeCardBg, border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 24, boxShadow: themeShadow }}>
               {/* Header & Quick Action Buttons */}
-              <div className="admin-tab-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+              <div className="admin-tab-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 14 }}>
                 <div>
                   <span style={{ fontSize: '.76rem', color: '#0EA5E9', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>
-                    PHYSICAL & DIGITAL BOOKINGS FOLIO
+                    ROCK VIEW BEACH RESORT · DOUBLE-ENTRY ACCOUNTING
                   </span>
-                  <h3 className="serif" style={{ fontSize: '1.4rem', margin: '4px 0 0', color: themeText }}>
-                    📋 Guest Stay & Reservations Ledger
+                  <h3 className="serif" style={{ fontSize: '1.45rem', margin: '4px 0 0', color: themeText, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span>⚖️</span> General Ledger (Debit & Credit System)
                   </h3>
                   <p className="muted small" style={{ margin: '4px 0 0' }}>
-                    Real-time guest folios, room assignments, physical logbook ingestion and check-in / check-out operations.
+                    Dual-entry bookkeeping with real-time Trial Balance, Chart of Accounts, and adaptive PostgreSQL backup migration.
                   </p>
                 </div>
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                  <button
-                    className="btn btn-sm btn-ghost"
-                    onClick={() => setShowLedgerCalendar((prev) => !prev)}
-                    style={{
-                      color: showLedgerCalendar ? '#0EA5E9' : themeText,
-                      border: `1px solid ${showLedgerCalendar ? '#0EA5E9' : themeBorder}`,
-                      background: showLedgerCalendar ? (isLightMode ? '#EFF6FF' : 'rgba(14, 165, 233, 0.15)') : 'transparent',
-                      fontWeight: 700,
-                    }}
-                  >
-                    📅 {showLedgerCalendar ? 'Hide Calendar' : 'Visual Availability & Lock Calendar'}
-                  </button>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
                   <button
                     className="btn btn-sky btn-sm"
-                    onClick={() => {
-                      if (!newReservation.room_id && roomsList.length > 0) {
-                        const firstRoom = roomsList[0];
-                        const nights = Math.max(1, Math.round((new Date(newReservation.check_out).getTime() - new Date(newReservation.check_in).getTime()) / 86400000));
-                        setNewReservation((prev) => ({
-                          ...prev,
-                          room_id: firstRoom.id,
-                          total_php: (firstRoom.rate_php || 3500) * nights,
-                        }));
-                      }
-                      setShowAddReservationModal(true);
-                    }}
-                    style={{ fontWeight: 700 }}
+                    onClick={() => setShowAddJournalModal(true)}
+                    style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
                   >
-                    ➕ New Reservation (Walk-In / Phone)
+                    <span>➕</span> New Journal Entry
                   </button>
                   <button
                     className="btn btn-sm btn-ghost"
-                    onClick={refreshReservations}
-                    disabled={loadingReservations}
+                    onClick={handleReconcileLedger}
+                    disabled={reconcilingLedger}
+                    style={{
+                      color: isLightMode ? '#0D9488' : '#2DD4BF',
+                      border: `1px solid ${isLightMode ? '#99F6E4' : 'rgba(45, 212, 191, 0.3)'}`,
+                      background: isLightMode ? '#F0FDFA' : 'rgba(45, 212, 191, 0.12)',
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
+                    title="Automatically sync and post unrecorded reservations and orders as double-entry journal vouchers"
+                  >
+                    <span>⚡</span> {reconcilingLedger ? 'Reconciling…' : 'Sync & Reconcile Stays'}
+                  </button>
+                  <button
+                    className="btn btn-sm btn-ghost"
+                    onClick={() => {
+                      setBackupTab('export');
+                      setShowBackupModal(true);
+                    }}
+                    style={{
+                      color: isLightMode ? '#4338CA' : '#818CF8',
+                      border: `1px solid ${isLightMode ? '#C7D2FE' : 'rgba(129, 140, 248, 0.3)'}`,
+                      background: isLightMode ? '#EEF2FF' : 'rgba(129, 140, 248, 0.12)',
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
+                    title="Export or Import PostgreSQL SQL dump, JSON, CSV, or logbook notation"
+                  >
+                    <span>💾</span> PostgreSQL Backup & Migration
+                  </button>
+                  <button
+                    className="btn btn-sm btn-ghost"
+                    onClick={() => {
+                      refreshLedgerEntries();
+                      refreshReservations();
+                    }}
+                    disabled={loadingLedger || loadingReservations}
                     style={{ color: themeText, border: `1px solid ${themeBorder}`, fontWeight: 600 }}
                   >
-                    {loadingReservations ? 'Refreshing…' : '🔄 Refresh Ledger'}
+                    {loadingLedger ? 'Refreshing…' : '🔄 Refresh'}
                   </button>
                 </div>
               </div>
 
-              {/* Visual Availability Calendar (Expandable in Ledger) */}
-              {showLedgerCalendar && (
-                <div style={{ marginBottom: 20 }}>
+              {/* Sub-View Navigation Switcher (Debit/Credit vs Stay Folios vs Calendar) */}
+              <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: `1px solid ${themeBorder}`, paddingBottom: 12, flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => setLedgerSubView('debit_credit')}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 10,
+                    border: 'none',
+                    background: ledgerSubView === 'debit_credit' ? (isLightMode ? '#0284C7' : '#0EA5E9') : 'transparent',
+                    color: ledgerSubView === 'debit_credit' ? '#FFFFFF' : themeMuted,
+                    fontWeight: 700,
+                    fontSize: '.84rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <span>⚖️</span> Debit & Credit General Ledger
+                  <span style={{ fontSize: '.72rem', background: ledgerSubView === 'debit_credit' ? 'rgba(255,255,255,0.25)' : 'rgba(148, 163, 184, 0.2)', padding: '2px 7px', borderRadius: 10 }}>
+                    {ledgerEntriesList.length}
+                  </span>
+                </button>
+                <button
+                  onClick={() => setLedgerSubView('stay_folios')}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 10,
+                    border: 'none',
+                    background: ledgerSubView === 'stay_folios' ? (isLightMode ? '#0284C7' : '#0EA5E9') : 'transparent',
+                    color: ledgerSubView === 'stay_folios' ? '#FFFFFF' : themeMuted,
+                    fontWeight: 700,
+                    fontSize: '.84rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <span>📋</span> Guest Stay Folios & Bookings
+                  <span style={{ fontSize: '.72rem', background: ledgerSubView === 'stay_folios' ? 'rgba(255,255,255,0.25)' : 'rgba(148, 163, 184, 0.2)', padding: '2px 7px', borderRadius: 10 }}>
+                    {allBookings.length}
+                  </span>
+                </button>
+                <button
+                  onClick={() => setLedgerSubView('availability')}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 10,
+                    border: 'none',
+                    background: ledgerSubView === 'availability' ? (isLightMode ? '#0284C7' : '#0EA5E9') : 'transparent',
+                    color: ledgerSubView === 'availability' ? '#FFFFFF' : themeMuted,
+                    fontWeight: 700,
+                    fontSize: '.84rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <span>📅</span> Visual Availability & Lock Calendar
+                </button>
+              </div>
+
+              {/* VIEW 1: DEBIT & CREDIT GENERAL LEDGER */}
+              {ledgerSubView === 'debit_credit' && (() => {
+                const totalDebits = trialBalance?.total_debits_php ?? ledgerEntriesList.reduce((acc, e) => acc + (Number(e.debit_php) || 0), 0);
+                const totalCredits = trialBalance?.total_credits_php ?? ledgerEntriesList.reduce((acc, e) => acc + (Number(e.credit_php) || 0), 0);
+                const netDifference = Math.abs(totalDebits - totalCredits);
+                const isBalanced = trialBalance ? trialBalance.is_balanced : netDifference === 0;
+
+                const filteredLedgerEntries = ledgerEntriesList.filter((entry) => {
+                  if (ledgerAccountFilter && entry.account_code !== ledgerAccountFilter) return false;
+                  if (ledgerCategoryFilter && String(entry.category).toUpperCase() !== ledgerCategoryFilter.toUpperCase()) return false;
+                  if (ledgerTypeFilter === 'debit' && entry.entry_type !== 'DEBIT') return false;
+                  if (ledgerTypeFilter === 'credit' && entry.entry_type !== 'CREDIT') return false;
+                  if (ledgerSearch) {
+                    const q = ledgerSearch.toLowerCase();
+                    const p = (entry.particulars || '').toLowerCase();
+                    const num = (entry.entry_number || '').toLowerCase();
+                    const acc = (entry.account_name || '').toLowerCase();
+                    const code = (entry.account_code || '').toLowerCase();
+                    const ref = (entry.reference_id || '').toLowerCase();
+                    if (!p.includes(q) && !num.includes(q) && !acc.includes(q) && !code.includes(q) && !ref.includes(q)) return false;
+                  }
+                  return true;
+                });
+
+                return (
+                  <div>
+                    {/* 4 Financial KPI Summary Cards */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14, marginBottom: 20 }}>
+                      <div style={{ padding: '16px 18px', background: isLightMode ? '#ECFDF5' : 'rgba(16,185,129,0.1)', borderRadius: 14, border: `1px solid ${isLightMode ? '#A7F3D0' : 'rgba(16,185,129,0.2)'}` }}>
+                        <small style={{ color: isLightMode ? '#047857' : '#34D399', textTransform: 'uppercase', fontSize: '.7rem', fontWeight: 800, letterSpacing: '.06em' }}>Total Debits (DR)</small>
+                        <b style={{ display: 'block', fontSize: '1.6rem', color: isLightMode ? '#065F46' : '#10B981', marginTop: 4 }}>
+                          {money(totalDebits)}
+                        </b>
+                        <span style={{ fontSize: '.74rem', color: '#10B981' }}>Assets increase & expense inflows</span>
+                      </div>
+                      <div style={{ padding: '16px 18px', background: isLightMode ? '#EFF6FF' : 'rgba(59,130,246,0.1)', borderRadius: 14, border: `1px solid ${isLightMode ? '#BFDBFE' : 'rgba(59,130,246,0.2)'}` }}>
+                        <small style={{ color: isLightMode ? '#1D4ED8' : '#60A5FA', textTransform: 'uppercase', fontSize: '.7rem', fontWeight: 800, letterSpacing: '.06em' }}>Total Credits (CR)</small>
+                        <b style={{ display: 'block', fontSize: '1.6rem', color: isLightMode ? '#1E40AF' : '#3B82F6', marginTop: 4 }}>
+                          {money(totalCredits)}
+                        </b>
+                        <span style={{ fontSize: '.74rem', color: '#3B82F6' }}>Revenues & guest deposit liabilities</span>
+                      </div>
+                      <div style={{ padding: '16px 18px', background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.04)', borderRadius: 14, border: `1px solid ${themeBorder}` }}>
+                        <small style={{ color: themeMuted, textTransform: 'uppercase', fontSize: '.7rem', fontWeight: 800, letterSpacing: '.06em' }}>Net General Ledger Balance</small>
+                        <b style={{ display: 'block', fontSize: '1.6rem', color: themeText, marginTop: 4 }}>
+                          {money(totalDebits - totalCredits)}
+                        </b>
+                        <span style={{ fontSize: '.74rem', color: '#0EA5E9' }}>Cumulative ledger balance</span>
+                      </div>
+                      <div style={{ padding: '16px 18px', background: isBalanced ? (isLightMode ? '#F0FDF4' : 'rgba(34,197,94,0.1)') : (isLightMode ? '#FFFBEB' : 'rgba(245,158,11,0.1)'), borderRadius: 14, border: `1px solid ${isBalanced ? (isLightMode ? '#BBF7D0' : 'rgba(34,197,94,0.25)') : (isLightMode ? '#FDE68A' : 'rgba(245,158,11,0.25)')}` }}>
+                        <small style={{ color: isBalanced ? (isLightMode ? '#15803D' : '#4ADE80') : (isLightMode ? '#B45309' : '#FBBF24'), textTransform: 'uppercase', fontSize: '.7rem', fontWeight: 800, letterSpacing: '.06em' }}>Trial Balance Status</small>
+                        <b style={{ display: 'block', fontSize: '1.35rem', color: isBalanced ? (isLightMode ? '#166534' : '#22C55E') : (isLightMode ? '#92400E' : '#F59E0B'), marginTop: 4 }}>
+                          {isBalanced ? '✓ Balanced (0.00)' : `⚠ Imbalance: ${money(netDifference)}`}
+                        </b>
+                        <span style={{ fontSize: '.74rem', color: isBalanced ? '#22C55E' : '#F59E0B' }}>
+                          {isBalanced ? 'Debits equal Credits perfectly' : 'Review adjusting entries'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Filter & Search Toolbar */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                        {/* Account Selector */}
+                        <select
+                          value={ledgerAccountFilter}
+                          onChange={(e) => setLedgerAccountFilter(e.target.value)}
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: 12,
+                            border: `1px solid ${themeBorder}`,
+                            background: isLightMode ? '#FFF' : '#1E293B',
+                            color: themeText,
+                            fontSize: '.78rem',
+                            fontWeight: 600,
+                          }}
+                        >
+                          <option value="">All Accounts ({chartOfAccounts.length || 11})</option>
+                          {(chartOfAccounts.length > 0 ? chartOfAccounts : [
+                            { code: '1010', name: 'Cash on Hand & Digital Wallets' },
+                            { code: '1020', name: 'Accounts Receivable - Guest Folios' },
+                            { code: '2010', name: 'Guest Reservation Deposits' },
+                            { code: '2020', name: 'Guest Refunds Payable' },
+                            { code: '4010', name: 'Room Accommodations Revenue' },
+                            { code: '4020', name: 'Kitchen & Dining Revenue' },
+                            { code: '4030', name: 'Island Tours Revenue' },
+                            { code: '5010', name: 'Kitchen & Food Supplies' },
+                            { code: '5020', name: 'Housekeeping Linens & Amenities' },
+                            { code: '5030', name: 'Resort Utilities & Fuel' },
+                            { code: '5040', name: 'Repairs & Property Maintenance' },
+                          ]).map((acc) => (
+                            <option key={acc.code} value={acc.code}>
+                              {acc.code} - {acc.name}
+                            </option>
+                          ))}
+                        </select>
+
+                        {/* Category Selector */}
+                        <select
+                          value={ledgerCategoryFilter}
+                          onChange={(e) => setLedgerCategoryFilter(e.target.value)}
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: 12,
+                            border: `1px solid ${themeBorder}`,
+                            background: isLightMode ? '#FFF' : '#1E293B',
+                            color: themeText,
+                            fontSize: '.78rem',
+                            fontWeight: 600,
+                          }}
+                        >
+                          <option value="">All Categories</option>
+                          <option value="REVENUE">Revenue</option>
+                          <option value="PAYMENT">Payment</option>
+                          <option value="EXPENSE">Expense</option>
+                          <option value="REFUND">Refund</option>
+                          <option value="ADJUSTMENT">Adjustment</option>
+                        </select>
+
+                        {/* Entry Type Filter Pills */}
+                        <div style={{ display: 'flex', gap: 4, background: isLightMode ? '#F1F5F9' : 'rgba(30,41,59,0.8)', padding: 3, borderRadius: 12 }}>
+                          {[
+                            { key: 'all', label: 'All' },
+                            { key: 'debit', label: 'Debits Only (DR)' },
+                            { key: 'credit', label: 'Credits Only (CR)' },
+                          ].map((t) => (
+                            <button
+                              key={t.key}
+                              onClick={() => setLedgerTypeFilter(t.key as any)}
+                              style={{
+                                padding: '4px 10px',
+                                borderRadius: 8,
+                                border: 'none',
+                                background: ledgerTypeFilter === t.key ? (isLightMode ? '#FFFFFF' : '#0F172A') : 'transparent',
+                                color: ledgerTypeFilter === t.key ? (isLightMode ? '#0284C7' : '#38BDF8') : themeMuted,
+                                fontSize: '.74rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                boxShadow: ledgerTypeFilter === t.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                              }}
+                            >
+                              {t.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Search Input */}
+                      <div style={{ position: 'relative', width: 280, maxWidth: '100%' }}>
+                        <input
+                          className="search"
+                          placeholder="Search particulars, entry #, ref, code…"
+                          value={ledgerSearch}
+                          onChange={(e) => setLedgerSearch(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '8px 12px 8px 32px',
+                            borderRadius: 14,
+                            border: `1px solid ${themeBorder}`,
+                            background: isLightMode ? '#FFFFFF' : 'rgba(15,23,42,0.6)',
+                            color: themeText,
+                            fontSize: '.82rem',
+                          }}
+                        />
+                        <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }}>
+                          <IconSearch size={14} />
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Debit & Credit Ledger Table */}
+                    {loadingLedger && ledgerEntriesList.length === 0 ? (
+                      <div style={{ padding: '40px 0', textAlign: 'center', color: themeMuted }}>
+                        <p>Loading Double-Entry General Ledger…</p>
+                      </div>
+                    ) : filteredLedgerEntries.length === 0 ? (
+                      <div style={{ padding: '40px 16px', textAlign: 'center', background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.02)', borderRadius: 14, border: `1px dashed ${themeBorder}` }}>
+                        <p className="muted" style={{ margin: '0 0 8px', fontSize: '1rem' }}>No ledger entries match your filter or search.</p>
+                        <small style={{ color: themeMuted }}>Click "New Journal Entry" or "Sync & Reconcile Stays" to record transactions.</small>
+                      </div>
+                    ) : (
+                      <div className="table-wrap" style={{ background: isLightMode ? '#FFFFFF' : 'rgba(15,23,42,0.85)', border: `1px solid ${themeBorder}`, borderRadius: 12, overflowX: 'auto' }}>
+                        <table className="table" style={{ color: themeText, width: '100%', borderCollapse: 'collapse' }}>
+                          <thead>
+                            <tr style={{ background: isLightMode ? '#F1F5F9' : 'rgba(30,41,59,0.8)', textAlign: 'left' }}>
+                              <th style={{ color: isLightMode ? '#475569' : themeMuted, padding: '12px 14px' }}>Entry #</th>
+                              <th style={{ color: isLightMode ? '#475569' : themeMuted, padding: '12px 14px' }}>Date / Time</th>
+                              <th style={{ color: isLightMode ? '#475569' : themeMuted, padding: '12px 14px' }}>Account</th>
+                              <th style={{ color: isLightMode ? '#475569' : themeMuted, padding: '12px 14px' }}>Particulars / Reference</th>
+                              <th style={{ color: isLightMode ? '#475569' : themeMuted, padding: '12px 14px' }}>Category</th>
+                              <th style={{ color: isLightMode ? '#047857' : '#34D399', padding: '12px 14px', textAlign: 'right' }}>Debit (₱)</th>
+                              <th style={{ color: isLightMode ? '#1D4ED8' : '#60A5FA', padding: '12px 14px', textAlign: 'right' }}>Credit (₱)</th>
+                              <th style={{ color: isLightMode ? '#475569' : themeMuted, padding: '12px 14px', textAlign: 'right' }}>Balance (₱)</th>
+                              <th style={{ color: isLightMode ? '#475569' : themeMuted, padding: '12px 14px' }}>Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {filteredLedgerEntries.map((e) => {
+                              const debitAmt = Number(e.debit_php) || 0;
+                              const creditAmt = Number(e.credit_php) || 0;
+                              const runBal = Number(e.running_balance_php) || 0;
+
+                              return (
+                                <tr key={e.id} style={{ borderBottom: `1px solid ${themeBorder}` }}>
+                                  <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
+                                    <span style={{ fontFamily: 'monospace', fontSize: '.8rem', fontWeight: 700, color: '#0EA5E9' }}>
+                                      {e.entry_number}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '12px 14px', fontSize: '.78rem', whiteSpace: 'nowrap', color: themeMuted }}>
+                                    {fmtDate(e.posted_at)} <span style={{ opacity: 0.7 }}>{fmtTime(e.posted_at)}</span>
+                                  </td>
+                                  <td style={{ padding: '12px 14px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                      <span style={{ fontFamily: 'monospace', fontWeight: 700, background: isLightMode ? '#E2E8F0' : 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: 6, fontSize: '.72rem' }}>
+                                        {e.account_code}
+                                      </span>
+                                      <span style={{ fontWeight: 600, fontSize: '.84rem' }}>{e.account_name}</span>
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '12px 14px' }}>
+                                    <div style={{ fontSize: '.84rem' }}>{e.particulars}</div>
+                                    {e.reference_id && (
+                                      <small style={{ color: themeMuted, fontSize: '.7rem', fontFamily: 'monospace' }}>
+                                        Ref: {e.reference_id}
+                                      </small>
+                                    )}
+                                  </td>
+                                  <td style={{ padding: '12px 14px' }}>
+                                    <span
+                                      className="pill"
+                                      style={{
+                                        fontSize: '.68rem',
+                                        textTransform: 'uppercase',
+                                        fontWeight: 700,
+                                        background: e.category === 'REVENUE' ? (isLightMode ? '#EFF6FF' : 'rgba(59,130,246,0.15)') : e.category === 'EXPENSE' ? (isLightMode ? '#FFF1F2' : 'rgba(244,63,94,0.15)') : (isLightMode ? '#F0FDFA' : 'rgba(45,212,191,0.15)'),
+                                        color: e.category === 'REVENUE' ? '#3B82F6' : e.category === 'EXPENSE' ? '#F43F5E' : '#14B8A6',
+                                        border: '1px solid currentColor',
+                                      }}
+                                    >
+                                      {e.category}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '12px 14px', textAlign: 'right', fontWeight: debitAmt > 0 ? 800 : 400, color: debitAmt > 0 ? (isLightMode ? '#059669' : '#10B981') : themeMuted }}>
+                                    {debitAmt > 0 ? money(debitAmt) : '—'}
+                                  </td>
+                                  <td style={{ padding: '12px 14px', textAlign: 'right', fontWeight: creditAmt > 0 ? 800 : 400, color: creditAmt > 0 ? (isLightMode ? '#2563EB' : '#38BDF8') : themeMuted }}>
+                                    {creditAmt > 0 ? money(creditAmt) : '—'}
+                                  </td>
+                                  <td style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 700, fontFamily: 'monospace', fontSize: '.84rem' }}>
+                                    {money(runBal)}
+                                  </td>
+                                  <td style={{ padding: '12px 14px' }}>
+                                    <span
+                                      style={{
+                                        fontSize: '.68rem',
+                                        padding: '3px 8px',
+                                        borderRadius: 8,
+                                        fontWeight: 700,
+                                        background: e.status === 'RECONCILED' ? (isLightMode ? '#ECFDF5' : 'rgba(16,185,129,0.15)') : (isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.06)'),
+                                        color: e.status === 'RECONCILED' ? '#10B981' : themeMuted,
+                                      }}
+                                    >
+                                      {e.status}
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* VIEW 2: GUEST STAY FOLIOS & RESERVATIONS */}
+              {ledgerSubView === 'stay_folios' && (
+                <div>
+                  {/* 4 KPI Summary Cards for Stays */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14, marginBottom: 20 }}>
+                    <div style={{ padding: '16px 18px', background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.04)', borderRadius: 14, border: `1px solid ${themeBorder}` }}>
+                      <small style={{ color: themeMuted, textTransform: 'uppercase', fontSize: '.7rem', fontWeight: 800, letterSpacing: '.06em' }}>Total Reservations</small>
+                      <b style={{ display: 'block', fontSize: '1.6rem', color: themeText, marginTop: 4 }}>{allBookings.length} stays</b>
+                      <span style={{ fontSize: '.74rem', color: '#0EA5E9' }}>All active & past folios</span>
+                    </div>
+                    <div style={{ padding: '16px 18px', background: isLightMode ? '#ECFDF5' : 'rgba(16,185,129,0.1)', borderRadius: 14, border: `1px solid ${isLightMode ? '#A7F3D0' : 'rgba(16,185,129,0.2)'}` }}>
+                      <small style={{ color: isLightMode ? '#047857' : '#34D399', textTransform: 'uppercase', fontSize: '.7rem', fontWeight: 800, letterSpacing: '.06em' }}>In-House / Checked In</small>
+                      <b style={{ display: 'block', fontSize: '1.6rem', color: isLightMode ? '#065F46' : '#10B981', marginTop: 4 }}>
+                        {allBookings.filter((b) => b.status === 'checked_in').length} guests
+                      </b>
+                      <span style={{ fontSize: '.74rem', color: '#10B981' }}>Currently staying in resort</span>
+                    </div>
+                    <div style={{ padding: '16px 18px', background: isLightMode ? '#EFF6FF' : 'rgba(59,130,246,0.1)', borderRadius: 14, border: `1px solid ${isLightMode ? '#BFDBFE' : 'rgba(59,130,246,0.2)'}` }}>
+                      <small style={{ color: isLightMode ? '#1D4ED8' : '#60A5FA', textTransform: 'uppercase', fontSize: '.7rem', fontWeight: 800, letterSpacing: '.06em' }}>Upcoming Confirmed</small>
+                      <b style={{ display: 'block', fontSize: '1.6rem', color: isLightMode ? '#1E40AF' : '#3B82F6', marginTop: 4 }}>
+                        {allBookings.filter((b) => b.status === 'confirmed').length} bookings
+                      </b>
+                      <span style={{ fontSize: '.74rem', color: '#3B82F6' }}>Awaiting arrival date</span>
+                    </div>
+                    <div style={{ padding: '16px 18px', background: isLightMode ? '#FFFBEB' : 'rgba(245,158,11,0.1)', borderRadius: 14, border: `1px solid ${isLightMode ? '#FDE68A' : 'rgba(245,158,11,0.2)'}` }}>
+                      <small style={{ color: isLightMode ? '#B45309' : '#FBBF24', textTransform: 'uppercase', fontSize: '.7rem', fontWeight: 800, letterSpacing: '.06em' }}>Gross Stay Value</small>
+                      <b style={{ display: 'block', fontSize: '1.6rem', color: isLightMode ? '#92400E' : '#F59E0B', marginTop: 4 }}>
+                        {money(allBookings.filter((b) => b.status !== 'cancelled').reduce((acc, b) => acc + (b.total_php || 0), 0))}
+                      </b>
+                      <span style={{ fontSize: '.74rem', color: '#F59E0B' }}>Total booking accommodations</span>
+                    </div>
+                  </div>
+
+                  {/* Search Bar & Status Filter Pills */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      {[
+                        { key: 'all', label: `All (${allBookings.length})` },
+                        { key: 'confirmed', label: `Confirmed (${allBookings.filter(b => b.status === 'confirmed').length})` },
+                        { key: 'checked_in', label: `In-House (${allBookings.filter(b => b.status === 'checked_in').length})` },
+                        { key: 'checked_out', label: `Checked Out (${allBookings.filter(b => b.status === 'checked_out').length})` },
+                        { key: 'pending', label: `Pending (${allBookings.filter(b => b.status === 'pending').length})` },
+                        { key: 'cancelled', label: `Cancelled (${allBookings.filter(b => b.status === 'cancelled').length})` },
+                      ].map((f) => (
+                        <button
+                          key={f.key}
+                          onClick={() => setReservationFilter(f.key)}
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: 16,
+                            border: `1px solid ${reservationFilter === f.key ? '#0EA5E9' : themeBorder}`,
+                            background: reservationFilter === f.key ? (isLightMode ? '#E0F2FE' : 'rgba(14,165,233,0.25)') : 'transparent',
+                            color: reservationFilter === f.key ? '#0284C7' : themeText,
+                            fontSize: '.78rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <button
+                        className="btn btn-sky btn-sm"
+                        onClick={() => {
+                          if (!newReservation.room_id && roomsList.length > 0) {
+                            const firstRoom = roomsList[0];
+                            const nights = Math.max(1, Math.round((new Date(newReservation.check_out).getTime() - new Date(newReservation.check_in).getTime()) / 86400000));
+                            setNewReservation((prev) => ({
+                              ...prev,
+                              room_id: firstRoom.id,
+                              total_php: (firstRoom.rate_php || 3500) * nights,
+                            }));
+                          }
+                          setShowAddReservationModal(true);
+                        }}
+                        style={{ fontWeight: 700 }}
+                      >
+                        ➕ Walk-In / Phone Booking
+                      </button>
+
+                      <div style={{ position: 'relative', width: 240, maxWidth: '100%' }}>
+                        <input
+                          className="search"
+                          placeholder="Search guest, room, phone…"
+                          value={reservationSearch}
+                          onChange={(e) => setReservationSearch(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '8px 12px 8px 32px',
+                            borderRadius: 14,
+                            border: `1px solid ${themeBorder}`,
+                            background: isLightMode ? '#FFFFFF' : 'rgba(15,23,42,0.6)',
+                            color: themeText,
+                            fontSize: '.82rem',
+                          }}
+                        />
+                        <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }}>
+                          <IconSearch size={14} />
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Reservations Ledger Table */}
+                  {loadingReservations && allBookings.length === 0 ? (
+                    <div style={{ padding: '40px 0', textAlign: 'center', color: themeMuted }}>
+                      <p>Loading Guest Reservations Folios…</p>
+                    </div>
+                  ) : filteredBookings.length === 0 ? (
+                    <div style={{ padding: '40px 16px', textAlign: 'center', background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.02)', borderRadius: 14, border: `1px dashed ${themeBorder}` }}>
+                      <p className="muted" style={{ margin: '0 0 8px', fontSize: '1rem' }}>No reservations match your search or filter.</p>
+                      <small style={{ color: themeMuted }}>Click "Walk-In / Phone Booking" to record a guest reservation.</small>
+                    </div>
+                  ) : (
+                    <div className="table-wrap" style={{ background: isLightMode ? '#FFFFFF' : 'rgba(15,23,42,0.85)', border: `1px solid ${themeBorder}`, borderRadius: 12 }}>
+                      <table className="table" style={{ color: themeText }}>
+                        <thead>
+                          <tr style={{ background: isLightMode ? '#F1F5F9' : 'rgba(30,41,59,0.8)' }}>
+                            <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Guest Folio</th>
+                            <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Accommodation</th>
+                            <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Stay Dates</th>
+                            <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Party</th>
+                            <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Total Amount</th>
+                            <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Status</th>
+                            <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Front Desk Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredBookings.map((b) => (
+                            <tr key={b.id} style={{ borderBottom: `1px solid ${themeBorder}` }}>
+                              <td>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                  <span style={{ width: 32, height: 32, borderRadius: '50%', background: isLightMode ? '#E2E8F0' : '#334155', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.8rem', fontWeight: 800 }}>
+                                    {(b.guest_name || b.profiles?.full_name || 'G').charAt(0).toUpperCase()}
+                                  </span>
+                                  <div>
+                                    <b>{b.guest_name || b.profiles?.full_name || 'Guest User'}</b>
+                                    <small style={{ color: themeMuted, display: 'block' }}>{b.phone || b.profiles?.phone || 'No phone recorded'}</small>
+                                  </div>
+                                </div>
+                              </td>
+                              <td>
+                                <b>{b.rooms?.name || 'Assigned Villa/Room'}</b>
+                              </td>
+                              <td>
+                                <div>
+                                  <span>{fmtDate(b.check_in)} → {fmtDate(b.check_out)}</span>
+                                  <span style={{ marginLeft: 6, fontSize: '.72rem', background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: 6, color: themeMuted }}>
+                                    {b.nights || 1} {b.nights === 1 ? 'night' : 'nights'}
+                                  </span>
+                                </div>
+                              </td>
+                              <td>
+                                <span style={{ fontSize: '.82rem' }}>{b.guests || 2} Guests</span>
+                              </td>
+                              <td>
+                                <b>{money(b.total_php)}</b>
+                                <small style={{ display: 'block', color: themeMuted, fontSize: '.72rem' }}>{b.payment_method || 'GCash'}</small>
+                              </td>
+                              <td>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                  <span className={`pill ${b.status}`}>{b.status.replace('_', ' ')}</span>
+                                  {b.payment_status === 'refund_pending' && (
+                                    <span className="pill" style={{ background: 'rgba(245,158,11,0.2)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.3)', fontSize: '.7rem' }}>
+                                      ⏳ Refund Pending
+                                    </span>
+                                  )}
+                                  {b.payment_status === 'refunded' && (
+                                    <span className="pill" style={{ background: 'rgba(16,185,129,0.2)', color: '#10B981', border: '1px solid rgba(16,185,129,0.3)', fontSize: '.7rem' }}>
+                                      ✅ Refunded
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                              <td>
+                                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                  {['pending', 'confirmed'].includes(b.status) && (
+                                    <button className="act-btn" onClick={() => updateStatus(b.id, 'checked_in')} style={{ color: '#10B981', borderColor: '#10B981' }}>
+                                      🛎️ Check-in
+                                    </button>
+                                  )}
+                                  {b.status === 'checked_in' && (
+                                    <button className="act-btn" onClick={() => updateStatus(b.id, 'checked_out')} style={{ color: '#6366F1', borderColor: '#6366F1' }}>
+                                      🔑 Check-out
+                                    </button>
+                                  )}
+                                  {['pending', 'confirmed'].includes(b.status) && (
+                                    <button className="act-btn" onClick={() => updateStatus(b.id, 'cancelled')} style={{ color: '#EF4444', borderColor: '#EF4444' }}>
+                                      ✕ Cancel
+                                    </button>
+                                  )}
+                                  {b.payment_status === 'refund_pending' ? (
+                                    <button
+                                      className="act-btn"
+                                      onClick={() => {
+                                        setRefundTarget(b);
+                                        setRefundMode('confirm');
+                                        setRefundAmount(b.downpayment_php || b.total_php || '');
+                                        setRefundMethod(b.payment_method || 'GCash');
+                                      }}
+                                      style={{ color: '#10B981', borderColor: '#10B981', background: 'rgba(16,185,129,0.1)' }}
+                                      title="Approve & confirm refund with automated email"
+                                    >
+                                      💵 Confirm Refund
+                                    </button>
+                                  ) : b.payment_status !== 'refunded' && (
+                                    <button
+                                      className="act-btn"
+                                      onClick={() => {
+                                        setRefundTarget(b);
+                                        setRefundMode('request');
+                                        setRefundAmount(b.downpayment_php || b.total_php || '');
+                                      }}
+                                      style={{ color: '#F59E0B', borderColor: '#F59E0B' }}
+                                      title="Request refund with automated email on the day requested"
+                                    >
+                                      💰 Refund
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* VIEW 3: VISUAL AVAILABILITY & LOCK CALENDAR */}
+              {ledgerSubView === 'availability' && (
+                <div>
                   <AvailabilityCalendar
                     rooms={roomsList}
                     isLightMode={isLightMode}
-                    onClose={() => setShowLedgerCalendar(false)}
+                    onClose={() => setLedgerSubView('debit_credit')}
                     onSelectDates={(cin, cout) => {
                       const activeRoom = roomsList.find((r) => r.id === newReservation.room_id) || roomsList[0];
                       const nights = Math.max(1, Math.round((new Date(cout).getTime() - new Date(cin).getTime()) / 86400000));
@@ -4373,213 +5086,6 @@ export default function Admin() {
                       toast(`✦ Check-in (${fmtDate(cin)}) and Check-out (${fmtDate(cout)}) set in New Reservation modal`);
                     }}
                   />
-                </div>
-              )}
-
-              {/* 4 KPI Summary Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14, marginBottom: 20 }}>
-                <div style={{ padding: '16px 18px', background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.04)', borderRadius: 14, border: `1px solid ${themeBorder}` }}>
-                  <small style={{ color: themeMuted, textTransform: 'uppercase', fontSize: '.7rem', fontWeight: 800, letterSpacing: '.06em' }}>Total Reservations</small>
-                  <b style={{ display: 'block', fontSize: '1.6rem', color: themeText, marginTop: 4 }}>{allBookings.length} stays</b>
-                  <span style={{ fontSize: '.74rem', color: '#0EA5E9' }}>All active & past folios</span>
-                </div>
-                <div style={{ padding: '16px 18px', background: isLightMode ? '#ECFDF5' : 'rgba(16,185,129,0.1)', borderRadius: 14, border: `1px solid ${isLightMode ? '#A7F3D0' : 'rgba(16,185,129,0.2)'}` }}>
-                  <small style={{ color: isLightMode ? '#047857' : '#34D399', textTransform: 'uppercase', fontSize: '.7rem', fontWeight: 800, letterSpacing: '.06em' }}>In-House / Checked In</small>
-                  <b style={{ display: 'block', fontSize: '1.6rem', color: isLightMode ? '#065F46' : '#10B981', marginTop: 4 }}>
-                    {allBookings.filter((b) => b.status === 'checked_in').length} guests
-                  </b>
-                  <span style={{ fontSize: '.74rem', color: '#10B981' }}>Currently staying in resort</span>
-                </div>
-                <div style={{ padding: '16px 18px', background: isLightMode ? '#EFF6FF' : 'rgba(59,130,246,0.1)', borderRadius: 14, border: `1px solid ${isLightMode ? '#BFDBFE' : 'rgba(59,130,246,0.2)'}` }}>
-                  <small style={{ color: isLightMode ? '#1D4ED8' : '#60A5FA', textTransform: 'uppercase', fontSize: '.7rem', fontWeight: 800, letterSpacing: '.06em' }}>Upcoming Confirmed</small>
-                  <b style={{ display: 'block', fontSize: '1.6rem', color: isLightMode ? '#1E40AF' : '#3B82F6', marginTop: 4 }}>
-                    {allBookings.filter((b) => b.status === 'confirmed').length} bookings
-                  </b>
-                  <span style={{ fontSize: '.74rem', color: '#3B82F6' }}>Awaiting arrival date</span>
-                </div>
-                <div style={{ padding: '16px 18px', background: isLightMode ? '#FFFBEB' : 'rgba(245,158,11,0.1)', borderRadius: 14, border: `1px solid ${isLightMode ? '#FDE68A' : 'rgba(245,158,11,0.2)'}` }}>
-                  <small style={{ color: isLightMode ? '#B45309' : '#FBBF24', textTransform: 'uppercase', fontSize: '.7rem', fontWeight: 800, letterSpacing: '.06em' }}>Gross Ledger Value</small>
-                  <b style={{ display: 'block', fontSize: '1.6rem', color: isLightMode ? '#92400E' : '#F59E0B', marginTop: 4 }}>
-                    {money(allBookings.filter((b) => b.status !== 'cancelled').reduce((acc, b) => acc + (b.total_php || 0), 0))}
-                  </b>
-                  <span style={{ fontSize: '.74rem', color: '#F59E0B' }}>Total booking revenue</span>
-                </div>
-              </div>
-
-              {/* Search Bar & Status Filter Pills */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  {[
-                    { key: 'all', label: `All (${allBookings.length})` },
-                    { key: 'confirmed', label: `Confirmed (${allBookings.filter(b => b.status === 'confirmed').length})` },
-                    { key: 'checked_in', label: `In-House (${allBookings.filter(b => b.status === 'checked_in').length})` },
-                    { key: 'checked_out', label: `Checked Out (${allBookings.filter(b => b.status === 'checked_out').length})` },
-                    { key: 'pending', label: `Pending (${allBookings.filter(b => b.status === 'pending').length})` },
-                    { key: 'cancelled', label: `Cancelled (${allBookings.filter(b => b.status === 'cancelled').length})` },
-                  ].map((f) => (
-                    <button
-                      key={f.key}
-                      onClick={() => setReservationFilter(f.key)}
-                      style={{
-                        padding: '6px 12px',
-                        borderRadius: 16,
-                        border: `1px solid ${reservationFilter === f.key ? '#0EA5E9' : themeBorder}`,
-                        background: reservationFilter === f.key ? (isLightMode ? '#E0F2FE' : 'rgba(14,165,233,0.25)') : 'transparent',
-                        color: reservationFilter === f.key ? '#0284C7' : themeText,
-                        fontSize: '.78rem',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {f.label}
-                    </button>
-                  ))}
-                </div>
-
-                <div style={{ position: 'relative', width: 280, maxWidth: '100%' }}>
-                  <input
-                    className="search"
-                    placeholder="Search guest, room, phone, folio…"
-                    value={reservationSearch}
-                    onChange={(e) => setReservationSearch(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px 8px 32px',
-                      borderRadius: 14,
-                      border: `1px solid ${themeBorder}`,
-                      background: isLightMode ? '#FFFFFF' : 'rgba(15,23,42,0.6)',
-                      color: themeText,
-                      fontSize: '.82rem',
-                    }}
-                  />
-                  <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }}>
-                    <IconSearch size={14} />
-                  </span>
-                </div>
-              </div>
-
-              {/* Reservations Ledger Table */}
-              {loadingReservations && allBookings.length === 0 ? (
-                <div style={{ padding: '40px 0', textAlign: 'center', color: themeMuted }}>
-                  <p>Loading Guest Reservations Ledger…</p>
-                </div>
-              ) : filteredBookings.length === 0 ? (
-                <div style={{ padding: '40px 16px', textAlign: 'center', background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.02)', borderRadius: 14, border: `1px dashed ${themeBorder}` }}>
-                  <p className="muted" style={{ margin: '0 0 8px', fontSize: '1rem' }}>No reservations match your search or filter.</p>
-                  <small style={{ color: themeMuted }}>Click "New Reservation" above to record a guest booking.</small>
-                </div>
-              ) : (
-                <div className="table-wrap" style={{ background: isLightMode ? '#FFFFFF' : 'rgba(15,23,42,0.85)', border: `1px solid ${themeBorder}`, borderRadius: 12 }}>
-                  <table className="table" style={{ color: themeText }}>
-                    <thead>
-                      <tr style={{ background: isLightMode ? '#F1F5F9' : 'rgba(30,41,59,0.8)' }}>
-                        <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Guest Folio</th>
-                        <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Accommodation</th>
-                        <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Stay Dates</th>
-                        <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Party</th>
-                        <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Total Amount</th>
-                        <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Status</th>
-                        <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Front Desk Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredBookings.map((b) => (
-                        <tr key={b.id} style={{ borderBottom: `1px solid ${themeBorder}` }}>
-                          <td>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                              <span style={{ width: 32, height: 32, borderRadius: '50%', background: isLightMode ? '#E2E8F0' : '#334155', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.8rem', fontWeight: 800 }}>
-                                {(b.guest_name || b.profiles?.full_name || 'G').charAt(0).toUpperCase()}
-                              </span>
-                              <div>
-                                <b>{b.guest_name || b.profiles?.full_name || 'Guest User'}</b>
-                                <small style={{ color: themeMuted, display: 'block' }}>{b.phone || b.profiles?.phone || 'No phone recorded'}</small>
-                              </div>
-                            </div>
-                          </td>
-                          <td>
-                            <b>{b.rooms?.name || 'Assigned Villa/Room'}</b>
-                          </td>
-                          <td>
-                            <div>
-                              <span>{fmtDate(b.check_in)} → {fmtDate(b.check_out)}</span>
-                              <span style={{ marginLeft: 6, fontSize: '.72rem', background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: 6, color: themeMuted }}>
-                                {b.nights || 1} {b.nights === 1 ? 'night' : 'nights'}
-                              </span>
-                            </div>
-                          </td>
-                          <td>
-                            <span style={{ fontSize: '.82rem' }}>{b.guests || 2} Guests</span>
-                          </td>
-                          <td>
-                            <b>{money(b.total_php)}</b>
-                            <small style={{ display: 'block', color: themeMuted, fontSize: '.72rem' }}>{b.payment_method || 'GCash'}</small>
-                          </td>
-                          <td>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                              <span className={`pill ${b.status}`}>{b.status.replace('_', ' ')}</span>
-                              {b.payment_status === 'refund_pending' && (
-                                <span className="pill" style={{ background: 'rgba(245,158,11,0.2)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.3)', fontSize: '.7rem' }}>
-                                  ⏳ Refund Pending
-                                </span>
-                              )}
-                              {b.payment_status === 'refunded' && (
-                                <span className="pill" style={{ background: 'rgba(16,185,129,0.2)', color: '#10B981', border: '1px solid rgba(16,185,129,0.3)', fontSize: '.7rem' }}>
-                                  ✅ Refunded
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td>
-                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                              {['pending', 'confirmed'].includes(b.status) && (
-                                <button className="act-btn" onClick={() => updateStatus(b.id, 'checked_in')} style={{ color: '#10B981', borderColor: '#10B981' }}>
-                                  🛎️ Check-in
-                                </button>
-                              )}
-                              {b.status === 'checked_in' && (
-                                <button className="act-btn" onClick={() => updateStatus(b.id, 'checked_out')} style={{ color: '#6366F1', borderColor: '#6366F1' }}>
-                                  🔑 Check-out
-                                </button>
-                              )}
-                              {['pending', 'confirmed'].includes(b.status) && (
-                                <button className="act-btn" onClick={() => updateStatus(b.id, 'cancelled')} style={{ color: '#EF4444', borderColor: '#EF4444' }}>
-                                  ✕ Cancel
-                                </button>
-                              )}
-                              {b.payment_status === 'refund_pending' ? (
-                                <button
-                                  className="act-btn"
-                                  onClick={() => {
-                                    setRefundTarget(b);
-                                    setRefundMode('confirm');
-                                    setRefundAmount(b.downpayment_php || b.total_php || '');
-                                    setRefundMethod(b.payment_method || 'GCash');
-                                  }}
-                                  style={{ color: '#10B981', borderColor: '#10B981', background: 'rgba(16,185,129,0.1)' }}
-                                  title="Approve & confirm refund with automated email"
-                                >
-                                  💵 Confirm Refund
-                                </button>
-                              ) : b.payment_status !== 'refunded' && (
-                                <button
-                                  className="act-btn"
-                                  onClick={() => {
-                                    setRefundTarget(b);
-                                    setRefundMode('request');
-                                    setRefundAmount(b.downpayment_php || b.total_php || '');
-                                  }}
-                                  style={{ color: '#F59E0B', borderColor: '#F59E0B' }}
-                                  title="Request refund with automated email on the day requested"
-                                >
-                                  💰 Refund
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
                 </div>
               )}
             </div>
@@ -5340,6 +5846,606 @@ export default function Admin() {
                   </div>
                 );
               })()}
+            </div>
+          )}
+
+          {/* MODAL: RECORD GENERAL LEDGER JOURNAL VOUCHER */}
+          {showAddJournalModal && (
+            <div
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(2, 6, 23, 0.78)',
+                backdropFilter: 'blur(8px)',
+                zIndex: 1000,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '16px 12px',
+              }}
+              onClick={() => setShowAddJournalModal(false)}
+            >
+              <div
+                style={{
+                  width: '100%',
+                  maxWidth: 620,
+                  background: isLightMode ? '#FFFFFF' : '#0F172A',
+                  borderRadius: 22,
+                  border: `1px solid ${themeBorder}`,
+                  boxShadow: '0 25px 60px -12px rgba(0,0,0,0.6)',
+                  maxHeight: '92vh',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflow: 'hidden',
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Header */}
+                <div style={{ padding: '20px 24px', borderBottom: `1px solid ${themeBorder}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <span style={{ fontSize: '.72rem', color: '#0EA5E9', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>
+                      DOUBLE-ENTRY BOOKKEEPING
+                    </span>
+                    <h3 className="serif" style={{ fontSize: '1.25rem', margin: '4px 0 0', color: themeText, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span>➕</span> Record Journal Voucher
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => setShowAddJournalModal(false)}
+                    style={{ background: 'transparent', border: 'none', color: themeMuted, fontSize: '1.4rem', cursor: 'pointer', padding: 4 }}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Form Body */}
+                <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1 }}>
+                  <form onSubmit={handlePostJournalEntry} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    {/* Mode Toggle */}
+                    <div style={{ display: 'flex', gap: 6, background: isLightMode ? '#F1F5F9' : 'rgba(30,41,59,0.8)', padding: 4, borderRadius: 12 }}>
+                      <button
+                        type="button"
+                        onClick={() => setJournalForm({ ...journalForm, mode: 'pair' })}
+                        style={{
+                          flex: 1,
+                          padding: '8px 12px',
+                          borderRadius: 8,
+                          border: 'none',
+                          background: journalForm.mode === 'pair' ? (isLightMode ? '#FFFFFF' : '#0F172A') : 'transparent',
+                          color: journalForm.mode === 'pair' ? (isLightMode ? '#0284C7' : '#38BDF8') : themeMuted,
+                          fontSize: '.78rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        ⚖️ Double-Entry Pair (Debit & Credit)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setJournalForm({ ...journalForm, mode: 'single' })}
+                        style={{
+                          flex: 1,
+                          padding: '8px 12px',
+                          borderRadius: 8,
+                          border: 'none',
+                          background: journalForm.mode === 'single' ? (isLightMode ? '#FFFFFF' : '#0F172A') : 'transparent',
+                          color: journalForm.mode === 'single' ? (isLightMode ? '#0284C7' : '#38BDF8') : themeMuted,
+                          fontSize: '.78rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        ⚡ Single Adjustment Entry
+                      </button>
+                    </div>
+
+                    {journalForm.mode === 'pair' ? (
+                      <>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 }}>
+                          <div>
+                            <label style={{ fontSize: '.78rem', color: isLightMode ? '#047857' : '#34D399', fontWeight: 700, display: 'block', marginBottom: 4 }}>
+                              Debit Account (Assets / Expenses) *
+                            </label>
+                            <select
+                              value={journalForm.debit_account_code}
+                              onChange={(e) => setJournalForm({ ...journalForm, debit_account_code: e.target.value })}
+                              style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText, fontSize: '.84rem' }}
+                            >
+                              {(chartOfAccounts.length > 0 ? chartOfAccounts : [
+                                { code: '1010', name: 'Cash on Hand & Digital Wallets' },
+                                { code: '1020', name: 'Accounts Receivable - Guest Folios' },
+                                { code: '5010', name: 'Kitchen & Food Supplies Expenses' },
+                                { code: '5020', name: 'Housekeeping Linens & Guest Amenities' },
+                                { code: '5030', name: 'Resort Utilities & Generator Fuel' },
+                                { code: '5040', name: 'Repairs & Property Maintenance' },
+                                { code: '2020', name: 'Guest Refunds Payable' },
+                              ]).map((acc) => (
+                                <option key={acc.code} value={acc.code}>
+                                  {acc.code} - {acc.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '.78rem', color: isLightMode ? '#1D4ED8' : '#60A5FA', fontWeight: 700, display: 'block', marginBottom: 4 }}>
+                              Credit Account (Revenue / Liabilities) *
+                            </label>
+                            <select
+                              value={journalForm.credit_account_code}
+                              onChange={(e) => setJournalForm({ ...journalForm, credit_account_code: e.target.value })}
+                              style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText, fontSize: '.84rem' }}
+                            >
+                              {(chartOfAccounts.length > 0 ? chartOfAccounts : [
+                                { code: '4010', name: 'Room Accommodations Revenue' },
+                                { code: '4020', name: 'Kitchen & Dining Revenue' },
+                                { code: '4030', name: 'Island Tours & Water Activities' },
+                                { code: '2010', name: 'Guest Reservation Deposits & Advances' },
+                                { code: '1010', name: 'Cash on Hand & Digital Wallets' },
+                              ]).map((acc) => (
+                                <option key={acc.code} value={acc.code}>
+                                  {acc.code} - {acc.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 }}>
+                          <div>
+                            <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>
+                              Account *
+                            </label>
+                            <select
+                              value={journalForm.debit_account_code}
+                              onChange={(e) => setJournalForm({ ...journalForm, debit_account_code: e.target.value })}
+                              style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText, fontSize: '.84rem' }}
+                            >
+                              {(chartOfAccounts.length > 0 ? chartOfAccounts : [
+                                { code: '1010', name: 'Cash on Hand & Digital Wallets' },
+                                { code: '4010', name: 'Room Accommodations Revenue' },
+                                { code: '5010', name: 'Kitchen & Food Supplies' },
+                              ]).map((acc) => (
+                                <option key={acc.code} value={acc.code}>
+                                  {acc.code} - {acc.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>
+                              Entry Type *
+                            </label>
+                            <select
+                              value={journalForm.category}
+                              onChange={(e) => setJournalForm({ ...journalForm, category: e.target.value })}
+                              style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText, fontSize: '.84rem' }}
+                            >
+                              <option value="ADJUSTMENT">Adjustment (DEBIT)</option>
+                              <option value="REVENUE">Revenue (CREDIT)</option>
+                              <option value="PAYMENT">Payment (DEBIT)</option>
+                              <option value="EXPENSE">Expense (DEBIT)</option>
+                              <option value="REFUND">Refund (DEBIT)</option>
+                            </select>
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+                      <div>
+                        <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>
+                          Amount in Philippine Peso (PHP) *
+                        </label>
+                        <input
+                          type="number"
+                          required
+                          min={1}
+                          step="0.01"
+                          placeholder="e.g. 5000"
+                          value={journalForm.amount_php || ''}
+                          onChange={(e) => setJournalForm({ ...journalForm, amount_php: parseFloat(e.target.value) || 0 })}
+                          style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText, fontSize: '.84rem', fontWeight: 700 }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>
+                          Category
+                        </label>
+                        <select
+                          value={journalForm.category}
+                          onChange={(e) => setJournalForm({ ...journalForm, category: e.target.value })}
+                          style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText, fontSize: '.84rem' }}
+                        >
+                          <option value="REVENUE">Revenue</option>
+                          <option value="PAYMENT">Payment</option>
+                          <option value="EXPENSE">Expense</option>
+                          <option value="REFUND">Refund</option>
+                          <option value="ADJUSTMENT">Adjustment</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>
+                        Particulars / Description *
+                      </label>
+                      <input
+                        required
+                        placeholder="e.g. Cash settlement for walk-in guest at Unit GEL Premier Suite"
+                        value={journalForm.particulars}
+                        onChange={(e) => setJournalForm({ ...journalForm, particulars: e.target.value })}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText, fontSize: '.84rem' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>
+                        Reference / Voucher ID (Optional)
+                      </label>
+                      <input
+                        placeholder="e.g. OR-2026-9014 or RES-1010"
+                        value={journalForm.reference_id}
+                        onChange={(e) => setJournalForm({ ...journalForm, reference_id: e.target.value })}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText, fontSize: '.84rem' }}
+                      />
+                    </div>
+
+                    {/* Submit Actions */}
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 12 }}>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => setShowAddJournalModal(false)}
+                        style={{ color: themeText }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="btn btn-sky btn-sm"
+                        disabled={postingJournal}
+                        style={{ fontWeight: 700 }}
+                      >
+                        {postingJournal ? 'Posting Voucher…' : 'Save & Post Journal Entry ✦'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL: POSTGRESQL BACKUP & ADAPTIVE MIGRATION HUB */}
+          {showBackupModal && (
+            <div
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(2, 6, 23, 0.78)',
+                backdropFilter: 'blur(8px)',
+                zIndex: 1000,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '16px 12px',
+              }}
+              onClick={() => setShowBackupModal(false)}
+            >
+              <div
+                style={{
+                  width: '100%',
+                  maxWidth: 780,
+                  background: isLightMode ? '#FFFFFF' : '#0F172A',
+                  borderRadius: 22,
+                  border: `1px solid ${themeBorder}`,
+                  boxShadow: '0 25px 60px -12px rgba(0,0,0,0.6)',
+                  maxHeight: '92vh',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflow: 'hidden',
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Header */}
+                <div style={{ padding: '20px 24px', borderBottom: `1px solid ${themeBorder}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <span style={{ fontSize: '.72rem', color: '#6366F1', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>
+                      POSTGRESQL & SUPABASE DATA PLATFORM
+                    </span>
+                    <h3 className="serif" style={{ fontSize: '1.25rem', margin: '4px 0 0', color: themeText, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span>🐘</span> PostgreSQL Ledger Backup & Adaptive Migration
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => setShowBackupModal(false)}
+                    style={{ background: 'transparent', border: 'none', color: themeMuted, fontSize: '1.4rem', cursor: 'pointer', padding: 4 }}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Sub-Tabs: Export vs Import */}
+                <div style={{ display: 'flex', borderBottom: `1px solid ${themeBorder}`, padding: '0 24px', gap: 16 }}>
+                  <button
+                    onClick={() => setBackupTab('export')}
+                    style={{
+                      padding: '12px 14px',
+                      border: 'none',
+                      borderBottom: `2px solid ${backupTab === 'export' ? '#6366F1' : 'transparent'}`,
+                      background: 'transparent',
+                      color: backupTab === 'export' ? (isLightMode ? '#4338CA' : '#818CF8') : themeMuted,
+                      fontWeight: 700,
+                      fontSize: '.84rem',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    📤 Export PostgreSQL Backup
+                  </button>
+                  <button
+                    onClick={() => setBackupTab('import')}
+                    style={{
+                      padding: '12px 14px',
+                      border: 'none',
+                      borderBottom: `2px solid ${backupTab === 'import' ? '#6366F1' : 'transparent'}`,
+                      background: 'transparent',
+                      color: backupTab === 'import' ? (isLightMode ? '#4338CA' : '#818CF8') : themeMuted,
+                      fontWeight: 700,
+                      fontSize: '.84rem',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    📥 Adaptive Import & Restore
+                  </button>
+                </div>
+
+                {/* Body Content */}
+                <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1 }}>
+                  {backupTab === 'export' ? (
+                    <div>
+                      <p style={{ margin: '0 0 16px', color: themeMuted, fontSize: '.84rem' }}>
+                        Generate complete PostgreSQL backups adhering to the <strong>public.ledger_entries</strong> schema. Choose your desired target format below:
+                      </p>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14, marginBottom: 20 }}>
+                        {/* SQL Dump */}
+                        <div style={{ padding: '16px', borderRadius: 14, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)' }}>
+                          <span style={{ fontSize: '1.5rem', display: 'block', marginBottom: 8 }}>🐘</span>
+                          <b style={{ color: themeText, fontSize: '.92rem', display: 'block' }}>PostgreSQL SQL Dump (.sql)</b>
+                          <p style={{ color: themeMuted, fontSize: '.74rem', margin: '4px 0 14px' }}>
+                            Full DDL, indexes, and transactional INSERT clauses with ON CONFLICT resolution for PostgreSQL 15+ / Supabase.
+                          </p>
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                            <a
+                              href={api.exportLedgerBackupUrl('sql', true)}
+                              download
+                              className="btn btn-sky btn-sm"
+                              style={{ fontSize: '.74rem', fontWeight: 700 }}
+                            >
+                              📥 Download .sql
+                            </a>
+                            <button
+                              type="button"
+                              className="btn btn-ghost btn-sm"
+                              style={{ fontSize: '.74rem', color: themeText, border: `1px solid ${themeBorder}` }}
+                              onClick={async () => {
+                                setLoadingPreviewSql(true);
+                                try {
+                                  const text = await api.fetchLedgerBackupText('sql');
+                                  setPreviewSqlText(text);
+                                } catch (e: any) {
+                                  toast(e.message, true);
+                                } finally {
+                                  setLoadingPreviewSql(false);
+                                }
+                              }}
+                            >
+                              {loadingPreviewSql ? 'Loading…' : '👁️ View / Copy'}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* JSON Archive */}
+                        <div style={{ padding: '16px', borderRadius: 14, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)' }}>
+                          <span style={{ fontSize: '1.5rem', display: 'block', marginBottom: 8 }}>📄</span>
+                          <b style={{ color: themeText, fontSize: '.92rem', display: 'block' }}>Structured JSON Backup (.json)</b>
+                          <p style={{ color: themeMuted, fontSize: '.74rem', margin: '4px 0 14px' }}>
+                            JSON archive containing complete ledger records, Trial Balance audit metrics, and Chart of Accounts catalog.
+                          </p>
+                          <a
+                            href={api.exportLedgerBackupUrl('json', true)}
+                            download
+                            className="btn btn-sky btn-sm"
+                            style={{ fontSize: '.74rem', fontWeight: 700 }}
+                          >
+                            📥 Download .json
+                          </a>
+                        </div>
+
+                        {/* CSV Spreadsheet */}
+                        <div style={{ padding: '16px', borderRadius: 14, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)' }}>
+                          <span style={{ fontSize: '1.5rem', display: 'block', marginBottom: 8 }}>📊</span>
+                          <b style={{ color: themeText, fontSize: '.92rem', display: 'block' }}>RFC 4180 CSV (.csv)</b>
+                          <p style={{ color: themeMuted, fontSize: '.74rem', margin: '4px 0 14px' }}>
+                            Universal spreadsheet format with dates, accounts, separate debit/credit columns, and running balance.
+                          </p>
+                          <a
+                            href={api.exportLedgerBackupUrl('csv', true)}
+                            download
+                            className="btn btn-sky btn-sm"
+                            style={{ fontSize: '.74rem', fontWeight: 700 }}
+                          >
+                            📥 Download .csv
+                          </a>
+                        </div>
+                      </div>
+
+                      {/* SQL Code Preview box */}
+                      {previewSqlText && (
+                        <div style={{ marginTop: 16 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                            <span style={{ fontSize: '.74rem', color: themeMuted, fontWeight: 700 }}>
+                              POSTGRESQL DUMP PREVIEW
+                            </span>
+                            <button
+                              className="btn btn-sm btn-ghost"
+                              style={{ fontSize: '.72rem', color: '#0EA5E9' }}
+                              onClick={() => {
+                                navigator.clipboard.writeText(previewSqlText);
+                                toast('✦ PostgreSQL SQL dump copied to clipboard!');
+                              }}
+                            >
+                              📋 Copy to Clipboard
+                            </button>
+                          </div>
+                          <textarea
+                            readOnly
+                            rows={10}
+                            value={previewSqlText}
+                            style={{
+                              width: '100%',
+                              padding: '12px',
+                              borderRadius: 10,
+                              fontFamily: 'monospace',
+                              fontSize: '.78rem',
+                              border: `1px solid ${themeBorder}`,
+                              background: isLightMode ? '#F1F5F9' : '#020617',
+                              color: themeText,
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div>
+                      <p style={{ margin: '0 0 14px', color: themeMuted, fontSize: '.84rem' }}>
+                        The <strong>Adaptive Import Engine</strong> automatically recognizes your data format: PostgreSQL SQL dump (INSERT/CREATE TABLE), JSON archives, CSV spreadsheets, or physical logbook notations.
+                      </p>
+
+                      {/* Format Auto-Detection Pill */}
+                      {(() => {
+                        const detectFormat = (text: string) => {
+                          const t = text.trim();
+                          if (!t) return { label: 'Awaiting file or pasted text…', color: '#64748B', icon: 'ℹ️' };
+                          if (t.includes('INSERT INTO') || t.includes('CREATE TABLE') || (t.startsWith('BEGIN;') && t.includes('INSERT INTO')) || /INSERT\s+INTO\s+[a-z0-9_.]*ledger_entries/i.test(t)) {
+                            return { label: 'Detected Format: PostgreSQL Dump (SQL)', color: '#10B981', icon: '🐘' };
+                          }
+                          if ((t.startsWith('[') && t.endsWith(']')) || (t.startsWith('{') && t.endsWith('}'))) {
+                            return { label: 'Detected Format: JSON Ledger Data', color: '#0EA5E9', icon: '📄' };
+                          }
+                          if (t.includes(',') && (t.toLowerCase().includes('debit') || t.toLowerCase().includes('credit') || t.toLowerCase().includes('particulars'))) {
+                            return { label: 'Detected Format: CSV Spreadsheet', color: '#F59E0B', icon: '📊' };
+                          }
+                          if (t.includes('|') || t.match(/\d+[\d,]*\s*-\s*\d+[\d,]*\s*=/)) {
+                            return { label: 'Detected Format: Physical Logbook Notation', color: '#8B5CF6', icon: '📋' };
+                          }
+                          return { label: 'Detected Format: Raw Text / Auto-Adaptive', color: '#0EA5E9', icon: '⚡' };
+                        };
+
+                        const detected = detectFormat(importContent);
+
+                        return (
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '.78rem', fontWeight: 700, color: detected.color, background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.06)', padding: '4px 10px', borderRadius: 8, border: `1px solid ${detected.color}` }}>
+                              <span>{detected.icon}</span> {detected.label}
+                            </div>
+                            <label style={{ fontSize: '.78rem', color: '#0EA5E9', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <span>📁</span> Upload File (.sql, .json, .csv, .txt)
+                              <input
+                                type="file"
+                                accept=".sql,.json,.csv,.txt"
+                                style={{ display: 'none' }}
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    const reader = new FileReader();
+                                    reader.onload = (evt) => {
+                                      const text = evt.target?.result;
+                                      if (typeof text === 'string') {
+                                        setImportContent(text);
+                                        toast(`✦ File loaded: ${file.name} (${Math.round(file.size / 1024)} KB)`);
+                                      }
+                                    };
+                                    reader.readAsText(file);
+                                  }
+                                }}
+                              />
+                            </label>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Textarea for Import Content */}
+                      <textarea
+                        rows={9}
+                        placeholder="Paste PostgreSQL SQL statements, JSON records, CSV text, or pipe-delimited logbook lines here…"
+                        value={importContent}
+                        onChange={(e) => setImportContent(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          borderRadius: 10,
+                          border: `1px solid ${themeBorder}`,
+                          background: isLightMode ? '#FFF' : '#1E293B',
+                          color: themeText,
+                          fontFamily: 'monospace',
+                          fontSize: '.78rem',
+                          marginBottom: 14,
+                        }}
+                      />
+
+                      {/* Import Mode Options */}
+                      <div style={{ marginBottom: 16 }}>
+                        <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 6 }}>
+                          Import Restoration Strategy
+                        </label>
+                        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '.82rem', color: themeText, cursor: 'pointer' }}>
+                            <input
+                              type="radio"
+                              name="importMode"
+                              checked={importMode === 'append'}
+                              onChange={() => setImportMode('append')}
+                            />
+                            <b>Append & Reconcile (Recommended)</b> — Preserves existing entries, only adds new records
+                          </label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '.82rem', color: isLightMode ? '#DC2626' : '#F87171', cursor: 'pointer' }}>
+                            <input
+                              type="radio"
+                              name="importMode"
+                              checked={importMode === 'overwrite'}
+                              onChange={() => setImportMode('overwrite')}
+                            />
+                            <b>Complete Overwrite & Restore</b> — Clears current ledger and restores from backup
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Execute Button */}
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => setShowBackupModal(false)}
+                          style={{ color: themeText }}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-sky btn-sm"
+                          disabled={importingBackup || !importContent.trim()}
+                          onClick={handleExecuteImport}
+                          style={{ fontWeight: 700 }}
+                        >
+                          {importingBackup ? 'Parsing & Restoring…' : '🚀 Execute Adaptive Import ✦'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 

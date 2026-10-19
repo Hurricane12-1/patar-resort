@@ -21,6 +21,17 @@ import {
   runReActLedgerIngestion,
   ROOMS_CATALOG,
 } from '../src/agents/ledgerIngestionAgent.js';
+import {
+  CHART_OF_ACCOUNTS,
+  getLedgerEntries,
+  createLedgerEntry,
+  createJournalPair,
+  calculateTrialBalance,
+  exportPostgresSQL,
+  exportJSON,
+  exportCSV,
+  importAdaptiveBackup,
+} from '../src/lib/ledgerService.js';
 import { registry } from '../src/framework/ModuleRegistry.js';
 import { createModuleSandbox, extractEndpoints } from '../src/framework/ModuleSandbox.js';
 import { loadRouteModule, loadDomainPlugin, bootstrapFramework } from '../src/framework/ModuleLoader.js';
@@ -1312,6 +1323,109 @@ await runTest('Account Deletion Lifecycle, Promotion Removal & Real-Time Room Lo
   const roomsSrc = fs.readFileSync(path.resolve(projectRoot, 'client/src/pages/Rooms.tsx'), 'utf8');
   assert(roomsSrc.includes('Occupied Until Checkout'), 'Rooms.tsx must display Occupied Until Checkout status');
   assert(roomsSrc.includes('AvailabilityCalendar'), 'Rooms.tsx must integrate AvailabilityCalendar');
+});
+
+// 35. Double-Entry Debit & Credit Ledger, Trial Balance & Adaptive PostgreSQL Backup Suite
+await runTest('Debit & Credit Ledger: Chart of Accounts, Double-Entry Pairs, Trial Balance & Adaptive PostgreSQL Backup', async () => {
+  // 1. Chart of Accounts verification
+  assert.ok(Array.isArray(CHART_OF_ACCOUNTS), 'CHART_OF_ACCOUNTS must be an array');
+  assert.ok(CHART_OF_ACCOUNTS.length >= 10, 'Chart of accounts must have at least 10 accounts');
+  const cashAcc = CHART_OF_ACCOUNTS.find((a) => a.code === '1010');
+  assert.strictEqual(cashAcc.type, 'ASSET');
+  assert.strictEqual(cashAcc.normal, 'DEBIT');
+  const revAcc = CHART_OF_ACCOUNTS.find((a) => a.code === '4010');
+  assert.strictEqual(revAcc.type, 'REVENUE');
+  assert.strictEqual(revAcc.normal, 'CREDIT');
+
+  // 2. Double-entry journal pair posting
+  const pairResult = await createJournalPair({
+    debit_account_code: '1010',
+    credit_account_code: '4010',
+    amount_php: 18000,
+    particulars: 'Test Stay Settlement Unit TEV',
+    reference_id: 'TRX-TEST-001',
+    category: 'REVENUE',
+  }, { email: 'admin@rockviewresort.ph' });
+
+  assert.ok(pairResult.success, 'createJournalPair must succeed');
+  assert.strictEqual(pairResult.debit.entry_type, 'DEBIT');
+  assert.strictEqual(pairResult.debit.debit_php, 18000);
+  assert.strictEqual(pairResult.credit.entry_type, 'CREDIT');
+  assert.strictEqual(pairResult.credit.credit_php, 18000);
+
+  // 3. Trial balance calculation
+  const tb = calculateTrialBalance();
+  assert.ok(tb.total_debits_php > 0, 'Trial balance must calculate total debits');
+  assert.ok(tb.total_credits_php > 0, 'Trial balance must calculate total credits');
+  assert.ok(typeof tb.is_balanced === 'boolean', 'Trial balance must return boolean is_balanced');
+
+  // 4. PostgreSQL Dump export
+  const sqlDump = exportPostgresSQL();
+  assert.ok(sqlDump.includes('BEGIN;'), 'SQL dump must start transaction with BEGIN;');
+  assert.ok(sqlDump.includes('CREATE TABLE IF NOT EXISTS public.ledger_entries'), 'SQL dump must contain DDL');
+  assert.ok(sqlDump.includes('INSERT INTO public.ledger_entries'), 'SQL dump must contain INSERT statements');
+  assert.ok(sqlDump.includes('COMMIT;'), 'SQL dump must commit transaction');
+
+  // 5. JSON export
+  const jsonExport = exportJSON();
+  assert.strictEqual(jsonExport.table, 'public.ledger_entries');
+  assert.ok(Array.isArray(jsonExport.records), 'JSON export must contain records array');
+  assert.ok(jsonExport.trial_balance, 'JSON export must include trial balance');
+
+  // 6. CSV export
+  const csvExport = exportCSV();
+  assert.ok(csvExport.includes('entry_number,posted_at,account_code'), 'CSV export must include standard headers');
+  assert.ok(csvExport.includes('1010'), 'CSV export must contain account entries');
+
+  // 7. Adaptive Import: PostgreSQL SQL Dump
+  const sqlImportResult = await importAdaptiveBackup(sqlDump, { mode: 'append' }, { email: 'test@rockviewresort.ph' });
+  assert.strictEqual(sqlImportResult.detected_format, 'sql', 'Must detect SQL dump format');
+  assert.ok(sqlImportResult.imported_count > 0, 'Must import records from SQL dump');
+
+  // 8. Adaptive Import: JSON
+  const sampleJson = JSON.stringify([
+    {
+      account_code: '1010',
+      account_name: 'Cash on Hand & Digital Wallets',
+      entry_type: 'DEBIT',
+      debit_php: 5000,
+      credit_php: 0,
+      particulars: 'JSON Import Test Deposit',
+    },
+    {
+      account_code: '2010',
+      account_name: 'Guest Reservation Deposits',
+      entry_type: 'CREDIT',
+      debit_php: 0,
+      credit_php: 5000,
+      particulars: 'JSON Import Test Liability',
+    },
+  ]);
+  const jsonImportResult = await importAdaptiveBackup(sampleJson, { mode: 'append' });
+  assert.strictEqual(jsonImportResult.detected_format, 'json', 'Must detect JSON format');
+  assert.strictEqual(jsonImportResult.imported_count, 2, 'Must import 2 records from JSON');
+
+  // 9. Adaptive Import: CSV
+  const sampleCsv = `entry_number,posted_at,account_code,account_name,entry_type,debit_php,credit_php,running_balance_php,category,particulars,reference_id,status\nLED-CSV-01,2026-10-02T10:00:00Z,1010,Cash on Hand,DEBIT,3000,0,3000,PAYMENT,CSV Test Entry,REF-CSV,POSTED`;
+  const csvImportResult = await importAdaptiveBackup(sampleCsv, { mode: 'append' });
+  assert.strictEqual(csvImportResult.detected_format, 'csv', 'Must detect CSV format');
+  assert.strictEqual(csvImportResult.imported_count, 1, 'Must import 1 record from CSV');
+
+  // 10. Adaptive Import: Physical Logbook notation
+  const logbookSample = `Juan Dela Cruz | 2026-10-01 to 2026-10-03 | Unit TEV | 18,000 - 3,000 = 15,000 Bal | DP Paid via GCash`;
+  const logbookImportResult = await importAdaptiveBackup(logbookSample, { mode: 'append' });
+  assert.strictEqual(logbookImportResult.detected_format, 'logbook', 'Must detect logbook format');
+  assert.strictEqual(logbookImportResult.imported_count, 2, 'Must generate dual debit & credit records from logbook line');
+
+  // 11. Schema DDL & Admin Frontend Verification
+  const schemaSql = fs.readFileSync(path.resolve(projectRoot, 'schema.sql'), 'utf8');
+  assert.ok(schemaSql.includes('public.ledger_entries'), 'schema.sql must define public.ledger_entries');
+
+  const adminSrc = fs.readFileSync(path.resolve(projectRoot, 'client/src/pages/Admin.tsx'), 'utf8');
+  assert.ok(adminSrc.includes('General Ledger (Debit & Credit System)'), 'Admin.tsx must render General Ledger Debit & Credit view');
+  assert.ok(adminSrc.includes('Trial Balance Status'), 'Admin.tsx must render Trial Balance Status');
+  assert.ok(adminSrc.includes('PostgreSQL Ledger Backup & Adaptive Migration'), 'Admin.tsx must render PostgreSQL Backup & Migration modal');
+  assert.ok(adminSrc.includes('Record Journal Voucher'), 'Admin.tsx must render Journal Voucher modal');
 });
 
 console.log('\n-------------------------------------------------------------');

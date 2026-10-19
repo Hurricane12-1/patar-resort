@@ -358,6 +358,34 @@ CREATE TABLE IF NOT EXISTS public.audit_logs (
 );
 COMMENT ON TABLE public.audit_logs IS 'System Security & Compliance Audit Trail Storage';
 
+-- O. General Ledger (Double-Entry Debit & Credit Journal Storage)
+CREATE TABLE IF NOT EXISTS public.ledger_entries (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  entry_number VARCHAR(64) UNIQUE NOT NULL,
+  posted_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  account_code VARCHAR(16) NOT NULL,
+  account_name VARCHAR(128) NOT NULL,
+  account_type VARCHAR(32) NOT NULL DEFAULT 'ASSET',
+  entry_type VARCHAR(16) NOT NULL CHECK (entry_type IN ('DEBIT', 'CREDIT')),
+  debit_php NUMERIC(14, 2) NOT NULL DEFAULT 0 CHECK (debit_php >= 0),
+  credit_php NUMERIC(14, 2) NOT NULL DEFAULT 0 CHECK (credit_php >= 0),
+  running_balance_php NUMERIC(14, 2) NOT NULL DEFAULT 0,
+  category VARCHAR(32) NOT NULL DEFAULT 'ADJUSTMENT',
+  particulars TEXT NOT NULL DEFAULT '',
+  reference_id VARCHAR(128),
+  status VARCHAR(32) NOT NULL DEFAULT 'POSTED',
+  created_by VARCHAR(128) DEFAULT 'system@rockviewresort.ph',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+COMMENT ON TABLE public.ledger_entries IS 'Resort Double-Entry Debit & Credit Financial Ledger Storage';
+
+CREATE INDEX IF NOT EXISTS idx_ledger_entries_posted_at ON public.ledger_entries (posted_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ledger_entries_account_code ON public.ledger_entries (account_code);
+CREATE INDEX IF NOT EXISTS idx_ledger_entries_entry_type ON public.ledger_entries (entry_type);
+CREATE INDEX IF NOT EXISTS idx_ledger_entries_category ON public.ledger_entries (category);
+CREATE INDEX IF NOT EXISTS idx_ledger_entries_reference_id ON public.ledger_entries (reference_id);
+
+
 -- ==============================================================================
 -- 4. Analytical Views
 -- ==============================================================================
