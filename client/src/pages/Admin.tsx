@@ -125,7 +125,7 @@ export default function Admin() {
   const [loadingLedger, setLoadingLedger] = useState(false);
   const [trialBalance, setTrialBalance] = useState<any>(null);
   const [chartOfAccounts, setChartOfAccounts] = useState<any[]>([]);
-  const [ledgerSubView, setLedgerSubView] = useState<'debit_credit' | 'stay_folios' | 'availability'>('debit_credit');
+  const [ledgerSubView, setLedgerSubView] = useState<'stay_folios' | 'availability' | 'debit_credit'>('stay_folios');
   const [ledgerAccountFilter, setLedgerAccountFilter] = useState('');
   const [ledgerCategoryFilter, setLedgerCategoryFilter] = useState('');
   const [ledgerTypeFilter, setLedgerTypeFilter] = useState<'all' | 'debit' | 'credit'>('all');
@@ -1602,7 +1602,7 @@ export default function Admin() {
 
   const sidebarItems = [
     { key: 'overview', label: 'Dashboard & Analytics', icon: <IconAnalytics size={19} /> },
-    { key: 'ledger', label: 'General Ledger (Debit & Credit)', icon: <IconLedger size={19} />, count: (ledgerEntriesList.length > 0 ? ledgerEntriesList.length : allBookings.length), badgeColor: '#0EA5E9' },
+    { key: 'ledger', label: 'Bookings & Reservations', icon: <IconLedger size={19} />, count: allBookings.length, badgeColor: '#0EA5E9' },
     { key: 'notifications', label: 'Alerts & Notifications', icon: <IconBell size={19} />, count: unreadNotifsCount, badgeColor: '#F43F5E' },
     { key: 'inventory', label: 'Accommodations & Inventory', icon: <IconBuilding size={19} /> },
     { key: 'conversations', label: 'Customer Services', icon: <IconMessages size={19} /> },
@@ -4427,138 +4427,309 @@ export default function Admin() {
           {/* TAB 6: DOUBLE-ENTRY GENERAL LEDGER (DEBIT & CREDIT) */}
           {activeTab === 'ledger' && (
             <div className="panel" style={{ background: themeCardBg, border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 24, boxShadow: themeShadow }}>
-              {/* Header & Quick Action Buttons */}
-              <div className="admin-tab-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 14 }}>
+              {/* Header & Dynamic Contextual Action Buttons */}
+              <div className="admin-tab-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, flexWrap: 'wrap', gap: 14 }}>
                 <div>
                   <span style={{ fontSize: '.76rem', color: '#0EA5E9', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>
-                    ROCK VIEW BEACH RESORT · DOUBLE-ENTRY ACCOUNTING
+                    ROCK VIEW BEACH RESORT · BOOKINGS & RESERVATIONS OPERATIONS
                   </span>
                   <h3 className="serif" style={{ fontSize: '1.45rem', margin: '4px 0 0', color: themeText, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span>⚖️</span> General Ledger (Debit & Credit System)
+                    {ledgerSubView === 'stay_folios' && (
+                      <>
+                        <span>📋</span> Bookings & Guest Stay Folios
+                      </>
+                    )}
+                    {ledgerSubView === 'availability' && (
+                      <>
+                        <span>📅</span> Bookings & Visual Room Lock Calendar
+                      </>
+                    )}
+                    {ledgerSubView === 'debit_credit' && (
+                      <>
+                        <span>⚖️</span> General Ledger (Debit & Credit System)
+                      </>
+                    )}
                   </h3>
                   <p className="muted small" style={{ margin: '4px 0 0' }}>
-                    Dual-entry bookkeeping with real-time Trial Balance, Chart of Accounts, and adaptive PostgreSQL backup migration.
+                    {ledgerSubView === 'stay_folios' &&
+                      'Real-time guest reservation folios, room assignments, direct walk-ins, and front desk check-in / check-out operations.'}
+                    {ledgerSubView === 'availability' &&
+                      'Interactive multi-month room occupancy timeline, real-time checkout locks, and date range walk-in dispatch.'}
+                    {ledgerSubView === 'debit_credit' &&
+                      'Dual-entry bookkeeping with real-time Trial Balance, Chart of Accounts, and adaptive PostgreSQL backup migration.'}
                   </p>
                 </div>
+
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-                  <button
-                    className="btn btn-sky btn-sm"
-                    onClick={() => setShowAddJournalModal(true)}
-                    style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
-                  >
-                    <span>➕</span> New Journal Entry
-                  </button>
-                  <button
-                    className="btn btn-sm btn-ghost"
-                    onClick={handleReconcileLedger}
-                    disabled={reconcilingLedger}
-                    style={{
-                      color: isLightMode ? '#0D9488' : '#2DD4BF',
-                      border: `1px solid ${isLightMode ? '#99F6E4' : 'rgba(45, 212, 191, 0.3)'}`,
-                      background: isLightMode ? '#F0FDFA' : 'rgba(45, 212, 191, 0.12)',
-                      fontWeight: 700,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                    }}
-                    title="Automatically sync and post unrecorded reservations and orders as double-entry journal vouchers"
-                  >
-                    <span>⚡</span> {reconcilingLedger ? 'Reconciling…' : 'Sync & Reconcile Stays'}
-                  </button>
-                  <button
-                    className="btn btn-sm btn-ghost"
-                    onClick={() => {
-                      setBackupTab('export');
-                      setShowBackupModal(true);
-                    }}
-                    style={{
-                      color: isLightMode ? '#4338CA' : '#818CF8',
-                      border: `1px solid ${isLightMode ? '#C7D2FE' : 'rgba(129, 140, 248, 0.3)'}`,
-                      background: isLightMode ? '#EEF2FF' : 'rgba(129, 140, 248, 0.12)',
-                      fontWeight: 700,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                    }}
-                    title="Export or Import PostgreSQL SQL dump, JSON, CSV, or logbook notation"
-                  >
-                    <span>💾</span> PostgreSQL Backup & Migration
-                  </button>
-                  <button
-                    className="btn btn-sm btn-ghost"
-                    onClick={() => {
-                      refreshLedgerEntries();
-                      refreshReservations();
-                    }}
-                    disabled={loadingLedger || loadingReservations}
-                    style={{ color: themeText, border: `1px solid ${themeBorder}`, fontWeight: 600 }}
-                  >
-                    {loadingLedger ? 'Refreshing…' : '🔄 Refresh'}
-                  </button>
+                  {ledgerSubView === 'stay_folios' && (
+                    <>
+                      <button
+                        className="btn btn-sky btn-sm"
+                        onClick={() => {
+                          if (!newReservation.room_id && roomsList.length > 0) {
+                            const firstRoom = roomsList[0];
+                            const nights = Math.max(1, Math.round((new Date(newReservation.check_out).getTime() - new Date(newReservation.check_in).getTime()) / 86400000));
+                            setNewReservation((prev) => ({
+                              ...prev,
+                              room_id: firstRoom.id,
+                              total_php: (firstRoom.rate_php || 3500) * nights,
+                            }));
+                          }
+                          setShowAddReservationModal(true);
+                        }}
+                        style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
+                      >
+                        <span>➕</span> Walk-In / Phone Booking
+                      </button>
+                      <button
+                        className="btn btn-sm btn-ghost"
+                        onClick={handleReconcileLedger}
+                        disabled={reconcilingLedger}
+                        style={{
+                          color: isLightMode ? '#0D9488' : '#2DD4BF',
+                          border: `1px solid ${isLightMode ? '#99F6E4' : 'rgba(45, 212, 191, 0.3)'}`,
+                          background: isLightMode ? '#F0FDFA' : 'rgba(45, 212, 191, 0.12)',
+                          fontWeight: 700,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                        }}
+                        title="Sync reservations into double-entry ledger vouchers"
+                      >
+                        <span>⚡</span> {reconcilingLedger ? 'Syncing…' : 'Sync with Ledger'}
+                      </button>
+                      <button
+                        className="btn btn-sm btn-ghost"
+                        onClick={() => refreshReservations()}
+                        disabled={loadingReservations}
+                        style={{ color: themeText, border: `1px solid ${themeBorder}`, fontWeight: 600 }}
+                      >
+                        {loadingReservations ? 'Refreshing…' : '🔄 Refresh Stays'}
+                      </button>
+                    </>
+                  )}
+
+                  {ledgerSubView === 'availability' && (
+                    <>
+                      <button
+                        className="btn btn-sky btn-sm"
+                        onClick={() => setShowAddReservationModal(true)}
+                        style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
+                      >
+                        <span>➕</span> Walk-In Booking
+                      </button>
+                      <button
+                        className="btn btn-sm btn-ghost"
+                        onClick={() => setLedgerSubView('stay_folios')}
+                        style={{ color: themeText, border: `1px solid ${themeBorder}`, fontWeight: 600 }}
+                      >
+                        <span>📋</span> View Folios Table
+                      </button>
+                      <button
+                        className="btn btn-sm btn-ghost"
+                        onClick={() => {
+                          refreshReservations();
+                          if (roomsList.length === 0) api.rooms(true).then((r: any) => setRoomsList(Array.isArray(r) ? r : [])).catch(() => {});
+                        }}
+                        style={{ color: themeText, border: `1px solid ${themeBorder}`, fontWeight: 600 }}
+                      >
+                        🔄 Refresh Calendar
+                      </button>
+                    </>
+                  )}
+
+                  {ledgerSubView === 'debit_credit' && (
+                    <>
+                      <button
+                        className="btn btn-sky btn-sm"
+                        onClick={() => setShowAddJournalModal(true)}
+                        style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
+                      >
+                        <span>➕</span> New Journal Entry
+                      </button>
+                      <button
+                        className="btn btn-sm btn-ghost"
+                        onClick={handleReconcileLedger}
+                        disabled={reconcilingLedger}
+                        style={{
+                          color: isLightMode ? '#0D9488' : '#2DD4BF',
+                          border: `1px solid ${isLightMode ? '#99F6E4' : 'rgba(45, 212, 191, 0.3)'}`,
+                          background: isLightMode ? '#F0FDFA' : 'rgba(45, 212, 191, 0.12)',
+                          fontWeight: 700,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                        }}
+                        title="Automatically sync and post unrecorded reservations and orders as double-entry journal vouchers"
+                      >
+                        <span>⚡</span> {reconcilingLedger ? 'Reconciling…' : 'Sync & Reconcile Stays'}
+                      </button>
+                      <button
+                        className="btn btn-sm btn-ghost"
+                        onClick={() => {
+                          setBackupTab('export');
+                          setShowBackupModal(true);
+                        }}
+                        style={{
+                          color: isLightMode ? '#4338CA' : '#818CF8',
+                          border: `1px solid ${isLightMode ? '#C7D2FE' : 'rgba(129, 140, 248, 0.3)'}`,
+                          background: isLightMode ? '#EEF2FF' : 'rgba(129, 140, 248, 0.12)',
+                          fontWeight: 700,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                        }}
+                        title="Export or Import PostgreSQL SQL dump, JSON, CSV, or logbook notation"
+                      >
+                        <span>💾</span> PostgreSQL Backup & Migration
+                      </button>
+                      <button
+                        className="btn btn-sm btn-ghost"
+                        onClick={() => {
+                          refreshLedgerEntries();
+                          refreshReservations();
+                        }}
+                        disabled={loadingLedger || loadingReservations}
+                        style={{ color: themeText, border: `1px solid ${themeBorder}`, fontWeight: 600 }}
+                      >
+                        {loadingLedger ? 'Refreshing…' : '🔄 Refresh Ledger'}
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
 
-              {/* Sub-View Navigation Switcher (Debit/Credit vs Stay Folios vs Calendar) */}
-              <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: `1px solid ${themeBorder}`, paddingBottom: 12, flexWrap: 'wrap' }}>
+              {/* THREE INTERACTIVE BUTTONS THAT REACTIVELY CHANGE THE UI */}
+              <div
+                style={{
+                  display: 'flex',
+                  gap: 10,
+                  marginBottom: 24,
+                  padding: '6px',
+                  background: isLightMode ? '#F1F5F9' : 'rgba(15, 23, 42, 0.65)',
+                  borderRadius: 14,
+                  border: `1px solid ${themeBorder}`,
+                  flexWrap: 'wrap',
+                }}
+              >
+                {/* Button 1: Guest Stay Folios & Bookings */}
                 <button
-                  onClick={() => setLedgerSubView('debit_credit')}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: 10,
-                    border: 'none',
-                    background: ledgerSubView === 'debit_credit' ? (isLightMode ? '#0284C7' : '#0EA5E9') : 'transparent',
-                    color: ledgerSubView === 'debit_credit' ? '#FFFFFF' : themeMuted,
-                    fontWeight: 700,
-                    fontSize: '.84rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                  }}
-                >
-                  <span>⚖️</span> Debit & Credit General Ledger
-                  <span style={{ fontSize: '.72rem', background: ledgerSubView === 'debit_credit' ? 'rgba(255,255,255,0.25)' : 'rgba(148, 163, 184, 0.2)', padding: '2px 7px', borderRadius: 10 }}>
-                    {ledgerEntriesList.length}
-                  </span>
-                </button>
-                <button
+                  type="button"
                   onClick={() => setLedgerSubView('stay_folios')}
                   style={{
-                    padding: '8px 16px',
+                    flex: '1 1 auto',
+                    minWidth: 200,
+                    padding: '10px 18px',
                     borderRadius: 10,
-                    border: 'none',
-                    background: ledgerSubView === 'stay_folios' ? (isLightMode ? '#0284C7' : '#0EA5E9') : 'transparent',
+                    border: ledgerSubView === 'stay_folios' ? '1px solid #0284C7' : '1px solid transparent',
+                    background:
+                      ledgerSubView === 'stay_folios'
+                        ? isLightMode
+                          ? 'linear-gradient(135deg, #0284C7, #0EA5E9)'
+                          : 'linear-gradient(135deg, #0369A1, #0284C7)'
+                        : 'transparent',
                     color: ledgerSubView === 'stay_folios' ? '#FFFFFF' : themeMuted,
-                    fontWeight: 700,
-                    fontSize: '.84rem',
+                    fontWeight: ledgerSubView === 'stay_folios' ? 800 : 600,
+                    fontSize: '.88rem',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 6,
+                    justifyContent: 'center',
+                    gap: 8,
+                    boxShadow: ledgerSubView === 'stay_folios' ? '0 4px 12px rgba(14, 165, 233, 0.3)' : 'none',
+                    transition: 'all 0.2s ease',
                   }}
                 >
-                  <span>📋</span> Guest Stay Folios & Bookings
-                  <span style={{ fontSize: '.72rem', background: ledgerSubView === 'stay_folios' ? 'rgba(255,255,255,0.25)' : 'rgba(148, 163, 184, 0.2)', padding: '2px 7px', borderRadius: 10 }}>
+                  <span style={{ fontSize: '1.05rem' }}>📋</span>
+                  <span>Guest Stay Folios & Bookings</span>
+                  <span
+                    style={{
+                      fontSize: '.72rem',
+                      fontWeight: 800,
+                      background: ledgerSubView === 'stay_folios' ? 'rgba(255,255,255,0.25)' : isLightMode ? '#E2E8F0' : 'rgba(148, 163, 184, 0.2)',
+                      color: ledgerSubView === 'stay_folios' ? '#FFFFFF' : themeText,
+                      padding: '2px 8px',
+                      borderRadius: 12,
+                    }}
+                  >
                     {allBookings.length}
                   </span>
                 </button>
+
+                {/* Button 2: Visual Availability & Lock Calendar */}
                 <button
+                  type="button"
                   onClick={() => setLedgerSubView('availability')}
                   style={{
-                    padding: '8px 16px',
+                    flex: '1 1 auto',
+                    minWidth: 200,
+                    padding: '10px 18px',
                     borderRadius: 10,
-                    border: 'none',
-                    background: ledgerSubView === 'availability' ? (isLightMode ? '#0284C7' : '#0EA5E9') : 'transparent',
+                    border: ledgerSubView === 'availability' ? '1px solid #0284C7' : '1px solid transparent',
+                    background:
+                      ledgerSubView === 'availability'
+                        ? isLightMode
+                          ? 'linear-gradient(135deg, #0284C7, #0EA5E9)'
+                          : 'linear-gradient(135deg, #0369A1, #0284C7)'
+                        : 'transparent',
                     color: ledgerSubView === 'availability' ? '#FFFFFF' : themeMuted,
-                    fontWeight: 700,
-                    fontSize: '.84rem',
+                    fontWeight: ledgerSubView === 'availability' ? 800 : 600,
+                    fontSize: '.88rem',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 6,
+                    justifyContent: 'center',
+                    gap: 8,
+                    boxShadow: ledgerSubView === 'availability' ? '0 4px 12px rgba(14, 165, 233, 0.3)' : 'none',
+                    transition: 'all 0.2s ease',
                   }}
                 >
-                  <span>📅</span> Visual Availability & Lock Calendar
+                  <span style={{ fontSize: '1.05rem' }}>📅</span>
+                  <span>Visual Availability & Lock Calendar</span>
+                </button>
+
+                {/* Button 3: Debit & Credit General Ledger */}
+                <button
+                  type="button"
+                  onClick={() => setLedgerSubView('debit_credit')}
+                  style={{
+                    flex: '1 1 auto',
+                    minWidth: 200,
+                    padding: '10px 18px',
+                    borderRadius: 10,
+                    border: ledgerSubView === 'debit_credit' ? '1px solid #0284C7' : '1px solid transparent',
+                    background:
+                      ledgerSubView === 'debit_credit'
+                        ? isLightMode
+                          ? 'linear-gradient(135deg, #0284C7, #0EA5E9)'
+                          : 'linear-gradient(135deg, #0369A1, #0284C7)'
+                        : 'transparent',
+                    color: ledgerSubView === 'debit_credit' ? '#FFFFFF' : themeMuted,
+                    fontWeight: ledgerSubView === 'debit_credit' ? 800 : 600,
+                    fontSize: '.88rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    boxShadow: ledgerSubView === 'debit_credit' ? '0 4px 12px rgba(14, 165, 233, 0.3)' : 'none',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <span style={{ fontSize: '1.05rem' }}>⚖️</span>
+                  <span>Debit & Credit General Ledger</span>
+                  <span
+                    style={{
+                      fontSize: '.72rem',
+                      fontWeight: 800,
+                      background: ledgerSubView === 'debit_credit' ? 'rgba(255,255,255,0.25)' : isLightMode ? '#E2E8F0' : 'rgba(148, 163, 184, 0.2)',
+                      color: ledgerSubView === 'debit_credit' ? '#FFFFFF' : themeText,
+                      padding: '2px 8px',
+                      borderRadius: 12,
+                    }}
+                  >
+                    {ledgerEntriesList.length}
+                  </span>
                 </button>
               </div>
 
@@ -5078,7 +5249,7 @@ export default function Admin() {
                   <AvailabilityCalendar
                     rooms={roomsList}
                     isLightMode={isLightMode}
-                    onClose={() => setLedgerSubView('debit_credit')}
+                    onClose={() => setLedgerSubView('stay_folios')}
                     onSelectDates={(cin, cout) => {
                       const activeRoom = roomsList.find((r) => r.id === newReservation.room_id) || roomsList[0];
                       const nights = Math.max(1, Math.round((new Date(cout).getTime() - new Date(cin).getTime()) / 86400000));
