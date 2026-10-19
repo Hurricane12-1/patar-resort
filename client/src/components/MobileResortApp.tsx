@@ -190,7 +190,6 @@ export default function MobileResortApp() {
   const [ambientPlaying, setAmbientPlaying] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
-  const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterDone, setNewsletterDone] = useState(false);
   const [activeTab, setActiveTab] = useState('Home');
@@ -556,12 +555,6 @@ export default function MobileResortApp() {
       audioCtxRef.current?.close().catch(() => {});
     };
   }, []);
-
-  const handleCopyCode = (code: string) => {
-    navigator.clipboard?.writeText(code).catch(() => {});
-    setCopiedCode(code);
-    setTimeout(() => setCopiedCode(null), 2500);
-  };
 
   const scrollTo = (id: string) => {
     setMenuOpen(false);
@@ -1938,52 +1931,6 @@ export default function MobileResortApp() {
                 Ask AI Concierge ✦
               </button>
             </div>
-          </div>
-        </section>
-
-        {/* 13. OFFERS */}
-        <section className={`${WRAP} ${SECTION}`}>
-          <Eyebrow>{site.offers.eyebrow}</Eyebrow>
-          <SectionTitle title={site.offers.title} />
-          <div className={`${RAIL} mt-8 lg:grid-cols-3 lg:gap-5`}>
-            {site.offers.items.map((offer, i) => {
-              const featured = i === 0;
-              const copied = copiedCode === offer.code;
-              return (
-                <div
-                  key={offer.code}
-                  className={`flex w-[82%] shrink-0 snap-start flex-col rounded-3xl p-6 sm:w-[55%] md:p-7 lg:w-auto ${
-                    featured ? 'bg-gradient-to-br from-cyan to-sky-600 text-navy' : 'border border-white/10 bg-ink text-white'
-                  }`}
-                >
-                  <span
-                    className={`text-[10px] font-semibold uppercase tracking-[0.25em] ${featured ? 'text-navy/70' : 'text-cyan'}`}
-                  >
-                    {offer.tag}
-                  </span>
-                  <h3 className="mt-2 font-serif text-2xl md:text-3xl font-medium leading-tight">{offer.title}</h3>
-                  <p className={`mt-2 text-sm leading-relaxed ${featured ? 'text-navy/80' : 'text-white/60'}`}>{offer.body}</p>
-                  <div
-                    className={`mt-auto flex items-center justify-between border-t pt-4 ${featured ? 'border-navy/15' : 'border-white/10'}`}
-                  >
-                    <span className="text-[10px] uppercase tracking-[0.2em] opacity-70">Promo code</span>
-                    <button
-                      type="button"
-                      onClick={() => handleCopyCode(offer.code)}
-                      className={`rounded-xl border border-dashed px-3 py-1.5 font-mono text-xs font-bold tracking-widest transition ${
-                        copied
-                          ? 'border-white bg-white text-navy'
-                          : featured
-                            ? 'border-navy/40 text-navy hover:bg-navy/10'
-                            : 'border-cyan/40 text-cyan hover:bg-cyan/10'
-                      }`}
-                    >
-                      {copied ? 'Copied ✦' : offer.code}
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
           </div>
         </section>
 
