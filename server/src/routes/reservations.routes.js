@@ -163,7 +163,7 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
 
   pingSMS({
     profileId: req.user.id, reservationId: stay.id, toPhone: finalPhone,
-    body: `Mabuhay! J & D Beach House ✦ Confirmed: ${stay.rooms?.name || roomName}, ${check_in} → ${check_out} (${nights} night${nights > 1 ? 's' : ''}), ₱${total_php.toLocaleString()}. Check-in 2:00 PM.`,
+    body: `Mabuhay! Rock View Beach Resort ✦ Confirmed: ${stay.rooms?.name || roomName}, ${check_in} → ${check_out} (${nights} night${nights > 1 ? 's' : ''}), ₱${total_php.toLocaleString()}. Check-in 2:00 PM.`,
   }).catch(() => {});
 
   return res.status(201).json(stay);
@@ -215,7 +215,7 @@ r.patch('/reservations/:id/cancel', authenticate, asyncH(async (req, res) => {
   });
 
   pingSMS({ profileId: req.user.id, reservationId: b.id, toPhone: req.user.phone,
-    body: 'J & D Beach House: your reservation was cancelled. The beach will miss you — rebook anytime.' }).catch(() => {});
+    body: 'Rock View Beach Resort: your reservation was cancelled. The beach will miss you — rebook anytime.' }).catch(() => {});
   return res.json(data);
 }));
 
@@ -253,9 +253,9 @@ r.patch('/reservations/:id/status', authenticate, requireStaffOrAdmin,
     });
 
     const msg =
-      status === 'checked_in'  ? `J & D Beach House: welcome! 🌊 Checked in to ${data.rooms?.name || 'your room'}. Enjoy Bolinao!` :
-      status === 'checked_out' ? `J & D Beach House: safe travels ✦ Salamat for staying with us. Rate your stay in My Bookings!` :
-      status === 'cancelled'   ? 'J & D Beach House: your reservation was cancelled by our team. Rebook anytime.' : null;
+      status === 'checked_in'  ? `Rock View Beach Resort: welcome! 🌊 Checked in to ${data.rooms?.name || 'your room'}. Enjoy Bolinao!` :
+      status === 'checked_out' ? `Rock View Beach Resort: safe travels ✦ Salamat for staying with us. Rate your stay in My Bookings!` :
+      status === 'cancelled'   ? 'Rock View Beach Resort: your reservation was cancelled by our team. Rebook anytime.' : null;
     const toPhone = data.phone || data.profiles?.phone;
     if (msg && toPhone) pingSMS({ profileId: data.guest_id || data.profiles?.id, reservationId: data.id,
       toPhone, body: msg }).catch(() => {});
@@ -419,7 +419,7 @@ r.post('/reservations/:id/refund-confirm', authenticate, requireStaffOrAdmin,
         profileId: b.guest_id || b.profiles?.id,
         reservationId: b.id,
         toPhone,
-        body: `J & D Beach House: Your refund of ₱${refundAmount.toLocaleString()} for ${roomName} has been processed via ${refundMethod}. Ref: ${refNum}. Salamat!`,
+        body: `Rock View Beach Resort: Your refund of ₱${refundAmount.toLocaleString()} for ${roomName} has been processed via ${refundMethod}. Ref: ${refNum}. Salamat!`,
       }).catch(() => {});
     }
 

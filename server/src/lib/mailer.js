@@ -25,7 +25,7 @@ export function getTransporter() {
       sendMail: async (options) => {
         const previewId = `mock-email-${Date.now()}`;
         console.log('\n============================================================');
-        console.log(' 📧 [J & D Beach House Mailer - Development / Offline Preview]');
+        console.log(' 📧 [Rock View Beach Resort Mailer - Development / Offline Preview]');
         console.log(` To:      ${options.to}`);
         console.log(` Subject: ${options.subject}`);
         console.log('------------------------------------------------------------');
@@ -69,7 +69,7 @@ export async function sendRecoveryOTP({ to, code, name = 'Guest' }) {
           <!-- Header Banner -->
           <tr>
             <td style="background: linear-gradient(135deg, #0284C7, #0EA5E9, #38BDF8); padding: 26px 30px; text-align: left;">
-              <span style="font-size: 11px; letter-spacing: 0.15em; color: rgba(255,255,255,0.9); text-transform: uppercase; font-weight: 700;">J & D Beach House · Patar Beach</span>
+              <span style="font-size: 11px; letter-spacing: 0.15em; color: rgba(255,255,255,0.9); text-transform: uppercase; font-weight: 700;">Rock View Beach Resort · Patar Beach</span>
               <h1 style="margin: 6px 0 0; color: #FFFFFF; font-size: 22px; font-weight: 800; letter-spacing: -0.02em;">Account Security Verification</h1>
             </td>
           </tr>
@@ -81,7 +81,7 @@ export async function sendRecoveryOTP({ to, code, name = 'Guest' }) {
                 Mabuhay, <strong>${name}</strong>!
               </p>
               <p style="margin: 0 0 24px; font-size: 14px; color: #94A3B8; line-height: 1.6;">
-                We received a request to recover or reset the security credentials for your J & D Beach House account. Please use the verification code below to authorize this request:
+                We received a request to recover or reset the security credentials for your Rock View Beach Resort account. Please use the verification code below to authorize this request:
               </p>
 
               <!-- OTP Code Display Card -->
@@ -100,7 +100,7 @@ export async function sendRecoveryOTP({ to, code, name = 'Guest' }) {
               </table>
 
               <p style="margin: 0 0 16px; font-size: 13px; color: #EF4444; line-height: 1.5; font-weight: 500;">
-                ⚠️ <strong>Security Notice:</strong> Never share this code with anyone. J & D Beach House staff will never ask you for your verification code or password.
+                ⚠️ <strong>Security Notice:</strong> Never share this code with anyone. Rock View Beach Resort staff will never ask you for your verification code or password.
               </p>
 
               <p style="margin: 0; font-size: 12px; color: #64748B; line-height: 1.5;">
@@ -113,7 +113,7 @@ export async function sendRecoveryOTP({ to, code, name = 'Guest' }) {
           <tr>
             <td style="background-color: #0F172A; border-top: 1px solid #334155; padding: 18px 30px; text-align: center;">
               <p style="margin: 0; font-size: 11px; color: #64748B; line-height: 1.5;">
-                J & D Beach House Resort Management System<br>
+                Rock View Beach Resort Management System<br>
                 Brgy. Patar, Bolinao, Pangasinan, Philippines 2406<br>
                 Direct Concierge Desk: +63 900 555 0123
               </p>
@@ -128,7 +128,7 @@ export async function sendRecoveryOTP({ to, code, name = 'Guest' }) {
 `;
 
   const text = `
-J & D Beach House · Account Recovery Verification Code
+Rock View Beach Resort · Account Recovery Verification Code
 
 Mabuhay, ${name}!
 
@@ -137,14 +137,14 @@ Your one-time verification code is: ${code}
 This code is valid for 15 minutes. Never share this code with anyone.
 If you did not request this, please ignore this email.
 
-J & D Beach House Resort
+Rock View Beach Resort
 Brgy. Patar, Bolinao, Pangasinan, Philippines
 `;
 
   return await mail.sendMail({
     from: env.SMTP_FROM,
     to,
-    subject: `Your Verification Code: ${code} · J & D Beach House`,
+    subject: `Your Verification Code: ${code} · Rock View Beach Resort`,
     text,
     html,
   });
@@ -172,7 +172,7 @@ export async function sendPasswordResetSuccess({ to, name = 'Guest' }) {
             <td>
               <h2 style="color: #10B981; margin: 0 0 12px;">✅ Password Successfully Reset</h2>
               <p style="color: #CBD5E1; font-size: 14px; line-height: 1.5;">
-                Mabuhay, <strong>${name}</strong>. Your J & D Beach House account password has been updated. You can now sign in with your new credentials.
+                Mabuhay, <strong>${name}</strong>. Your Rock View Beach Resort account password has been updated. You can now sign in with your new credentials.
               </p>
               <p style="color: #64748B; font-size: 12px; margin-top: 18px;">
                 If you did not make this change, please contact the front desk immediately at +63 900 555 0123.
@@ -190,8 +190,8 @@ export async function sendPasswordResetSuccess({ to, name = 'Guest' }) {
   return await mail.sendMail({
     from: env.SMTP_FROM,
     to,
-    subject: 'Security Alert: Password Updated · J & D Beach House',
-    text: `Your password has been successfully reset. J & D Beach House.`,
+    subject: 'Security Alert: Password Updated · Rock View Beach Resort',
+    text: `Your password has been successfully reset. Rock View Beach Resort.`,
     html,
   });
 }
@@ -225,7 +225,7 @@ export async function sendSignup2FAOTP({ to, code, name = 'Guest', provider = 'e
           <!-- Header Banner -->
           <tr>
             <td style="background: linear-gradient(135deg, #0284C7, #0EA5E9, #38BDF8); padding: 26px 30px; text-align: left;">
-              <span style="font-size: 11px; letter-spacing: 0.15em; color: rgba(255,255,255,0.9); text-transform: uppercase; font-weight: 700;">J & D Beach House · Patar Beach</span>
+              <span style="font-size: 11px; letter-spacing: 0.15em; color: rgba(255,255,255,0.9); text-transform: uppercase; font-weight: 700;">Rock View Beach Resort · Patar Beach</span>
               <h1 style="margin: 6px 0 0; color: #FFFFFF; font-size: 22px; font-weight: 800; letter-spacing: -0.02em;">Finalize Account Sign-Up · 2FA Security</h1>
             </td>
           </tr>
@@ -240,7 +240,7 @@ export async function sendSignup2FAOTP({ to, code, name = 'Guest', provider = 'e
                 Method: ${providerLabel}
               </p>
               <p style="margin: 0 0 24px; font-size: 14px; color: #94A3B8; line-height: 1.6;">
-                Thank you for choosing J & D Beach House. To finalize your client account creation and activate your reservation portal, please enter the two-factor authentication (2FA) verification code below:
+                Thank you for choosing Rock View Beach Resort. To finalize your client account creation and activate your reservation portal, please enter the two-factor authentication (2FA) verification code below:
               </p>
 
               <!-- OTP Code Display Card -->
@@ -272,7 +272,7 @@ export async function sendSignup2FAOTP({ to, code, name = 'Guest', provider = 'e
           <tr>
             <td style="background-color: #0F172A; border-top: 1px solid #334155; padding: 18px 30px; text-align: center;">
               <p style="margin: 0; font-size: 11px; color: #64748B; line-height: 1.5;">
-                J & D Beach House Resort Management System<br>
+                Rock View Beach Resort Management System<br>
                 Brgy. Patar, Bolinao, Pangasinan, Philippines 2406<br>
                 Front Desk & Concierge: +63 900 555 0123
               </p>
@@ -287,7 +287,7 @@ export async function sendSignup2FAOTP({ to, code, name = 'Guest', provider = 'e
 `;
 
   const text = `
-J & D Beach House · 2FA Account Sign-Up Confirmation
+Rock View Beach Resort · 2FA Account Sign-Up Confirmation
 
 Mabuhay, ${name}!
 
@@ -295,14 +295,14 @@ Your 2FA verification code to finalize account sign-up is: ${code}
 
 This code is valid for 15 minutes. Never share this code with anyone.
 
-J & D Beach House Resort
+Rock View Beach Resort
 Brgy. Patar, Bolinao, Pangasinan, Philippines
 `;
 
   return await mail.sendMail({
     from: env.SMTP_FROM,
     to,
-    subject: `Your 2FA Sign-Up Code: ${code} · J & D Beach House`,
+    subject: `Your 2FA Sign-Up Code: ${code} · Rock View Beach Resort`,
     text,
     html,
   });
@@ -319,7 +319,7 @@ export async function sendWelcomeClientEmail({ to, name = 'Guest', provider = 'e
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Welcome to J & D Beach House</title>
+  <title>Welcome to Rock View Beach Resort</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #0F172A; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #F8FAFC;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 30px 16px;">
@@ -328,7 +328,7 @@ export async function sendWelcomeClientEmail({ to, name = 'Guest', provider = 'e
         <table role="presentation" width="100%" style="max-width: 520px; background-color: #1E293B; border: 1px solid #334155; border-radius: 16px; padding: 26px;">
           <tr>
             <td>
-              <h2 style="color: #38BDF8; margin: 0 0 12px;">🏖️ Welcome to J & D Beach House!</h2>
+              <h2 style="color: #38BDF8; margin: 0 0 12px;">🏖️ Welcome to Rock View Beach Resort!</h2>
               <p style="color: #E2E8F0; font-size: 15px; line-height: 1.5;">
                 Mabuhay, <strong>${name}</strong>! Your client user account has been successfully verified and finalized with 2FA security.
               </p>
@@ -355,8 +355,8 @@ export async function sendWelcomeClientEmail({ to, name = 'Guest', provider = 'e
   return await mail.sendMail({
     from: env.SMTP_FROM,
     to,
-    subject: 'Welcome to J & D Beach House · Your Account is Finalized ✦',
-    text: `Welcome to J & D Beach House, ${name}! Your account has been verified and finalized.`,
+    subject: 'Welcome to Rock View Beach Resort · Your Account is Finalized ✦',
+    text: `Welcome to Rock View Beach Resort, ${name}! Your account has been verified and finalized.`,
     html,
   });
 }
@@ -374,7 +374,7 @@ export async function sendSignupExpiredEmail({ to, name = 'Guest' }) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Account Not Confirmed · J & D Beach House</title>
+  <title>Account Not Confirmed · Rock View Beach Resort</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #0F172A; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #F8FAFC;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0F172A; padding: 36px 16px;">
@@ -384,7 +384,7 @@ export async function sendSignupExpiredEmail({ to, name = 'Guest' }) {
           <!-- Header Banner -->
           <tr>
             <td style="background: linear-gradient(135deg, #EF4444, #DC2626, #B91C1C); padding: 26px 30px; text-align: left;">
-              <span style="font-size: 11px; letter-spacing: 0.15em; color: rgba(255,255,255,0.9); text-transform: uppercase; font-weight: 700;">J & D Beach House · Patar Beach</span>
+              <span style="font-size: 11px; letter-spacing: 0.15em; color: rgba(255,255,255,0.9); text-transform: uppercase; font-weight: 700;">Rock View Beach Resort · Patar Beach</span>
               <h1 style="margin: 6px 0 0; color: #FFFFFF; font-size: 22px; font-weight: 800; letter-spacing: -0.02em;">Account Not Confirmed · Time Limit Expired</h1>
             </td>
           </tr>
@@ -427,7 +427,7 @@ export async function sendSignupExpiredEmail({ to, name = 'Guest' }) {
           <tr>
             <td style="background-color: #0F172A; border-top: 1px solid #334155; padding: 18px 30px; text-align: center;">
               <p style="margin: 0; font-size: 11px; color: #64748B; line-height: 1.5;">
-                J & D Beach House Resort Management System<br>
+                Rock View Beach Resort Management System<br>
                 Brgy. Patar, Bolinao, Pangasinan, Philippines 2406<br>
                 Direct Concierge Desk: +63 900 555 0123
               </p>
@@ -442,7 +442,7 @@ export async function sendSignupExpiredEmail({ to, name = 'Guest' }) {
 `;
 
   const text = `
-J & D Beach House · Account Not Confirmed
+Rock View Beach Resort · Account Not Confirmed
 
 Mabuhay, ${name},
 
@@ -451,14 +451,14 @@ The unconfirmed account has been automatically removed from our system.
 
 Try Again, please make sure you confirm.
 
-J & D Beach House Resort
+Rock View Beach Resort
 Brgy. Patar, Bolinao, Pangasinan, Philippines
 `;
 
   return await mail.sendMail({
     from: env.SMTP_FROM,
     to,
-    subject: 'Account Not Confirmed · Try Again · J & D Beach House',
+    subject: 'Account Not Confirmed · Try Again · Rock View Beach Resort',
     text,
     html,
   });
@@ -497,7 +497,7 @@ export async function sendRefundRequestedEmail({
           <!-- Header Banner -->
           <tr>
             <td style="background: linear-gradient(135deg, #D97706, #F59E0B, #FBBF24); padding: 26px 30px; text-align: left;">
-              <span style="font-size: 11px; letter-spacing: 0.15em; color: rgba(15,23,42,0.85); text-transform: uppercase; font-weight: 800;">J & D Beach House · Guest Billing Operations</span>
+              <span style="font-size: 11px; letter-spacing: 0.15em; color: rgba(15,23,42,0.85); text-transform: uppercase; font-weight: 800;">Rock View Beach Resort · Guest Billing Operations</span>
               <h1 style="margin: 6px 0 0; color: #0F172A; font-size: 22px; font-weight: 800; letter-spacing: -0.02em;">Refund Request In Process</h1>
             </td>
           </tr>
@@ -560,7 +560,7 @@ export async function sendRefundRequestedEmail({
           <tr>
             <td style="background-color: #0F172A; border-top: 1px solid #334155; padding: 18px 30px; text-align: center;">
               <p style="margin: 0; font-size: 11px; color: #64748B; line-height: 1.5;">
-                J & D Beach House Resort Management System<br>
+                Rock View Beach Resort Management System<br>
                 Brgy. Patar, Bolinao, Pangasinan, Philippines 2406<br>
                 Direct Concierge Desk: +63 900 555 0123
               </p>
@@ -575,7 +575,7 @@ export async function sendRefundRequestedEmail({
 `;
 
   const text = `
-J & D Beach House · Refund Request In Process
+Rock View Beach Resort · Refund Request In Process
 
 Mabuhay, ${name},
 
@@ -592,14 +592,14 @@ ${checkIn && checkOut ? `- Stay Dates: ${checkIn} → ${checkOut}\n` : ''}- Refu
 You will receive an automated confirmation email once the refund is finalized.
 For inquiries, contact: concierge@janddbeachhouse.ph | +63 900 555 0123
 
-J & D Beach House Resort
+Rock View Beach Resort
 Brgy. Patar, Bolinao, Pangasinan, Philippines
 `;
 
   return await mail.sendMail({
     from: env.SMTP_FROM,
     to,
-    subject: `Refund Request In Process · Booking #${shortId} · J & D Beach House`,
+    subject: `Refund Request In Process · Booking #${shortId} · Rock View Beach Resort`,
     text,
     html,
   });
@@ -637,7 +637,7 @@ export async function sendRefundConfirmedEmail({
           <!-- Header Banner -->
           <tr>
             <td style="background: linear-gradient(135deg, #059669, #10B981, #34D399); padding: 26px 30px; text-align: left;">
-              <span style="font-size: 11px; letter-spacing: 0.15em; color: rgba(15,23,42,0.85); text-transform: uppercase; font-weight: 800;">J & D Beach House · Guest Billing Operations</span>
+              <span style="font-size: 11px; letter-spacing: 0.15em; color: rgba(15,23,42,0.85); text-transform: uppercase; font-weight: 800;">Rock View Beach Resort · Guest Billing Operations</span>
               <h1 style="margin: 6px 0 0; color: #0F172A; font-size: 22px; font-weight: 800; letter-spacing: -0.02em;">Refund Confirmed & Processed</h1>
             </td>
           </tr>
@@ -689,7 +689,7 @@ export async function sendRefundConfirmedEmail({
               </table>
 
               <p style="margin: 0; font-size: 12px; color: #64748B; line-height: 1.5;">
-                We hope to welcome you to J & D Beach House in the future! For further inquiries, contact us at concierge@janddbeachhouse.ph.
+                We hope to welcome you to Rock View Beach Resort in the future! For further inquiries, contact us at concierge@janddbeachhouse.ph.
               </p>
             </td>
           </tr>
@@ -698,7 +698,7 @@ export async function sendRefundConfirmedEmail({
           <tr>
             <td style="background-color: #0F172A; border-top: 1px solid #334155; padding: 18px 30px; text-align: center;">
               <p style="margin: 0; font-size: 11px; color: #64748B; line-height: 1.5;">
-                J & D Beach House Resort Management System<br>
+                Rock View Beach Resort Management System<br>
                 Brgy. Patar, Bolinao, Pangasinan, Philippines 2406<br>
                 Direct Concierge Desk: +63 900 555 0123
               </p>
@@ -713,7 +713,7 @@ export async function sendRefundConfirmedEmail({
 `;
 
   const text = `
-J & D Beach House · Refund Confirmed & Processed
+Rock View Beach Resort · Refund Confirmed & Processed
 
 Mabuhay, ${name},
 
@@ -729,14 +729,14 @@ Details:
 The funds have been returned to your original payment method.
 Salamat for your patience, and we hope to welcome you to Bolinao soon!
 
-J & D Beach House Resort
+Rock View Beach Resort
 Brgy. Patar, Bolinao, Pangasinan, Philippines
 `;
 
   return await mail.sendMail({
     from: env.SMTP_FROM,
     to,
-    subject: `Refund Confirmed & Processed · Booking #${shortId} · J & D Beach House`,
+    subject: `Refund Confirmed & Processed · Booking #${shortId} · Rock View Beach Resort`,
     text,
     html,
   });

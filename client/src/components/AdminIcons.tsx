@@ -1,4 +1,4 @@
-// Comprehensive Vector SVG & FontAwesome Icon Library for J & D Beach House Management System
+// Comprehensive Vector SVG & FontAwesome Icon Library for Rock View Beach Resort Management System
 
 export function FaIcon({ name, size = 16, color = 'currentColor', style = {} }) {
   const iconClass = name.startsWith('fa') ? name : `fas fa-${name}`;

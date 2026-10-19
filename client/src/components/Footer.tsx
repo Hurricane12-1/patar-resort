@@ -5,7 +5,7 @@ export default function Footer() {
     <footer>
       <div className="container">
         <div>
-          <h4 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem' }}>J & D BEACH HOUSE</h4>
+          <h4 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem' }}>ROCK VIEW BEACH RESORT</h4>
           <p style={{ fontSize: '.88rem', maxWidth: '30ch', marginTop: 8, color: '#94A3B8' }}>
             Beachfront stays in Bolinao, Pangasinan — cottages, suites and villas with instant SMS pings on every reservation.
           </p>
@@ -26,7 +26,7 @@ export default function Footer() {
         </div>
       </div>
       <div className="foot-bottom">
-        © {new Date().getFullYear()} J & D Beach House · Bolinao, Pangasinan · All rights reserved.
+        © {new Date().getFullYear()} Rock View Beach Resort · Bolinao, Pangasinan · All rights reserved.
       </div>
     </footer>
   );

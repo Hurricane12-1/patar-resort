@@ -375,7 +375,7 @@ export default function AuthModal() {
         setMode('in');
         setF((prev) => ({ ...prev, email: signupEmail, password: signupPassword }));
       } else {
-        toast(`Welcome to J & D Beach House, ${signupName}! ✦`);
+        toast(`Welcome to Rock View Beach Resort, ${signupName}! ✦`);
         setAuthOpen(false);
       }
     } catch (err: any) {

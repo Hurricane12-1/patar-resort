@@ -1,5 +1,5 @@
 /**
- * J & D Beach House — Word Prompt & AI Typewriter Script
+ * Rock View Beach Resort — Word Prompt & AI Typewriter Script
  * 
  * Enables interactive word-to-prompt dispatching across the application.
  * When a guest or admin clicks a keyword, chip, amenity, or destination,

@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 
-// Resort Exact Coordinates: J & D Beach House, Patar Beach Road, Bolinao, Pangasinan
+// Resort Exact Coordinates: Rock View Beach Resort, Patar Beach Road, Bolinao, Pangasinan
 const RESORT_COORDS = {
   lat: 16.3044,
   lng: 119.7828,
-  name: 'J & D Beach House',
+  name: 'Rock View Beach Resort',
   address: 'Patar Beach Road, Barangay Patar, Bolinao, 2406 Pangasinan, Philippines',
-  googleMapsQuery: 'J+%26+D+Beach+House,+Patar+Beach+Road,+Bolinao,+Pangasinan',
+  googleMapsQuery: 'Rock+View+Beach+Resort,+Patar+Beach+Road,+Bolinao,+Pangasinan',
 };
 
 // Key Bolinao Landmarks & Excursions
@@ -173,7 +173,7 @@ export default function ResortMapGeolocation({ isLightMode = true }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ fontSize: '1.3rem' }}>📍</span>
                 <div>
-                  <b style={{ fontSize: '0.92rem', color: '#0F172A', display: 'block' }}>J & D Beach House</b>
+                  <b style={{ fontSize: '0.92rem', color: '#0F172A', display: 'block' }}>Rock View Beach Resort</b>
                   <span style={{ fontSize: '0.74rem', color: '#64748B' }}>16.3044° N, 119.7828° E · Seafront</span>
                 </div>
               </div>
@@ -216,7 +216,7 @@ export default function ResortMapGeolocation({ isLightMode = true }) {
             {/* INTERACTIVE MAP FRAME */}
             <div style={{ width: '100%', height: 400, position: 'relative', background: '#E2E8F0' }}>
               <iframe
-                title="J & D Beach House Resort Map"
+                title="Rock View Beach Resort Map"
                 width="100%"
                 height="100%"
                 style={{ border: 0 }}
@@ -295,7 +295,7 @@ export default function ResortMapGeolocation({ isLightMode = true }) {
               </div>
 
               <p style={{ margin: '0 0 16px', fontSize: '0.86rem', color: '#475569', lineHeight: 1.5 }}>
-                Tap below to detect your current coordinates. We will calculate the direct distance and estimated travel time to J & D Beach House.
+                Tap below to detect your current coordinates. We will calculate the direct distance and estimated travel time to Rock View Beach Resort.
               </p>
 
               <button

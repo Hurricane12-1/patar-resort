@@ -8,7 +8,7 @@ export function InterchangeableImagePicker({ currentImageUrl, onImageSelect, isL
   // Preset interchangeable initial badge presets (Zero Mock Unsplash URLs)
   const presetInitialAvatars = [
     { id: 'badge-1', label: 'Administrator', initials: 'A', bg: 'linear-gradient(135deg, #0284C7, #0EA5E9)' },
-    { id: 'badge-2', label: 'J&D Reserve', initials: 'JD', bg: 'linear-gradient(135deg, #2563EB, #38BDF8)' },
+    { id: 'badge-2', label: 'Rock View Reserve', initials: 'RV', bg: 'linear-gradient(135deg, #2563EB, #38BDF8)' },
     { id: 'badge-3', label: 'General Manager', initials: 'GM', bg: 'linear-gradient(135deg, #059669, #10B981)' },
     { id: 'badge-4', label: 'Security Chief', initials: 'SC', bg: 'linear-gradient(135deg, #DC2626, #F43F5E)' },
     { id: 'badge-5', label: 'Operations Lead', initials: 'OL', bg: 'linear-gradient(135deg, #7C3AED, #A855F7)' },

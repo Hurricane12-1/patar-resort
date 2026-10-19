@@ -36,7 +36,7 @@ r.post('/customer/orders', authenticate,
       .select().single();
     if (error) throw new ApiError(500, error.message);
     pingSMS({ profileId: req.user.id, toPhone: req.user.phone,
-      body: `J & D Beach House: Order received ✦ ${item_name} (${price_php ? `₱${price_php}` : 'Complimentary'}). Staff will deliver shortly.` }).catch(() => {});
+      body: `Rock View Beach Resort: Order received ✦ ${item_name} (${price_php ? `₱${price_php}` : 'Complimentary'}). Staff will deliver shortly.` }).catch(() => {});
     return res.status(201).json(data);
   }));
 

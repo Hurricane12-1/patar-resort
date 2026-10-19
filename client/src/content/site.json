@@ -1,7 +1,7 @@
 {
   "brand": {
-    "name": "J & D",
-    "sub": "Beach House",
+    "name": "Rock View",
+    "sub": "Beach Resort",
     "tagline": "Where days slow to the tide."
   },
   "ticker": [
@@ -239,7 +239,7 @@
       "title": "Welcome Back",
       "sub": "Sign in to manage your stays and access exclusive rates.",
       "cta": "Sign In",
-      "switch": "New to J & D Beach House?",
+      "switch": "New to Rock View Beach Resort?",
       "switchCta": "Create an account"
     },
     "forgot": "Forgot password?",
@@ -269,7 +269,7 @@
     "badges": ["Top Rated Beachfront 2026", "Bolinao Heritage Partner"],
     "legal": ["Privacy Policy", "Terms of Stay", "Cancellation Rules"],
     "backToTop": "Back to top",
-    "copyright": "© 2026 J & D Beach House. All rights reserved. Patar Beach, Bolinao, Pangasinan, Philippines."
+    "copyright": "© 2026 Rock View Beach Resort. All rights reserved. Patar Beach, Bolinao, Pangasinan, Philippines."
   },
   "tabs": ["Home", "Rooms", "Book", "Dining", "Profile"]
 }

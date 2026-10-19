@@ -85,7 +85,7 @@ r.patch('/me/password', authenticate,
           .catch(() => {});
       }
 
-      pingSMS({ profileId: req.user.id, toPhone: req.user.phone, body: 'J & D Beach House: Your account password was updated successfully.' }).catch(() => {});
+      pingSMS({ profileId: req.user.id, toPhone: req.user.phone, body: 'Rock View Beach Resort: Your account password was updated successfully.' }).catch(() => {});
       return res.json({
         success: true,
         message: 'Password updated successfully',

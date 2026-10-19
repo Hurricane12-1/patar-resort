@@ -43,7 +43,7 @@ r.get('/chat/conversations', authenticate, asyncH(async (req, res) => {
         const formattedMsg = {
           id: msg.id,
           sender: msg.role === 'user' ? 'guest' : 'admin',
-          senderName: msg.role === 'user' ? 'Guest' : (msg.metadata?.agent_name || (isAgent ? 'Service Agent' : 'J & D Concierge')),
+          senderName: msg.role === 'user' ? 'Guest' : (msg.metadata?.agent_name || (isAgent ? 'Service Agent' : 'Rock View Concierge')),
           text: msg.content,
           time: msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
           is_agent: isAgent,
@@ -103,7 +103,7 @@ r.get('/chat/conversations', authenticate, asyncH(async (req, res) => {
           name,
           phone: prof?.phone || null,
           channel: 'Webchat',
-          resort: 'J & D Beach House · Patar Rock View',
+          resort: 'Rock View Beach Resort · Patar',
           lastMessage: conv.last_message,
           timeAgo: formatRelativeTime(conv.last_message_time),
           messageCount: conv.message_count,
@@ -187,8 +187,8 @@ r.get('/chat/conversations', authenticate, asyncH(async (req, res) => {
         {
           id: `${rItem.id}-a1`,
           sender: 'admin',
-          senderName: 'J & D Concierge',
-          text: `Warm greetings from J & D Beach House & Patar Rock View, ${name.split(' ')[0]}! Your reservation for ${roomName} (${rItem.check_in} → ${rItem.check_out}) is ${rItem.status.replace('_', ' ')}. Our team has noted your request.`,
+          senderName: 'Rock View Concierge',
+          text: `Warm greetings from Rock View Beach Resort, ${name.split(' ')[0]}! Your reservation for ${roomName} (${rItem.check_in} → ${rItem.check_out}) is ${rItem.status.replace('_', ' ')}. Our team has noted your request.`,
           time: '09:34 AM',
         },
       ];
@@ -198,7 +198,7 @@ r.get('/chat/conversations', authenticate, asyncH(async (req, res) => {
           thread.push({
             id: `${rItem.id}-sr-${rIdx}`,
             sender: 'admin',
-            senderName: 'J & D Concierge',
+            senderName: 'Rock View Concierge',
             text: replyText.trim(),
             time: 'Just now',
           });
@@ -215,7 +215,7 @@ r.get('/chat/conversations', authenticate, asyncH(async (req, res) => {
         name,
         phone: prof?.phone || null,
         channel: channels[idx % channels.length],
-        resort: `J & D Beach House · ${roomName}`,
+        resort: `Rock View Beach Resort · ${roomName}`,
         lastMessage: lastMsg,
         timeAgo: formatRelativeTime(rItem.created_at),
         messageCount: thread.length,

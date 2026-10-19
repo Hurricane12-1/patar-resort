@@ -11,7 +11,7 @@ import {
 const DEFAULT_WELCOME = {
   id: 'welcome-0',
   from: 'bot',
-  text: "Mabuhay! I'm J & D Bot 🌊 How can I help you plan your stay, recommend rooms for your family or group, or answer questions about J & D Beach House?",
+  text: "Mabuhay! I'm Rock View Bot 🌊 How can I help you plan your stay, recommend rooms for your family or group, or answer questions about Rock View Beach Resort?",
   is_ai: true,
 };
 
@@ -424,7 +424,7 @@ export default function Chatbot() {
             <span className="live-dot" />
             <div>
               <b style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                J & D Bot
+                Rock View Bot
                 <span
                   style={{
                     fontSize: '0.62rem',
@@ -525,7 +525,7 @@ export default function Chatbot() {
                   flexShrink: 0,
                   fontWeight: 600,
                 }}
-                title="Switch back to J & D Bot AI Concierge"
+                title="Switch back to Rock View Bot AI Concierge"
               >
                 Back to AI
               </button>

@@ -763,7 +763,7 @@ export default function Admin() {
               <IconShield size={14} color="#22c3ee" /> Administrator Portal
             </span>
             <span style={{ fontSize: '.72rem', color: '#f6b74a', fontWeight: 700, letterSpacing: '.06em' }}>
-              ✦ J&D RESORT
+              ✦ ROCK VIEW RESORT
             </span>
           </div>
 
@@ -1553,7 +1553,7 @@ export default function Admin() {
             {!sidebarCollapsed && (
               <div>
                 <b style={{ fontSize: '1.05rem', color: themeText, display: 'block', fontFamily: "'Plus Jakarta Sans', sans-serif", lineHeight: 1 }}>
-                  J & D SAAS
+                  ROCK VIEW SAAS
                 </b>
                 <span style={{ fontSize: '.62rem', color: '#6366F1', fontWeight: 800, letterSpacing: '.08em' }}>EXECUTIVE HUB</span>
               </div>

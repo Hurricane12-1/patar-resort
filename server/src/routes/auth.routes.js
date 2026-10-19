@@ -555,7 +555,7 @@ r.post('/auth/signup/initiate',
       pingSMS({
         profileId: 'client-signup',
         toPhone: phone,
-        body: `J & D Beach House: Your client account confirmation code is ${code}. Valid for 1 minute. Confirm now to keep your account.`,
+        body: `Rock View Beach Resort: Your client account confirmation code is ${code}. Valid for 1 minute. Confirm now to keep your account.`,
       }).catch(() => {});
     }
 
@@ -712,7 +712,7 @@ r.post('/auth/signup/confirm-2fa',
       pingSMS({
         profileId: userId,
         toPhone: phone,
-        body: `Mabuhay ${first_name}! Your J & D Beach House account is verified & finalized. You may now reserve villas & access your digital pass.`,
+        body: `Mabuhay ${first_name}! Your Rock View Beach Resort account is verified & finalized. You may now reserve villas & access your digital pass.`,
       }).catch(() => {});
     }
 
@@ -739,7 +739,7 @@ r.post('/auth/signup/confirm-2fa',
     return res.status(201).json({
       success: true,
       finalized: true,
-      message: 'Account finalized and verified successfully! Welcome to J & D Beach House.',
+      message: 'Account finalized and verified successfully! Welcome to Rock View Beach Resort.',
       user: {
         id: userId,
         email: cleanEmail,
@@ -788,7 +788,7 @@ r.post('/auth/signup/resend-2fa',
       pingSMS({
         profileId: 'client-signup',
         toPhone: record.profile.phone,
-        body: `J & D Beach House: Your new 2FA confirmation code is ${newCode}. Valid for 1 minute.`,
+        body: `Rock View Beach Resort: Your new 2FA confirmation code is ${newCode}. Valid for 1 minute.`,
       }).catch(() => {});
     }
 
@@ -912,7 +912,7 @@ r.post('/auth/forgot-password',
       pingSMS({
         profileId: targetUser?.id || 'guest',
         toPhone: targetPhone,
-        body: `J & D Beach House: Your account recovery verification code is ${code}. Valid for 15 minutes. Never share this code.`,
+        body: `Rock View Beach Resort: Your account recovery verification code is ${code}. Valid for 15 minutes. Never share this code.`,
       }).catch(() => {});
     }
 
@@ -1036,7 +1036,7 @@ r.post('/auth/reset-password',
       pingSMS({
         profileId: userId,
         toPhone: targetPhone,
-        body: 'J & D Beach House: Your account password has been successfully updated. You may now log in.',
+        body: 'Rock View Beach Resort: Your account password has been successfully updated. You may now log in.',
       }).catch(() => {});
     }
 

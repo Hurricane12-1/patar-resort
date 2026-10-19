@@ -1,6 +1,6 @@
 /**
  * AI Guardrails, Anti-Hacking Security, and System Intent Analyzer
- * for J & D Beach House AI Concierge
+ * for Rock View Beach Resort AI Concierge
  */
 
 export interface GuardrailEvaluation {
@@ -81,7 +81,7 @@ export function evaluateClientGuardrails(input: string): GuardrailEvaluation {
         category: 'SYSTEM_EXFILTRATION',
         reason: 'Detected attempt to probe system credentials or internal prompts.',
         safeMessage:
-          '🛡️ Security Notice: I am J & D Bot, dedicated exclusively to assisting with J & D Beach House resort inquiries and guest bookings. Internal system credentials and configuration prompts are protected and cannot be shared. For assistance with your account, please reach our Front Desk.',
+          '🛡️ Security Notice: I am Rock View Bot, dedicated exclusively to assisting with Rock View Beach Resort inquiries and guest bookings. Internal system credentials and configuration prompts are protected and cannot be shared. For assistance with your account, please reach our Front Desk.',
       };
     }
   }
@@ -94,7 +94,7 @@ export function evaluateClientGuardrails(input: string): GuardrailEvaluation {
         category: 'PROMPT_INJECTION',
         reason: 'Detected prompt injection or persona override attempt.',
         safeMessage:
-          '🛡️ Security Guardrail: I am designed specifically to serve as your 24/7 J & D Beach House concierge. I cannot alter my core safety guidelines or adopt unrestricted personas. How may I assist your stay in Bolinao today?',
+          '🛡️ Security Guardrail: I am designed specifically to serve as your 24/7 Rock View Beach Resort concierge. I cannot alter my core safety guidelines or adopt unrestricted personas. How may I assist your stay in Bolinao today?',
       };
     }
   }
@@ -117,7 +117,7 @@ export function detectSystemIntent(input: string): SystemIntent {
     return {
       intent: 'CONTACT_US',
       title: 'Contact Front Desk & Helpdesk',
-      summary: 'Get in direct touch with J & D Beach House 24/7 staff.',
+      summary: 'Get in direct touch with Rock View Beach Resort 24/7 staff.',
       contactQuickAction: true,
     };
   }

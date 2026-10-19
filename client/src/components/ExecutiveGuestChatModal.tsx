@@ -87,7 +87,7 @@ export function ExecutiveGuestChatModal({ guest, onClose, isLightMode }) {
                 </span>
               </div>
               <span style={{ fontSize: '.76rem', color: themeMuted }}>
-                Channel: <b>{guest.channel || 'Messenger'}</b> · {guest.resort || 'J & D Beach House'}
+                Channel: <b>{guest.channel || 'Messenger'}</b> · {guest.resort || 'Rock View Beach Resort'}
               </span>
             </div>
           </div>

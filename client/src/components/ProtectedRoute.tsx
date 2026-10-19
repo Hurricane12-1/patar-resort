@@ -135,7 +135,7 @@ export default function ProtectedRoute({ children, allowedRoles = [], portalTitl
             </svg>
           </div>
           <h1 className="serif" style={{ fontSize: 'clamp(1.6rem,3vw,2rem)', color: '#FFF', margin: 0, letterSpacing: '.06em' }}>
-            J & D BEACH HOUSE
+            ROCK VIEW BEACH RESORT
           </h1>
           <span style={{
             display: 'inline-block', fontSize: '.65rem', letterSpacing: '.28em', color: accent,

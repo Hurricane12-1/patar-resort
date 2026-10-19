@@ -768,7 +768,7 @@ export default function MyBookings() {
 
             <form className="modal-body" onSubmit={submitGuestRefund} style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.08)', fontSize: '.78rem', color: '#94A3B8', lineHeight: 1.45 }}>
-                ℹ️ <strong>J & D Refund Guidelines:</strong> Cancellations made 7+ days prior are eligible for 100% refund. Within 3–6 days are eligible for 50%. Free full refund or rebooking applies under official storm/force majeure advisories.
+                ℹ️ <strong>Rock View Refund Guidelines:</strong> Cancellations made 7+ days prior are eligible for 100% refund. Within 3–6 days are eligible for 50%. Free full refund or rebooking applies under official storm/force majeure advisories.
               </div>
 
               <div className="field">

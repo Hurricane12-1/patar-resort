@@ -145,9 +145,9 @@ export default function ResortCustomer() {
           </div>
           <button
             className="btn btn-ghost btn-sm"
-            onClick={() => dispatchWordPrompt('Guest Concierge', { template: 'Hello J & D Bot, what room services, dining, and tours can I book today?' })}
+            onClick={() => dispatchWordPrompt('Guest Concierge', { template: 'Hello Rock View Bot, what room services, dining, and tours can I book today?' })}
           >
-            Ask J & D Bot 💬
+            Ask Rock View Bot 💬
           </button>
         </div>
 

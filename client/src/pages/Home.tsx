@@ -127,7 +127,7 @@ export default function Home() {
         </button>
 
         <div className="container cine-inner">
-          <span className="label light fade-in">J & D Beach House · Bolinao, Pangasinan, Philippines</span>
+          <span className="label light fade-in">Rock View Beach Resort · Bolinao, Pangasinan, Philippines</span>
           <h1 className="cine-h1">
             <span className="mask"><span>Where days slow</span></span>
             <span className="mask d2"><span><em>to the tide.</em></span></span>
@@ -263,7 +263,7 @@ export default function Home() {
             <span
               key={i}
               className="clickable-prompt-word"
-              onClick={() => dispatchWordPrompt(w, { template: 'What makes {word} special at J & D Beach House?' })}
+              onClick={() => dispatchWordPrompt(w, { template: 'What makes {word} special at Rock View Beach Resort?' })}
               title={`Click word to type AI prompt: "${w}"`}
             >
               {w}<i>✦</i>
@@ -295,7 +295,7 @@ export default function Home() {
             style={{ marginTop: 32 }}
             onClick={() => dispatchWordPrompt('Plan my day in Bolinao', { template: 'Can you plan a 1-day itinerary around Bolinao with beach, caves, and dinner?' })}
           >
-            Ask J & D Bot to plan your day 💬
+            Ask Rock View Bot to plan your day 💬
           </button>
         </div>
       </section>

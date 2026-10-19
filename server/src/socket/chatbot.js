@@ -153,7 +153,7 @@ export function attachChatbot(httpServer) {
     }
 
     socket.emit('bot:message', {
-      text: "Mabuhay! I'm J & D Bot 🌊 How can I help you plan your stay, recommend rooms for your family or group, or answer questions about J & D Beach House?",
+      text: "Mabuhay! I'm Rock View Bot 🌊 How can I help you plan your stay, recommend rooms for your family or group, or answer questions about Rock View Beach Resort?",
       chips: [],
     });
 
@@ -290,7 +290,7 @@ export function attachChatbot(httpServer) {
         socket.isDirectedToAgent = false;
         socket.assignedAgent = null;
         socket.emit('bot:message', {
-          text: "Returned to J & D Bot AI Concierge. How can I assist you with your booking or resort inquiries?",
+          text: "Returned to Rock View Bot AI Concierge. How can I assist you with your booking or resort inquiries?",
           chips: ['Recommend a room for a family', 'How to refund', 'Resort Amenities'],
           is_ai: true,
         });
@@ -462,7 +462,7 @@ function checkBackendGuardrails(text) {
       return {
         blocked: true,
         guardrail: true,
-        text: '🛡️ Security Guardrail: I am J & D Bot, dedicated exclusively to assisting with J & D Beach House resort reservations, accommodations, and customer service. For security reasons, internal system directives and configuration inquiries cannot be processed.\n\nNeed assistance with your booking? Call our 24/7 Front Desk at +63 900 555 0123.',
+        text: '🛡️ Security Guardrail: I am Rock View Bot, dedicated exclusively to assisting with Rock View Beach Resort reservations, accommodations, and customer service. For security reasons, internal system directives and configuration inquiries cannot be processed.\n\nNeed assistance with your booking? Call our 24/7 Front Desk at +63 900 555 0123.',
         chips: [],
       };
     }
@@ -492,7 +492,7 @@ async function generateGeminiAIAnswer(userId, text, contextData = {}) {
   • Nipa Cove Cottage: sleeps 2, ₱1,450/night (Authentic bamboo breeze cottage)
   • Backpacker Bunk: sleeps 1, ₱650/night (Budget traveler air-conditioned dorm)`;
 
-  const systemPrompt = `You are J & D Bot, the fast, knowledgeable 24/7 AI Concierge for J & D Beach House in Patar White Beach, Bolinao, Pangasinan, Philippines.
+  const systemPrompt = `You are Rock View Bot, the fast, knowledgeable 24/7 AI Concierge for Rock View Beach Resort in Patar White Beach, Bolinao, Pangasinan, Philippines.
 You know the ENTIRE resort system and can assist in English, Tagalog, or Taglish.
 
 CORE DIRECTIVE — RESOLVE INQUIRIES DIRECTLY (DO NOT PASS TO PERSONNEL UNLESS NECESSARY):
@@ -627,7 +627,7 @@ function resortKnowledgeFallback(text, rooms = []) {
       };
     }
     return {
-      text: 'Nag-aalok ang J & D Beach House ng mga silid mula ₱650/night (Backpacker Bunk) hanggang ₱18,000/night (Grand Villa para sa 60 guests). May 30% downpayment via GCash o Maya para ma-reserve.',
+      text: 'Nag-aalok ang Rock View Beach Resort ng mga silid mula ₱650/night (Backpacker Bunk) hanggang ₱18,000/night (Grand Villa para sa 60 guests). May 30% downpayment via GCash o Maya para ma-reserve.',
       chips: ['Recommend for 5 pax', 'Sunset Pavilion (Couple)', 'Grand Villa (Big Group)'],
     };
   }
@@ -672,7 +672,7 @@ function resortKnowledgeFallback(text, rooms = []) {
   // 6. How to Get Here (Directions)
   if (/how to get here|directions|paano pumunta|commute|route|waze|maps|sakay|transport/i.test(t)) {
     return {
-      text: '📍 Paano Pumunta sa J & D Beach House (Patar, Bolinao, Pangasinan):\n\n• Public Bus: Sumakay ng Victory Liner, Solid North, o Five Star bus galing Cubao/Pasay papuntang Bolinao town proper (5-6 oras).\n• From Town Proper: Sumakay ng tricycle direkta sa Patar Rock View / J & D Beach House (25-30 mins, ₱250-₱300).\n• Private Vehicle: NLEX → SCTEX → TPLEX (Exit Paniqui/Urdaneta) → Alaminos → Bolinao. I-search ang "J & D Beach House Patar" sa Waze o Google Maps.\n• Landmark: Katabi ng Patar Rock Formations at 10 minuto mula sa Cape Bolinao Lighthouse.',
+      text: '📍 Paano Pumunta sa Rock View Beach Resort (Patar, Bolinao, Pangasinan):\n\n• Public Bus: Sumakay ng Victory Liner, Solid North, o Five Star bus galing Cubao/Pasay papuntang Bolinao town proper (5-6 oras).\n• From Town Proper: Sumakay ng tricycle direkta sa Patar Rock View Beach Resort (25-30 mins, ₱250-₱300).\n• Private Vehicle: NLEX → SCTEX → TPLEX (Exit Paniqui/Urdaneta) → Alaminos → Bolinao. I-search ang "Rock View Beach Resort Patar" sa Waze o Google Maps.\n• Landmark: Katabi ng Patar Rock Formations at 10 minuto mula sa Cape Bolinao Lighthouse.',
       chips: ['Cape Bolinao Lighthouse', 'Room Rates', 'Contact Service Agent'],
       is_ai: true,
     };
@@ -681,7 +681,7 @@ function resortKnowledgeFallback(text, rooms = []) {
   // 7. How to Refund
   if (/how to refund|paano mag\s*refund|process refund|request refund|soli bayad/i.test(t)) {
     return {
-      text: '💸 Paano Mag-Request ng Refund sa J & D Beach House:\n\n1. Ihanda ang inyong Booking Reference ID mula sa confirmation pass o email/SMS.\n2. Makipag-ugnayan sa aming Front Desk team o mag-email sa support@janddbeachhouse.ph kalakip ang inyong reference.\n3. Ive-verify ng reservation officer ang petsa at cancellation eligibility.\n4. Kapag aprubado, maibabalik ang pondo diretso sa inyong GCash, Maya, o Bank Account sa loob ng 3 hanggang 5 business days.',
+      text: '💸 Paano Mag-Request ng Refund sa Rock View Beach Resort:\n\n1. Ihanda ang inyong Booking Reference ID mula sa confirmation pass o email/SMS.\n2. Makipag-ugnayan sa aming Front Desk team o mag-email sa support@janddbeachhouse.ph kalakip ang inyong reference.\n3. Ive-verify ng reservation officer ang petsa at cancellation eligibility.\n4. Kapag aprubado, maibabalik ang pondo diretso sa inyong GCash, Maya, o Bank Account sa loob ng 3 hanggang 5 business days.',
       chips: ['Refund Policy', 'Contact Service Agent', 'Booking Status'],
       is_ai: true,
     };
@@ -690,14 +690,14 @@ function resortKnowledgeFallback(text, rooms = []) {
   // 8. Refund & Cancellation Policy
   if (/refund policy|cancellation policy|cancel policy|polisiya sa refund|kanselasyon/i.test(t)) {
     return {
-      text: '📋 J & D Beach House Refund & Cancellation Policy:\n\n• 100% Full Refund: Kanselasyon na ginawa 7 araw o higit pa bago ang check-in date.\n• 50% Refund: Kanselasyon 3 hanggang 6 na araw bago ang check-in.\n• Non-refundable: Kanselasyon sa loob ng 72 oras bago ang check-in (pinapayagan ang libreng rebooking ng petsa depende sa availability ng kuwarto).\n• Severe Weather / Force Majeure: Sakaling magkaroon ng opisyal na babala ng bagyo (PAGASA storm signal), libreng full refund o free rebooking ang ipagkakaloob.',
+      text: '📋 Rock View Beach Resort Refund & Cancellation Policy:\n\n• 100% Full Refund: Kanselasyon na ginawa 7 araw o higit pa bago ang check-in date.\n• 50% Refund: Kanselasyon 3 hanggang 6 na araw bago ang check-in.\n• Non-refundable: Kanselasyon sa loob ng 72 oras bago ang check-in (pinapayagan ang libreng rebooking ng petsa depende sa availability ng kuwarto).\n• Severe Weather / Force Majeure: Sakaling magkaroon ng opisyal na babala ng bagyo (PAGASA storm signal), libreng full refund o free rebooking ang ipagkakaloob.',
       chips: ['How to Refund', 'Contact Service Agent', 'Room Rates'],
       is_ai: true,
     };
   }
 
   return {
-    text: 'Mabuhay! Ako si J & D Bot. Matutulungan kita sa lahat ng impormasyon tungkol sa aming mga kuwarto, presyo, 30% downpayment reservation, RFID keycard, at mga pasyalan sa Patar, Bolinao.',
+    text: 'Mabuhay! Ako si Rock View Bot. Matutulungan kita sa lahat ng impormasyon tungkol sa aming mga kuwarto, presyo, 30% downpayment reservation, RFID keycard, at mga pasyalan sa Patar, Bolinao.',
     chips: ['Room Rates & Capacity', 'Check-in Time & Location', '30% Downpayment Info'],
   };
 }

@@ -47,8 +47,8 @@ export default function Navbar() {
               </svg>
             </span>
             <span style={{ display: 'flex', flexDirection: 'column', gap: 4, justifyContent: 'center' }}>
-              <span className="serif" style={{ fontSize: '1.32rem', lineHeight: 1.15, letterSpacing: '.06em', fontWeight: 600, color: '#FFFFFF' }}>J & D</span>
-              <span style={{ fontSize: '.62rem', lineHeight: 1, letterSpacing: '.22em', color: '#7DD3FC', fontWeight: 700, textTransform: 'uppercase' }}>BEACH HOUSE</span>
+              <span className="serif" style={{ fontSize: '1.32rem', lineHeight: 1.15, letterSpacing: '.06em', fontWeight: 600, color: '#FFFFFF' }}>Rock View</span>
+              <span style={{ fontSize: '.62rem', lineHeight: 1, letterSpacing: '.22em', color: '#7DD3FC', fontWeight: 700, textTransform: 'uppercase' }}>BEACH RESORT</span>
             </span>
           </Link>
 

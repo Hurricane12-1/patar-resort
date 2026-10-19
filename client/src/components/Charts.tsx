@@ -207,7 +207,7 @@ export function DualSplineWaveChart({ height = 230, isLightMode = false, onPoint
       staffPct,
       efficiency: (95 + (i % 4) * 1.1).toFixed(1),
       latency: (1.1 + (i % 3) * 0.15).toFixed(2),
-      insight: insights[i] || "High customer engagement handled smoothly by J & D AI Assistant.",
+      insight: insights[i] || "High customer engagement handled smoothly by Rock View AI Assistant.",
     };
     setSelectedPoint(item);
     if (onPointClick) onPointClick(item);

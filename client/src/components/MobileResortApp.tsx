@@ -829,7 +829,7 @@ export default function MobileResortApp() {
       <div className="jd-app">
         <main
           className="jd-stage flex flex-col items-center justify-center p-6 select-none animate-fade-in"
-          aria-label="Loading J & D Beach House"
+          aria-label="Loading Rock View Beach Resort"
         >
           <Logo size="lg" />
           <p className="mt-6 font-serif text-4xl font-medium text-white">{site.brand.name}</p>
@@ -1980,7 +1980,7 @@ export default function MobileResortApp() {
         {/* 16. FOOTER */}
         <footer className="relative mt-20 overflow-hidden border-t border-white/10 bg-deep md:mt-28">
           <span className="pointer-events-none absolute -bottom-4 left-1/2 -translate-x-1/2 select-none whitespace-nowrap font-serif text-[80px] italic leading-none text-white/[0.03] md:-bottom-8 md:text-[160px] lg:text-[220px]">
-            Beach House
+            Rock View
           </span>
 
           <div className={`${WRAP} relative pb-[calc(8rem+env(safe-area-inset-bottom))] pt-16 lg:pb-16`}>
@@ -2741,10 +2741,10 @@ export default function MobileResortApp() {
                 <div className="flex flex-col gap-4 animate-fade-in">
                   <div className="rounded-2xl border border-cyan/40 bg-gradient-to-b from-cyan/15 via-ink to-ink p-4 sm:p-5 text-center relative overflow-hidden">
                     <span className="font-serif text-3xl sm:text-4xl text-cyan block">✦</span>
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-cyan mt-1 block">J & D Beach House · Patar Bolinao</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-cyan mt-1 block">Rock View Beach Resort · Patar Bolinao</span>
                     <h4 className="font-serif text-xl sm:text-2xl font-medium text-white mt-1">Reservation Confirmed</h4>
                     <div className="mt-2.5 inline-block rounded-full bg-cyan px-3.5 py-1 font-mono text-[11px] font-bold tracking-widest text-navy">
-                      REF: JD-RES-{resConfirmed.id ? resConfirmed.id.slice(0, 8).toUpperCase() : 'GUARANTEED'}
+                      REF: RV-RES-{resConfirmed.id ? resConfirmed.id.slice(0, 8).toUpperCase() : 'GUARANTEED'}
                     </div>
 
                     <div className="mt-4 grid grid-cols-2 gap-2 text-left text-xs bg-white/[0.03] p-3 rounded-xl border border-white/10">
