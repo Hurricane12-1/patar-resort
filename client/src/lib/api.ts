@@ -235,6 +235,7 @@ export const api = {
   createReservation: (body: any) => req('/reservations', { method: 'POST', body }),
   myReservations: () => req('/reservations/mine'),
   cancelReservation: (id: string) => req(`/reservations/${id}/cancel`, { method: 'PATCH' }),
+  deleteReservation: (id: string) => req(`/reservations/${id}`, { method: 'DELETE' }),
   allReservations: () => req('/reservations'),
   setReservationStatus: (id: string, status: string) => req(`/reservations/${id}/status`, { method: 'PATCH', body: { status } }),
 

@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { asyncH, ApiError } from '../middleware/errors.js';
 import { authenticate, requireStaffOrAdmin } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
-import { admin } from '../lib/supabase.js';
+import { admin, getSystemAdminClient } from '../lib/supabase.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
 
 const r = Router();
@@ -142,7 +142,7 @@ r.patch('/department/inventory/:id', authenticate, requireStaffOrAdmin,
   }));
 
 r.delete('/department/inventory/:id', authenticate, requireStaffOrAdmin, asyncH(async (req, res) => {
-  const client = req.sb || admin;
+  const client = (await getSystemAdminClient().catch(() => null)) || admin;
   const { error } = await client.from('resort_inventory').delete().eq('id', req.params.id);
   if (error) throw new ApiError(500, error.message);
 

@@ -467,6 +467,14 @@ export default function Admin() {
   const [userToDelete, setUserToDelete] = useState(null);
   const [deletingUser, setDeletingUser] = useState(false);
 
+  // Dedicated Remove Confirmation States (Reliable In-App Modals)
+  const [roomToRemove, setRoomToRemove] = useState<any>(null);
+  const [removingRoom, setRemovingRoom] = useState(false);
+  const [supplyToRemove, setSupplyToRemove] = useState<any>(null);
+  const [removingSupply, setRemovingSupply] = useState(false);
+  const [reservationToRemove, setReservationToRemove] = useState<any>(null);
+  const [removingReservation, setRemovingReservation] = useState(false);
+
   // Administrator Forgot Password Modal State
   const [showAdminForgotModal, setShowAdminForgotModal] = useState(false);
   const [adminRecoveryEmail, setAdminRecoveryEmail] = useState('');
@@ -1552,6 +1560,52 @@ export default function Admin() {
     }
   }
 
+  async function handleConfirmRemoveRoom() {
+    if (!roomToRemove?.id) return;
+    setRemovingRoom(true);
+    try {
+      await api.deleteRoom(roomToRemove.id, true);
+      setRoomsList((prev) => prev.filter((r) => r.id !== roomToRemove.id));
+      if (editingRoom?.id === roomToRemove.id) setEditingRoom(null);
+      toast(`Accommodation "${roomToRemove.name}" removed successfully`);
+      setRoomToRemove(null);
+    } catch (err: any) {
+      toast(`Remove failed: ${err.message || 'Error removing room'}`, true);
+    } finally {
+      setRemovingRoom(false);
+    }
+  }
+
+  async function handleConfirmRemoveSupply() {
+    if (!supplyToRemove?.id) return;
+    setRemovingSupply(true);
+    try {
+      await api.deleteInventoryItem(supplyToRemove.id);
+      setInventoryList((prev) => prev.filter((i) => i.id !== supplyToRemove.id));
+      toast(`Supply item "${supplyToRemove.item_name}" removed`);
+      setSupplyToRemove(null);
+    } catch (err: any) {
+      toast(`Remove failed: ${err.message || 'Error removing supply item'}`, true);
+    } finally {
+      setRemovingSupply(false);
+    }
+  }
+
+  async function handleConfirmRemoveReservation() {
+    if (!reservationToRemove?.id) return;
+    setRemovingReservation(true);
+    try {
+      await api.deleteReservation(reservationToRemove.id);
+      setReservationsList((prev) => prev.filter((r) => r.id !== reservationToRemove.id));
+      toast(`Booking folio #${reservationToRemove.id.slice(0, 8)} removed successfully`);
+      setReservationToRemove(null);
+    } catch (err: any) {
+      toast(`Remove failed: ${err.message || 'Error removing reservation'}`, true);
+    } finally {
+      setRemovingReservation(false);
+    }
+  }
+
   async function handleDeleteRoom(room) {
     if (!room?.id) return;
     const ok = window.confirm(`Permanently remove accommodation "${room.name}"? If there are no bookings referencing it, this will completely delete it from the system.`);
@@ -2633,7 +2687,7 @@ export default function Admin() {
               {/* SUBTAB SWITCHER */}
               <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.04)', borderRadius: 12, padding: 4 }}>
                 {[
-                  { key: 'accommodations', label: '🏡 Accommodations & Rates', count: roomsList.length },
+                  { key: 'accommodations', label: '🏡 Accommodations & Rates', count: roomsList.filter((r) => r.is_active !== false).length },
                   { key: 'supplies', label: '📦 Resort Supplies Ledger', count: inventoryList.length },
                 ].map((tab) => (
                   <button
@@ -2674,6 +2728,7 @@ export default function Admin() {
                     <div className="skel" style={{ height: 260 }} />
                   ) : (() => {
                     const filteredRooms = roomsList
+                      .filter((r) => r.is_active !== false)
                       .filter((r) => inventoryRoomFilter === 'all' || r.category?.toLowerCase() === inventoryRoomFilter.toLowerCase())
                       .filter((r) => !inventorySearch || r.name?.toLowerCase().includes(inventorySearch.toLowerCase()) || r.description?.toLowerCase().includes(inventorySearch.toLowerCase()));
 
@@ -2796,18 +2851,22 @@ export default function Admin() {
                                     </button>
                                     <button
                                       className="btn btn-sm"
-                                      onClick={() => handleDeleteRoom(room)}
+                                      onClick={() => setRoomToRemove(room)}
                                       style={{
-                                        background: 'rgba(244,63,94,0.1)',
-                                        color: '#F43F5E',
-                                        border: '1px solid rgba(244,63,94,0.25)',
-                                        fontSize: '.82rem',
-                                        padding: '4px 8px',
+                                        background: 'rgba(239, 68, 68, 0.1)',
+                                        color: '#EF4444',
+                                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                                        fontSize: '.8rem',
+                                        fontWeight: 700,
+                                        padding: '6px 12px',
+                                        borderRadius: 8,
                                         cursor: 'pointer',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
                                       }}
-                                      title="Delete room"
+                                      title="Remove accommodation"
                                     >
-                                      🗑️
+                                      Remove
                                     </button>
                                   </div>
                                 </div>
@@ -2919,11 +2978,22 @@ export default function Admin() {
                                   </td>
                                   <td style={{ textAlign: 'right' }}>
                                     <button
-                                      onClick={() => handleDeleteSupply(item.id, item.item_name)}
-                                      style={{ background: 'none', border: 'none', color: '#F43F5E', cursor: 'pointer', fontSize: '.8rem', fontWeight: 700 }}
-                                      title="Delete supply item"
+                                      onClick={() => setSupplyToRemove(item)}
+                                      style={{
+                                        background: 'rgba(239, 68, 68, 0.1)',
+                                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                                        color: '#EF4444',
+                                        cursor: 'pointer',
+                                        fontSize: '.78rem',
+                                        fontWeight: 700,
+                                        padding: '5px 12px',
+                                        borderRadius: 8,
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                      }}
+                                      title="Remove supply item"
                                     >
-                                      Delete
+                                      Remove
                                     </button>
                                   </td>
                                 </tr>
@@ -4355,9 +4425,10 @@ export default function Admin() {
                                       🔑 Reset
                                     </button>
                                     <button className="act-btn" style={{ color: '#EF4444', borderColor: '#EF4444' }}
-                                      title="Delete account permanently"
+                                      title="Remove account permanently"
+                                      aria-label="🗑️ Delete"
                                       onClick={() => setUserToDelete(u)}>
-                                      🗑️ Delete
+                                      Remove
                                     </button>
                                   </div>
                                 </td>
@@ -4439,9 +4510,10 @@ export default function Admin() {
                                       🔑 Reset
                                     </button>
                                     <button className="act-btn" style={{ color: '#EF4444', borderColor: '#EF4444' }}
-                                      title="Delete account permanently"
+                                      title="Remove account permanently"
+                                      aria-label="🗑️ Delete"
                                       onClick={() => setUserToDelete(u)}>
-                                      🗑️ Delete
+                                      Remove
                                     </button>
                                   </div>
                                 </td>
@@ -5237,6 +5309,14 @@ export default function Admin() {
                                       ✕ Cancel
                                     </button>
                                   )}
+                                  <button
+                                    className="act-btn"
+                                    onClick={() => setReservationToRemove(b)}
+                                    style={{ color: '#EF4444', borderColor: 'rgba(239, 68, 68, 0.4)' }}
+                                    title="Remove booking folio permanently"
+                                  >
+                                    Remove
+                                  </button>
                                   {b.payment_status === 'refund_pending' ? (
                                     <button
                                       className="act-btn"
@@ -5515,20 +5595,21 @@ export default function Admin() {
                           <button
                             onClick={() => handleDeleteNotif(n.id)}
                             style={{
-                              background: 'transparent',
+                              background: 'rgba(239, 68, 68, 0.08)',
                               border: `1px solid ${isLightMode ? '#FEE2E2' : 'rgba(244, 63, 94, 0.25)'}`,
                               color: '#F43F5E',
                               borderRadius: 8,
-                              padding: '5px 9px',
+                              padding: '5px 12px',
                               fontSize: '.76rem',
+                              fontWeight: 700,
                               cursor: 'pointer',
                               display: 'inline-flex',
                               alignItems: 'center',
                               justifyContent: 'center',
                             }}
-                            title="Delete this alert"
+                            title="Remove this alert"
                           >
-                            🗑️
+                            Remove
                           </button>
                         </div>
                       </div>
@@ -7099,6 +7180,102 @@ export default function Admin() {
         </div>
       )}
 
+      {/* MODAL: REMOVE ACCOMMODATION CONFIRMATION */}
+      {roomToRemove && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(2, 6, 23, 0.75)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={() => setRoomToRemove(null)}>
+          <div style={{ width: '100%', maxWidth: 440, background: isLightMode ? '#FFFFFF' : '#0F172A', borderRadius: 20, border: '1px solid rgba(239, 68, 68, 0.4)', padding: 24, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <span style={{ fontSize: '.74rem', color: '#EF4444', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>REMOVE ACCOMMODATION</span>
+              <button onClick={() => setRoomToRemove(null)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+            </div>
+            <h3 style={{ margin: '0 0 10px', fontSize: '1.25rem', color: '#EF4444', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+              Remove "{roomToRemove.name}"?
+            </h3>
+            <p style={{ fontSize: '.86rem', color: themeText, lineHeight: 1.5, margin: '0 0 16px' }}>
+              Are you sure you want to remove accommodation <strong>{roomToRemove.name}</strong> ({roomToRemove.category || 'Cottage'})? This will permanently remove it from the resort catalog and inventory.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button type="button" className="btn btn-sm" onClick={() => setRoomToRemove(null)} style={{ border: `1px solid ${themeBorder}`, color: themeText }}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={handleConfirmRemoveRoom}
+                disabled={removingRoom}
+                style={{ background: '#EF4444', color: '#FFF', fontWeight: 700 }}
+              >
+                {removingRoom ? 'Removing…' : 'Remove Accommodation'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: REMOVE SUPPLY ITEM CONFIRMATION */}
+      {supplyToRemove && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(2, 6, 23, 0.75)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={() => setSupplyToRemove(null)}>
+          <div style={{ width: '100%', maxWidth: 420, background: isLightMode ? '#FFFFFF' : '#0F172A', borderRadius: 20, border: '1px solid rgba(239, 68, 68, 0.4)', padding: 24, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <span style={{ fontSize: '.74rem', color: '#EF4444', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>REMOVE SUPPLY ITEM</span>
+              <button onClick={() => setSupplyToRemove(null)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+            </div>
+            <h3 style={{ margin: '0 0 10px', fontSize: '1.2rem', color: '#EF4444', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+              Remove "{supplyToRemove.item_name}"?
+            </h3>
+            <p style={{ fontSize: '.86rem', color: themeText, lineHeight: 1.5, margin: '0 0 16px' }}>
+              Are you sure you want to remove supply item <strong>{supplyToRemove.item_name}</strong> from the warehouse inventory ledger?
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button type="button" className="btn btn-sm" onClick={() => setSupplyToRemove(null)} style={{ border: `1px solid ${themeBorder}`, color: themeText }}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={handleConfirmRemoveSupply}
+                disabled={removingSupply}
+                style={{ background: '#EF4444', color: '#FFF', fontWeight: 700 }}
+              >
+                {removingSupply ? 'Removing…' : 'Remove Item'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: REMOVE RESERVATION CONFIRMATION */}
+      {reservationToRemove && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(2, 6, 23, 0.75)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={() => setReservationToRemove(null)}>
+          <div style={{ width: '100%', maxWidth: 440, background: isLightMode ? '#FFFFFF' : '#0F172A', borderRadius: 20, border: '1px solid rgba(239, 68, 68, 0.4)', padding: 24, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <span style={{ fontSize: '.74rem', color: '#EF4444', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>REMOVE BOOKING FOLIO</span>
+              <button onClick={() => setReservationToRemove(null)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+            </div>
+            <h3 style={{ margin: '0 0 10px', fontSize: '1.25rem', color: '#EF4444', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+              Remove Booking #{reservationToRemove.id.slice(0, 8)}?
+            </h3>
+            <p style={{ fontSize: '.86rem', color: themeText, lineHeight: 1.5, margin: '0 0 16px' }}>
+              Are you sure you want to remove the booking folio for <strong>{reservationToRemove.guest_name || reservationToRemove.profiles?.full_name || 'Guest'}</strong> ({fmtDate(reservationToRemove.check_in)} → {fmtDate(reservationToRemove.check_out)})?
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button type="button" className="btn btn-sm" onClick={() => setReservationToRemove(null)} style={{ border: `1px solid ${themeBorder}`, color: themeText }}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={handleConfirmRemoveReservation}
+                disabled={removingReservation}
+                style={{ background: '#EF4444', color: '#FFF', fontWeight: 700 }}
+              >
+                {removingReservation ? 'Removing…' : 'Remove Booking'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* MODAL: DELETE USER CONFIRMATION */}
       {userToDelete && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(2, 6, 23, 0.75)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={() => setUserToDelete(null)}>
@@ -7754,7 +7931,11 @@ export default function Admin() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, borderTop: `1px solid ${themeBorder}`, paddingTop: 16 }}>
                 <button
                   type="button"
-                  onClick={() => handleDeleteRoom(editingRoom)}
+                  onClick={() => {
+                    const target = editingRoom;
+                    setEditingRoom(null);
+                    setRoomToRemove(target);
+                  }}
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -7775,8 +7956,9 @@ export default function Admin() {
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background = isLightMode ? '#FEF2F2' : 'rgba(239, 68, 68, 0.12)';
                   }}
+                  title="Remove accommodation"
                 >
-                  🗑️ Delete
+                  Remove
                 </button>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <button

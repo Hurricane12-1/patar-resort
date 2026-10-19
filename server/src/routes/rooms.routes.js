@@ -384,7 +384,7 @@ r.post('/rooms', authenticate, requireAdmin,
     }
     const packed = packRoomPayload(req.body, null);
     const payload = { ...packed, slug };
-    const client = req.sb || (await getSystemAdminClient());
+    const client = (await getSystemAdminClient().catch(() => null)) || admin;
     const { data, error } = await client.from('rooms').insert(payload).select().single();
     if (error) throw new ApiError(500, error.message);
     await redis.clear();
@@ -418,7 +418,7 @@ r.patch('/rooms/:id', authenticate, requireAdmin,
     is_active: z.boolean().optional(),
   })),
   asyncH(async (req, res) => {
-    const client = req.sb || (await getSystemAdminClient());
+    const client = (await getSystemAdminClient().catch(() => null)) || admin;
 
     let existingRoom = null;
     try {
@@ -450,29 +450,42 @@ r.patch('/rooms/:id', authenticate, requireAdmin,
   }));
 
 r.delete('/rooms/:id', authenticate, requireAdmin, asyncH(async (req, res) => {
-  const client = req.sb || (await getSystemAdminClient());
+  const sysClient = (await getSystemAdminClient().catch(() => null)) || admin;
   const isHard = req.query.hard === 'true';
 
   if (isHard) {
-    const { error: hardErr } = await client.from('rooms').delete().eq('id', req.params.id);
-    if (!hardErr) {
-      await redis.clear();
-      await logAuditEvent({
-        actor: req.user,
-        action: 'ROOM_DELETE_PERMANENT',
-        resourceType: 'room',
-        resourceId: req.params.id,
-        details: { permanent: true },
-        req,
-      });
-      return res.json({ success: true, deleted_id: req.params.id, permanent: true });
+    try {
+      // 1. Clean up locks, reviews referencing this room
+      await sysClient.from('room_locks').delete().eq('room_id', req.params.id);
+      await sysClient.from('reviews').delete().eq('room_id', req.params.id);
+
+      // 2. Unlink reservations to satisfy foreign key constraint ON DELETE RESTRICT
+      await sysClient.from('reservations').update({ room_id: null }).eq('room_id', req.params.id);
+
+      // 3. Delete room permanently
+      const { error: hardErr } = await sysClient.from('rooms').delete().eq('id', req.params.id);
+      if (!hardErr) {
+        await redis.clear();
+        await logAuditEvent({
+          actor: req.user,
+          action: 'ROOM_DELETE_PERMANENT',
+          resourceType: 'room',
+          resourceId: req.params.id,
+          details: { permanent: true },
+          req,
+        });
+        return res.json({ success: true, deleted_id: req.params.id, permanent: true });
+      }
+      console.warn('[Rooms API] Hard delete failed, falling back to soft deactivation:', hardErr.message);
+    } catch (e) {
+      console.warn('[Rooms API] Hard delete exception, falling back to soft deactivation:', e.message);
     }
   }
 
-  const { data, error } = await client.from('rooms')
+  const { data, error } = await sysClient.from('rooms')
     .update({ is_active: false })
     .eq('id', req.params.id)
-    .select().single();
+    .select().maybeSingle();
   if (error) throw new ApiError(500, error.message);
   await redis.clear();
 
@@ -485,7 +498,7 @@ r.delete('/rooms/:id', authenticate, requireAdmin, asyncH(async (req, res) => {
     req,
   });
 
-  return res.json({ success: true, deactivated: data });
+  return res.json({ success: true, deactivated: data, deleted_id: req.params.id });
 }));
 
 export default r;

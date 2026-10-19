@@ -449,4 +449,32 @@ r.post('/reservations/:id/refund-confirm', authenticate, requireStaffOrAdmin,
   })
 );
 
+r.delete('/reservations/:id', authenticate, requireStaffOrAdmin, asyncH(async (req, res) => {
+  const sysClient = (await getSystemAdminClient().catch(() => null)) || admin;
+  const resId = req.params.id;
+
+  try {
+    await sysClient.from('room_locks').delete().eq('reservation_id', resId);
+  } catch {}
+
+  const { error } = await sysClient.from('reservations').delete().eq('id', resId);
+  if (error) {
+    // If foreign keys restrict deletion, soft delete to cancelled status
+    const { error: updErr } = await sysClient.from('reservations').update({ status: 'cancelled' }).eq('id', resId);
+    if (updErr) throw new ApiError(500, updErr.message);
+  }
+
+  await redis.clear();
+  await logAuditEvent({
+    actor: req.user,
+    action: 'BOOKING_DELETE',
+    resourceType: 'reservation',
+    resourceId: resId,
+    details: { deleted: true },
+    req,
+  });
+
+  return res.json({ success: true, deleted_id: resId });
+}));
+
 export default r;
