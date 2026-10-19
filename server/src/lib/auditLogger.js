@@ -43,6 +43,38 @@ function savePersistedLogs() {
 
 loadPersistedLogs();
 
+function parseUserAgent(ua) {
+  if (!ua || ua === 'System Kernel') {
+    return { device: 'Server / System', browser: 'System Service', os: 'Internal Runtime' };
+  }
+  let browser = 'Chrome';
+  if (/edg\//i.test(ua)) browser = 'Edge';
+  else if (/opr\/|opera/i.test(ua)) browser = 'Opera';
+  else if (/chrome|crios/i.test(ua)) browser = 'Chrome';
+  else if (/firefox|fxios/i.test(ua)) browser = 'Firefox';
+  else if (/safari/i.test(ua) && !/chrome/i.test(ua)) browser = 'Safari';
+  else if (/msie|trident/i.test(ua)) browser = 'Internet Explorer';
+  else if (/postman/i.test(ua)) browser = 'Postman';
+  else if (/curl/i.test(ua)) browser = 'cURL';
+  
+  let os = 'Windows';
+  if (/windows nt 10/i.test(ua)) os = 'Windows 10/11';
+  else if (/windows/i.test(ua)) os = 'Windows';
+  else if (/mac os x/i.test(ua)) os = 'macOS';
+  else if (/android/i.test(ua)) os = 'Android';
+  else if (/iphone|ipad|ipod/i.test(ua)) os = 'iOS';
+  else if (/linux/i.test(ua)) os = 'Linux';
+
+  let device = 'Desktop';
+  if (/mobile/i.test(ua) || /android/i.test(ua) || /iphone/i.test(ua)) {
+    device = 'Mobile';
+  } else if (/tablet|ipad/i.test(ua)) {
+    device = 'Tablet';
+  }
+
+  return { device, browser, os };
+}
+
 /**
  * Log an administrative or security audit event automatically.
  *
@@ -60,6 +92,10 @@ export async function logAuditEvent({ actor, action, resourceType = 'system', re
   const ip = req?.headers?.['x-forwarded-for']?.split(',')[0]?.trim() || req?.socket?.remoteAddress || req?.ip || '127.0.0.1';
   const userAgent = req?.headers?.['user-agent'] || 'System Kernel';
   const nowIso = new Date().toISOString();
+  const parsedUa = parseUserAgent(userAgent);
+  const roleStr = String(reqActor.role || 'system').toLowerCase();
+  const isClient = roleStr === 'customer' || roleStr === 'client' || action === 'CUSTOMER_LOGIN';
+  const category = isClient ? 'CLIENT' : 'EMPLOYEE';
 
   const entry = {
     id: `audit_${crypto.randomUUID()}`,
@@ -71,11 +107,15 @@ export async function logAuditEvent({ actor, action, resourceType = 'system', re
     actor_name: reqActor.full_name || reqActor.name || (reqActor.first_name ? `${reqActor.first_name} ${reqActor.last_name || ''}`.trim() : (reqActor.email ? reqActor.email.split('@')[0] : 'System Administrator')),
     role: reqActor.role || 'system',
     actor_role: reqActor.role || 'system',
+    category,
     resource_type: resourceType,
     resource_id: resourceId ? String(resourceId) : null,
     details: typeof details === 'object' ? details : { message: String(details) },
     ip_address: ip,
     user_agent: userAgent,
+    device: parsedUa.device,
+    browser: parsedUa.browser,
+    os: parsedUa.os,
   };
 
   // 1. Add to in-memory store
@@ -109,7 +149,7 @@ export async function logAuditEvent({ actor, action, resourceType = 'system', re
     }).catch(() => {});
   } catch {}
 
-  console.log(`[AUDIT AUTO LOGGER] 🛡️ [${entry.action}] by ${entry.actor_email} (${entry.role}) on ${entry.resource_type}:${entry.resource_id || 'all'}`);
+  console.log(`[AUDIT AUTO LOGGER] 🛡️ [${entry.action}] by ${entry.actor_email} (${entry.role}) on ${entry.resource_type}:${entry.resource_id || 'all'} [${parsedUa.device} • ${parsedUa.browser}]`);
   return entry;
 }
 
@@ -164,10 +204,10 @@ export async function getAuditLogs({
 
     if (role && role !== 'ALL') {
       const rLower = role.toLowerCase();
-      if (rLower === 'customer') {
-        query = query.or('actor_role.eq.customer,action.eq.CUSTOMER_LOGIN');
-      } else if (rLower === 'staff') {
-        query = query.or('actor_role.eq.staff,actor_role.eq.receptionist,actor_role.eq.accounting,action.ilike.%STAFF%');
+      if (rLower === 'employee' || rLower === 'staff') {
+        query = query.not('actor_role', 'eq', 'customer').neq('action', 'CUSTOMER_LOGIN');
+      } else if (rLower === 'client' || rLower === 'customer') {
+        query = query.or('actor_role.eq.customer,action.eq.CUSTOMER_LOGIN,actor_role.eq.client');
       } else if (rLower === 'administrator' || rLower === 'admin') {
         query = query.or('actor_role.eq.administrator,actor_role.eq.admin,actor_role.eq.system');
       } else {
@@ -190,23 +230,32 @@ export async function getAuditLogs({
       .range(offset, offset + limit - 1);
 
     if (!error && Array.isArray(data) && data.length > 0) {
-      const logs = data.map((l) => ({
-        id: l.id,
-        timestamp: l.created_at,
-        created_at: l.created_at,
-        action: l.action,
-        actor_id: l.actor_id,
-        actor_email: l.actor_email,
-        actor_name: l.actor_email ? l.actor_email.split('@')[0] : 'System Administrator',
-        role: l.actor_role || 'administrator',
-        actor_role: l.actor_role || 'administrator',
-        resource_type: l.resource_type,
-        resource_id: l.resource_id,
-        details: l.details || {},
-        ip_address: l.ip_address,
-        user_agent: l.user_agent,
-        source: 'supabase',
-      }));
+      const logs = data.map((l) => {
+        const parsed = parseUserAgent(l.user_agent);
+        const rLower = String(l.actor_role || '').toLowerCase();
+        const isClient = rLower === 'customer' || rLower === 'client' || l.action === 'CUSTOMER_LOGIN';
+        return {
+          id: l.id,
+          timestamp: l.created_at,
+          created_at: l.created_at,
+          action: l.action,
+          actor_id: l.actor_id,
+          actor_email: l.actor_email,
+          actor_name: l.actor_email ? l.actor_email.split('@')[0] : 'System Administrator',
+          role: l.actor_role || 'administrator',
+          actor_role: l.actor_role || 'administrator',
+          category: isClient ? 'CLIENT' : 'EMPLOYEE',
+          resource_type: l.resource_type,
+          resource_id: l.resource_id,
+          details: l.details || {},
+          ip_address: l.ip_address || '127.0.0.1',
+          user_agent: l.user_agent,
+          device: l.device || parsed.device,
+          browser: l.browser || parsed.browser,
+          os: l.os || parsed.os,
+          source: 'supabase',
+        };
+      });
       return {
         success: true,
         total: count ?? logs.length,
@@ -237,8 +286,10 @@ export async function getAuditLogs({
 
   if (role && role !== 'ALL') {
     const rLower = role.toLowerCase();
-    if (rLower === 'customer') {
-      list = list.filter((l) => l.role === 'customer' || l.actor_role === 'customer' || l.action === 'CUSTOMER_LOGIN');
+    if (rLower === 'employee') {
+      list = list.filter((l) => l.category === 'EMPLOYEE' || (!['customer', 'client'].includes(l.role?.toLowerCase()) && !['customer', 'client'].includes(l.actor_role?.toLowerCase()) && l.action !== 'CUSTOMER_LOGIN'));
+    } else if (rLower === 'client' || rLower === 'customer') {
+      list = list.filter((l) => l.category === 'CLIENT' || ['customer', 'client'].includes(l.role?.toLowerCase()) || ['customer', 'client'].includes(l.actor_role?.toLowerCase()) || l.action === 'CUSTOMER_LOGIN');
     } else if (rLower === 'staff') {
       list = list.filter((l) => ['staff', 'receptionist', 'accounting', 'manager', 'cashier'].includes(l.role?.toLowerCase()) || ['staff', 'receptionist', 'accounting'].includes(l.actor_role?.toLowerCase()) || l.action?.includes('STAFF'));
     } else if (rLower === 'administrator' || rLower === 'admin') {
@@ -280,7 +331,18 @@ export async function getAuditLogs({
   }
 
   const total = list.length;
-  const paginated = list.slice(offset, offset + limit);
+  const paginated = list.slice(offset, offset + limit).map((l) => {
+    const parsed = parseUserAgent(l.user_agent);
+    const rLower = String(l.role || l.actor_role || '').toLowerCase();
+    const isClient = rLower === 'customer' || rLower === 'client' || l.action === 'CUSTOMER_LOGIN';
+    return {
+      ...l,
+      category: l.category || (isClient ? 'CLIENT' : 'EMPLOYEE'),
+      device: l.device || parsed.device,
+      browser: l.browser || parsed.browser,
+      os: l.os || parsed.os,
+    };
+  });
 
   return {
     success: true,
