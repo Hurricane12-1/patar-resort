@@ -123,7 +123,7 @@ app.post('/api/limiter/reset', (_req, res) => {
 });
 
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', service: 'J & D Beach House API', version: '1.1.0', timestamp: new Date().toISOString() });
+  res.json({ status: 'ok', service: 'J & D Beach House API', version: '1.5.0', timestamp: new Date().toISOString() });
 });
 
 // Bootstrap Isolated Modular Framework (IMF) with dynamic auto-discovery & bulkhead error boundaries
@@ -164,7 +164,7 @@ app.use((req, res, next) => {
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       return res.sendFile(indexPath);
     }
-    return res.json({ status: 'ok', service: 'J & D Beach House API', version: '1.1.0' });
+    return res.json({ status: 'ok', service: 'J & D Beach House API', version: '1.5.0' });
   }
   next();
 });

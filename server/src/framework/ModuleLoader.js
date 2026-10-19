@@ -44,7 +44,7 @@ export async function loadRouteModule(app, filePath) {
     // Register module in registry
     registry.register({
       name: moduleName,
-      version: imported.version || '1.1.0',
+      version: imported.version || '1.5.0',
       description: imported.description || `Core operational route module: ${moduleName}`,
       type: 'core-route',
       mountPath: '/api',

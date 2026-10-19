@@ -37,7 +37,7 @@ const configData = {
   system: 'J & D Beach House',
   backup_timestamp: now.toISOString(),
   backup_type: label,
-  version: '1.0.0',
+  version: '1.5.0',
   status: 'healthy',
   modules: [
     'Public Guest Portal',
