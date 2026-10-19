@@ -1154,3 +1154,27 @@
   }
 }
 
+/* 13. ROUNDED PILL BUTTON & CURVED CONTROLS ARCHITECTURE */
+.admin-portal button,
+.admin-portal .btn,
+.admin-portal .btn-sm,
+.admin-portal .btn-sky,
+.admin-portal .btn-ghost,
+.admin-portal .act-btn,
+.admin-portal .chip,
+.admin-portal select,
+.admin-portal input.search {
+  border-radius: 9999px !important;
+}
+
+.admin-portal .kpi-card-clickable {
+  border-radius: 20px !important;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.admin-portal .kpi-card-clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.25);
+}

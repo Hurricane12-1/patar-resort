@@ -5190,64 +5190,160 @@ export default function Admin() {
               {/* VIEW 2: GUEST STAY FOLIOS & RESERVATIONS */}
               {ledgerSubView === 'stay_folios' && (
                 <div>
-                  {/* 4 KPI Summary Cards for Stays */}
+                  {/* 4 KPI Summary Cards for Stays (CLICKABLE & INTERACTIVE FILTER TRIGGERS) */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14, marginBottom: 20 }}>
-                    <div style={{ padding: '16px 18px', background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.04)', borderRadius: 14, border: `1px solid ${themeBorder}` }}>
-                      <small style={{ color: themeMuted, textTransform: 'uppercase', fontSize: '.7rem', fontWeight: 800, letterSpacing: '.06em' }}>Total Reservations</small>
-                      <b style={{ display: 'block', fontSize: '1.6rem', color: themeText, marginTop: 4 }}>{allBookings.length} stays</b>
-                      <span style={{ fontSize: '.74rem', color: '#0EA5E9' }}>All active & past folios</span>
+                    {/* CARD 1: TOTAL RESERVATIONS */}
+                    <div
+                      className="kpi-card-clickable"
+                      onClick={() => setReservationFilter('all')}
+                      style={{
+                        padding: '18px 20px',
+                        background: reservationFilter === 'all'
+                          ? (isLightMode ? '#EFF6FF' : 'rgba(14,165,233,0.14)')
+                          : (isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.04)'),
+                        borderRadius: 20,
+                        border: `1.5px solid ${reservationFilter === 'all' ? '#0EA5E9' : themeBorder}`,
+                        boxShadow: reservationFilter === 'all' ? '0 0 0 3px rgba(14,165,233,0.2)' : 'none',
+                      }}
+                      title="Click to view all reservations"
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <small style={{ color: themeMuted, textTransform: 'uppercase', fontSize: '.7rem', fontWeight: 800, letterSpacing: '.06em' }}>Total Reservations</small>
+                        {reservationFilter === 'all' && (
+                          <span style={{ fontSize: '.68rem', fontWeight: 800, color: '#0EA5E9', background: 'rgba(14,165,233,0.15)', padding: '2px 8px', borderRadius: 9999 }}>
+                            Active
+                          </span>
+                        )}
+                      </div>
+                      <b style={{ display: 'block', fontSize: '1.65rem', color: themeText, marginTop: 4 }}>{allBookings.length} stays</b>
+                      <span style={{ fontSize: '.74rem', color: '#0EA5E9', display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
+                        <i className="fas fa-layer-group" style={{ fontSize: '.7rem' }} /> All active & past folios
+                      </span>
                     </div>
-                    <div style={{ padding: '16px 18px', background: isLightMode ? '#ECFDF5' : 'rgba(16,185,129,0.1)', borderRadius: 14, border: `1px solid ${isLightMode ? '#A7F3D0' : 'rgba(16,185,129,0.2)'}` }}>
-                      <small style={{ color: isLightMode ? '#047857' : '#34D399', textTransform: 'uppercase', fontSize: '.7rem', fontWeight: 800, letterSpacing: '.06em' }}>In-House / Checked In</small>
-                      <b style={{ display: 'block', fontSize: '1.6rem', color: isLightMode ? '#065F46' : '#10B981', marginTop: 4 }}>
+
+                    {/* CARD 2: IN-HOUSE / CHECKED IN */}
+                    <div
+                      className="kpi-card-clickable"
+                      onClick={() => setReservationFilter('checked_in')}
+                      style={{
+                        padding: '18px 20px',
+                        background: reservationFilter === 'checked_in'
+                          ? (isLightMode ? '#D1FAE5' : 'rgba(16,185,129,0.2)')
+                          : (isLightMode ? '#ECFDF5' : 'rgba(16,185,129,0.08)'),
+                        borderRadius: 20,
+                        border: `1.5px solid ${reservationFilter === 'checked_in' ? '#10B981' : (isLightMode ? '#A7F3D0' : 'rgba(16,185,129,0.25)')}`,
+                        boxShadow: reservationFilter === 'checked_in' ? '0 0 0 3px rgba(16,185,129,0.2)' : 'none',
+                      }}
+                      title="Click to filter In-House / Checked In guests"
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <small style={{ color: isLightMode ? '#047857' : '#34D399', textTransform: 'uppercase', fontSize: '.7rem', fontWeight: 800, letterSpacing: '.06em' }}>In-House / Checked In</small>
+                        {reservationFilter === 'checked_in' && (
+                          <span style={{ fontSize: '.68rem', fontWeight: 800, color: '#10B981', background: 'rgba(16,185,129,0.2)', padding: '2px 8px', borderRadius: 9999 }}>
+                            Active
+                          </span>
+                        )}
+                      </div>
+                      <b style={{ display: 'block', fontSize: '1.65rem', color: isLightMode ? '#065F46' : '#10B981', marginTop: 4 }}>
                         {allBookings.filter((b) => b.status === 'checked_in').length} guests
                       </b>
-                      <span style={{ fontSize: '.74rem', color: '#10B981' }}>Currently staying in resort</span>
+                      <span style={{ fontSize: '.74rem', color: '#10B981', display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
+                        <i className="fas fa-hotel" style={{ fontSize: '.7rem' }} /> Currently staying in resort
+                      </span>
                     </div>
-                    <div style={{ padding: '16px 18px', background: isLightMode ? '#EFF6FF' : 'rgba(59,130,246,0.1)', borderRadius: 14, border: `1px solid ${isLightMode ? '#BFDBFE' : 'rgba(59,130,246,0.2)'}` }}>
-                      <small style={{ color: isLightMode ? '#1D4ED8' : '#60A5FA', textTransform: 'uppercase', fontSize: '.7rem', fontWeight: 800, letterSpacing: '.06em' }}>Upcoming Confirmed</small>
-                      <b style={{ display: 'block', fontSize: '1.6rem', color: isLightMode ? '#1E40AF' : '#3B82F6', marginTop: 4 }}>
+
+                    {/* CARD 3: UPCOMING CONFIRMED */}
+                    <div
+                      className="kpi-card-clickable"
+                      onClick={() => setReservationFilter('confirmed')}
+                      style={{
+                        padding: '18px 20px',
+                        background: reservationFilter === 'confirmed'
+                          ? (isLightMode ? '#DBEAFE' : 'rgba(59,130,246,0.2)')
+                          : (isLightMode ? '#EFF6FF' : 'rgba(59,130,246,0.08)'),
+                        borderRadius: 20,
+                        border: `1.5px solid ${reservationFilter === 'confirmed' ? '#3B82F6' : (isLightMode ? '#BFDBFE' : 'rgba(59,130,246,0.25)')}`,
+                        boxShadow: reservationFilter === 'confirmed' ? '0 0 0 3px rgba(59,130,246,0.2)' : 'none',
+                      }}
+                      title="Click to filter upcoming confirmed bookings"
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <small style={{ color: isLightMode ? '#1D4ED8' : '#60A5FA', textTransform: 'uppercase', fontSize: '.7rem', fontWeight: 800, letterSpacing: '.06em' }}>Upcoming Confirmed</small>
+                        {reservationFilter === 'confirmed' && (
+                          <span style={{ fontSize: '.68rem', fontWeight: 800, color: '#3B82F6', background: 'rgba(59,130,246,0.2)', padding: '2px 8px', borderRadius: 9999 }}>
+                            Active
+                          </span>
+                        )}
+                      </div>
+                      <b style={{ display: 'block', fontSize: '1.65rem', color: isLightMode ? '#1E40AF' : '#3B82F6', marginTop: 4 }}>
                         {allBookings.filter((b) => b.status === 'confirmed').length} bookings
                       </b>
-                      <span style={{ fontSize: '.74rem', color: '#3B82F6' }}>Awaiting arrival date</span>
+                      <span style={{ fontSize: '.74rem', color: '#3B82F6', display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
+                        <i className="fas fa-calendar-check" style={{ fontSize: '.7rem' }} /> Awaiting arrival date
+                      </span>
                     </div>
-                    <div style={{ padding: '16px 18px', background: isLightMode ? '#FFFBEB' : 'rgba(245,158,11,0.1)', borderRadius: 14, border: `1px solid ${isLightMode ? '#FDE68A' : 'rgba(245,158,11,0.2)'}` }}>
-                      <small style={{ color: isLightMode ? '#B45309' : '#FBBF24', textTransform: 'uppercase', fontSize: '.7rem', fontWeight: 800, letterSpacing: '.06em' }}>Gross Stay Value</small>
-                      <b style={{ display: 'block', fontSize: '1.6rem', color: isLightMode ? '#92400E' : '#F59E0B', marginTop: 4 }}>
+
+                    {/* CARD 4: GROSS STAY VALUE */}
+                    <div
+                      className="kpi-card-clickable"
+                      onClick={() => setReservationFilter(reservationFilter === 'pending' ? 'all' : 'pending')}
+                      style={{
+                        padding: '18px 20px',
+                        background: reservationFilter === 'pending'
+                          ? (isLightMode ? '#FEF3C7' : 'rgba(245,158,11,0.2)')
+                          : (isLightMode ? '#FFFBEB' : 'rgba(245,158,11,0.08)'),
+                        borderRadius: 20,
+                        border: `1.5px solid ${reservationFilter === 'pending' ? '#F59E0B' : (isLightMode ? '#FDE68A' : 'rgba(245,158,11,0.25)')}`,
+                        boxShadow: reservationFilter === 'pending' ? '0 0 0 3px rgba(245,158,11,0.2)' : 'none',
+                      }}
+                      title="Click to filter pending stays or inspect revenue"
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <small style={{ color: isLightMode ? '#B45309' : '#FBBF24', textTransform: 'uppercase', fontSize: '.7rem', fontWeight: 800, letterSpacing: '.06em' }}>Gross Stay Value</small>
+                        {reservationFilter === 'pending' && (
+                          <span style={{ fontSize: '.68rem', fontWeight: 800, color: '#F59E0B', background: 'rgba(245,158,11,0.2)', padding: '2px 8px', borderRadius: 9999 }}>
+                            Pending Filter
+                          </span>
+                        )}
+                      </div>
+                      <b style={{ display: 'block', fontSize: '1.65rem', color: isLightMode ? '#92400E' : '#F59E0B', marginTop: 4 }}>
                         {money(allBookings.filter((b) => b.status !== 'cancelled').reduce((acc, b) => acc + (b.total_php || 0), 0))}
                       </b>
-                      <span style={{ fontSize: '.74rem', color: '#F59E0B' }}>Total booking accommodations</span>
+                      <span style={{ fontSize: '.74rem', color: '#F59E0B', display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
+                        <i className="fas fa-sack-dollar" style={{ fontSize: '.7rem' }} /> Total booking accommodations
+                      </span>
                     </div>
                   </div>
 
-                  {/* Search Bar & Status Filter Pills */}
+                  {/* Search Bar & Clean Filter Dropdown */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
-                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                      {[
-                        { key: 'all', label: `All (${allBookings.length})` },
-                        { key: 'confirmed', label: `Confirmed (${allBookings.filter(b => b.status === 'confirmed').length})` },
-                        { key: 'checked_in', label: `In-House (${allBookings.filter(b => b.status === 'checked_in').length})` },
-                        { key: 'checked_out', label: `Checked Out (${allBookings.filter(b => b.status === 'checked_out').length})` },
-                        { key: 'pending', label: `Pending (${allBookings.filter(b => b.status === 'pending').length})` },
-                        { key: 'cancelled', label: `Cancelled (${allBookings.filter(b => b.status === 'cancelled').length})` },
-                      ].map((f) => (
-                        <button
-                          key={f.key}
-                          onClick={() => setReservationFilter(f.key)}
-                          style={{
-                            padding: '6px 12px',
-                            borderRadius: 16,
-                            border: `1px solid ${reservationFilter === f.key ? '#0EA5E9' : themeBorder}`,
-                            background: reservationFilter === f.key ? (isLightMode ? '#E0F2FE' : 'rgba(14,165,233,0.25)') : 'transparent',
-                            color: reservationFilter === f.key ? '#0284C7' : themeText,
-                            fontSize: '.78rem',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          {f.label}
-                        </button>
-                      ))}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <label style={{ fontSize: '.8rem', fontWeight: 800, color: themeText, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <i className="fas fa-filter" style={{ color: '#0EA5E9' }} /> Filter Status:
+                      </label>
+                      <select
+                        value={reservationFilter}
+                        onChange={(e) => setReservationFilter(e.target.value)}
+                        style={{
+                          padding: '8px 18px',
+                          borderRadius: 9999,
+                          border: `1.5px solid ${themeBorder}`,
+                          background: isLightMode ? '#FFFFFF' : '#1E293B',
+                          color: themeText,
+                          fontSize: '.82rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          boxShadow: isLightMode ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
+                          outline: 'none',
+                        }}
+                      >
+                        <option value="all">🌐 All Folios ({allBookings.length})</option>
+                        <option value="confirmed">📅 Upcoming Confirmed ({allBookings.filter(b => b.status === 'confirmed').length})</option>
+                        <option value="checked_in">🏨 In-House / Checked In ({allBookings.filter(b => b.status === 'checked_in').length})</option>
+                        <option value="checked_out">🚪 Checked Out ({allBookings.filter(b => b.status === 'checked_out').length})</option>
+                        <option value="pending">⏳ Pending Approval ({allBookings.filter(b => b.status === 'pending').length})</option>
+                        <option value="cancelled">✕ Cancelled ({allBookings.filter(b => b.status === 'cancelled').length})</option>
+                      </select>
                     </div>
                     <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: '.76rem', color: themeMuted, fontWeight: 700 }}>
