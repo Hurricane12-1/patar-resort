@@ -8,8 +8,9 @@ import { useAuth } from '../context/AuthContext.tsx';
 export function ExecutiveGuestChatModal({ guest, onClose, isLightMode }) {
   if (!guest) return null;
 
-  const { profile } = useAuth();
-  const adminDisplayName = profile?.full_name ? `${profile.full_name} (Executive Staff)` : 'Resort Staff';
+  const { profile, adminProfile } = useAuth();
+  const currentProfile = adminProfile || profile;
+  const adminDisplayName = currentProfile?.full_name ? `${currentProfile.full_name} (Executive Staff)` : 'Resort Staff';
 
   const [messages, setMessages] = useState(guest.messages || guest.initialMessages || []);
   const [inputText, setInputText] = useState('');

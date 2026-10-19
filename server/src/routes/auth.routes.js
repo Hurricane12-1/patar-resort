@@ -58,12 +58,16 @@ r.post('/auth/admin-login', asyncH(async (req, res) => {
 
   // 3. Resolve username to email if identifier is not an email
   let targetEmail = userIdent.toLowerCase();
+  const localPart = targetEmail.includes('@') ? targetEmail.split('@')[0] : targetEmail;
+
+  let targetProfile = null;
   if (!targetEmail.includes('@')) {
     const { data: matched } = await admin
       .from('profiles')
-      .select('email')
-      .ilike('username', userIdent)
+      .select('*')
+      .or(`username.ilike.${userIdent},email.ilike.${userIdent}@rockviewresort.ph,email.ilike.${userIdent}@janddbeachhouse.ph`)
       .maybeSingle();
+    targetProfile = matched;
     if (matched?.email) {
       targetEmail = matched.email.toLowerCase();
     } else {
@@ -76,55 +80,103 @@ r.post('/auth/admin-login', asyncH(async (req, res) => {
         targetEmail = userMatched.email.toLowerCase();
       }
     }
+  } else {
+    const { data: matched } = await admin
+      .from('profiles')
+      .select('*')
+      .or(`email.ilike.${targetEmail},email.ilike.${localPart}@rockviewresort.ph,email.ilike.${localPart}@janddbeachhouse.ph,username.ilike.${localPart}`)
+      .maybeSingle();
+    targetProfile = matched;
+    if (matched?.email) {
+      targetEmail = matched.email.toLowerCase();
+    }
   }
 
   // 4. Live Supabase PostgreSQL Credential & RBAC Role Verification (Zero Hardcoded Accounts)
   let verifiedUser = null;
-  try {
-    const { data, error } = await admin.auth.signInWithPassword({
-      email: targetEmail,
-      password: rawPass,
-    });
-    if (error) throw error;
-    if (data?.session && data?.user) {
-      const authedClient = userClient(data.session.access_token);
-      const { data: prof } = await authedClient.from('profiles').select('*').eq('id', data.user.id).single();
+  let authData = null;
+  let lastAuthErr = null;
 
-      const role = prof?.role || data.user.user_metadata?.role || 'customer';
-      if (role !== 'administrator' && role !== 'admin') {
-        throw new ApiError(403, `Access denied: Role "${role}" is not authorized for administrative operations.`);
+  const emailsToTry = [targetEmail];
+  if (targetEmail.endsWith('@rockviewresort.ph') || targetEmail.endsWith('@rockview.ph')) {
+    emailsToTry.push(`${localPart}@janddbeachhouse.ph`);
+  } else if (targetEmail.endsWith('@janddbeachhouse.ph')) {
+    emailsToTry.push(`${localPart}@rockviewresort.ph`);
+  }
+  if (env.SUPABASE_ADMIN_EMAIL && !emailsToTry.includes(env.SUPABASE_ADMIN_EMAIL.toLowerCase()) && (localPart === 'admin' || targetProfile?.role === 'administrator')) {
+    emailsToTry.push(env.SUPABASE_ADMIN_EMAIL.toLowerCase());
+  }
+
+  for (const tryEmail of emailsToTry) {
+    try {
+      const { data, error } = await admin.auth.signInWithPassword({
+        email: tryEmail,
+        password: rawPass,
+      });
+      if (!error && data?.session && data?.user) {
+        authData = data;
+        lastAuthErr = null;
+        break;
       }
-
-      let employeeRecord = null;
-      try {
-        const { data: emp } = await authedClient.from('employee_accounts')
-          .select('id, employee_id, department, position, shift, status, is_active, hire_date')
-          .or(`auth_user_id.eq.${data.user.id},email.eq.${targetEmail}`)
-          .maybeSingle();
-        employeeRecord = emp;
-      } catch {}
-
-      verifiedUser = {
-        id: data.user.id,
-        email: data.user.email,
-        full_name: prof?.full_name || data.user.user_metadata?.full_name || data.user.email,
-        role: role,
-        position: prof?.position || rawPos || 'Administrator',
-        has_password: true,
-        password_status: 'Configured',
-        ...(employeeRecord ? {
-          employee_id: employeeRecord.employee_id,
-          department: employeeRecord.department,
-          shift: employeeRecord.shift,
-          employee_status: employeeRecord.status,
-          employee_record: employeeRecord,
-        } : {}),
-      };
+      if (error) lastAuthErr = error;
+    } catch (err) {
+      lastAuthErr = err;
     }
+  }
+
+  if (!authData) {
+    await recordFailedAttempt(req.ip, userIdent, req);
+    if (lastAuthErr instanceof ApiError) throw lastAuthErr;
+    throw new ApiError(401, 'Invalid administrative credentials. Please sign in with your verified Supabase Administrator email and password.');
+  }
+
+  try {
+    const data = authData;
+    const authedClient = userClient(data.session.access_token);
+    let prof = targetProfile;
+    if (!prof) {
+      const { data: p } = await authedClient.from('profiles').select('*').eq('id', data.user.id).single();
+      prof = p;
+    }
+
+    const role = prof?.role || data.user.user_metadata?.role || 'customer';
+    if (role !== 'administrator' && role !== 'admin') {
+      throw new ApiError(403, `Access denied: Role "${role}" is not authorized for administrative operations.`);
+    }
+
+    let employeeRecord = null;
+    try {
+      const { data: emp } = await authedClient.from('employee_accounts')
+        .select('id, employee_id, department, position, shift, status, is_active, hire_date')
+        .or(`auth_user_id.eq.${data.user.id},email.eq.${targetEmail},email.eq.${data.user.email}`)
+        .maybeSingle();
+      employeeRecord = emp;
+    } catch {}
+
+    const resolvedEmail = prof?.email || (targetEmail.includes('@') ? targetEmail : data.user.email);
+
+    verifiedUser = {
+      id: data.user.id,
+      email: resolvedEmail,
+      full_name: prof?.full_name || data.user.user_metadata?.full_name || resolvedEmail,
+      role: role,
+      position: prof?.position || prof?.title || rawPos || 'Administrator',
+      phone: prof?.phone || '',
+      department: prof?.department || employeeRecord?.department || '',
+      has_password: true,
+      password_status: 'Configured',
+      ...(employeeRecord ? {
+        employee_id: employeeRecord.employee_id,
+        department: employeeRecord.department,
+        shift: employeeRecord.shift,
+        employee_status: employeeRecord.status,
+        employee_record: employeeRecord,
+      } : {}),
+    };
   } catch (err) {
     await recordFailedAttempt(req.ip, userIdent, req);
     if (err instanceof ApiError) throw err;
-    throw new ApiError(401, 'Invalid administrative credentials. Please sign in with your verified Supabase Administrator email and password.');
+    throw new ApiError(401, 'Invalid administrative credentials. Authentication failed.');
   }
 
   if (!verifiedUser) {
@@ -209,15 +261,18 @@ r.post('/auth/login', asyncH(async (req, res) => {
   }
 
   let targetEmail = userIdent.toLowerCase();
+  const localPart = targetEmail.includes('@') ? targetEmail.split('@')[0] : targetEmail;
 
+  let targetProfile = null;
   // If user entered a username (no '@'), look up registered email in profiles, customers, or users
   if (!targetEmail.includes('@')) {
     const { data: matched } = await admin
       .from('profiles')
-      .select('email')
-      .ilike('username', userIdent)
+      .select('*')
+      .or(`username.ilike.${userIdent},email.ilike.${userIdent}@rockviewresort.ph,email.ilike.${userIdent}@janddbeachhouse.ph`)
       .maybeSingle();
 
+    targetProfile = matched;
     if (matched?.email) {
       targetEmail = matched.email.toLowerCase();
     } else {
@@ -239,45 +294,90 @@ r.post('/auth/login', asyncH(async (req, res) => {
         }
       }
     }
+  } else {
+    const { data: matched } = await admin
+      .from('profiles')
+      .select('*')
+      .or(`email.ilike.${targetEmail},email.ilike.${localPart}@rockviewresort.ph,email.ilike.${localPart}@janddbeachhouse.ph,username.ilike.${localPart}`)
+      .maybeSingle();
+    targetProfile = matched;
+    if (matched?.email) {
+      targetEmail = matched.email.toLowerCase();
+    }
   }
 
   // Strictly authenticate via live Supabase Auth without hardcoded accounts
+  let authData = null;
+  let authErr = null;
+  const loginEmailsToTry = [targetEmail];
+  if (targetEmail.endsWith('@rockviewresort.ph') || targetEmail.endsWith('@rockview.ph')) {
+    loginEmailsToTry.push(`${localPart}@janddbeachhouse.ph`);
+  } else if (targetEmail.endsWith('@janddbeachhouse.ph')) {
+    loginEmailsToTry.push(`${localPart}@rockviewresort.ph`);
+  }
+  if (env.SUPABASE_ADMIN_EMAIL && !loginEmailsToTry.includes(env.SUPABASE_ADMIN_EMAIL.toLowerCase()) && (localPart === 'admin' || targetProfile?.role === 'administrator')) {
+    loginEmailsToTry.push(env.SUPABASE_ADMIN_EMAIL.toLowerCase());
+  }
+
+  for (const tryEmail of loginEmailsToTry) {
+    try {
+      const { data, error } = await admin.auth.signInWithPassword({
+        email: tryEmail,
+        password,
+      });
+      if (!error && data?.session) {
+        authData = data;
+        authErr = null;
+        break;
+      }
+      if (error) authErr = error;
+    } catch (e) {
+      authErr = e;
+    }
+  }
+
+  if (!authData) {
+    await recordFailedAttempt(req.ip, userIdent, req);
+    if (authErr instanceof ApiError) throw authErr;
+    throw new ApiError(401, 'Invalid login credentials.');
+  }
+
   try {
-    const { data, error } = await admin.auth.signInWithPassword({
-      email: targetEmail,
-      password,
-    });
-    if (error) throw error;
+    const data = authData;
     if (data?.session) {
-      let profile = null;
+    let profile = targetProfile;
+    if (!profile) {
       try {
         const { data: prof } = await admin.from('profiles').select('*').eq('id', data.user.id).single();
         profile = prof;
       } catch {}
+    }
 
-      // Fetch isolated employee accounts record if existing
-      let employeeRecord = null;
-      try {
-        const { data: emp } = await admin.from('employee_accounts')
-          .select('id, employee_id, department, position, shift, status, is_active, hire_date')
-          .or(`auth_user_id.eq.${data.user.id},email.eq.${targetEmail}`)
-          .maybeSingle();
-        employeeRecord = emp;
-      } catch {}
+    // Fetch isolated employee accounts record if existing
+    let employeeRecord = null;
+    try {
+      const { data: emp } = await admin.from('employee_accounts')
+        .select('id, employee_id, department, position, shift, status, is_active, hire_date')
+        .or(`auth_user_id.eq.${data.user.id},email.eq.${targetEmail},email.eq.${data.user.email}`)
+        .maybeSingle();
+      employeeRecord = emp;
+    } catch {}
 
-      const hasPassword = Boolean(
-        (profile?.password && String(profile.password).trim() !== '') ||
-        (employeeRecord?.password && String(employeeRecord.password).trim() !== '') ||
-        true // Successfully authenticated with password
-      );
-      const passwordStatus = hasPassword ? 'Configured' : 'N/A';
+    const hasPassword = Boolean(
+      (profile?.password && String(profile.password).trim() !== '') ||
+      (employeeRecord?.password && String(employeeRecord.password).trim() !== '') ||
+      true // Successfully authenticated with password
+    );
+    const passwordStatus = hasPassword ? 'Configured' : 'N/A';
 
-      const enrichedUser = {
-        ...(profile || data.user),
-        id: data.user.id,
-        email: data.user.email || targetEmail,
-        has_password: hasPassword,
-        password_status: passwordStatus,
+    const resolvedEmail = profile?.email || (targetEmail.includes('@') ? targetEmail : data.user.email);
+
+    const enrichedUser = {
+      ...(profile || data.user),
+      id: data.user.id,
+      email: resolvedEmail,
+      has_password: hasPassword,
+      password_status: passwordStatus,
         ...(employeeRecord ? {
           employee_id: employeeRecord.employee_id,
           department: employeeRecord.department,

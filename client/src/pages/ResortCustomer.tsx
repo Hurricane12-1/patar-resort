@@ -18,7 +18,7 @@ function to11Digits(val: string): string {
 }
 
 export default function ResortCustomer() {
-  const { session, profile, setAuthOpen, updateProfile, updatePassword } = useAuth();
+  const { session, profile, setAuthOpen, updateProfile, updatePassword, refreshProfile } = useAuth();
   const [pass, setPass] = useState(null);
   const [services, setServices] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -52,6 +52,7 @@ export default function ResortCustomer() {
   }, [profile]);
 
   useEffect(() => {
+    if (refreshProfile) refreshProfile();
     if (!session) { setLoading(false); return; }
     let live = true;
     Promise.all([api.digitalPass(), api.customerServices(), api.customerOrders(), api.customerStats()])

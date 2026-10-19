@@ -18,7 +18,7 @@ function to11Digits(val: string): string {
 }
 
 export default function MyBookings() {
-  const { session, profile, setAuthOpen, updateProfile, deleteAccount } = useAuth();
+  const { session, profile, setAuthOpen, updateProfile, deleteAccount, refreshProfile } = useAuth();
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [revModal, setRevModal] = useState(null);
@@ -63,6 +63,7 @@ export default function MyBookings() {
   }, [profile]);
 
   useEffect(() => {
+    if (refreshProfile) refreshProfile();
     if (!session) { setLoading(false); return; }
     let live = true;
     const load = () => api.myReservations().then((d) => live && setList(d)).finally(() => live && setLoading(false));

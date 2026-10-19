@@ -172,12 +172,20 @@ export async function authenticate(req, _res, next) {
 
     const isElevatedAdminEmail = (userEmail && (
       userEmail.toLowerCase() === 'admin@janddbeachhouse.ph' ||
+      userEmail.toLowerCase() === 'admin@rockviewresort.ph' ||
+      userEmail.toLowerCase() === 'admin@rockview.ph' ||
       userEmail.toLowerCase().includes('admin') ||
+      userEmail.toLowerCase().endsWith('@rockviewresort.ph') ||
+      userEmail.toLowerCase().endsWith('@rockview.ph') ||
       userEmail.toLowerCase() === 'sheepermichigun@gmail.com' ||
       userEmail.toLowerCase() === 'juliannygeljdeleon@gmail.com'
-    )) || (profile.email && (
+    )) || (profile?.email && (
       profile.email.toLowerCase() === 'admin@janddbeachhouse.ph' ||
+      profile.email.toLowerCase() === 'admin@rockviewresort.ph' ||
+      profile.email.toLowerCase() === 'admin@rockview.ph' ||
       profile.email.toLowerCase().includes('admin') ||
+      profile.email.toLowerCase().endsWith('@rockviewresort.ph') ||
+      profile.email.toLowerCase().endsWith('@rockview.ph') ||
       profile.email.toLowerCase() === 'sheepermichigun@gmail.com' ||
       profile.email.toLowerCase() === 'juliannygeljdeleon@gmail.com'
     ));
@@ -260,7 +268,11 @@ export const requireAdminSecurityBlock = (req, _res, next) => {
   const headerKey = req.headers['x-admin-token-key'] || req.query.admin_token_key;
   const isOwnerEmail = req.user.email && (
     req.user.email.toLowerCase() === 'admin@janddbeachhouse.ph' ||
+    req.user.email.toLowerCase() === 'admin@rockviewresort.ph' ||
+    req.user.email.toLowerCase() === 'admin@rockview.ph' ||
     req.user.email.toLowerCase().includes('admin') ||
+    req.user.email.toLowerCase().endsWith('@rockviewresort.ph') ||
+    req.user.email.toLowerCase().endsWith('@rockview.ph') ||
     req.user.email.toLowerCase() === 'sheepermichigun@gmail.com' ||
     req.user.email.toLowerCase() === 'juliannygeljdeleon@gmail.com'
   );

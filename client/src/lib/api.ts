@@ -70,7 +70,13 @@ async function req<T = any>(path: string, { method = 'GET', body }: { method?: s
 
   const adminJwt = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_jwt') : null;
   const customerJwt = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_customer_jwt') : null;
-  if (session?.access_token) {
+  const isAdminContext = (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) || path.startsWith('/admin');
+
+  if (isAdminContext && adminJwt) {
+    headers['Authorization'] = `Bearer ${adminJwt}`;
+  } else if (!isAdminContext && customerJwt) {
+    headers['Authorization'] = `Bearer ${customerJwt}`;
+  } else if (session?.access_token) {
     headers['Authorization'] = `Bearer ${session.access_token}`;
   } else if (adminJwt) {
     headers['Authorization'] = `Bearer ${adminJwt}`;

@@ -23,7 +23,7 @@ export function generateAccountEmail(firstName, middleName, lastName, seq = 1, i
     return `${f}${m}${l}@gmail.com`;
   }
   const paddedSeq = String(seq).padStart(3, '0');
-  return `${f}${m}${l}${paddedSeq}@resortmanagement.ph`;
+  return `${f}${m}${l}${paddedSeq}@rockviewresort.ph`;
 }
 
 export function isSystemOwnerEmail(email?: string): boolean {
@@ -33,7 +33,11 @@ export function isSystemOwnerEmail(email?: string): boolean {
     em === 'sheepermichigun@gmail.com' ||
     em === 'juliannygeljdeleon@gmail.com' ||
     em === 'admin@janddbeachhouse.ph' ||
-    em.includes('admin')
+    em === 'admin@rockviewresort.ph' ||
+    em === 'admin@rockview.ph' ||
+    em.includes('admin') ||
+    em.endsWith('@rockviewresort.ph') ||
+    em.endsWith('@rockview.ph')
   );
 }
 
@@ -203,6 +207,62 @@ export function AuthProvider({ children }) {
     });
     return () => data?.subscription?.unsubscribe();
   }, [customerSession, adminSession]);
+
+  // Live Database Profile Retrieval & Synchronization
+  const refreshProfile = useCallback(async () => {
+    try {
+      const hasAdminJwt = typeof sessionStorage !== 'undefined' && Boolean(sessionStorage.getItem('jd_admin_jwt'));
+      const hasCustomerJwt = typeof sessionStorage !== 'undefined' && Boolean(sessionStorage.getItem('jd_customer_jwt'));
+      const onAdminPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+
+      if (adminSession || customerSession || hasAdminJwt || hasCustomerJwt) {
+        try {
+          const freshMe = await api.me();
+          if (freshMe && freshMe.id) {
+            const role = freshMe.role || 'customer';
+            const isAdminRole = ['administrator', 'admin', 'staff', 'receptionist', 'accounting'].includes(role) || isSystemOwnerEmail(freshMe.email);
+
+            if ((hasAdminJwt || onAdminPath || adminSession) && isAdminRole) {
+              setAdminProfile((prev: any) => ({
+                ...(prev || {}),
+                ...freshMe,
+                role: isSystemOwnerEmail(freshMe.email) ? 'administrator' : role,
+              }));
+              return freshMe;
+            } else if (hasCustomerJwt || customerSession || !onAdminPath) {
+              setCustomerProfile((prev: any) => ({
+                ...(prev || {}),
+                ...freshMe,
+                role: 'customer',
+              }));
+              return freshMe;
+            }
+          }
+        } catch {
+          // Fallback directly to Supabase table
+          const targetId = (onAdminPath ? adminSession?.user?.id : customerSession?.user?.id) || adminSession?.user?.id;
+          if (targetId) {
+            const { data: sbProf } = await supabase.from('profiles').select('*').eq('id', targetId).maybeSingle();
+            if (sbProf) {
+              if (onAdminPath || adminSession) {
+                setAdminProfile((prev: any) => ({ ...(prev || {}), ...sbProf }));
+              } else {
+                setCustomerProfile((prev: any) => ({ ...(prev || {}), ...sbProf, role: 'customer' }));
+              }
+              return sbProf;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[AuthContext] Profile sync notice:', e);
+    }
+    return null;
+  }, [adminSession, customerSession]);
+
+  useEffect(() => {
+    refreshProfile();
+  }, [refreshProfile]);
 
   // ─────────────────────────────────────────────────────────────
   // 3. COMPLETE DEEP PURGE SIGN-OUT (Removes ALL User Credentials)
@@ -462,7 +522,8 @@ export function AuthProvider({ children }) {
   };
 
   const updateProfile = async (fields: any) => {
-    const currentProf = customerProfile || adminProfile;
+    const isAdmin = (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) || Boolean(adminProfile);
+    const currentProf = isAdmin ? (adminProfile || customerProfile) : (customerProfile || adminProfile);
     const first = fields.first_name !== undefined ? fields.first_name : (currentProf?.first_name || '');
     const middle = fields.middle_name !== undefined ? fields.middle_name : (currentProf?.middle_name || '');
     const last = fields.last_name !== undefined ? fields.last_name : (currentProf?.last_name || '');
@@ -470,11 +531,11 @@ export function AuthProvider({ children }) {
     const updatedFields = { ...fields, full_name };
 
     const updated = await api.updateMe(updatedFields);
-    if (customerProfile) {
-      setCustomerProfile((prev: any) => ({ ...prev, ...updated, role: 'customer' }));
-    }
-    if (adminProfile) {
+    if (isAdmin || adminProfile) {
       setAdminProfile((prev: any) => ({ ...prev, ...updated }));
+    }
+    if (!isAdmin && customerProfile) {
+      setCustomerProfile((prev: any) => ({ ...prev, ...updated, role: 'customer' }));
     }
     return updated;
   };
@@ -525,6 +586,7 @@ export function AuthProvider({ children }) {
     },
     updateProfile,
     updatePassword,
+    refreshProfile,
     switchActiveRole,
     switchMockRole: switchActiveRole,
     authOpen,

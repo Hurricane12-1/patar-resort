@@ -121,7 +121,7 @@ export default function AuthModal() {
         false,
         signupProvider === 'facebook' ? 'facebook' : 'gmail'
       );
-      if (!f.email || f.email.endsWith('@gmail.com') || f.email.endsWith('@facebook.com') || f.email.endsWith('@resortmanagement.ph')) {
+      if (!f.email || f.email.endsWith('@gmail.com') || f.email.endsWith('@facebook.com') || f.email.endsWith('@rockviewresort.ph') || f.email.endsWith('@resortmanagement.ph')) {
         setF((prev) => ({ ...prev, email: generated }));
       }
     }

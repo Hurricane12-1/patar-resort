@@ -55,7 +55,8 @@ export default function Admin() {
     session, profile,
     adminSession, adminProfile,
     adminSignIn, signOut, signOutAdmin,
-    deleteAccount, updateProfile, updatePassword
+    deleteAccount, updateProfile, updatePassword,
+    refreshProfile
   } = useAuth();
   const currentAdminSession = adminSession || session;
   const currentAdminProfile = adminProfile || profile;
@@ -320,14 +321,14 @@ export default function Admin() {
 
   // TWEAKABLE ADVANCED ADMIN PROFILE STATE (LIVE SYNCHRONIZED)
   const [adminProfileState, setAdminProfileState] = useState({
-    fullName: profile?.full_name || '',
-    title: profile?.title || '',
+    fullName: currentAdminProfile?.full_name || '',
+    title: currentAdminProfile?.title || currentAdminProfile?.position || '',
     avatarKey: 'crown',
-    customAvatarUrl: profile?.avatar_url || '',
-    email: profile?.email || user?.email || '',
-    phone: profile?.phone || '',
-    department: profile?.department || '',
-    statusBio: profile?.status_bio || '',
+    customAvatarUrl: currentAdminProfile?.avatar_url || '',
+    email: currentAdminProfile?.email || user?.email || '',
+    phone: currentAdminProfile?.phone || '',
+    department: currentAdminProfile?.department || '',
+    statusBio: currentAdminProfile?.status_bio || '',
     location: 'Brgy. Patar, Bolinao, Pangasinan',
     refreshRate: '5',
     smsNotifications: true,
@@ -340,15 +341,40 @@ export default function Admin() {
   });
 
   useEffect(() => {
-    if (profile) {
+    if (currentAdminProfile) {
       setAdminProfileState((prev) => ({
         ...prev,
-        fullName: profile.full_name || prev.fullName,
-        email: profile.email || user?.email || prev.email,
-        phone: profile.phone || prev.phone,
+        fullName: currentAdminProfile.full_name || prev.fullName,
+        title: currentAdminProfile.title || currentAdminProfile.position || prev.title,
+        avatarKey: prev.avatarKey || 'crown',
+        customAvatarUrl: currentAdminProfile.avatar_url || prev.customAvatarUrl,
+        email: currentAdminProfile.email || user?.email || prev.email,
+        phone: currentAdminProfile.phone || prev.phone,
+        department: currentAdminProfile.department || prev.department,
+        statusBio: currentAdminProfile.status_bio || prev.statusBio,
       }));
     }
-  }, [profile, user]);
+  }, [currentAdminProfile, user]);
+
+  useEffect(() => {
+    if (refreshProfile) {
+      refreshProfile();
+    }
+    // Also live-sync from api.me directly on mount
+    api.me().then((fresh) => {
+      if (fresh && fresh.id) {
+        setAdminProfileState((prev) => ({
+          ...prev,
+          fullName: fresh.full_name || prev.fullName,
+          title: fresh.title || fresh.position || prev.title,
+          email: fresh.email || prev.email,
+          phone: fresh.phone || prev.phone,
+          department: fresh.department || prev.department,
+          statusBio: fresh.status_bio || prev.statusBio,
+        }));
+      }
+    }).catch(() => {});
+  }, [refreshProfile]);
 
   const avatarOptions = [
     { label: 'Executive Crown', key: 'crown', icon: <IconCrown size={22} color="#F59E0B" /> },
@@ -3103,7 +3129,7 @@ export default function Admin() {
                   </p>
                 </div>
                 <span style={{ fontSize: '.76rem', color: '#10B981', fontWeight: 700, background: 'rgba(16, 185, 129, 0.1)', padding: '4px 14px', borderRadius: 20, border: '1px solid rgba(16, 185, 129, 0.25)' }}>
-                  👑 {profile?.role?.toUpperCase() || 'ADMINISTRATOR'}
+                  👑 {currentAdminProfile?.role?.toUpperCase() || 'ADMINISTRATOR'}
                 </span>
               </div>
 
@@ -3164,9 +3190,9 @@ export default function Admin() {
                       🔒 Password Security
                     </b>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      {profile?.employee_id && (
+                      {currentAdminProfile?.employee_id && (
                         <span style={{ fontSize: '0.72rem', padding: '3px 8px', borderRadius: 12, background: 'rgba(56, 189, 248, 0.15)', color: '#38BDF8', border: '1px solid rgba(56, 189, 248, 0.35)', fontWeight: 600 }}>
-                          ID: {profile.employee_id} {profile.department ? `(${profile.department})` : ''}
+                          ID: {currentAdminProfile.employee_id} {currentAdminProfile.department ? `(${currentAdminProfile.department})` : ''}
                         </span>
                       )}
                       <span style={{
@@ -3174,11 +3200,11 @@ export default function Admin() {
                         fontWeight: 700,
                         padding: '3px 8px',
                         borderRadius: 12,
-                        background: profile?.password_status === 'N/A' || !profile?.has_password ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-                        color: profile?.password_status === 'N/A' || !profile?.has_password ? '#F59E0B' : '#10B981',
-                        border: `1px solid ${profile?.password_status === 'N/A' || !profile?.has_password ? 'rgba(245, 158, 11, 0.35)' : 'rgba(16, 185, 129, 0.35)'}`,
+                        background: currentAdminProfile?.password_status === 'N/A' || !currentAdminProfile?.has_password ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                        color: currentAdminProfile?.password_status === 'N/A' || !currentAdminProfile?.has_password ? '#F59E0B' : '#10B981',
+                        border: `1px solid ${currentAdminProfile?.password_status === 'N/A' || !currentAdminProfile?.has_password ? 'rgba(245, 158, 11, 0.35)' : 'rgba(16, 185, 129, 0.35)'}`,
                       }}>
-                        {profile?.password_status === 'N/A' || !profile?.has_password ? 'Password: N/A' : 'Password: Configured 🔒'}
+                        {currentAdminProfile?.password_status === 'N/A' || !currentAdminProfile?.has_password ? 'Password: N/A' : 'Password: Configured 🔒'}
                       </span>
                     </div>
                   </div>
@@ -7335,7 +7361,7 @@ export default function Admin() {
                     type="email"
                     value={adminRecoveryEmail}
                     onChange={(e) => setAdminRecoveryEmail(e.target.value)}
-                    placeholder="admin@resortmanagement.ph"
+                    placeholder="admin@rockviewresort.ph"
                     style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: '#FFF', fontSize: '.88rem' }}
                   />
                 </div>
