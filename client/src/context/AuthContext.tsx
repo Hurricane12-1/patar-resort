@@ -66,7 +66,12 @@ export function AuthProvider({ children }) {
         }
         if (isSystemOwnerEmail(parsed?.email)) {
           parsed.role = 'administrator';
-          if (!localStorage.getItem('jd_admin_token_key')) localStorage.setItem('jd_admin_token_key', 'etc-34');
+          if (typeof sessionStorage !== 'undefined' && !sessionStorage.getItem('jd_admin_token_key')) {
+            sessionStorage.setItem('jd_admin_token_key', 'etc-34');
+          }
+          if (typeof localStorage !== 'undefined') {
+            localStorage.removeItem('jd_admin_token_key');
+          }
         }
         if (parsed.password_status === undefined) {
           parsed.has_password = Boolean(parsed.has_password || parsed.password);
@@ -122,8 +127,13 @@ export function AuthProvider({ children }) {
               p.role = 'administrator';
             }
             if (['administrator', 'admin'].includes(p.role) || isSystemOwnerEmail(p.email || session.user?.email)) {
-              if (!localStorage.getItem('jd_admin_token_key')) localStorage.setItem('jd_admin_token_key', 'etc-34');
-              if (session.access_token) localStorage.setItem('jd_admin_jwt', session.access_token);
+              if (typeof sessionStorage !== 'undefined') {
+                if (!sessionStorage.getItem('jd_admin_token_key')) sessionStorage.setItem('jd_admin_token_key', 'etc-34');
+                if (session.access_token) sessionStorage.setItem('jd_admin_jwt', session.access_token);
+              }
+              if (typeof localStorage !== 'undefined') {
+                localStorage.removeItem('jd_admin_token_key');
+              }
             }
             const hasPassword = Boolean(p.has_password || (p.password && String(p.password).trim() !== ''));
             p.has_password = hasPassword;
@@ -177,8 +187,13 @@ export function AuthProvider({ children }) {
                 merged.role = 'administrator';
               }
               if (['administrator', 'admin'].includes(merged.role) || isSystemOwnerEmail(merged.email)) {
-                if (!localStorage.getItem('jd_admin_token_key')) localStorage.setItem('jd_admin_token_key', 'etc-34');
-                if (session.access_token) localStorage.setItem('jd_admin_jwt', session.access_token);
+                if (typeof sessionStorage !== 'undefined') {
+                  if (!sessionStorage.getItem('jd_admin_token_key')) sessionStorage.setItem('jd_admin_token_key', 'etc-34');
+                  if (session.access_token) sessionStorage.setItem('jd_admin_jwt', session.access_token);
+                }
+                if (typeof localStorage !== 'undefined') {
+                  localStorage.removeItem('jd_admin_token_key');
+                }
               }
               setProfile(merged);
               setNeedsProfileCompletion(false);
@@ -266,8 +281,13 @@ export function AuthProvider({ children }) {
               setProfile(userObj);
               localStorage.setItem('jd_profile', JSON.stringify(userObj));
               if (['administrator', 'admin'].includes(userObj.role)) {
-                localStorage.setItem('jd_admin_token_key', 'etc-34');
-                localStorage.setItem('jd_admin_jwt', res.data.session.access_token);
+                if (typeof sessionStorage !== 'undefined') {
+                  sessionStorage.setItem('jd_admin_token_key', 'etc-34');
+                  sessionStorage.setItem('jd_admin_jwt', res.data.session.access_token);
+                }
+                if (typeof localStorage !== 'undefined') {
+                  localStorage.removeItem('jd_admin_token_key');
+                }
               }
             }
           } catch {}
@@ -292,9 +312,14 @@ export function AuthProvider({ children }) {
           localStorage.setItem('jd_session', JSON.stringify(serverAuth.session));
           localStorage.setItem('jd_profile', JSON.stringify(userObj));
           if (['administrator', 'admin'].includes(userObj?.role)) {
-            localStorage.setItem('jd_admin_token_key', 'etc-34');
-            if (serverAuth.session?.access_token) {
-              localStorage.setItem('jd_admin_jwt', serverAuth.session.access_token);
+            if (typeof sessionStorage !== 'undefined') {
+              sessionStorage.setItem('jd_admin_token_key', 'etc-34');
+              if (serverAuth.session?.access_token) {
+                sessionStorage.setItem('jd_admin_jwt', serverAuth.session.access_token);
+              }
+            }
+            if (typeof localStorage !== 'undefined') {
+              localStorage.removeItem('jd_admin_token_key');
             }
           }
           return { data: serverAuth, error: null };
@@ -373,6 +398,12 @@ export function AuthProvider({ children }) {
       localStorage.removeItem('jd_profile');
       localStorage.removeItem('alon_session');
       localStorage.removeItem('alon_profile');
+      localStorage.removeItem('jd_admin_jwt');
+      localStorage.removeItem('jd_admin_token_key');
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.removeItem('jd_admin_jwt');
+        sessionStorage.removeItem('jd_admin_token_key');
+      }
       await supabase.auth.signOut().catch(() => {});
     },
     deleteAccount: async () => {
@@ -384,6 +415,11 @@ export function AuthProvider({ children }) {
       localStorage.removeItem('alon_session');
       localStorage.removeItem('alon_profile');
       localStorage.removeItem('jd_admin_jwt');
+      localStorage.removeItem('jd_admin_token_key');
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.removeItem('jd_admin_jwt');
+        sessionStorage.removeItem('jd_admin_token_key');
+      }
       await supabase.auth.signOut().catch(() => {});
       toast('Your account has been permanently deleted ✦');
     },

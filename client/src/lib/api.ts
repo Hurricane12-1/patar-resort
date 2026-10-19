@@ -29,18 +29,44 @@ export const API_BASE = (
   ? ''
   : rawApiBase;
 
+let inMemoryCsrfToken = '';
+
+async function getOrFetchCsrfToken(): Promise<string> {
+  if (inMemoryCsrfToken) return inMemoryCsrfToken;
+  if (typeof document !== 'undefined') {
+    const match = document.cookie.match(/(?:^|; )csrf_token=([^;]*)/);
+    if (match && match[1]) {
+      inMemoryCsrfToken = decodeURIComponent(match[1]);
+      return inMemoryCsrfToken;
+    }
+  }
+  try {
+    const endpoint = API_BASE ? `${API_BASE}/api/security/token` : '/api/security/token';
+    const res = await fetch(endpoint, { credentials: 'include' });
+    const data = await res.json();
+    if (data?.csrf_token) {
+      inMemoryCsrfToken = data.csrf_token;
+      return inMemoryCsrfToken;
+    }
+  } catch {}
+  return '';
+}
+
 async function req<T = any>(path: string, { method = 'GET', body }: { method?: string; body?: any } = {}): Promise<T> {
   const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
 
-  const adminTokenKey = typeof localStorage !== 'undefined' ? (localStorage.getItem('jd_admin_token_key') || 'etc-34') : 'etc-34';
+  const adminTokenKey = (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_token_key') : null)
+    || (typeof localStorage !== 'undefined' ? localStorage.getItem('jd_admin_token_key') : null)
+    || 'etc-34';
   if (adminTokenKey) {
     headers['x-admin-token-key'] = adminTokenKey;
   }
 
-  const adminJwt = typeof localStorage !== 'undefined' ? localStorage.getItem('jd_admin_jwt') : null;
+  const adminJwt = (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_jwt') : null)
+    || (typeof localStorage !== 'undefined' ? localStorage.getItem('jd_admin_jwt') : null);
   if (session?.access_token) {
     headers['Authorization'] = `Bearer ${session.access_token}`;
   } else if (adminJwt) {
@@ -48,10 +74,10 @@ async function req<T = any>(path: string, { method = 'GET', body }: { method?: s
   }
 
   // Double-Submit CSRF Token Protection Header
-  if (typeof document !== 'undefined') {
-    const match = document.cookie.match(/(?:^|; )csrf_token=([^;]*)/);
-    if (match && match[1]) {
-      headers['X-CSRF-Token'] = decodeURIComponent(match[1]);
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase())) {
+    const token = await getOrFetchCsrfToken();
+    if (token) {
+      headers['X-CSRF-Token'] = token;
     }
   }
 
@@ -62,6 +88,11 @@ async function req<T = any>(path: string, { method = 'GET', body }: { method?: s
     credentials: 'include',
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
+
+  const csrfHeader = res.headers.get('x-csrf-token');
+  if (csrfHeader) {
+    inMemoryCsrfToken = csrfHeader;
+  }
 
   if (!res.ok) {
     const errorBody = await res.json().catch(() => ({}));

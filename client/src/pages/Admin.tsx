@@ -405,8 +405,8 @@ export default function Admin() {
         .catch(() => {});
 
       supabase.auth.getSession().then(({ data: authData }) => {
-        const token = localStorage.getItem('jd_admin_jwt') || authData?.session?.access_token;
-        const key = localStorage.getItem('jd_admin_token_key') || 'etc-34';
+        const token = (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_jwt') : null) || localStorage.getItem('jd_admin_jwt') || authData?.session?.access_token;
+        const key = (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_token_key') : null) || localStorage.getItem('jd_admin_token_key') || 'etc-34';
         if (token) {
           const streamUrl = API_BASE
             ? `${API_BASE}/api/analytics/stream?token=${encodeURIComponent(token)}&admin_token_key=${encodeURIComponent(key)}`

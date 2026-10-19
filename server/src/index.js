@@ -5,7 +5,7 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { env } from './config/env.js';
-import { securityHeaders, corsPolicy, globalLimiter, cookieTokenizer, antiXssSanitizer } from './middleware/security.js';
+import { securityHeaders, corsPolicy, globalLimiter, cookieTokenizer, antiXssSanitizer, apiCacheControl } from './middleware/security.js';
 import { concurrencyLimiter, testLimiter, getLimiterStats, resetLimiterBuckets } from './middleware/adaptiveLimiter.js';
 import { ngwfFirewall, pathNormalizer } from './middleware/ngwfSecurity.js';
 import { getCertificateStatus, getTlsCredentials, getCaCertificatePem, getCertificatePem } from './config/cert.js';
@@ -16,10 +16,12 @@ import { bootstrapFramework } from './framework/ModuleLoader.js';
 import { registry } from './framework/ModuleRegistry.js';
 
 const app = express();
+app.disable('x-powered-by');
 app.set('trust proxy', 1);
 
 app.use(pathNormalizer);
 app.use(securityHeaders);
+app.use(apiCacheControl);
 app.use(corsPolicy);
 app.use(globalLimiter);
 app.use(concurrencyLimiter(250));
@@ -129,17 +131,37 @@ await bootstrapFramework(app);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const uploadsDir = path.resolve(__dirname, '../uploads');
-app.use('/uploads', express.static(uploadsDir));
+
+const staticOptions = {
+  maxAge: '1d',
+  setHeaders: (res, filePath) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+    res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
+    if (filePath && filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    }
+  },
+};
+
+app.use('/uploads', express.static(uploadsDir, staticOptions));
 
 const dist = path.resolve(__dirname, '../../client/dist');
 if (fs.existsSync(dist)) {
-  app.use(express.static(dist));
+  app.use(express.static(dist, staticOptions));
 }
 
 app.use((req, res, next) => {
   if (req.method === 'GET' && !req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
     const indexPath = path.join(dist, 'index.html');
     if (fs.existsSync(indexPath)) {
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('X-Frame-Options', 'DENY');
+      res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       return res.sendFile(indexPath);
     }
     return res.json({ status: 'ok', service: 'J & D Beach House API', version: '1.1.0' });

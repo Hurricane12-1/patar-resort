@@ -28,9 +28,9 @@ export function cookieTokenizer(req, res, next) {
   if (!csrfToken) {
     csrfToken = crypto.randomBytes(24).toString('hex');
     res.cookie('csrf_token', csrfToken, {
-      httpOnly: false, // Accessible by client JS to include in X-CSRF-Token header
+      httpOnly: true, // Secure cookie inaccessible to untrusted scripts (CWE-1004 mitigation)
       sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.NODE_ENV === 'production' || req.secure || req.get('x-forwarded-proto') === 'https',
       path: '/',
     });
   }
@@ -162,6 +162,8 @@ const helmetMiddleware = helmet({
 });
 
 export function securityHeaders(req, res, next) {
+  res.removeHeader('X-Powered-By');
+  res.removeHeader('Server');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
   res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -172,6 +174,17 @@ export function securityHeaders(req, res, next) {
   return helmetMiddleware(req, res, next);
 }
 
+// Dedicated API & Sensitive Route Cache Control Middleware
+export function apiCacheControl(req, res, next) {
+  if (req.path.startsWith('/api') || req.path.startsWith('/graphql')) {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
+  }
+  next();
+}
+
 const allowedOrigins = [
   env.CLIENT_ORIGIN,
   'http://localhost:5173',
@@ -180,17 +193,31 @@ const allowedOrigins = [
   'http://localhost:5176',
   'http://127.0.0.1:5173',
   'http://127.0.0.1:5174',
+  'https://janddbeachhouse.localhost:8000',
+  'https://localhost:8000',
+  'http://localhost:8000',
+  'https://localhost:4000',
+  'http://localhost:4000',
 ].filter(Boolean);
 
 export const corsPolicy = cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps, curl, or same-origin)
-    if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+    if (!origin) {
       return callback(null, true);
     }
-    return callback(null, true); // Permissive in dev mode for multi-port testing
+    // Check against allowed origins or local loopback interfaces
+    if (
+      allowedOrigins.includes(origin) ||
+      /^https?:\/\/(localhost|127\.0\.0\.1|janddbeachhouse\.localhost)(:\d+)?$/.test(origin)
+    ) {
+      return callback(null, true);
+    }
+    // Strict block on untrusted cross-domains to eliminate cross-domain misconfiguration
+    return callback(new Error('Cross-Origin Request Blocked by CORS Security Policy'));
   },
   credentials: true,
+  exposedHeaders: ['X-CSRF-Token', 'X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset'],
 });
 
 export const globalLimiter = rateLimit({
