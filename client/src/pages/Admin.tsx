@@ -223,6 +223,37 @@ export default function Admin() {
     }
   };
 
+  const [downloadingExport, setDownloadingExport] = useState<string | null>(null);
+
+  const handleDownloadExport = async (format: 'sql' | 'json' | 'csv') => {
+    setDownloadingExport(format);
+    try {
+      toast(`Exporting ${format.toUpperCase()} database backup…`);
+      const content = await api.fetchLedgerBackupText(format);
+      const dateStamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      const filename = `rockview_ledger_backup_${dateStamp}.${format}`;
+      const mimeTypes: Record<string, string> = {
+        sql: 'application/sql',
+        json: 'application/json',
+        csv: 'text/csv',
+      };
+      const blob = new Blob([content], { type: `${mimeTypes[format] || 'text/plain'};charset=utf-8` });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast(`✦ ${format.toUpperCase()} database backup downloaded successfully!`);
+    } catch (err: any) {
+      toast(`Export failed: ${err.message}`, true);
+    } finally {
+      setDownloadingExport(null);
+    }
+  };
+
   const handleExecuteImport = async () => {
     if (!importContent.trim()) {
       toast('Please upload a file or paste content to import.', true);
@@ -231,10 +262,12 @@ export default function Admin() {
     setImportingBackup(true);
     try {
       const res = await api.importLedgerBackup(importContent, importMode);
-      toast(`✦ Successfully imported ${res.data.imported_count} records via adaptive ${String(res.data.detected_format).toUpperCase()} engine!`);
+      const count = res?.data?.imported_count ?? res?.imported_count ?? 0;
+      const fmt = res?.data?.detected_format ?? res?.detected_format ?? 'adaptive';
+      toast(`✦ Successfully imported ${count} records via adaptive ${String(fmt).toUpperCase()} engine!`);
       setImportContent('');
       setShowBackupModal(false);
-      await refreshLedgerEntries();
+      await Promise.all([refreshLedgerEntries(), refreshReservations()]);
     } catch (err: any) {
       toast(`Import failed: ${err.message}`, true);
     } finally {
@@ -1609,7 +1642,7 @@ export default function Admin() {
     { key: 'food_sales', label: 'Dining Sales', icon: <IconDining size={19} /> },
     { key: 'accounts', label: 'Staff & Accounts', icon: <IconUsers size={19} /> },
     { key: 'audit', label: 'System Audit Logs', icon: <IconShield size={19} /> },
-    { key: 'csv', label: 'CSV Explorer', icon: <IconCsv size={19} /> },
+    { key: 'csv', label: 'Backup & Data Explorer', icon: <IconCsv size={19} /> },
     { key: 'settings', label: 'Profile & Settings', icon: <IconSettings size={19} /> },
   ];
 
@@ -4446,7 +4479,7 @@ export default function Admin() {
                     )}
                     {ledgerSubView === 'debit_credit' && (
                       <>
-                        <span>⚖️</span> General Ledger (Debit & Credit System)
+                        <span>⚖️</span> Booking Financial Ledger (General Ledger (Debit & Credit System))
                       </>
                     )}
                   </h3>
@@ -4717,7 +4750,7 @@ export default function Admin() {
                   }}
                 >
                   <span style={{ fontSize: '1.05rem' }}>⚖️</span>
-                  <span>Debit & Credit General Ledger</span>
+                  <span>Booking Financial Ledger</span>
                   <span
                     style={{
                       fontSize: '.72rem',
@@ -6395,14 +6428,15 @@ export default function Admin() {
                             Full DDL, indexes, and transactional INSERT clauses with ON CONFLICT resolution for PostgreSQL 15+ / Supabase.
                           </p>
                           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                            <a
-                              href={api.exportLedgerBackupUrl('sql', true)}
-                              download
+                            <button
+                              type="button"
+                              onClick={() => handleDownloadExport('sql')}
+                              disabled={downloadingExport === 'sql'}
                               className="btn btn-sky btn-sm"
-                              style={{ fontSize: '.74rem', fontWeight: 700 }}
+                              style={{ fontSize: '.74rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}
                             >
-                              📥 Download .sql
-                            </a>
+                              <span>📥</span> {downloadingExport === 'sql' ? 'Exporting…' : 'Download .sql'}
+                            </button>
                             <button
                               type="button"
                               className="btn btn-ghost btn-sm"
@@ -6431,14 +6465,15 @@ export default function Admin() {
                           <p style={{ color: themeMuted, fontSize: '.74rem', margin: '4px 0 14px' }}>
                             JSON archive containing complete ledger records, Trial Balance audit metrics, and Chart of Accounts catalog.
                           </p>
-                          <a
-                            href={api.exportLedgerBackupUrl('json', true)}
-                            download
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadExport('json')}
+                            disabled={downloadingExport === 'json'}
                             className="btn btn-sky btn-sm"
-                            style={{ fontSize: '.74rem', fontWeight: 700 }}
+                            style={{ fontSize: '.74rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}
                           >
-                            📥 Download .json
-                          </a>
+                            <span>📥</span> {downloadingExport === 'json' ? 'Exporting…' : 'Download .json'}
+                          </button>
                         </div>
 
                         {/* CSV Spreadsheet */}
@@ -6448,14 +6483,15 @@ export default function Admin() {
                           <p style={{ color: themeMuted, fontSize: '.74rem', margin: '4px 0 14px' }}>
                             Universal spreadsheet format with dates, accounts, separate debit/credit columns, and running balance.
                           </p>
-                          <a
-                            href={api.exportLedgerBackupUrl('csv', true)}
-                            download
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadExport('csv')}
+                            disabled={downloadingExport === 'csv'}
                             className="btn btn-sky btn-sm"
-                            style={{ fontSize: '.74rem', fontWeight: 700 }}
+                            style={{ fontSize: '.74rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}
                           >
-                            📥 Download .csv
-                          </a>
+                            <span>📥</span> {downloadingExport === 'csv' ? 'Exporting…' : 'Download .csv'}
+                          </button>
                         </div>
                       </div>
 
@@ -6627,9 +6663,117 @@ export default function Admin() {
             </div>
           )}
 
-          {/* TAB 7: CSV DATA EXPLORER & AUTO-READER */}
+          {/* TAB 7: SYSTEM BACKUP & DATA EXPLORER */}
           {activeTab === 'csv' && (
-            <div style={{ marginTop: 10 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              {/* Executive Header & Quick Actions */}
+              <div className="panel" style={{ background: themeCardBg, border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 24, boxShadow: themeShadow }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14 }}>
+                  <div>
+                    <span style={{ fontSize: '.76rem', color: '#6366F1', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>
+                      DATABASE MANAGEMENT & ARCHIVAL ENGINE
+                    </span>
+                    <h3 className="serif" style={{ fontSize: '1.45rem', margin: '4px 0 0', color: themeText, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span>💾</span> System Backup & Data Explorer
+                    </h3>
+                    <p className="muted small" style={{ margin: '4px 0 0' }}>
+                      Export complete PostgreSQL database dumps, import adaptive backup archives, and inspect operational CSV datasets.
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className="btn btn-sky btn-sm"
+                      onClick={() => handleDownloadExport('sql')}
+                      disabled={downloadingExport === 'sql'}
+                      style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
+                    >
+                      <span>📥</span> {downloadingExport === 'sql' ? 'Exporting…' : 'Quick Backup (.sql)'}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-ghost"
+                      onClick={() => {
+                        setBackupTab('import');
+                        setShowBackupModal(true);
+                      }}
+                      style={{
+                        color: isLightMode ? '#0284C7' : '#38BDF8',
+                        border: `1px solid ${isLightMode ? '#BAE6FD' : 'rgba(56, 189, 248, 0.3)'}`,
+                        background: isLightMode ? '#F0F9FF' : 'rgba(56, 189, 248, 0.12)',
+                        fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                      }}
+                    >
+                      <span>🚀</span> Restore / Import File
+                    </button>
+                  </div>
+                </div>
+
+                {/* Quick Backup Export Cards Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14, marginTop: 20 }}>
+                  {/* Card 1: SQL Dump */}
+                  <div style={{ padding: '16px', borderRadius: 14, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <span style={{ fontSize: '1.4rem' }}>🐘</span>
+                      <span style={{ fontSize: '.7rem', fontWeight: 800, color: '#10B981', background: isLightMode ? '#ECFDF5' : 'rgba(16,185,129,0.15)', padding: '2px 8px', borderRadius: 10 }}>POSTGRESQL</span>
+                    </div>
+                    <b style={{ color: themeText, fontSize: '.9rem', display: 'block' }}>PostgreSQL SQL Dump</b>
+                    <small style={{ color: themeMuted, fontSize: '.74rem', display: 'block', margin: '4px 0 12px' }}>DDL schema + transactional INSERT statements with conflict handling</small>
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadExport('sql')}
+                      disabled={downloadingExport === 'sql'}
+                      className="btn btn-sky btn-sm"
+                      style={{ width: '100%', fontSize: '.76rem', fontWeight: 700 }}
+                    >
+                      📥 {downloadingExport === 'sql' ? 'Exporting…' : 'Download .sql'}
+                    </button>
+                  </div>
+
+                  {/* Card 2: JSON Archive */}
+                  <div style={{ padding: '16px', borderRadius: 14, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <span style={{ fontSize: '1.4rem' }}>📄</span>
+                      <span style={{ fontSize: '.7rem', fontWeight: 800, color: '#0EA5E9', background: isLightMode ? '#EFF6FF' : 'rgba(14,165,233,0.15)', padding: '2px 8px', borderRadius: 10 }}>JSON</span>
+                    </div>
+                    <b style={{ color: themeText, fontSize: '.9rem', display: 'block' }}>Structured JSON Backup</b>
+                    <small style={{ color: themeMuted, fontSize: '.74rem', display: 'block', margin: '4px 0 12px' }}>Full database records, trial balance metrics, and chart of accounts</small>
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadExport('json')}
+                      disabled={downloadingExport === 'json'}
+                      className="btn btn-sky btn-sm"
+                      style={{ width: '100%', fontSize: '.76rem', fontWeight: 700 }}
+                    >
+                      📥 {downloadingExport === 'json' ? 'Exporting…' : 'Download .json'}
+                    </button>
+                  </div>
+
+                  {/* Card 3: CSV Spreadsheet */}
+                  <div style={{ padding: '16px', borderRadius: 14, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <span style={{ fontSize: '1.4rem' }}>📊</span>
+                      <span style={{ fontSize: '.7rem', fontWeight: 800, color: '#F59E0B', background: isLightMode ? '#FFFBEB' : 'rgba(245,158,11,0.15)', padding: '2px 8px', borderRadius: 10 }}>CSV</span>
+                    </div>
+                    <b style={{ color: themeText, fontSize: '.9rem', display: 'block' }}>RFC 4180 CSV Export</b>
+                    <small style={{ color: themeMuted, fontSize: '.74rem', display: 'block', margin: '4px 0 12px' }}>Spreadsheet export compatible with Excel, Google Sheets, & Calc</small>
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadExport('csv')}
+                      disabled={downloadingExport === 'csv'}
+                      className="btn btn-sky btn-sm"
+                      style={{ width: '100%', fontSize: '.76rem', fontWeight: 700 }}
+                    >
+                      📥 {downloadingExport === 'csv' ? 'Exporting…' : 'Download .csv'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Embedded CSV Auto-Reader Table */}
               <CsvTableViewer
                 title="Resort Operational & Account Data Explorer"
                 defaultFilename="jd_beach_house_accounts.csv"

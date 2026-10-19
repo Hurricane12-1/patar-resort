@@ -335,15 +335,31 @@ export const api = {
   ledgerTrialBalance: () => req('/ledger/trial-balance'),
   exportLedgerBackupUrl: (format = 'sql', download = true) => {
     const endpoint = API_BASE ? `${API_BASE}/api/ledger/backup/export` : '/api/ledger/backup/export';
-    return `${endpoint}?format=${format}${download ? '&download=true' : ''}`;
+    const adminJwt = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_jwt') : null;
+    const tokenQuery = adminJwt ? `&token=${encodeURIComponent(adminJwt)}` : '';
+    return `${endpoint}?format=${format}${download ? '&download=true' : ''}${tokenQuery}`;
   },
   fetchLedgerBackupText: async (format = 'sql'): Promise<string> => {
     const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
     const headers: Record<string, string> = {};
-    if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+    const adminJwt = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_jwt') : null;
+    const customerJwt = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_customer_jwt') : null;
+    const adminTokenKey = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_token_key') : null;
+    if (adminTokenKey) headers['x-admin-token-key'] = adminTokenKey;
+
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`;
+    } else if (adminJwt) {
+      headers['Authorization'] = `Bearer ${adminJwt}`;
+    } else if (customerJwt) {
+      headers['Authorization'] = `Bearer ${customerJwt}`;
+    }
     const endpoint = API_BASE ? `${API_BASE}/api/ledger/backup/export?format=${format}` : `/api/ledger/backup/export?format=${format}`;
     const res = await fetch(endpoint, { headers, credentials: 'include' });
-    if (!res.ok) throw new ApiError(res.status, 'Failed to export ledger backup');
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => ({}));
+      throw new ApiError(res.status, errJson.message || 'Failed to export ledger backup');
+    }
     return res.text();
   },
   importLedgerBackup: (content: string, mode: 'append' | 'overwrite' = 'append') =>

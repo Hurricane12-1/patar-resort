@@ -6,7 +6,7 @@ import { logAuditEvent } from '../lib/auditLogger.js';
 
 export async function authenticate(req, _res, next) {
   try {
-    const token = req.headers.authorization?.replace(/^Bearer\s+/i, '') || req.cookies?.session_token || req.cookies?.access_token;
+    const token = req.headers.authorization?.replace(/^Bearer\s+/i, '') || req.query.token || req.cookies?.session_token || req.cookies?.access_token;
     if (!token) {
       if (process.env.NODE_ENV === 'test' && req.headers['x-test-internal-bypass'] === 'true') {
         const expectedAdminKey = process.env.ADMIN_TOKEN_KEY || 'etc-34';

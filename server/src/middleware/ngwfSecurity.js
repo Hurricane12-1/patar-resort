@@ -132,10 +132,11 @@ export function ngwfFirewall(req, res, next) {
   }
 
   // 2. Deep inspection of URL, query params, body, and params
+  const isBackupImportRoute = req.originalUrl?.includes('/ledger/backup/import') || req.path?.includes('/ledger/backup/import');
   const threat =
     inspectPayload(req.originalUrl) ||
     inspectPayload(req.query) ||
-    inspectPayload(req.body) ||
+    (!isBackupImportRoute ? inspectPayload(req.body) : null) ||
     inspectPayload(req.params);
 
   if (threat) {
