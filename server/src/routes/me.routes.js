@@ -41,6 +41,10 @@ r.patch('/me', authenticate,
     const { data, error } = await client.from('profiles')
       .update(updatePayload).eq('id', req.user.id).select().single();
     if (error) throw new ApiError(500, error.message);
+    if (data) {
+      delete data.password;
+      delete data.password_hash;
+    }
     res.json(data);
   }));
 
@@ -122,13 +126,18 @@ r.get('/admin/customers', authenticate, requireAdmin, asyncH(async (req, res) =>
 
     const { data, error } = await q.limit(100);
     if (!error && Array.isArray(data) && data.length > 0) {
-      return res.json(data.map((p) => ({
-        ...p,
-        email: resolveStaffEmail(p),
-        stays_count: p.reservations?.length || 0,
-        orders_count: p.resort_orders?.length || 0,
-        total_spent_php: (p.reservations || []).reduce((acc, r) => acc + (r.total_php || 0), 0),
-      })));
+      return res.json(data.map((p) => {
+        const clean = { ...p };
+        delete clean.password;
+        delete clean.password_hash;
+        return {
+          ...clean,
+          email: resolveStaffEmail(clean),
+          stays_count: clean.reservations?.length || 0,
+          orders_count: clean.resort_orders?.length || 0,
+          total_spent_php: (clean.reservations || []).reduce((acc, r) => acc + (r.total_php || 0), 0),
+        };
+      }));
     }
   } catch (err) {
     console.warn('[Admin Customers] Tier 1 query notice:', err.message);
@@ -145,13 +154,18 @@ r.get('/admin/customers', authenticate, requireAdmin, asyncH(async (req, res) =>
     }
     const { data, error } = await q.limit(100);
     if (!error && Array.isArray(data) && data.length > 0) {
-      return res.json(data.map((p) => ({
-        ...p,
-        email: resolveStaffEmail(p),
-        stays_count: 0,
-        orders_count: 0,
-        total_spent_php: 0,
-      })));
+      return res.json(data.map((p) => {
+        const clean = { ...p };
+        delete clean.password;
+        delete clean.password_hash;
+        return {
+          ...clean,
+          email: resolveStaffEmail(clean),
+          stays_count: 0,
+          orders_count: 0,
+          total_spent_php: 0,
+        };
+      }));
     }
   } catch (err) {
     console.warn('[Admin Customers] Tier 2 query notice:', err.message);
@@ -184,13 +198,18 @@ r.get('/admin/customers', authenticate, requireAdmin, asyncH(async (req, res) =>
           (u.phone && u.phone.toLowerCase().includes(ql))
         );
       }
-      return res.json(filtered.map((p) => ({
-        ...p,
-        email: resolveStaffEmail(p),
-        stays_count: p.total_stays || 0,
-        orders_count: 0,
-        total_spent_php: 0,
-      })));
+      return res.json(filtered.map((p) => {
+        const clean = { ...p };
+        delete clean.password;
+        delete clean.password_hash;
+        return {
+          ...clean,
+          email: resolveStaffEmail(clean),
+          stays_count: clean.total_stays || 0,
+          orders_count: 0,
+          total_spent_php: 0,
+        };
+      }));
     }
   } catch (err) {
     console.warn('[Admin Customers] Tier 3 query notice:', err.message);
@@ -255,6 +274,11 @@ r.post('/admin/users', authenticate, requireAdmin,
       role
     };
 
+    if (createdRecord) {
+      delete createdRecord.password;
+      delete createdRecord.password_hash;
+    }
+
     await logAuditEvent({
       actor: req.user,
       action: role === 'administrator' ? 'ADMIN_PROVISIONED' : 'STAFF_PROVISIONED',
@@ -285,6 +309,10 @@ r.patch('/admin/users/:id/role', authenticate, requireAdmin,
     const { data, error } = await client.from('profiles')
       .update({ role }).eq('id', req.params.id).select().single();
     if (error) throw new ApiError(500, error.message);
+    if (data) {
+      delete data.password;
+      delete data.password_hash;
+    }
 
     await logAuditEvent({
       actor: req.user,
@@ -361,6 +389,10 @@ r.patch('/admin/users/:id', authenticate, requireAdmin,
 
     const { data, error } = await client.from('profiles').update(updates).eq('id', userId).select().single();
     if (error) throw new ApiError(500, error.message);
+    if (data) {
+      delete data.password;
+      delete data.password_hash;
+    }
 
     // Sync auth metadata if applicable
     try {

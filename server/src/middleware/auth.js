@@ -166,6 +166,7 @@ export async function authenticate(req, _res, next) {
 
     // Sanitize profile object so sensitive password fields are never exposed in API payloads
     delete profile.password;
+    delete profile.password_hash;
 
     const isElevatedAdminEmail = (userEmail && (
       userEmail.toLowerCase() === 'admin@janddbeachhouse.ph' ||

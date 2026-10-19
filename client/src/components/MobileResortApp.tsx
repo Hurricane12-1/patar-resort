@@ -225,6 +225,7 @@ export default function MobileResortApp() {
 
   const audioCtxRef = useRef<AudioContext | null>(null);
   const roomsRailRef = useRef<HTMLDivElement>(null);
+  const tabBarRef = useRef<HTMLDivElement>(null);
 
   const scrollRoomsRail = (direction: 'left' | 'right') => {
     if (!roomsRailRef.current) return;
@@ -568,6 +569,58 @@ export default function MobileResortApp() {
   };
 
   const scrollTop = () => document.getElementById('main-scroll')?.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // Active section tracking on main scroll for mobile navigation
+  useEffect(() => {
+    const scroller = document.getElementById('main-scroll');
+    if (!scroller) return;
+
+    const sections = [
+      { id: 'booking-section', tab: 'Book' },
+      { id: 'rooms-section', tab: 'Rooms' },
+      { id: 'experiences-section', tab: 'Experiences' },
+      { id: 'amenities-section', tab: 'Amenities' },
+      { id: 'dining-section', tab: 'Dining' },
+      { id: 'location-section', tab: 'Location' },
+      { id: 'faq-section', tab: 'FAQ' },
+    ];
+
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        ticking = false;
+        const top = scroller.scrollTop;
+        if (top < 150) {
+          setActiveTab('Home');
+          return;
+        }
+        for (let i = sections.length - 1; i >= 0; i--) {
+          const el = document.getElementById(sections[i].id);
+          if (el) {
+            const rect = el.getBoundingClientRect();
+            if (rect.top <= window.innerHeight * 0.45 && rect.bottom >= 100) {
+              setActiveTab(sections[i].tab);
+              break;
+            }
+          }
+        }
+      });
+    };
+
+    scroller.addEventListener('scroll', onScroll, { passive: true });
+    return () => scroller.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Center active tab inside mobile nav bar
+  useEffect(() => {
+    if (!tabBarRef.current) return;
+    const activeBtn = tabBarRef.current.querySelector<HTMLElement>(`[data-tab="${activeTab}"]`);
+    if (activeBtn) {
+      activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+  }, [activeTab]);
 
   const navTargets: Record<string, string> = {
     'Rooms & Suites': 'rooms-section',
@@ -2105,9 +2158,9 @@ export default function MobileResortApp() {
           role="dialog"
           aria-modal="true"
           aria-label="Site menu"
-          className="fixed inset-0 z-50 bg-navy/95 backdrop-blur-2xl animate-fade-in lg:hidden"
+          className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-navy/95 backdrop-blur-2xl animate-fade-in lg:hidden"
         >
-          <div className="mx-auto flex h-full max-w-md flex-col px-6 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))]">
+          <div className="mx-auto flex min-h-full max-w-md flex-col px-6 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))]">
             <div className="flex h-12 items-center justify-between">
               <Logo size="sm" />
               <button
@@ -2246,42 +2299,63 @@ export default function MobileResortApp() {
       {/* 17. TAB BAR (hidden on desktop where the header nav takes over) */}
       <nav
         aria-label="Tab bar"
-        className="fixed inset-x-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-40 mx-auto flex max-w-md items-center justify-between rounded-full border border-white/10 bg-ink/85 p-1.5 shadow-2xl shadow-black/60 backdrop-blur-xl lg:hidden"
+        className="fixed inset-x-3 sm:inset-x-6 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-40 mx-auto max-w-lg lg:hidden"
       >
-        {site.tabs.map((tab) => {
-          const isBook = tab === 'Book';
-          const isActive = activeTab === tab;
-          return (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => {
-                setActiveTab(tab);
-                if (tab === 'Home') scrollTop();
-                else if (tab === 'Rooms') scrollTo('rooms-section');
-                else if (tab === 'Book') scrollTo('booking-section');
-                else if (tab === 'Dining') scrollTo('dining-section');
-                else {
+        <div className="relative flex items-center rounded-full border border-white/15 bg-ink/90 p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.65)] backdrop-blur-2xl">
+          {/* Subtle fade edge masks */}
+          <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-4 rounded-l-full bg-gradient-to-r from-ink/90 to-transparent z-10" />
+          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-4 rounded-r-full bg-gradient-to-l from-ink/90 to-transparent z-10" />
+
+          {/* Horizontally Scrollable Pills Container */}
+          <div
+            ref={tabBarRef}
+            className="flex w-full items-center gap-1 overflow-x-auto no-scrollbar scroll-smooth px-1 touch-pan-x"
+          >
+            {[
+              { key: 'Home', label: 'Home', action: () => { setActiveTab('Home'); scrollTop(); } },
+              { key: 'Rooms', label: 'Rooms', action: () => { setActiveTab('Rooms'); scrollTo('rooms-section'); } },
+              { key: 'Book', label: 'Book', action: () => { setActiveTab('Book'); scrollTo('booking-section'); } },
+              { key: 'Dining', label: 'Dining', action: () => { setActiveTab('Dining'); scrollTo('dining-section'); } },
+              { key: 'Experiences', label: 'Experiences', action: () => { setActiveTab('Experiences'); scrollTo('experiences-section'); } },
+              { key: 'Amenities', label: 'Amenities', action: () => { setActiveTab('Amenities'); scrollTo('amenities-section'); } },
+              { key: 'Location', label: 'Location', action: () => { setActiveTab('Location'); scrollTo('location-section'); } },
+              { key: 'FAQ', label: 'FAQ', action: () => { setActiveTab('FAQ'); scrollTo('faq-section'); } },
+              {
+                key: 'Profile',
+                label: session ? (profile?.first_name || 'Account') : 'Sign In',
+                action: () => {
+                  setActiveTab('Profile');
                   if (session) {
                     setProfileTab('manifest');
                     setProfileModalOpen(true);
                   } else {
                     go('auth', 'login');
                   }
-                }
-              }}
-              className={`flex-1 rounded-full py-2.5 text-[11px] font-medium transition cursor-pointer ${
-                isBook
-                  ? 'bg-cyan font-semibold text-navy shadow-[0_4px_16px_rgba(34,195,238,.5)]'
-                  : isActive
-                    ? 'bg-white/10 text-white'
-                    : 'text-white/60 hover:text-white'
-              }`}
-            >
-              {tab === 'Profile' && session ? (profile?.first_name || 'Account') : tab}
-            </button>
-          );
-        })}
+                },
+              },
+            ].map((tab) => {
+              const isBook = tab.key === 'Book';
+              const isActive = activeTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  data-tab={tab.key}
+                  type="button"
+                  onClick={tab.action}
+                  className={`shrink-0 whitespace-nowrap rounded-full px-3.5 py-2 text-[11px] font-medium transition cursor-pointer ${
+                    isBook
+                      ? 'bg-gradient-to-r from-cyan to-sky-400 font-bold text-navy shadow-[0_3px_14px_rgba(34,195,238,0.45)]'
+                      : isActive
+                        ? 'bg-white/15 text-white font-semibold'
+                        : 'text-white/65 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </nav>
 
       {/* GUEST PROFILE & MANIFEST MODAL */}
