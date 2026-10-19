@@ -3,6 +3,7 @@ import { NavLink, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.tsx';
 import { api } from '../lib/api.ts';
 import { fmtTime } from '../lib/format.ts';
+import { LiveClock, FloatingWelcome } from './LiveClock.tsx';
 
 export default function Navbar() {
   const { session, profile, adminSession, adminProfile, signOut, signOutCustomer, signOutAdmin, setAuthOpen } = useAuth();
@@ -30,9 +31,12 @@ export default function Navbar() {
   return (
     <>
       <div className="tagbar">
-        <div className="container">
+        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
           <span>☀️ Bolinao 29°C · Sunset 6:24 PM · High Tide 4:15 PM · Front desk 24/7</span>
-          <span>📟 SMS pings on every reservation · +63 900 555 0123</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <LiveClock isLightMode={false} showSeconds={true} style={{ padding: '2px 10px', fontSize: '.72rem', background: 'transparent', border: '1px solid rgba(255,255,255,0.18)' }} />
+            <span>📟 SMS pings on every reservation · +63 900 555 0123</span>
+          </div>
         </div>
       </div>
 
@@ -84,6 +88,10 @@ export default function Navbar() {
 
             {session ? (
               <>
+                <FloatingWelcome
+                  username={profile?.full_name?.split(' ')[0] || session?.user?.email?.split('@')[0] || 'Guest'}
+                  isLightMode={false}
+                />
                 <Link
                   to="/my-bookings"
                   className="nav-user"

@@ -2,8 +2,8 @@
 
 - **Baseline Version**: `v1.5.1`
 - **Gate Verdict**: **🟢 RELEASE APPROVED (100% GATES CLEARED)**
-- **Audit Timestamp**: `2026-10-19T15:41:50.983Z`
-- **Git Branch / Commit**: `main` @ `e9eff10`
+- **Audit Timestamp**: `2026-10-19T15:58:31.728Z`
+- **Git Branch / Commit**: `main` @ `5d29f81`
 
 ---
 

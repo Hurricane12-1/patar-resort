@@ -29,6 +29,9 @@ import { money, fmtDate, fmtTime } from '../lib/format.ts';
 import { toast } from '../components/Toasts.tsx';
 import { dispatchWordPrompt } from '../lib/wordPrompt.ts';
 import { getRoomImageUrl } from '../lib/images.ts';
+import { LiveClock, FloatingWelcome } from '../components/LiveClock.tsx';
+import StatusPill from '../components/StatusPill.tsx';
+import StatusTimelineModal from '../components/StatusTimelineModal.tsx';
 
 const emptyAnalytics = {
   overview: {
@@ -90,6 +93,7 @@ export default function Admin() {
   const [notifFilter, setNotifFilter] = useState<'unread' | 'all' | 'read' | string>('unread');
   const [viewingNotification, setViewingNotification] = useState<any>(null);
   const [receiptModalBooking, setReceiptModalBooking] = useState<any>(null);
+  const [timelineBooking, setTimelineBooking] = useState<any>(null);
   const [folioViewLimit, setFolioViewLimit] = useState<number | 'all'>(25);
   const [reservationsList, setReservationsList] = useState<any[]>([]);
   const [loadingReservations, setLoadingReservations] = useState(false);
@@ -1837,7 +1841,7 @@ export default function Admin() {
         />
       )}
 
-      {/* 1. VERTICAL EXECUTIVE SAAS SIDEBAR NAVIGATION BAR (FIXED DOCKED STATE) */}
+      {/* 1. VERTICAL EXECUTIVE RESORT SIDEBAR NAVIGATION BAR (FIXED DOCKED STATE) */}
       <aside
         className={`sidebar ${sidebarMobileOpen ? 'mobile-open' : ''} ${sidebarHidden ? 'hidden' : ''}`}
         style={{
@@ -1878,7 +1882,7 @@ export default function Admin() {
             {!sidebarCollapsed && (
               <div>
                 <b style={{ fontSize: '1.05rem', color: themeText, display: 'block', fontFamily: "'Plus Jakarta Sans', sans-serif", lineHeight: 1 }}>
-                  ROCK VIEW SAAS
+                  ROCK VIEW RESORT
                 </b>
                 <span style={{ fontSize: '.62rem', color: '#6366F1', fontWeight: 800, letterSpacing: '.08em' }}>EXECUTIVE HUB</span>
               </div>
@@ -2094,6 +2098,15 @@ export default function Admin() {
           {/* TOP RIGHT CONTROLS: LIGHT/DARK THEME TOGGLE, NOTIFICATION BAR & AVATAR */}
           <div className="admin-header-right">
 
+            {/* REAL-TIME EXECUTIVE CLOCK */}
+            <LiveClock isLightMode={isLightMode} />
+
+            {/* FLOATING & FADING ANIMATED WELCOME USERNAME */}
+            <FloatingWelcome
+              username={adminProfileState.fullName?.split(' ')[0] || profile?.full_name?.split(' ')[0] || 'Overseer'}
+              isLightMode={isLightMode}
+            />
+
             {/* LIGHT MODE / DARK MODE TOGGLE BUTTON */}
             <button
               onClick={toggleThemeMode}
@@ -2305,7 +2318,7 @@ export default function Admin() {
 
         {/* 3. DASHBOARD MAIN TAB VIEW (ISOLATED INDEPENDENT SCROLL CONTAINER) */}
         <div className="admin-main-content">
-          {/* TAB 1: EXECUTIVE SAAS DASHBOARD (MATCHING 2026 REFERENCE SYSTEM) */}
+          {/* TAB 1: EXECUTIVE RESORT DASHBOARD (MATCHING 2026 REFERENCE SYSTEM) */}
           {activeTab === 'overview' && (
             <>
               {/* TOP BANNER & PERFORMANCE BAND (RESPONSIVE GRID) */}
@@ -5958,19 +5971,11 @@ export default function Admin() {
                                 <small style={{ display: 'block', color: themeMuted, fontSize: '.72rem' }}>{b.payment_method || 'GCash'}</small>
                               </td>
                               <td>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                  <span className={`pill ${b.status}`}>{b.status.replace('_', ' ')}</span>
-                                  {b.payment_status === 'refund_pending' && (
-                                    <span className="pill" style={{ background: 'rgba(245,158,11,0.2)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.3)', fontSize: '.7rem' }}>
-                                      ⏳ Refund Pending
-                                    </span>
-                                  )}
-                                  {b.payment_status === 'refunded' && (
-                                    <span className="pill" style={{ background: 'rgba(16,185,129,0.2)', color: '#10B981', border: '1px solid rgba(16,185,129,0.3)', fontSize: '.7rem' }}>
-                                      ✅ Refunded
-                                    </span>
-                                  )}
-                                </div>
+                                <StatusPill
+                                  status={b.status}
+                                  paymentStatus={b.payment_status}
+                                  onClick={() => setTimelineBooking(b)}
+                                />
                               </td>
                               <td>
                                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -9384,6 +9389,18 @@ export default function Admin() {
           </div>
         );
       })()}
+
+      {/* MODAL 10: RESERVATION STATUS LIFECYCLE TIMELINE ARCHITECTURE */}
+      <StatusTimelineModal
+        booking={timelineBooking}
+        isOpen={Boolean(timelineBooking)}
+        onClose={() => setTimelineBooking(null)}
+        viewerRole="general_manager"
+        onUpdateStatus={(id, st) => {
+          updateStatus(id, st);
+          setTimelineBooking((prev: any) => prev ? { ...prev, status: st } : null);
+        }}
+      />
     </div>
   );
 }

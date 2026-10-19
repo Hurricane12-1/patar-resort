@@ -7,6 +7,8 @@ import { api } from '../lib/api.ts';
 import { supabase } from '../lib/supabaseClient.ts';
 import { money, fmtDate } from '../lib/format.ts';
 import { toast } from '../components/Toasts.tsx';
+import StatusPill from '../components/StatusPill.tsx';
+import StatusTimelineModal from '../components/StatusTimelineModal.tsx';
 
 function to11Digits(val: string): string {
   if (!val) return '';
@@ -21,6 +23,7 @@ export default function MyBookings() {
   const { session, profile, setAuthOpen, updateProfile, deleteAccount, refreshProfile } = useAuth();
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [timelineBooking, setTimelineBooking] = useState<any>(null);
   const [revModal, setRevModal] = useState(null);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
@@ -415,19 +418,11 @@ export default function MyBookings() {
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
-                    <span className={`pill ${b.status}`} style={{ textTransform: 'capitalize' }}>
-                      {b.status.replace('_', ' ')}
-                    </span>
-                    {b.payment_status === 'refund_pending' && (
-                      <span className="pill" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#F59E0B', border: '1px solid rgba(245, 158, 11, 0.35)', fontSize: '.72rem', fontWeight: 700 }}>
-                        ⏳ Refund In Process
-                      </span>
-                    )}
-                    {b.payment_status === 'refunded' && (
-                      <span className="pill" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#10B981', border: '1px solid rgba(16, 185, 129, 0.35)', fontSize: '.72rem', fontWeight: 700 }}>
-                        ✅ Refunded
-                      </span>
-                    )}
+                    <StatusPill
+                      status={b.status}
+                      paymentStatus={b.payment_status}
+                      onClick={() => setTimelineBooking(b)}
+                    />
                   </div>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                     {['pending', 'confirmed'].includes(b.status) && b.payment_status !== 'refund_pending' && b.payment_status !== 'refunded' && (
@@ -846,6 +841,14 @@ export default function MyBookings() {
           </div>
         </div>
       )}
+
+      {/* STATUS LIFECYCLE TIMELINE MODAL */}
+      <StatusTimelineModal
+        booking={timelineBooking}
+        isOpen={Boolean(timelineBooking)}
+        onClose={() => setTimelineBooking(null)}
+        viewerRole="customer"
+      />
     </div>
   );
 }
