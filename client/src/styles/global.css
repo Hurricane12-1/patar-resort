@@ -2464,3 +2464,10 @@ input[type="date"] {
   background: rgba(56, 189, 248, 0.04) !important;
 }
 
+@keyframes gate-spin {
+  to { transform: rotate(360deg); }
+}
+
+.gate-page input::placeholder {
+  color: #475569 !important;
+}

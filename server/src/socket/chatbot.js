@@ -91,7 +91,22 @@ export async function findAvailableServiceAgent() {
 
 export function attachChatbot(httpServer) {
   const io = new Server(httpServer, {
-    cors: { origin: [env.CLIENT_ORIGIN], credentials: true },
+    cors: {
+      origin: [
+        env.CLIENT_ORIGIN,
+        'https://patar-resort.pages.dev',
+        'https://patar-resort.onrender.com',
+        /^https:\/\/([a-z0-9-]+\.)?patar-resort\.pages\.dev$/,
+      ].filter(Boolean),
+      credentials: true,
+    },
+  });
+  io.engine.on('headers', (headers) => {
+    headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload';
+    headers['X-Content-Type-Options'] = 'nosniff';
+    headers['X-Frame-Options'] = 'DENY';
+    headers['Referrer-Policy'] = 'strict-origin-when-cross-origin';
+    headers['Permissions-Policy'] = 'camera=(), microphone=(), geolocation=(), payment=()';
   });
   ioInstance = io;
 

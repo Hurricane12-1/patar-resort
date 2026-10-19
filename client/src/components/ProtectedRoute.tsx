@@ -303,16 +303,6 @@ export default function ProtectedRoute({ children, allowedRoles = [], portalTitl
           </div>
         )}
       </div>
-
-      {/* Spinner keyframes */}
-      <style>{`
-        @keyframes gate-spin {
-          to { transform: rotate(360deg); }
-        }
-        .gate-page input::placeholder {
-          color: #475569 !important;
-        }
-      `}</style>
     </div>
   );
 }

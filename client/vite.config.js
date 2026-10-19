@@ -1,9 +1,50 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
+
+function sriBuildPlugin() {
+  return {
+    name: 'vite-plugin-sri-build',
+    apply: 'build',
+    enforce: 'post',
+    closeBundle() {
+      try {
+        const distDir = path.resolve(process.cwd(), 'dist');
+        const indexPath = path.join(distDir, 'index.html');
+        if (!fs.existsSync(indexPath)) return;
+        let html = fs.readFileSync(indexPath, 'utf8');
+
+        // Inject sha384 integrity onto built <script ... src="/assets/..."> tags
+        html = html.replace(/<script\b([^>]*?\bsrc="(\/assets\/[^"]+)"[^>]*)><\/script>/g, (full, attrs, relPath) => {
+          if (attrs.includes('integrity=')) return full;
+          const filePath = path.join(distDir, relPath.replace(/^\//, ''));
+          if (!fs.existsSync(filePath)) return full;
+          const hash = crypto.createHash('sha384').update(fs.readFileSync(filePath)).digest('base64');
+          return `<script${attrs} integrity="sha384-${hash}"></script>`;
+        });
+
+        // Inject sha384 integrity onto built <link rel="stylesheet" ... href="/assets/..."> tags
+        html = html.replace(/<link\b([^>]*?\bhref="(\/assets\/[^"]+\.css)"[^>]*)>/g, (full, attrs, relPath) => {
+          if (attrs.includes('integrity=')) return full;
+          const filePath = path.join(distDir, relPath.replace(/^\//, ''));
+          if (!fs.existsSync(filePath)) return full;
+          const hash = crypto.createHash('sha384').update(fs.readFileSync(filePath)).digest('base64');
+          return `<link${attrs} integrity="sha384-${hash}">`;
+        });
+
+        fs.writeFileSync(indexPath, html, 'utf8');
+      } catch (err) {
+        console.warn('[SRI Build Plugin Warning]', err?.message);
+      }
+    },
+  };
+}
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), sriBuildPlugin()],
   envDir: '../',
   envPrefix: ['VITE_', 'PUBLIC_'],
   server: {
@@ -16,7 +57,7 @@ export default defineConfig({
       'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=()',
       'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
       'X-Permitted-Cross-Domain-Policies': 'none',
-      'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https://images.unsplash.com https://res.cloudinary.com https://*.cloudinary.com https://*.supabase.co; connect-src 'self' https://*.supabase.co https://api.cloudinary.com https://res.cloudinary.com https://*.cloudinary.com ws: wss:; object-src 'none'; frame-ancestors 'none'; base-uri 'self';",
+      'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' https://fonts.googleapis.com https://cdnjs.cloudflare.com; style-src-attr 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https://images.unsplash.com https://res.cloudinary.com https://*.cloudinary.com https://*.supabase.co; connect-src 'self' https://*.supabase.co https://patar-resort.onrender.com wss://patar-resort.onrender.com https://api.cloudinary.com https://res.cloudinary.com https://*.cloudinary.com ws: wss:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';",
     },
     proxy: {
       '/api': {

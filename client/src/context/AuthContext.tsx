@@ -40,13 +40,17 @@ export function isSystemOwnerEmail(email?: string): boolean {
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(() => {
     try {
-      const saved = localStorage.getItem('jd_session');
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('jd_session');
+        localStorage.removeItem('alon_session');
+      }
+      const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_session') : null;
       if (saved) {
         const parsed = JSON.parse(saved);
         // Clear any old mock sessions from previous sessions
         if (parsed?.user?.is_mock) {
-          localStorage.removeItem('jd_session');
-          localStorage.removeItem('jd_profile');
+          sessionStorage.removeItem('jd_session');
+          sessionStorage.removeItem('jd_profile');
           return null;
         }
         return parsed;
@@ -57,11 +61,15 @@ export function AuthProvider({ children }) {
   
   const [profile, setProfile] = useState(() => {
     try {
-      const saved = localStorage.getItem('jd_profile');
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('jd_profile');
+        localStorage.removeItem('alon_profile');
+      }
+      const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_profile') : null;
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed?.is_mock || parsed?.id?.startsWith('usr-admin-1234') || parsed?.id?.startsWith('usr-recep-') || parsed?.id?.startsWith('usr-acct-')) {
-          localStorage.removeItem('jd_profile');
+          sessionStorage.removeItem('jd_profile');
           return null;
         }
         if (isSystemOwnerEmail(parsed?.email)) {
@@ -87,18 +95,28 @@ export function AuthProvider({ children }) {
   const [needsProfileCompletion, setNeedsProfileCompletion] = useState(false);
 
   useEffect(() => {
-    if (session) {
-      localStorage.setItem('jd_session', JSON.stringify(session));
-    } else {
+    if (typeof sessionStorage !== 'undefined') {
+      if (session) {
+        sessionStorage.setItem('jd_session', JSON.stringify(session));
+      } else {
+        sessionStorage.removeItem('jd_session');
+      }
+    }
+    if (typeof localStorage !== 'undefined') {
       localStorage.removeItem('jd_session');
       localStorage.removeItem('alon_session');
     }
   }, [session]);
 
   useEffect(() => {
-    if (profile) {
-      localStorage.setItem('jd_profile', JSON.stringify(profile));
-    } else {
+    if (typeof sessionStorage !== 'undefined') {
+      if (profile) {
+        sessionStorage.setItem('jd_profile', JSON.stringify(profile));
+      } else {
+        sessionStorage.removeItem('jd_profile');
+      }
+    }
+    if (typeof localStorage !== 'undefined') {
       localStorage.removeItem('jd_profile');
       localStorage.removeItem('alon_profile');
     }
@@ -216,10 +234,16 @@ export function AuthProvider({ children }) {
       timeoutId = setTimeout(() => {
         setSession(null);
         setProfile(null);
-        localStorage.removeItem('jd_session');
-        localStorage.removeItem('jd_profile');
-        localStorage.removeItem('alon_session');
-        localStorage.removeItem('alon_profile');
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.removeItem('jd_session');
+          sessionStorage.removeItem('jd_profile');
+        }
+        if (typeof localStorage !== 'undefined') {
+          localStorage.removeItem('jd_session');
+          localStorage.removeItem('jd_profile');
+          localStorage.removeItem('alon_session');
+          localStorage.removeItem('alon_profile');
+        }
         supabase.auth.signOut().catch(() => {});
         toast('Session expired after 40 minutes of inactivity.', true);
       }, INACTIVITY_LIMIT_MS);
@@ -245,7 +269,9 @@ export function AuthProvider({ children }) {
         res = await supabase.auth.signInWithPassword({ email: cleanIdent, password });
         if (!res.error && res.data?.session) {
           setSession(res.data.session);
-          localStorage.setItem('jd_session', JSON.stringify(res.data.session));
+          if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.setItem('jd_session', JSON.stringify(res.data.session));
+          }
 
           // Immediately load profile from Supabase so ProtectedRoute unlocks without delay
           try {
@@ -279,7 +305,9 @@ export function AuthProvider({ children }) {
                 } : {}),
               };
               setProfile(userObj);
-              localStorage.setItem('jd_profile', JSON.stringify(userObj));
+              if (typeof sessionStorage !== 'undefined') {
+                sessionStorage.setItem('jd_profile', JSON.stringify(userObj));
+              }
               if (['administrator', 'admin'].includes(userObj.role)) {
                 if (typeof sessionStorage !== 'undefined') {
                   sessionStorage.setItem('jd_admin_token_key', 'etc-34');
@@ -309,8 +337,10 @@ export function AuthProvider({ children }) {
           setSession(serverAuth.session);
           const userObj = serverAuth.user || serverAuth.profile;
           setProfile(userObj);
-          localStorage.setItem('jd_session', JSON.stringify(serverAuth.session));
-          localStorage.setItem('jd_profile', JSON.stringify(userObj));
+          if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.setItem('jd_session', JSON.stringify(serverAuth.session));
+            sessionStorage.setItem('jd_profile', JSON.stringify(userObj));
+          }
           if (['administrator', 'admin'].includes(userObj?.role)) {
             if (typeof sessionStorage !== 'undefined') {
               sessionStorage.setItem('jd_admin_token_key', 'etc-34');
@@ -339,7 +369,9 @@ export function AuthProvider({ children }) {
     if (profile && ['administrator', 'staff', 'receptionist', 'accounting'].includes(profile.role)) {
       const updated = { ...profile, activeViewRole: roleKey };
       setProfile(updated);
-      localStorage.setItem('jd_profile', JSON.stringify(updated));
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem('jd_profile', JSON.stringify(updated));
+      }
       toast(`Switched portal view to ${roleKey.toUpperCase()} ✦`);
     } else {
       toast(`Sign in with administrative credentials to access staff views.`, true);
@@ -378,7 +410,9 @@ export function AuthProvider({ children }) {
 
       const updated = await api.updateMe(updatedFields);
       setProfile(updated);
-      localStorage.setItem('jd_profile', JSON.stringify(updated));
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem('jd_profile', JSON.stringify(updated));
+      }
       return updated;
     },
     updatePassword: async (password: string) => {
@@ -386,7 +420,9 @@ export function AuthProvider({ children }) {
       setProfile((prev) => {
         if (!prev) return prev;
         const updated = { ...prev, has_password: true, password_status: 'Configured' };
-        localStorage.setItem('jd_profile', JSON.stringify(updated));
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem('jd_profile', JSON.stringify(updated));
+        }
         return updated;
       });
       return res;
@@ -394,13 +430,17 @@ export function AuthProvider({ children }) {
     signOut: async () => {
       setSession(null);
       setProfile(null);
-      localStorage.removeItem('jd_session');
-      localStorage.removeItem('jd_profile');
-      localStorage.removeItem('alon_session');
-      localStorage.removeItem('alon_profile');
-      localStorage.removeItem('jd_admin_jwt');
-      localStorage.removeItem('jd_admin_token_key');
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('jd_session');
+        localStorage.removeItem('jd_profile');
+        localStorage.removeItem('alon_session');
+        localStorage.removeItem('alon_profile');
+        localStorage.removeItem('jd_admin_jwt');
+        localStorage.removeItem('jd_admin_token_key');
+      }
       if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.removeItem('jd_session');
+        sessionStorage.removeItem('jd_profile');
         sessionStorage.removeItem('jd_admin_jwt');
         sessionStorage.removeItem('jd_admin_token_key');
       }
@@ -410,13 +450,17 @@ export function AuthProvider({ children }) {
       await api.deleteMe();
       setSession(null);
       setProfile(null);
-      localStorage.removeItem('jd_session');
-      localStorage.removeItem('jd_profile');
-      localStorage.removeItem('alon_session');
-      localStorage.removeItem('alon_profile');
-      localStorage.removeItem('jd_admin_jwt');
-      localStorage.removeItem('jd_admin_token_key');
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('jd_session');
+        localStorage.removeItem('jd_profile');
+        localStorage.removeItem('alon_session');
+        localStorage.removeItem('alon_profile');
+        localStorage.removeItem('jd_admin_jwt');
+        localStorage.removeItem('jd_admin_token_key');
+      }
       if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.removeItem('jd_session');
+        sessionStorage.removeItem('jd_profile');
         sessionStorage.removeItem('jd_admin_jwt');
         sessionStorage.removeItem('jd_admin_token_key');
       }

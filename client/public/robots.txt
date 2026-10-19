@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /administrator
+Disallow: /accounting
+Disallow: /receptionist
+Disallow: /resort-department
+
+Sitemap: https://patar-resort.pages.dev/sitemap.xml

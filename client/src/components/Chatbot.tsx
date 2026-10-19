@@ -30,10 +30,15 @@ export default function Chatbot() {
 
   const [msgs, setMsgs] = useState<any[]>(() => {
     try {
-      const cached = typeof localStorage !== 'undefined' ? localStorage.getItem(`jd_chat_msgs_${session?.user?.id || 'guest'}`) : null;
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('jd_chat_msgs_guest');
+      }
+      if (session?.user?.id && typeof sessionStorage !== 'undefined') {
+        const cached = sessionStorage.getItem(`jd_chat_msgs_${session.user.id}`);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
       }
     } catch {}
     return [DEFAULT_WELCOME];
@@ -50,24 +55,30 @@ export default function Chatbot() {
   const inputRef = useRef<HTMLInputElement>(null);
   const cancelTypewriterRef = useRef<(() => void) | null>(null);
 
-  // Mandated Account Chat Reload: Hydrate from localStorage and sync with Supabase
+  // Mandated Account Chat Reload: Hydrate from sessionStorage and sync with Supabase
   const reloadAccountChat = async () => {
     setReloadingChat(true);
     try {
-      // 1. Immediately hydrate from localStorage
-      const cached = localStorage.getItem(storageKey);
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setMsgs(parsed);
-          const agentMsg = parsed.slice().reverse().find((m: any) => m.is_agent || m.directed_to_agent);
-          if (agentMsg && agentMsg.agent_name) {
-            setAssignedAgent({
-              id: agentMsg.agent_id || 'staff',
-              name: agentMsg.agent_name,
-              role: agentMsg.agent_role || 'Front Desk Receptionist',
-            });
-            setIsDirectedToAgent(true);
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem(storageKey);
+        localStorage.removeItem('jd_chat_msgs_guest');
+      }
+      // 1. Immediately hydrate from sessionStorage for authenticated accounts
+      if (session?.user?.id && typeof sessionStorage !== 'undefined') {
+        const cached = sessionStorage.getItem(storageKey);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setMsgs(parsed);
+            const agentMsg = parsed.slice().reverse().find((m: any) => m.is_agent || m.directed_to_agent);
+            if (agentMsg && agentMsg.agent_name) {
+              setAssignedAgent({
+                id: agentMsg.agent_id || 'staff',
+                name: agentMsg.agent_name,
+                role: agentMsg.agent_role || 'Front Desk Receptionist',
+              });
+              setIsDirectedToAgent(true);
+            }
           }
         }
       }
@@ -77,7 +88,9 @@ export default function Chatbot() {
         const serverMsgs = await api.myChatMessages();
         if (Array.isArray(serverMsgs) && serverMsgs.length > 0) {
           setMsgs(serverMsgs);
-          localStorage.setItem(storageKey, JSON.stringify(serverMsgs));
+          if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.setItem(storageKey, JSON.stringify(serverMsgs));
+          }
           const agentMsg = serverMsgs.slice().reverse().find((m: any) => m.is_agent || m.directed_to_agent);
           if (agentMsg && agentMsg.agent_name) {
             setAssignedAgent({
@@ -100,14 +113,16 @@ export default function Chatbot() {
     reloadAccountChat();
   }, [accountId, session?.user?.id, storageKey]);
 
-  // Mandated Account Chat Saving: Persist every conversation turn to localStorage
+  // Mandated Account Chat Saving: Persist active authenticated conversation turns to sessionStorage
   useEffect(() => {
-    if (msgs && msgs.length > 0) {
+    if (session?.user?.id && msgs && msgs.length > 1) {
       try {
-        localStorage.setItem(storageKey, JSON.stringify(msgs));
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem(storageKey, JSON.stringify(msgs));
+        }
       } catch {}
     }
-  }, [msgs, storageKey]);
+  }, [msgs, storageKey, session?.user?.id]);
 
   // Smoothly types any clicked word or prompt into the input field
   const typePrompt = (promptText: string, autoSubmit = false) => {

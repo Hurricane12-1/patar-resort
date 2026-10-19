@@ -44,10 +44,11 @@ export function cookieTokenizer(req, res, next) {
     const hasBearerAuth = req.headers.authorization?.startsWith('Bearer ');
     const isAdminKeyAuth = req.headers['x-admin-token-key'];
     const isWebhook = req.path?.includes('/webhooks') || req.path?.includes('/stripe');
+    const isTelemetry = req.path?.startsWith('/api/telemetry');
     const isTest = process.env.NODE_ENV === 'test' || req.path?.startsWith('/api/test') || req.path?.startsWith('/api/limiter');
 
-    // Allow authenticated APIs (Bearer JWT or verified admin key) and automated webhooks/tests
-    if (!hasBearerAuth && !isAdminKeyAuth && !isWebhook && !isTest) {
+    // Allow authenticated APIs (Bearer JWT or verified admin key) and automated webhooks/tests/telemetry
+    if (!hasBearerAuth && !isAdminKeyAuth && !isWebhook && !isTelemetry && !isTest) {
       if (!headerToken || !csrfToken || headerToken !== csrfToken) {
         return res.status(403).json({ 
           error: 'Forbidden', 
@@ -117,10 +118,10 @@ export const cspDirectives = {
   'script-src': ["'self'"],
   'style-src': [
     "'self'",
-    "'unsafe-inline'",
     'https://fonts.googleapis.com',
     'https://cdnjs.cloudflare.com',
   ],
+  'style-src-attr': ["'unsafe-inline'"],
   'font-src': [
     "'self'",
     'https://fonts.gstatic.com',
@@ -137,10 +138,13 @@ export const cspDirectives = {
   ],
   'connect-src': [
     "'self'",
+    'https://patar-resort.onrender.com',
+    'wss://patar-resort.onrender.com',
     'https://api.cloudinary.com',
     'https://res.cloudinary.com',
     'https://*.cloudinary.com',
     `https://${supabaseHost}`,
+    `wss://${supabaseHost}`,
     'ws:',
     'wss:',
   ],
@@ -187,6 +191,8 @@ export function apiCacheControl(req, res, next) {
 
 const allowedOrigins = [
   env.CLIENT_ORIGIN,
+  'https://patar-resort.pages.dev',
+  'https://patar-resort.onrender.com',
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:5175',
@@ -206,15 +212,16 @@ export const corsPolicy = cors({
     if (!origin) {
       return callback(null, true);
     }
-    // Check against allowed origins or local loopback interfaces
+    // Check against allowed origins, Cloudflare Pages preview subdomains, or local loopback interfaces
     if (
       allowedOrigins.includes(origin) ||
+      /^https:\/\/([a-z0-9-]+\.)?patar-resort\.pages\.dev$/.test(origin) ||
       /^https?:\/\/(localhost|127\.0\.0\.1|janddbeachhouse\.localhost)(:\d+)?$/.test(origin)
     ) {
       return callback(null, true);
     }
-    // Strict block on untrusted cross-domains to eliminate cross-domain misconfiguration
-    return callback(new Error('Cross-Origin Request Blocked by CORS Security Policy'));
+    // Reject untrusted cross-domains cleanly without throwing an unhandled HTTP 500 Error
+    return callback(null, false);
   },
   credentials: true,
   exposedHeaders: ['X-CSRF-Token', 'X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset'],
