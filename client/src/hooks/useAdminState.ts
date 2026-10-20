@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useAuth, generateAccountEmail, isSystemOwnerEmail } from '../context/AuthContext';
 import { api, API_BASE } from '../lib/api';
 import { supabase } from '../lib/supabaseClient';
-import { uploadImageToCloudinary } from '../lib/cloudinary';
+import { uploadImageToCloudinary, getCategoryDefaultCloudinaryImage } from '../lib/cloudinary';
 import { toast } from '../components/Toasts';
 
 export const emptyAnalytics = {
@@ -236,7 +236,17 @@ export function useAdminState() {
   const [inventoryList, setInventoryList] = useState<any[]>([]);
   const [loadingRoomsAndInv, setLoadingRoomsAndInv] = useState(false);
   const [showCreateRoomModal, setShowCreateRoomModal] = useState(false);
-  const [newRoom, setNewRoom] = useState({
+  const [newRoom, setNewRoom] = useState<{
+    name: string;
+    category: string;
+    description: string;
+    capacity: number;
+    units: number;
+    rate_php: number;
+    amenities: string;
+    image_url: string;
+    images: string[];
+  }>({
     name: '',
     category: 'Cottage',
     description: '',
@@ -244,6 +254,8 @@ export function useAdminState() {
     units: 1,
     rate_php: 3500,
     amenities: 'Air Conditioning, Free Wi-Fi, Private Bath, Sea View',
+    image_url: '',
+    images: [],
   });
   const [editingRoom, setEditingRoom] = useState<any>(null);
   const [uploadingRoomPhoto, setUploadingRoomPhoto] = useState(false);
@@ -278,6 +290,12 @@ export function useAdminState() {
       const amenitiesArr = newRoom.amenities
         ? newRoom.amenities.split(',').map((s) => s.trim()).filter(Boolean)
         : [];
+      const fallbackCloudinaryImg = getCategoryDefaultCloudinaryImage(newRoom.category, newRoom.name);
+      const imagesArr = Array.isArray(newRoom.images) && newRoom.images.length > 0
+        ? newRoom.images.filter(Boolean)
+        : [newRoom.image_url || fallbackCloudinaryImg];
+      const primaryImg = newRoom.image_url || imagesArr[0] || fallbackCloudinaryImg;
+
       const created = await api.createRoom({
         name: newRoom.name,
         category: newRoom.category,
@@ -286,6 +304,8 @@ export function useAdminState() {
         units: Number(newRoom.units),
         rate_php: Number(newRoom.rate_php),
         amenities: amenitiesArr,
+        image_url: primaryImg,
+        images: imagesArr,
       });
       setRoomsList((prev) => [...prev, created]);
       setShowCreateRoomModal(false);
@@ -297,43 +317,49 @@ export function useAdminState() {
         units: 1,
         rate_php: 3500,
         amenities: 'Air Conditioning, Free Wi-Fi, Private Bath, Sea View',
+        image_url: '',
+        images: [],
       });
-      toast(`✦ Room "${created.name}" created successfully`);
+      toast(`✦ Room "${created.name}" created with Cloudinary image background detail!`);
     } catch (err: any) {
       toast(err.message, true);
     }
+  };
+
+  const handleSaveEditedRoom = async (updatedRoomData: any) => {
+    if (!updatedRoomData?.id) return;
+    const amenitiesArr =
+      typeof updatedRoomData.amenities === 'string'
+        ? updatedRoomData.amenities.split(',').map((s: string) => s.trim()).filter(Boolean)
+        : updatedRoomData.amenities || [];
+    const fallbackCloudinaryImg = getCategoryDefaultCloudinaryImage(updatedRoomData.category, updatedRoomData.name);
+    const imagesArr = Array.isArray(updatedRoomData.images) && updatedRoomData.images.length > 0
+      ? updatedRoomData.images.filter(Boolean)
+      : [updatedRoomData.image_url || fallbackCloudinaryImg];
+    const primaryImg = updatedRoomData.image_url || imagesArr[0] || fallbackCloudinaryImg;
+
+    const updated = await api.updateRoom(updatedRoomData.id, {
+      name: updatedRoomData.name,
+      category: updatedRoomData.category,
+      description: updatedRoomData.description,
+      capacity: Number(updatedRoomData.capacity),
+      units: Number(updatedRoomData.units),
+      rate_php: Number(updatedRoomData.rate_php),
+      amenities: amenitiesArr,
+      image_url: primaryImg,
+      images: imagesArr,
+    });
+
+    setRoomsList((prev) => prev.map((r) => (r.id === updatedRoomData.id ? { ...r, ...updated } : r)));
+    setEditingRoom(null);
+    toast(`✦ Room "${updatedRoomData.name}" updated & synchronized live!`);
   };
 
   const handleUpdateRoomSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingRoom) return;
     try {
-      const amenitiesArr =
-        typeof editingRoom.amenities === 'string'
-          ? editingRoom.amenities.split(',').map((s: string) => s.trim()).filter(Boolean)
-          : editingRoom.amenities || [];
-      const imagesArr = Array.isArray(editingRoom.images)
-        ? editingRoom.images.filter(Boolean)
-        : editingRoom.image_url
-        ? [editingRoom.image_url]
-        : [];
-      const primaryImg = editingRoom.image_url || imagesArr[0] || '';
-
-      const updated = await api.updateRoom(editingRoom.id, {
-        name: editingRoom.name,
-        category: editingRoom.category,
-        description: editingRoom.description,
-        capacity: Number(editingRoom.capacity),
-        units: Number(editingRoom.units),
-        rate_php: Number(editingRoom.rate_php),
-        amenities: amenitiesArr,
-        image_url: primaryImg,
-        images: imagesArr,
-      });
-
-      setRoomsList((prev) => prev.map((r) => (r.id === editingRoom.id ? { ...r, ...updated } : r)));
-      setEditingRoom(null);
-      toast(`✦ Room "${editingRoom.name}" updated & synchronized live!`);
+      await handleSaveEditedRoom(editingRoom);
     } catch (err: any) {
       toast(err.message, true);
     }
@@ -1554,6 +1580,7 @@ export function useAdminState() {
     previewSqlText,
     setPreviewSqlText,
     loadingPreviewSql,
+    setLoadingPreviewSql,
     importContent,
     setImportContent,
     importMode,
@@ -1577,6 +1604,7 @@ export function useAdminState() {
     editingRoom,
     setEditingRoom,
     uploadingRoomPhoto,
+    handleSaveEditedRoom,
     handleUpdateRoomSubmit,
     handleRoomPhotoUpload,
     handleAddPhotoUrl,

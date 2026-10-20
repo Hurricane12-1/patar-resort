@@ -9,6 +9,7 @@ export interface CloudinaryConfig {
   cloudName: string;
   uploadPreset: string;
   apiKey?: string;
+  apiSecret?: string;
   imageUrl?: string;
 }
 
@@ -18,8 +19,37 @@ export const DEFAULT_CLOUDINARY_CONFIG: CloudinaryConfig = {
   cloudName: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_CLOUDINARY_CLOUD_NAME) || 'juynm9ab',
   uploadPreset: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_CLOUDINARY_UPLOAD_PRESET) || 'jd_beach_house_preset',
   apiKey: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_CLOUDINARY_API_KEY) || '551438838453596',
+  apiSecret: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_CLOUDINARY_API_SECRET) || 'uvBrutAEgFxT8Ek6fBFuvNh7uDk',
   imageUrl: '',
 };
+
+export function getCategoryDefaultCloudinaryImage(category?: string, slug?: string): string {
+  const cat = String(category || '').toLowerCase();
+  const sl = String(slug || '').toLowerCase();
+  if (cat.includes('villa') || sl.includes('villa')) {
+    return 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209697/jd_beach_house_accommodations/villa.jpg';
+  }
+  if (cat.includes('suite') || sl.includes('suite') || sl.includes('gel')) {
+    return 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209695/jd_beach_house_accommodations/suite.jpg';
+  }
+  if (cat.includes('garden') || sl.includes('garden')) {
+    return 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209698/jd_beach_house_accommodations/garden.jpg';
+  }
+  if (cat.includes('dorm') || cat.includes('bunk') || sl.includes('dorm')) {
+    return 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209699/jd_beach_house_accommodations/bunk.jpg';
+  }
+  return 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209696/jd_beach_house_accommodations/cottage.jpg';
+}
+
+async function sha1Hex(input: string): Promise<string> {
+  if (typeof window !== 'undefined' && window.crypto?.subtle) {
+    const encoded = new TextEncoder().encode(input);
+    const hashBuffer = await window.crypto.subtle.digest('SHA-1', encoded);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+  }
+  return '';
+}
 
 export function getCloudinaryConfig(): CloudinaryConfig {
   try {
@@ -86,7 +116,45 @@ export async function uploadImageToCloudinary(
 ): Promise<{ url: string; publicId?: string; source: 'cloudinary' | 'server' | 'local' }> {
   const cfg = { ...getCloudinaryConfig(), ...configOverride };
 
-  // 1. Attempt Direct Cloudinary Upload if cloudName and uploadPreset are explicitly configured
+  // 1A. Direct Signed Cloudinary Upload via Web Crypto SHA-1 (works directly from Cloudflare Pages & browser)
+  if (cfg.cloudName && cfg.apiKey && (cfg.apiSecret || DEFAULT_CLOUDINARY_CONFIG.apiSecret)) {
+    try {
+      const secret = cfg.apiSecret || DEFAULT_CLOUDINARY_CONFIG.apiSecret || '';
+      const timestamp = String(Math.floor(Date.now() / 1000));
+      const folder = 'jd_beach_house_accommodations';
+      const signature = await sha1Hex(`folder=${folder}&timestamp=${timestamp}${secret}`);
+
+      if (signature) {
+        const signedForm = new FormData();
+        signedForm.append('file', file);
+        signedForm.append('api_key', cfg.apiKey);
+        signedForm.append('timestamp', timestamp);
+        signedForm.append('folder', folder);
+        signedForm.append('signature', signature);
+
+        const endpoint = `https://api.cloudinary.com/v1_1/${encodeURIComponent(cfg.cloudName)}/image/upload`;
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          body: signedForm,
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.secure_url) {
+            return {
+              url: data.secure_url,
+              publicId: data.public_id,
+              source: 'cloudinary',
+            };
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[Cloudinary Signed Upload] Notice, trying unsigned preset:', err);
+    }
+  }
+
+  // 1B. Attempt Direct Unsigned Cloudinary Upload if cloudName and uploadPreset are explicitly configured
   if (cfg.cloudName && cfg.uploadPreset && !cfg.cloudName.includes('demo-') && cfg.cloudName !== 'jd-beach-house') {
     try {
       const formData = new FormData();
@@ -110,7 +178,6 @@ export async function uploadImageToCloudinary(
           };
         }
       }
-      console.warn('[Cloudinary Upload] API responded with non-200:', res.status, await res.text().catch(() => ''));
     } catch (err) {
       console.warn('[Cloudinary Upload] Direct upload notice, falling back to server upload:', err);
     }

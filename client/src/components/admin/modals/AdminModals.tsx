@@ -11,6 +11,9 @@ import StatusTimelineModal from '../../StatusTimelineModal';
 import { AnalyticsGlossaryModal } from '../../AnalyticsGlossaryModal';
 import { ExecutiveGuestChatModal } from '../../ExecutiveGuestChatModal';
 import { AdminState } from '../../../hooks/useAdminState';
+import { uploadImageToCloudinary, getCategoryDefaultCloudinaryImage } from '../../../lib/cloudinary';
+import { api } from '../../../lib/api';
+import { toast } from '../../Toasts';
 
 export interface AdminModalsProps {
   state: AdminState;
@@ -34,6 +37,13 @@ export const AdminModals: React.FC<AdminModalsProps> = ({ state }) => {
           setWalkInPoolAddon={state.setWalkInPoolAddon}
           isLightMode={state.isLightMode}
           themeBorder={state.themeBorder}
+          themeText={state.themeText}
+          themeMuted={state.themeMuted}
+          getRoomImageUrl={(room: any) =>
+            room?.image_url ||
+            (Array.isArray(room?.images) && room.images[0]) ||
+            getCategoryDefaultCloudinaryImage(room?.category, room?.slug || room?.name)
+          }
         />
       )}
 
@@ -41,13 +51,15 @@ export const AdminModals: React.FC<AdminModalsProps> = ({ state }) => {
         <JournalVoucherModal
           isOpen={state.showAddJournalModal}
           onClose={() => state.setShowAddJournalModal(false)}
-          journalForm={state.journalForm}
-          setJournalForm={state.setJournalForm}
+          journalForm={state.journalForm as any}
+          setJournalForm={state.setJournalForm as any}
           onSubmit={state.handlePostJournalEntry}
           postingJournal={state.postingJournal}
           chartOfAccounts={state.chartOfAccounts}
           isLightMode={state.isLightMode}
           themeBorder={state.themeBorder}
+          themeText={state.themeText}
+          themeMuted={state.themeMuted}
         />
       )}
 
@@ -55,22 +67,25 @@ export const AdminModals: React.FC<AdminModalsProps> = ({ state }) => {
         <BackupMigrationModal
           isOpen={state.showBackupModal}
           onClose={() => state.setShowBackupModal(false)}
-          backupTab={state.backupTab}
+          backupTab={state.backupTab === 'import' ? 'import' : 'export'}
           setBackupTab={state.setBackupTab}
-          exportFormat={state.exportFormat}
-          setExportFormat={state.setExportFormat}
+          downloadingExport={null}
           previewSqlText={state.previewSqlText}
           setPreviewSqlText={state.setPreviewSqlText}
           loadingPreviewSql={state.loadingPreviewSql}
+          setLoadingPreviewSql={state.setLoadingPreviewSql}
           importContent={state.importContent}
           setImportContent={state.setImportContent}
           importMode={state.importMode}
           setImportMode={state.setImportMode}
           importingBackup={state.importingBackup}
-          onDownloadExport={state.handleDownloadExport}
-          onExecuteImport={state.handleExecuteImport}
+          handleDownloadExport={state.handleDownloadExport}
+          handleExecuteImport={state.handleExecuteImport}
+          onFetchBackupText={(fmt) => api.fetchLedgerBackupText(fmt)}
           isLightMode={state.isLightMode}
           themeBorder={state.themeBorder}
+          themeText={state.themeText}
+          themeMuted={state.themeMuted}
         />
       )}
 
@@ -78,27 +93,25 @@ export const AdminModals: React.FC<AdminModalsProps> = ({ state }) => {
         <GuestFolioReceiptModal
           booking={state.receiptModalBooking}
           onClose={() => state.setReceiptModalBooking(null)}
-          isLightMode={state.isLightMode}
-          themeBorder={state.themeBorder}
+          adminProfileState={state.adminProfileState}
         />
       )}
 
       {state.editingRoom && (
         <RoomEditorModal
-          editingRoom={state.editingRoom}
-          setEditingRoom={state.setEditingRoom}
-          onSubmit={state.handleUpdateRoomSubmit}
-          onPhotoUpload={state.handleRoomPhotoUpload}
-          uploadingRoomPhoto={state.uploadingRoomPhoto}
-          onAddPhotoUrl={state.handleAddPhotoUrl}
-          onAddPresetPhoto={state.handleAddPresetPhoto}
-          onRemovePhoto={state.handleRemovePhoto}
-          onSetPrimaryPhoto={state.handleSetPrimaryPhoto}
-          onDeleteRoom={() => {
-            state.setRoomToRemove(state.editingRoom);
+          room={state.editingRoom}
+          isOpen={Boolean(state.editingRoom)}
+          onClose={() => state.setEditingRoom(null)}
+          onSave={state.handleSaveEditedRoom}
+          onDelete={(room) => {
+            state.setRoomToRemove(room);
           }}
           isLightMode={state.isLightMode}
           themeBorder={state.themeBorder}
+          themeText={state.themeText}
+          themeMuted={state.themeMuted}
+          uploadImageToCloudinary={uploadImageToCloudinary}
+          toast={toast}
         />
       )}
 
@@ -108,9 +121,13 @@ export const AdminModals: React.FC<AdminModalsProps> = ({ state }) => {
           onClose={() => state.setShowCreateRoomModal(false)}
           newRoom={state.newRoom}
           setNewRoom={state.setNewRoom}
-          onSubmit={state.handleCreateRoom}
+          handleCreateRoom={state.handleCreateRoom}
           isLightMode={state.isLightMode}
           themeBorder={state.themeBorder}
+          themeText={state.themeText}
+          themeMuted={state.themeMuted}
+          uploadImageToCloudinary={uploadImageToCloudinary}
+          toast={toast}
         />
       )}
 
@@ -120,18 +137,22 @@ export const AdminModals: React.FC<AdminModalsProps> = ({ state }) => {
           onClose={() => state.setShowCreateSupplyModal(false)}
           newSupply={state.newSupply}
           setNewSupply={state.setNewSupply}
-          onSubmit={state.handleCreateSupply}
+          handleCreateSupply={state.handleCreateSupply}
           isLightMode={state.isLightMode}
           themeBorder={state.themeBorder}
+          themeText={state.themeText}
+          themeMuted={state.themeMuted}
         />
       )}
 
       {state.timelineBooking && (
         <StatusTimelineModal
+          isOpen={Boolean(state.timelineBooking)}
           booking={state.timelineBooking}
           onClose={() => state.setTimelineBooking(null)}
-          onStatusUpdated={() => {
-            state.refreshReservations();
+          viewerRole="administrator"
+          onUpdateStatus={(id, status) => {
+            state.updateStatus(id, status);
           }}
         />
       )}
@@ -141,7 +162,11 @@ export const AdminModals: React.FC<AdminModalsProps> = ({ state }) => {
       )}
 
       {state.activeChatGuest && (
-        <ExecutiveGuestChatModal guest={state.activeChatGuest} onClose={() => state.setActiveChatGuest(null)} />
+        <ExecutiveGuestChatModal
+          guest={state.activeChatGuest}
+          onClose={() => state.setActiveChatGuest(null)}
+          isLightMode={state.isLightMode}
+        />
       )}
 
       <AdminDialogs

@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { money } from '../../../lib/format';
+import { getCategoryDefaultCloudinaryImage, RESORT_PRESET_IMAGES } from '../../../lib/cloudinary';
 
 export interface RoomEditorModalProps {
   room: any | null;
@@ -101,12 +103,11 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
       const uploaded = await uploadImageToCloudinary(file);
       const url = uploaded.url;
       const currentList = Array.isArray(formData.images) ? [...formData.images] : [];
-      if (!currentList.includes(url)) currentList.push(url);
-      const primaryUrl = formData.image_url || url;
+      if (!currentList.includes(url)) currentList.unshift(url);
 
       setFormData({
         ...formData,
-        image_url: primaryUrl,
+        image_url: url,
         images: currentList,
       });
 
@@ -173,18 +174,36 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
     }
   };
 
+  const featuredImageUrl =
+    formData.image_url ||
+    (Array.isArray(formData.images) && formData.images[0]) ||
+    getCategoryDefaultCloudinaryImage(formData.category, formData.name);
+
+  const isCloudinaryFeatured = featuredImageUrl.includes('cloudinary.com');
+
+  const handleSelectPreset = (presetUrl: string, presetTitle: string) => {
+    const currentList = Array.isArray(formData.images) ? [...formData.images] : [];
+    if (!currentList.includes(presetUrl)) currentList.unshift(presetUrl);
+    setFormData({
+      ...formData,
+      image_url: presetUrl,
+      images: currentList,
+    });
+    toast(`☁️ Featured "${presetTitle}" Cloudinary image as background detail`);
+  };
+
   return (
     <div
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(2, 6, 23, 0.75)',
+        background: 'rgba(2, 6, 23, 0.78)',
         backdropFilter: 'blur(8px)',
         zIndex: 1000,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: 20,
+        padding: '16px 12px',
       }}
       onClick={onClose}
     >
@@ -193,28 +212,212 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
           width: '100%',
           maxWidth: 660,
           background: isLightMode ? '#FFFFFF' : '#0F172A',
-          borderRadius: 20,
+          borderRadius: 22,
           border: `1px solid ${themeBorder}`,
-          padding: 24,
-          boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
+          boxShadow: '0 25px 60px -12px rgba(0,0,0,0.6)',
           maxHeight: '92vh',
-          overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: `1px solid ${themeBorder}`, paddingBottom: 12 }}>
-          <div>
-            <span style={{ fontSize: '.74rem', color: '#0EA5E9', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>ROOM DETAILS & PHOTO MANAGEMENT</span>
-            <h3 style={{ margin: '4px 0 0', fontSize: '1.35rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-              <i className="fas fa-pen-to-square" style={{ marginRight: 6 }} />
-              Edit {formData.name}
-            </h3>
+        {/* FEATURED CLOUDINARY IMAGE BACKGROUND DETAIL HERO */}
+        <div
+          style={{
+            position: 'relative',
+            width: '100%',
+            height: 185,
+            background: '#0B1120',
+            overflow: 'hidden',
+            flexShrink: 0,
+          }}
+        >
+          <img
+            key={featuredImageUrl}
+            src={featuredImageUrl}
+            alt={formData.name || 'Room Background Detail'}
+            onError={(e) => {
+              e.currentTarget.src =
+                'https://res.cloudinary.com/juynm9ab/image/upload/v1792209696/jd_beach_house_accommodations/cottage.jpg';
+            }}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              filter: 'brightness(0.84)',
+              transition: 'all 0.35s ease',
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'linear-gradient(180deg, rgba(15,23,42,0.4) 0%, rgba(15,23,42,0.9) 100%)',
+              pointerEvents: 'none',
+            }}
+          />
+
+          <div
+            style={{
+              position: 'absolute',
+              top: 14,
+              left: 18,
+              right: 18,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              zIndex: 3,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <span
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: 20,
+                  background: 'rgba(14, 165, 233, 0.95)',
+                  color: '#FFFFFF',
+                  fontSize: '.68rem',
+                  fontWeight: 800,
+                  letterSpacing: '.06em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                ✦ ROOM DETAILS &amp; PHOTO MANAGEMENT
+              </span>
+              <span
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: 20,
+                  background: 'rgba(15, 23, 42, 0.78)',
+                  color: '#F8FAFC',
+                  fontSize: '.68rem',
+                  fontWeight: 700,
+                  border: '1px solid rgba(255,255,255,0.22)',
+                }}
+              >
+                {formData.category || 'Cottage'}
+              </span>
+              {isCloudinaryFeatured && (
+                <span
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: 20,
+                    background: 'rgba(16, 185, 129, 0.9)',
+                    color: '#FFFFFF',
+                    fontSize: '.66rem',
+                    fontWeight: 800,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5,
+                  }}
+                >
+                  <i className="fas fa-cloud" /> CLOUDINARY CDN FEATURED
+                </span>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                background: 'rgba(15, 23, 42, 0.75)',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                color: '#FFFFFF',
+                fontSize: '1rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <i className="fas fa-xmark" />
+            </button>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}>
-            <i className="fas fa-xmark" />
-          </button>
+
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 14,
+              left: 18,
+              right: 18,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-end',
+              gap: 12,
+              zIndex: 3,
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize: '.68rem',
+                  color: '#38BDF8',
+                  fontWeight: 800,
+                  textTransform: 'uppercase',
+                  letterSpacing: '.06em',
+                }}
+              >
+                <i className="fas fa-image" style={{ marginRight: 5 }} />
+                Cloudinary Image Background Detail
+              </div>
+              <h3
+                style={{
+                  margin: '2px 0 0',
+                  fontSize: '1.35rem',
+                  fontWeight: 800,
+                  color: '#FFFFFF',
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  textShadow: '0 2px 6px rgba(0,0,0,0.65)',
+                }}
+              >
+                Edit {formData.name}
+              </h3>
+              <div
+                style={{
+                  fontSize: '.74rem',
+                  color: '#E2E8F0',
+                  marginTop: 3,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                }}
+              >
+                <span>
+                  <i className="fas fa-users" style={{ marginRight: 4 }} />
+                  Sleeps {formData.capacity || 2} Guests
+                </span>
+                <span>•</span>
+                <span>
+                  <i className="fas fa-door-open" style={{ marginRight: 4 }} />
+                  {formData.units || 1} Physical Unit{Number(formData.units || 1) > 1 ? 's' : ''}
+                </span>
+              </div>
+            </div>
+
+            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+              <div
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: 12,
+                  background: 'rgba(16, 185, 129, 0.92)',
+                  color: '#FFFFFF',
+                  fontWeight: 800,
+                  fontSize: '.9rem',
+                  border: '1px solid rgba(255,255,255,0.25)',
+                }}
+              >
+                {money(Number(formData.rate_php) || 3500)}{' '}
+                <span style={{ fontSize: '.68rem', fontWeight: 600 }}>/ night</span>
+              </div>
+            </div>
+          </div>
         </div>
 
+        <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1 }}>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* SECTION A: ROOM DETAILS */}
           <div>
@@ -391,6 +594,99 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
               </span>
             </div>
 
+            {/* QUICK-SELECT CLOUDINARY RESORT PRESET BACKGROUNDS */}
+            <div style={{ marginBottom: 14 }}>
+              <span
+                style={{
+                  fontSize: '.71rem',
+                  color: themeMuted,
+                  fontWeight: 700,
+                  display: 'block',
+                  marginBottom: 6,
+                  textTransform: 'uppercase',
+                  letterSpacing: '.04em',
+                }}
+              >
+                Or Feature an Existing Cloudinary Resort Image:
+              </span>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(92px, 1fr))',
+                  gap: 8,
+                }}
+              >
+                {RESORT_PRESET_IMAGES.map((preset) => {
+                  const isActive = featuredImageUrl === preset.url;
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => handleSelectPreset(preset.url, preset.title)}
+                      title={`Feature ${preset.title}`}
+                      style={{
+                        position: 'relative',
+                        padding: 0,
+                        borderRadius: 8,
+                        overflow: 'hidden',
+                        border: isActive ? '2px solid #0EA5E9' : `1px solid ${themeBorder}`,
+                        aspectRatio: '16/10',
+                        cursor: 'pointer',
+                        background: '#0F172A',
+                        boxShadow: isActive ? '0 0 0 2px rgba(14,165,233,0.3)' : 'none',
+                      }}
+                    >
+                      <img
+                        src={preset.url}
+                        alt={preset.title}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                      <div
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          background: 'linear-gradient(180deg, transparent 35%, rgba(2,6,23,0.85) 100%)',
+                          display: 'flex',
+                          alignItems: 'flex-end',
+                          padding: '3px 5px',
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: '.58rem',
+                            color: '#FFFFFF',
+                            fontWeight: 700,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                        >
+                          {preset.category}
+                        </span>
+                      </div>
+                      {isActive && (
+                        <span
+                          style={{
+                            position: 'absolute',
+                            top: 3,
+                            right: 3,
+                            background: '#0EA5E9',
+                            color: '#FFF',
+                            fontSize: '.55rem',
+                            fontWeight: 800,
+                            padding: '1px 4px',
+                            borderRadius: 4,
+                          }}
+                        >
+                          ✓
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* CURRENT UPLOADED PHOTOS GALLERY */}
             {Array.isArray(formData.images) && formData.images.length > 0 ? (
               <div>
@@ -556,6 +852,7 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
             </div>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { money, fmtDate } from '../../../lib/format.ts';
 import AvailabilityCalendar from '../../AvailabilityCalendar.tsx';
 import { POOL_ADDON_OPTIONS } from '../../../lib/ledgerUtils.ts';
+import { getCategoryDefaultCloudinaryImage } from '../../../lib/cloudinary.ts';
 
 export interface NewReservationFormState {
   guest_name: string;
@@ -21,19 +22,25 @@ interface AddReservationModalProps {
   isOpen: boolean;
   onClose: () => void;
   activeRoomsList: any[];
+  roomsList?: any[];
   reservationsList: any[];
   isLightMode: boolean;
   themeBorder: string;
-  themeText: string;
-  themeMuted: string;
+  themeText?: string;
+  themeMuted?: string;
   newReservation: NewReservationFormState;
   setNewReservation: React.Dispatch<React.SetStateAction<any>>;
   walkInPoolAddon: string;
   setWalkInPoolAddon: (val: string) => void;
   creatingReservation: boolean;
   onSubmit: (e: React.FormEvent) => Promise<void>;
-  getRoomImageUrl: (room: any) => string;
+  getRoomImageUrl?: (room: any) => string;
 }
+
+const defaultGetRoomImageUrl = (room: any): string =>
+  room?.image_url ||
+  (Array.isArray(room?.images) && room.images[0]) ||
+  getCategoryDefaultCloudinaryImage(room?.category, room?.slug || room?.name);
 
 export default function AddReservationModal({
   isOpen,
@@ -42,19 +49,22 @@ export default function AddReservationModal({
   reservationsList,
   isLightMode,
   themeBorder,
-  themeText,
-  themeMuted,
+  themeText: propThemeText,
+  themeMuted: propThemeMuted,
   newReservation,
   setNewReservation,
   walkInPoolAddon,
   setWalkInPoolAddon,
   creatingReservation,
   onSubmit,
-  getRoomImageUrl,
+  getRoomImageUrl = defaultGetRoomImageUrl,
 }: AddReservationModalProps) {
   const [showWalkInCalendar, setShowWalkInCalendar] = useState(false);
 
   if (!isOpen) return null;
+
+  const themeText = propThemeText || (isLightMode ? '#0F172A' : '#F8FAFC');
+  const themeMuted = propThemeMuted || (isLightMode ? '#64748B' : '#94A3B8');
 
   const activeWalkInRoom = activeRoomsList.find((r) => r.id === newReservation.room_id) || activeRoomsList[0];
   const activeRoomImage = getRoomImageUrl(activeWalkInRoom);
