@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { money, fmtDate, fmtTime } from '../../lib/format';
 import { IconSearch } from '../../components/AdminIcons';
 import StatusPill from '../../components/StatusPill';
 import AvailabilityCalendar from '../../components/AvailabilityCalendar';
+import { exportReservationsCSV } from '../../lib/ledgerUtils';
 import { api } from '../../lib/api';
 
 export interface LedgerViewProps {
@@ -104,360 +105,118 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
     return true;
   });
 
+  const statusCounts = useMemo(() => {
+    const all = allBookings.length;
+    const confirmed = allBookings.filter((b: any) => b.status === 'confirmed').length;
+    const pending = allBookings.filter((b: any) => b.status === 'pending').length;
+    const checkedIn = allBookings.filter((b: any) => b.status === 'checked_in').length;
+    const checkedOut = allBookings.filter((b: any) => b.status === 'checked_out').length;
+    const cancelled = allBookings.filter((b: any) => b.status === 'cancelled').length;
+    return { all, confirmed, pending, checkedIn, checkedOut, cancelled };
+  }, [allBookings]);
+
+  const filterOptions = [
+    { key: 'all', label: 'All', count: statusCounts.all },
+    { key: 'confirmed', label: 'Confirmed', count: statusCounts.confirmed },
+    { key: 'pending', label: 'Pending', count: statusCounts.pending },
+    { key: 'checked_in', label: 'Checked in', count: statusCounts.checkedIn },
+    { key: 'checked_out', label: 'Checked out', count: statusCounts.checkedOut },
+    { key: 'cancelled', label: 'Cancelled', count: statusCounts.cancelled },
+  ];
+
   return (
-    <div className="panel" style={{ background: themeCardBg, border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 24, boxShadow: themeShadow }}>
-      {/* Header & Dynamic Contextual Action Buttons */}
-      <div className="admin-tab-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, flexWrap: 'wrap', gap: 14 }}>
-        <div>
-          <span style={{ fontSize: '.76rem', color: '#0EA5E9', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>
-            ROCK VIEW BEACH RESORT · RESERVATIONS OPERATIONS
-          </span>
-          <h3 className="serif" style={{ fontSize: '1.45rem', margin: '4px 0 0', color: themeText, display: 'flex', alignItems: 'center', gap: 8 }}>
-            {ledgerSubView === 'stay_folios' && (
-              <>
-                <i className="fas fa-clipboard-list" style={{ marginRight: 6 }} />Guest Stay Folios
-              </>
-            )}
-            {ledgerSubView === 'availability' && (
-              <>
-                <i className="fas fa-calendar-alt" style={{ marginRight: 6 }} />Visual Room Lock & Availability Calendar
-              </>
-            )}
-            {ledgerSubView === 'debit_credit' && (
-              <>
-                <i className="fas fa-scale-balanced" style={{ marginRight: 6 }} />Reservation Financial Ledger (General Ledger (Debit & Credit System))
-              </>
-            )}
-          </h3>
-          <p className="muted small" style={{ margin: '4px 0 0' }}>
-            {ledgerSubView === 'stay_folios' &&
-              'Real-time guest reservation folios, room assignments, direct walk-ins, and front desk check-in / check-out operations.'}
-            {ledgerSubView === 'availability' &&
-              'Interactive multi-month room occupancy timeline, real-time checkout locks, and date range walk-in dispatch.'}
-            {ledgerSubView === 'debit_credit' &&
-              'Dual-entry bookkeeping with real-time Trial Balance, Chart of Accounts, and adaptive PostgreSQL backup migration.'}
-          </p>
+    <div className="ledger-view-wrapper">
+      {/* 1. TOP VIEW SWITCHER & ACTIONS BAR (MATCHING SCREENSHOT) */}
+      <div className="pms-view-bar">
+        {/* Left: Segmented Switcher */}
+        <div className={`pms-view-switcher ${!isLightMode ? 'dark' : ''}`}>
+          <button
+            type="button"
+            className={`pms-view-tab ${ledgerSubView === 'availability' ? 'active' : ''} ${!isLightMode ? 'dark' : ''}`}
+            onClick={() => setLedgerSubView('availability')}
+          >
+            <i className="far fa-calendar-alt" />
+            <span>Calendar</span>
+          </button>
+          <button
+            type="button"
+            className={`pms-view-tab ${ledgerSubView === 'stay_folios' ? 'active' : ''} ${!isLightMode ? 'dark' : ''}`}
+            onClick={() => setLedgerSubView('stay_folios')}
+          >
+            <i className="fas fa-list-ul" />
+            <span>List</span>
+          </button>
+          <button
+            type="button"
+            className={`pms-view-tab ${ledgerSubView === 'debit_credit' ? 'active' : ''} ${!isLightMode ? 'dark' : ''}`}
+            onClick={() => setLedgerSubView('debit_credit')}
+          >
+            <i className="fas fa-chart-simple" />
+            <span>Analytics</span>
+          </button>
         </div>
 
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-          {ledgerSubView === 'stay_folios' && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              {/* Booking Actions Systematic Dropdown */}
-              <select
-                onChange={(e) => {
-                  const val = e.target.value;
-                  e.target.value = '';
-                  if (val === 'book') {
-                    if (activeRoomsList.length === 0) {
-                      toast("There's no present room around. Please add a room in Room Management first.", true);
-                      return;
-                    }
-                    if (!newReservation.room_id && activeRoomsList.length > 0) {
-                      const firstRoom = activeRoomsList[0];
-                      const nights = Math.max(1, Math.round((new Date(newReservation.check_out).getTime() - new Date(newReservation.check_in).getTime()) / 86400000));
-                      setNewReservation((prev: any) => ({
-                        ...prev,
-                        room_id: firstRoom.id,
-                        total_php: (firstRoom.rate_php || 3500) * nights,
-                      }));
-                    }
-                    setShowAddReservationModal(true);
-                  } else if (val === 'refund') {
-                    const target = allBookings.find((b) => b.payment_status === 'refund_pending' || (b.status !== 'cancelled' && b.payment_status !== 'refunded'));
-                    if (target) {
-                      setRefundTarget(target);
-                      setRefundMode(target.payment_status === 'refund_pending' ? 'confirm' : 'request');
-                      setRefundAmount(target.downpayment_php || target.total_php || '');
-                      setRefundMethod(target.payment_method || 'GCash');
-                    } else {
-                      toast('No refundable reservation found', true);
-                    }
-                  } else if (val === 'cancel') {
-                    const target = allBookings.find((b) => ['pending', 'confirmed'].includes(b.status));
-                    if (target) {
-                      if (confirm(`Cancel reservation for ${target.guest_name}?`)) {
-                        updateStatus(target.id, 'cancelled');
-                      }
-                    } else {
-                      toast('No pending or confirmed reservation to cancel', true);
-                    }
-                  } else if (val === 'refresh') {
-                    refreshReservations();
-                  }
-                }}
-                className="btn btn-sky btn-sm"
-                style={{
-                  padding: '7px 14px',
-                  fontWeight: 800,
-                  borderRadius: 10,
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                }}
-              >
-                <option value="">Booking Actions ▾</option>
-                <option value="book">+ New Walk-In / Phone Booking</option>
-                <option value="refund">Process Guest Refund</option>
-                <option value="cancel">Cancel Reservation</option>
-                <option value="refresh">Refresh Stays</option>
-              </select>
+        {/* Right: Export & New Booking Actions */}
+        <div className="pms-header-actions">
+          <button
+            type="button"
+            className={`pms-export-btn ${!isLightMode ? 'dark' : ''}`}
+            onClick={() => {
+              const ok = exportReservationsCSV(allBookings);
+              if (ok) {
+                toast('✓ Reservations CSV exported successfully');
+              } else {
+                toast('No reservations to export', true);
+              }
+            }}
+          >
+            <i className="fas fa-arrow-down-to-line" />
+            <span>Export</span>
+          </button>
 
-              {/* Viewable Rows Count Dropdown */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: '.76rem', color: themeMuted, fontWeight: 700 }}>SHOW:</span>
-                <select
-                  value={String(folioViewLimit)}
-                  onChange={(e) => setFolioViewLimit(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: 10,
-                    border: `1px solid ${themeBorder}`,
-                    background: isLightMode ? '#FFF' : '#1E293B',
-                    color: themeText,
-                    fontSize: '.78rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                  }}
-                >
-                  <option value="10">10 Rows</option>
-                  <option value="25">25 Rows</option>
-                  <option value="50">50 Rows</option>
-                  <option value="100">100 Rows</option>
-                  <option value="all">All ({allBookings.length})</option>
-                </select>
-              </div>
-            </div>
-          )}
-
-          {ledgerSubView === 'availability' && (
-            <>
-              <button
-                className="btn btn-sky btn-sm"
-                onClick={() => {
-                  if (activeRoomsList.length === 0) {
-                    toast("There's no present room around. Please add a room in Room Management first.", true);
-                    return;
-                  }
-                  setShowAddReservationModal(true);
-                }}
-                style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
-              >
-                <i className="fas fa-plus" /> Walk-In Booking
-              </button>
-              <button
-                className="btn btn-sm btn-ghost"
-                onClick={() => setLedgerSubView('stay_folios')}
-                style={{ color: themeText, border: `1px solid ${themeBorder}`, fontWeight: 600 }}
-              >
-                <i className="fas fa-clipboard-list" /> View Folios Table
-              </button>
-              <button
-                className="btn btn-sm btn-ghost"
-                onClick={() => {
-                  refreshReservations();
-                  if (roomsList.length === 0) api.rooms(false).then((r: any) => setRoomsList(Array.isArray(r) ? r : [])).catch(() => {});
-                }}
-                style={{ color: themeText, border: `1px solid ${themeBorder}`, fontWeight: 600 }}
-              >
-                <i className="fas fa-rotate" /> Refresh Calendar
-              </button>
-            </>
-          )}
-
-          {ledgerSubView === 'debit_credit' && (
-            <>
-              <button
-                className="btn btn-sky btn-sm"
-                onClick={() => setShowAddJournalModal(true)}
-                style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
-              >
-                <i className="fas fa-plus" /> New Journal Entry
-              </button>
-              <button
-                className="btn btn-sm btn-ghost"
-                onClick={handleReconcileLedger}
-                disabled={reconcilingLedger}
-                style={{
-                  color: isLightMode ? '#0D9488' : '#2DD4BF',
-                  border: `1px solid ${isLightMode ? '#99F6E4' : 'rgba(45, 212, 191, 0.3)'}`,
-                  background: isLightMode ? '#F0FDFA' : 'rgba(45, 212, 191, 0.12)',
-                  fontWeight: 700,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                }}
-                title="Automatically sync and post unrecorded reservations and orders as double-entry journal vouchers"
-              >
-                <i className="fas fa-bolt" /> {reconcilingLedger ? 'Reconciling…' : 'Sync & Reconcile Stays'}
-              </button>
-              <button
-                className="btn btn-sm btn-ghost"
-                onClick={() => {
-                  setBackupTab('export');
-                  setShowBackupModal(true);
-                }}
-                style={{
-                  color: isLightMode ? '#4338CA' : '#818CF8',
-                  border: `1px solid ${isLightMode ? '#C7D2FE' : 'rgba(129, 140, 248, 0.3)'}`,
-                  background: isLightMode ? '#EEF2FF' : 'rgba(129, 140, 248, 0.12)',
-                  fontWeight: 700,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                }}
-                title="Export or Import PostgreSQL SQL dump, JSON, CSV, or logbook notation"
-              >
-                <i className="fas fa-floppy-disk" /> PostgreSQL Backup & Migration
-              </button>
-              <button
-                className="btn btn-sm btn-ghost"
-                onClick={() => {
-                  refreshLedgerEntries();
-                  refreshReservations();
-                }}
-                disabled={loadingLedger || loadingReservations}
-                style={{ color: themeText, border: `1px solid ${themeBorder}`, fontWeight: 600 }}
-              >
-                {loadingLedger ? 'Refreshing…' : <><i className="fas fa-rotate" /> Refresh Ledger</>}
-              </button>
-            </>
-          )}
+          <button
+            type="button"
+            className="pms-primary-btn"
+            onClick={() => {
+              if (activeRoomsList.length === 0) {
+                toast("There's no present room around. Please add a room in Room Management first.", true);
+                return;
+              }
+              const activeRoom = activeRoomsList[0];
+              setNewReservation((prev: any) => ({
+                ...prev,
+                room_id: prev.room_id || activeRoom?.id || '',
+                check_in: prev.check_in || '2026-10-20',
+                check_out: prev.check_out || '2026-10-21',
+                total_php: activeRoom?.rate_php || 3500,
+              }));
+              setShowAddReservationModal(true);
+            }}
+          >
+            <i className="fas fa-plus" />
+            <span>New booking</span>
+          </button>
         </div>
       </div>
 
-      {/* THREE INTERACTIVE BUTTONS THAT REACTIVELY CHANGE THE UI */}
-      <div
-        style={{
-          display: 'flex',
-          gap: 10,
-          marginBottom: 24,
-          padding: '6px',
-          background: isLightMode ? '#F1F5F9' : 'rgba(15, 23, 42, 0.65)',
-          borderRadius: 14,
-          border: `1px solid ${themeBorder}`,
-          flexWrap: 'wrap',
-        }}
-      >
-        {/* Button 1: Guest Stay Folios & Bookings */}
-        <button
-          type="button"
-          onClick={() => setLedgerSubView('stay_folios')}
-          style={{
-            flex: '1 1 auto',
-            minWidth: 200,
-            padding: '10px 18px',
-            borderRadius: 10,
-            border: ledgerSubView === 'stay_folios' ? '1px solid #0284C7' : '1px solid transparent',
-            background:
-              ledgerSubView === 'stay_folios'
-                ? isLightMode
-                  ? 'linear-gradient(135deg, #0284C7, #0EA5E9)'
-                  : 'linear-gradient(135deg, #0369A1, #0284C7)'
-                : 'transparent',
-            color: ledgerSubView === 'stay_folios' ? '#FFFFFF' : themeMuted,
-            fontWeight: ledgerSubView === 'stay_folios' ? 800 : 600,
-            fontSize: '.88rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8,
-            boxShadow: ledgerSubView === 'stay_folios' ? '0 4px 12px rgba(14, 165, 233, 0.3)' : 'none',
-            transition: 'all 0.2s ease',
-          }}
-        >
-          <i className="fas fa-clipboard-list" style={{ fontSize: "1.05rem" }} />
-          <span>Guest Stay Folios</span>
-          <span
-            style={{
-              fontSize: '.72rem',
-              fontWeight: 800,
-              background: ledgerSubView === 'stay_folios' ? 'rgba(255,255,255,0.25)' : isLightMode ? '#E2E8F0' : 'rgba(148, 163, 184, 0.2)',
-              color: ledgerSubView === 'stay_folios' ? '#FFFFFF' : themeText,
-              padding: '2px 8px',
-              borderRadius: 12,
-            }}
-          >
-            {allBookings.length}
-          </span>
-        </button>
-
-        {/* Button 2: Visual Availability & Lock Calendar */}
-        <button
-          type="button"
-          onClick={() => setLedgerSubView('availability')}
-          style={{
-            flex: '1 1 auto',
-            minWidth: 200,
-            padding: '10px 18px',
-            borderRadius: 10,
-            border: ledgerSubView === 'availability' ? '1px solid #0284C7' : '1px solid transparent',
-            background:
-              ledgerSubView === 'availability'
-                ? isLightMode
-                  ? 'linear-gradient(135deg, #0284C7, #0EA5E9)'
-                  : 'linear-gradient(135deg, #0369A1, #0284C7)'
-                : 'transparent',
-            color: ledgerSubView === 'availability' ? '#FFFFFF' : themeMuted,
-            fontWeight: ledgerSubView === 'availability' ? 800 : 600,
-            fontSize: '.88rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8,
-            boxShadow: ledgerSubView === 'availability' ? '0 4px 12px rgba(14, 165, 233, 0.3)' : 'none',
-            transition: 'all 0.2s ease',
-          }}
-        >
-          <i className="fas fa-calendar-alt" style={{ fontSize: "1.05rem" }} />
-          <span>Visual Room Lock & Calendar</span>
-        </button>
-
-        {/* Button 3: Debit & Credit General Ledger */}
-        <button
-          type="button"
-          onClick={() => setLedgerSubView('debit_credit')}
-          style={{
-            flex: '1 1 auto',
-            minWidth: 200,
-            padding: '10px 18px',
-            borderRadius: 10,
-            border: ledgerSubView === 'debit_credit' ? '1px solid #0284C7' : '1px solid transparent',
-            background:
-              ledgerSubView === 'debit_credit'
-                ? isLightMode
-                  ? 'linear-gradient(135deg, #0284C7, #0EA5E9)'
-                  : 'linear-gradient(135deg, #0369A1, #0284C7)'
-                : 'transparent',
-            color: ledgerSubView === 'debit_credit' ? '#FFFFFF' : themeMuted,
-            fontWeight: ledgerSubView === 'debit_credit' ? 800 : 600,
-            fontSize: '.88rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8,
-            boxShadow: ledgerSubView === 'debit_credit' ? '0 4px 12px rgba(14, 165, 233, 0.3)' : 'none',
-            transition: 'all 0.2s ease',
-          }}
-        >
-          <i className="fas fa-scale-balanced" style={{ fontSize: "1.05rem" }} />
-          <span>Reservation Financial Ledger</span>
-          <span
-            style={{
-              fontSize: '.72rem',
-              fontWeight: 800,
-              background: ledgerSubView === 'debit_credit' ? 'rgba(255,255,255,0.25)' : isLightMode ? '#E2E8F0' : 'rgba(148, 163, 184, 0.2)',
-              color: ledgerSubView === 'debit_credit' ? '#FFFFFF' : themeText,
-              padding: '2px 8px',
-              borderRadius: 12,
-            }}
-          >
-            {ledgerEntriesList.length}
-          </span>
-        </button>
+      {/* 2. STATUS FILTER PILL STRIP (MATCHING SCREENSHOT) */}
+      <div className={`pms-filter-strip ${!isLightMode ? 'dark' : ''}`}>
+        {filterOptions.map((f) => {
+          const isActive = reservationFilter === f.key;
+          return (
+            <button
+              key={f.key}
+              type="button"
+              onClick={() => setReservationFilter(f.key)}
+              className={`pms-filter-chip ${isActive ? 'active' : ''} ${!isLightMode ? 'dark' : ''}`}
+            >
+              <span>{f.label}</span>
+              <span className="pms-filter-count">
+                {f.count}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* VIEW 1: DEBIT & CREDIT GENERAL LEDGER */}

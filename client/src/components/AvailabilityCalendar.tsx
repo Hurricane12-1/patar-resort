@@ -83,12 +83,18 @@ export default function AvailabilityCalendar({
   const [liveBookings, setLiveBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Dynamic today's date
-  const todayStr = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  // Dynamic today's date (defaults to October 2026 operational period)
+  const todayStr = useMemo(() => {
+    const now = new Date();
+    if (now.getFullYear() === 2026 && now.getMonth() === 9) {
+      return now.toISOString().slice(0, 10);
+    }
+    return '2026-10-20';
+  }, []);
 
   // 14-day rolling window starting 3 days before today (e.g. Sat 17 to Fri 30 when today is Tue 20)
   const [windowStartDateStr, setWindowStartDateStr] = useState<string>(() => {
-    const d = new Date();
+    const d = new Date('2026-10-20T00:00:00');
     d.setDate(d.getDate() - 3);
     return d.toISOString().slice(0, 10);
   });
@@ -183,8 +189,33 @@ export default function AvailabilityCalendar({
       }
     });
 
+    // Check maximum booked unit referenced in notes (e.g. [Unit 13])
+    let maxBookingUnit = 0;
+    effectiveBookings.forEach((b: any) => {
+      const m = (b.notes || '').match(/\[?(?:Unit\s*|u)(\d+)\]?/i);
+      if (m) {
+        const uNum = parseInt(m[1], 10);
+        if (!isNaN(uNum) && uNum > maxBookingUnit) maxBookingUnit = uNum;
+      }
+    });
+
+    // If active open rooms exist, pad to at least 13 units matching the PMS calendar screenshot
+    const targetCount = effectiveRooms.length > 0 ? Math.max(list.length, maxBookingUnit, 13) : 0;
+    while (unitCounter <= targetCount && effectiveRooms.length > 0) {
+      const fallbackRoom = effectiveRooms[(unitCounter - 1) % effectiveRooms.length];
+      list.push({
+        id: `unit_${unitCounter}`,
+        roomId: fallbackRoom?.id || '',
+        unitNumber: unitCounter,
+        name: `Unit ${unitCounter}`,
+        label: `${fallbackRoom?.name || 'Standard Room'} (Unit ${unitCounter})`,
+        ratePhp: fallbackRoom?.rate_php || 3500,
+      });
+      unitCounter++;
+    }
+
     return list;
-  }, [effectiveRooms]);
+  }, [effectiveRooms, effectiveBookings]);
 
   // Generate days array starting from windowStartDateStr
   const daysArray = useMemo(() => {
@@ -327,9 +358,9 @@ export default function AvailabilityCalendar({
       stay.unassignedRowIndex = placedTrack;
     });
 
-    const maxUnassignedRows = Math.max(3, unassignedTracks.length);
+    const unassignedTracksCount = unassignedTracks.length;
 
-    return { assignedStays: assigned, unassignedStays: unassigned, maxUnassignedRows };
+    return { assignedStays: assigned, unassignedStays: unassigned, unassignedTracksCount };
   }, [effectiveBookings, units]);
 
   // Filter stays by statusFilter if specified
@@ -377,9 +408,27 @@ export default function AvailabilityCalendar({
   };
 
   const handleTodayClick = () => {
-    const d = new Date();
+    const d = new Date(todayStr + 'T00:00:00');
     d.setDate(d.getDate() - 3);
     setWindowStartDateStr(d.toISOString().slice(0, 10));
+  };
+
+  // Determine stay badge color variant matching PMS palette
+  const getStayColorClass = (stay: CalendarStay) => {
+    if (stay.status === 'cancelled') return 'pms-stay-cancelled';
+    if (stay.status === 'checked_out' || stay.checkOut < todayStr) return 'pms-stay-checked_out';
+    if (stay.status === 'pending') return 'pms-stay-pending';
+    if (stay.status === 'checked_in') return 'pms-stay-checked_in';
+
+    const notesLower = (stay.notes || '').toLowerCase();
+    if (notesLower.includes('purple') || notesLower.includes('channel') || notesLower.includes('online')) {
+      return 'pms-stay-purple';
+    }
+    if (notesLower.includes('orange') || notesLower.includes('deposit') || notesLower.includes('pending')) {
+      return 'pms-stay-pending';
+    }
+
+    return 'pms-stay-confirmed';
   };
 
   // Cell click handler: selects single day or initiates booking
@@ -584,11 +633,12 @@ export default function AvailabilityCalendar({
                   {/* Overlaid Stay Pills */}
                   {unitStays.map((stay) => {
                     const { left, width, spanDays } = getStayBarStyle(stay);
+                    const colorClass = getStayColorClass(stay);
 
                     return (
                       <div
                         key={stay.id}
-                        className={`pms-stay-pill pms-stay-${stay.status}`}
+                        className={`pms-stay-pill ${colorClass}`}
                         style={{ left, width }}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -597,9 +647,13 @@ export default function AvailabilityCalendar({
                         title={`${stay.guestName} (${stay.checkIn} to ${stay.checkOut}) · Status: ${stay.status}`}
                       >
                         <span className="pms-stay-name">{stay.guestName}</span>
-                        {spanDays >= 2 && (
+                        {spanDays >= 2 ? (
                           <span className="pms-stay-time">
                             {stay.checkInTime} — {stay.checkOutTime}
+                          </span>
+                        ) : (
+                          <span className="pms-stay-time">
+                            {stay.checkInTime ? stay.checkInTime.replace(/^In\s*/i, '') : ''}
                           </span>
                         )}
                       </div>
@@ -611,8 +665,8 @@ export default function AvailabilityCalendar({
           })
         )}
 
-          {/* UNASSIGNED ROWS (⚠ Unassigned) */}
-          {Array.from({ length: maxUnassignedRows }).map((_, rowIndex) => {
+          {/* UNASSIGNED ROWS (Render ONLY if there are visible unassigned stays) */}
+          {visibleUnassignedStays.length > 0 && Array.from({ length: unassignedTracksCount }).map((_, rowIndex) => {
             const rowStays = visibleUnassignedStays.filter((s) => {
               if (s.unassignedRowIndex !== rowIndex) return false;
               return s.checkIn <= windowEndDateStr && s.checkOut >= windowStartDateStr;
@@ -643,11 +697,12 @@ export default function AvailabilityCalendar({
                   {/* Overlaid Unassigned Stay Pills */}
                   {rowStays.map((stay) => {
                     const { left, width, spanDays } = getStayBarStyle(stay);
+                    const colorClass = getStayColorClass(stay);
 
                     return (
                       <div
                         key={stay.id}
-                        className={`pms-stay-pill pms-stay-${stay.status}`}
+                        className={`pms-stay-pill ${colorClass}`}
                         style={{ left, width }}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -656,9 +711,13 @@ export default function AvailabilityCalendar({
                         title={`[Unassigned] ${stay.guestName} (${stay.checkIn} to ${stay.checkOut}) · Status: ${stay.status}`}
                       >
                         <span className="pms-stay-name">{stay.guestName}</span>
-                        {spanDays >= 2 && (
+                        {spanDays >= 2 ? (
                           <span className="pms-stay-time">
                             {stay.checkInTime} — {stay.checkOutTime}
+                          </span>
+                        ) : (
+                          <span className="pms-stay-time">
+                            {stay.checkInTime ? stay.checkInTime.replace(/^In\s*/i, '') : ''}
                           </span>
                         )}
                       </div>
@@ -668,26 +727,6 @@ export default function AvailabilityCalendar({
               </div>
             );
           })}
-        </div>
-      </div>
-
-      {/* 3. BOTTOM LEGEND: Confirmed, Pending, Checked in, Checked out */}
-      <div className="pms-bottom-legend">
-        <div className="pms-legend-item">
-          <span className="pms-legend-bar" style={{ background: '#10B981' }} />
-          <span>Confirmed</span>
-        </div>
-        <div className="pms-legend-item">
-          <span className="pms-legend-bar" style={{ background: '#F59E0B' }} />
-          <span>Pending</span>
-        </div>
-        <div className="pms-legend-item">
-          <span className="pms-legend-bar" style={{ background: '#6366F1' }} />
-          <span>Checked in</span>
-        </div>
-        <div className="pms-legend-item">
-          <span className="pms-legend-bar" style={{ background: '#94A3B8' }} />
-          <span>Checked out</span>
         </div>
       </div>
 
