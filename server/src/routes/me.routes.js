@@ -6,10 +6,35 @@ import { validate } from '../middleware/validate.js';
 import { admin, getSystemAdminClient } from '../lib/supabase.js';
 import { pingSMS } from '../lib/sms.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
+import { hashPassword } from '../lib/passwords.js';
 
 const r = Router();
 
-r.get('/me', authenticate, (req, res) => res.json(req.user));
+r.get('/me', authenticate, asyncH(async (req, res) => {
+  let user = { ...req.user };
+  try {
+    const sysAdmin = await getSystemAdminClient().catch(() => null);
+    const client = sysAdmin || req.sb || admin;
+    const lookupId = req.user.auth_user_id || req.user.id;
+    let prof = null;
+    if (lookupId) {
+      const { data } = await client.from('profiles').select('*').eq('id', lookupId).maybeSingle();
+      prof = data;
+    }
+    if (!prof && req.user.email) {
+      const { data } = await client.from('profiles').select('*').ilike('email', req.user.email).maybeSingle();
+      prof = data;
+    }
+    if (prof) {
+      user = {
+        ...prof,
+        ...user,
+        avatar_url: prof.avatar_url || user.avatar_url,
+      };
+    }
+  } catch {}
+  res.json(user);
+}));
 
 r.patch('/me', authenticate,
   validate(z.object({
@@ -39,8 +64,28 @@ r.patch('/me', authenticate,
     }
     const sysAdmin = await getSystemAdminClient().catch(() => null);
     const client = sysAdmin || req.sb || admin;
-    const { data, error } = await client.from('profiles')
-      .update(updatePayload).eq('id', req.user.id).select().single();
+    const targetId = req.user.auth_user_id || req.user.id;
+    let { data, error } = await client.from('profiles')
+      .update(updatePayload).eq('id', targetId).select().maybeSingle();
+
+    if (!data && req.user.email) {
+      const { data: byEmail } = await client.from('profiles')
+        .update(updatePayload).ilike('email', req.user.email).select().maybeSingle();
+      data = byEmail;
+    }
+
+    if (!data) {
+      const insertRecord = {
+        id: targetId,
+        email: req.user.email,
+        full_name: updatePayload.full_name || req.user.full_name || '',
+        ...updatePayload,
+      };
+      const res = await client.from('profiles').upsert(insertRecord).select().single();
+      data = res.data;
+      error = res.error;
+    }
+
     if (error) throw new ApiError(500, error.message);
     if (data) {
       delete data.password;
@@ -81,7 +126,7 @@ r.patch('/me/password', authenticate,
         if (req.user.id) empFilter.push(`auth_user_id.eq.${req.user.id}`);
         if (userEmail) empFilter.push(`email.eq.${userEmail}`);
         await client.from('employee_accounts')
-          .update({ password, updated_at: new Date().toISOString() })
+          .update({ password: hashPassword(password), updated_at: new Date().toISOString() })
           .or(empFilter.join(','))
           .catch(() => {});
       }

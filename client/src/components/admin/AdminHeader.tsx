@@ -498,14 +498,10 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
         >
           {adminProfileState.customAvatarUrl ? (
             <img
-              src={optimizeCloudinaryUrl(adminProfileState.customAvatarUrl, 'c_fill,w_80,h_80')}
+              src={adminProfileState.customAvatarUrl}
               alt="Admin Avatar"
               onError={(e) => {
-                if (e.currentTarget.src !== adminProfileState.customAvatarUrl) {
-                  e.currentTarget.src = adminProfileState.customAvatarUrl;
-                } else {
-                  e.currentTarget.style.display = 'none';
-                }
+                e.currentTarget.style.display = 'none';
               }}
               style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }}
             />

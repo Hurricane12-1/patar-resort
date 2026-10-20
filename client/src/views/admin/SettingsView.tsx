@@ -86,110 +86,112 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
       <form onSubmit={handleSaveSettings} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 20 }}>
         {/* 0. Cloudinary Executive Avatar & Identity Management */}
-        <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.5)', border: `1px solid ${themeBorder}`, borderRadius: 18, padding: 22, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-            <div style={{ position: 'relative' }}>
-              <div
-                style={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: '50%',
-                  overflow: 'hidden',
-                  border: '3px solid #6366F1',
-                  boxShadow: '0 8px 20px rgba(99, 102, 241, 0.3)',
-                  background: isLightMode ? '#EEF2FF' : '#312E81',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                {adminProfileState.customAvatarUrl ? (
-                  <img
-                    src={optimizeCloudinaryUrl(adminProfileState.customAvatarUrl, 'c_fill,w_200,h_200')}
-                    alt="Profile Avatar"
-                    onError={(e) => {
-                      if (e.currentTarget.src !== adminProfileState.customAvatarUrl) {
-                        e.currentTarget.src = adminProfileState.customAvatarUrl;
-                      } else {
-                        e.currentTarget.style.display = 'none';
-                      }
-                    }}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                ) : (
-                  <span style={{ fontSize: '2rem', color: '#818CF8', fontWeight: 800 }}>
-                    {adminProfileState.fullName ? adminProfileState.fullName.charAt(0).toUpperCase() : <i className="fas fa-user-tie" />}
-                  </span>
-                )}
-              </div>
-            </div>
-            <div>
-              <b style={{ fontSize: '1.05rem', color: themeText, display: 'block' }}>
-                Executive Profile Picture
-              </b>
-              <p style={{ margin: '4px 0 8px', fontSize: '.8rem', color: themeMuted }}>
-                Hosted on Cloudinary High-Performance CDN with auto-formatting & facial focus.
-              </p>
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                <label
-                  htmlFor="settings-avatar-upload"
-                  className="btn btn-sky btn-sm"
-                  style={{
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    borderRadius: 9999,
-                    fontWeight: 700,
-                    padding: '6px 16px',
-                  }}
-                >
-                  {uploadingAvatar ? <i className="fas fa-spinner fa-spin" /> : <i className="fas fa-cloud-arrow-up" />}
-                  {uploadingAvatar ? 'Uploading to Cloudinary…' : 'Upload Photo'}
-                  <input
-                    id="settings-avatar-upload"
-                    type="file"
-                    accept="image/*"
-                    style={{ display: 'none' }}
-                    onChange={handleAvatarUpload}
-                    disabled={uploadingAvatar}
-                  />
-                </label>
-                {adminProfileState.customAvatarUrl && (
-                  <button
-                    type="button"
-                    onClick={handleRemoveAvatar}
-                    disabled={uploadingAvatar}
-                    className="btn btn-ghost btn-sm"
+        {(() => {
+          const avatarUrl = adminProfileState.customAvatarUrl || currentAdminProfile?.avatar_url || currentAdminProfile?.picture || '';
+          return (
+            <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.5)', border: `1px solid ${themeBorder}`, borderRadius: 18, padding: 22, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+                <div style={{ position: 'relative' }}>
+                  <div
                     style={{
-                      borderRadius: 9999,
-                      color: '#EF4444',
-                      borderColor: 'rgba(239, 68, 68, 0.4)',
-                      fontWeight: 700,
-                      padding: '6px 16px',
+                      width: 80,
+                      height: 80,
+                      borderRadius: '50%',
+                      overflow: 'hidden',
+                      border: '3px solid #6366F1',
+                      boxShadow: '0 8px 20px rgba(99, 102, 241, 0.3)',
+                      background: isLightMode ? '#EEF2FF' : '#312E81',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                     }}
                   >
-                    Remove Photo
-                  </button>
-                )}
+                    {avatarUrl ? (
+                      <img
+                        key={avatarUrl}
+                        src={avatarUrl}
+                        alt="Executive Profile Avatar"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <span style={{ fontSize: '2rem', color: '#818CF8', fontWeight: 800 }}>
+                        {adminProfileState.fullName ? adminProfileState.fullName.charAt(0).toUpperCase() : <i className="fas fa-user-tie" />}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <b style={{ fontSize: '1.05rem', color: themeText, display: 'block' }}>
+                    Executive Profile Picture
+                  </b>
+                  <p style={{ margin: '4px 0 8px', fontSize: '.8rem', color: themeMuted }}>
+                    Hosted on Cloudinary High-Performance CDN with auto-formatting & facial focus.
+                  </p>
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    <label
+                      htmlFor="settings-avatar-upload"
+                      className="btn btn-sky btn-sm"
+                      style={{
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        borderRadius: 9999,
+                        fontWeight: 700,
+                        padding: '6px 16px',
+                      }}
+                    >
+                      {uploadingAvatar ? <i className="fas fa-spinner fa-spin" /> : <i className="fas fa-cloud-arrow-up" />}
+                      {uploadingAvatar ? 'Uploading to Cloudinary…' : 'Upload Photo'}
+                      <input
+                        id="settings-avatar-upload"
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={handleAvatarUpload}
+                        disabled={uploadingAvatar}
+                      />
+                    </label>
+                    {avatarUrl && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveAvatar}
+                        disabled={uploadingAvatar}
+                        className="btn btn-ghost btn-sm"
+                        style={{
+                          borderRadius: 9999,
+                          color: '#EF4444',
+                          borderColor: 'rgba(239, 68, 68, 0.4)',
+                          fontWeight: 700,
+                          padding: '6px 16px',
+                        }}
+                      >
+                        Remove Photo
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Enterprise Domain Account Badge */}
+              <div style={{ background: isLightMode ? '#EFF6FF' : 'rgba(59, 130, 246, 0.1)', border: `1px solid ${isLightMode ? '#BFDBFE' : 'rgba(59, 130, 246, 0.3)'}`, borderRadius: 14, padding: '12px 18px', textAlign: 'right' }}>
+                <small style={{ fontSize: '.68rem', color: isLightMode ? '#1E40AF' : '#93C5FD', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em', display: 'block' }}>
+                  ENTERPRISE DOMAIN IDENTITY
+                </small>
+                <span style={{ fontSize: '.9rem', fontWeight: 800, color: isLightMode ? '#1E3A8A' : '#BFDBFE', display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                  <i className="fas fa-shield-halved" style={{ color: '#10B981' }} />
+                  {adminProfileState.domainAccount || 'admin@janddbeachhouse.ph'}
+                </span>
+                <span style={{ fontSize: '.72rem', color: isLightMode ? '#475569' : '#94A3B8', marginTop: 2, display: 'block' }}>
+                  Security Clearance: Tier-1 Master Access
+                </span>
               </div>
             </div>
-          </div>
-
-          {/* Enterprise Domain Account Badge */}
-          <div style={{ background: isLightMode ? '#EFF6FF' : 'rgba(59, 130, 246, 0.1)', border: `1px solid ${isLightMode ? '#BFDBFE' : 'rgba(59, 130, 246, 0.3)'}`, borderRadius: 14, padding: '12px 18px', textAlign: 'right' }}>
-            <small style={{ fontSize: '.68rem', color: isLightMode ? '#1E40AF' : '#93C5FD', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em', display: 'block' }}>
-              ENTERPRISE DOMAIN IDENTITY
-            </small>
-            <span style={{ fontSize: '.9rem', fontWeight: 800, color: isLightMode ? '#1E3A8A' : '#BFDBFE', display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-              <i className="fas fa-shield-halved" style={{ color: '#10B981' }} />
-              {adminProfileState.domainAccount || 'admin@janddbeachhouse.ph'}
-            </span>
-            <span style={{ fontSize: '.72rem', color: isLightMode ? '#475569' : '#94A3B8', marginTop: 2, display: 'block' }}>
-              Security Clearance: Tier-1 Master Access
-            </span>
-          </div>
-        </div>
+          );
+        })()}
 
         {/* 1. Identity & Contact Information */}
         <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.5)', border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 22 }}>

@@ -10,6 +10,7 @@ import { pingSMS } from '../lib/sms.js';
 import { sendRecoveryOTP, sendPasswordResetSuccess, sendSignup2FAOTP, sendWelcomeClientEmail, sendSignupExpiredEmail } from '../lib/mailer.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
 import { checkBruteForceLockout, recordFailedAttempt, recordSuccessfulAttempt } from '../middleware/bruteForceGuard.js';
+import { hashPassword, verifyPassword } from '../lib/passwords.js';
 
 const r = Router();
 
@@ -124,13 +125,20 @@ r.post('/auth/admin-login', asyncH(async (req, res) => {
         `email.ilike.${localPart}@rockview.ph`,
         `email.ilike.${localPart}@rockviewresort.ph`,
       ];
-      const { data: empMatch, error: empErr } = await admin
+      const { data: empsFound, error: empErr } = await admin
         .from('employee_accounts')
         .select('*')
         .or(empCandidates.join(','))
-        .eq('password', rawPass)
-        .eq('is_active', true)
-        .maybeSingle();
+        .eq('is_active', true);
+
+      const empMatch = (empsFound || []).find((e) => verifyPassword(rawPass, e.password));
+
+      if (empMatch && !empMatch.password.startsWith('scrypt:')) {
+        await admin.from('employee_accounts')
+          .update({ password: hashPassword(rawPass) })
+          .eq('id', empMatch.id)
+          .catch(() => {});
+      }
 
       if (empMatch) {
         authData = {
@@ -1222,7 +1230,7 @@ r.post('/auth/reset-password',
     let empUpdated = false;
     try {
       const { error: empErr } = await admin.from('employee_accounts')
-        .update({ password: new_password })
+        .update({ password: hashPassword(new_password) })
         .or(`email.ilike.${cleanEmail},auth_user_id.eq.${userId || '00000000-0000-0000-0000-000000000000'}`);
       if (!empErr) empUpdated = true;
     } catch {}
