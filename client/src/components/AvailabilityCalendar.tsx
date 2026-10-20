@@ -224,9 +224,6 @@ export default function AvailabilityCalendar({
     const endMonth = endD.toLocaleDateString('en-US', { month: 'short' });
     const year = endD.getFullYear();
 
-    if (startMonth === endMonth) {
-      return `${startMonth} ${startD.getDate()} – ${endMonth} ${endD.getDate()}, ${year}`;
-    }
     return `${startMonth} ${startD.getDate()} – ${endMonth} ${endD.getDate()}, ${year}`;
   }, [daysArray]);
 
@@ -402,7 +399,7 @@ export default function AvailabilityCalendar({
     }
   };
 
-  // Calculate stay bar horizontal coordinates across the 7 columns
+  // Calculate stay bar coordinates directly within .pms-days-track (0% to 100%)
   const getStayBarStyle = (stay: CalendarStay) => {
     const startIdx = daysArray.findIndex((d) => d.dateStr === stay.checkIn);
     const endIdx = daysArray.findIndex((d) => d.dateStr === stay.checkOut);
@@ -418,7 +415,7 @@ export default function AvailabilityCalendar({
     const widthPercent = (spanDays / NUM_DAYS) * 100;
 
     return {
-      left: `calc(88px + ${leftPercent}% + 2px)`,
+      left: `calc(${leftPercent}% + 2px)`,
       width: `calc(${widthPercent}% - 4px)`,
       spanDays,
     };
@@ -458,7 +455,7 @@ export default function AvailabilityCalendar({
 
           <h2 className="pms-date-title">{dateRangeLabel}</h2>
 
-          {/* Real-time Inline Metrics: 8 arriving today  2 departing  22 stays in view */}
+          {/* Real-time Inline Metrics */}
           <div className="pms-metrics-group">
             <div>
               <span className="pms-metric-val">{metrics.arriving}</span> arriving today
@@ -496,20 +493,21 @@ export default function AvailabilityCalendar({
           {/* HEADER ROW: UNIT + 7 DAYS */}
           <div className="pms-grid-header">
             <div className="pms-col-unit-header">UNIT</div>
-
-            {daysArray.map((day) => (
-              <div
-                key={day.dateStr}
-                className={`pms-day-header-cell ${day.isToday ? 'is-today' : ''}`}
-              >
-                <div className="pms-day-name">{day.dayOfWeek}</div>
-                {day.isToday ? (
-                  <div className="pms-day-num-today-badge">{day.dayNum}</div>
-                ) : (
-                  <div className="pms-day-num">{day.dayNum}</div>
-                )}
-              </div>
-            ))}
+            <div className="pms-days-header-track">
+              {daysArray.map((day) => (
+                <div
+                  key={day.dateStr}
+                  className={`pms-day-header-cell ${day.isToday ? 'is-today' : ''}`}
+                >
+                  <div className="pms-day-name">{day.dayOfWeek}</div>
+                  {day.isToday ? (
+                    <div className="pms-day-num-today-badge">{day.dayNum}</div>
+                  ) : (
+                    <div className="pms-day-num">{day.dayNum}</div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* PHYSICAL UNIT ROWS (Unit 1 to Unit 18) */}
@@ -527,58 +525,60 @@ export default function AvailabilityCalendar({
                   {unit.name}
                 </div>
 
-                {/* 7 Days Slots */}
-                {daysArray.map((day) => {
-                  const isSelected = selectedCell?.unitId === unit.id && selectedCell?.dateStr === day.dateStr;
+                {/* 7 Days Slots & Floating Stay Pills */}
+                <div className="pms-days-track">
+                  {daysArray.map((day) => {
+                    const isSelected = selectedCell?.unitId === unit.id && selectedCell?.dateStr === day.dateStr;
 
-                  return (
-                    <div
-                      key={day.dateStr}
-                      className={`pms-cell ${day.isToday ? 'is-today' : ''}`}
-                      onClick={() => handleCellClick(unit.id, day.dateStr)}
-                    >
-                      {isSelected && (
-                        <div
-                          style={{
-                            position: 'absolute',
-                            inset: 3,
-                            border: '1.5px solid #6366F1',
-                            background: 'rgba(99, 102, 241, 0.08)',
-                            borderRadius: 4,
-                            pointerEvents: 'none',
-                          }}
-                        />
-                      )}
-                    </div>
-                  );
-                })}
+                    return (
+                      <div
+                        key={day.dateStr}
+                        className={`pms-cell ${day.isToday ? 'is-today' : ''}`}
+                        onClick={() => handleCellClick(unit.id, day.dateStr)}
+                      >
+                        {isSelected && (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              inset: 2,
+                              border: '1.5px solid #6366F1',
+                              background: 'rgba(99, 102, 241, 0.08)',
+                              borderRadius: 4,
+                              pointerEvents: 'none',
+                            }}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
 
-                {/* Overlaid Stay Pills */}
-                {unitStays.map((stay) => {
-                  const { left, width, spanDays } = getStayBarStyle(stay);
+                  {/* Overlaid Stay Pills */}
+                  {unitStays.map((stay) => {
+                    const { left, width, spanDays } = getStayBarStyle(stay);
 
-                  return (
-                    <div
-                      key={stay.id}
-                      className={`pms-stay-pill pms-stay-${stay.status}`}
-                      style={{ left, width }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleBookingClick(stay);
-                      }}
-                      title={`${stay.guestName} (${stay.checkIn} to ${stay.checkOut}) · Status: ${stay.status}`}
-                    >
-                      <span className="pms-stay-name">{stay.guestName}</span>
-                      {spanDays >= 2 ? (
-                        <span className="pms-stay-time">
-                          {stay.checkInTime} → {stay.checkOutTime}
-                        </span>
-                      ) : (
-                        <span className="pms-stay-time">{stay.checkInTime}</span>
-                      )}
-                    </div>
-                  );
-                })}
+                    return (
+                      <div
+                        key={stay.id}
+                        className={`pms-stay-pill pms-stay-${stay.status}`}
+                        style={{ left, width }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleBookingClick(stay);
+                        }}
+                        title={`${stay.guestName} (${stay.checkIn} to ${stay.checkOut}) · Status: ${stay.status}`}
+                      >
+                        <span className="pms-stay-name">{stay.guestName}</span>
+                        {spanDays >= 2 ? (
+                          <span className="pms-stay-time">
+                            {stay.checkInTime} → {stay.checkOutTime}
+                          </span>
+                        ) : (
+                          <span className="pms-stay-time">{stay.checkInTime}</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             );
           })}
@@ -599,41 +599,43 @@ export default function AvailabilityCalendar({
                   </span>
                 </div>
 
-                {/* 7 Days Slots */}
-                {daysArray.map((day) => (
-                  <div
-                    key={day.dateStr}
-                    className={`pms-cell ${day.isToday ? 'is-today' : ''}`}
-                    onClick={() => handleCellClick('unassigned', day.dateStr)}
-                  />
-                ))}
-
-                {/* Overlaid Unassigned Stay Pills */}
-                {rowStays.map((stay) => {
-                  const { left, width, spanDays } = getStayBarStyle(stay);
-
-                  return (
+                {/* 7 Days Slots & Floating Stay Pills */}
+                <div className="pms-days-track">
+                  {daysArray.map((day) => (
                     <div
-                      key={stay.id}
-                      className={`pms-stay-pill pms-stay-${stay.status}`}
-                      style={{ left, width }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleBookingClick(stay);
-                      }}
-                      title={`[Unassigned] ${stay.guestName} (${stay.checkIn} to ${stay.checkOut}) · Status: ${stay.status}`}
-                    >
-                      <span className="pms-stay-name">{stay.guestName}</span>
-                      {spanDays >= 2 ? (
-                        <span className="pms-stay-time">
-                          {stay.checkInTime} → {stay.checkOutTime}
-                        </span>
-                      ) : (
-                        <span className="pms-stay-time">{stay.checkInTime}</span>
-                      )}
-                    </div>
-                  );
-                })}
+                      key={day.dateStr}
+                      className={`pms-cell ${day.isToday ? 'is-today' : ''}`}
+                      onClick={() => handleCellClick('unassigned', day.dateStr)}
+                    />
+                  ))}
+
+                  {/* Overlaid Unassigned Stay Pills */}
+                  {rowStays.map((stay) => {
+                    const { left, width, spanDays } = getStayBarStyle(stay);
+
+                    return (
+                      <div
+                        key={stay.id}
+                        className={`pms-stay-pill pms-stay-${stay.status}`}
+                        style={{ left, width }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleBookingClick(stay);
+                        }}
+                        title={`[Unassigned] ${stay.guestName} (${stay.checkIn} to ${stay.checkOut}) · Status: ${stay.status}`}
+                      >
+                        <span className="pms-stay-name">{stay.guestName}</span>
+                        {spanDays >= 2 ? (
+                          <span className="pms-stay-time">
+                            {stay.checkInTime} → {stay.checkOutTime}
+                          </span>
+                        ) : (
+                          <span className="pms-stay-time">{stay.checkInTime}</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             );
           })}
