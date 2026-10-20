@@ -2771,50 +2771,51 @@ export default function Admin() {
                   </div>
                 </div>
 
-                {/* ROW 2: FULL-WIDTH RESORT AVAILABILITY & OCCUPANCY CALENDAR */}
-                <div style={{ marginBottom: 24, width: '100%' }}>
-                  <AvailabilityCalendar
-                    rooms={roomsList}
-                    bookings={allBookings}
-                    isLightMode={isLightMode}
-                    onNewBooking={() => {
-                      const activeRoom = roomsList[0];
-                      setNewReservation((prev) => ({
-                        ...prev,
-                        room_id: prev.room_id || activeRoom?.id || '',
-                        check_in: prev.check_in || '2026-10-20',
-                        check_out: prev.check_out || '2026-10-21',
-                        total_php: activeRoom?.rate_php || 3500,
-                      }));
-                      setShowAddReservationModal(true);
-                    }}
-                    onSelectBooking={(stay) => {
-                      const foundBooking = allBookings.find((b: any) => b.id === stay.id);
-                      if (foundBooking) {
-                        toast(`Selected reservation for ${stay.guestName} (${stay.unitName})`);
-                      }
-                    }}
-                    onSelectDates={(cin, cout, targetRoomId, unitInfo) => {
-                      const activeRoom = (targetRoomId ? roomsList.find((r) => r.id === targetRoomId) : null) || roomsList.find((r) => r.id === newReservation.room_id) || roomsList[0];
-                      const nights = Math.max(1, Math.round((new Date(cout).getTime() - new Date(cin).getTime()) / 86400000));
-                      const unitTag = unitInfo && unitInfo.unitNumber ? `[Unit ${unitInfo.unitNumber}]` : '';
-                      const cleanNotes = (newReservation.notes || '').replace(/\[Unit\s*\d+\]\s*/g, '').trim();
+                {/* ROW 2: AVAILABILITY CALENDAR (LEFT) + OPEN CONVERSATIONS (RIGHT) */}
+                <div className="admin-grid-split-2">
+                  {/* LEFT: RESORT AVAILABILITY & PMS CALENDAR */}
+                  <div style={{ minWidth: 0 }}>
+                    <AvailabilityCalendar
+                      rooms={roomsList}
+                      bookings={allBookings}
+                      isLightMode={isLightMode}
+                      onNewBooking={() => {
+                        const activeRoom = roomsList[0];
+                        setNewReservation((prev) => ({
+                          ...prev,
+                          room_id: prev.room_id || activeRoom?.id || '',
+                          check_in: prev.check_in || '2026-10-20',
+                          check_out: prev.check_out || '2026-10-21',
+                          total_php: activeRoom?.rate_php || 3500,
+                        }));
+                        setShowAddReservationModal(true);
+                      }}
+                      onSelectBooking={(stay) => {
+                        const foundBooking = allBookings.find((b: any) => b.id === stay.id);
+                        if (foundBooking) {
+                          toast(`Selected reservation for ${stay.guestName} (${stay.unitName})`);
+                        }
+                      }}
+                      onSelectDates={(cin, cout, targetRoomId, unitInfo) => {
+                        const activeRoom = (targetRoomId ? roomsList.find((r) => r.id === targetRoomId) : null) || roomsList.find((r) => r.id === newReservation.room_id) || roomsList[0];
+                        const nights = Math.max(1, Math.round((new Date(cout).getTime() - new Date(cin).getTime()) / 86400000));
+                        const unitTag = unitInfo && unitInfo.unitNumber ? `[Unit ${unitInfo.unitNumber}]` : '';
+                        const cleanNotes = (newReservation.notes || '').replace(/\[Unit\s*\d+\]\s*/g, '').trim();
 
-                      setNewReservation((prev) => ({
-                        ...prev,
-                        room_id: activeRoom?.id || prev.room_id || '',
-                        check_in: cin,
-                        check_out: cout,
-                        total_php: (activeRoom?.rate_php || 3500) * nights,
-                        notes: unitTag ? `${unitTag} ${cleanNotes}`.trim() : cleanNotes,
-                      }));
-                      setShowAddReservationModal(true);
-                    }}
-                  />
-                </div>
+                        setNewReservation((prev) => ({
+                          ...prev,
+                          room_id: activeRoom?.id || prev.room_id || '',
+                          check_in: cin,
+                          check_out: cout,
+                          total_php: (activeRoom?.rate_php || 3500) * nights,
+                          notes: unitTag ? `${unitTag} ${cleanNotes}`.trim() : cleanNotes,
+                        }));
+                        setShowAddReservationModal(true);
+                      }}
+                    />
+                  </div>
 
-                {/* ROW 3: OPEN CONVERSATIONS */}
-                <div style={{ marginBottom: 22 }}>
+                  {/* RIGHT: OPEN CONVERSATIONS PANEL */}
                   <div
                     className="panel panel-card"
                     style={{
@@ -2826,6 +2827,7 @@ export default function Admin() {
                       display: 'flex',
                       flexDirection: 'column',
                       justifyContent: 'space-between',
+                      minWidth: 0,
                     }}
                   >
                     <div>
