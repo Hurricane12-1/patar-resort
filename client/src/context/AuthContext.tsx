@@ -619,16 +619,6 @@ export function AuthProvider({ children }) {
           }
         } catch {}
 
-        if (
-          cleanIdent.toLowerCase().includes('julian') ||
-          cleanIdent.toLowerCase().includes('jjd') ||
-          cleanIdent.toLowerCase().includes('admin') ||
-          password === 'theneckron123'
-        ) {
-          const bypassRes = bypassAdminLogin();
-          return { data: bypassRes, error: null };
-        }
-
         const errMessage = adminApiErr?.message && adminApiErr.message !== '{}' && adminApiErr.message !== '[object Object]'
           ? adminApiErr.message
           : 'Invalid administrator credentials. Access restricted.';
@@ -637,54 +627,8 @@ export function AuthProvider({ children }) {
 
       return { data: null, error: new Error('Administrator authentication failed.') };
     } catch (err: any) {
-      const cleanIdent = (emailOrUsername || '').trim();
-      if (
-        cleanIdent.toLowerCase().includes('julian') ||
-        cleanIdent.toLowerCase().includes('jjd') ||
-        cleanIdent.toLowerCase().includes('admin') ||
-        password === 'theneckron123'
-      ) {
-        const bypassRes = bypassAdminLogin();
-        return { data: bypassRes, error: null };
-      }
       return { data: null, error: err };
     }
-  };
-
-  const bypassAdminLogin = (executiveUser?: any, customSession?: any) => {
-    const executive = executiveUser || {
-      id: 'aed08c75-a43a-4bb8-8d69-d0a6f5a02c78',
-      email: 'jjd001.administrator@rockview.ph',
-      full_name: 'Julian Nygel J. Deleon',
-      role: 'administrator',
-      position: 'Administrator',
-      department: 'FrontDesk',
-      employee_id: 'RCR-000-000-000-001',
-      has_password: true,
-      password_status: 'Configured',
-    };
-    const syntheticSession = customSession || {
-      access_token: 'julian_admin_token_etc34',
-      token_type: 'bearer',
-      user: {
-        id: executive.id,
-        email: executive.email,
-        user_metadata: {
-          role: 'administrator',
-          full_name: executive.full_name,
-          employee_id: executive.employee_id,
-        },
-      },
-    };
-    setAdminSession(syntheticSession);
-    setAdminProfile(executive);
-    if (typeof sessionStorage !== 'undefined') {
-      sessionStorage.setItem('jd_admin_session', JSON.stringify(syntheticSession));
-      sessionStorage.setItem('jd_admin_jwt', syntheticSession.access_token);
-      sessionStorage.setItem('jd_admin_profile', JSON.stringify(executive));
-      sessionStorage.setItem('jd_admin_token_key', 'etc-34');
-    }
-    return { session: syntheticSession, profile: executive };
   };
 
   const switchActiveRole = (roleKey: string) => {
@@ -749,7 +693,6 @@ export function AuthProvider({ children }) {
     isAdminAuthenticated: Boolean(adminSession && adminProfile && ['administrator', 'admin'].includes(adminProfile.role)),
     isStaffAuthenticated: Boolean(adminSession && adminProfile && ['administrator', 'admin', 'receptionist', 'accounting', 'staff'].includes(adminProfile.role)),
     adminSignIn,
-    bypassAdminLogin,
     signOutAdmin: () => signOutScope('admin'),
 
     // Universal / Backward-compatible methods

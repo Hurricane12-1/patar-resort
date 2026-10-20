@@ -294,8 +294,6 @@ export const api = {
     req('/auth/login', { method: 'POST', body: credentials }),
   adminLogin: (credentials: { email?: string; username?: string; identifier?: string; identity?: string; password: string; tokenIdKey?: string; position?: string }) =>
     req('/auth/admin-login', { method: 'POST', body: credentials }),
-  adminBypass: () =>
-    req('/auth/admin-bypass', { method: 'POST', body: { token_id_key: 'etc-34' } }),
   logout: () => req<{ success: boolean; message: string }>('/auth/logout', { method: 'POST' }).catch(() => ({ success: true, message: 'Session purged' })),
   me: async () => {
     try {
