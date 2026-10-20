@@ -154,8 +154,8 @@ export default function Admin() {
           {state.activeTab === 'conversations' && (
             <ExecutiveGuestConversationsPanel
               {...themeProps}
-              selectedGuest={state.selectedPanelGuest}
-              onSelectGuest={state.setSelectedPanelGuest}
+              initialGuest={state.selectedPanelGuest}
+              conversations={state.guestConversations}
             />
           )}
 

@@ -86,6 +86,8 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
   const [reservationFilter, setReservationFilter] = useState<string>('all');
   const [reservationSearch, setReservationSearch] = useState<string>('');
   const [folioViewLimit, setFolioViewLimit] = useState<number | 'all'>(25);
+  const [editingBooking, setEditingBooking] = useState<any>(null);
+  const [savingBookingEdit, setSavingBookingEdit] = useState<boolean>(false);
 
   const [ledgerAccountFilter, setLedgerAccountFilter] = useState<string>('');
   const [ledgerCategoryFilter, setLedgerCategoryFilter] = useState<string>('');
@@ -756,6 +758,28 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                       </td>
                       <td>
                         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                          <button
+                            className="act-btn"
+                            onClick={() =>
+                              setEditingBooking({
+                                ...b,
+                                guest_name: b.guest_name || b.profiles?.full_name || 'Guest',
+                                phone: b.phone || b.profiles?.phone || '',
+                                room_id: b.room_id || activeRoomsList[0]?.id || '',
+                                check_in: (b.check_in || '').slice(0, 10),
+                                check_out: (b.check_out || '').slice(0, 10),
+                                guests: b.guests || 2,
+                                total_php: b.total_php || 3500,
+                                status: b.status || 'confirmed',
+                                payment_method: b.payment_method || 'GCash',
+                                notes: b.notes || '',
+                              })
+                            }
+                            style={{ color: '#4F46E5', borderColor: '#4F46E5', background: 'rgba(79,70,229,0.08)' }}
+                            title="Edit reservation details, dates, room, or status"
+                          >
+                            <i className="fas fa-pen-to-square" /> Edit
+                          </button>
                           {/* Official Receipt & Folio Generator */}
                           <button
                             className="act-btn"
@@ -880,6 +904,219 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
               toast(`✦ ${unitInfo?.name || activeRoom?.name || 'Unit'} selected: Check-in (${fmtDate(cin)}) and Check-out (${fmtDate(cout)})`);
             }}
           />
+        </div>
+      )}
+
+      {/* EDIT BOOKING MODAL (FROM LIST VIEW) */}
+      {editingBooking && (
+        <div
+          onClick={() => setEditingBooking(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: 16,
+          }}
+        >
+          <form
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={async (e) => {
+              e.preventDefault();
+              try {
+                setSavingBookingEdit(true);
+                await api.updateReservation(editingBooking.id, {
+                  guest_name: editingBooking.guest_name,
+                  phone: editingBooking.phone,
+                  room_id: editingBooking.room_id,
+                  check_in: editingBooking.check_in,
+                  check_out: editingBooking.check_out,
+                  guests: Number(editingBooking.guests) || 2,
+                  total_php: Number(editingBooking.total_php) || 3500,
+                  status: editingBooking.status,
+                  payment_method: editingBooking.payment_method,
+                  notes: editingBooking.notes,
+                });
+                toast(`✦ Updated booking for ${editingBooking.guest_name}!`);
+                setEditingBooking(null);
+                refreshReservations();
+              } catch (err: any) {
+                toast(err.message || 'Could not update booking', true);
+              } finally {
+                setSavingBookingEdit(false);
+              }
+            }}
+            style={{
+              background: isLightMode ? '#FFFFFF' : '#0F172A',
+              color: themeText,
+              border: `1px solid ${themeBorder}`,
+              borderRadius: 16,
+              maxWidth: 520,
+              width: '100%',
+              padding: 24,
+              boxShadow: '0 20px 40px rgba(0,0,0,0.25)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div>
+                <span style={{ fontSize: '.72rem', fontWeight: 800, color: '#4F46E5', textTransform: 'uppercase', letterSpacing: '.06em' }}>
+                  RESERVATION EDITOR
+                </span>
+                <h3 style={{ margin: '2px 0 0', fontSize: '1.25rem', fontWeight: 800 }}>
+                  Edit Booking Folio #{String(editingBooking.id).slice(0, 8)}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingBooking(null)}
+                style={{ background: 'transparent', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: themeMuted }}
+              >
+                <i className="fas fa-xmark" />
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <span style={{ fontSize: '.76rem', fontWeight: 700, color: themeMuted }}>Guest Full Name</span>
+                <input
+                  required
+                  value={editingBooking.guest_name || ''}
+                  onChange={(e) => setEditingBooking({ ...editingBooking, guest_name: e.target.value })}
+                  style={{ padding: '8px 10px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : '#1E293B', color: themeText }}
+                />
+              </label>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <span style={{ fontSize: '.76rem', fontWeight: 700, color: themeMuted }}>Contact Phone</span>
+                <input
+                  value={editingBooking.phone || ''}
+                  onChange={(e) => setEditingBooking({ ...editingBooking, phone: e.target.value })}
+                  style={{ padding: '8px 10px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : '#1E293B', color: themeText }}
+                />
+              </label>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <span style={{ fontSize: '.76rem', fontWeight: 700, color: themeMuted }}>Accommodation Room</span>
+                <select
+                  value={editingBooking.room_id || ''}
+                  onChange={(e) => setEditingBooking({ ...editingBooking, room_id: e.target.value })}
+                  style={{ padding: '8px 10px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : '#1E293B', color: themeText }}
+                >
+                  {roomsList.map((r: any) => (
+                    <option key={r.id} value={r.id}>
+                      {r.name} ({money(r.rate_php)}/night)
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <span style={{ fontSize: '.76rem', fontWeight: 700, color: themeMuted }}>Reservation Status</span>
+                <select
+                  value={editingBooking.status || 'confirmed'}
+                  onChange={(e) => setEditingBooking({ ...editingBooking, status: e.target.value })}
+                  style={{ padding: '8px 10px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : '#1E293B', color: themeText, fontWeight: 700 }}
+                >
+                  <option value="confirmed">Confirmed</option>
+                  <option value="pending">Pending</option>
+                  <option value="checked_in">Checked In</option>
+                  <option value="checked_out">Checked Out</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </label>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <span style={{ fontSize: '.76rem', fontWeight: 700, color: themeMuted }}>Check-in Date</span>
+                <input
+                  type="date"
+                  required
+                  value={editingBooking.check_in || ''}
+                  onChange={(e) => setEditingBooking({ ...editingBooking, check_in: e.target.value })}
+                  style={{ padding: '8px 10px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : '#1E293B', color: themeText }}
+                />
+              </label>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <span style={{ fontSize: '.76rem', fontWeight: 700, color: themeMuted }}>Check-out Date</span>
+                <input
+                  type="date"
+                  required
+                  value={editingBooking.check_out || ''}
+                  onChange={(e) => setEditingBooking({ ...editingBooking, check_out: e.target.value })}
+                  style={{ padding: '8px 10px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : '#1E293B', color: themeText }}
+                />
+              </label>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <span style={{ fontSize: '.76rem', fontWeight: 700, color: themeMuted }}>Guests</span>
+                <input
+                  type="number"
+                  min={1}
+                  value={editingBooking.guests || 2}
+                  onChange={(e) => setEditingBooking({ ...editingBooking, guests: Number(e.target.value) })}
+                  style={{ padding: '8px 10px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : '#1E293B', color: themeText }}
+                />
+              </label>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <span style={{ fontSize: '.76rem', fontWeight: 700, color: themeMuted }}>Payment Method</span>
+                <select
+                  value={editingBooking.payment_method || 'GCash'}
+                  onChange={(e) => setEditingBooking({ ...editingBooking, payment_method: e.target.value })}
+                  style={{ padding: '8px 10px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : '#1E293B', color: themeText }}
+                >
+                  <option value="GCash">GCash</option>
+                  <option value="Cash">Cash</option>
+                  <option value="Maya">Maya</option>
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="Card">Card</option>
+                </select>
+              </label>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <span style={{ fontSize: '.76rem', fontWeight: 700, color: themeMuted }}>Total Amount (₱)</span>
+                <input
+                  type="number"
+                  min={0}
+                  value={editingBooking.total_php || 0}
+                  onChange={(e) => setEditingBooking({ ...editingBooking, total_php: Number(e.target.value) })}
+                  style={{ padding: '8px 10px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : '#1E293B', color: '#10B981', fontWeight: 800 }}
+                />
+              </label>
+            </div>
+
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 18 }}>
+              <span style={{ fontSize: '.76rem', fontWeight: 700, color: themeMuted }}>Special Notes & Unit Tag</span>
+              <input
+                value={editingBooking.notes || ''}
+                onChange={(e) => setEditingBooking({ ...editingBooking, notes: e.target.value })}
+                placeholder="e.g. [Unit 2] Pool Pass included"
+                style={{ padding: '8px 10px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : '#1E293B', color: themeText }}
+              />
+            </label>
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setEditingBooking(null)}
+                style={{ padding: '10px 16px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: 'transparent', color: themeText, fontWeight: 600, cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={savingBookingEdit}
+                style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: '#4F46E5', color: '#FFF', fontWeight: 700, cursor: 'pointer' }}
+              >
+                {savingBookingEdit ? 'Saving…' : '💾 Save Changes'}
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </div>

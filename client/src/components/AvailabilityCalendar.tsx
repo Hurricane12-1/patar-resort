@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { toast } from './Toasts.tsx';
 import { money, fmtDate } from '../lib/format.ts';
 import { supabase } from '../lib/supabaseClient.ts';
+import { api } from '../lib/api.ts';
 import '../styles/availability-calendar.css';
 
 export interface CalendarStay {
@@ -101,6 +102,7 @@ export default function AvailabilityCalendar({
 
   const [selectedCell, setSelectedCell] = useState<{ unitId: string; dateStr: string } | null>(null);
   const [activeDetailStay, setActiveDetailStay] = useState<CalendarStay | null>(null);
+  const [savingBookingEdit, setSavingBookingEdit] = useState(false);
 
   // Real-Time Supabase Fetcher
   const fetchRealtimeData = useCallback(async () => {
@@ -730,7 +732,7 @@ export default function AvailabilityCalendar({
         </div>
       </div>
 
-      {/* 4. STAY DETAILS MODAL */}
+      {/* 4. INTERACTIVE STAY DETAILS & EDIT BOOKING MODAL */}
       {activeDetailStay && (
         <div
           onClick={() => setActiveDetailStay(null)}
@@ -750,19 +752,22 @@ export default function AvailabilityCalendar({
             onClick={(e) => e.stopPropagation()}
             style={{
               background: isLightMode ? '#FFFFFF' : '#0F172A',
+              color: isLightMode ? '#0F172A' : '#F8FAFC',
               border: `1px solid ${isLightMode ? '#E2E8F0' : '#334155'}`,
               borderRadius: 16,
-              maxWidth: 440,
+              maxWidth: 500,
               width: '100%',
               padding: '24px',
               boxShadow: '0 20px 40px rgba(0,0,0,0.25)',
               position: 'relative',
+              maxHeight: '90vh',
+              overflowY: 'auto',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
               <div>
-                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#4F46E5', textTransform: 'uppercase' }}>
-                  {activeDetailStay.unitName}
+                <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#4F46E5', textTransform: 'uppercase', letterSpacing: '.06em' }}>
+                  EDIT RESERVATION · {activeDetailStay.unitName}
                 </span>
                 <h3 style={{ margin: '2px 0 0', fontSize: '1.25rem', fontWeight: 800 }}>
                   {activeDetailStay.guestName}
@@ -783,36 +788,187 @@ export default function AvailabilityCalendar({
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: '0.85rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: isLightMode ? '#F8FAFC' : '#1E293B', borderRadius: 8 }}>
-                <span style={{ color: '#64748B' }}>Status</span>
-                <strong style={{ textTransform: 'capitalize', color: '#4F46E5' }}>{activeDetailStay.status.replace('_', ' ')}</strong>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: '0.85rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <span style={{ fontSize: '.74rem', fontWeight: 700, color: '#64748B' }}>Guest Name</span>
+                  <input
+                    value={activeDetailStay.guestName}
+                    onChange={(e) => setActiveDetailStay({ ...activeDetailStay, guestName: e.target.value })}
+                    style={{
+                      padding: '8px 10px',
+                      borderRadius: 8,
+                      border: `1px solid ${isLightMode ? '#CBD5E1' : '#334155'}`,
+                      background: isLightMode ? '#F8FAFC' : '#1E293B',
+                      color: isLightMode ? '#0F172A' : '#F8FAFC',
+                    }}
+                  />
+                </label>
+
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <span style={{ fontSize: '.74rem', fontWeight: 700, color: '#64748B' }}>Contact Phone</span>
+                  <input
+                    value={activeDetailStay.phone || ''}
+                    onChange={(e) => setActiveDetailStay({ ...activeDetailStay, phone: e.target.value })}
+                    style={{
+                      padding: '8px 10px',
+                      borderRadius: 8,
+                      border: `1px solid ${isLightMode ? '#CBD5E1' : '#334155'}`,
+                      background: isLightMode ? '#F8FAFC' : '#1E293B',
+                      color: isLightMode ? '#0F172A' : '#F8FAFC',
+                    }}
+                  />
+                </label>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: isLightMode ? '#F8FAFC' : '#1E293B', borderRadius: 8 }}>
-                <span style={{ color: '#64748B' }}>Check-in</span>
-                <strong>{activeDetailStay.checkIn} ({activeDetailStay.checkInTime})</strong>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <span style={{ fontSize: '.74rem', fontWeight: 700, color: '#64748B' }}>Assigned Unit</span>
+                  <select
+                    value={activeDetailStay.assignedUnitNumber || ''}
+                    onChange={(e) => {
+                      const uNum = e.target.value ? Number(e.target.value) : undefined;
+                      const matchedUnit = units.find((u) => u.unitNumber === uNum);
+                      const cleanNotes = (activeDetailStay.notes || '').replace(/\[?(?:Unit\s*|u)\d+\]?\s*/gi, '').trim();
+                      const nextNotes = uNum ? `[Unit ${uNum}] ${cleanNotes}`.trim() : cleanNotes;
+                      setActiveDetailStay({
+                        ...activeDetailStay,
+                        assignedUnitNumber: uNum,
+                        unitName: uNum ? `Unit ${uNum}` : 'Unassigned',
+                        roomId: matchedUnit?.roomId || activeDetailStay.roomId,
+                        notes: nextNotes,
+                      });
+                    }}
+                    style={{
+                      padding: '8px 10px',
+                      borderRadius: 8,
+                      border: `1px solid ${isLightMode ? '#CBD5E1' : '#334155'}`,
+                      background: isLightMode ? '#F8FAFC' : '#1E293B',
+                      color: isLightMode ? '#0F172A' : '#F8FAFC',
+                    }}
+                  >
+                    <option value="">Unassigned</option>
+                    {units.map((u) => (
+                      <option key={u.id} value={u.unitNumber}>
+                        {u.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <span style={{ fontSize: '.74rem', fontWeight: 700, color: '#64748B' }}>Booking Status</span>
+                  <select
+                    value={activeDetailStay.status}
+                    onChange={(e) => setActiveDetailStay({ ...activeDetailStay, status: e.target.value as any })}
+                    style={{
+                      padding: '8px 10px',
+                      borderRadius: 8,
+                      border: `1px solid ${isLightMode ? '#CBD5E1' : '#334155'}`,
+                      background: isLightMode ? '#F8FAFC' : '#1E293B',
+                      color: isLightMode ? '#0F172A' : '#F8FAFC',
+                      fontWeight: 700,
+                    }}
+                  >
+                    <option value="confirmed">Confirmed</option>
+                    <option value="pending">Pending</option>
+                    <option value="checked_in">Checked In</option>
+                    <option value="checked_out">Checked Out</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </label>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: isLightMode ? '#F8FAFC' : '#1E293B', borderRadius: 8 }}>
-                <span style={{ color: '#64748B' }}>Check-out</span>
-                <strong>{activeDetailStay.checkOut} ({activeDetailStay.checkOutTime})</strong>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <span style={{ fontSize: '.74rem', fontWeight: 700, color: '#64748B' }}>Check-in Date</span>
+                  <input
+                    type="date"
+                    value={activeDetailStay.checkIn}
+                    onChange={(e) => setActiveDetailStay({ ...activeDetailStay, checkIn: e.target.value })}
+                    style={{
+                      padding: '8px 10px',
+                      borderRadius: 8,
+                      border: `1px solid ${isLightMode ? '#CBD5E1' : '#334155'}`,
+                      background: isLightMode ? '#F8FAFC' : '#1E293B',
+                      color: isLightMode ? '#0F172A' : '#F8FAFC',
+                    }}
+                  />
+                </label>
+
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <span style={{ fontSize: '.74rem', fontWeight: 700, color: '#64748B' }}>Check-out Date</span>
+                  <input
+                    type="date"
+                    value={activeDetailStay.checkOut}
+                    onChange={(e) => setActiveDetailStay({ ...activeDetailStay, checkOut: e.target.value })}
+                    style={{
+                      padding: '8px 10px',
+                      borderRadius: 8,
+                      border: `1px solid ${isLightMode ? '#CBD5E1' : '#334155'}`,
+                      background: isLightMode ? '#F8FAFC' : '#1E293B',
+                      color: isLightMode ? '#0F172A' : '#F8FAFC',
+                    }}
+                  />
+                </label>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: isLightMode ? '#F8FAFC' : '#1E293B', borderRadius: 8 }}>
-                <span style={{ color: '#64748B' }}>Contact Phone</span>
-                <strong>{activeDetailStay.phone || 'N/A'}</strong>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <span style={{ fontSize: '.74rem', fontWeight: 700, color: '#64748B' }}>Payment Method</span>
+                  <select
+                    value={activeDetailStay.paymentMethod || 'GCash'}
+                    onChange={(e) => setActiveDetailStay({ ...activeDetailStay, paymentMethod: e.target.value })}
+                    style={{
+                      padding: '8px 10px',
+                      borderRadius: 8,
+                      border: `1px solid ${isLightMode ? '#CBD5E1' : '#334155'}`,
+                      background: isLightMode ? '#F8FAFC' : '#1E293B',
+                      color: isLightMode ? '#0F172A' : '#F8FAFC',
+                    }}
+                  >
+                    <option value="GCash">GCash</option>
+                    <option value="Cash">Cash</option>
+                    <option value="Maya">Maya</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
+                    <option value="Card">Credit / Debit Card</option>
+                  </select>
+                </label>
+
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <span style={{ fontSize: '.74rem', fontWeight: 700, color: '#64748B' }}>Total Amount (₱)</span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={activeDetailStay.totalPhp || 3500}
+                    onChange={(e) => setActiveDetailStay({ ...activeDetailStay, totalPhp: Number(e.target.value) })}
+                    style={{
+                      padding: '8px 10px',
+                      borderRadius: 8,
+                      border: `1px solid ${isLightMode ? '#CBD5E1' : '#334155'}`,
+                      background: isLightMode ? '#F8FAFC' : '#1E293B',
+                      color: '#10B981',
+                      fontWeight: 800,
+                    }}
+                  />
+                </label>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: isLightMode ? '#F8FAFC' : '#1E293B', borderRadius: 8 }}>
-                <span style={{ color: '#64748B' }}>Payment Method</span>
-                <strong>{activeDetailStay.paymentMethod || 'GCash'} ({activeDetailStay.paymentStatus || 'unpaid'})</strong>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: isLightMode ? '#F8FAFC' : '#1E293B', borderRadius: 8 }}>
-                <span style={{ color: '#64748B' }}>Total Booking</span>
-                <strong style={{ color: '#10B981', fontSize: '1rem' }}>{money(activeDetailStay.totalPhp || 3500)}</strong>
-              </div>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <span style={{ fontSize: '.74rem', fontWeight: 700, color: '#64748B' }}>Notes & Unit Tags</span>
+                <input
+                  value={activeDetailStay.notes || ''}
+                  onChange={(e) => setActiveDetailStay({ ...activeDetailStay, notes: e.target.value })}
+                  placeholder="e.g. [Unit 3] Pool Pass included"
+                  style={{
+                    padding: '8px 10px',
+                    borderRadius: 8,
+                    border: `1px solid ${isLightMode ? '#CBD5E1' : '#334155'}`,
+                    background: isLightMode ? '#F8FAFC' : '#1E293B',
+                    color: isLightMode ? '#0F172A' : '#F8FAFC',
+                  }}
+                />
+              </label>
             </div>
 
             <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
@@ -820,26 +976,46 @@ export default function AvailabilityCalendar({
                 type="button"
                 onClick={() => setActiveDetailStay(null)}
                 style={{
-                  flex: 1,
-                  padding: '10px',
+                  padding: '10px 14px',
                   borderRadius: 8,
                   border: `1px solid ${isLightMode ? '#CBD5E1' : '#334155'}`,
                   background: isLightMode ? '#FFFFFF' : '#1E293B',
+                  color: isLightMode ? '#0F172A' : '#F8FAFC',
                   fontWeight: 600,
                   cursor: 'pointer',
                 }}
               >
-                Close
+                Cancel
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setActiveDetailStay(null);
-                  if (onNewBooking) onNewBooking();
+                disabled={savingBookingEdit}
+                onClick={async () => {
+                  try {
+                    setSavingBookingEdit(true);
+                    await api.updateReservation(activeDetailStay.id, {
+                      guest_name: activeDetailStay.guestName,
+                      phone: activeDetailStay.phone,
+                      room_id: activeDetailStay.roomId || undefined,
+                      check_in: activeDetailStay.checkIn,
+                      check_out: activeDetailStay.checkOut,
+                      status: activeDetailStay.status,
+                      payment_method: activeDetailStay.paymentMethod,
+                      total_php: activeDetailStay.totalPhp,
+                      notes: activeDetailStay.notes,
+                    });
+                    toast(`✦ Updated booking for ${activeDetailStay.guestName}!`);
+                    setActiveDetailStay(null);
+                    fetchRealtimeData();
+                  } catch (err: any) {
+                    toast(err.message || 'Could not update booking', true);
+                  } finally {
+                    setSavingBookingEdit(false);
+                  }
                 }}
                 style={{
                   flex: 1,
-                  padding: '10px',
+                  padding: '10px 14px',
                   borderRadius: 8,
                   border: 'none',
                   background: '#4F46E5',
@@ -848,7 +1024,7 @@ export default function AvailabilityCalendar({
                   cursor: 'pointer',
                 }}
               >
-                + New Booking
+                {savingBookingEdit ? 'Saving…' : '💾 Save Booking Changes'}
               </button>
             </div>
           </div>

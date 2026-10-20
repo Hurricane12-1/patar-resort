@@ -275,7 +275,7 @@ export function useAdminState() {
 
   const refreshRoomsAndInventory = useCallback(() => {
     setLoadingRoomsAndInv(true);
-    Promise.all([api.rooms(false), api.departmentInventory()])
+    Promise.all([api.rooms(true), api.departmentInventory()])
       .then(([r, inv]) => {
         setRoomsList(Array.isArray(r) ? r : []);
         setInventoryList(Array.isArray(inv) ? inv : []);
@@ -579,7 +579,7 @@ export function useAdminState() {
         api.analyticsOverview().catch(() => null),
         api.allReservations().catch(() => null),
         api.myNotifications().catch(() => null),
-        api.rooms(false).catch(() => null),
+        api.rooms(true).catch(() => null),
         api.departmentInventory().catch(() => null),
         api.conversations().catch(() => null),
       ]);
@@ -1332,6 +1332,8 @@ export function useAdminState() {
         .finally(() => live && setLoading(false));
 
       refreshReservations();
+      refreshRoomsAndInventory();
+      refreshLedgerEntries();
 
       api
         .myNotifications()
@@ -1343,37 +1345,43 @@ export function useAdminState() {
         .then((conv) => live && Array.isArray(conv) && setGuestConversations(conv))
         .catch(() => {});
 
-      supabase.auth.getSession().then(({ data: authData }) => {
-        const token =
-          (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_jwt') : null) ||
-          localStorage.getItem('jd_admin_jwt') ||
-          authData?.session?.access_token;
-        const key =
-          (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_token_key') : null) ||
-          localStorage.getItem('jd_admin_token_key') ||
-          'etc-34';
-        if (token) {
-          const streamUrl = API_BASE
-            ? `${API_BASE}/api/analytics/stream?token=${encodeURIComponent(token)}&admin_token_key=${encodeURIComponent(key)}`
-            : `/api/analytics/stream?token=${encodeURIComponent(token)}&admin_token_key=${encodeURIComponent(key)}`;
-          try {
-            es = new EventSource(streamUrl);
-            es.onmessage = (e) => {
-              if (!live) return;
-              try {
-                const ov = JSON.parse(e.data);
-                setData((prev: any) => (prev ? { ...prev, overview: ov } : prev));
-              } catch {}
-            };
-            es.onerror = () => {
-              if (es) {
-                es.close();
-                es = null;
-              }
-            };
-          } catch {}
-        }
-      });
+      const isLocal =
+        typeof window !== 'undefined' &&
+        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+      if (API_BASE || isLocal) {
+        supabase.auth.getSession().then(({ data: authData }) => {
+          const token =
+            (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_jwt') : null) ||
+            localStorage.getItem('jd_admin_jwt') ||
+            authData?.session?.access_token;
+          const key =
+            (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_token_key') : null) ||
+            localStorage.getItem('jd_admin_token_key') ||
+            'etc-34';
+          if (token) {
+            const streamUrl = API_BASE
+              ? `${API_BASE}/api/analytics/stream?token=${encodeURIComponent(token)}&admin_token_key=${encodeURIComponent(key)}`
+              : `/api/analytics/stream?token=${encodeURIComponent(token)}&admin_token_key=${encodeURIComponent(key)}`;
+            try {
+              es = new EventSource(streamUrl);
+              es.onmessage = (e) => {
+                if (!live) return;
+                try {
+                  const ov = JSON.parse(e.data);
+                  setData((prev: any) => (prev ? { ...prev, overview: ov } : prev));
+                } catch {}
+              };
+              es.onerror = () => {
+                if (es) {
+                  es.close();
+                  es = null;
+                }
+              };
+            } catch {}
+          }
+        });
+      }
 
       return () => {
         live = false;
@@ -1382,7 +1390,7 @@ export function useAdminState() {
     } else {
       setLoading(false);
     }
-  }, [isAdministrator, profile, refreshReservations]);
+  }, [isAdministrator, profile, refreshReservations, refreshRoomsAndInventory, refreshLedgerEntries]);
 
   // Auto-reload every 20s
   useEffect(() => {
