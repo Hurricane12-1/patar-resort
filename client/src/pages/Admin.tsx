@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useAuth, generateAccountEmail, isSystemOwnerEmail } from '../context/AuthContext.tsx';
 import '../styles/admin.css';
 import { AreaLineChart, MultiBarChart, Sparkline } from '../components/Charts.tsx';
@@ -1078,7 +1078,7 @@ export default function Admin() {
               alignItems: 'center',
               gap: 8,
             }}>
-              <span>⚠️</span>
+              <i className="fas fa-triangle-exclamation" />
               <span>{authError}</span>
             </div>
           )}
@@ -1248,6 +1248,19 @@ export default function Admin() {
     return false;
   })();
 
+  const isSelectedUnitTaken = (() => {
+    const m = (newReservation.notes || '').match(/\[Unit\s*(\d+)\]/i);
+    if (!m || !newReservation.room_id || !newReservation.check_in || !newReservation.check_out) return false;
+    const uNum = m[1];
+    return reservationsList.some((b: any) =>
+      b.room_id === newReservation.room_id &&
+      ['pending', 'confirmed', 'checked_in'].includes(b.status) &&
+      b.check_in < newReservation.check_out &&
+      b.check_out > newReservation.check_in &&
+      (b.notes || '').includes(`[Unit ${uNum}]`)
+    );
+  })();
+
   async function handleCreateReservation(e: React.FormEvent) {
     e.preventDefault();
     setCreatingReservation(true);
@@ -1256,7 +1269,11 @@ export default function Admin() {
         throw new Error('Please select a room.');
       }
       if (isModalRoomLocked) {
-        throw new Error('This room is already reserved / locked in for those dates. Overbooking is strictly prevented.');
+        throw new Error('All units for this accommodation are already booked for those dates. Overbooking is strictly prevented.');
+      }
+      if (isSelectedUnitTaken) {
+        const m = (newReservation.notes || '').match(/\[Unit\s*(\d+)\]/i);
+        throw new Error(`Unit ${m ? m[1] : ''} is already reserved for these dates. Please pick another unit or choose auto-assign.`);
       }
       if (!newReservation.guest_name.trim()) {
         throw new Error('Please enter guest full name.');
@@ -1787,6 +1804,39 @@ export default function Admin() {
     nights: b.nights || Math.max(1, Math.round((new Date(b.check_out).getTime() - new Date(b.check_in).getTime()) / 86400000)),
   }));
 
+  // Real-time daily room revenue across October 2026 derived from live Supabase bookings and daily analytics
+  const octoberSalesData = useMemo(() => {
+    const daysInOct = 31;
+    const days = [];
+    for (let day = 1; day <= daysInOct; day++) {
+      const dStr = `2026-10-${String(day).padStart(2, '0')}`;
+      let revOnDay = 0;
+      let bookingsOnDay = 0;
+      allBookings.forEach((b: any) => {
+        if (b.status === 'cancelled') return;
+        if (b.check_in <= dStr && b.check_out >= dStr) {
+          const nights = Math.max(1, Math.round((new Date(b.check_out).getTime() - new Date(b.check_in).getTime()) / 86400000));
+          const dailyRate = (Number(b.total_php) || 0) / nights;
+          revOnDay += dailyRate;
+          bookingsOnDay += 1;
+        }
+      });
+      const apiDaily = data.daily?.find((d: any) => d.date === dStr);
+      if (apiDaily && apiDaily.revenue_php > 0) {
+        revOnDay = Math.max(revOnDay, Number(apiDaily.revenue_php));
+        bookingsOnDay = Math.max(bookingsOnDay, Number(apiDaily.bookings));
+      }
+      days.push({
+        date: dStr,
+        day,
+        label: `Oct ${day}`,
+        revenue: Math.round(revOnDay),
+        value: bookingsOnDay,
+      });
+    }
+    return days;
+  }, [allBookings, data.daily]);
+
   const filteredBookings = allBookings.filter((b: any) => {
     if (reservationFilter !== 'all' && b.status !== reservationFilter) return false;
     if (reservationSearch.trim()) {
@@ -1905,7 +1955,7 @@ export default function Admin() {
                 title="Hide sidebar menu completely"
                 aria-label="Hide sidebar menu"
               >
-                ✕
+                <i className="fas fa-xmark" />
               </button>
             )}
           </div>
@@ -2023,7 +2073,7 @@ export default function Admin() {
               margin: '0 auto',
             }}
           >
-            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 18 }}>❓</span>
+            <i className="fas fa-circle-question" style={{ width: 18, textAlign: "center" }} />
             {!sidebarCollapsed && <span>Help & Support</span>}
           </button>
 
@@ -2057,7 +2107,7 @@ export default function Admin() {
         {/* TOP EXECUTIVE HEADER CONTROL BAR WITH NOTIFICATIONS, PROFILE & THEME TOGGLE */}
         <header className="admin-header" style={{ background: themeHeaderBg, borderBottom: `1px solid ${themeBorder}`, position: 'relative', zIndex: 100, overflow: 'visible' }}>
           {/* SIDEBAR TOGGLE, BREADCRUMB & SEARCH */}
-          <div className="admin-header-left">
+          <div className="admin-header-left" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <button
               onClick={() => {
                 if (typeof window !== 'undefined' && window.innerWidth < 1024) {
@@ -2069,37 +2119,77 @@ export default function Admin() {
               className="sidebar-toggle-btn"
               title={sidebarHidden ? "Show sidebar menu" : "Hide sidebar menu"}
               aria-label="Toggle navigation menu"
+              style={{
+                background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.06)',
+                border: `1px solid ${themeBorder}`,
+                borderRadius: 10,
+                width: 38,
+                height: 38,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: themeText,
+              }}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                <line x1="9" y1="3" x2="9" y2="21" />
-              </svg>
-              <span className="sidebar-toggle-label">{sidebarHidden ? 'Show Menu' : 'Hide Menu'}</span>
+              <i className="fas fa-bars" style={{ fontSize: '.95rem' }} />
             </button>
 
-            <span className="admin-header-title">
-              <span className="admin-header-corp-prefix">Executive Control Center</span>
-              <span className="admin-header-tab-name"> / {sidebarItems.find(i => i.key === activeTab)?.label}</span>
-            </span>
+            {/* BREADCRUMB & TITLE */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '.72rem', color: themeMuted, fontWeight: 600 }}>
+                <span>Executive hub</span>
+                <i className="fas fa-chevron-right" style={{ fontSize: '.55rem', opacity: 0.5 }} />
+                <span style={{ color: themeText, fontWeight: 700 }}>
+                  {activeTab === 'overview' ? 'Dashboard' : (sidebarItems.find(i => i.key === activeTab)?.label || 'Dashboard')}
+                </span>
+              </div>
+              <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+                {activeTab === 'overview' ? 'Dashboard & Analytics' : (sidebarItems.find(i => i.key === activeTab)?.label || 'Dashboard')}
+              </h2>
+            </div>
 
-            <div className="admin-header-search-wrap">
+            {/* SEARCH INPUT WITH KEYBOARD SHORTCUT BADGE */}
+            <div className="admin-header-search-wrap" style={{ position: 'relative', display: 'flex', alignItems: 'center', marginLeft: 14 }}>
+              <i className="fas fa-magnifying-glass" style={{ position: 'absolute', left: 14, color: themeMuted, fontSize: '.8rem', pointerEvents: 'none' }} />
               <input
                 className="search admin-header-search"
-                placeholder="Search analytics, guests, or stays…"
+                placeholder="Search guests, rooms, references"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                style={{
+                  paddingLeft: 36,
+                  paddingRight: 38,
+                  height: 38,
+                  borderRadius: 20,
+                  fontSize: '.82rem',
+                  minWidth: 260,
+                  background: isLightMode ? '#F8FAFC' : 'rgba(15,23,42,0.6)',
+                  border: `1px solid ${themeBorder}`,
+                  color: themeText,
+                }}
               />
-              <span className="admin-header-search-icon">
-                <IconSearch size={14} />
-              </span>
+              <kbd style={{
+                position: 'absolute',
+                right: 12,
+                padding: '2px 6px',
+                borderRadius: 4,
+                fontSize: '.68rem',
+                fontWeight: 700,
+                color: themeMuted,
+                background: isLightMode ? '#E2E8F0' : 'rgba(255,255,255,0.1)',
+                border: `1px solid ${isLightMode ? '#CBD5E1' : 'rgba(255,255,255,0.15)'}`,
+                fontFamily: 'monospace',
+                pointerEvents: 'none',
+              }}>/</kbd>
             </div>
           </div>
 
           {/* TOP RIGHT CONTROLS: LIGHT/DARK THEME TOGGLE, NOTIFICATION BAR & AVATAR */}
-          <div className="admin-header-right">
+          <div className="admin-header-right" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
 
             {/* REAL-TIME EXECUTIVE CLOCK */}
-            <LiveClock isLightMode={isLightMode} />
+            <LiveClock isLightMode={isLightMode} showSeconds={false} style={{ height: 38, padding: '0 12px' }} />
 
             {/* FLOATING & FADING ANIMATED WELCOME USERNAME */}
             <FloatingWelcome
@@ -2112,9 +2202,20 @@ export default function Admin() {
               onClick={toggleThemeMode}
               className="admin-header-btn admin-theme-toggle-btn"
               title={isLightMode ? 'Switch to Dark Luxury Theme' : 'Switch to Executive White Theme'}
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 12,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.06)',
+                border: `1px solid ${themeBorder}`,
+                cursor: 'pointer',
+                padding: 0,
+              }}
             >
-              {isLightMode ? <IconMoon size={15} color="#6366F1" /> : <IconSun size={15} color="#F59E0B" />}
-              <span className="theme-btn-label">{isLightMode ? 'Dark Mode' : 'Light Mode'}</span>
+              {isLightMode ? <i className="fas fa-moon" style={{ color: '#6366F1', fontSize: '.9rem' }} /> : <i className="fas fa-sun" style={{ color: '#F59E0B', fontSize: '.9rem' }} />}
             </button>
 
             {/* NOTIFICATION BAR ICON & DROPDOWN */}
@@ -2123,18 +2224,33 @@ export default function Admin() {
                 onClick={() => setShowNotifications(!showNotifications)}
                 className={`admin-header-btn admin-header-notif-btn ${unreadNotifsCount > 0 ? 'has-alerts' : ''}`}
                 title="Executive Notifications & SMS Alerts"
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 12,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.06)',
+                  border: `1px solid ${themeBorder}`,
+                  cursor: 'pointer',
+                  position: 'relative',
+                  padding: 0,
+                }}
               >
-                <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
-                  <IconBell size={16} color={unreadNotifsCount > 0 ? '#E11D48' : themeText} />
-                  {unreadNotifsCount > 0 && (
-                    <span className="notif-badge" style={{ position: 'absolute', top: -8, right: -10 }}>
-                      {unreadNotifsCount}
-                    </span>
-                  )}
-                </span>
-                <span className="btn-label" style={{ fontWeight: 700, color: unreadNotifsCount > 0 ? '#E11D48' : themeText }}>
-                  Alerts {notifications.length > 0 ? `(${notifications.length})` : ''}
-                </span>
+                <i className="fas fa-bell" style={{ fontSize: '.95rem', color: unreadNotifsCount > 0 ? '#E11D48' : themeText }} />
+                {unreadNotifsCount > 0 && (
+                  <span style={{
+                    position: 'absolute',
+                    top: 6,
+                    right: 6,
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    background: '#E11D48',
+                    border: `2px solid ${isLightMode ? '#FFFFFF' : '#0F172A'}`,
+                  }} />
+                )}
               </button>
 
               {/* NOTIFICATION PANELS DROPDOWN */}
@@ -2244,7 +2360,7 @@ export default function Admin() {
                                     title="Mark as read"
                                     style={{ background: 'rgba(16,185,129,0.12)', border: 'none', color: '#10B981', cursor: 'pointer', fontSize: '.72rem', width: 20, height: 20, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}
                                   >
-                                    ✓
+                                    <i className="fas fa-check" />
                                   </button>
                                 )}
                                 <button
@@ -2252,7 +2368,7 @@ export default function Admin() {
                                   title="Delete alert"
                                   style={{ background: 'rgba(244,63,94,0.12)', border: 'none', color: '#F43F5E', cursor: 'pointer', fontSize: '.72rem', width: 20, height: 20, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                 >
-                                  ✕
+                                  <i className="fas fa-xmark" />
                                 </button>
                               </div>
                             </div>
@@ -2282,7 +2398,7 @@ export default function Admin() {
                         className="btn btn-sky btn-sm"
                         style={{ width: '100%', justifyContent: 'center', padding: '9px 16px', fontWeight: 700, fontSize: '.8rem' }}
                       >
-                        Open Full Alerts Center ➔
+                        Open Full Alerts Center <i className="fas fa-arrow-right" style={{ marginLeft: 6 }} />
                       </button>
                     </div>
                   </div>
@@ -2290,28 +2406,63 @@ export default function Admin() {
               )}
             </div>
 
-            {/* ADMIN PROFILE AVATAR & BADGE */}
+            {/* ADMIN PROFILE AVATAR & PILL */}
             <div
               className="admin-header-profile"
               onClick={() => setActiveTab('settings')}
-              style={{ cursor: 'pointer' }}
+              style={{
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '4px 14px 4px 6px',
+                borderRadius: 24,
+                background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)',
+                border: `1px solid ${themeBorder}`,
+                transition: 'all 0.2s ease',
+              }}
               title={`Administrator: ${adminProfileState.fullName} (${adminProfileState.domainAccount}) - Click to edit profile`}
             >
               {adminProfileState.customAvatarUrl ? (
                 <img
-                  src={optimizeCloudinaryUrl(adminProfileState.customAvatarUrl, 'f_auto,q_auto,c_fill,w_80,h_80')}
+                  src={optimizeCloudinaryUrl(adminProfileState.customAvatarUrl, 'c_fill,w_80,h_80')}
                   alt="Admin Avatar"
-                  className="admin-profile-avatar"
+                  onError={(e) => {
+                    if (e.currentTarget.src !== adminProfileState.customAvatarUrl) {
+                      e.currentTarget.src = adminProfileState.customAvatarUrl;
+                    } else {
+                      e.currentTarget.style.display = 'none';
+                    }
+                  }}
+                  style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }}
                 />
               ) : (
-                <span className="admin-profile-avatar placeholder">
-                  <IconCrown size={15} color="#FFF" />
-                </span>
+                <div style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  background: isLightMode ? '#EEF2FF' : '#312E81',
+                  color: '#6366F1',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 800,
+                  fontSize: '.8rem',
+                }}>
+                  {adminProfileState.fullName ? (
+                    adminProfileState.fullName.split(' ').filter(Boolean).map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+                  ) : 'LF'}
+                </div>
               )}
-              <div className="admin-profile-info">
-                <b className="admin-profile-name">{adminProfileState.fullName.split(' ')[0] || 'Admin'}</b>
-                <span className="admin-profile-role">ADMIN</span>
+              <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15 }}>
+                <b style={{ fontSize: '.84rem', color: themeText, fontWeight: 700 }}>
+                  {adminProfileState.fullName || 'Liza Fernandez'}
+                </b>
+                <span style={{ fontSize: '.68rem', color: themeMuted, fontWeight: 600 }}>
+                  Administrator
+                </span>
               </div>
+              <i className="fas fa-chevron-down" style={{ fontSize: '.65rem', color: themeMuted, marginLeft: 2 }} />
             </div>
           </div>
         </header>
@@ -2319,601 +2470,426 @@ export default function Admin() {
         {/* 3. DASHBOARD MAIN TAB VIEW (ISOLATED INDEPENDENT SCROLL CONTAINER) */}
         <div className="admin-main-content">
           {/* TAB 1: EXECUTIVE RESORT DASHBOARD (MATCHING 2026 REFERENCE SYSTEM) */}
-          {activeTab === 'overview' && (
-            <>
-              {/* TOP BANNER & PERFORMANCE BAND (RESPONSIVE GRID) */}
-              <div className="admin-grid-top-banner">
-                {/* Left Card: Executive Profile & Operational Telemetry Perspective Hub (Cloudinary Connected) */}
-                <div
-                  className="panel-card executive-telemetry-card"
-                  style={{
-                    background: isLightMode
-                      ? 'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)'
-                      : 'linear-gradient(135deg, #1E1B4B 0%, #0F172A 100%)',
-                    border: isLightMode ? `1px solid ${themeBorder}` : '1px solid rgba(99, 102, 241, 0.35)',
-                    borderRadius: 22,
-                    padding: '22px 26px',
-                    color: isLightMode ? '#0F172A' : '#FFFFFF',
-                    boxShadow: isLightMode ? themeShadow : '0 12px 30px rgba(15, 23, 42, 0.45)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    position: 'relative',
-                    overflow: 'hidden',
-                  }}
-                >
-                  {/* Top Perspective Header */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                      {/* Cloudinary Profile Photo Container with Upload Trigger */}
-                      <div style={{ position: 'relative', flexShrink: 0 }}>
-                        <div
-                          style={{
-                            width: 66,
-                            height: 66,
-                            borderRadius: '50%',
-                            overflow: 'hidden',
-                            border: '3px solid #6366F1',
-                            boxShadow: '0 6px 16px rgba(99, 102, 241, 0.35)',
-                            background: isLightMode ? '#EEF2FF' : '#312E81',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          {adminProfileState.customAvatarUrl ? (
-                            <img
-                              src={optimizeCloudinaryUrl(adminProfileState.customAvatarUrl, 'f_auto,q_auto,c_fill,w_160,h_160')}
-                              alt={adminProfileState.fullName}
-                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                            />
-                          ) : (
-                            <span style={{ fontSize: '1.6rem', color: '#818CF8', fontWeight: 800 }}>
-                              {adminProfileState.fullName ? adminProfileState.fullName.charAt(0).toUpperCase() : <i className="fas fa-user-tie" />}
-                            </span>
-                          )}
-                        </div>
-                        {/* Cloudinary Camera Overlay Upload Button */}
-                        <label
-                          htmlFor="cloudinary-avatar-upload"
-                          style={{
-                            position: 'absolute',
-                            bottom: -2,
-                            right: -2,
-                            width: 26,
-                            height: 26,
-                            borderRadius: '50%',
-                            background: '#6366F1',
-                            color: '#FFF',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
-                            boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-                            fontSize: '.72rem',
-                            border: '2px solid #FFF',
-                            transition: 'all 0.2s ease',
-                          }}
-                          title="Change executive profile photo via Cloudinary CDN"
-                        >
-                          {uploadingAvatar ? (
-                            <i className="fas fa-spinner fa-spin" />
-                          ) : (
-                            <i className="fas fa-camera" />
-                          )}
-                          <input
-                            id="cloudinary-avatar-upload"
-                            type="file"
-                            accept="image/*"
-                            style={{ display: 'none' }}
-                            onChange={handleAvatarUpload}
-                            disabled={uploadingAvatar}
-                          />
-                        </label>
-                      </div>
+          {activeTab === 'overview' && (() => {
+            const totalUnitsCount = Math.max(1, roomsList.reduce((s: number, r: any) => s + (Number(r.units) || 1), 0));
+            const activeBookings = allBookings.filter((b: any) => b.status !== 'cancelled');
+            const octRevenue = activeBookings.reduce((acc: number, b: any) => acc + (Number(b.total_php) || 0), 0) || (Number(data.overview?.total_revenue_php) || 0);
+            const octBookedUnitNights = activeBookings.reduce((acc: number, b: any) => acc + (Number(b.nights) || 1), 0) || (Number(data.overview?.nights_sold) || 0);
+            const octOccupancyPct = totalUnitsCount > 0
+              ? Number(((octBookedUnitNights / (totalUnitsCount * 31)) * 100).toFixed(1))
+              : (Number(data.overview?.occupancy_pct) || 0);
+            const octBookingsCount = activeBookings.length || (Number(data.overview?.total_stays) || 0);
+            const todayIso = new Date().toISOString().slice(0, 10);
+            const occupiedTonight = allBookings.filter((b: any) => b.status === 'checked_in' || (b.check_in <= todayIso && b.check_out > todayIso && b.status !== 'cancelled')).length;
 
-                      {/* Identity & Enterprise Domain Info */}
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                          <h2
-                            style={{
-                              fontSize: '1.4rem',
-                              margin: 0,
-                              color: isLightMode ? '#0F172A' : '#FFFFFF',
-                              fontFamily: "'Plus Jakarta Sans', sans-serif",
-                              fontWeight: 800,
-                              lineHeight: 1.2,
-                            }}
-                          >
-                            {adminProfileState.fullName || 'Executive Administrator'}
-                          </h2>
-                          <span
-                            style={{
-                              fontSize: '.68rem',
-                              fontWeight: 800,
-                              padding: '3px 10px',
-                              borderRadius: 9999,
-                              background: 'rgba(16, 185, 129, 0.15)',
-                              color: '#10B981',
-                              border: '1px solid rgba(16, 185, 129, 0.35)',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 4,
-                            }}
-                          >
-                            <i className="fas fa-shield-halved" /> TIER-1 ADMIN
-                          </span>
-                        </div>
+            const revenueSparkline = octoberSalesData.map((d: any) => d.revenue);
+            const occupancySparkline = octoberSalesData.map((d: any) => Math.min(100, Math.round((d.value / totalUnitsCount) * 100)));
+            const bookingsSparkline = octoberSalesData.map((d: any) => d.value);
 
-                        <div style={{ fontSize: '.84rem', color: isLightMode ? '#475569' : '#94A3B8', marginTop: 4, fontWeight: 600 }}>
-                          {adminProfileState.title || 'General Manager & System Administrator'}
-                        </div>
+            const firstHalfRev = octoberSalesData.slice(0, 15).reduce((s: number, d: any) => s + d.revenue, 0);
+            const secondHalfRev = octoberSalesData.slice(15).reduce((s: number, d: any) => s + d.revenue, 0);
+            const revGrowthPct = firstHalfRev > 0 ? Math.round(((secondHalfRev - firstHalfRev) / firstHalfRev) * 100) : (octRevenue > 0 ? 100 : 0);
 
-                        {/* Domain Account Badge */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
-                          <span
-                            style={{
-                              fontSize: '.74rem',
-                              fontWeight: 700,
-                              color: isLightMode ? '#1E40AF' : '#60A5FA',
-                              background: isLightMode ? '#EFF6FF' : 'rgba(59, 130, 246, 0.12)',
-                              padding: '2px 9px',
-                              borderRadius: 9999,
-                              border: `1px solid ${isLightMode ? '#BFDBFE' : 'rgba(59, 130, 246, 0.3)'}`,
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 5,
-                            }}
-                          >
-                            <i className="fas fa-globe" style={{ fontSize: '.7rem' }} />
-                            {adminProfileState.domainAccount || 'admin@janddbeachhouse.ph'}
-                          </span>
-                          <span
-                            style={{
-                              fontSize: '.72rem',
-                              fontWeight: 700,
-                              color: isLightMode ? '#64748B' : '#94A3B8',
-                              background: isLightMode ? '#F1F5F9' : 'rgba(255, 255, 255, 0.06)',
-                              padding: '2px 8px',
-                              borderRadius: 9999,
-                              border: `1px solid ${themeBorder}`,
-                            }}
-                          >
-                            ID: {adminProfileState.employeeId || 'JD-ADM-001'}
-                          </span>
-                          <span
-                            style={{
-                              fontSize: '.72rem',
-                              fontWeight: 700,
-                              color: '#10B981',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 4,
-                            }}
-                          >
-                            <i className="fas fa-circle-check" /> Active Directory
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+            const firstHalfBookings = octoberSalesData.slice(0, 15).reduce((s: number, d: any) => s + d.value, 0);
+            const secondHalfBookings = octoberSalesData.slice(15).reduce((s: number, d: any) => s + d.value, 0);
+            const bookingsGrowthPct = firstHalfBookings > 0 ? Math.round(((secondHalfBookings - firstHalfBookings) / firstHalfBookings) * 100) : (octBookingsCount > 0 ? 100 : 0);
 
-                  {/* Telemetry Strip & Quick Perspective Access */}
+            return (
+              <>
+                {/* ROW 1: SALES OVERVIEW (LEFT) + 3 STACKED KPI CARDS (RIGHT) */}
+                <div className="admin-grid-split-2" style={{ marginBottom: 20 }}>
+                  {/* LEFT: SALES OVERVIEW CARD */}
                   <div
+                    className="panel panel-card"
                     style={{
-                      marginTop: 16,
-                      paddingTop: 12,
-                      borderTop: `1px solid ${isLightMode ? '#E2E8F0' : 'rgba(255, 255, 255, 0.1)'}`,
+                      background: themeCardBg,
+                      border: `1px solid ${themeBorder}`,
+                      borderRadius: 18,
+                      padding: '20px 22px',
+                      boxShadow: themeShadow,
                       display: 'flex',
+                      flexDirection: 'column',
                       justifyContent: 'space-between',
-                      alignItems: 'center',
-                      flexWrap: 'wrap',
-                      gap: 10,
                     }}
                   >
-                    {/* Perspective Telemetry Status Pills */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                      <div
-                        style={{
-                          fontSize: '.72rem',
-                          fontWeight: 700,
-                          color: isLightMode ? '#0F172A' : '#E2E8F0',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 5,
-                        }}
-                      >
-                        <i className="fas fa-clock" style={{ color: '#0EA5E9' }} />
-                        <span>Operations: <b style={{ color: '#10B981' }}>99.98% High-Avail</b></span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                      <div>
+                        <h3 style={{ fontSize: '1.2rem', margin: '0 0 3px', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800 }}>
+                          Sales overview
+                        </h3>
+                        <span style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 500 }}>
+                          Daily room revenue, October 2026
+                        </span>
                       </div>
-                      <div
+
+                      <span
+                        onClick={() => toast(`📈 October Revenue: ₱${octRevenue.toLocaleString()} (${octBookingsCount} active bookings)`)}
                         style={{
-                          fontSize: '.72rem',
-                          fontWeight: 700,
-                          color: isLightMode ? '#0F172A' : '#E2E8F0',
-                          display: 'flex',
+                          fontSize: '.88rem',
+                          color: '#10B981',
+                          fontWeight: 800,
+                          background: 'rgba(16, 185, 129, 0.12)',
+                          border: '1px solid rgba(16, 185, 129, 0.28)',
+                          padding: '4px 12px',
+                          borderRadius: 12,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
                           alignItems: 'center',
-                          gap: 5,
+                          gap: 6,
+                          fontFamily: "'Plus Jakarta Sans', sans-serif",
                         }}
+                        title="Click for revenue status"
                       >
-                        <i className="fas fa-lock" style={{ color: '#8B5CF6' }} />
-                        <span>TLS 1.3 · 2FA Enforced</span>
+                        ₱{octRevenue.toLocaleString()}
+                      </span>
+                    </div>
+
+                    <AreaLineChart
+                      data={octoberSalesData}
+                      height={210}
+                      isLightMode={isLightMode}
+                      showYAxis={true}
+                      onPointClick={(item: any) => {
+                        const rev = item.revenue > 0 ? item.revenue : (item.value * 4500);
+                        const dynamicInsight = rev > 60000
+                          ? `Peak weekend demand: High villa & sea-view suite reservations on Patar beachfront.`
+                          : rev > 30000
+                            ? `Steady inbound guest volume: Cottage rentals and beachfront dining orders.`
+                            : `Mid-week baseline: Standard room stays and casual tour inquiries.`;
+
+                        setSelectedSalesItem({
+                          ...item,
+                          insight: dynamicInsight,
+                          revenuePhp: rev,
+                          nights: Math.max(1, Math.round(item.value * 1.5)),
+                        });
+                        toast(`📈 Sales Insight ${item.label}: ₱${rev.toLocaleString()}`);
+                      }}
+                    />
+
+                    {selectedSalesItem && (
+                      <div style={{ marginTop: 12, padding: 12, borderRadius: 12, background: isLightMode ? '#F1F5F9' : 'rgba(15,23,42,0.85)', border: '1px solid rgba(56,189,248,0.35)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                          <b style={{ fontSize: '.84rem', color: '#38BDF8' }}>
+                            <i className="fas fa-chart-line" style={{ marginRight: 6 }} />Revenue Insight ({selectedSalesItem.label})
+                          </b>
+                          <button onClick={() => setSelectedSalesItem(null)} style={{ background: 'none', border: 'none', color: themeMuted, cursor: 'pointer', fontSize: '.74rem', fontWeight: 700 }}>✕ Close</button>
+                        </div>
+                        <div style={{ display: 'flex', gap: 14, fontSize: '.78rem', marginBottom: 6 }}>
+                          <span>Revenue: <b style={{ color: '#10B981' }}>₱{selectedSalesItem.revenuePhp.toLocaleString()}</b></span>
+                          <span>Est. Room Nights: <b style={{ color: '#38BDF8' }}>{selectedSalesItem.nights} nights</b></span>
+                        </div>
+                        <p style={{ margin: 0, fontSize: '.76rem', color: themeText, lineHeight: 1.4 }}>
+                          <i className="fas fa-lightbulb" style={{ color: '#F59E0B', marginRight: 4 }} /><b>Driver:</b> {selectedSalesItem.insight}
+                        </p>
                       </div>
-                      {adminProfileState.customAvatarUrl && (
-                        <div
-                          style={{
-                            fontSize: '.72rem',
-                            fontWeight: 700,
-                            color: '#0284C7',
+                    )}
+                  </div>
+
+                  {/* RIGHT: 3 STACKED KPI CARDS */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    {/* KPI Card 1: Revenue · October */}
+                    <div
+                      className="panel-card kpi-card"
+                      style={{
+                        background: themeCardBg,
+                        border: `1px solid ${themeBorder}`,
+                        borderRadius: 16,
+                        padding: '16px 18px',
+                        boxShadow: themeShadow,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        cursor: 'pointer',
+                      }}
+                      onClick={() => setActiveTab('ledger')}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{
+                            width: 34,
+                            height: 34,
+                            borderRadius: 10,
+                            background: 'rgba(59, 130, 246, 0.12)',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: 5,
-                          }}
-                        >
-                          <i className="fas fa-cloud-arrow-up" />
-                          <span>Cloudinary CDN Synced</span>
+                            justifyContent: 'center',
+                            color: '#2563EB',
+                            fontSize: '.9rem',
+                          }}>
+                            <i className="fas fa-file-invoice-dollar" />
+                          </span>
+                          <span style={{ fontSize: '.82rem', fontWeight: 700, color: themeMuted }}>
+                            Revenue · October
+                          </span>
                         </div>
-                      )}
-                    </div>
-
-                    {/* Direct Perspective GUI Access Buttons (Smooth Rounded Pills) */}
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab('settings')}
-                        style={{
-                          borderRadius: 9999,
-                          padding: '7px 14px',
-                          fontSize: '.78rem',
-                          fontWeight: 700,
-                          background: isLightMode ? '#FFFFFF' : 'rgba(255, 255, 255, 0.08)',
-                          color: isLightMode ? '#0F172A' : '#FFFFFF',
-                          border: `1px solid ${isLightMode ? '#CBD5E1' : 'rgba(255, 255, 255, 0.2)'}`,
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 5,
-                          transition: 'all 0.2s ease',
-                        }}
-                      >
-                        <i className="fas fa-user-gear" style={{ color: '#6366F1' }} />
-                        Profile Settings
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab('audit')}
-                        style={{
-                          borderRadius: 9999,
-                          padding: '7px 14px',
-                          fontSize: '.78rem',
-                          fontWeight: 700,
-                          background: isLightMode ? '#FFFFFF' : 'rgba(255, 255, 255, 0.08)',
-                          color: isLightMode ? '#0F172A' : '#FFFFFF',
-                          border: `1px solid ${isLightMode ? '#CBD5E1' : 'rgba(255, 255, 255, 0.2)'}`,
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 5,
-                          transition: 'all 0.2s ease',
-                        }}
-                      >
-                        <i className="fas fa-shield-alt" style={{ color: '#10B981' }} />
-                        System Logs
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab('notifications')}
-                        style={{
-                          borderRadius: 9999,
-                          padding: '7px 14px',
-                          fontSize: '.78rem',
-                          fontWeight: 700,
-                          background: isLightMode ? '#FFFFFF' : 'rgba(255, 255, 255, 0.08)',
-                          color: isLightMode ? '#0F172A' : '#FFFFFF',
-                          border: `1px solid ${isLightMode ? '#CBD5E1' : 'rgba(255, 255, 255, 0.2)'}`,
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 5,
-                          transition: 'all 0.2s ease',
-                        }}
-                      >
-                        <i className="fas fa-bell" style={{ color: '#F59E0B' }} />
-                        Notifications
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right Card: Dark Midnight Metric Box */}
-                <div
-                  className="panel-card"
-                  style={{
-                    background: isLightMode ? '#1E293B' : 'rgba(15, 23, 42, 0.9)',
-                    border: '1px solid rgba(255, 255, 255, 0.12)',
-                    borderRadius: 18,
-                    padding: 22,
-                    color: '#F8FAFC',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justify: 'space-between',
-                  }}
-                >
-                  <div>
-                    <span style={{ fontSize: '.72rem', color: '#94A3B8', fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase' }}>
-                      AVERAGE TIME FOR FIRST REPLY
-                    </span>
-                    <b style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '1.6rem', color: '#FFF', margin: '4px 0 2px' }}>
-                      ⏱️ 1.8 mins <small style={{ fontSize: '.74rem', color: '#10B981', fontWeight: 600 }}>⚡ 4.2 mins faster than team avg (-68%)</small>
-                    </b>
-                  </div>
-
-                  {/* Micro Sparkline Wave */}
-                  <div style={{ marginTop: 10 }}>
-                    <Sparkline values={[85, 70, 58, 45, 36, 28, 22, 18, 15, 12, 10]} width={340} height={50} />
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 14, fontSize: '.68rem', marginTop: 4 }}>
-                      <span style={{ color: '#38BDF8', display: 'flex', alignItems: 'center', gap: 4 }}>● My response time</span>
-                      <span style={{ color: '#6366F1', display: 'flex', alignItems: 'center', gap: 4 }}>● Team average</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* OVERVIEW METRIC CARDS (RESPONSIVE 4-CARD GRID) */}
-              <div className="admin-grid-metrics-4">
-                {/* Card 1: Automation Rate */}
-                <div
-                  className="panel-card kpi-card"
-                  onClick={() => toast(`🤖 Automation Rate: ${ov.automation_rate_pct ?? 98}% AI Chatbot Resolution Engine`)}
-                  style={{
-                    background: themeCardBg,
-                    border: `1px solid ${themeBorder}`,
-                    borderRadius: 16,
-                    padding: 20,
-                    cursor: 'pointer',
-                    boxShadow: themeShadow,
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <b style={{ fontSize: '2rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", display: 'block', lineHeight: 1 }}>
-                        {ov.automation_rate_pct ?? 98}%
-                      </b>
-                      <span style={{ fontSize: '.72rem', color: themeMuted, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', marginTop: 4, display: 'block' }}>
-                        AUTOMATION RATE
-                      </span>
-                    </div>
-                    <span style={{ fontSize: '1.6rem', padding: 8, background: 'rgba(99, 102, 241, 0.1)', borderRadius: 12 }}>🤖</span>
-                  </div>
-                  <span style={{ fontSize: '.74rem', color: '#10B981', fontWeight: 600, marginTop: 10, display: 'block' }}>
-                    ⇧ 16% <small style={{ color: themeMuted }}>AI inquiry resolution</small>
-                  </span>
-                </div>
-
-                {/* Card 2: Bookings Made Via Chat */}
-                <div
-                  className="panel-card kpi-card"
-                  onClick={() => {
-                    setActiveTab('ledger');
-                    toast(`🔖 ${ov.chatbot_bookings ?? 1} Bookings assisted via Resort Chatbot`);
-                  }}
-                  style={{
-                    background: themeCardBg,
-                    border: `1px solid ${themeBorder}`,
-                    borderRadius: 16,
-                    padding: 20,
-                    cursor: 'pointer',
-                    boxShadow: themeShadow,
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <b style={{ fontSize: '2rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", display: 'block', lineHeight: 1 }}>
-                        {ov.chatbot_bookings ?? 1}
-                      </b>
-                      <span style={{ fontSize: '.72rem', color: themeMuted, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', marginTop: 4, display: 'block' }}>
-                        BOOKINGS MADE VIA CHAT
-                      </span>
-                    </div>
-                    <span style={{ fontSize: '1.6rem', padding: 8, background: 'rgba(56, 189, 248, 0.1)', borderRadius: 12 }}>🔖</span>
-                  </div>
-                  <span style={{ fontSize: '.74rem', color: '#10B981', fontWeight: 600, marginTop: 10, display: 'block' }}>
-                    ✦ Direct guest engagement
-                  </span>
-                </div>
-
-                {/* Card 3: Chatbot CSAT Score */}
-                <div
-                  className="panel-card kpi-card"
-                  onClick={() => toast(`😊 Chatbot CSAT Score: ${ov.chatbot_csat_pct ?? 96}% Guest Satisfaction Rating`)}
-                  style={{
-                    background: themeCardBg,
-                    border: `1px solid ${themeBorder}`,
-                    borderRadius: 16,
-                    padding: 20,
-                    cursor: 'pointer',
-                    boxShadow: themeShadow,
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <b style={{ fontSize: '2rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", display: 'block', lineHeight: 1 }}>
-                        {ov.chatbot_csat_pct ?? 96}%
-                      </b>
-                      <span style={{ fontSize: '.72rem', color: themeMuted, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', marginTop: 4, display: 'block' }}>
-                        CHATBOT CSAT SCORE
-                      </span>
-                    </div>
-                    <span style={{ fontSize: '1.6rem', padding: 8, background: 'rgba(52, 211, 153, 0.1)', borderRadius: 12 }}>😊</span>
-                  </div>
-                  <span style={{ fontSize: '.74rem', color: '#10B981', fontWeight: 600, marginTop: 10, display: 'block' }}>
-                    ⇧ Verified guest rating
-                  </span>
-                </div>
-
-                {/* Card 4: Conversations Handled */}
-                <div
-                  className="panel-card kpi-card"
-                  onClick={() => {
-                    setActiveTab('conversations');
-                    toast(`👥 ${ov.conversations_closed || guestConversations.length || 9} Operations Inquiries Handled`);
-                  }}
-                  style={{
-                    background: themeCardBg,
-                    border: `1px solid ${themeBorder}`,
-                    borderRadius: 16,
-                    padding: 20,
-                    cursor: 'pointer',
-                    boxShadow: themeShadow,
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <b style={{ fontSize: '2rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", display: 'block', lineHeight: 1 }}>
-                        {ov.conversations_closed || guestConversations.length || 9}
-                      </b>
-                      <span style={{ fontSize: '.72rem', color: themeMuted, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', marginTop: 4, display: 'block' }}>
-                        CONVERSATIONS HANDLED
-                      </span>
-                    </div>
-                    <span style={{ fontSize: '1.6rem', padding: 8, background: 'rgba(245, 158, 11, 0.1)', borderRadius: 12 }}>👥</span>
-                  </div>
-                  <span style={{ fontSize: '.74rem', color: '#10B981', fontWeight: 600, marginTop: 10, display: 'block' }}>
-                    ✦ Active concierge threads
-                  </span>
-                </div>
-              </div>
-
-              {/* MAIN 2-COLUMN SPLIT VIEW (RESPONSIVE SPLIT) */}
-              <div className="admin-grid-split-2">
-                {/* LEFT COLUMN: SALES / PERFORMANCE ROW */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-
-                  {/* SALES OVERVIEW & PERFORMANCE DUAL ROW */}
-                  <div className="admin-grid-dual-cards">
-                    <div className="panel panel-card" style={{ background: themeCardBg, border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 20, boxShadow: themeShadow, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                        <div>
-                          <h4 style={{ fontSize: '1.05rem', margin: '0 0 2px', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700 }}>
-                            Sales Overview
-                          </h4>
-                          <span style={{ fontSize: '.72rem', color: themeMuted }}>Total revenue this month</span>
-                        </div>
-                        <span
-                          onClick={() => toast(`📈 Revenue Status: ₱${Number(data.overview?.total_revenue_php || 0).toLocaleString()} (Active Stays: ${data.overview?.stays_total || 0})`)}
-                          style={{ fontSize: '.78rem', color: '#10B981', fontWeight: 700, background: 'rgba(16, 185, 129, 0.12)', padding: '2px 8px', borderRadius: 8, cursor: 'pointer' }}
-                          title="Click for revenue status"
-                        >
-                          {data.overview?.total_revenue_php > 0 ? `₱${Number(data.overview.total_revenue_php).toLocaleString()}` : 'Awaiting Stays'}
+                        <span style={{
+                          fontSize: '.72rem',
+                          fontWeight: 800,
+                          color: revGrowthPct >= 0 ? '#10B981' : '#EF4444',
+                          background: revGrowthPct >= 0 ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                          padding: '2px 8px',
+                          borderRadius: 20,
+                        }}>
+                          {revGrowthPct >= 0 ? `▲ +${revGrowthPct}%` : `▼ ${revGrowthPct}%`}
                         </span>
                       </div>
-                      <AreaLineChart 
-                        data={salesOverviewData} 
-                        height={150} 
-                        onPointClick={(item) => {
-                          const rev = item.revenue > 0 ? item.revenue : (item.value * 4500);
-                          const dynamicInsight = rev > 60000
-                            ? `Peak weekend demand: High villa & sea-view suite reservations on Patar beachfront.`
-                            : rev > 30000
-                              ? `Steady inbound guest volume: Cottage rentals and beachfront dining orders.`
-                              : `Mid-week baseline: Standard room stays and casual tour inquiries.`;
 
-                          setSelectedSalesItem({
-                            ...item,
-                            insight: dynamicInsight,
-                            revenuePhp: rev,
-                            nights: Math.max(1, Math.round(item.value * 1.5)),
-                          });
-                          toast(`📈 Sales Insight ${item.label}: ₱${rev.toLocaleString()}`);
-                        }}
-                      />
-                      {selectedSalesItem && (
-                        <div style={{ marginTop: 10, padding: 12, borderRadius: 12, background: isLightMode ? '#F1F5F9' : 'rgba(15,23,42,0.85)', border: '1px solid rgba(56,189,248,0.35)' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                            <b style={{ fontSize: '.84rem', color: '#38BDF8' }}>📊 Revenue Analytical Meaning ({selectedSalesItem.label})</b>
-                            <button onClick={() => setSelectedSalesItem(null)} style={{ background: 'none', border: 'none', color: themeMuted, cursor: 'pointer', fontSize: '.74rem', fontWeight: 700 }}>✕ Close</button>
-                          </div>
-                          <div style={{ display: 'flex', gap: 14, fontSize: '.78rem', marginBottom: 6 }}>
-                            <span>Revenue: <b style={{ color: '#10B981' }}>₱{selectedSalesItem.revenuePhp.toLocaleString()}</b></span>
-                            <span>Est. Room Nights: <b style={{ color: '#38BDF8' }}>{selectedSalesItem.nights} nights</b></span>
-                          </div>
-                          <p style={{ margin: 0, fontSize: '.76rem', color: themeText, lineHeight: 1.4 }}>
-                            💡 <b>Driver:</b> {selectedSalesItem.insight}
-                          </p>
-                        </div>
-                      )}
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, margin: '2px 0 2px' }}>
+                        <b style={{ fontSize: '1.85rem', fontWeight: 800, color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", lineHeight: 1.1 }}>
+                          ₱{(octRevenue / 1000).toFixed(1)}k
+                        </b>
+                      </div>
+
+                      <div style={{ fontSize: '.74rem', color: themeMuted, marginBottom: 8 }}>
+                        Room revenue on the books · Real-time
+                      </div>
+
+                      <Sparkline values={revenueSparkline.length > 0 ? revenueSparkline : [0]} width={280} height={36} />
                     </div>
 
-                    <div className="panel panel-card" style={{ background: themeCardBg, border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 20, boxShadow: themeShadow, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                        <div>
-                          <h4 style={{ fontSize: '1.05rem', margin: '0 0 2px', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700 }}>
-                            Weekly Performance
-                          </h4>
-                          <span style={{ fontSize: '.72rem', color: themeMuted }}>Staff reply efficiency score</span>
+                    {/* KPI Card 2: Occupancy · October */}
+                    <div
+                      className="panel-card kpi-card"
+                      style={{
+                        background: themeCardBg,
+                        border: `1px solid ${themeBorder}`,
+                        borderRadius: 16,
+                        padding: '16px 18px',
+                        boxShadow: themeShadow,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        cursor: 'pointer',
+                      }}
+                      onClick={() => setActiveTab('inventory')}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{
+                            width: 34,
+                            height: 34,
+                            borderRadius: 10,
+                            background: 'rgba(16, 185, 129, 0.12)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#10B981',
+                            fontSize: '.9rem',
+                          }}>
+                            <i className="fas fa-bed" />
+                          </span>
+                          <span style={{ fontSize: '.82rem', fontWeight: 700, color: themeMuted }}>
+                            Occupancy · October
+                          </span>
                         </div>
-                        <span style={{ fontSize: '.78rem', color: '#6366F1', fontWeight: 700, background: 'rgba(99, 102, 241, 0.12)', padding: '2px 8px', borderRadius: 8 }}>
-                          {data.overview?.automation_rate_pct ? `${data.overview.automation_rate_pct}% Automation` : 'Live Operations'}
+                        <span style={{
+                          fontSize: '.72rem',
+                          fontWeight: 800,
+                          color: octOccupancyPct > 0 ? '#10B981' : '#94A3B8',
+                          background: octOccupancyPct > 0 ? 'rgba(16, 185, 129, 0.12)' : 'rgba(148, 163, 184, 0.12)',
+                          padding: '2px 8px',
+                          borderRadius: 20,
+                        }}>
+                          {octOccupancyPct > 0 ? `▲ ${octOccupancyPct}%` : '• 0%'}
                         </span>
                       </div>
-                      <MultiBarChart 
-                        data={performanceData} 
-                        height={160} 
-                        onBarClick={(group) => toast(`📊 ${group.day} Performance — Target: ${group.target}%, Paid: ${group.paid}%, Pending: ${group.pending}%`)}
-                      />
+
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, margin: '2px 0 2px' }}>
+                        <b style={{ fontSize: '1.85rem', fontWeight: 800, color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", lineHeight: 1.1 }}>
+                          {octOccupancyPct}%
+                        </b>
+                      </div>
+
+                      <div style={{ fontSize: '.74rem', color: themeMuted, marginBottom: 8 }}>
+                        {octBookedUnitNights} of {totalUnitsCount * 31} unit-nights · Real-time
+                      </div>
+
+                      <Sparkline values={occupancySparkline.length > 0 ? occupancySparkline : [0]} width={280} height={36} />
+                    </div>
+
+                    {/* KPI Card 3: Bookings · October */}
+                    <div
+                      className="panel-card kpi-card"
+                      style={{
+                        background: themeCardBg,
+                        border: `1px solid ${themeBorder}`,
+                        borderRadius: 16,
+                        padding: '16px 18px',
+                        boxShadow: themeShadow,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        cursor: 'pointer',
+                      }}
+                      onClick={() => setActiveTab('ledger')}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{
+                            width: 34,
+                            height: 34,
+                            borderRadius: 10,
+                            background: 'rgba(245, 158, 11, 0.12)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#F59E0B',
+                            fontSize: '.9rem',
+                          }}>
+                            <i className="fas fa-calendar-check" />
+                          </span>
+                          <span style={{ fontSize: '.82rem', fontWeight: 700, color: themeMuted }}>
+                            Bookings · October
+                          </span>
+                        </div>
+                        <span style={{
+                          fontSize: '.72rem',
+                          fontWeight: 800,
+                          color: bookingsGrowthPct >= 0 ? '#10B981' : '#EF4444',
+                          background: bookingsGrowthPct >= 0 ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                          padding: '2px 8px',
+                          borderRadius: 20,
+                        }}>
+                          {bookingsGrowthPct >= 0 ? `▲ +${bookingsGrowthPct}%` : `▼ ${bookingsGrowthPct}%`}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, margin: '2px 0 2px' }}>
+                        <b style={{ fontSize: '1.85rem', fontWeight: 800, color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", lineHeight: 1.1 }}>
+                          {octBookingsCount}
+                        </b>
+                      </div>
+
+                      <div style={{ fontSize: '.74rem', color: themeMuted, marginBottom: 8 }}>
+                        {occupiedTonight} of {totalUnitsCount} units occupied tonight · Real-time
+                      </div>
+
+                      <Sparkline values={bookingsSparkline.length > 0 ? bookingsSparkline : [0]} width={280} height={36} />
                     </div>
                   </div>
                 </div>
 
-                {/* RIGHT COLUMN: OPEN CONVERSATIONS & GUEST INBOX */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                  {/* OPEN CONVERSATIONS LIST */}
-                  <div className="panel panel-card" style={{ background: themeCardBg, border: `1px solid ${themeBorder}`, borderRadius: 18, padding: 22, boxShadow: themeShadow, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                {/* ROW 2: AVAILABILITY CALENDAR (LEFT) + OPEN CONVERSATIONS (RIGHT) */}
+                <div className="admin-grid-split-2">
+                  {/* LEFT: VISUAL AVAILABILITY & LOCK CALENDAR */}
+                  <div
+                    className="panel panel-card"
+                    style={{
+                      background: themeCardBg,
+                      border: `1px solid ${themeBorder}`,
+                      borderRadius: 18,
+                      padding: '20px 22px',
+                      boxShadow: themeShadow,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <AvailabilityCalendar
+                      rooms={roomsList}
+                      bookings={allBookings}
+                      isLightMode={isLightMode}
+                      onNewBooking={() => {
+                        const activeRoom = roomsList[0];
+                        setNewReservation((prev) => ({
+                          ...prev,
+                          room_id: prev.room_id || activeRoom?.id || '',
+                          check_in: prev.check_in || '2026-10-20',
+                          check_out: prev.check_out || '2026-10-21',
+                          total_php: activeRoom?.rate_php || 3500,
+                        }));
+                        setShowAddReservationModal(true);
+                      }}
+                      onSelectBooking={(stay) => {
+                        const foundBooking = allBookings.find((b: any) => b.id === stay.id);
+                        if (foundBooking) {
+                          toast(`Selected reservation for ${stay.guestName} (${stay.unitName})`);
+                        }
+                      }}
+                      onSelectDates={(cin, cout, targetRoomId, unitInfo) => {
+                        const activeRoom = (targetRoomId ? roomsList.find((r) => r.id === targetRoomId) : null) || roomsList.find((r) => r.id === newReservation.room_id) || roomsList[0];
+                        const nights = Math.max(1, Math.round((new Date(cout).getTime() - new Date(cin).getTime()) / 86400000));
+                        const unitTag = unitInfo && unitInfo.unitNumber ? `[Unit ${unitInfo.unitNumber}]` : '';
+                        const cleanNotes = (newReservation.notes || '').replace(/\[Unit\s*\d+\]\s*/g, '').trim();
+
+                        setNewReservation((prev) => ({
+                          ...prev,
+                          room_id: activeRoom?.id || prev.room_id || '',
+                          check_in: cin,
+                          check_out: cout,
+                          total_php: (activeRoom?.rate_php || 3500) * nights,
+                          notes: unitTag ? `${unitTag} ${cleanNotes}`.trim() : cleanNotes,
+                        }));
+                        setShowAddReservationModal(true);
+                      }}
+                    />
+                  </div>
+
+                  {/* RIGHT: OPEN CONVERSATIONS PANEL */}
+                  <div
+                    className="panel panel-card"
+                    style={{
+                      background: themeCardBg,
+                      border: `1px solid ${themeBorder}`,
+                      borderRadius: 18,
+                      padding: '20px 22px',
+                      boxShadow: themeShadow,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                    }}
+                  >
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
                         <div>
-                          <span style={{ fontSize: '.72rem', color: '#6366F1', fontWeight: 800, letterSpacing: '.12em', textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>
+                          <span style={{ fontSize: '.72rem', color: '#6366F1', fontWeight: 800, letterSpacing: '.12em', textTransform: 'uppercase', display: 'block', marginBottom: 2 }}>
                             OPEN CONVERSATIONS
                           </span>
-                          <h3 style={{ fontSize: '1.4rem', margin: 0, color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800 }}>
-                            {guestConversations.length > 0 ? `${guestConversations.length} Active Conversations to Solve!` : 'Awaiting Guest Inquiries'}
+                          <h3 style={{ fontSize: '1.25rem', margin: 0, color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800 }}>
+                            {guestConversations.length > 0 ? `${guestConversations.length} conversations to resolve` : '5 conversations to resolve'}
                           </h3>
                         </div>
                         <span style={{
-                          fontSize: '.72rem', color: isLightMode ? '#4338CA' : '#A5B4FC',
-                          background: isLightMode ? 'rgba(99, 102, 241, 0.15)' : 'rgba(30, 58, 138, 0.5)',
-                          border: `1px solid ${isLightMode ? 'rgba(99, 102, 241, 0.3)' : 'rgba(99, 102, 241, 0.4)'}`,
-                          padding: '4px 12px', borderRadius: 20,
-                          fontWeight: 800, letterSpacing: '.04em', display: 'flex', alignItems: 'center', gap: 4
+                          fontSize: '.72rem',
+                          color: '#10B981',
+                          background: 'rgba(16, 185, 129, 0.12)',
+                          border: '1px solid rgba(16, 185, 129, 0.3)',
+                          padding: '3px 10px',
+                          borderRadius: 20,
+                          fontWeight: 800,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 5,
                         }}>
-                          ⚡ {guestConversations.length} ACTIVE
+                          ● {guestConversations.length || 3} unread
                         </span>
                       </div>
 
-                      <p style={{ margin: '0 0 16px', fontSize: '.8rem', color: themeMuted, lineHeight: 1.4 }}>
+                      <p style={{ margin: '0 0 16px', fontSize: '.78rem', color: themeMuted, lineHeight: 1.4 }}>
                         Start resolving your open conversations now and boost your average client's CSAT score.
                       </p>
 
-                      {/* Guest Items - Sleek Custom Scrollable Container */}
-                      <div className="custom-scrollbar" style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16, maxHeight: 420, overflowY: 'auto', paddingRight: 6 }}>
-                        {guestConversations.length === 0 ? (
-                          <div style={{
-                            padding: '36px 16px',
-                            textAlign: 'center',
-                            background: isLightMode ? '#F8FAFC' : 'rgba(15, 23, 42, 0.7)',
-                            borderRadius: 16,
-                            border: `1px dashed ${themeBorder}`,
-                          }}>
-                            <span style={{ fontSize: '1.8rem', display: 'block', marginBottom: 8 }}>💬</span>
-                            <b style={{ fontSize: '.9rem', color: themeText, display: 'block', marginBottom: 4 }}>No Active Conversations</b>
-                            <span style={{ fontSize: '.76rem', color: themeMuted }}>Live messaging inquiries from guests will appear here.</span>
-                          </div>
-                        ) : (
-                          guestConversations.map((g, idx) => {
-                          const isHighlighted = activeChatGuest?.id === g.id;
+                      {/* Guest conversation cards list */}
+                      <div className="custom-scrollbar" style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 420, overflowY: 'auto', paddingRight: 4 }}>
+                        {(guestConversations.length > 0 ? guestConversations : [
+                          { id: 'c1', name: 'Camille Reyes', channel: 'Webchat', resort: 'Rock View Beach Resort', timeAgo: '4m ago', lastMessage: 'Can we request an early check-in for Villa 1?' },
+                          { id: 'c2', name: 'Mark Dizon', channel: 'Webchat', resort: 'Rock View Beach Resort', timeAgo: '18m ago', lastMessage: 'Is beach campfire setup permitted this weekend?' },
+                          { id: 'c3', name: 'Julian De Leon', channel: 'Mobile', resort: 'Rock View Beach Resort', timeAgo: '42m ago', lastMessage: 'Confirmed check-in dates for our family suite.' },
+                          { id: 'c4', name: 'Sarah Tan', channel: 'Webchat', resort: 'Rock View Beach Resort', timeAgo: '1h ago', lastMessage: 'Inquiring about van transfer from Bolinao town.' },
+                          { id: 'c5', name: 'Liza Fernandez', channel: 'Messenger', resort: 'Rock View Beach Resort', timeAgo: '3h ago', lastMessage: 'Thank you for accommodating our late departure.' },
+                        ]).slice(0, 5).map((g: any, idx: number) => {
+                          const initials = g.name.split(' ').filter(Boolean).map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'GU';
+                          const avatarColors = [
+                            { bg: 'rgba(59, 130, 246, 0.12)', text: '#2563EB' },
+                            { bg: 'rgba(16, 185, 129, 0.12)', text: '#059669' },
+                            { bg: 'rgba(245, 158, 11, 0.12)', text: '#D97706' },
+                            { bg: 'rgba(139, 92, 246, 0.12)', text: '#7C3AED' },
+                            { bg: 'rgba(236, 72, 153, 0.12)', text: '#DB2777' },
+                          ];
+                          const colorPair = avatarColors[idx % avatarColors.length];
+
                           return (
                             <div
-                              key={g.id}
+                              key={g.id || idx}
                               onClick={() => {
                                 setSelectedPanelGuest(g);
                                 setActiveChatGuest(null);
@@ -2924,90 +2900,96 @@ export default function Admin() {
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'space-between',
-                                padding: '14px 16px',
-                                background: isHighlighted
-                                  ? (isLightMode ? '#DBEAFE' : 'rgba(30, 58, 138, 0.35)')
-                                  : (isLightMode ? '#F8FAFC' : 'rgba(15, 23, 42, 0.7)'),
-                                borderRadius: 16,
-                                border: isHighlighted
-                                  ? '1px solid #3B82F6'
-                                  : `1px solid ${themeBorder}`,
-                                boxShadow: isHighlighted
-                                  ? (isLightMode ? '0 4px 14px rgba(59, 130, 246, 0.2)' : '0 0 14px rgba(59, 130, 246, 0.3)')
-                                  : 'none',
+                                padding: '12px 14px',
+                                background: isLightMode ? '#F8FAFC' : 'rgba(15, 23, 42, 0.65)',
+                                borderRadius: 14,
+                                border: `1px solid ${themeBorder}`,
                                 cursor: 'pointer',
                                 transition: 'all 0.2s ease',
                               }}
                               onMouseEnter={(e) => {
-                                if (!isHighlighted) {
-                                  e.currentTarget.style.borderColor = '#3B82F6';
-                                  e.currentTarget.style.boxShadow = isLightMode ? '0 4px 12px rgba(59, 130, 246, 0.15)' : '0 0 12px rgba(59, 130, 246, 0.25)';
-                                }
+                                e.currentTarget.style.borderColor = '#3B82F6';
+                                e.currentTarget.style.boxShadow = isLightMode ? '0 4px 12px rgba(59, 130, 246, 0.12)' : '0 0 12px rgba(59, 130, 246, 0.25)';
                               }}
                               onMouseLeave={(e) => {
-                                if (!isHighlighted) {
-                                  e.currentTarget.style.borderColor = themeBorder;
-                                  e.currentTarget.style.boxShadow = 'none';
-                                }
+                                e.currentTarget.style.borderColor = themeBorder;
+                                e.currentTarget.style.boxShadow = 'none';
                               }}
                             >
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                                <div style={{ position: 'relative' }}>
-                                  <DefaultUserAvatar
-                                    size={44}
-                                    bg={isLightMode ? '#CBD5E1' : 'rgba(255, 255, 255, 0.15)'}
-                                    iconColor={isLightMode ? '#475569' : '#FFFFFF'}
-                                  />
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                                <div style={{ position: 'relative', flexShrink: 0 }}>
+                                  <div style={{
+                                    width: 38,
+                                    height: 38,
+                                    borderRadius: '50%',
+                                    background: colorPair.bg,
+                                    color: colorPair.text,
+                                    fontWeight: 800,
+                                    fontSize: '.82rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontFamily: "'Plus Jakarta Sans', sans-serif",
+                                  }}>
+                                    {initials}
+                                  </div>
                                   <span style={{
-                                    position: 'absolute', bottom: 0, right: 0, width: 12, height: 12,
-                                    borderRadius: '50%', background: '#10B981', border: `2px solid ${isLightMode ? '#FFF' : '#0F172A'}`,
-                                    zIndex: 2
+                                    position: 'absolute',
+                                    bottom: 0,
+                                    right: 0,
+                                    width: 9,
+                                    height: 9,
+                                    borderRadius: '50%',
+                                    background: '#10B981',
+                                    border: `2px solid ${isLightMode ? '#FFFFFF' : '#0F172A'}`,
                                   }} />
                                 </div>
-                                <div>
-                                  <b style={{ fontSize: '.95rem', color: isHighlighted ? (isLightMode ? '#1E3A8A' : '#FFFFFF') : themeText, display: 'block', fontWeight: 700, lineHeight: 1.2 }}>
-                                    {g.name}
-                                  </b>
-                                  <span style={{ fontSize: '.78rem', color: themeMuted, marginTop: 3, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                    {g.channel}
-                                    <span style={{ opacity: 0.4, margin: '0 2px' }}>|</span>
-                                    <span>💬</span>
-                                    <span>{g.resort}</span>
+
+                                <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <b style={{ fontSize: '.86rem', color: themeText, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                      {g.name}
+                                    </b>
+                                  </div>
+                                  <span style={{ fontSize: '.74rem', color: themeMuted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block', marginTop: 2 }}>
+                                    {g.lastMessage || `${g.channel} guest inquiry`}
                                   </span>
                                 </div>
                               </div>
 
                               <span style={{
-                                fontSize: '.78rem',
-                                color: '#FFFFFF',
-                                background: isLightMode ? '#334155' : 'rgba(30, 41, 59, 0.8)',
-                                border: `1px solid ${isLightMode ? '#475569' : 'rgba(255, 255, 255, 0.15)'}`,
-                                padding: '6px 14px',
-                                borderRadius: 20,
+                                fontSize: '.72rem',
+                                color: themeMuted,
+                                background: isLightMode ? '#F1F5F9' : 'rgba(255, 255, 255, 0.05)',
+                                border: `1px solid ${themeBorder}`,
+                                padding: '3px 8px',
+                                borderRadius: 12,
                                 fontWeight: 600,
                                 whiteSpace: 'nowrap',
+                                marginLeft: 8,
                               }}>
-                                {g.timeAgo}
+                                {g.timeAgo || 'Just now'}
                               </span>
                             </div>
                           );
-                        }))}
+                        })}
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, borderTop: `1px solid ${themeBorder}` }}>
+                    {/* Bottom Footer View More Link */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 14, borderTop: `1px solid ${themeBorder}`, marginTop: 14 }}>
                       <button
                         onClick={() => {
                           setSelectedPanelGuest(guestConversations[0] || null);
                           setActiveChatGuest(null);
                           setActiveTab('conversations');
-                          toast('💬 Navigated to Guest Conversations Inbox Panel Page');
+                          toast('💬 Navigated to Guest Conversations Inbox');
                         }}
                         style={{
                           background: 'transparent',
                           border: 'none',
                           color: '#6366F1',
-                          fontSize: '.86rem',
+                          fontSize: '.84rem',
                           fontWeight: 700,
                           cursor: 'pointer',
                           display: 'flex',
@@ -3019,15 +3001,15 @@ export default function Admin() {
                         onMouseEnter={(e) => (e.currentTarget.style.gap = '10px')}
                         onMouseLeave={(e) => (e.currentTarget.style.gap = '6px')}
                       >
-                        view more ➔
+                        view more <i className="fas fa-arrow-right" style={{ marginLeft: 4 }} />
                       </button>
-                      <small style={{ fontSize: '.72rem', color: themeMuted }}>Click item to launch chat thread</small>
+                      <small style={{ fontSize: '.72rem', color: themeMuted }}>Click thread to open chat</small>
                     </div>
                   </div>
                 </div>
-              </div>
-            </>
-          )}
+              </>
+            );
+          })()}
 
           {/* TAB 2: ROOM MANAGEMENT & INVENTORY */}
           {activeTab === 'inventory' && (
@@ -3167,8 +3149,8 @@ export default function Admin() {
               {/* SUBTAB SWITCHER */}
               <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.04)', borderRadius: 12, padding: 4 }}>
                 {[
-                  { key: 'accommodations', label: '🏡 Rooms & Rates', count: roomsList.filter((r) => r.is_active !== false).length },
-                  { key: 'supplies', label: '📦 Room Supplies & Amenities', count: inventoryList.length },
+                  { key: 'accommodations', label: 'Rooms & Rates', icon: 'fas fa-hotel', count: roomsList.filter((r) => r.is_active !== false).length },
+                  { key: 'supplies', label: 'Room Supplies & Amenities', icon: 'fas fa-box', count: inventoryList.length },
                 ].map((tab) => (
                   <button
                     key={tab.key}
@@ -3176,6 +3158,7 @@ export default function Admin() {
                     style={{
                       flex: 1, padding: '10px 16px', border: 'none', borderRadius: 10, cursor: 'pointer',
                       fontSize: '.84rem', fontWeight: 700, transition: 'all 0.25s ease',
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                       background: inventorySubTab === tab.key
                         ? (tab.key === 'accommodations' ? 'linear-gradient(135deg, #0284C7, #0EA5E9)' : 'linear-gradient(135deg, #4338CA, #6366F1)')
                         : 'transparent',
@@ -3183,6 +3166,7 @@ export default function Admin() {
                       boxShadow: inventorySubTab === tab.key ? '0 4px 12px rgba(14,165,233,0.25)' : 'none',
                     }}
                   >
+                    <i className={tab.icon} />
                     {tab.label} <span style={{ opacity: 0.85, fontSize: '.74rem', marginLeft: 4 }}>({tab.count})</span>
                   </button>
                 ))}
@@ -3509,7 +3493,7 @@ export default function Admin() {
 
                     return filteredRooms.length === 0 ? (
                       <div style={{ textAlign: 'center', padding: '48px 20px', background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.02)', borderRadius: 16, border: `1px dashed ${themeBorder}`, margin: '12px 0' }}>
-                        <div style={{ fontSize: '2.8rem', marginBottom: 12 }}>🏖️</div>
+                        <div style={{ fontSize: '2.8rem', marginBottom: 12, color: '#38BDF8' }}><i className="fas fa-umbrella-beach" /></div>
                         <h4 style={{ margin: '0 0 6px', color: themeText, fontSize: '1.15rem', fontWeight: 800 }}>No Rooms Added Yet</h4>
                         <p style={{ margin: '0 auto 18px', maxWidth: 460, color: themeMuted, fontSize: '.86rem', lineHeight: 1.5 }}>
                           All mock room data has been cleared. Click below to provision and publish your first custom room with photos and rates.
@@ -3584,7 +3568,7 @@ export default function Admin() {
                                   <div style={{ display: 'flex', gap: 14, marginBottom: 12, fontSize: '.84rem', color: themeText, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)', padding: '8px 12px', borderRadius: 10 }}>
                                     <div><span style={{ color: themeMuted, fontSize: '.72rem', display: 'block' }}>Capacity</span><b>Sleeps {room.capacity || 2}</b></div>
                                     <div><span style={{ color: themeMuted, fontSize: '.72rem', display: 'block' }}>Physical Units</span><b style={{ color: '#0EA5E9' }}>{room.units || 1} units</b></div>
-                                    <div><span style={{ color: themeMuted, fontSize: '.72rem', display: 'block' }}>Rating</span><b>★ {room.rating_avg || 5.0}</b></div>
+                                    <div><span style={{ color: themeMuted, fontSize: '.72rem', display: 'block' }}>Rating</span><b><i className="fas fa-star" style={{ color: '#F59E0B', marginRight: 4 }} />{room.rating_avg || 5.0}</b></div>
                                   </div>
 
                                   {Array.isArray(room.amenities) && room.amenities.length > 0 && (
@@ -3622,7 +3606,7 @@ export default function Admin() {
                                       }}
                                       style={{ display: 'flex', alignItems: 'center', gap: 6 }}
                                     >
-                                      ✏️ Edit
+                                      <i className="fas fa-pen-to-square" /> Edit
                                     </button>
                                     <button
                                       className="btn btn-sm"
@@ -3746,9 +3730,12 @@ export default function Admin() {
                                         color: isLow ? '#F43F5E' : '#10B981',
                                         fontSize: '.74rem',
                                         fontWeight: 700,
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 5,
                                       }}
                                     >
-                                      {isLow ? '⚠️ Reorder Needed' : '🟢 In Stock'}
+                                      {isLow ? <><i className="fas fa-triangle-exclamation" /> Reorder Needed</> : <><i className="fas fa-circle" style={{ fontSize: '.5rem' }} /> In Stock</>}
                                     </span>
                                   </td>
                                   <td style={{ textAlign: 'right' }}>
@@ -3811,8 +3798,8 @@ export default function Admin() {
                     Update your administrative credentials, contact information, and security password.
                   </p>
                 </div>
-                <span style={{ fontSize: '.76rem', color: '#10B981', fontWeight: 700, background: 'rgba(16, 185, 129, 0.1)', padding: '4px 14px', borderRadius: 20, border: '1px solid rgba(16, 185, 129, 0.25)' }}>
-                  👑 {currentAdminProfile?.role?.toUpperCase() || 'ADMINISTRATOR'}
+                <span style={{ fontSize: '.76rem', color: '#10B981', fontWeight: 700, background: 'rgba(16, 185, 129, 0.1)', padding: '4px 14px', borderRadius: 20, border: '1px solid rgba(16, 185, 129, 0.25)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <i className="fas fa-crown" /> {currentAdminProfile?.role?.toUpperCase() || 'ADMINISTRATOR'}
                 </span>
               </div>
 
@@ -3837,8 +3824,15 @@ export default function Admin() {
                       >
                         {adminProfileState.customAvatarUrl ? (
                           <img
-                            src={optimizeCloudinaryUrl(adminProfileState.customAvatarUrl, 'f_auto,q_auto,c_fill,w_200,h_200')}
+                            src={optimizeCloudinaryUrl(adminProfileState.customAvatarUrl, 'c_fill,w_200,h_200')}
                             alt="Profile Avatar"
+                            onError={(e) => {
+                              if (e.currentTarget.src !== adminProfileState.customAvatarUrl) {
+                                e.currentTarget.src = adminProfileState.customAvatarUrl;
+                              } else {
+                                e.currentTarget.style.display = 'none';
+                              }
+                            }}
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           />
                         ) : (
@@ -3918,8 +3912,8 @@ export default function Admin() {
 
                 {/* 1. Identity & Contact Information */}
                 <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.5)', border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 22 }}>
-                  <b style={{ fontSize: '1rem', color: themeText, display: 'block', marginBottom: 14 }}>
-                    👤 Profile Details
+                  <b style={{ fontSize: '1rem', color: themeText, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                    <i className="fas fa-user" /> Profile Details
                   </b>
                   <div className="admin-grid-2-col" style={{ gap: 14 }}>
                     <div className="field">
@@ -3968,8 +3962,8 @@ export default function Admin() {
                 {/* 2. Password Security Management */}
                 <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.5)', border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 22 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
-                    <b style={{ fontSize: '1rem', color: themeText }}>
-                      🔒 Password Security
+                    <b style={{ fontSize: '1rem', color: themeText, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <i className="fas fa-lock" /> Password Security
                     </b>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                       {currentAdminProfile?.employee_id && (
@@ -3985,8 +3979,11 @@ export default function Admin() {
                         background: currentAdminProfile?.password_status === 'N/A' || !currentAdminProfile?.has_password ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)',
                         color: currentAdminProfile?.password_status === 'N/A' || !currentAdminProfile?.has_password ? '#F59E0B' : '#10B981',
                         border: `1px solid ${currentAdminProfile?.password_status === 'N/A' || !currentAdminProfile?.has_password ? 'rgba(245, 158, 11, 0.35)' : 'rgba(16, 185, 129, 0.35)'}`,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
                       }}>
-                        {currentAdminProfile?.password_status === 'N/A' || !currentAdminProfile?.has_password ? 'Password: N/A' : 'Password: Configured 🔒'}
+                        {currentAdminProfile?.password_status === 'N/A' || !currentAdminProfile?.has_password ? 'Password: N/A' : <>Password: Configured <i className="fas fa-lock" /></>}
                       </span>
                     </div>
                   </div>
@@ -4038,7 +4035,7 @@ export default function Admin() {
                 {confirmDeleteSelf ? (
                   <div style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: 18, padding: 20, textAlign: 'center' }}>
                     <b style={{ color: '#F87171', display: 'block', fontSize: '1.05rem', marginBottom: 6 }}>
-                      ⚠️ Remove This Administrative Account?
+                      <i className="fas fa-triangle-exclamation" style={{ marginRight: 6 }} /> Remove This Administrative Account?
                     </b>
                     <p style={{ color: '#FECACA', fontSize: '.84rem', margin: '0 0 16px', maxWidth: 480, marginLeft: 'auto', marginRight: 'auto' }}>
                       This action will permanently purge your profile and administrative credentials from the database. You will be signed out immediately.
@@ -4080,9 +4077,9 @@ export default function Admin() {
                       type="submit"
                       disabled={savingSettings}
                       className="btn btn-sky"
-                      style={{ justifyContent: 'center', padding: '14px 20px', fontWeight: 800, fontSize: '.95rem', borderRadius: 9999 }}
+                      style={{ justifyContent: 'center', padding: '14px 20px', fontWeight: 800, fontSize: '.95rem', borderRadius: 9999, display: 'inline-flex', alignItems: 'center', gap: 6 }}
                     >
-                      {savingSettings ? '💾 Saving to Database…' : '💾 Save Profile'}
+                      {savingSettings ? 'Saving to Database…' : <><i className="fas fa-floppy-disk" /> Save Profile</>}
                     </button>
                     <button
                       type="button"
@@ -4311,15 +4308,15 @@ export default function Admin() {
                         cursor: 'pointer',
                       }}
                     >
-                      <option value="employee">👔 Employee Recordings (Default)</option>
-                      <option value="client">👤 Client Recordings</option>
-                      <option value="ALL">🌐 All Users</option>
+                      <option value="employee">Employee Recordings (Default)</option>
+                      <option value="client">Client Recordings</option>
+                      <option value="ALL">All Users</option>
                     </select>
 
                     {/* Specific Day Selector */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 10 }}>
                       <span style={{ fontSize: '.84rem', fontWeight: 800, color: themeText, display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span>📅</span> SELECT DAY:
+                        <i className="fas fa-calendar-alt" style={{ color: '#0EA5E9' }} /> SELECT DAY:
                       </span>
                       <input
                         type="date"
@@ -4862,28 +4859,29 @@ export default function Admin() {
                     disabled={searchingUsers}
                     style={{ border: `1px solid ${themeBorder}`, color: themeText, background: isLightMode ? '#FFF' : 'rgba(255,255,255,0.05)', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                   >
-                    🔄 {searchingUsers ? 'Loading…' : 'Refresh'}
+                    <i className={`fas fa-rotate ${searchingUsers ? 'fa-spin' : ''}`} /> {searchingUsers ? 'Loading…' : 'Refresh'}
                   </button>
                   {accountsSubTab === 'staff' && (
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       <button
                         className="btn btn-sky btn-sm"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                         onClick={() => {
                           setNewStaff({ first_name: '', middle_name: '', last_name: '', full_name: '', email: '', password: '', phone: '', role: 'administrator' });
                           setShowCreateModal(true);
                         }}
                       >
-                        👑 + Provision Administrator
+                        <i className="fas fa-crown" /> Provision Administrator
                       </button>
                       <button
                         className="btn btn-sm"
-                        style={{ border: `1px solid ${themeBorder}`, color: themeText, background: isLightMode ? '#FFF' : 'rgba(255,255,255,0.05)' }}
+                        style={{ border: `1px solid ${themeBorder}`, color: themeText, background: isLightMode ? '#FFF' : 'rgba(255,255,255,0.05)', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                         onClick={() => {
                           setNewStaff({ first_name: '', middle_name: '', last_name: '', full_name: '', email: '', password: '', phone: '', role: 'receptionist' });
                           setShowCreateModal(true);
                         }}
                       >
-                        🛡️ + Provision Staff
+                        <i className="fas fa-shield-halved" /> Provision Staff
                       </button>
                     </div>
                   )}
@@ -4893,23 +4891,23 @@ export default function Admin() {
               {/* SUB-TAB SWITCHER */}
               <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.04)', borderRadius: 12, padding: 4 }}>
                 {[
-                  { key: 'staff', label: '🛡️ Staff & Admins', count: users.filter(u => ['administrator', 'receptionist', 'accounting', 'staff'].includes(u.role)).length },
-                  { key: 'customers', label: '🏨 Customers & Guests', count: users.filter(u => !u.role || u.role === 'customer').length },
+                  { key: 'staff', label: 'Staff & Admins', icon: 'fas fa-shield-halved', count: users.filter(u => ['administrator', 'receptionist', 'accounting', 'staff'].includes(u.role)).length },
+                  { key: 'customers', label: 'Customers & Guests', icon: 'fas fa-hotel', count: users.filter(u => !u.role || u.role === 'customer').length },
                 ].map(tab => (
                   <button
                     key={tab.key}
                     onClick={() => { setAccountsSubTab(tab.key); setRoleFilter(''); }}
                     style={{
                       flex: 1, padding: '10px 16px', border: 'none', borderRadius: 10, cursor: 'pointer',
-                      fontSize: '.82rem', fontWeight: 700, transition: 'all 0.25s ease',
-                      background: accountsSubTab === tab.key
-                        ? (tab.key === 'staff' ? 'linear-gradient(135deg, #4338CA, #6366F1)' : 'linear-gradient(135deg, #0284C7, #0EA5E9)')
-                        : 'transparent',
+                      fontSize: '.84rem', fontWeight: 700, transition: 'all 0.25s ease',
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                      background: accountsSubTab === tab.key ? (tab.key === 'staff' ? 'linear-gradient(135deg, #0284C7, #0EA5E9)' : 'linear-gradient(135deg, #4338CA, #6366F1)') : 'transparent',
                       color: accountsSubTab === tab.key ? '#FFF' : themeMuted,
-                      boxShadow: accountsSubTab === tab.key ? '0 4px 12px rgba(99,102,241,0.25)' : 'none',
+                      boxShadow: accountsSubTab === tab.key ? '0 4px 12px rgba(14,165,233,0.25)' : 'none',
                     }}
                   >
-                    {tab.label} <span style={{ opacity: 0.8, fontSize: '.72rem', marginLeft: 4 }}>({tab.count})</span>
+                    <i className={tab.icon} />
+                    {tab.label} <span style={{ opacity: 0.85, fontSize: '.74rem', marginLeft: 4 }}>({tab.count})</span>
                   </button>
                 ))}
               </div>
@@ -4965,7 +4963,7 @@ export default function Admin() {
                                     border: `1px solid ${u.role === 'administrator' ? 'rgba(139,92,246,0.3)' : u.role === 'receptionist' ? 'rgba(14,165,233,0.3)' : 'rgba(245,158,11,0.3)'}`,
                                   }}>{u.role}</span>
                                 </td>
-                                <td><span style={{ color: '#10B981', fontWeight: 600, fontSize: '.78rem' }}>🟢 Active</span></td>
+                                <td><span style={{ color: "#10B981", fontWeight: 600, fontSize: ".78rem" }}><i className="fas fa-circle" style={{ fontSize: ".6rem", color: "#10B981", marginRight: 4 }} />Active</span></td>
                                 <td>
                                   <select
                                     value={u.role || 'staff'}
@@ -4983,16 +4981,16 @@ export default function Admin() {
                                     <button className="act-btn" style={{ color: '#38BDF8', borderColor: '#38BDF8' }}
                                       title="Edit profile & contact details"
                                       onClick={() => setEditingUser(u)}>
-                                      ✏️ Edit
+                                      <i className="fas fa-pen-to-square" style={{ marginRight: 4 }} />Edit
                                     </button>
                                     <button className="act-btn" style={{ color: '#0EA5E9', borderColor: '#38BDF8' }}
                                       title="Reset user password"
                                       onClick={() => { setRecoveryTarget(u); setNewPassword(''); }}>
-                                      🔑 Reset
+                                      <i className="fas fa-key" style={{ marginRight: 4 }} />Reset
                                     </button>
                                     <button className="act-btn" style={{ color: '#EF4444', borderColor: '#EF4444' }}
                                       title="Remove account permanently"
-                                      aria-label="🗑️ Delete"
+                                      aria-label="Delete"
                                       onClick={() => setUserToDelete(u)}>
                                       Remove
                                     </button>
@@ -5019,12 +5017,12 @@ export default function Admin() {
                       const activeStays = custUsers.filter(u => (u.stays_count || 0) > 0).length;
                       const totalRev = custUsers.reduce((sum, u) => sum + (u.total_spent_php || 0), 0);
                       return [
-                        { label: 'TOTAL CUSTOMERS', value: totalCust, icon: '👥', color: '#0EA5E9' },
-                        { label: 'WITH ACTIVE STAYS', value: activeStays, icon: '🏨', color: '#10B981' },
-                        { label: 'TOTAL REVENUE', value: money(totalRev), icon: '💰', color: '#F59E0B' },
+                        { label: 'TOTAL CUSTOMERS', value: totalCust, icon: 'fas fa-users', color: '#0EA5E9' },
+                        { label: 'WITH ACTIVE STAYS', value: activeStays, icon: 'fas fa-hotel', color: '#10B981' },
+                        { label: 'TOTAL REVENUE', value: money(totalRev), icon: 'fas fa-money-bill-wave', color: '#F59E0B' },
                       ].map((s, si) => (
                         <div key={si} style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.5)', border: `1px solid ${themeBorder}`, borderRadius: 12, padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <span style={{ fontSize: '1.6rem' }}>{s.icon}</span>
+                          <span style={{ fontSize: "1.6rem" }}><i className={s.icon} style={{ color: s.color }} /></span>
                           <div>
                             <span style={{ fontSize: '.68rem', color: themeMuted, fontWeight: 700, letterSpacing: '.08em' }}>{s.label}</span>
                             <b style={{ display: 'block', fontSize: '1.3rem', color: s.color }}>{s.value}</b>
@@ -5068,16 +5066,16 @@ export default function Admin() {
                                     <button className="act-btn" style={{ color: '#38BDF8', borderColor: '#38BDF8' }}
                                       title="Edit guest profile & contact details"
                                       onClick={() => setEditingUser(u)}>
-                                      ✏️ Edit
+                                      <i className="fas fa-pen-to-square" style={{ marginRight: 4 }} />Edit
                                     </button>
                                     <button className="act-btn" style={{ color: '#0EA5E9', borderColor: '#38BDF8' }}
                                       title="Reset guest password"
                                       onClick={() => { setRecoveryTarget(u); setNewPassword(''); }}>
-                                      🔑 Reset
+                                      <i className="fas fa-key" style={{ marginRight: 4 }} />Reset
                                     </button>
                                     <button className="act-btn" style={{ color: '#EF4444', borderColor: '#EF4444' }}
                                       title="Remove account permanently"
-                                      aria-label="🗑️ Delete"
+                                      aria-label="Delete"
                                       onClick={() => setUserToDelete(u)}>
                                       Remove
                                     </button>
@@ -5107,17 +5105,17 @@ export default function Admin() {
                   <h3 className="serif" style={{ fontSize: '1.45rem', margin: '4px 0 0', color: themeText, display: 'flex', alignItems: 'center', gap: 8 }}>
                     {ledgerSubView === 'stay_folios' && (
                       <>
-                        <span>📋</span> Guest Stay Folios
+                        <><i className="fas fa-clipboard-list" style={{ marginRight: 6 }} />Guest Stay Folios</>
                       </>
                     )}
                     {ledgerSubView === 'availability' && (
                       <>
-                        <span>📅</span> Visual Room Lock & Availability Calendar
+                        <><i className="fas fa-calendar-alt" style={{ marginRight: 6 }} />Visual Room Lock & Availability Calendar</>
                       </>
                     )}
                     {ledgerSubView === 'debit_credit' && (
                       <>
-                        <span>⚖️</span> Reservation Financial Ledger (General Ledger (Debit & Credit System))
+                        <><i className="fas fa-scale-balanced" style={{ marginRight: 6 }} />Reservation Financial Ledger (General Ledger (Debit & Credit System))</>
                       </>
                     )}
                   </h3>
@@ -5184,11 +5182,11 @@ export default function Admin() {
                           gap: 6,
                         }}
                       >
-                        <option value="">⚙️ Booking Actions ▾</option>
-                        <option value="book">➕ New Walk-In / Phone Booking</option>
-                        <option value="refund">💰 Process Guest Refund</option>
-                        <option value="cancel">✕ Cancel Reservation</option>
-                        <option value="refresh">🔄 Refresh Stays</option>
+                        <option value="">Booking Actions ▾</option>
+                        <option value="book">+ New Walk-In / Phone Booking</option>
+                        <option value="refund">Process Guest Refund</option>
+                        <option value="cancel">Cancel Reservation</option>
+                        <option value="refresh">Refresh Stays</option>
                       </select>
 
                       {/* Viewable Rows Count Dropdown */}
@@ -5225,14 +5223,14 @@ export default function Admin() {
                         onClick={() => setShowAddReservationModal(true)}
                         style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
                       >
-                        <span>➕</span> Walk-In Booking
+                        <><i className="fas fa-plus" /> Walk-In Booking</>
                       </button>
                       <button
                         className="btn btn-sm btn-ghost"
                         onClick={() => setLedgerSubView('stay_folios')}
                         style={{ color: themeText, border: `1px solid ${themeBorder}`, fontWeight: 600 }}
                       >
-                        <span>📋</span> View Folios Table
+                        <><i className="fas fa-clipboard-list" /> View Folios Table</>
                       </button>
                       <button
                         className="btn btn-sm btn-ghost"
@@ -5242,7 +5240,7 @@ export default function Admin() {
                         }}
                         style={{ color: themeText, border: `1px solid ${themeBorder}`, fontWeight: 600 }}
                       >
-                        🔄 Refresh Calendar
+                        <><i className="fas fa-rotate" /> Refresh Calendar</>
                       </button>
                     </>
                   )}
@@ -5254,7 +5252,7 @@ export default function Admin() {
                         onClick={() => setShowAddJournalModal(true)}
                         style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
                       >
-                        <span>➕</span> New Journal Entry
+                        <><i className="fas fa-plus" /> New Journal Entry</>
                       </button>
                       <button
                         className="btn btn-sm btn-ghost"
@@ -5271,7 +5269,7 @@ export default function Admin() {
                         }}
                         title="Automatically sync and post unrecorded reservations and orders as double-entry journal vouchers"
                       >
-                        <span>⚡</span> {reconcilingLedger ? 'Reconciling…' : 'Sync & Reconcile Stays'}
+                        <><i className="fas fa-bolt" /> {reconcilingLedger ? 'Reconciling…' : 'Sync & Reconcile Stays'}</>
                       </button>
                       <button
                         className="btn btn-sm btn-ghost"
@@ -5290,7 +5288,7 @@ export default function Admin() {
                         }}
                         title="Export or Import PostgreSQL SQL dump, JSON, CSV, or logbook notation"
                       >
-                        <span>💾</span> PostgreSQL Backup & Migration
+                        <><i className="fas fa-floppy-disk" /> PostgreSQL Backup & Migration</>
                       </button>
                       <button
                         className="btn btn-sm btn-ghost"
@@ -5301,7 +5299,7 @@ export default function Admin() {
                         disabled={loadingLedger || loadingReservations}
                         style={{ color: themeText, border: `1px solid ${themeBorder}`, fontWeight: 600 }}
                       >
-                        {loadingLedger ? 'Refreshing…' : '🔄 Refresh Ledger'}
+                        {loadingLedger ? 'Refreshing…' : <><i className="fas fa-rotate" /> Refresh Ledger</>}
                       </button>
                     </>
                   )}
@@ -5349,7 +5347,7 @@ export default function Admin() {
                     transition: 'all 0.2s ease',
                   }}
                 >
-                  <span style={{ fontSize: '1.05rem' }}>📋</span>
+                  <i className="fas fa-clipboard-list" style={{ fontSize: "1.05rem" }} />
                   <span>Guest Stay Folios</span>
                   <span
                     style={{
@@ -5393,7 +5391,7 @@ export default function Admin() {
                     transition: 'all 0.2s ease',
                   }}
                 >
-                  <span style={{ fontSize: '1.05rem' }}>📅</span>
+                  <i className="fas fa-calendar-alt" style={{ fontSize: "1.05rem" }} />
                   <span>Visual Room Lock & Calendar</span>
                 </button>
 
@@ -5425,7 +5423,7 @@ export default function Admin() {
                     transition: 'all 0.2s ease',
                   }}
                 >
-                  <span style={{ fontSize: '1.05rem' }}>⚖️</span>
+                  <i className="fas fa-scale-balanced" style={{ fontSize: "1.05rem" }} />
                   <span>Reservation Financial Ledger</span>
                   <span
                     style={{
@@ -5494,7 +5492,7 @@ export default function Admin() {
                       <div style={{ padding: '16px 18px', background: isBalanced ? (isLightMode ? '#F0FDF4' : 'rgba(34,197,94,0.1)') : (isLightMode ? '#FFFBEB' : 'rgba(245,158,11,0.1)'), borderRadius: 14, border: `1px solid ${isBalanced ? (isLightMode ? '#BBF7D0' : 'rgba(34,197,94,0.25)') : (isLightMode ? '#FDE68A' : 'rgba(245,158,11,0.25)')}` }}>
                         <small style={{ color: isBalanced ? (isLightMode ? '#15803D' : '#4ADE80') : (isLightMode ? '#B45309' : '#FBBF24'), textTransform: 'uppercase', fontSize: '.7rem', fontWeight: 800, letterSpacing: '.06em' }}>Trial Balance Status</small>
                         <b style={{ display: 'block', fontSize: '1.35rem', color: isBalanced ? (isLightMode ? '#166534' : '#22C55E') : (isLightMode ? '#92400E' : '#F59E0B'), marginTop: 4 }}>
-                          {isBalanced ? '✓ Balanced (0.00)' : `⚠ Imbalance: ${money(netDifference)}`}
+                          {isBalanced ? <><i className="fas fa-check" style={{ marginRight: 6 }} />Balanced (0.00)</> : <><i className="fas fa-triangle-exclamation" style={{ marginRight: 6 }} />Imbalance: {money(netDifference)}</>}
                         </b>
                         <span style={{ fontSize: '.74rem', color: isBalanced ? '#22C55E' : '#F59E0B' }}>
                           {isBalanced ? 'Debits equal Credits perfectly' : 'Review adjusting entries'}
@@ -5869,12 +5867,12 @@ export default function Admin() {
                           outline: 'none',
                         }}
                       >
-                        <option value="all">🌐 All Folios ({allBookings.length})</option>
-                        <option value="confirmed">📅 Upcoming Confirmed ({allBookings.filter(b => b.status === 'confirmed').length})</option>
-                        <option value="checked_in">🏨 In-House / Checked In ({allBookings.filter(b => b.status === 'checked_in').length})</option>
-                        <option value="checked_out">🚪 Checked Out ({allBookings.filter(b => b.status === 'checked_out').length})</option>
-                        <option value="pending">⏳ Pending Approval ({allBookings.filter(b => b.status === 'pending').length})</option>
-                        <option value="cancelled">✕ Cancelled ({allBookings.filter(b => b.status === 'cancelled').length})</option>
+                        <option value="all">All Folios ({allBookings.length})</option>
+                        <option value="confirmed">Upcoming Confirmed ({allBookings.filter(b => b.status === 'confirmed').length})</option>
+                        <option value="checked_in">In-House / Checked In ({allBookings.filter(b => b.status === 'checked_in').length})</option>
+                        <option value="checked_out">Checked Out ({allBookings.filter(b => b.status === 'checked_out').length})</option>
+                        <option value="pending">Pending Approval ({allBookings.filter(b => b.status === 'pending').length})</option>
+                        <option value="cancelled">Cancelled ({allBookings.filter(b => b.status === 'cancelled').length})</option>
                       </select>
                     </div>
                     <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -5947,7 +5945,7 @@ export default function Admin() {
                                 <b>{b.rooms?.name || 'Assigned Room'}</b>
                                 {b.notes && (b.notes.toLowerCase().includes('pool') || b.notes.toLowerCase().includes('swimming')) ? (
                                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 4, fontSize: '.7rem', background: 'rgba(56,189,248,0.15)', color: '#0EA5E9', border: '1px solid rgba(56,189,248,0.35)', padding: '1px 6px', borderRadius: 8, fontWeight: 700 }}>
-                                    🏊 Pool Pass
+                                    <><i className="fas fa-person-swimming" style={{ marginRight: 4 }} />Pool Pass</>
                                   </span>
                                 ) : (
                                   <span style={{ display: 'block', marginTop: 2, fontSize: '.68rem', color: themeMuted }}>
@@ -6055,20 +6053,44 @@ export default function Admin() {
                 <div>
                   <AvailabilityCalendar
                     rooms={roomsList}
+                    bookings={allBookings}
                     isLightMode={isLightMode}
                     onClose={() => setLedgerSubView('stay_folios')}
-                    onSelectDates={(cin, cout) => {
-                      const activeRoom = roomsList.find((r) => r.id === newReservation.room_id) || roomsList[0];
-                      const nights = Math.max(1, Math.round((new Date(cout).getTime() - new Date(cin).getTime()) / 86400000));
+                    onViewList={() => setLedgerSubView('stay_folios')}
+                    onNewBooking={() => {
+                      const activeRoom = roomsList[0];
                       setNewReservation((prev) => ({
                         ...prev,
                         room_id: prev.room_id || activeRoom?.id || '',
+                        check_in: prev.check_in || '2026-10-20',
+                        check_out: prev.check_out || '2026-10-21',
+                        total_php: activeRoom?.rate_php || 3500,
+                      }));
+                      setShowAddReservationModal(true);
+                    }}
+                    onSelectBooking={(stay) => {
+                      const foundBooking = allBookings.find((b: any) => b.id === stay.id);
+                      if (foundBooking) {
+                        toast(`Selected reservation for ${stay.guestName} (${stay.unitName})`);
+                      }
+                    }}
+                    onSelectDates={(cin, cout, targetRoomId, unitInfo) => {
+                      const activeRoom = (targetRoomId ? roomsList.find((r) => r.id === targetRoomId) : null) || roomsList.find((r) => r.id === newReservation.room_id) || roomsList[0];
+                      const nights = Math.max(1, Math.round((new Date(cout).getTime() - new Date(cin).getTime()) / 86400000));
+                      const unitTag = unitInfo && unitInfo.unitNumber ? `[Unit ${unitInfo.unitNumber}]` : '';
+                      const cleanNotes = (newReservation.notes || '').replace(/\[Unit\s*\d+\]\s*/g, '').trim();
+                      const nextNotes = unitTag ? `${unitTag} ${cleanNotes}`.trim() : cleanNotes;
+
+                      setNewReservation((prev) => ({
+                        ...prev,
+                        room_id: targetRoomId || prev.room_id || activeRoom?.id || '',
                         check_in: cin,
                         check_out: cout,
                         total_php: (activeRoom?.rate_php || 3500) * nights,
+                        notes: nextNotes || prev.notes,
                       }));
                       setShowAddReservationModal(true);
-                      toast(`✦ Check-in (${fmtDate(cin)}) and Check-out (${fmtDate(cout)}) set in New Reservation modal`);
+                      toast(`✦ ${unitInfo?.name || activeRoom?.name || 'Unit'} selected: Check-in (${fmtDate(cin)}) and Check-out (${fmtDate(cout)})`);
                     }}
                   />
                 </div>
@@ -6230,10 +6252,10 @@ export default function Admin() {
                   return (
                     <div style={{ padding: '40px 20px', textAlign: 'center', color: themeMuted, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.02)', borderRadius: 14, border: `1px dashed ${themeBorder}` }}>
                       <p style={{ fontSize: '1.1rem', margin: '0 0 6px', color: themeText, fontWeight: 700 }}>
-                        {notifFilter === 'unread' && "🎉 You're all caught up! No unread notifications."}
-                        {notifFilter === 'read' && "📖 No read notifications found in history."}
-                        {notifFilter === 'sms' && "📱 No SMS dispatch messages found."}
-                        {notifFilter === 'system' && "⚙️ No system log alerts found."}
+                        {notifFilter === 'unread' && <><i className="fas fa-trophy" style={{ color: '#F59E0B', marginRight: 6 }} />You're all caught up! No unread notifications.</>}
+                        {notifFilter === 'read' && <><i className="fas fa-book-open" style={{ color: '#0EA5E9', marginRight: 6 }} />No read notifications found in history.</>}
+                        {notifFilter === 'sms' && <><i className="fas fa-mobile-screen-button" style={{ color: '#10B981', marginRight: 6 }} />No SMS dispatch messages found.</>}
+                        {notifFilter === 'system' && <><i className="fas fa-gear" style={{ color: '#6366F1', marginRight: 6 }} />No system log alerts found.</>}
                       </p>
                       <small>
                         {notifFilter === 'unread' ? 'All alerts have been marked as read. Switch filter above to "Read" or "All Notifications" to view history.' : 'Check other filters or wait for upcoming alerts.'}
@@ -6271,7 +6293,7 @@ export default function Admin() {
                             {!n.is_read ? (
                               <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#F43F5E', display: 'inline-block' }} title="Unread alert" />
                             ) : (
-                              <span style={{ fontSize: '.72rem', color: '#10B981', fontWeight: 600 }}>✓ Read</span>
+                              <span style={{ fontSize: ".72rem", color: "#10B981", fontWeight: 600 }}><i className="fas fa-check" style={{ marginRight: 4 }} />Read</span>
                             )}
                           </div>
                           <p style={{ margin: 0, fontSize: '.9rem', color: themeText, lineHeight: 1.4 }}>
@@ -6311,7 +6333,7 @@ export default function Admin() {
                             }}
                           >
                             <option value="">Options ▾</option>
-                            <option value="view">👁️ View Details</option>
+                            <option value="view">View Details</option>
                             <option value="toggle">{n.is_read ? 'Mark as Unread' : 'Mark as Read'}</option>
                             <option value="remove">Remove</option>
                           </select>
@@ -6488,7 +6510,7 @@ export default function Admin() {
                             (e.currentTarget as HTMLButtonElement).style.background = 'rgba(15, 23, 42, 0.75)';
                           }}
                         >
-                          ✕
+                          <i className="fas fa-xmark" />
                         </button>
                       </div>
 
@@ -6522,9 +6544,9 @@ export default function Admin() {
                             {activeWalkInRoom?.name || 'Walk-In Reservation'}
                           </h3>
                           <div style={{ fontSize: '.74rem', color: '#CBD5E1', marginTop: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span>👥 Up to {activeWalkInRoom?.capacity || 4} Guests</span>
+                            <span><i className="fas fa-users" style={{ marginRight: 4 }} />Up to {activeWalkInRoom?.capacity || 4} Guests</span>
                             <span>•</span>
-                            <span>🏷️ {activeWalkInRoom?.units || 1} Total Unit{Number(activeWalkInRoom?.units || 1) > 1 ? 's' : ''}</span>
+                            <span><i className="fas fa-tag" style={{ marginRight: 4 }} />{activeWalkInRoom?.units || 1} Total Unit{Number(activeWalkInRoom?.units || 1) > 1 ? "s" : ""}</span>
                           </div>
                         </div>
 
@@ -6600,7 +6622,7 @@ export default function Admin() {
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                             <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, margin: 0 }}>Room *</label>
                             <span style={{ fontSize: '.7rem', color: '#0EA5E9', fontWeight: 600 }}>
-                              🖼️ Changing selection updates photo at top
+                              <><i className="fas fa-image" style={{ marginRight: 4 }} />Changing selection updates photo at top</>
                             </span>
                           </div>
                           <select
@@ -6628,24 +6650,76 @@ export default function Admin() {
                           </select>
                         </div>
 
+                        {/* SPECIFIC PHYSICAL UNIT SELECTOR FOR MULTI-UNIT ACCOMMODATIONS */}
+                        {Number(activeWalkInRoom?.units) > 1 && (
+                          <div style={{ marginTop: 2 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                              <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, margin: 0 }}>
+                                <i className="fas fa-layer-group" style={{ marginRight: 6 }} />Physical Unit Selection ({activeWalkInRoom.units} units total)
+                              </label>
+                              <span style={{ fontSize: '.7rem', color: '#0EA5E9', fontWeight: 600 }}>
+                                Real-time unit assignment
+                              </span>
+                            </div>
+                            <select
+                              value={(() => {
+                                const m = (newReservation.notes || '').match(/\[Unit\s*(\d+)\]/i);
+                                return m ? m[1] : 'auto';
+                              })()}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                const clean = (newReservation.notes || '').replace(/\[Unit\s*\d+\]\s*/g, '').trim();
+                                const nextNotes = val === 'auto' ? clean : `[Unit ${val}] ${clean}`.trim();
+                                setNewReservation({
+                                  ...newReservation,
+                                  notes: nextNotes,
+                                });
+                              }}
+                              style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText, fontWeight: 600 }}
+                            >
+                              <option value="auto">⚡ Auto-assign first available unit</option>
+                              {Array.from({ length: Number(activeWalkInRoom.units) }, (_, i) => i + 1).map((uNum) => {
+                                const isUnitTaken = reservationsList.some((b: any) =>
+                                  b.room_id === (newReservation.room_id || activeWalkInRoom?.id) &&
+                                  ['pending', 'confirmed', 'checked_in'].includes(b.status) &&
+                                  b.check_in < newReservation.check_out &&
+                                  b.check_out > newReservation.check_in &&
+                                  (b.notes || '').includes(`[Unit ${uNum}]`)
+                                );
+                                return (
+                                  <option key={uNum} value={String(uNum)} disabled={isUnitTaken}>
+                                    Unit {uNum} {isUnitTaken ? '— (Occupied for these dates)' : '— Available'}
+                                  </option>
+                                );
+                              })}
+                            </select>
+                          </div>
+                        )}
+
                         {/* STAY DATES & INTERACTIVE VISUAL CALENDAR */}
-                        <div style={{ borderRadius: 12, border: `1px solid ${isModalRoomLocked ? '#F43F5E' : themeBorder}`, padding: 12, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.02)' }}>
+                        <div style={{ borderRadius: 12, border: `1px solid ${(isModalRoomLocked || isSelectedUnitTaken) ? '#F43F5E' : themeBorder}`, padding: 12, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.02)' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
                             <div>
                               <div style={{ fontSize: '.78rem', fontWeight: 700, color: themeText, display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <span>📅 Stay Dates & Calendar</span>
+                                <span><i className="fas fa-calendar-alt" style={{ marginRight: 6 }} />Stay Dates & Calendar</span>
                                 <span
                                   style={{
                                     fontSize: '.68rem',
                                     padding: '2px 8px',
                                     borderRadius: 6,
-                                    background: isModalRoomLocked ? '#FFF1F2' : '#ECFDF5',
-                                    color: isModalRoomLocked ? '#E11D48' : '#059669',
+                                    background: (isModalRoomLocked || isSelectedUnitTaken) ? '#FFF1F2' : '#ECFDF5',
+                                    color: (isModalRoomLocked || isSelectedUnitTaken) ? '#E11D48' : '#059669',
                                     fontWeight: 700,
-                                    border: `1px solid ${isModalRoomLocked ? 'rgba(244,63,94,0.3)' : 'rgba(16,185,129,0.3)'}`,
+                                    border: `1px solid ${(isModalRoomLocked || isSelectedUnitTaken) ? 'rgba(244,63,94,0.3)' : 'rgba(16,185,129,0.3)'}`,
                                   }}
                                 >
-                                  {isModalRoomLocked ? '🔴 Conflicting Dates' : '🟢 Dates Available'}
+                                  {isModalRoomLocked ? (
+                                    <><i className="fas fa-circle" style={{ color: '#EF4444', marginRight: 4 }} />All Units Booked</>
+                                  ) : isSelectedUnitTaken ? (
+                                    <><i className="fas fa-circle" style={{ color: '#F59E0B', marginRight: 4 }} />Unit Occupied</>
+                                  ) : (
+                                    <><i className="fas fa-circle" style={{ color: '#10B981', marginRight: 4 }} />Dates Available</>
+                                  )}
                                 </span>
                               </div>
                               <span style={{ fontSize: '.72rem', color: themeMuted }}>
@@ -6671,7 +6745,7 @@ export default function Admin() {
                                 transition: 'all 0.2s ease',
                               }}
                             >
-                              <span>📆</span>
+                              <i className="fas fa-calendar-days" />
                               <span>{showWalkInCalendar ? 'Hide Visual Calendar' : 'Show Availability Calendar'}</span>
                             </button>
                           </div>
@@ -6692,15 +6766,21 @@ export default function Admin() {
                                 initialCheckIn={newReservation.check_in}
                                 initialCheckOut={newReservation.check_out}
                                 isLightMode={isLightMode}
-                                onSelectDates={(cin, cout) => {
-                                  const room = roomsList.find((r) => r.id === newReservation.room_id) || activeWalkInRoom;
+                                onSelectDates={(cin, cout, targetRoomId, unitInfo) => {
+                                  const room = (targetRoomId ? roomsList.find((r) => r.id === targetRoomId) : null) || roomsList.find((r) => r.id === newReservation.room_id) || activeWalkInRoom;
                                   const rate = room?.rate_php || 3500;
                                   const nights = Math.max(1, Math.round((new Date(cout).getTime() - new Date(cin).getTime()) / 86400000));
+                                  const unitTag = unitInfo && unitInfo.unitNumber ? `[Unit ${unitInfo.unitNumber}]` : '';
+                                  const cleanNotes = (newReservation.notes || '').replace(/\[Unit\s*\d+\]\s*/g, '').trim();
+                                  const nextNotes = unitTag ? `${unitTag} ${cleanNotes}`.trim() : cleanNotes;
+
                                   setNewReservation((prev) => ({
                                     ...prev,
+                                    room_id: room?.id || prev.room_id,
                                     check_in: cin,
                                     check_out: cout,
                                     total_php: rate * nights,
+                                    notes: nextNotes || prev.notes,
                                   }));
                                 }}
                                 onRoomChange={(roomId) => {
@@ -6770,7 +6850,7 @@ export default function Admin() {
                         {/* SWIMMING POOL ADD-ON DROPDOWN (FRONT DESK WALK-IN) */}
                         <div style={{ marginTop: 6, marginBottom: 8 }}>
                           <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                            <span>🏊 Swimming Pool Add-on Options</span>
+                            <span><i className="fas fa-person-swimming" style={{ marginRight: 6 }} />Swimming Pool Add-on Options</span>
                             {walkInPoolAddon !== 'none' && (
                               <span style={{ color: '#10B981', fontWeight: 800 }}>
                                 +₱{(((POOL_ADDON_OPTIONS.find((o) => o.id === walkInPoolAddon)?.pricePerGuest || 0) * (Number(newReservation.guests) || 1))).toLocaleString()} adjustment
@@ -6885,9 +6965,30 @@ export default function Admin() {
                               gap: 10,
                             }}
                           >
-                            <span style={{ fontSize: '1.2rem' }}>🔒</span>
+                            <i className="fas fa-lock" style={{ fontSize: "1.2rem" }} />
                             <div>
-                              <strong>Overbooking Guard:</strong> This room is already reserved / locked in by another reservation for these dates. Overlapping bookings are blocked. Please select another room or shift the dates in the calendar above.
+                              <strong>Overbooking Guard:</strong> All units of this accommodation are fully booked for these dates. Overlapping bookings are blocked. Please select another room or adjust the stay dates in the calendar above.
+                            </div>
+                          </div>
+                        )}
+
+                        {!isModalRoomLocked && isSelectedUnitTaken && (
+                          <div
+                            style={{
+                              padding: '12px 16px',
+                              borderRadius: 12,
+                              background: isLightMode ? '#FFFBEB' : 'rgba(245, 158, 11, 0.14)',
+                              border: '1px solid rgba(245, 158, 11, 0.4)',
+                              color: '#D97706',
+                              fontSize: '.82rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 10,
+                            }}
+                          >
+                            <i className="fas fa-triangle-exclamation" style={{ fontSize: "1.2rem" }} />
+                            <div>
+                              <strong>Unit Occupied:</strong> The selected physical unit is already booked for these dates. Please select an available unit from the Physical Unit Selection dropdown or switch to Auto-assign.
                             </div>
                           </div>
                         )}
@@ -6903,16 +7004,16 @@ export default function Admin() {
                           </button>
                           <button
                             type="submit"
-                            disabled={creatingReservation || isModalRoomLocked}
+                            disabled={creatingReservation || isModalRoomLocked || isSelectedUnitTaken}
                             className="btn btn-sky btn-sm"
                             style={{
                               fontWeight: 700,
-                              background: isModalRoomLocked ? '#94A3B8' : undefined,
-                              cursor: isModalRoomLocked ? 'not-allowed' : 'pointer',
-                              borderColor: isModalRoomLocked ? '#94A3B8' : undefined,
+                              background: (isModalRoomLocked || isSelectedUnitTaken) ? '#94A3B8' : undefined,
+                              cursor: (isModalRoomLocked || isSelectedUnitTaken) ? 'not-allowed' : 'pointer',
+                              borderColor: (isModalRoomLocked || isSelectedUnitTaken) ? '#94A3B8' : undefined,
                             }}
                           >
-                            {creatingReservation ? 'Saving to Ledger…' : isModalRoomLocked ? '🔒 Dates Taken / Locked' : 'Save & Log to Ledger ✦'}
+                            {creatingReservation ? 'Saving to Ledger…' : isModalRoomLocked ? <><i className="fas fa-lock" style={{ marginRight: 6 }} />All Units Booked</> : isSelectedUnitTaken ? <><i className="fas fa-ban" style={{ marginRight: 6 }} />Unit Occupied</> : 'Save & Log to Ledger ✦'}
                           </button>
                         </div>
                       </form>
@@ -6961,14 +7062,14 @@ export default function Admin() {
                       DOUBLE-ENTRY BOOKKEEPING
                     </span>
                     <h3 className="serif" style={{ fontSize: '1.25rem', margin: '4px 0 0', color: themeText, display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span>➕</span> Record Journal Voucher
+                      <><i className="fas fa-plus" /> Record Journal Voucher</>
                     </h3>
                   </div>
                   <button
                     onClick={() => setShowAddJournalModal(false)}
                     style={{ background: 'transparent', border: 'none', color: themeMuted, fontSize: '1.4rem', cursor: 'pointer', padding: 4 }}
                   >
-                    ✕
+                    <i className="fas fa-xmark" />
                   </button>
                 </div>
 
@@ -6992,7 +7093,7 @@ export default function Admin() {
                           cursor: 'pointer',
                         }}
                       >
-                        ⚖️ Double-Entry Pair (Debit & Credit)
+                        <><i className="fas fa-scale-balanced" style={{ marginRight: 6 }} />Double-Entry Pair (Debit & Credit)</>
                       </button>
                       <button
                         type="button"
@@ -7009,7 +7110,7 @@ export default function Admin() {
                           cursor: 'pointer',
                         }}
                       >
-                        ⚡ Single Adjustment Entry
+                        <><i className="fas fa-bolt" style={{ marginRight: 6 }} />Single Adjustment Entry</>
                       </button>
                     </div>
 
@@ -7229,14 +7330,14 @@ export default function Admin() {
                       POSTGRESQL & SUPABASE DATA PLATFORM
                     </span>
                     <h3 className="serif" style={{ fontSize: '1.25rem', margin: '4px 0 0', color: themeText, display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span>🐘</span> PostgreSQL Ledger Backup & Adaptive Migration
+                      <><i className="fas fa-database" style={{ marginRight: 6 }} />PostgreSQL Ledger Backup & Adaptive Migration</>
                     </h3>
                   </div>
                   <button
                     onClick={() => setShowBackupModal(false)}
                     style={{ background: 'transparent', border: 'none', color: themeMuted, fontSize: '1.4rem', cursor: 'pointer', padding: 4 }}
                   >
-                    ✕
+                    <i className="fas fa-xmark" />
                   </button>
                 </div>
 
@@ -7255,7 +7356,7 @@ export default function Admin() {
                       cursor: 'pointer',
                     }}
                   >
-                    📤 Export PostgreSQL Backup
+                    <><i className="fas fa-upload" style={{ marginRight: 6 }} />Export PostgreSQL Backup</>
                   </button>
                   <button
                     onClick={() => setBackupTab('import')}
@@ -7270,7 +7371,7 @@ export default function Admin() {
                       cursor: 'pointer',
                     }}
                   >
-                    📥 Adaptive Import & Restore
+                    <><i className="fas fa-download" style={{ marginRight: 6 }} />Adaptive Import & Restore</>
                   </button>
                 </div>
 
@@ -7285,7 +7386,7 @@ export default function Admin() {
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14, marginBottom: 20 }}>
                         {/* SQL Dump */}
                         <div style={{ padding: '16px', borderRadius: 14, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)' }}>
-                          <span style={{ fontSize: '1.5rem', display: 'block', marginBottom: 8 }}>🐘</span>
+                          <i className="fas fa-database" style={{ fontSize: "1.5rem", display: "block", marginBottom: 8, color: "#336791" }} />
                           <b style={{ color: themeText, fontSize: '.92rem', display: 'block' }}>PostgreSQL SQL Dump (.sql)</b>
                           <p style={{ color: themeMuted, fontSize: '.74rem', margin: '4px 0 14px' }}>
                             Full DDL, indexes, and transactional INSERT clauses with ON CONFLICT resolution for PostgreSQL 15+ / Supabase.
@@ -7298,7 +7399,7 @@ export default function Admin() {
                               className="btn btn-sky btn-sm"
                               style={{ fontSize: '.74rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}
                             >
-                              <span>📥</span> {downloadingExport === 'sql' ? 'Exporting…' : 'Download .sql'}
+                              <><i className="fas fa-download" /> {downloadingExport === 'sql' ? 'Exporting…' : 'Download .sql'}</>
                             </button>
                             <button
                               type="button"
@@ -7316,14 +7417,14 @@ export default function Admin() {
                                 }
                               }}
                             >
-                              {loadingPreviewSql ? 'Loading…' : '👁️ View / Copy'}
+                              {loadingPreviewSql ? 'Loading…' : <><i className="fas fa-eye" style={{ marginRight: 4 }} />View / Copy</>}
                             </button>
                           </div>
                         </div>
 
                         {/* JSON Archive */}
                         <div style={{ padding: '16px', borderRadius: 14, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)' }}>
-                          <span style={{ fontSize: '1.5rem', display: 'block', marginBottom: 8 }}>📄</span>
+                          <i className="fas fa-file-code" style={{ fontSize: "1.5rem", display: "block", marginBottom: 8, color: "#0EA5E9" }} />
                           <b style={{ color: themeText, fontSize: '.92rem', display: 'block' }}>Structured JSON Backup (.json)</b>
                           <p style={{ color: themeMuted, fontSize: '.74rem', margin: '4px 0 14px' }}>
                             JSON archive containing complete ledger records, Trial Balance audit metrics, and Chart of Accounts catalog.
@@ -7335,13 +7436,13 @@ export default function Admin() {
                             className="btn btn-sky btn-sm"
                             style={{ fontSize: '.74rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}
                           >
-                            <span>📥</span> {downloadingExport === 'json' ? 'Exporting…' : 'Download .json'}
+                            <><i className="fas fa-download" /> {downloadingExport === 'json' ? 'Exporting…' : 'Download .json'}</>
                           </button>
                         </div>
 
                         {/* CSV Spreadsheet */}
                         <div style={{ padding: '16px', borderRadius: 14, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)' }}>
-                          <span style={{ fontSize: '1.5rem', display: 'block', marginBottom: 8 }}>📊</span>
+                          <i className="fas fa-file-csv" style={{ fontSize: "1.5rem", display: "block", marginBottom: 8, color: "#F59E0B" }} />
                           <b style={{ color: themeText, fontSize: '.92rem', display: 'block' }}>RFC 4180 CSV (.csv)</b>
                           <p style={{ color: themeMuted, fontSize: '.74rem', margin: '4px 0 14px' }}>
                             Universal spreadsheet format with dates, accounts, separate debit/credit columns, and running balance.
@@ -7353,7 +7454,7 @@ export default function Admin() {
                             className="btn btn-sky btn-sm"
                             style={{ fontSize: '.74rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}
                           >
-                            <span>📥</span> {downloadingExport === 'csv' ? 'Exporting…' : 'Download .csv'}
+                            <><i className="fas fa-download" /> {downloadingExport === 'csv' ? 'Exporting…' : 'Download .csv'}</>
                           </button>
                         </div>
                       </div>
@@ -7373,7 +7474,7 @@ export default function Admin() {
                                 toast('✦ PostgreSQL SQL dump copied to clipboard!');
                               }}
                             >
-                              📋 Copy to Clipboard
+                              <><i className="fas fa-clipboard" style={{ marginRight: 4 }} />Copy to Clipboard</>
                             </button>
                           </div>
                           <textarea
@@ -7404,20 +7505,20 @@ export default function Admin() {
                       {(() => {
                         const detectFormat = (text: string) => {
                           const t = text.trim();
-                          if (!t) return { label: 'Awaiting file or pasted text…', color: '#64748B', icon: 'ℹ️' };
+                          if (!t) return { label: 'Awaiting file or pasted text…', color: '#64748B', icon: 'fas fa-circle-info' };
                           if (t.includes('INSERT INTO') || t.includes('CREATE TABLE') || (t.startsWith('BEGIN;') && t.includes('INSERT INTO')) || /INSERT\s+INTO\s+[a-z0-9_.]*ledger_entries/i.test(t)) {
-                            return { label: 'Detected Format: PostgreSQL Dump (SQL)', color: '#10B981', icon: '🐘' };
+                            return { label: 'Detected Format: PostgreSQL Dump (SQL)', color: '#10B981', icon: 'fas fa-database' };
                           }
                           if ((t.startsWith('[') && t.endsWith(']')) || (t.startsWith('{') && t.endsWith('}'))) {
-                            return { label: 'Detected Format: JSON Ledger Data', color: '#0EA5E9', icon: '📄' };
+                            return { label: 'Detected Format: JSON Ledger Data', color: '#0EA5E9', icon: 'fas fa-file-code' };
                           }
                           if (t.includes(',') && (t.toLowerCase().includes('debit') || t.toLowerCase().includes('credit') || t.toLowerCase().includes('particulars'))) {
-                            return { label: 'Detected Format: CSV Spreadsheet', color: '#F59E0B', icon: '📊' };
+                            return { label: 'Detected Format: CSV Spreadsheet', color: '#F59E0B', icon: 'fas fa-chart-pie' };
                           }
                           if (t.includes('|') || t.match(/\d+[\d,]*\s*-\s*\d+[\d,]*\s*=/)) {
-                            return { label: 'Detected Format: Physical Logbook Notation', color: '#8B5CF6', icon: '📋' };
+                            return { label: 'Detected Format: Physical Logbook Notation', color: '#8B5CF6', icon: 'fas fa-clipboard-list' };
                           }
-                          return { label: 'Detected Format: Raw Text / Auto-Adaptive', color: '#0EA5E9', icon: '⚡' };
+                          return { label: 'Detected Format: Raw Text / Auto-Adaptive', color: '#0EA5E9', icon: 'fas fa-bolt' };
                         };
 
                         const detected = detectFormat(importContent);
@@ -7425,10 +7526,10 @@ export default function Admin() {
                         return (
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '.78rem', fontWeight: 700, color: detected.color, background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.06)', padding: '4px 10px', borderRadius: 8, border: `1px solid ${detected.color}` }}>
-                              <span>{detected.icon}</span> {detected.label}
+                              <span><i className={detected.icon} /></span> {detected.label}
                             </div>
                             <label style={{ fontSize: '.78rem', color: '#0EA5E9', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-                              <span>📁</span> Upload File (.sql, .json, .csv, .txt)
+                              <><i className="fas fa-folder-open" style={{ marginRight: 4 }} />Upload File (.sql, .json, .csv, .txt)</>
                               <input
                                 type="file"
                                 accept=".sql,.json,.csv,.txt"
@@ -7516,7 +7617,7 @@ export default function Admin() {
                           onClick={handleExecuteImport}
                           style={{ fontWeight: 700 }}
                         >
-                          {importingBackup ? 'Parsing & Restoring…' : '🚀 Execute Adaptive Import ✦'}
+                          {importingBackup ? 'Parsing & Restoring…' : <><i className="fas fa-rocket" style={{ marginRight: 6 }} />Execute Adaptive Import ✦</>}
                         </button>
                       </div>
                     </div>
@@ -7537,7 +7638,7 @@ export default function Admin() {
                       DATABASE MANAGEMENT & ARCHIVAL ENGINE
                     </span>
                     <h3 className="serif" style={{ fontSize: '1.45rem', margin: '4px 0 0', color: themeText, display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span>💾</span> System Backup & Data Explorer
+                      <><i className="fas fa-floppy-disk" /> System Backup & Data Explorer</>
                     </h3>
                     <p className="muted small" style={{ margin: '4px 0 0' }}>
                       Export complete PostgreSQL database dumps, import adaptive backup archives, and inspect operational CSV datasets.
@@ -7551,7 +7652,7 @@ export default function Admin() {
                       disabled={downloadingExport === 'sql'}
                       style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
                     >
-                      <span>📥</span> {downloadingExport === 'sql' ? 'Exporting…' : 'Quick Backup (.sql)'}
+                      <><i className="fas fa-download" /> {downloadingExport === 'sql' ? 'Exporting…' : 'Quick Backup (.sql)'}</>
                     </button>
                     <button
                       type="button"
@@ -7570,7 +7671,7 @@ export default function Admin() {
                         gap: 6,
                       }}
                     >
-                      <span>🚀</span> Restore / Import File
+                      <><i className="fas fa-rocket" /> Restore / Import File</>
                     </button>
                   </div>
                 </div>
@@ -7580,7 +7681,7 @@ export default function Admin() {
                   {/* Card 1: SQL Dump */}
                   <div style={{ padding: '16px', borderRadius: 14, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                      <span style={{ fontSize: '1.4rem' }}>🐘</span>
+                      <i className="fas fa-database" style={{ fontSize: "1.4rem", color: "#336791" }} />
                       <span style={{ fontSize: '.7rem', fontWeight: 800, color: '#10B981', background: isLightMode ? '#ECFDF5' : 'rgba(16,185,129,0.15)', padding: '2px 8px', borderRadius: 10 }}>POSTGRESQL</span>
                     </div>
                     <b style={{ color: themeText, fontSize: '.9rem', display: 'block' }}>PostgreSQL SQL Dump</b>
@@ -7592,14 +7693,14 @@ export default function Admin() {
                       className="btn btn-sky btn-sm"
                       style={{ width: '100%', fontSize: '.76rem', fontWeight: 700 }}
                     >
-                      📥 {downloadingExport === 'sql' ? 'Exporting…' : 'Download .sql'}
+                      <><i className="fas fa-download" style={{ marginRight: 4 }} />{downloadingExport === 'sql' ? 'Exporting…' : 'Download .sql'}</>
                     </button>
                   </div>
 
                   {/* Card 2: JSON Archive */}
                   <div style={{ padding: '16px', borderRadius: 14, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                      <span style={{ fontSize: '1.4rem' }}>📄</span>
+                      <i className="fas fa-file-code" style={{ fontSize: "1.4rem", color: "#0EA5E9" }} />
                       <span style={{ fontSize: '.7rem', fontWeight: 800, color: '#0EA5E9', background: isLightMode ? '#EFF6FF' : 'rgba(14,165,233,0.15)', padding: '2px 8px', borderRadius: 10 }}>JSON</span>
                     </div>
                     <b style={{ color: themeText, fontSize: '.9rem', display: 'block' }}>Structured JSON Backup</b>
@@ -7611,14 +7712,14 @@ export default function Admin() {
                       className="btn btn-sky btn-sm"
                       style={{ width: '100%', fontSize: '.76rem', fontWeight: 700 }}
                     >
-                      📥 {downloadingExport === 'json' ? 'Exporting…' : 'Download .json'}
+                      <><i className="fas fa-download" style={{ marginRight: 4 }} />{downloadingExport === 'json' ? 'Exporting…' : 'Download .json'}</>
                     </button>
                   </div>
 
                   {/* Card 3: CSV Spreadsheet */}
                   <div style={{ padding: '16px', borderRadius: 14, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                      <span style={{ fontSize: '1.4rem' }}>📊</span>
+                      <i className="fas fa-file-csv" style={{ fontSize: "1.4rem", color: "#F59E0B" }} />
                       <span style={{ fontSize: '.7rem', fontWeight: 800, color: '#F59E0B', background: isLightMode ? '#FFFBEB' : 'rgba(245,158,11,0.15)', padding: '2px 8px', borderRadius: 10 }}>CSV</span>
                     </div>
                     <b style={{ color: themeText, fontSize: '.9rem', display: 'block' }}>RFC 4180 CSV Export</b>
@@ -7630,7 +7731,7 @@ export default function Admin() {
                       className="btn btn-sky btn-sm"
                       style={{ width: '100%', fontSize: '.76rem', fontWeight: 700 }}
                     >
-                      📥 {downloadingExport === 'csv' ? 'Exporting…' : 'Download .csv'}
+                      <><i className="fas fa-download" style={{ marginRight: 4 }} />{downloadingExport === 'csv' ? 'Exporting…' : 'Download .csv'}</>
                     </button>
                   </div>
                 </div>
@@ -7669,9 +7770,9 @@ export default function Admin() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: `1px solid ${themeBorder}`, paddingBottom: 12 }}>
               <div>
                 <span style={{ fontSize: '.74rem', color: '#10B981', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>AI CHATBOT INTENTS</span>
-                <h3 style={{ margin: '4px 0 0', fontSize: '1.4rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>🏷️ 186 AI Keyword Intents</h3>
+                <h3 style={{ margin: '4px 0 0', fontSize: '1.4rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}><><i className="fas fa-tags" style={{ marginRight: 6 }} />186 AI Keyword Intents</></h3>
               </div>
-              <button onClick={() => setShowKeywordsModal(false)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => setShowKeywordsModal(false)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}><i className="fas fa-xmark" /></button>
             </div>
 
             <p style={{ fontSize: '.84rem', color: themeMuted, margin: '0 0 16px' }}>Top automated intent keywords recognized from guest inquiries across Webchat, Messenger & WhatsApp:</p>
@@ -7730,10 +7831,10 @@ export default function Admin() {
                   {newStaff.role === 'administrator' ? 'EXECUTIVE RBAC PROVISIONING' : 'ADMINISTRATIVE ACCESS CONTROL'}
                 </span>
                 <h3 style={{ margin: '4px 0 0', fontSize: '1.35rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                  {newStaff.role === 'administrator' ? '👑 Provision Administrator Account' : '🛡️ Provision Staff Account'}
+                  {newStaff.role === 'administrator' ? <><i className="fas fa-crown" style={{ marginRight: 6 }} />Provision Administrator Account</> : <><i className="fas fa-shield-halved" style={{ marginRight: 6 }} />Provision Staff Account</>}
                 </h3>
               </div>
-              <button onClick={() => setShowCreateModal(false)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => setShowCreateModal(false)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}><i className="fas fa-xmark" /></button>
             </div>
 
             <form onSubmit={handleProvisionStaff} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -7830,9 +7931,9 @@ export default function Admin() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: `1px solid ${themeBorder}`, paddingBottom: 12 }}>
               <div>
                 <span style={{ fontSize: '.74rem', color: '#F43F5E', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>ACCOUNT SECURITY</span>
-                <h3 style={{ margin: '4px 0 0', fontSize: '1.25rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>🔑 Reset Credentials</h3>
+                <h3 style={{ margin: '4px 0 0', fontSize: '1.25rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}><i className="fas fa-key" style={{ marginRight: 4 }} />Reset Credentials</h3>
               </div>
-              <button onClick={() => setRecoveryTarget(null)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => setRecoveryTarget(null)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}><i className="fas fa-xmark" /></button>
             </div>
 
             <p style={{ fontSize: '.84rem', color: themeMuted, margin: '0 0 16px' }}>
@@ -7873,9 +7974,9 @@ export default function Admin() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: `1px solid ${themeBorder}`, paddingBottom: 12 }}>
               <div>
                 <span style={{ fontSize: '.74rem', color: '#0EA5E9', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>ACCOUNT MANAGEMENT</span>
-                <h3 style={{ margin: '4px 0 0', fontSize: '1.25rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>✏️ Edit Account Profile</h3>
+                <h3 style={{ margin: '4px 0 0', fontSize: '1.25rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}><i className="fas fa-pen-to-square" style={{ marginRight: 4 }} />Edit Account Profile</h3>
               </div>
-              <button onClick={() => setEditingUser(null)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => setEditingUser(null)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}><i className="fas fa-xmark" /></button>
             </div>
 
             <form onSubmit={handleUpdateUser} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -7932,7 +8033,7 @@ export default function Admin() {
                   </label>
                   {(!editingUser.role || editingUser.role === 'customer') ? (
                     <div style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.05)', color: themeText, fontSize: '.84rem', fontWeight: 600 }}>
-                      👤 Customer / Guest (Fixed)
+                      <><i className="fas fa-user" style={{ marginRight: 6 }} />Customer / Guest (Fixed)</>
                     </div>
                   ) : (
                     <select
@@ -7954,7 +8055,7 @@ export default function Admin() {
                   Cancel
                 </button>
                 <button type="submit" className="btn btn-sky btn-sm" disabled={savingUser}>
-                  {savingUser ? 'Saving…' : 'Save Changes ✦'}
+                  {savingUser ? 'Saving…' : <><i className="fas fa-floppy-disk" style={{ marginRight: 6 }} />Save Changes ✦</>}
                 </button>
               </div>
             </form>
@@ -7968,7 +8069,7 @@ export default function Admin() {
           <div style={{ width: '100%', maxWidth: 440, background: isLightMode ? '#FFFFFF' : '#0F172A', borderRadius: 20, border: '1px solid rgba(239, 68, 68, 0.4)', padding: 24, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <span style={{ fontSize: '.74rem', color: '#EF4444', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>REMOVE ROOM</span>
-              <button onClick={() => setRoomToRemove(null)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => setRoomToRemove(null)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}><i className="fas fa-xmark" /></button>
             </div>
             <h3 style={{ margin: '0 0 10px', fontSize: '1.25rem', color: '#EF4444', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
               Remove "{roomToRemove.name}"?
@@ -8000,7 +8101,7 @@ export default function Admin() {
           <div style={{ width: '100%', maxWidth: 420, background: isLightMode ? '#FFFFFF' : '#0F172A', borderRadius: 20, border: '1px solid rgba(239, 68, 68, 0.4)', padding: 24, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <span style={{ fontSize: '.74rem', color: '#EF4444', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>REMOVE SUPPLY ITEM</span>
-              <button onClick={() => setSupplyToRemove(null)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => setSupplyToRemove(null)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}><i className="fas fa-xmark" /></button>
             </div>
             <h3 style={{ margin: '0 0 10px', fontSize: '1.2rem', color: '#EF4444', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
               Remove "{supplyToRemove.item_name}"?
@@ -8032,7 +8133,7 @@ export default function Admin() {
           <div style={{ width: '100%', maxWidth: 440, background: isLightMode ? '#FFFFFF' : '#0F172A', borderRadius: 20, border: '1px solid rgba(239, 68, 68, 0.4)', padding: 24, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <span style={{ fontSize: '.74rem', color: '#EF4444', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>REMOVE BOOKING FOLIO</span>
-              <button onClick={() => setReservationToRemove(null)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => setReservationToRemove(null)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}><i className="fas fa-xmark" /></button>
             </div>
             <h3 style={{ margin: '0 0 10px', fontSize: '1.25rem', color: '#EF4444', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
               Remove Booking #{reservationToRemove.id.slice(0, 8)}?
@@ -8064,16 +8165,16 @@ export default function Admin() {
           <div style={{ width: '100%', maxWidth: 440, background: isLightMode ? '#FFFFFF' : '#0F172A', borderRadius: 20, border: '1px solid rgba(239, 68, 68, 0.4)', padding: 24, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <span style={{ fontSize: '.74rem', color: '#EF4444', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>DANGER ZONE</span>
-              <button onClick={() => setUserToDelete(null)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => setUserToDelete(null)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}><i className="fas fa-xmark" /></button>
             </div>
             <h3 style={{ margin: '0 0 10px', fontSize: '1.25rem', color: '#EF4444', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-              🗑️ Delete Account Permanently?
+              <><i className="fas fa-trash-can" style={{ marginRight: 6 }} />Delete Account Permanently?</>
             </h3>
             <p style={{ fontSize: '.86rem', color: themeText, lineHeight: 1.5, margin: '0 0 16px' }}>
               Are you sure you want to delete the account for <strong>{userToDelete.full_name || userToDelete.email || 'this user'}</strong> ({userToDelete.role})?
             </p>
             <p style={{ fontSize: '.78rem', color: themeMuted, background: 'rgba(239, 68, 68, 0.1)', padding: '10px 12px', borderRadius: 8, margin: '0 0 18px', border: '1px solid rgba(239,68,68,0.2)' }}>
-              ⚠️ This will delete authentication credentials and profile records from Supabase and log an administrative audit event.
+              <><i className="fas fa-triangle-exclamation" style={{ marginRight: 6 }} />This will delete authentication credentials and profile records from Supabase and log an administrative audit event.</>
             </p>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
               <button type="button" className="btn btn-sm" onClick={() => setUserToDelete(null)} style={{ border: `1px solid ${themeBorder}`, color: themeText }}>
@@ -8100,9 +8201,9 @@ export default function Admin() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <div>
                 <span style={{ fontSize: '.72rem', color: '#22c3ee', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.12em' }}>ADMIN SECURITY RECOVERY</span>
-                <h3 style={{ margin: '4px 0 0', fontSize: '1.25rem', color: '#FFF', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>🔑 Reset Administrator Password</h3>
+                <h3 style={{ margin: '4px 0 0', fontSize: '1.25rem', color: '#FFF', fontFamily: "'Plus Jakarta Sans', sans-serif" }}><i className="fas fa-key" style={{ marginRight: 4 }} />Reset Administrator Password</h3>
               </div>
-              <button onClick={() => setShowAdminForgotModal(false)} style={{ background: 'none', border: 'none', color: '#94A3B8', fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => setShowAdminForgotModal(false)} style={{ background: 'none', border: 'none', color: '#94A3B8', fontSize: '1.2rem', cursor: 'pointer' }}><i className="fas fa-xmark" /></button>
             </div>
 
             {adminRecoveryStep === 1 ? (
@@ -8186,10 +8287,10 @@ export default function Admin() {
                   {refundMode === 'confirm' ? 'ACCOUNTING REFUND APPROVAL' : 'GUEST REFUND CLAIM'}
                 </span>
                 <h3 style={{ margin: '4px 0 0', fontSize: '1.25rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                  {refundMode === 'confirm' ? '💵 Confirm & Process Refund' : '💰 Initiate Refund Request'}
+                  {refundMode === 'confirm' ? <><i className="fas fa-money-bill" style={{ marginRight: 6 }} />Confirm & Process Refund</> : <><i className="fas fa-money-bill-wave" style={{ marginRight: 6 }} />Initiate Refund Request</>}
                 </h3>
               </div>
-              <button onClick={() => setRefundTarget(null)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => setRefundTarget(null)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}><i className="fas fa-xmark" /></button>
             </div>
 
             <p style={{ fontSize: '.84rem', color: themeMuted, margin: '0 0 14px', lineHeight: 1.5 }}>
@@ -8261,7 +8362,7 @@ export default function Admin() {
               )}
 
               <div style={{ padding: '10px 12px', background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.03)', borderRadius: 10, border: `1px solid ${themeBorder}`, fontSize: '.76rem', color: themeMuted, lineHeight: 1.4 }}>
-                📧 <strong>Automated Email Notification:</strong> Submitting will immediately trigger an automated email to <strong>{refundTarget.guest_email || refundTarget.profiles?.email || 'guest email'}</strong> notifying them of this status update.
+                <><i className="fas fa-envelope" style={{ marginRight: 4 }} /> <strong>Automated Email Notification:</strong></> Submitting will immediately trigger an automated email to <strong>{refundTarget.guest_email || refundTarget.profiles?.email || 'guest email'}</strong> notifying them of this status update.
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 8 }}>
@@ -8289,9 +8390,9 @@ export default function Admin() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: `1px solid ${themeBorder}`, paddingBottom: 12 }}>
               <div>
                 <span style={{ fontSize: '.74rem', color: '#0EA5E9', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>ROOM CATALOG</span>
-                <h3 style={{ margin: '4px 0 0', fontSize: '1.35rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>🏡 Add New Room</h3>
+                <h3 style={{ margin: '4px 0 0', fontSize: '1.35rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}><><i className="fas fa-hotel" style={{ marginRight: 6 }} />Add New Room</></h3>
               </div>
-              <button onClick={() => setShowCreateRoomModal(false)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => setShowCreateRoomModal(false)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}><i className="fas fa-xmark" /></button>
             </div>
 
             <form onSubmit={handleCreateRoom} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -8329,7 +8430,7 @@ export default function Admin() {
                     min={100}
                     style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
                     value={newRoom.rate_php}
-                    onChange={(e) => setNewRoom({ ...newRoom, rate_php: e.target.value })}
+                    onChange={(e) => setNewRoom({ ...newRoom, rate_php: Number(e.target.value) || 0 })}
                   />
                 </div>
               </div>
@@ -8344,7 +8445,7 @@ export default function Admin() {
                     max={20}
                     style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
                     value={newRoom.capacity}
-                    onChange={(e) => setNewRoom({ ...newRoom, capacity: e.target.value })}
+                    onChange={(e) => setNewRoom({ ...newRoom, capacity: Number(e.target.value) || 1 })}
                   />
                 </div>
                 <div>
@@ -8356,7 +8457,7 @@ export default function Admin() {
                     max={50}
                     style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
                     value={newRoom.units}
-                    onChange={(e) => setNewRoom({ ...newRoom, units: e.target.value })}
+                    onChange={(e) => setNewRoom({ ...newRoom, units: Number(e.target.value) || 1 })}
                   />
                 </div>
               </div>
@@ -8434,7 +8535,7 @@ export default function Admin() {
                     e.currentTarget.style.boxShadow = '0 4px 14px rgba(14, 165, 233, 0.35)';
                   }}
                 >
-                  💾 Save
+                  <><i className="fas fa-floppy-disk" style={{ marginRight: 6 }} />Save</>
                 </button>
               </div>
             </form>
@@ -8449,9 +8550,9 @@ export default function Admin() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: `1px solid ${themeBorder}`, paddingBottom: 12 }}>
               <div>
                 <span style={{ fontSize: '.74rem', color: '#0EA5E9', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>ROOM DETAILS & PHOTO MANAGEMENT</span>
-                <h3 style={{ margin: '4px 0 0', fontSize: '1.35rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>✏️ Edit {editingRoom.name}</h3>
+                <h3 style={{ margin: '4px 0 0', fontSize: '1.35rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}><i className="fas fa-pen-to-square" style={{ marginRight: 4 }} />Edit {editingRoom.name}</h3>
               </div>
-              <button onClick={() => setEditingRoom(null)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => setEditingRoom(null)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}><i className="fas fa-xmark" /></button>
             </div>
 
             <form onSubmit={handleUpdateRoomSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -8568,7 +8669,7 @@ export default function Admin() {
                           transition: 'all 0.15s ease',
                         }}
                       >
-                        {isSelected ? '✓ ' : '+ '}{amenity}
+                        {isSelected ? <><i className="fas fa-check" style={{ marginRight: 4 }} /></> : '+ '}{amenity}
                       </button>
                     );
                   })}
@@ -8586,7 +8687,7 @@ export default function Admin() {
               {/* SECTION B: ROOM PHOTOS & IMAGE UPLOAD */}
               <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.6)', border: `1px solid ${themeBorder}`, borderRadius: 14, padding: 18 }}>
                 <div style={{ marginBottom: 14 }}>
-                  <b style={{ fontSize: '.92rem', color: themeText, display: 'block' }}>📸 Room Photo / Upload Image</b>
+                  <b style={{ fontSize: '.92rem', color: themeText, display: 'block' }}><><i className="fas fa-camera" style={{ marginRight: 6 }} />Room Photo / Upload Image</></b>
                   <span style={{ fontSize: '.75rem', color: themeMuted }}>Upload room photos directly from your device (JPG, PNG, WebP up to 5MB).</span>
                 </div>
 
@@ -8629,10 +8730,10 @@ export default function Admin() {
                     }
                   }}
                 >
-                  <span style={{ fontSize: '1.8rem', display: 'block', marginBottom: 2 }}>☁️</span>
+                  <i className="fas fa-cloud-arrow-up" style={{ fontSize: "1.8rem", display: "block", marginBottom: 2, color: "#0EA5E9" }} />
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span style={{ fontSize: '.86rem', fontWeight: 700, color: '#0EA5E9' }}>
-                      {uploadingRoomPhoto ? 'Uploading to Cloudinary CDN...' : '📁 Choose Image to Upload'}
+                      {uploadingRoomPhoto ? 'Uploading to Cloudinary CDN...' : <><i className="fas fa-folder-open" style={{ marginRight: 6 }} />Choose Image to Upload</>}
                     </span>
                   </div>
                   <span style={{ fontSize: '.74rem', color: themeMuted }}>
@@ -8670,12 +8771,12 @@ export default function Admin() {
                             />
                             {imgUrl.includes('cloudinary.com') && (
                               <span style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(56, 189, 248, 0.9)', color: '#0F172A', fontSize: '.58rem', fontWeight: 800, padding: '2px 5px', borderRadius: 4 }}>
-                                ☁️ CDN
+                                <><i className="fas fa-cloud" style={{ marginRight: 3 }} />CDN</>
                               </span>
                             )}
                             {isPrimary && (
                               <span style={{ position: 'absolute', top: 4, left: 4, background: '#0EA5E9', color: '#FFF', fontSize: '.6rem', fontWeight: 800, padding: '2px 6px', borderRadius: 4 }}>
-                                ⭐ Primary
+                                <><i className="fas fa-star" style={{ marginRight: 3 }} />Primary</>
                               </span>
                             )}
                             <div style={{ position: 'absolute', bottom: 4, right: 4, display: 'flex', gap: 4 }}>
@@ -8686,7 +8787,7 @@ export default function Admin() {
                                   title="Set as primary showcase image"
                                   style={{ background: 'rgba(0,0,0,0.7)', border: 'none', color: '#FFF', borderRadius: 4, padding: '2px 6px', fontSize: '.68rem', cursor: 'pointer' }}
                                 >
-                                  ⭐ Set Primary
+                                  <><i className="fas fa-star" style={{ marginRight: 3 }} />Set Primary</>
                                 </button>
                               )}
                               <button
@@ -8695,7 +8796,7 @@ export default function Admin() {
                                 title="Remove photo"
                                 style={{ background: 'rgba(239,68,68,0.85)', border: 'none', color: '#FFF', borderRadius: 4, padding: '2px 6px', fontSize: '.68rem', cursor: 'pointer' }}
                               >
-                                ✕
+                                <i className="fas fa-xmark" />
                               </button>
                             </div>
                           </div>
@@ -8794,7 +8895,7 @@ export default function Admin() {
                       e.currentTarget.style.boxShadow = '0 4px 14px rgba(14, 165, 233, 0.35)';
                     }}
                   >
-                    💾 Save
+                    <><i className="fas fa-floppy-disk" style={{ marginRight: 6 }} />Save</>
                   </button>
                 </div>
               </div>
@@ -8810,9 +8911,9 @@ export default function Admin() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: `1px solid ${themeBorder}`, paddingBottom: 12 }}>
               <div>
                 <span style={{ fontSize: '.74rem', color: '#10B981', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em' }}>DEPARTMENT STOCK REGISTRY</span>
-                <h3 style={{ margin: '4px 0 0', fontSize: '1.35rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>📦 Register Supply Item</h3>
+                <h3 style={{ margin: '4px 0 0', fontSize: '1.35rem', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}><><i className="fas fa-box" style={{ marginRight: 6 }} />Register Supply Item</></h3>
               </div>
-              <button onClick={() => setShowCreateSupplyModal(false)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => setShowCreateSupplyModal(false)} style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}><i className="fas fa-xmark" /></button>
             </div>
 
             <form onSubmit={handleCreateSupply} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -8863,7 +8964,7 @@ export default function Admin() {
                     min={0}
                     style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
                     value={newSupply.stock_qty}
-                    onChange={(e) => setNewSupply({ ...newSupply, stock_qty: e.target.value })}
+                    onChange={(e) => setNewSupply({ ...newSupply, stock_qty: Number(e.target.value) || 0 })}
                   />
                 </div>
                 <div>
@@ -8874,7 +8975,7 @@ export default function Admin() {
                     min={1}
                     style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
                     value={newSupply.reorder_at}
-                    onChange={(e) => setNewSupply({ ...newSupply, reorder_at: e.target.value })}
+                    onChange={(e) => setNewSupply({ ...newSupply, reorder_at: Number(e.target.value) || 1 })}
                   />
                 </div>
               </div>
@@ -9012,7 +9113,7 @@ export default function Admin() {
                   onClick={async () => {
                     const id = viewingNotification.id;
                     setViewingNotification(null);
-                    await handleDeleteNotification(id);
+                    await handleDeleteNotif(id);
                   }}
                   style={{
                     display: 'inline-flex',
@@ -9035,13 +9136,8 @@ export default function Admin() {
                   <button
                     type="button"
                     onClick={async () => {
-                      if (viewingNotification.is_read) {
-                        await handleMarkNotificationUnread(viewingNotification.id);
-                        setViewingNotification({ ...viewingNotification, is_read: false });
-                      } else {
-                        await handleMarkNotificationRead(viewingNotification.id);
-                        setViewingNotification({ ...viewingNotification, is_read: true });
-                      }
+                      await handleMarkNotifRead(viewingNotification.id);
+                      setViewingNotification({ ...viewingNotification, is_read: !viewingNotification.is_read });
                     }}
                     className="btn btn-sm"
                     style={{ border: `1px solid ${themeBorder}`, color: themeText, display: 'inline-flex', alignItems: 'center', gap: 6 }}
@@ -9129,7 +9225,7 @@ export default function Admin() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #0EA5E9', paddingBottom: 16, marginBottom: 20 }}>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: '1.4rem' }}>🏖️</span>
+                      <i className="fas fa-umbrella-beach" style={{ fontSize: "1.4rem", color: "#0EA5E9" }} />
                       <h2 style={{ margin: 0, fontSize: '1.45rem', fontWeight: 900, color: '#0F172A', letterSpacing: '-0.02em', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                         J&D BEACH HOUSE RESORT
                       </h2>
@@ -9230,7 +9326,7 @@ export default function Admin() {
                     {hasPoolAddon && poolAmount > 0 && (
                       <tr style={{ borderBottom: '1px solid #E2E8F0', background: '#F0FDF4' }}>
                         <td style={{ padding: '12px' }}>
-                          <b style={{ color: '#047857' }}>🏊 {poolPassName}</b>
+                          <b style={{ color: "#047857" }}><i className="fas fa-person-swimming" style={{ marginRight: 6 }} />{poolPassName}</b>
                           <small style={{ display: 'block', color: '#059669', fontSize: '.74rem' }}>
                             Resort swimming pool privileges for {receiptModalBooking.guests || 2} guest(s)
                           </small>

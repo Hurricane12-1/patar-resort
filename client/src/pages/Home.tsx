@@ -122,7 +122,7 @@ export default function Home() {
           onClick={toggleSound}
           title="Toggle synthesized ocean waves ambience"
         >
-          <span className="wave-icon">🌊</span>
+          <span className="wave-icon"><i className="fas fa-water" /></span>
           <span>{playingAudio ? 'Ocean Ambience: ON' : 'Ambient Waves'}</span>
         </button>
 
@@ -201,7 +201,7 @@ export default function Home() {
 
           {displayRooms.length === 0 ? (
             <div className="reveal" style={{ padding: '48px 24px', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: 16, border: '1px dashed rgba(255,255,255,0.15)', margin: '20px 0 40px' }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🏖️</div>
+              <div style={{ fontSize: '2.5rem', marginBottom: 12 }}><i className="fas fa-umbrella-beach" style={{ color: '#38BDF8' }} /></div>
               <h3 className="serif" style={{ fontSize: '1.5rem', margin: '0 0 8px' }}>Rooms Awaiting Provisioning</h3>
               <p className="muted" style={{ maxWidth: 520, margin: '0 auto 20px', fontSize: '.9rem', lineHeight: 1.6 }}>
                 Resort management is currently updating our active beachfront inventory. Villas, suites, and cottages will be published here upon provisioning.
@@ -238,7 +238,7 @@ export default function Home() {
                   </div>
                   <div className="sp-meta">
                     <span>Sleeps<b>{s.capacity}</b></span>
-                    <span>Rating<b>★ {Number(s.rating_avg).toFixed(1)}</b></span>
+                    <span>Rating<b><i className="fas fa-star" style={{ color: '#F59E0B', marginRight: 4 }} />{Number(s.rating_avg).toFixed(1)}</b></span>
                     <span>Units<b>{s.units}</b></span>
                   </div>
                   <div style={{ display: 'flex', gap: 10 }}>
@@ -295,7 +295,7 @@ export default function Home() {
             style={{ marginTop: 32 }}
             onClick={() => dispatchWordPrompt('Plan my day in Bolinao', { template: 'Can you plan a 1-day itinerary around Bolinao with beach, caves, and dinner?' })}
           >
-            Ask Rock View Bot to plan your day 💬
+            Ask Rock View Bot to plan your day <i className="fas fa-comments" style={{ marginLeft: 6 }} />
           </button>
         </div>
       </section>

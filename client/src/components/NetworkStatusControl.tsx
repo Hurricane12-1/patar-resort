@@ -217,7 +217,7 @@ export const NetworkStatusControl: React.FC = () => {
             }}
             title="Minimize status regulator"
           >
-            ✕
+            <i className="fas fa-xmark" />
           </button>
         </div>
       )}
@@ -291,7 +291,7 @@ export const NetworkStatusControl: React.FC = () => {
                   fontFamily: 'ui-monospace, monospace',
                 }}
               >
-                SYNC ↻
+                <><i className="fas fa-rotate" style={{ marginRight: 4 }} />SYNC</>
               </button>
               <button
                 onClick={() => setExpanded(false)}
@@ -304,7 +304,7 @@ export const NetworkStatusControl: React.FC = () => {
                   lineHeight: 1,
                 }}
               >
-                ✕
+                <i className="fas fa-xmark" />
               </button>
             </div>
           </div>

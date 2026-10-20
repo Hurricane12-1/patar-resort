@@ -583,12 +583,7 @@ export default function AuthModal() {
                   }}
                   onClick={handleGoogleLogin}
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z" />
-                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.27v3.15C3.25 21.3 7.31 24 12 24z" />
-                    <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.27C.46 8.2.005 10.04.005 12s.455 3.8 1.265 5.42l4.01-3.15z" />
-                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.7 1.27 6.58l4.01 3.15c.95-2.83 3.6-4.98 6.72-4.98z" />
-                  </svg>
+                  <i className="fab fa-google" style={{ fontSize: '1.05rem', color: '#EA4335' }} />
                   Google
                 </button>
 
@@ -613,9 +608,7 @@ export default function AuthModal() {
                   }}
                   onClick={handleFacebookLogin}
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="#FFFFFF">
-                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                  </svg>
+                  <i className="fab fa-facebook-f" style={{ fontSize: '1.05rem', color: '#FFFFFF' }} />
                   Facebook
                 </button>
               </div>
@@ -631,7 +624,7 @@ export default function AuthModal() {
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: '1.1rem' }}>⚡</span>
+                      <i className="fas fa-bolt" style={{ fontSize: '1.1rem', color: '#F59E0B' }} />
                       <div>
                         <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#38BDF8', letterSpacing: '0.04em' }}>
                           AUTOMATION CONTROLS
@@ -680,7 +673,7 @@ export default function AuthModal() {
                         cursor: 'pointer',
                       }}
                     >
-                      <span>⚡ Auto Sign-Up (Google)</span>
+                      <span><i className="fab fa-google" style={{ marginRight: 6 }} />Auto Sign-Up (Google)</span>
                     </button>
 
                     <button
@@ -702,7 +695,7 @@ export default function AuthModal() {
                         cursor: 'pointer',
                       }}
                     >
-                      <span>⚡ Auto Sign-Up (Facebook)</span>
+                      <span><i className="fab fa-facebook-f" style={{ marginRight: 6 }} />Auto Sign-Up (Facebook)</span>
                     </button>
                   </div>
 
@@ -710,7 +703,7 @@ export default function AuthModal() {
                   {automationOpen && (
                     <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                        <span style={{ fontSize: '0.75rem', color: '#CBD5E1' }}>🤖 Auto Sign-Up Automation Engine</span>
+                        <span style={{ fontSize: '0.75rem', color: '#CBD5E1' }}><i className="fas fa-robot" style={{ marginRight: 6 }} />Auto Sign-Up Automation Engine</span>
                         <button
                           type="button"
                           onClick={() => setAutomationEnabled(!automationEnabled)}
@@ -730,12 +723,12 @@ export default function AuthModal() {
                       </div>
 
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                        <span style={{ fontSize: '0.75rem', color: '#CBD5E1' }}>✉️ Auto-Dispatch 2FA to Gmail</span>
+                        <span style={{ fontSize: '0.75rem', color: '#CBD5E1' }}><i className="fas fa-envelope" style={{ marginRight: 6 }} />Auto-Dispatch 2FA to Gmail</span>
                         <span style={{ fontSize: '0.7rem', color: '#10B981', fontWeight: 700 }}>ACTIVE (SMTP)</span>
                       </div>
 
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                        <span style={{ fontSize: '0.75rem', color: '#CBD5E1' }}>🛡️ Mandatory Name Sentinel</span>
+                        <span style={{ fontSize: '0.75rem', color: '#CBD5E1' }}><i className="fas fa-shield-halved" style={{ marginRight: 6 }} />Mandatory Name Sentinel</span>
                         <span style={{ fontSize: '0.7rem', color: '#38BDF8', fontWeight: 700 }}>ENFORCED (GUEST MANIFEST)</span>
                       </div>
                     </div>
@@ -779,7 +772,7 @@ export default function AuthModal() {
                       cursor: 'pointer',
                     }}
                   >
-                    🔴 Gmail (@gmail.com)
+                    <><i className="fab fa-google" style={{ color: '#EA4335', marginRight: 6 }} />Gmail (@gmail.com)</>
                   </button>
 
                   <button
@@ -797,7 +790,7 @@ export default function AuthModal() {
                       cursor: 'pointer',
                     }}
                   >
-                    🔵 Facebook Account
+                    <><i className="fab fa-facebook" style={{ color: '#1877F2', marginRight: 6 }} />Facebook Account</>
                   </button>
 
                   <button
@@ -815,7 +808,7 @@ export default function AuthModal() {
                       cursor: 'pointer',
                     }}
                   >
-                    ✉️ Standard Email
+                    <><i className="fas fa-envelope" style={{ color: '#38BDF8', marginRight: 6 }} />Standard Email</>
                   </button>
                 </div>
               )}
@@ -833,7 +826,7 @@ export default function AuthModal() {
                   gap: 12,
                   boxShadow: '0 4px 12px rgba(239, 68, 68, 0.2)',
                 }}>
-                  <span style={{ fontSize: '1.6rem' }}>⚠️</span>
+                  <i className="fas fa-triangle-exclamation" style={{ fontSize: '1.6rem', color: '#EF4444' }} />
                   <div style={{ flex: 1 }}>
                     <div style={{ color: '#FCA5A5', fontWeight: 800, fontSize: '0.92rem', letterSpacing: '0.01em' }}>
                       {confirmationExpiredMsg}
@@ -871,7 +864,7 @@ export default function AuthModal() {
                       }}>
                         <div style={{ fontSize: '0.76rem', color: '#FECACA' }}>
                           <strong style={{ color: '#FCA5A5', display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span>⚡</span> Automated Google Account Collection
+                            <><i className="fas fa-bolt" style={{ color: '#F59E0B', marginRight: 6 }} />Automated Google Account Collection</>
                           </strong>
                           <div style={{ color: '#94A3B8', fontSize: '0.72rem', marginTop: 2 }}>
                             Automatically collect and verify user information from your Google account.
@@ -913,8 +906,8 @@ export default function AuthModal() {
                     }}>
                       <span>
                         {isNameValid
-                          ? `✓ Guest Name Verified: ${fullNamePreview}`
-                          : '⚠️ Name is strictly required for Guest Manifest & Security 2FA'}
+                          ? <><i className="fas fa-check" style={{ marginRight: 4, color: '#10B981' }} />Guest Name Verified: {fullNamePreview}</>
+                          : <><i className="fas fa-triangle-exclamation" style={{ marginRight: 4, color: '#FCD34D' }} />Name is strictly required for Guest Manifest & Security 2FA</>}
                       </span>
                       <span style={{ fontWeight: 800 }}>MANDATORY</span>
                     </div>
@@ -924,7 +917,7 @@ export default function AuthModal() {
                       <div className="field">
                         <label style={{ display: 'flex', justifyContent: 'space-between' }}>
                           <span>FIRST NAME * (CHAR ONLY)</span>
-                          {f.first_name && <span style={{ color: '#10B981' }}>✓</span>}
+                          {f.first_name && <i className="fas fa-check" style={{ color: '#10B981' }} />}
                         </label>
                         <input
                           required
@@ -944,7 +937,7 @@ export default function AuthModal() {
                       <div className="field">
                         <label style={{ display: 'flex', justifyContent: 'space-between' }}>
                           <span>LAST NAME * (CHAR ONLY)</span>
-                          {f.last_name && <span style={{ color: '#10B981' }}>✓</span>}
+                          {f.last_name && <i className="fas fa-check" style={{ color: '#10B981' }} />}
                         </label>
                         <input
                           required
@@ -1143,7 +1136,7 @@ export default function AuthModal() {
                 marginBottom: 16,
                 textAlign: 'center',
               }}>
-                <span style={{ fontSize: '1.6rem', display: 'block', marginBottom: 4 }}>🔒</span>
+                <i className="fas fa-lock" style={{ fontSize: '1.6rem', display: 'block', marginBottom: 4, color: '#38BDF8' }} />
                 <h4 style={{ color: '#FFFFFF', margin: '0 0 6px', fontSize: '1.1rem' }}>Two-Factor Confirmation</h4>
                 <p style={{ color: '#CBD5E1', fontSize: '0.82rem', margin: 0, lineHeight: 1.5 }}>
                   A secure 6-digit confirmation code was sent to <strong>{signupEmail}</strong> via Google Mail (SMTP)
@@ -1167,7 +1160,7 @@ export default function AuthModal() {
                   marginBottom: 14,
                 }}>
                   <span style={{ fontSize: '0.76rem', color: '#6EE7B7' }}>
-                    ⚡ <strong>Automated Dev Preview:</strong> Code is <code>{devCodePreview}</code>
+                    <><i className="fas fa-bolt" style={{ color: '#F59E0B', marginRight: 4 }} /> <strong>Automated Dev Preview:</strong></> Code is <code>{devCodePreview}</code>
                   </span>
                   <button
                     type="button"
@@ -1291,12 +1284,7 @@ export default function AuthModal() {
                 }}
                 onClick={handleGoogleLogin}
               >
-                <svg width="20" height="20" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z" />
-                  <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.27v3.15C3.25 21.3 7.31 24 12 24z" />
-                  <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.27C.46 8.2.005 10.04.005 12s.455 3.8 1.265 5.42l4.01-3.15z" />
-                  <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.7 1.27 6.58l4.01 3.15c.95-2.83 3.6-4.98 6.72-4.98z" />
-                </svg>
+                <i className="fab fa-google" style={{ fontSize: '1.15rem', color: '#EA4335' }} />
                 Instant Recovery via Google Account
               </button>
 

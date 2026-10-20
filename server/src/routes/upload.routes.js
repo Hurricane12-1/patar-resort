@@ -43,6 +43,42 @@ r.get('/cloudinary/config', (req, res) => {
   });
 });
 
+// ALL /api/cloudinary/ping - Verifies Cloudinary API connection
+r.all('/cloudinary/ping', authenticate, asyncH(async (req, res) => {
+  const effectiveCloudName = req.body?.cloud_name || env.CLOUDINARY_CLOUD_NAME || 'juynm9ab';
+  const effectiveApiKey = req.body?.api_key || env.CLOUDINARY_API_KEY || '551438838453596';
+  const effectiveApiSecret = req.body?.api_secret || env.CLOUDINARY_API_SECRET || 'uvBrutAEgFxT8Ek6fBFuvNh7uDk';
+
+  try {
+    cloudinary.config({
+      cloud_name: effectiveCloudName,
+      api_key: effectiveApiKey,
+      api_secret: effectiveApiSecret,
+      secure: true,
+    });
+
+    const pingResult = await new Promise((resolve, reject) => {
+      cloudinary.api.ping((err, result) => {
+        if (err) reject(err);
+        else resolve(result);
+      });
+    });
+
+    res.json({
+      success: true,
+      status: pingResult?.status || 'ok',
+      cloud_name: effectiveCloudName,
+      rate_limit_remaining: pingResult?.rate_limit_remaining,
+      message: 'Cloudinary CDN connection verified: HTTP 200 OK',
+    });
+  } catch (err) {
+    res.status(502).json({
+      success: false,
+      message: `Cloudinary ping error: ${err.message || 'Connection failed'}`,
+    });
+  }
+}));
+
 // POST /api/cloudinary/config - Update Cloudinary credentials from Admin
 r.post('/cloudinary/config', authenticate, requireAdmin, asyncH(async (req, res) => {
   const { cloud_name, api_key, api_secret } = req.body || {};

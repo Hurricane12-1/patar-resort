@@ -31,13 +31,14 @@ export default function BookingFlow({ initialSlug }) {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(null);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [selectedUnitNumber, setSelectedUnitNumber] = useState<number | 'auto'>('auto');
   const preferred = useRef(null);
   const resultsRef = useRef(null);
 
   useEffect(() => { api.rooms().then(setCatalog).catch(() => {}); }, []);
   useEffect(() => { setPhone(to11Digits(profile?.phone || '')); }, [profile]);
 
-  const nights = Math.max(1, Math.round((new Date(checkOut) - new Date(checkIn)) / 86400000));
+  const nights = Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000));
   const meta = (r) => catalog.find((c) => c.id === r.room_id);
 
   const selectedPoolOption = POOL_ADDON_OPTIONS.find((o) => o.id === poolAddonId) || POOL_ADDON_OPTIONS[0];
@@ -77,9 +78,17 @@ export default function BookingFlow({ initialSlug }) {
     }
     setBusy(true);
     try {
-      const fullNotes = poolAdjustment > 0
-        ? `[Pool Add-on: ${selectedPoolOption.shortName} (+₱${poolAdjustment.toLocaleString()})] ${notes}`.trim()
-        : notes;
+      const unitTag = selectedUnitNumber !== 'auto'
+        ? `[Unit ${selectedUnitNumber}]`
+        : (room.available_unit_numbers?.[0] ? `[Unit ${room.available_unit_numbers[0]}]` : '');
+
+      let fullNotes = notes;
+      if (unitTag && !fullNotes.includes(unitTag)) {
+        fullNotes = `${unitTag} ${fullNotes}`.trim();
+      }
+      if (poolAdjustment > 0) {
+        fullNotes = `[Pool Add-on: ${selectedPoolOption.shortName} (+₱${poolAdjustment.toLocaleString()})] ${fullNotes}`.trim();
+      }
 
       const stay = await api.createReservation({
         roomId: room.room_id,
@@ -98,7 +107,14 @@ export default function BookingFlow({ initialSlug }) {
     finally { setBusy(false); }
   }
 
-  function reset() { setStage('search'); setDone(null); setRoom(null); setResults([]); setPoolAddonId('none'); }
+  function reset() {
+    setStage('search');
+    setDone(null);
+    setRoom(null);
+    setResults([]);
+    setPoolAddonId('none');
+    setSelectedUnitNumber('auto');
+  }
 
   return (
     <section id="reserve" className="reserve">
@@ -109,14 +125,14 @@ export default function BookingFlow({ initialSlug }) {
             <span className="rb-label">Check-in</span>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#fff', fontSize: '0.9rem', fontWeight: 600, marginTop: 4 }}>
               <span>{checkIn}</span>
-              <span style={{ fontSize: '0.8rem', color: '#38BDF8' }}>📅</span>
+              <span style={{ fontSize: '0.8rem', color: '#38BDF8' }}><i className="fas fa-calendar-alt" /></span>
             </div>
           </div>
           <div className="rb-cell" onClick={() => setShowCalendar(true)} style={{ cursor: 'pointer' }} title="Tap to select check-out date on marked calendar">
             <span className="rb-label">Check-out</span>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#fff', fontSize: '0.9rem', fontWeight: 600, marginTop: 4 }}>
               <span>{checkOut}</span>
-              <span style={{ fontSize: '0.8rem', color: '#38BDF8' }}>📅</span>
+              <span style={{ fontSize: '0.8rem', color: '#38BDF8' }}><i className="fas fa-calendar-alt" /></span>
             </div>
           </div>
           <div className="rb-cell rb-guests">
@@ -154,7 +170,7 @@ export default function BookingFlow({ initialSlug }) {
               transition: 'all 0.2s ease',
             }}
           >
-            📅 {showCalendar ? 'Hide Availability Calendar' : 'View Calendar & Locked-In (Taken) Dates'}
+            <i className="fas fa-calendar-alt" /> {showCalendar ? 'Hide Availability Calendar' : 'View Calendar & Locked-In (Taken) Dates'}
           </button>
         </div>
 
@@ -166,9 +182,12 @@ export default function BookingFlow({ initialSlug }) {
             initialCheckIn={checkIn}
             initialCheckOut={checkOut}
             isLightMode={false}
-            onSelectDates={(cin, cout) => {
+            onSelectDates={(cin, cout, _targetRoomId, unitInfo) => {
               setCheckIn(cin);
               setCheckOut(cout);
+              if (unitInfo?.unitNumber) {
+                setSelectedUnitNumber(unitInfo.unitNumber);
+              }
               search(undefined, cin, cout);
             }}
             onClose={() => setShowCalendar(false)}
@@ -186,8 +205,8 @@ export default function BookingFlow({ initialSlug }) {
               <div key={i} className="skel" style={{ height: 170, marginBottom: 16 }} />)}
             {!searching && results.length === 0 && (
               <div style={{ textAlign: 'center', padding: '30px 16px', background: 'rgba(255,255,255,0.03)', borderRadius: 14, border: '1px dashed rgba(255,255,255,0.15)' }}>
-                <p className="empty" style={{ margin: '0 0 10px', fontSize: '1.05rem', color: '#F43F5E' }}>
-                  🔒 All rooms are reserved / locked in until checkout for those dates.
+                <p className="empty" style={{ margin: '0 0 10px', fontSize: '1.05rem', color: '#F43F5E', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  <i className="fas fa-lock" /> All rooms are reserved / locked in until checkout for those dates.
                 </p>
                 <p className="muted small" style={{ margin: '0 0 14px' }}>
                   Rooms are locked exclusively once reserved by a guest and remain locked until their checkout date. Check the calendar for open dates.
@@ -195,9 +214,9 @@ export default function BookingFlow({ initialSlug }) {
                 <button
                   className="btn btn-sky btn-sm"
                   onClick={() => setShowCalendar(true)}
-                  style={{ fontWeight: 700 }}
+                  style={{ fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}
                 >
-                  📅 Browse Open Dates on Calendar
+                  <i className="fas fa-calendar-alt" /> Browse Open Dates on Calendar
                 </button>
               </div>
             )}
@@ -225,7 +244,7 @@ export default function BookingFlow({ initialSlug }) {
                   <div>
                     <span className="label">{r.category}</span>
                     <h3 className="serif">{r.name}</h3>
-                    <p className="muted small">Sleeps {r.capacity} · ★ {Number(r.rating_avg).toFixed(1)}</p>
+                    <p className="muted small"><i className="fas fa-users" style={{ marginRight: 4 }} />Sleeps {r.capacity} · <i className="fas fa-star" style={{ color: '#F59E0B', margin: '0 4px' }} />{Number(r.rating_avg).toFixed(1)}</p>
                   </div>
                   <div className="ro-right">
                     <span className="rate serif">{money(r.rate_php)}<small> /night</small></span>
@@ -237,9 +256,12 @@ export default function BookingFlow({ initialSlug }) {
                           color: '#F43F5E',
                           border: '1px solid #F43F5E',
                           fontWeight: 800,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 5,
                         }}
                       >
-                        🔒 Taken Until Checkout
+                        <i className="fas fa-lock" /> Taken Until Checkout
                       </span>
                     ) : r.units_left <= 2 ? (
                       <span className="units-left">Only {r.units_left} left</span>
@@ -257,10 +279,13 @@ export default function BookingFlow({ initialSlug }) {
                             cursor: 'not-allowed',
                             color: '#F43F5E',
                             border: '1px solid rgba(244, 63, 94, 0.4)',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
                           }}
                           title="Reserved by another guest until checkout"
                         >
-                          🔒 Taken
+                          <i className="fas fa-lock" /> Taken
                         </button>
                         <button
                           className="btn btn-sm"
@@ -276,10 +301,13 @@ export default function BookingFlow({ initialSlug }) {
                             color: '#38BDF8',
                             cursor: 'pointer',
                             borderRadius: 6,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
                           }}
                           title="View calendar to see which dates are available"
                         >
-                          📅 View Free Dates
+                          <i className="fas fa-calendar-day" /> View Free Dates
                         </button>
                       </div>
                     ) : (
@@ -314,12 +342,12 @@ export default function BookingFlow({ initialSlug }) {
 
                 {poolAdjustment > 0 ? (
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.84rem', color: '#38BDF8', background: 'rgba(56, 189, 248, 0.12)', padding: '5px 10px', borderRadius: 8, border: '1px solid rgba(56, 189, 248, 0.3)' }}>
-                    <span>🏊 Pool Add-on ({selectedPoolOption.shortName}):</span>
+                    <span><i className="fas fa-person-swimming" style={{ marginRight: 6 }} />Pool Add-on ({selectedPoolOption.shortName}):</span>
                     <b>+{money(poolAdjustment)}</b>
                   </div>
                 ) : (
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.78rem', color: '#94A3B8' }}>
-                    <span>🏊 Pool Access:</span>
+                    <span><i className="fas fa-person-swimming" style={{ marginRight: 6 }} />Pool Access:</span>
                     <span>Room Only (₱0)</span>
                   </div>
                 )}
@@ -344,10 +372,52 @@ export default function BookingFlow({ initialSlug }) {
                   alignItems: 'center',
                   gap: 8,
                 }}>
-                  <span style={{ fontSize: '1rem' }}>✓</span>
+                  <span style={{ fontSize: '0.9rem' }}><i className="fas fa-check" /></span>
                   <span>
                     Connected to verified Guest Manifest for <strong>{profile.full_name || 'Guest'}</strong>
                   </span>
+                </div>
+              )}
+
+              {/* AVAILABLE PHYSICAL UNIT SELECTION */}
+              {Number(room?.total_units || meta(room)?.units || 1) > 1 && (
+                <div className="field">
+                  <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span><i className="fas fa-layer-group" style={{ marginRight: 6 }} />ASSIGNED RESORT UNIT</span>
+                      <span style={{ fontSize: '.7rem', background: 'rgba(16, 185, 129, 0.15)', color: '#10B981', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '2px 8px', borderRadius: 10, fontWeight: 700 }}>
+                        {room.units_left || (room.available_unit_numbers?.length ?? 1)} Unit{(room.units_left || 1) > 1 ? 's' : ''} Open
+                      </span>
+                    </span>
+                    <span style={{ fontSize: '.74rem', color: '#38BDF8', fontWeight: 600 }}>
+                      Physical Unit Allocation
+                    </span>
+                  </label>
+                  <select
+                    value={selectedUnitNumber}
+                    onChange={(e) => setSelectedUnitNumber(e.target.value === 'auto' ? 'auto' : Number(e.target.value))}
+                    style={{
+                      width: '100%',
+                      padding: '11px 14px',
+                      borderRadius: 10,
+                      background: 'rgba(15, 23, 42, 0.85)',
+                      border: '1.5px solid rgba(16, 185, 129, 0.45)',
+                      color: '#FFFFFF',
+                      fontSize: '0.9rem',
+                      cursor: 'pointer',
+                      outline: 'none',
+                    }}
+                  >
+                    <option value="auto">⚡ Auto-assign first available unit (Unit {room.available_unit_numbers?.[0] || 1})</option>
+                    {(room.available_unit_numbers || Array.from({ length: Number(room.total_units || meta(room)?.units || 1) }, (_, i) => i + 1)).map((uNum: number) => (
+                      <option key={uNum} value={uNum} style={{ background: '#0F172A', color: '#FFF' }}>
+                        Unit {uNum} (Available: {fmtDate(checkIn)} → {fmtDate(checkOut)})
+                      </option>
+                    ))}
+                  </select>
+                  <small className="muted" style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontSize: '.76rem', color: '#94A3B8' }}>
+                    <i className="fas fa-circle-check" style={{ color: '#10B981' }} /> Reflects strictly confirmed available units. Guaranteed no uneven or overlapping reservation.
+                  </small>
                 </div>
               )}
 
@@ -355,7 +425,7 @@ export default function BookingFlow({ initialSlug }) {
               <div className="field">
                 <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span>🏊 SWIMMING POOL ADD-ON OPTIONS</span>
+                    <span><i className="fas fa-person-swimming" style={{ marginRight: 6 }} />SWIMMING POOL ADD-ON OPTIONS</span>
                     <span style={{ fontSize: '.7rem', background: 'rgba(56, 189, 248, 0.15)', color: '#38BDF8', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '2px 8px', borderRadius: 10, fontWeight: 700 }}>
                       Optional Dropdown
                     </span>
@@ -387,8 +457,8 @@ export default function BookingFlow({ initialSlug }) {
                     </option>
                   ))}
                 </select>
-                <small className="muted" style={{ display: 'block', marginTop: 4, fontSize: '.76rem', color: '#94A3B8' }}>
-                  💡 Select swimming pool pass if you wish to add pool privileges to this room reservation.
+                <small className="muted" style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontSize: '.76rem', color: '#94A3B8' }}>
+                  <i className="fas fa-lightbulb" style={{ color: '#38BDF8' }} /> Select swimming pool pass if you wish to add pool privileges to this room reservation.
                 </small>
               </div>
 
@@ -431,11 +501,13 @@ export default function BookingFlow({ initialSlug }) {
             <h3 className="serif">Mabuhay — see you on the sand.</h3>
             <p>{done.rooms?.name || 'Room'} · {fmtDate(done.check_in)} → {fmtDate(done.check_out)} · {money(done.total_php)}</p>
             {selectedPoolOption.pricePerGuest > 0 && (
-              <p style={{ color: '#38BDF8', fontSize: '0.9rem', fontWeight: 700, margin: '8px 0' }}>
-                🏊 Swimming Pool Privileges: {selectedPoolOption.shortName} (+₱{poolAdjustment.toLocaleString()})
+              <p style={{ color: '#38BDF8', fontSize: '0.9rem', fontWeight: 700, margin: '8px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <i className="fas fa-person-swimming" /> Swimming Pool Privileges: {selectedPoolOption.shortName} (+₱{poolAdjustment.toLocaleString()})
               </p>
             )}
-            <p className="muted">📟 SMS ping sent{phone ? ` to ${phone}` : ''} · check-in 2:00 PM</p>
+            <p className="muted" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              <i className="fas fa-comment-sms" /> SMS ping sent{phone ? ` to ${phone}` : ''} · check-in 2:00 PM
+            </p>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 26 }}>
               <button className="btn btn-ghost btn-sm" onClick={reset}>Book another stay</button>
               <a className="btn btn-sky btn-sm" href="/my-bookings">My bookings</a>

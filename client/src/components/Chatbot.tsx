@@ -463,7 +463,7 @@ export default function Chatbot() {
                 }}
                 title="Reload and sync saved chat from account"
               >
-                {reloadingChat ? '🔄 Syncing…' : '💾 Saved'}
+                {reloadingChat ? <><i className="fas fa-rotate" style={{ marginRight: 4 }} />Syncing…</> : <><i className="fas fa-floppy-disk" style={{ marginRight: 4 }} />Saved</>}
               </button>
               <button
                 style={{
@@ -500,7 +500,7 @@ export default function Chatbot() {
                 <span className="live-dot" style={{ width: 8, height: 8, background: '#10B981', boxShadow: '0 0 10px #10B981', flexShrink: 0 }} />
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: '0.74rem', fontWeight: 800, color: '#34D399', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    🟢 Directed to: {assignedAgent.name}
+                    <><i className="fas fa-circle" style={{ color: '#10B981', fontSize: '.6rem', marginRight: 4 }} />Directed to: {assignedAgent.name}</>
                   </div>
                   <div style={{ fontSize: '0.64rem', color: '#A7F3D0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {assignedAgent.role || 'Front Desk & Guest Concierge'} · Logged in database
@@ -553,7 +553,7 @@ export default function Chatbot() {
                       color: '#F87171',
                     }}
                   >
-                    <span>🛡️ AI SECURITY GUARDRAIL ENFORCED</span>
+                    <span><i className="fas fa-shield-halved" style={{ marginRight: 6 }} />AI SECURITY GUARDRAIL ENFORCED</span>
                   </div>
                 )}
 
@@ -574,7 +574,7 @@ export default function Chatbot() {
                       color: '#FBBF24',
                     }}
                   >
-                    <span>⚠️ GUEST CONCERN PRIORITY NOTIFICATION</span>
+                    <span><i className="fas fa-triangle-exclamation" style={{ marginRight: 6 }} />GUEST CONCERN PRIORITY NOTIFICATION</span>
                   </div>
                 )}
 
@@ -595,7 +595,7 @@ export default function Chatbot() {
                       color: '#34D399',
                     }}
                   >
-                    <span>🧑‍💼 {m.agent_name || m.senderName || 'Front Desk Concierge'} · SERVICE AGENT</span>
+                    <span><i className="fas fa-user-tie" style={{ marginRight: 6 }} />{m.agent_name || m.senderName || 'Front Desk Concierge'} · SERVICE AGENT</span>
                   </div>
                 )}
 
@@ -657,7 +657,7 @@ export default function Chatbot() {
                           gap: 4,
                         }}
                       >
-                        📞 FRONT DESK 24/7 HOTLINE
+                        <><i className="fas fa-phone" style={{ marginRight: 6 }} />FRONT DESK 24/7 HOTLINE</>
                       </span>
                       <span style={{ fontSize: '0.65rem', color: '#10B981', fontWeight: 700 }}>
                         ● On-Site Active
@@ -695,7 +695,7 @@ export default function Chatbot() {
                     </div>
 
                     <div style={{ fontSize: '0.68rem', color: '#94A3B8' }}>
-                      📍 {RESORT_CONTACT_INFO.receptionDesk}
+                      <><i className="fas fa-location-dot" style={{ marginRight: 6 }} />{RESORT_CONTACT_INFO.receptionDesk}</>
                     </div>
 
                     <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
@@ -710,7 +710,7 @@ export default function Chatbot() {
                           flex: 1,
                         }}
                       >
-                        📞 Call Front Desk
+                        <><i className="fas fa-phone" style={{ marginRight: 6 }} />Call Front Desk</>
                       </a>
                       <button
                         type="button"
@@ -726,7 +726,7 @@ export default function Chatbot() {
                         className="btn btn-outline btn-sm"
                         style={{ padding: '4px 8px', fontSize: '0.7rem', flex: 1 }}
                       >
-                        📋 Copy Hotline
+                        <><i className="fas fa-clipboard" style={{ marginRight: 6 }} />Copy Hotline</>
                       </button>
                     </div>
                   </div>
@@ -745,7 +745,7 @@ export default function Chatbot() {
                           className="feedback-btn up"
                           title="Thumbs up - Helpful"
                         >
-                          👍
+                          <i className="fas fa-thumbs-up" />
                         </button>
                         <button
                           type="button"
@@ -753,7 +753,7 @@ export default function Chatbot() {
                           className="feedback-btn down"
                           title="Thumbs down - Needs improvement"
                         >
-                          👎
+                          <i className="fas fa-thumbs-down" />
                         </button>
                       </div>
                     )}
@@ -761,7 +761,7 @@ export default function Chatbot() {
                     {/* Stage 1: Thumbs Up Quiet Recorded State */}
                     {m.feedbackStage === 'recorded_up' && (
                       <div className="chat-feedback-recorded">
-                        <span>✓ Thank you for your feedback! 👍</span>
+                        <span><i className="fas fa-check" style={{ marginRight: 4 }} />Thank you for your feedback! <i className="fas fa-thumbs-up" style={{ marginLeft: 4 }} /></span>
                       </div>
                     )}
 
@@ -775,7 +775,7 @@ export default function Chatbot() {
                             onClick={() => handleClarification(i, 'help')}
                             className="clarify-btn help"
                           >
-                            <span>❓ Did it help you?</span>
+                            <span><i className="fas fa-circle-question" style={{ marginRight: 4 }} />Did it help you?</span>
                             <small>General inquiries, resort rates, or directions</small>
                           </button>
                           <button
@@ -783,7 +783,7 @@ export default function Chatbot() {
                             onClick={() => handleClarification(i, 'problem')}
                             className="clarify-btn problem"
                           >
-                            <span>⚠️ Did it resolve the problem?</span>
+                            <span><i className="fas fa-triangle-exclamation" style={{ marginRight: 4 }} />Did it resolve the problem?</span>
                             <small>Booking issues, cancellations, refunds, or stay concerns</small>
                           </button>
                         </div>
@@ -800,14 +800,14 @@ export default function Chatbot() {
                             onClick={() => handleHelpAnswer(i, true)}
                             className="chip-ans yes"
                           >
-                            ✓ Yes, it helped
+                            <><i className="fas fa-check" style={{ marginRight: 4 }} />Yes, it helped</>
                           </button>
                           <button
                             type="button"
                             onClick={() => handleHelpAnswer(i, false)}
                             className="chip-ans no"
                           >
-                            ✕ No, didn't help
+                            <><i className="fas fa-xmark" style={{ marginRight: 4 }} />No, didn't help</>
                           </button>
                         </div>
                       </div>
@@ -823,14 +823,14 @@ export default function Chatbot() {
                             onClick={() => handleProblemAnswer(i, true)}
                             className="chip-ans yes"
                           >
-                            ✓ Yes, resolved
+                            <><i className="fas fa-check" style={{ marginRight: 4 }} />Yes, resolved</>
                           </button>
                           <button
                             type="button"
                             onClick={() => handleProblemAnswer(i, false)}
                             className="chip-ans no"
                           >
-                            ✕ No, not resolved
+                            <><i className="fas fa-xmark" style={{ marginRight: 4 }} />No, not resolved</>
                           </button>
                         </div>
                       </div>
@@ -839,12 +839,12 @@ export default function Chatbot() {
                     {/* Stage 4: Positive resolution completion notes */}
                     {m.feedbackStage === 'help_success' && (
                       <div className="chat-feedback-recorded">
-                        <span>✓ Glad we could help you! 🌊</span>
+                        <span><i className="fas fa-check" style={{ marginRight: 4 }} />Glad we could help you! <i className="fas fa-water" style={{ marginLeft: 4 }} /></span>
                       </div>
                     )}
                     {m.feedbackStage === 'problem_success' && (
                       <div className="chat-feedback-recorded">
-                        <span>✓ Great! Glad your problem was resolved. 🌴</span>
+                        <span><i className="fas fa-check" style={{ marginRight: 4 }} />Great! Glad your problem was resolved. <i className="fas fa-tree" style={{ marginLeft: 4 }} /></span>
                       </div>
                     )}
 
@@ -852,7 +852,7 @@ export default function Chatbot() {
                     {m.feedbackStage === 'show_resolutions' && (
                       <div className="chat-resolutions-panel">
                         <div className="chat-resolutions-header">
-                          <span>💡 Here are direct options to resolve your request:</span>
+                          <span><i className="fas fa-lightbulb" style={{ marginRight: 4 }} />Here are direct options to resolve your request:</span>
                         </div>
                         <div className="chat-resolutions-grid">
                           <button
@@ -860,7 +860,7 @@ export default function Chatbot() {
                             onClick={handleContactAgent}
                             className="resolution-chip-btn agent"
                           >
-                            <span>🧑‍💼</span>
+                            <i className="fas fa-user-tie" style={{ marginRight: 6 }} />
                             <div>
                               <b>Contact Service Agent</b>
                               <small style={{ display: 'block', fontSize: '0.62rem', opacity: 0.85 }}>Priority front desk live assistance</small>
@@ -871,7 +871,7 @@ export default function Chatbot() {
                             onClick={() => typePrompt('How to get here directions', true)}
                             className="resolution-chip-btn"
                           >
-                            <span>📍</span>
+                            <i className="fas fa-location-dot" style={{ marginRight: 6 }} />
                             <span>How to Get Here (Directions)</span>
                           </button>
                           <button
@@ -879,7 +879,7 @@ export default function Chatbot() {
                             onClick={() => typePrompt('How to refund', true)}
                             className="resolution-chip-btn"
                           >
-                            <span>💸</span>
+                            <i className="fas fa-money-bill-transfer" style={{ marginRight: 6 }} />
                             <span>How to Refund</span>
                           </button>
                           <button
@@ -887,7 +887,7 @@ export default function Chatbot() {
                             onClick={() => typePrompt('Refund and cancellation policy', true)}
                             className="resolution-chip-btn"
                           >
-                            <span>📋</span>
+                            <i className="fas fa-clipboard-list" style={{ marginRight: 6 }} />
                             <span>Refund Policy</span>
                           </button>
                           <button
@@ -895,7 +895,7 @@ export default function Chatbot() {
                             onClick={() => typePrompt('Recommend a room for a family', true)}
                             className="resolution-chip-btn"
                           >
-                            <span>🛏️</span>
+                            <i className="fas fa-bed" style={{ marginRight: 6 }} />
                             <span>Room Rates & Capacity</span>
                           </button>
                           <button
@@ -903,7 +903,7 @@ export default function Chatbot() {
                             onClick={() => typePrompt('Check-in and check-out hours', true)}
                             className="resolution-chip-btn"
                           >
-                            <span>🕒</span>
+                            <i className="fas fa-clock" style={{ marginRight: 6 }} />
                             <span>Check-in / Check-out Times</span>
                           </button>
                         </div>
@@ -1002,9 +1002,7 @@ export default function Chatbot() {
 
       {/* Floating Action Button */}
       <button className="chat-fab" aria-label="Open chat" onClick={() => setOpen((o) => !o)}>
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
-          <path d="M21 12a8 8 0 0 1-8 8H5l-2 2V12a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8z" />
-        </svg>
+        <i className={open ? "fas fa-xmark" : "fas fa-comments"} style={{ fontSize: '1.35rem', color: '#fff' }} />
       </button>
     </>
   );

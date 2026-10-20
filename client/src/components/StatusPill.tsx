@@ -29,7 +29,7 @@ export default function StatusPill({
     bg = '#064E3B';
     color = '#34D399';
     border = '#059669';
-    icon = '☑';
+    icon = 'fas fa-arrow-rotate-left';
   } else if (normStatus === 'confirmed') {
     label = 'CONFIRMED';
     bg = '#D1FAE5';
@@ -99,7 +99,7 @@ export default function StatusPill({
         }
       }}
     >
-      {icon && <span style={{ fontWeight: 800 }}>{icon}</span>}
+      {icon && <i className={icon} style={{ fontSize: '0.72rem', marginRight: 4 }} />}
       <span>{label}</span>
     </button>
   );

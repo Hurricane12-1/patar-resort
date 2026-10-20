@@ -72,8 +72,8 @@ export default function Accounting() {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
-            <button className="btn btn-sky" style={{ width: '100%', justifyContent: 'center', marginTop: 12, background: 'var(--amber)' }} disabled={busy}>
-              {busy ? 'Authenticating…' : 'Sign In to Accounting Portal 📊'}
+            <button className="btn btn-sky" style={{ width: '100%', justifyContent: 'center', marginTop: 12, background: 'var(--amber)', display: 'inline-flex', alignItems: 'center', gap: 6 }} disabled={busy}>
+              {busy ? 'Authenticating…' : <><i className="fas fa-chart-line" /> Sign In to Accounting Portal</>}
             </button>
           </form>
         </div>
@@ -100,8 +100,8 @@ export default function Accounting() {
             Accounting <em style={{ fontStyle: 'italic' }}>Audit & Ledger Portal</em>
           </h2>
         </div>
-        <button className="btn btn-sky btn-sm" onClick={api.exportAnalyticsCSV}>
-          📥 Export Financial Audit CSV
+        <button className="btn btn-sky btn-sm" onClick={api.exportAnalyticsCSV} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <i className="fas fa-file-arrow-down" /> Export Financial Audit CSV
         </button>
       </div>
 

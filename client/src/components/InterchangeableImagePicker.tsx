@@ -67,7 +67,7 @@ export function InterchangeableImagePicker({ currentImageUrl, onImageSelect, isL
     <div style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.5)', border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 20, marginBottom: 24 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
         <div>
-          <b style={{ fontSize: '.95rem', color: themeText, display: 'block' }}>🖼️ Interchangeable Avatar & Badge Selector</b>
+          <b style={{ fontSize: '.95rem', color: themeText, display: 'block' }}><i className="fas fa-image" style={{ marginRight: 6 }} />Interchangeable Avatar & Badge Selector</b>
           <span style={{ fontSize: '.78rem', color: themeMuted }}>Select a monogram initial badge, vector emblem, upload a picture, or enter a real image URL.</span>
         </div>
       </div>
@@ -164,7 +164,7 @@ export function InterchangeableImagePicker({ currentImageUrl, onImageSelect, isL
             cursor: 'pointer',
           }}
         >
-          📁 Browse Local File…
+          <><i className="fas fa-folder-open" style={{ marginRight: 6 }} />Browse Local File…</>
           <input type="file" accept="image/*" onChange={handleFileUpload} style={{ display: 'none' }} />
         </label>
 

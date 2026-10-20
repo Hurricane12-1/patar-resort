@@ -147,8 +147,9 @@ export default function ResortCustomer() {
           <button
             className="btn btn-ghost btn-sm"
             onClick={() => dispatchWordPrompt('Guest Concierge', { template: 'Hello Rock View Bot, what room services, dining, and tours can I book today?' })}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
           >
-            Ask Rock View Bot 💬
+            <i className="fas fa-comments" /> Ask Rock View Bot
           </button>
         </div>
 
@@ -175,7 +176,9 @@ export default function ResortCustomer() {
         {/* TABS */}
         <div className="chip-row reveal" style={{ marginBottom: 28 }}>
           <button className={`chip ${activeTab === 'profile' ? 'sel' : ''}`} onClick={() => setActiveTab('profile')}>My Profile & Security</button>
-          <button className={`chip ${activeTab === 'expect' ? 'sel' : ''}`} onClick={() => setActiveTab('expect')}>What to Expect 🌴</button>
+          <button className={`chip ${activeTab === 'expect' ? 'sel' : ''}`} onClick={() => setActiveTab('expect')}>
+            <i className="fas fa-umbrella-beach" style={{ marginRight: 6 }} /> What to Expect
+          </button>
           <button className={`chip ${activeTab === 'pass' ? 'sel' : ''}`} onClick={() => setActiveTab('pass')}>Digital Keycode Pass</button>
           <button className={`chip ${activeTab === 'services' ? 'sel' : ''}`} onClick={() => setActiveTab('services')}>In-Room Services & Tours</button>
           <button className={`chip ${activeTab === 'orders' ? 'sel' : ''}`} onClick={() => setActiveTab('orders')}>Order Tracker ({orders.length})</button>
@@ -270,8 +273,11 @@ export default function ResortCustomer() {
                   background: profile?.password_status === 'N/A' || !profile?.has_password ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)',
                   color: profile?.password_status === 'N/A' || !profile?.has_password ? '#F59E0B' : '#10B981',
                   border: `1px solid ${profile?.password_status === 'N/A' || !profile?.has_password ? 'rgba(245, 158, 11, 0.35)' : 'rgba(16, 185, 129, 0.35)'}`,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
                 }}>
-                  {profile?.password_status === 'N/A' || !profile?.has_password ? 'Status: N/A (Not Set)' : 'Status: Configured 🔒'}
+                  {profile?.password_status === 'N/A' || !profile?.has_password ? 'Status: N/A (Not Set)' : <>Status: Configured <i className="fas fa-lock" /></>}
                 </span>
               </div>
               <p className="muted small" style={{ marginBottom: 20 }}>
@@ -291,8 +297,8 @@ export default function ResortCustomer() {
                     onChange={(e) => setNewPass(e.target.value)}
                   />
                 </div>
-                <button className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center', marginTop: 8 }} disabled={updatingPass}>
-                  {updatingPass ? 'Saving Password…' : (profile?.password_status === 'N/A' || !profile?.has_password ? '✦ Set Account Password' : '🔑 Change Password')}
+                <button className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center', marginTop: 8, display: 'inline-flex', alignItems: 'center', gap: 6 }} disabled={updatingPass}>
+                  {updatingPass ? 'Saving Password…' : (profile?.password_status === 'N/A' || !profile?.has_password ? '✦ Set Account Password' : <><i className="fas fa-key" /> Change Password</>)}
                 </button>
               </form>
             </div>
@@ -307,19 +313,19 @@ export default function ResortCustomer() {
             
             <div className="grid-3">
               <div className="bk-row" style={{ padding: 18, flexDirection: 'column', alignItems: 'flex-start' }}>
-                <span style={{ fontSize: '2rem' }}>🌊</span>
+                <span style={{ fontSize: '2rem', color: '#38BDF8' }}><i className="fas fa-water" /></span>
                 <h4 style={{ fontSize: '1.15rem', margin: '8px 0 4px' }}>Beachfront & High Tide</h4>
                 <p className="muted small">Patar Beach is just 50 steps from your room porch. High tide occurs around 4:15 PM daily for peak swimming.</p>
               </div>
 
               <div className="bk-row" style={{ padding: 18, flexDirection: 'column', alignItems: 'flex-start' }}>
-                <span style={{ fontSize: '2rem' }}>🍳</span>
+                <span style={{ fontSize: '2rem', color: '#F59E0B' }}><i className="fas fa-utensils" /></span>
                 <h4 style={{ fontSize: '1.15rem', margin: '8px 0 4px' }}>Complimentary Seafood Breakfast</h4>
                 <p className="muted small">Grilled Bolinao Bangus breakfast is served daily from 6:30 AM to 10:00 AM at the open-air beach pavilion.</p>
               </div>
 
               <div className="bk-row" style={{ padding: 18, flexDirection: 'column', alignItems: 'flex-start' }}>
-                <span style={{ fontSize: '2rem' }}>⛵</span>
+                <span style={{ fontSize: '2rem', color: '#38BDF8' }}><i className="fas fa-sailboat" /></span>
                 <h4 style={{ fontSize: '1.15rem', margin: '8px 0 4px' }}>Patar Outriggers & Shuttles</h4>
                 <p className="muted small">Guided outrigger boats to Patar shallows depart twice daily at 9:00 AM and 2:00 PM. Book via In-Room Services & Tours tab.</p>
               </div>
@@ -343,8 +349,8 @@ export default function ResortCustomer() {
                     </div>
                     <small style={{ color: '#BFD8F2' }}>RFID Room Key: {pass.rfid_key}</small>
                   </div>
-                  <p className="muted" style={{ color: '#BFD8F2', marginTop: 14, fontSize: '.85rem' }}>
-                    📟 Show this digital pass at the front desk or use keycode at room door touchpads.
+                  <p className="muted" style={{ color: '#BFD8F2', marginTop: 14, fontSize: '.85rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <i className="fas fa-comment-sms" /> Show this digital pass at the front desk or use keycode at room door touchpads.
                   </p>
                 </>
               ) : (

@@ -82,8 +82,8 @@ export default function Receptionist() {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
-            <button className="btn btn-sky" style={{ width: '100%', justifyContent: 'center', marginTop: 12 }} disabled={busy}>
-              {busy ? 'Authenticating…' : 'Sign In to Reception Desk 🛎️'}
+            <button className="btn btn-sky" style={{ width: '100%', justifyContent: 'center', marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 6 }} disabled={busy}>
+              {busy ? 'Authenticating…' : <><i className="fas fa-bell-concierge" /> Sign In to Reception Desk</>}
             </button>
           </form>
         </div>
@@ -110,8 +110,8 @@ export default function Receptionist() {
             Guest Check-In <em style={{ fontStyle: 'italic' }}>& Desk Portal</em>
           </h2>
         </div>
-        <span style={{ fontSize: '.83rem', color: 'var(--muted)' }}>
-          📟 SMS Pings Active for Check-ins
+        <span style={{ fontSize: '.83rem', color: 'var(--muted)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <i className="fas fa-comment-sms" style={{ color: '#38BDF8' }} /> SMS Pings Active for Check-ins
         </span>
       </div>
 
@@ -131,7 +131,7 @@ export default function Receptionist() {
         </div>
         <div className="stat-card">
           <small>SMS Pings Sent</small>
-          <b>{ov.sms_delivered || 142} sent</b>
+          <b>{ov.sms_delivered || 0} sent</b>
         </div>
       </div>
 
@@ -164,10 +164,14 @@ export default function Receptionist() {
                     <td><span className={`pill ${b.status}`}>{b.status.replace('_', ' ')}</span></td>
                     <td>
                       {b.status === 'confirmed' && (
-                        <button className="act-btn" onClick={() => updateStatus(b.id, 'checked_in')}>🛎️ Check-in</button>
+                        <button className="act-btn" onClick={() => updateStatus(b.id, 'checked_in')}>
+                          <i className="fas fa-bell-concierge" style={{ marginRight: 5 }} /> Check-in
+                        </button>
                       )}
                       {b.status === 'checked_in' && (
-                        <button className="act-btn" onClick={() => updateStatus(b.id, 'checked_out')}>🔑 Check-out</button>
+                        <button className="act-btn" onClick={() => updateStatus(b.id, 'checked_out')}>
+                          <i className="fas fa-key" style={{ marginRight: 5 }} /> Check-out
+                        </button>
                       )}
                     </td>
                   </tr>

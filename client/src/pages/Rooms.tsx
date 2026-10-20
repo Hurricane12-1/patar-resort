@@ -43,15 +43,15 @@ function RoomCardItem({ s, index, onOpenCalendar }) {
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
             <span className="label">Room</span>
             <span style={{ fontSize: '.72rem', background: 'rgba(56, 189, 248, 0.15)', color: '#38BDF8', border: '1px solid rgba(56, 189, 248, 0.35)', padding: '2px 8px', borderRadius: 12, fontWeight: 700 }}>
-              🏊 Pool Add-on
+              <i className="fas fa-person-swimming" style={{ marginRight: 4 }} /> Pool Add-on
             </span>
             {isLockedNow ? (
               <span style={{ fontSize: '.72rem', background: 'rgba(244, 63, 94, 0.15)', color: '#F43F5E', border: '1px solid rgba(244, 63, 94, 0.35)', padding: '2px 8px', borderRadius: 12, fontWeight: 800 }}>
-                🔒 Occupied Until Checkout
+                <i className="fas fa-lock" style={{ marginRight: 4 }} /> Occupied Until Checkout
               </span>
             ) : (
               <span style={{ fontSize: '.72rem', background: 'rgba(16, 185, 129, 0.15)', color: '#10B981', border: '1px solid rgba(16, 185, 129, 0.35)', padding: '2px 8px', borderRadius: 12, fontWeight: 700 }}>
-                🟢 {unitsOpen} {unitsOpen === 1 ? 'Unit' : 'Units'} Open Today
+                <i className="fas fa-circle" style={{ fontSize: '.55rem', marginRight: 5, verticalAlign: 'middle' }} />{unitsOpen} {unitsOpen === 1 ? 'Unit' : 'Units'} Open Today
               </span>
             )}
           </div>
@@ -77,7 +77,7 @@ function RoomCardItem({ s, index, onOpenCalendar }) {
               className="btn btn-ghost"
               style={{ flex: 1, justifyContent: 'center', borderColor: '#38BDF8', color: '#38BDF8', fontWeight: 700 }}
             >
-              📅 View Free Dates
+              <i className="fas fa-calendar-day" style={{ marginRight: 6 }} /> View Free Dates
             </button>
             <Link to="/" state={{ book: s.slug }} className="btn btn-sky btn-sm" style={{ justifyContent: 'center' }}>
               Advance Book
@@ -146,7 +146,8 @@ export default function Rooms() {
               transition: 'all 0.2s ease',
             }}
           >
-            📅 {showCalendar ? 'Hide Resort Calendar' : 'View Resort Calendar (Check Occupied & Open Dates)'}
+            <i className="fas fa-calendar-alt" style={{ marginRight: 8 }} />
+            {showCalendar ? 'Hide Resort Calendar' : 'View Resort Calendar (Check Occupied & Open Dates)'}
           </button>
         </div>
 
@@ -182,7 +183,9 @@ export default function Rooms() {
         </div>
         {!loading && all.length === 0 && (
           <div className="reveal" style={{ padding: '60px 24px', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: 16, border: '1px dashed rgba(255,255,255,0.15)', margin: '30px 0 60px' }}>
-            <div style={{ fontSize: '3rem', marginBottom: 12 }}>🏖️</div>
+            <div style={{ fontSize: '3rem', marginBottom: 12, color: '#38BDF8' }}>
+              <i className="fas fa-umbrella-beach" />
+            </div>
             <h3 className="serif" style={{ fontSize: '1.6rem', margin: '0 0 8px' }}>Rooms Awaiting Provisioning</h3>
             <p className="muted" style={{ maxWidth: 540, margin: '0 auto 20px', fontSize: '.92rem', lineHeight: 1.6 }}>
               Resort management is currently updating our active beachfront inventory. Villas, suites, and cottages will be published here upon provisioning.

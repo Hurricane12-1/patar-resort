@@ -171,7 +171,7 @@ export default function ResortMapGeolocation({ isLightMode = true }) {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontSize: '1.3rem' }}>📍</span>
+                <i className="fas fa-location-dot" style={{ fontSize: '1.3rem', color: '#EF4444' }} />
                 <div>
                   <b style={{ fontSize: '0.92rem', color: '#0F172A', display: 'block' }}>Rock View Beach Resort</b>
                   <span style={{ fontSize: '0.74rem', color: '#64748B' }}>16.3044° N, 119.7828° E · Seafront</span>
@@ -254,7 +254,7 @@ export default function ResortMapGeolocation({ isLightMode = true }) {
                   boxShadow: '0 2px 8px rgba(37, 99, 235, 0.25)',
                 }}
               >
-                🗺️ Open in Google Maps ↗
+                <><i className="fas fa-map-location-dot" style={{ marginRight: 6 }} />Open in Google Maps <i className="fas fa-arrow-up-right-from-square" style={{ marginLeft: 4 }} /></>
               </a>
             </div>
           </div>
@@ -284,7 +284,7 @@ export default function ResortMapGeolocation({ isLightMode = true }) {
                     fontSize: '1.3rem',
                   }}
                 >
-                  🧭
+                  <i className="fas fa-compass" style={{ color: '#2563EB' }} />
                 </div>
                 <div>
                   <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#0F172A' }}>
@@ -320,7 +320,7 @@ export default function ResortMapGeolocation({ isLightMode = true }) {
                   transition: 'all 0.2s ease',
                 }}
               >
-                {locating ? '📡 Pinpointing Your Coordinates…' : '📍 Detect My Current Location'}
+                {locating ? <><i className="fas fa-satellite-dish" style={{ marginRight: 6 }} />Pinpointing Your Coordinates…</> : <><i className="fas fa-crosshairs" style={{ marginRight: 6 }} />Detect My Current Location</>}
               </button>
 
               {locError && (
@@ -335,7 +335,7 @@ export default function ResortMapGeolocation({ isLightMode = true }) {
                     fontSize: '0.8rem',
                   }}
                 >
-                  ⚠️ {locError}
+                  <><i className="fas fa-triangle-exclamation" style={{ color: '#F59E0B', marginRight: 6 }} />{locError}</>
                 </div>
               )}
 
@@ -393,7 +393,7 @@ export default function ResortMapGeolocation({ isLightMode = true }) {
               }}
             >
               <h4 style={{ margin: '0 0 14px', fontSize: '1rem', fontWeight: 800, color: '#0F172A', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span>🏖️</span> Nearby Patar Beach Excursions & Landmarks
+                <><i className="fas fa-umbrella-beach" style={{ marginRight: 6 }} />Nearby Patar Beach Excursions & Landmarks</>
               </h4>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

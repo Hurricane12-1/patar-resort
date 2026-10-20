@@ -1,12 +1,12 @@
 import { io } from 'socket.io-client';
 
+const metaEnv = typeof import.meta !== 'undefined' ? (import.meta as any).env : null;
 const rawSocketBase = (
-  (typeof import.meta !== 'undefined' && (
-    import.meta.env.VITE_API_URL ||
-    import.meta.env.PUBLIC_API_URL ||
-    import.meta.env.VITE_PUBLIC_API_URL ||
-    import.meta.env.VITE_BACKEND_URL
-  )) || '/'
+  metaEnv?.VITE_API_URL ||
+  metaEnv?.PUBLIC_API_URL ||
+  metaEnv?.VITE_PUBLIC_API_URL ||
+  metaEnv?.VITE_BACKEND_URL ||
+  '/'
 );
 
 const SOCKET_BASE = (
@@ -17,8 +17,8 @@ const SOCKET_BASE = (
   ? '/'
   : rawSocketBase;
 
-let socket = null;
-export function getSocket(token) {
+let socket: any = null;
+export function getSocket(token?: string) {
   if (!socket) {
     socket = io(SOCKET_BASE, { auth: { token }, transports: ['websocket', 'polling'] });
   } else if (token && socket.auth?.token !== token) {

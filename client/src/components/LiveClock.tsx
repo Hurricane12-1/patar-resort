@@ -49,7 +49,7 @@ export function LiveClock({ isLightMode = false, style, showSeconds = true }: Li
       }}
       title={`Current Philippine Standard Time (PST / GMT+8): ${dateStr} ${timeStr}`}
     >
-      <span style={{ fontSize: '0.85rem', color: '#0EA5E9' }}>🕒</span>
+      <i className="fas fa-clock" style={{ fontSize: '0.85rem', color: '#0EA5E9' }} />
       <span>{timeStr}</span>
       <span style={{ color: '#64748B', fontSize: '0.7rem' }}>• {dateStr}</span>
       <span
@@ -101,7 +101,7 @@ export function FloatingWelcome({ username = 'Guest', isLightMode = false, style
       }}
       title={`Logged in user: ${cleanName}`}
     >
-      <span style={{ fontSize: '0.85rem' }}>👋</span>
+      <i className="fas fa-hand" style={{ fontSize: '0.85rem', color: '#F59E0B' }} />
       <span>
         Welcome, <strong style={{ color: isLightMode ? '#0F172A' : '#FFFFFF', fontWeight: 800 }}>{cleanName}</strong>
       </span>

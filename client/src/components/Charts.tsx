@@ -17,7 +17,7 @@ export function DonutChart({
   if (total === 0 || segments.length === 0) {
     return (
       <div style={{ textAlign: 'center', padding: '24px 16px', border: '1px dashed rgba(255,255,255,0.12)', borderRadius: 16, width: '100%', maxWidth: size + 80 }}>
-        <span style={{ fontSize: '1.6rem', display: 'block', marginBottom: 6 }}>📊</span>
+        <i className="fas fa-chart-pie" style={{ fontSize: '1.6rem', display: 'block', marginBottom: 6, color: '#0EA5E9' }} />
         <b style={{ fontSize: '.84rem', color: 'var(--theme-text, #0F172A)', display: 'block' }}>Awaiting Channel Activity</b>
         <span style={{ fontSize: '.72rem', color: '#64748B' }}>0 active guest sessions recorded</span>
       </div>
@@ -71,7 +71,7 @@ export function DonutChart({
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            justify: 'center',
+            justifyContent: 'center',
             textAlign: 'center',
           }}
         >
@@ -405,20 +405,20 @@ export function DualSplineWaveChart({ height = 230, isLightMode = false, onPoint
             }}
           >
             <div style={{ fontWeight: 800, color: '#818CF8', marginBottom: 4 }}>
-              📅 {timeRange === 'Month' ? `Day ${labels[hoveredIdx]}` : labels[hoveredIdx]}
+              <><i className="fas fa-calendar-alt" style={{ marginRight: 6 }} />{timeRange === 'Month' ? `Day ${labels[hoveredIdx]}` : labels[hoveredIdx]}</>
             </div>
             {showAuto && (
               <div style={{ color: '#34D399', fontWeight: 600 }}>
-                🟢 Automated: {lineA[hoveredIdx]} chats
+                <><i className="fas fa-circle" style={{ color: '#10B981', fontSize: '.65rem', marginRight: 6 }} />Automated: {lineA[hoveredIdx]} chats</>
               </div>
             )}
             {showStaff && (
               <div style={{ color: '#818CF8', fontWeight: 600 }}>
-                🟣 Staff Requests: {lineB[hoveredIdx]} tickets
+                <><i className="fas fa-circle" style={{ color: '#A855F7', fontSize: '.65rem', marginRight: 6 }} />Staff Requests: {lineB[hoveredIdx]} tickets</>
               </div>
             )}
             <div style={{ marginTop: 4, paddingTop: 4, borderTop: '1px solid rgba(255,255,255,0.1)', color: '#94A3B8', fontSize: '.68rem' }}>
-              💡 Click point for full analytical breakdown
+              <><i className="fas fa-lightbulb" style={{ color: '#F59E0B', marginRight: 6 }} />Click point for full analytical breakdown</>
             </div>
           </div>
         )}
@@ -437,7 +437,7 @@ export function DualSplineWaveChart({ height = 230, isLightMode = false, onPoint
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: '1.2rem' }}>💡</span>
+              <i className="fas fa-lightbulb" style={{ fontSize: '1.2rem', color: '#F59E0B' }} />
               <div>
                 <b style={{ fontSize: '.92rem', color: themeText, display: 'block' }}>
                   Analytical Meaning for {selectedPoint.periodLabel}
@@ -454,7 +454,7 @@ export function DualSplineWaveChart({ height = 230, isLightMode = false, onPoint
                 padding: '4px 10px', borderRadius: 8, cursor: 'pointer', fontSize: '.75rem', fontWeight: 700
               }}
             >
-              ✕ Close
+              <><i className="fas fa-xmark" style={{ marginRight: 4 }} />Close</>
             </button>
           </div>
 
@@ -486,7 +486,7 @@ export function DualSplineWaveChart({ height = 230, isLightMode = false, onPoint
 
           <div style={{ padding: '10px 12px', background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.03)', borderRadius: 10, border: `1px solid ${themeBorder}` }}>
             <p style={{ margin: 0, fontSize: '.8rem', color: themeText, lineHeight: 1.45 }}>
-              📌 <b>Operational Meaning & Driver:</b> {selectedPoint.insight}
+              <><i className="fas fa-thumbtack" style={{ color: '#EF4444', marginRight: 6 }} /><b>Operational Meaning & Driver:</b></> {selectedPoint.insight}
             </p>
           </div>
         </div>
@@ -496,31 +496,45 @@ export function DualSplineWaveChart({ height = 230, isLightMode = false, onPoint
 }
 
 // Smooth Curved Area Line Chart (Matching "Sales Overview" in reference UI)
-export function AreaLineChart({ data = [], height = 180, onPointClick }) {
-  const [hoveredIdx, setHoveredIdx] = useState(null);
-  const [selectedIdx, setSelectedIdx] = useState(null);
+export function AreaLineChart({
+  data = [],
+  height = 200,
+  onPointClick,
+  showYAxis = true,
+  isLightMode = false,
+}: any) {
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
 
   const hasData = Array.isArray(data) && data.length > 0 && data.some((d) => (d.revenue > 0 || d.value > 0));
   if (!hasData) {
     return (
       <div style={{ height, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 12 }}>
-        <span style={{ fontSize: '1.5rem', marginBottom: 4 }}>📈</span>
+        <i className="fas fa-chart-line" style={{ fontSize: '1.5rem', marginBottom: 4, color: '#0EA5E9' }} />
         <b style={{ fontSize: '.84rem', color: 'var(--theme-text, #0F172A)' }}>Awaiting Live Revenue Records</b>
         <span style={{ fontSize: '.72rem', color: '#64748B' }}>Daily booking revenue from Supabase will plot here</span>
       </div>
     );
   }
 
-  const metricOf = (d) => (Number(d.revenue) > 0 ? Number(d.revenue) : Number(d.value) || 0);
-  const max = Math.max(...data.map(metricOf), 1);
-  const min = Math.min(...data.map(metricOf));
-  const range = Math.max(1, max - min);
-  const w = 480;
+  const metricOf = (d: any) => (Number(d.revenue) > 0 ? Number(d.revenue) : Number(d.value) || 0);
+  const rawMax = Math.max(...data.map(metricOf), 1);
+  const max = Math.ceil(rawMax / 1000) * 1000 || 10000;
+  const min = 0;
+  const range = max - min;
 
-  const points = data.map((d, i) => {
+  const w = 640;
+  const marginLeft = showYAxis ? 55 : 20;
+  const marginRight = 20;
+  const marginTop = 20;
+  const marginBottom = 28;
+  const plotW = w - marginLeft - marginRight;
+  const plotH = height - marginTop - marginBottom;
+
+  const points = data.map((d: any, i: number) => {
     const val = metricOf(d);
-    const x = data.length > 1 ? (i / (data.length - 1)) * (w - 40) + 20 : w / 2;
-    const y = height - 30 - ((val - min) / range) * (height - 60);
+    const x = data.length > 1 ? marginLeft + (i / (data.length - 1)) * plotW : marginLeft + plotW / 2;
+    const y = marginTop + plotH - ((val - min) / range) * plotH;
     return { x, y, label: d.label, value: d.value, revenue: val, raw: d };
   });
 
@@ -536,7 +550,16 @@ export function AreaLineChart({ data = [], height = 180, onPointClick }) {
     pathD += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${next.x} ${next.y}`;
   }
 
-  const areaD = `${pathD} L ${points[points.length - 1].x} ${height - 20} L ${points[0].x} ${height - 20} Z`;
+  const areaD = `${pathD} L ${points[points.length - 1].x} ${marginTop + plotH} L ${points[0].x} ${marginTop + plotH} Z`;
+
+  // 5 Y-axis ticks: max, 0.75, 0.5, 0.25, 0
+  const yTicks = [
+    { val: max, label: max >= 1000 ? `${(max / 1000).toFixed(1)}k` : `${max}` },
+    { val: max * 0.75, label: (max * 0.75) >= 1000 ? `${((max * 0.75) / 1000).toFixed(1)}k` : `${Math.round(max * 0.75)}` },
+    { val: max * 0.5, label: (max * 0.5) >= 1000 ? `${((max * 0.5) / 1000).toFixed(1)}k` : `${Math.round(max * 0.5)}` },
+    { val: max * 0.25, label: (max * 0.25) >= 1000 ? `${((max * 0.25) / 1000).toFixed(1)}k` : `${Math.round(max * 0.25)}` },
+    { val: 0, label: '0' },
+  ];
 
   return (
     <div style={{ position: 'relative', width: '100%' }}>
@@ -548,39 +571,73 @@ export function AreaLineChart({ data = [], height = 180, onPointClick }) {
       >
         <defs>
           <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#38BDF8" stopOpacity="0.45" />
+            <stop offset="0%" stopColor="#38BDF8" stopOpacity="0.4" />
             <stop offset="100%" stopColor="#0EA5E9" stopOpacity="0.02" />
           </linearGradient>
         </defs>
+
+        {/* Y-Axis Ticks & Subtle Horizontal Grid Lines */}
+        {showYAxis && yTicks.map((tick, idx) => {
+          const yPos = marginTop + plotH - (tick.val / range) * plotH;
+          return (
+            <g key={idx}>
+              <line
+                x1={marginLeft}
+                y1={yPos}
+                x2={w - marginRight}
+                y2={yPos}
+                stroke={isLightMode ? 'rgba(203, 213, 225, 0.6)' : 'rgba(255, 255, 255, 0.08)'}
+                strokeDasharray="4 4"
+                strokeWidth="1"
+              />
+              <text
+                x={marginLeft - 12}
+                y={yPos + 3.5}
+                textAnchor="end"
+                fontSize="10"
+                fontWeight="600"
+                fill={isLightMode ? '#64748B' : '#94A3B8'}
+                fontFamily="'Plus Jakarta Sans', monospace"
+              >
+                {tick.label}
+              </text>
+            </g>
+          );
+        })}
+
         <path d={areaD} fill="url(#areaGrad)" />
-        <path d={pathD} fill="none" stroke="#38BDF8" strokeWidth="3" strokeLinecap="round" />
+        <path d={pathD} fill="none" stroke="#0EA5E9" strokeWidth="2.5" strokeLinecap="round" />
 
         {/* Hover Crosshair */}
         {hoveredIdx !== null && points[hoveredIdx] && (
           <line
             x1={points[hoveredIdx].x}
-            y1={10}
+            y1={marginTop}
             x2={points[hoveredIdx].x}
-            y2={height - 25}
-            stroke="#38BDF8"
+            y2={marginTop + plotH}
+            stroke="#0EA5E9"
             strokeWidth="1.5"
             strokeDasharray="3 3"
             style={{ pointerEvents: 'none' }}
           />
         )}
 
-        {points.map((p, i) => {
+        {/* Data Points and X-Axis Labels */}
+        {points.map((p: any, i: number) => {
           const isHover = hoveredIdx === i;
           const isSel = selectedIdx === i;
+          // Determine if we should show x-axis label for this index
+          const showXLabel = data.length <= 10 || i === 0 || i === data.length - 1 || i % 5 === 0;
+
           return (
             <g key={i}>
               <circle
                 cx={p.x}
                 cy={p.y}
-                r={isSel ? 7 : isHover ? 6 : 4}
-                fill={isSel ? '#38BDF8' : '#0F172A'}
-                stroke="#38BDF8"
-                strokeWidth={isSel ? 3.5 : 2.5}
+                r={isSel ? 6 : isHover ? 5 : 3.5}
+                fill={isSel ? '#0EA5E9' : (isLightMode ? '#FFFFFF' : '#0F172A')}
+                stroke="#0EA5E9"
+                strokeWidth={isSel ? 3 : 2}
                 style={{ cursor: 'pointer', transition: 'all 0.15s ease' }}
                 onMouseEnter={() => setHoveredIdx(i)}
                 onClick={() => {
@@ -588,9 +645,19 @@ export function AreaLineChart({ data = [], height = 180, onPointClick }) {
                   if (onPointClick) onPointClick(data[i], i);
                 }}
               />
-              <text x={p.x} y={height - 4} textAnchor="middle" fontSize="10" fontWeight="600" fill="#94A3B8">
-                {p.label}
-              </text>
+              {showXLabel && (
+                <text
+                  x={p.x}
+                  y={height - 6}
+                  textAnchor="middle"
+                  fontSize="10"
+                  fontWeight="600"
+                  fill={isLightMode ? '#64748B' : '#94A3B8'}
+                  fontFamily="'Plus Jakarta Sans', sans-serif"
+                >
+                  {p.label}
+                </text>
+              )}
             </g>
           );
         })}
@@ -604,13 +671,13 @@ export function AreaLineChart({ data = [], height = 180, onPointClick }) {
             left: `${(points[hoveredIdx].x / w) * 100}%`,
             top: 0,
             transform: 'translateX(-50%)',
-            background: 'rgba(15, 23, 42, 0.95)',
+            background: isLightMode ? '#0F172A' : 'rgba(15, 23, 42, 0.95)',
             border: '1px solid rgba(56, 189, 248, 0.4)',
             borderRadius: 8,
-            padding: '6px 10px',
+            padding: '6px 12px',
             color: '#FFF',
             fontSize: '.74rem',
-            boxShadow: '0 6px 16px rgba(0,0,0,0.4)',
+            boxShadow: '0 6px 16px rgba(0,0,0,0.3)',
             pointerEvents: 'none',
             zIndex: 10,
             whiteSpace: 'nowrap',
@@ -621,7 +688,7 @@ export function AreaLineChart({ data = [], height = 180, onPointClick }) {
             Revenue: ₱{Number(points[hoveredIdx].revenue || 0).toLocaleString()}
           </span>
           <div style={{ fontSize: '.68rem', color: '#94A3B8', marginTop: 2 }}>
-            💡 Click to view revenue driver
+            <i className="fas fa-lightbulb" style={{ color: '#F59E0B', marginRight: 6 }} />Click to view revenue driver
           </div>
         </div>
       )}
@@ -636,7 +703,7 @@ export function MultiBarChart({ data = [], height = 180, onBarClick }) {
   if (!hasData) {
     return (
       <div style={{ height, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 12 }}>
-        <span style={{ fontSize: '1.5rem', marginBottom: 4 }}>📊</span>
+        <i className="fas fa-chart-pie" style={{ fontSize: '1.5rem', marginBottom: 4, color: '#0EA5E9' }} />
         <b style={{ fontSize: '.84rem', color: 'var(--theme-text, #0F172A)' }}>Awaiting Weekly Performance</b>
         <span style={{ fontSize: '.72rem', color: '#64748B' }}>Staff reply and inquiry resolution data will appear here</span>
       </div>
@@ -851,7 +918,7 @@ export function DualLineChart({ data = [], height = 170, isLightMode = false, on
       <div style={{ position: 'relative', width: '100%', overflow: 'hidden' }}>
         {chartData.length === 0 ? (
           <div style={{ padding: '40px 10px', textAlign: 'center', color: themeMuted, fontSize: '.8rem' }}>
-            📊 No sales trends recorded yet. Data will automatically graph upon active bookings and orders.
+            <><i className="fas fa-chart-line" style={{ marginRight: 6 }} />No sales trends recorded yet.</> Data will automatically graph upon active bookings and orders.
           </div>
         ) : (
           <svg
@@ -960,10 +1027,10 @@ export function DualLineChart({ data = [], height = 170, isLightMode = false, on
               whiteSpace: 'nowrap',
             }}
           >
-            <b style={{ color: '#93C5FD', display: 'block', marginBottom: 2 }}>📅 {chartData[hoveredIdx].month} Performance</b>
+            <b style={{ color: '#93C5FD', display: 'block', marginBottom: 2 }}><><i className="fas fa-calendar-alt" style={{ marginRight: 6 }} />{chartData[hoveredIdx].month}</> Performance</b>
             {showRoom && <div style={{ color: '#60A5FA', fontWeight: 600 }}>● Rooms: ₱{Number(chartData[hoveredIdx].lineA || 0).toLocaleString()}</div>}
             {showDining && <div style={{ color: '#FDA4AF', fontWeight: 600 }}>● Orders / Dining: {Number(chartData[hoveredIdx].lineB || 0).toLocaleString()}</div>}
-            <div style={{ fontSize: '.68rem', color: '#94A3B8', marginTop: 2 }}>💡 Click point for full driver insight</div>
+            <div style={{ fontSize: '.68rem', color: '#94A3B8', marginTop: 2 }}><i className="fas fa-lightbulb" style={{ color: '#F59E0B', marginRight: 4 }} />Click point for full driver insight</div>
           </div>
         )}
       </div>
@@ -977,8 +1044,8 @@ export function DualLineChart({ data = [], height = 170, isLightMode = false, on
           transition: 'all 0.2s ease',
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <b style={{ fontSize: '.84rem', color: isLightMode ? '#1E293B' : '#818CF8' }}>📊 {selectedPoint.month} Sales Analytical Breakdown</b>
-            <button onClick={() => setSelectedPoint(null)} style={{ background: 'none', border: 'none', color: themeMuted, cursor: 'pointer', fontSize: '.74rem', fontWeight: 700 }}>✕ Close</button>
+            <b style={{ fontSize: '.84rem', color: isLightMode ? '#1E293B' : '#818CF8' }}><i className="fas fa-chart-column" style={{ marginRight: 6 }} />{selectedPoint.month} Sales Analytical Breakdown</b>
+            <button onClick={() => setSelectedPoint(null)} style={{ background: 'none', border: 'none', color: themeMuted, cursor: 'pointer', fontSize: '.74rem', fontWeight: 700 }}><><i className="fas fa-xmark" style={{ marginRight: 4 }} />Close</></button>
           </div>
 
           <div style={{ display: 'flex', gap: 14, fontSize: '.78rem', marginBottom: 6, flexWrap: 'wrap' }}>
@@ -988,7 +1055,7 @@ export function DualLineChart({ data = [], height = 170, isLightMode = false, on
           </div>
 
           <p style={{ margin: 0, fontSize: '.76rem', color: themeText, lineHeight: 1.4 }}>
-            💡 <b>Driver:</b> {selectedPoint.insight}
+            <><i className="fas fa-lightbulb" style={{ color: '#F59E0B', marginRight: 6 }} /><b>Driver:</b></> {selectedPoint.insight}
           </p>
         </div>
       )}
@@ -1022,7 +1089,7 @@ export function ReferrerCategoryBarChart({ isLightMode = true, totalAmount = 0 }
   if (tot === 0) {
     return (
       <div style={{ textAlign: 'center', padding: '24px 12px', border: '1px dashed rgba(255,255,255,0.12)', borderRadius: 14 }}>
-        <span style={{ fontSize: '1.4rem', display: 'block', marginBottom: 4 }}>🏖️</span>
+        <i className="fas fa-umbrella-beach" style={{ fontSize: '1.4rem', display: 'block', marginBottom: 4, color: '#0EA5E9' }} />
         <b style={{ fontSize: '.82rem', color: isLightMode ? '#0F172A' : '#F8FAFC', display: 'block' }}>Awaiting Live Bookings</b>
         <span style={{ fontSize: '.72rem', color: '#64748B' }}>₱0 revenue recorded from referral channels</span>
       </div>
@@ -1099,7 +1166,7 @@ export function BarChart({ data = [], height = 160 }) {
 
         <div style={{ background: 'rgba(30,41,59,0.7)', border: '1px solid rgba(56,189,248,0.3)', borderRadius: 10, padding: '10px 14px' }}>
           <span style={{ fontSize: '.68rem', textTransform: 'uppercase', letterSpacing: '.12em', color: '#94A3B8', fontWeight: 700 }}>
-            {activeItem?.fc ? '🤖 AI Forecast Detail' : '📊 Historical Record'}
+            {activeItem?.fc ? <><i className="fas fa-robot" style={{ marginRight: 6 }} />AI Forecast Detail</> : <><i className="fas fa-chart-line" style={{ marginRight: 6 }} />Historical Record</>}
           </span>
           <b style={{ display: 'block', fontSize: '1.1rem', color: '#F8FAFC', fontFamily: 'var(--font-serif)', marginTop: 2 }}>
             {activeItem?.label ? `Aug ${activeItem.label}` : 'Selected Day'}: {activeItem?.value || 0} stays
@@ -1228,7 +1295,7 @@ export function BarChart({ data = [], height = 160 }) {
           </span>
         </div>
         <div>
-          <span>⚡ AI Occupancy Model Accuracy: <b>94.8%</b></span>
+          <span><i className="fas fa-bolt" style={{ color: '#0EA5E9', marginRight: 6 }} />AI Occupancy Model Accuracy: <b>94.8%</b></span>
         </div>
       </div>
     </div>

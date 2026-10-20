@@ -163,7 +163,7 @@ export default function StatusTimelineModal({
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 16, marginBottom: 20 }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: '1.4rem' }}>🏖️</span>
+              <i className="fas fa-umbrella-beach" style={{ fontSize: '1.4rem', color: '#38BDF8' }} />
               <div>
                 <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.02em' }}>
                   Reservation Status & Lifecycle Architecture
@@ -204,7 +204,7 @@ export default function StatusTimelineModal({
             }}
             title="Close status timeline"
           >
-            ✕
+            <i className="fas fa-xmark" />
           </button>
         </div>
 
@@ -264,7 +264,7 @@ export default function StatusTimelineModal({
 
         {/* 2. BRANCHED STATUS LIFECYCLE TIMELINE (VERTICAL STEPPER) */}
         <h4 style={{ margin: '0 0 16px', fontSize: '.92rem', color: '#CBD5E1', textTransform: 'uppercase', letterSpacing: '.08em', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span>📍</span> Lifecycle Milestones & Chronological Branching
+          <><i className="fas fa-location-dot" style={{ color: '#0EA5E9', marginRight: 6 }} />Lifecycle Milestones & Chronological Branching</>
         </h4>
 
         <div style={{ position: 'relative', paddingLeft: 28, marginBottom: 26 }}>
@@ -300,7 +300,7 @@ export default function StatusTimelineModal({
                 boxShadow: '0 0 10px rgba(14, 165, 233, 0.5)',
               }}
             >
-              ✓
+              <i className="fas fa-check" />
             </div>
             <div style={{ background: 'rgba(30, 41, 59, 0.5)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '12px 16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
@@ -318,7 +318,7 @@ export default function StatusTimelineModal({
                 </span>
                 {hasPoolAddon && (
                   <span style={{ fontSize: '.7rem', background: 'rgba(16, 185, 129, 0.1)', color: '#10B981', padding: '2px 8px', borderRadius: 8, border: '1px solid rgba(16, 185, 129, 0.25)' }}>
-                    🏊 Pool: {poolPassName} (+₱{poolCost.toLocaleString()})
+                    <><i className="fas fa-person-swimming" style={{ marginRight: 4 }} />Pool: {poolPassName} (+₱{poolCost.toLocaleString()})</>
                   </span>
                 )}
               </div>
@@ -345,7 +345,7 @@ export default function StatusTimelineModal({
                 boxShadow: !isPending ? '0 0 10px rgba(16, 185, 129, 0.5)' : 'none',
               }}
             >
-              {!isPending ? '✓' : '•'}
+              {!isPending ? <i className="fas fa-check" /> : '•'}
             </div>
             <div style={{ background: 'rgba(30, 41, 59, 0.5)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '12px 16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
@@ -385,7 +385,7 @@ export default function StatusTimelineModal({
                 boxShadow: isCheckedIn ? '0 0 12px rgba(37, 99, 235, 0.7)' : 'none',
               }}
             >
-              {isCheckedIn || isCheckedOut ? '✓' : '3'}
+              {isCheckedIn || isCheckedOut ? <i className="fas fa-check" /> : '3'}
             </div>
             <div style={{ background: 'rgba(30, 41, 59, 0.5)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '12px 16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
@@ -424,7 +424,7 @@ export default function StatusTimelineModal({
                 fontWeight: 800,
               }}
             >
-              {isCheckedOut ? '✓' : '4'}
+              {isCheckedOut ? <i className="fas fa-check" /> : '4'}
             </div>
             <div style={{ background: 'rgba(30, 41, 59, 0.5)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '12px 16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
@@ -465,7 +465,7 @@ export default function StatusTimelineModal({
                   boxShadow: '0 0 10px rgba(239, 68, 68, 0.5)',
                 }}
               >
-                ✕
+                <i className="fas fa-xmark" />
               </div>
               <div style={{ background: 'rgba(76, 29, 36, 0.35)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 12, padding: '12px 16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
@@ -481,7 +481,7 @@ export default function StatusTimelineModal({
                 </p>
                 {isRefunded && (
                   <div style={{ marginTop: 8, padding: '6px 10px', background: 'rgba(6, 78, 59, 0.5)', borderRadius: 8, border: '1px solid rgba(5, 150, 105, 0.4)', fontSize: '.74rem', color: '#34D399' }}>
-                    ☑ REFUNDED: Payout of ₱{totalAmount.toLocaleString()} confirmed via {booking.payment_method || 'GCash'}
+                    <i className="fas fa-arrow-rotate-left" style={{ marginRight: 6 }} />REFUNDED: Payout of ₱{totalAmount.toLocaleString()} confirmed via {booking.payment_method || 'GCash'}
                   </div>
                 )}
               </div>
@@ -501,10 +501,10 @@ export default function StatusTimelineModal({
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
             <span style={{ fontSize: '.78rem', fontWeight: 800, color: '#38BDF8', letterSpacing: '.06em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span>🤖</span> AI Concierge & Agent Communications
+              <><i className="fas fa-robot" style={{ marginRight: 6 }} />AI Concierge & Agent Communications</>
             </span>
             <span style={{ fontSize: '.72rem', background: 'rgba(16, 185, 129, 0.15)', color: '#10B981', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '2px 8px', borderRadius: 8, fontWeight: 700 }}>
-              {aiResolved ? '✅ Resolved by AI Concierge' : '👨‍💼 Handled by Staff'}
+              {aiResolved ? <><i className="fas fa-circle-check" style={{ marginRight: 4 }} />Resolved by AI Concierge</> : <><i className="fas fa-user-tie" style={{ marginRight: 4 }} />Handled by Staff</>}
             </span>
           </div>
 
@@ -518,7 +518,7 @@ export default function StatusTimelineModal({
             <div>
               <span style={{ fontSize: '.72rem', color: '#94A3B8', display: 'block' }}>GUEST SATISFACTION RATING</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-                <span style={{ color: '#F59E0B', fontSize: '1rem' }}>★★★★★</span>
+                <span style={{ color: '#F59E0B', fontSize: '.85rem' }}><i className="fas fa-star" /><i className="fas fa-star" /><i className="fas fa-star" /><i className="fas fa-star" /><i className="fas fa-star" /></span>
                 <strong style={{ fontSize: '.85rem', color: '#FFFFFF' }}>{ratingVal}.0 / 5.0</strong>
               </div>
             </div>
@@ -543,7 +543,7 @@ export default function StatusTimelineModal({
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
               <span style={{ fontSize: '.78rem', fontWeight: 800, color: '#A5B4FC', letterSpacing: '.06em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span>👑</span> General Manager & Overseer Control Box
+                <><i className="fas fa-crown" style={{ marginRight: 6 }} />General Manager & Overseer Control Box</>
               </span>
               <span style={{ fontSize: '.68rem', background: 'rgba(99, 102, 241, 0.25)', color: '#C7D2FE', padding: '2px 8px', borderRadius: 6, fontWeight: 700 }}>
                 OVERSEER PRIVILEGE ACTIVE
@@ -572,7 +572,7 @@ export default function StatusTimelineModal({
                     onClick={() => onUpdateStatus(booking.id, 'checked_in')}
                     style={{ background: '#2563EB', color: '#FFF', border: 'none', padding: '6px 14px', borderRadius: 8, fontSize: '.76rem', fontWeight: 700, cursor: 'pointer' }}
                   >
-                    🏨 Advance to Checked-In
+                    <><i className="fas fa-hotel" style={{ marginRight: 6 }} />Advance to Checked-In</>
                   </button>
                 )}
                 {status === 'checked_in' && (
@@ -580,7 +580,7 @@ export default function StatusTimelineModal({
                     onClick={() => onUpdateStatus(booking.id, 'checked_out')}
                     style={{ background: '#4338CA', color: '#FFF', border: 'none', padding: '6px 14px', borderRadius: 8, fontSize: '.76rem', fontWeight: 700, cursor: 'pointer' }}
                   >
-                    🚪 Advance to Checked-Out
+                    <><i className="fas fa-door-open" style={{ marginRight: 6 }} />Advance to Checked-Out</>
                   </button>
                 )}
                 {['pending', 'confirmed'].includes(status) && (
@@ -588,7 +588,7 @@ export default function StatusTimelineModal({
                     onClick={() => onUpdateStatus(booking.id, 'cancelled')}
                     style={{ background: '#EF4444', color: '#FFF', border: 'none', padding: '6px 14px', borderRadius: 8, fontSize: '.76rem', fontWeight: 700, cursor: 'pointer' }}
                   >
-                    ✕ Cancel Reservation
+                    <><i className="fas fa-xmark" style={{ marginRight: 6 }} />Cancel Reservation</>
                   </button>
                 )}
               </div>

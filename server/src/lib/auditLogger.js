@@ -308,14 +308,8 @@ export async function getAuditLogs({
     });
   } else if (date && date !== 'ALL') {
     list = list.filter((l) => {
-      const raw = l.timestamp || l.created_at || '';
-      if (raw.startsWith(date)) return true;
-      try {
-        const d = new Date(raw);
-        return !isNaN(d.getTime()) && (d.toISOString().slice(0, 10) === date || d.toLocaleDateString('en-CA') === date);
-      } catch {
-        return false;
-      }
+      const raw = (l.timestamp || l.created_at || '').slice(0, 10);
+      return raw === date;
     });
   }
 

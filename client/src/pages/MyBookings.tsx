@@ -80,7 +80,7 @@ export default function MyBookings() {
   if (!session) return (
     <div className="container" style={{ padding: '80px 20px', textAlign: 'center' }}>
       <div className="gate" style={{ maxWidth: 500, margin: '0 auto', background: 'rgba(15, 23, 42, 0.75)', padding: 36, borderRadius: 16, border: '1px solid rgba(255,255,255,0.1)' }}>
-        <span style={{ fontSize: '2.4rem', display: 'block', marginBottom: 12 }}>🌴</span>
+        <span style={{ fontSize: '2.4rem', display: 'block', marginBottom: 12, color: '#38BDF8' }}><i className="fas fa-umbrella-beach" /></span>
         <h2 className="serif" style={{ fontSize: '2rem', color: '#FFFFFF', marginBottom: 8 }}>Your Resort Stays</h2>
         <p style={{ color: 'var(--muted)', margin: '0 0 24px', fontSize: '.95rem', lineHeight: 1.5 }}>
           Sign in to view your upcoming bookings, access your active stay digital keycode, and leave reviews.
@@ -178,7 +178,7 @@ export default function MyBookings() {
             style={{ display: 'flex', alignItems: 'center', gap: 6, borderColor: 'rgba(56, 189, 248, 0.4)', color: '#38BDF8' }}
             onClick={() => setProfOpen(true)}
           >
-            📋 Guest Manifest ({profile?.full_name?.split(' ')[0] || 'Profile'})
+            <i className="fas fa-clipboard-list" /> Guest Manifest ({profile?.full_name?.split(' ')[0] || 'Profile'})
           </button>
           <Link to="/rooms" className="btn btn-sky btn-sm">
             + Book Another Room
@@ -210,10 +210,11 @@ export default function MyBookings() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '1.4rem',
+            fontSize: '1.2rem',
+            color: '#38BDF8',
             flexShrink: 0,
           }}>
-            📋
+            <i className="fas fa-clipboard-list" />
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -231,13 +232,13 @@ export default function MyBookings() {
                 letterSpacing: '.05em',
                 textTransform: 'uppercase',
               }}>
-                ✓ Verified Manifest for Check-In
+                <i className="fas fa-check" style={{ marginRight: 4 }} />Verified Manifest for Check-In
               </span>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 4, fontSize: '0.82rem', color: '#94A3B8' }}>
-              <span>📞 Mobile: <b style={{ color: '#F1F5F9' }}>{profile?.phone || '09XXXXXXXXX'}</b></span>
-              <span>🚨 Emergency: <b style={{ color: '#F1F5F9' }}>{profile?.emergency_contact || 'None'}</b></span>
-              <span>📍 Location: <b style={{ color: '#F1F5F9' }}>{[profile?.address, profile?.city].filter(Boolean).join(', ') || 'Bolinao, Pangasinan'}</b></span>
+              <span><i className="fas fa-phone" style={{ marginRight: 5, color: '#38BDF8' }} />Mobile: <b style={{ color: '#F1F5F9' }}>{profile?.phone || '09XXXXXXXXX'}</b></span>
+              <span><i className="fas fa-triangle-exclamation" style={{ marginRight: 5, color: '#F87171' }} />Emergency: <b style={{ color: '#F1F5F9' }}>{profile?.emergency_contact || 'None'}</b></span>
+              <span><i className="fas fa-location-dot" style={{ marginRight: 5, color: '#38BDF8' }} />Location: <b style={{ color: '#F1F5F9' }}>{[profile?.address, profile?.city].filter(Boolean).join(', ') || 'Bolinao, Pangasinan'}</b></span>
             </div>
           </div>
         </div>
@@ -248,7 +249,7 @@ export default function MyBookings() {
           style={{ borderColor: '#38BDF8', color: '#38BDF8', fontWeight: 600, padding: '7px 16px', display: 'flex', alignItems: 'center', gap: 6 }}
           onClick={() => setProfOpen(true)}
         >
-          ✏️ Edit Manifest Profile
+          <i className="fas fa-pen-to-square" /> Edit Manifest Profile
         </button>
       </div>
 
@@ -340,7 +341,7 @@ export default function MyBookings() {
             gap: 10,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.82rem', color: '#BAE6FD' }}>
-              <span>🛡️</span>
+              <span><i className="fas fa-shield-halved" style={{ color: '#38BDF8' }} /></span>
               <span>
                 <strong>Manifest Pass:</strong> {profile?.full_name || 'Guest'} · <strong>Phone:</strong> {profile?.phone || '09XXXXXXXXX'} · <strong>Emergency:</strong> {profile?.emergency_contact || 'None'}
               </span>
@@ -369,7 +370,9 @@ export default function MyBookings() {
           maxWidth: 580,
           margin: '30px auto',
         }}>
-          <div style={{ fontSize: '3rem', marginBottom: 12 }}>🏖️</div>
+          <div style={{ fontSize: '3rem', marginBottom: 12, color: '#38BDF8' }}>
+            <i className="fas fa-umbrella-beach" />
+          </div>
           <h3 className="serif" style={{ fontSize: '1.6rem', color: '#FFFFFF', marginBottom: 8 }}>
             No Reservations Yet
           </h3>
@@ -433,7 +436,7 @@ export default function MyBookings() {
                     {b.payment_status !== 'refund_pending' && b.payment_status !== 'refunded' && (
                       <button
                         className="act-btn"
-                        style={{ padding: '6px 14px', borderRadius: 8, fontSize: '.82rem', borderColor: '#F59E0B', color: '#F59E0B', background: 'rgba(245, 158, 11, 0.08)' }}
+                        style={{ padding: '6px 14px', borderRadius: 8, fontSize: '.82rem', borderColor: '#F59E0B', color: '#F59E0B', background: 'rgba(245, 158, 11, 0.08)', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                         onClick={() => {
                           setRefundModal(b);
                           setRefundAmount(b.downpayment_php || b.total_php || '');
@@ -442,7 +445,7 @@ export default function MyBookings() {
                         }}
                         title="Submit refund claim for this reservation"
                       >
-                        💰 Request Refund
+                        <i className="fas fa-money-bill-wave" /> Request Refund
                       </button>
                     )}
                     {b.status === 'checked_out' && !b.reviews && (
@@ -501,7 +504,7 @@ export default function MyBookings() {
             }}>
               <div>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.72rem', letterSpacing: '.12em', textTransform: 'uppercase', color: '#BAE6FD', fontWeight: 800, marginBottom: 2 }}>
-                  <span>🛡️</span> RESORT CHECK-IN MANIFEST
+                  <i className="fas fa-shield-halved" /> RESORT CHECK-IN MANIFEST
                 </div>
                 <h3 className="serif" style={{ fontSize: '1.6rem', color: '#FFFFFF', margin: 0 }}>Guest Manifest Profile</h3>
                 <p style={{ fontSize: '.82rem', color: 'rgba(255,255,255,0.85)', margin: '4px 0 0' }}>
@@ -517,7 +520,7 @@ export default function MyBookings() {
                   border: '1px solid rgba(255,255,255,0.3)',
                   background: 'rgba(0,0,0,0.2)',
                   color: '#FFFFFF',
-                  fontSize: '1.1rem',
+                  fontSize: '1rem',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -529,7 +532,7 @@ export default function MyBookings() {
                 aria-label="Close"
                 onClick={() => setProfOpen(false)}
               >
-                ✕
+                <i className="fas fa-xmark" />
               </button>
             </div>
 
@@ -539,7 +542,7 @@ export default function MyBookings() {
                 <div className="field">
                   <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', fontWeight: 700 }}>
                     <span>FIRST NAME * (CHAR ONLY)</span>
-                    {profForm.first_name && <span style={{ color: '#10B981' }}>✓</span>}
+                    {profForm.first_name && <span style={{ color: '#10B981' }}><i className="fas fa-check" /></span>}
                   </label>
                   <input
                     required
@@ -559,7 +562,7 @@ export default function MyBookings() {
                 <div className="field">
                   <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', fontWeight: 700 }}>
                     <span>LAST NAME * (CHAR ONLY)</span>
-                    {profForm.last_name && <span style={{ color: '#10B981' }}>✓</span>}
+                    {profForm.last_name && <span style={{ color: '#10B981' }}><i className="fas fa-check" /></span>}
                   </label>
                   <input
                     required
@@ -633,7 +636,7 @@ export default function MyBookings() {
               {confirmDeleteProf ? (
                 <div style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: 12, padding: 14, textAlign: 'center', marginTop: 10 }}>
                   <b style={{ color: '#F87171', display: 'block', fontSize: '.92rem', marginBottom: 4 }}>
-                    ⚠️ Permanently Delete Account?
+                    <i className="fas fa-triangle-exclamation" style={{ marginRight: 6 }} /> Permanently Delete Account?
                   </b>
                   <p style={{ color: '#FECACA', fontSize: '.78rem', margin: '0 0 12px' }}>
                     This action is permanent and cannot be undone. All your profile info and stay history will be deleted.
@@ -675,9 +678,9 @@ export default function MyBookings() {
                     type="submit"
                     className="btn btn-sky"
                     disabled={savingProf}
-                    style={{ justifyContent: 'center', padding: '12px', fontSize: '.92rem', fontWeight: 700 }}
+                    style={{ justifyContent: 'center', padding: '12px', fontSize: '.92rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}
                   >
-                    {savingProf ? 'Saving…' : '💾 Save'}
+                    {savingProf ? 'Saving…' : <><i className="fas fa-floppy-disk" /> Save</>}
                   </button>
                   <button
                     type="button"
@@ -691,9 +694,12 @@ export default function MyBookings() {
                       padding: '12px',
                       fontSize: '.92rem',
                       fontWeight: 700,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
                     }}
                   >
-                    🗑️ Delete
+                    <i className="fas fa-trash-can" /> Delete
                   </button>
                   <button
                     type="button"
@@ -705,9 +711,12 @@ export default function MyBookings() {
                       padding: '12px',
                       fontSize: '.92rem',
                       fontWeight: 700,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
                     }}
                   >
-                    ✕ Cancel
+                    <i className="fas fa-xmark" /> Cancel
                   </button>
                 </div>
               )}
@@ -745,16 +754,16 @@ export default function MyBookings() {
                 <span style={{ fontSize: '.72rem', letterSpacing: '.12em', color: '#FEF3C7', fontWeight: 800, textTransform: 'uppercase' }}>
                   Accounting & Guest Refund Office
                 </span>
-                <h3 className="serif" style={{ fontSize: '1.45rem', color: '#FFFFFF', margin: '4px 0 0' }}>
-                  💰 Request a Booking Refund
+                <h3 className="serif" style={{ fontSize: '1.45rem', color: '#FFFFFF', margin: '4px 0 0', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <i className="fas fa-money-bill-wave" /> Request a Booking Refund
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setRefundModal(null)}
-                style={{ background: 'none', border: 'none', color: '#FFFFFF', fontSize: '1.4rem', cursor: 'pointer', lineHeight: 1 }}
+                style={{ background: 'none', border: 'none', color: '#FFFFFF', fontSize: '1.2rem', cursor: 'pointer', lineHeight: 1 }}
               >
-                ✕
+                <i className="fas fa-xmark" />
               </button>
             </div>
 
@@ -764,7 +773,8 @@ export default function MyBookings() {
 
             <form className="modal-body" onSubmit={submitGuestRefund} style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.08)', fontSize: '.78rem', color: '#94A3B8', lineHeight: 1.45 }}>
-                ℹ️ <strong>Rock View Refund Guidelines:</strong> Cancellations made 7+ days prior are eligible for 100% refund. Within 3–6 days are eligible for 50%. Free full refund or rebooking applies under official storm/force majeure advisories.
+                <i className="fas fa-circle-info" style={{ marginRight: 6, color: '#38BDF8' }} />
+                <strong>Rock View Refund Guidelines:</strong> Cancellations made 7+ days prior are eligible for 100% refund. Within 3–6 days are eligible for 50%. Free full refund or rebooking applies under official storm/force majeure advisories.
               </div>
 
               <div className="field">
@@ -825,16 +835,17 @@ export default function MyBookings() {
                   className="btn btn-ghost btn-sm"
                   onClick={() => setRefundModal(null)}
                   disabled={submittingRefund}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                 >
-                  ✕ Cancel
+                  <i className="fas fa-xmark" /> Cancel
                 </button>
                 <button
                   type="submit"
                   className="btn btn-sky btn-sm"
                   disabled={submittingRefund}
-                  style={{ background: '#F59E0B', borderColor: '#D97706', color: '#FFFFFF', fontWeight: 700 }}
+                  style={{ background: '#F59E0B', borderColor: '#D97706', color: '#FFFFFF', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}
                 >
-                  {submittingRefund ? 'Submitting…' : '💾 Submit Refund Request'}
+                  {submittingRefund ? 'Submitting…' : <><i className="fas fa-floppy-disk" /> Submit Refund Request</>}
                 </button>
               </div>
             </form>

@@ -1295,22 +1295,22 @@ await runTest('Account Deletion Lifecycle, Promotion Removal & Real-Time Room Lo
   const authCtxSrc = fs.readFileSync(path.resolve(projectRoot, 'client/src/context/AuthContext.tsx'), 'utf8');
   assert(authCtxSrc.includes('deleteAccount: async () =>'), 'AuthContext.tsx must export deleteAccount method');
 
-  // Verify "Save | Delete | Cancel" pattern across user profile settings
+  // Verify "Save | Delete | Cancel" pattern across user profile settings (supports FontAwesome and classic emojis)
   const myBookingsSrc = fs.readFileSync(path.resolve(projectRoot, 'client/src/pages/MyBookings.tsx'), 'utf8');
-  assert(myBookingsSrc.includes('💾 Save'), 'MyBookings.tsx must render Save button');
-  assert(myBookingsSrc.includes('🗑️ Delete'), 'MyBookings.tsx must render Delete button');
-  assert(myBookingsSrc.includes('✕ Cancel'), 'MyBookings.tsx must render Cancel button');
+  assert(myBookingsSrc.includes('💾 Save') || (myBookingsSrc.includes('fa-floppy-disk') && myBookingsSrc.includes('Save')), 'MyBookings.tsx must render Save button');
+  assert(myBookingsSrc.includes('🗑️ Delete') || (myBookingsSrc.includes('fa-trash') && myBookingsSrc.includes('Delete')), 'MyBookings.tsx must render Delete button');
+  assert(myBookingsSrc.includes('✕ Cancel') || (myBookingsSrc.includes('Cancel') && (myBookingsSrc.includes('fa-xmark') || myBookingsSrc.includes('✕'))), 'MyBookings.tsx must render Cancel button');
   assert(myBookingsSrc.includes('confirmDeleteProf'), 'MyBookings.tsx must require confirmation before account deletion');
 
   const mobileAppSrc = fs.readFileSync(path.resolve(projectRoot, 'client/src/components/MobileResortApp.tsx'), 'utf8');
-  assert(mobileAppSrc.includes('💾 Save'), 'MobileResortApp.tsx must render Save button');
-  assert(mobileAppSrc.includes('🗑️ Delete'), 'MobileResortApp.tsx must render Delete button');
-  assert(mobileAppSrc.includes('✕ Cancel'), 'MobileResortApp.tsx must render Cancel button');
+  assert(mobileAppSrc.includes('💾 Save') || (mobileAppSrc.includes('fa-floppy-disk') && mobileAppSrc.includes('Save')), 'MobileResortApp.tsx must render Save button');
+  assert(mobileAppSrc.includes('🗑️ Delete') || (mobileAppSrc.includes('fa-trash') && mobileAppSrc.includes('Delete')), 'MobileResortApp.tsx must render Delete button');
+  assert(mobileAppSrc.includes('✕ Cancel') || (mobileAppSrc.includes('Cancel') && (mobileAppSrc.includes('fa-xmark') || mobileAppSrc.includes('✕'))), 'MobileResortApp.tsx must render Cancel button');
 
   const adminSrc = fs.readFileSync(path.resolve(projectRoot, 'client/src/pages/Admin.tsx'), 'utf8');
-  assert(adminSrc.includes('💾 Save'), 'Admin.tsx must render Save button');
-  assert(adminSrc.includes('🗑️ Delete'), 'Admin.tsx must render Delete button');
-  assert(adminSrc.includes('✕ Cancel'), 'Admin.tsx must render Cancel button');
+  assert(adminSrc.includes('💾 Save') || (adminSrc.includes('fa-floppy-disk') && adminSrc.includes('Save')), 'Admin.tsx must render Save button');
+  assert(adminSrc.includes('🗑️ Delete') || (adminSrc.includes('fa-trash') && adminSrc.includes('Delete')), 'Admin.tsx must render Delete button');
+  assert(adminSrc.includes('✕ Cancel') || (adminSrc.includes('Cancel') && (adminSrc.includes('fa-xmark') || adminSrc.includes('✕'))), 'Admin.tsx must render Cancel button');
   assert(!adminSrc.includes('<th style={{ color: isLightMode ? \'#475569\' : themeMuted }}>Promote</th>'), 'Admin.tsx must remove Promote column from customer accounts table');
   assert(!adminSrc.includes('🌴 Patar Beach Festival Promo 2026'), 'Admin.tsx must remove marketing campaigns modal');
 

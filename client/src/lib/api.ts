@@ -227,6 +227,7 @@ export const api = {
     req('/upload/image', { method: 'POST', body: { image_data, filename, ...(extra || {}) } }),
   getCloudinaryConfig: () => req('/cloudinary/config'),
   saveCloudinaryConfig: (body: any) => req('/cloudinary/config', { method: 'POST', body }),
+  pingCloudinary: (body?: any) => req('/cloudinary/ping', { method: 'POST', body: body || {} }),
   availability: (check_in: string, check_out: string, guests: number) =>
     req(`/availability?check_in=${encodeURIComponent(check_in)}&check_out=${encodeURIComponent(check_out)}&guests=${guests}`),
   availabilityCalendar: (params?: { room_id?: string; from?: string; to?: string }) => {

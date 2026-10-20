@@ -206,7 +206,7 @@ r.get('/availability', validate(rangeSchema, 'query'), asyncH(async (req, res) =
   let overlappingRes = [];
   try {
     const { data } = await sysClient.from('reservations')
-      .select('room_id, check_in, check_out, status')
+      .select('room_id, check_in, check_out, status, notes')
       .in('status', ['pending', 'confirmed', 'checked_in'])
       .lt('check_in', check_out)
       .gt('check_out', check_in);
@@ -224,18 +224,38 @@ r.get('/availability', validate(rangeSchema, 'query'), asyncH(async (req, res) =
     cur.setDate(cur.getDate() + 1);
   }
 
-  // 4. Calculate peak occupancy per room across the stay duration
+  // 4. Calculate peak occupancy & available physical unit numbers per room across stay duration
   const list = allRooms
     .filter((r) => r.capacity >= guests)
     .map((r) => {
+      const totalUnits = Number(r.units) || 1;
       const roomBookings = overlappingRes.filter((b) => b.room_id === r.id);
+
+      // Track units specifically taken by overlapping bookings
+      const takenUnits = new Set();
+      roomBookings.forEach((b) => {
+        const m = (b.notes || '').match(/\[Unit\s*(\d+)\]/i);
+        if (m) {
+          const uNum = parseInt(m[1], 10);
+          if (uNum >= 1 && uNum <= totalUnits) takenUnits.add(uNum);
+        }
+      });
+
       let peakBusy = 0;
       for (const night of nights) {
         const busyTonight = roomBookings.filter((b) => b.check_in <= night && b.check_out > night).length;
         if (busyTonight > peakBusy) peakBusy = busyTonight;
       }
-      const totalUnits = Number(r.units) || 1;
-      const unitsLeft = Math.max(0, totalUnits - peakBusy);
+
+      // Compute exact available unit numbers
+      const availableUnits = [];
+      for (let u = 1; u <= totalUnits; u++) {
+        if (!takenUnits.has(u)) {
+          availableUnits.push(u);
+        }
+      }
+
+      const unitsLeft = Math.max(0, Math.min(availableUnits.length, totalUnits - peakBusy));
       return {
         room_id: r.id,
         name: r.name,
@@ -244,6 +264,7 @@ r.get('/availability', validate(rangeSchema, 'query'), asyncH(async (req, res) =
         rate_php: r.rate_php,
         units_left: unitsLeft,
         total_units: totalUnits,
+        available_unit_numbers: availableUnits,
         occupied_units: peakBusy,
         is_locked: unitsLeft <= 0,
         rating_avg: Number(r.rating_avg) || 0,

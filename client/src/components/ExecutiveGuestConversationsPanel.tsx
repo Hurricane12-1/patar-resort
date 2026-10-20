@@ -162,7 +162,7 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
     };
   }, []);
 
-  const handleSendMessage = async (textToSend) => {
+  const handleSendMessage = async (textToSend?: string) => {
     const text = textToSend || inputText;
     if (!text.trim() || !selectedGuest) return;
 
@@ -229,7 +229,7 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <span style={{ fontSize: '.82rem', padding: '6px 14px', background: 'rgba(99, 102, 241, 0.15)', color: '#6366F1', fontWeight: 700, borderRadius: 20, border: '1px solid rgba(99, 102, 241, 0.3)' }}>
-            💬 {openCount} Open Ticket{openCount === 1 ? '' : 's'} · CSAT 100%
+            <><i className="fas fa-comments" style={{ marginRight: 6 }} />{openCount} Open Ticket{openCount === 1 ? '' : 's'} · CSAT 100%</>
           </span>
         </div>
       </div>
@@ -267,7 +267,7 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0 }}>
             <input
               type="text"
-              placeholder="🔍 Search guest or channel..."
+              placeholder="Search guest or channel..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{
@@ -363,7 +363,7 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
                         {(g.is_directed_to_agent || g.status === 'Directed to Agent') && (
                           <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981' }} />
                         )}
-                        {g.is_directed_to_agent || g.status === 'Directed to Agent' ? '🟢 Live with Agent' : g.status}
+                        {g.is_directed_to_agent || g.status === 'Directed to Agent' ? <><i className="fas fa-circle" style={{ color: '#10B981', fontSize: '.6rem', marginRight: 4 }} />Live with Agent</> : g.status}
                       </span>
                     </div>
 
@@ -431,7 +431,7 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
                       }}
                     >
                       {selectedGuest.is_directed_to_agent || selectedGuest.status === 'Directed to Agent'
-                        ? '🟢 Live with Service Agent'
+                        ? <><i className="fas fa-circle" style={{ color: '#10B981', fontSize: '.6rem', marginRight: 4 }} />Live with Service Agent</>
                         : selectedGuest.status}
                     </span>
                   </div>
@@ -457,7 +457,7 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
                     transition: 'all 0.2s ease',
                   }}
                 >
-                  ✔️ Mark Resolved
+                  <><i className="fas fa-check" style={{ marginRight: 4 }} />Mark Resolved</>
                 </button>
               )}
             </div>
@@ -542,7 +542,7 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
                   style={{ fontSize: '.74rem', padding: '5px 10px', background: 'rgba(16, 185, 129, 0.12)', color: '#10B981', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 12, cursor: 'pointer' }}
                   title="Click to type prompt into reply composer"
                 >
-                  ✅ Approve Early Check-In
+                  <><i className="fas fa-check" style={{ marginRight: 4 }} />Approve Early Check-In</>
                 </button>
                 <button
                   type="button"
@@ -551,7 +551,7 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
                   style={{ fontSize: '.74rem', padding: '5px 10px', background: 'rgba(99, 102, 241, 0.12)', color: '#6366F1', border: '1px solid rgba(99, 102, 241, 0.3)', borderRadius: 12, cursor: 'pointer' }}
                   title="Click to type prompt into reply composer"
                 >
-                  🍽️ Confirm Dining
+                  <><i className="fas fa-utensils" style={{ marginRight: 4 }} />Confirm Dining</>
                 </button>
                 <button
                   type="button"
@@ -560,7 +560,7 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
                   style={{ fontSize: '.74rem', padding: '5px 10px', background: 'rgba(56, 189, 248, 0.12)', color: '#0EA5E9', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: 12, cursor: 'pointer' }}
                   title="Click to type prompt into reply composer"
                 >
-                  🚐 Send Van Details
+                  <><i className="fas fa-van-shuttle" style={{ marginRight: 4 }} />Send Van Details</>
                 </button>
               </div>
 
@@ -612,7 +612,7 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 24px', background: themeCardBg, borderRadius: 16, border: `1px dashed ${themeBorder}`, textAlign: 'center', minHeight: 440 }}>
             <div style={{ width: 60, height: 60, borderRadius: '50%', background: isLightMode ? '#EFF6FF' : 'rgba(37, 99, 235, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-              <span style={{ fontSize: '1.8rem' }}>💬</span>
+              <i className="fas fa-comments" style={{ fontSize: '1.8rem', color: '#0EA5E9' }} />
             </div>
             <h4 style={{ margin: '0 0 8px', fontSize: '1.15rem', color: themeText, fontWeight: 700 }}>No Active Guest Conversations</h4>
             <p style={{ margin: 0, fontSize: '0.86rem', color: themeMuted, maxWidth: 420, lineHeight: 1.5 }}>

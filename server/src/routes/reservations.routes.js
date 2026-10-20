@@ -68,7 +68,7 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
   let activeRes = [];
   try {
     const { data } = await sysClient.from('reservations')
-      .select('id, check_in, check_out')
+      .select('id, check_in, check_out, notes')
       .eq('room_id', targetRoomId)
       .in('status', ['pending', 'confirmed', 'checked_in'])
       .lt('check_in', check_out)
@@ -93,6 +93,37 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
   const roomUnits = Number(room.units) || 1;
   if (peakOccupied >= roomUnits) {
     throw new ApiError(409, 'That room was just booked for those dates — please pick another.');
+  }
+
+  // Exact available physical unit resolution (ensures non-overlapping, even unit distribution)
+  let finalNotes = (notes || '').trim();
+  if (roomUnits > 1) {
+    const unitMatch = finalNotes.match(/\[Unit\s*(\d+)\]/i);
+    const takenUnits = new Set();
+    activeRes.forEach((b) => {
+      const m = (b.notes || '').match(/\[Unit\s*(\d+)\]/i);
+      if (m) {
+        const u = parseInt(m[1], 10);
+        if (u >= 1 && u <= roomUnits) takenUnits.add(u);
+      }
+    });
+
+    if (unitMatch) {
+      const requestedUnit = parseInt(unitMatch[1], 10);
+      if (takenUnits.has(requestedUnit)) {
+        throw new ApiError(409, `Unit ${requestedUnit} is already booked for those dates. Please select an available unit.`);
+      }
+    } else {
+      // Auto-assign first free unit
+      let freeUnit = 1;
+      for (let u = 1; u <= roomUnits; u++) {
+        if (!takenUnits.has(u)) {
+          freeUnit = u;
+          break;
+        }
+      }
+      finalNotes = `[Unit ${freeUnit}] ${finalNotes}`.trim();
+    }
   }
 
   const roomName = room.name;
@@ -129,7 +160,7 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
     check_in,
     check_out,
     guests,
-    notes,
+    notes: finalNotes,
     total_php,
     downpayment_php,
     payment_method: finalPaymentMethod,

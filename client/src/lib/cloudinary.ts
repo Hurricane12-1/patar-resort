@@ -15,9 +15,9 @@ export interface CloudinaryConfig {
 const STORAGE_KEY = 'jd_beach_house_cloudinary_config';
 
 export const DEFAULT_CLOUDINARY_CONFIG: CloudinaryConfig = {
-  cloudName: 'juynm9ab',
-  uploadPreset: '',
-  apiKey: '551438838453596',
+  cloudName: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_CLOUDINARY_CLOUD_NAME) || 'juynm9ab',
+  uploadPreset: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_CLOUDINARY_UPLOAD_PRESET) || 'jd_beach_house_preset',
+  apiKey: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_CLOUDINARY_API_KEY) || '551438838453596',
   imageUrl: '',
 };
 
@@ -26,7 +26,13 @@ export function getCloudinaryConfig(): CloudinaryConfig {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      return { ...DEFAULT_CLOUDINARY_CONFIG, ...parsed, apiKey: parsed.apiKey || '551438838453596' };
+      return {
+        ...DEFAULT_CLOUDINARY_CONFIG,
+        ...parsed,
+        cloudName: parsed.cloudName || DEFAULT_CLOUDINARY_CONFIG.cloudName,
+        uploadPreset: parsed.uploadPreset || DEFAULT_CLOUDINARY_CONFIG.uploadPreset,
+        apiKey: parsed.apiKey || DEFAULT_CLOUDINARY_CONFIG.apiKey,
+      };
     }
   } catch {}
   return { ...DEFAULT_CLOUDINARY_CONFIG };
@@ -43,15 +49,29 @@ export function saveCloudinaryConfig(cfg: CloudinaryConfig): void {
 
 /**
  * Optimizes a Cloudinary URL with standard auto-format and auto-quality transforms.
+ * Preserves the /v<version>/ prefix to prevent Cloudinary 400 'Invalid transformation parameter' errors.
  */
-export function optimizeCloudinaryUrl(url: string, transforms = 'f_auto,q_auto,c_fill,w_1200'): string {
+export function optimizeCloudinaryUrl(url: string, transforms = 'c_fill,w_1200'): string {
   if (!url || typeof url !== 'string') return url;
   if (!url.includes('/image/upload/')) return url;
   if (url.includes('/image/upload/' + transforms)) return url;
   try {
     const parts = url.split('/image/upload/');
-    const remaining = parts[1].replace(/^[a-z0-9_,]+?\//i, '');
-    return `${parts[0]}/image/upload/${transforms}/${remaining}`;
+    const base = parts[0];
+    const afterUpload = parts[1];
+
+    // Detect version tag if present (e.g. v1792451892 or v1)
+    const versionMatch = afterUpload.match(/(v\d+)\//);
+    const version = versionMatch ? versionMatch[1] : 'v1';
+
+    let publicPath = afterUpload;
+    if (versionMatch) {
+      publicPath = afterUpload.slice(afterUpload.indexOf(versionMatch[0]) + versionMatch[0].length);
+    } else {
+      publicPath = afterUpload.replace(/^(?:[a-z0-9_,]+?\/?)+?(?=[a-z0-9_.-]+(?:\/|$))/i, '');
+    }
+
+    return `${base}/image/upload/${transforms}/${version}/${publicPath.replace(/^\/+/, '')}`;
   } catch {
     return url;
   }

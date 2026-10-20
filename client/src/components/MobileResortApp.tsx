@@ -81,17 +81,7 @@ export function Logo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
       <div
         className={`${mark} shrink-0 flex items-center justify-center border border-cyan/30 bg-gradient-to-br from-cyan/20 to-transparent`}
       >
-        <svg viewBox="0 0 24 24" className="w-3/5 h-3/5" fill="none" aria-hidden="true">
-          <circle cx="12" cy="8" r="3" fill="#f6b74a" />
-          <path d="M4 14C7 12 9 16 12 14C15 12 17 16 20 14" stroke="#22c3ee" strokeWidth="2" strokeLinecap="round" />
-          <path
-            d="M4 18C7 16 9 20 12 18C15 16 17 20 20 18"
-            stroke="#22c3ee"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeOpacity="0.7"
-          />
-        </svg>
+        <i className="fas fa-umbrella-beach text-cyan text-sm" />
       </div>
       {size !== 'lg' && (
         <div className="whitespace-nowrap leading-none">
@@ -104,66 +94,24 @@ export function Logo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
 }
 
 function AmenityIcon({ name }: { name: string }) {
-  const common = {
-    viewBox: '0 0 24 24',
-    className: 'w-4 h-4',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 1.8,
-    strokeLinecap: 'round' as const,
-    strokeLinejoin: 'round' as const,
-    'aria-hidden': true,
-  };
   switch (name) {
     case 'wifi':
-      return (
-        <svg {...common}>
-          <path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0" />
-          <circle cx="12" cy="19" r="1" fill="currentColor" />
-        </svg>
-      );
+      return <i className="fas fa-wifi text-xs" />;
     case 'utensils':
-      return (
-        <svg {...common}>
-          <path d="M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10M17 3c-2 0-3 2-3 5s1 4 3 4v9" />
-        </svg>
-      );
+      return <i className="fas fa-utensils text-xs" />;
     case 'cocktail':
-      return (
-        <svg {...common}>
-          <path d="M4 4h16l-8 9-8-9zM12 13v7M8 20h8" />
-        </svg>
-      );
+      return <i className="fas fa-martini-glass text-xs" />;
     case 'sun':
-      return (
-        <svg {...common}>
-          <circle cx="12" cy="12" r="4" />
-          <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
-        </svg>
-      );
+      return <i className="fas fa-sun text-xs" />;
     case 'compass':
-      return (
-        <svg {...common}>
-          <circle cx="12" cy="12" r="9" />
-          <path d="M15.5 8.5l-2 5-5 2 2-5 5-2z" />
-        </svg>
-      );
+      return <i className="fas fa-compass text-xs" />;
     default:
-      return (
-        <svg {...common}>
-          <path d="M2 12c3-3 5 3 8 0s5 3 8 0 3-1 4 0M2 17c3-3 5 3 8 0s5 3 8 0 3-1 4 0" />
-        </svg>
-      );
+      return <i className="fas fa-water text-xs" />;
   }
 }
 
 function PinIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-      <path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z" />
-      <circle cx="12" cy="9.5" r="2.5" />
-    </svg>
-  );
+  return <i className="fas fa-location-dot w-4 h-4 text-xs inline-flex items-center justify-center text-cyan" aria-hidden="true" />;
 }
 
 const peso = (n: number) => `₱${n.toLocaleString('en-PH')}`;
@@ -1003,7 +951,7 @@ export default function MobileResortApp() {
           {/* REVIEW + OFFER */}
           <section className={`${WRAP} ${SECTION} grid gap-5 lg:grid-cols-2`}>
             <div className="flex flex-col rounded-3xl bg-sand p-7 md:p-10 text-navy">
-              <span className="text-sm tracking-[0.3em] text-[#d9962b]">★★★★★</span>
+              <span className="text-sm tracking-[0.2em] text-[#d9962b]"><i className="fas fa-star" /><i className="fas fa-star" /><i className="fas fa-star" /><i className="fas fa-star" /><i className="fas fa-star" /></span>
               <p className="mt-4 font-serif text-2xl md:text-3xl italic leading-snug">
                 "{site.reviews.items[0].quote}"
               </p>
@@ -1096,9 +1044,7 @@ export default function MobileResortApp() {
                 aria-label="Back"
                 className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/5 text-white/80 transition hover:bg-white/10 active:scale-95"
               >
-                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                  <path d="M19 12H5M12 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
+                <i className="fas fa-arrow-left text-sm" aria-hidden="true" />
               </button>
               <Logo size="sm" />
             </div>
@@ -1212,12 +1158,7 @@ export default function MobileResortApp() {
                 disabled={authBusy}
                 className="flex items-center justify-center gap-2.5 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-xs font-medium text-white transition hover:bg-white/10 active:scale-[.98] disabled:opacity-50 cursor-pointer"
               >
-                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-                </svg>
+                <i className="fab fa-google text-amber-400 text-sm shrink-0" />
                 Google
               </button>
 
@@ -1227,9 +1168,7 @@ export default function MobileResortApp() {
                 disabled={authBusy}
                 className="flex items-center justify-center gap-2.5 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-xs font-medium text-white transition hover:bg-white/10 active:scale-[.98] disabled:opacity-50 cursor-pointer"
               >
-                <svg className="w-4 h-4 shrink-0 fill-[#1877F2]" viewBox="0 0 24 24">
-                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                </svg>
+                <i className="fab fa-facebook text-[#1877F2] text-sm shrink-0" />
                 Facebook
               </button>
             </div>
@@ -1371,9 +1310,7 @@ export default function MobileResortApp() {
                 aria-expanded={menuOpen}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:bg-white/10 active:scale-95 lg:hidden"
               >
-                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                  <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />
-                </svg>
+                <i className="fas fa-bars text-sm" aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -1467,7 +1404,7 @@ export default function MobileResortApp() {
               >
                 <span className={LABEL}>{site.booking.checkIn}</span>
                 <span className="text-sm font-semibold text-white flex items-center justify-between">
-                  {checkIn} <span className="text-xs text-cyan">📅</span>
+                  {checkIn} <i className="fas fa-calendar-alt text-xs text-cyan" />
                 </span>
                 <span className="text-[10px] text-cyan/70 font-medium">Tap for marked calendar</span>
               </button>
@@ -1482,7 +1419,7 @@ export default function MobileResortApp() {
               >
                 <span className={LABEL}>{site.booking.checkOut}</span>
                 <span className="text-sm font-semibold text-white flex items-center justify-between">
-                  {checkOut} <span className="text-xs text-cyan">📅</span>
+                  {checkOut} <i className="fas fa-calendar-alt text-xs text-cyan" />
                 </span>
                 <span className="text-[10px] text-cyan/70 font-medium">Tap for marked calendar</span>
               </button>
@@ -1552,7 +1489,7 @@ export default function MobileResortApp() {
                 onClick={() => setShowHeroCalendar((prev) => !prev)}
                 className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-cyan hover:text-white transition cursor-pointer"
               >
-                📅 {showHeroCalendar ? 'Hide Availability Calendar' : 'View Calendar (Check Reserved vs Open Dates)'}
+                <><i className="fas fa-calendar-alt" style={{ marginRight: 6 }} />{showHeroCalendar ? 'Hide Availability Calendar' : 'View Calendar (Check Reserved vs Open Dates)'}</>
               </button>
             </div>
 
@@ -1714,23 +1651,23 @@ export default function MobileResortApp() {
                             {roomTitle}
                           </h3>
                           <span className="flex items-center gap-1 text-[11px] font-medium text-amber-300/90 shrink-0 pt-0.5">
-                            ★ 4.9 <span className="text-white/40">(18)</span>
+                            <><i className="fas fa-star text-gold" style={{ marginRight: 4 }} />4.9 <span className="text-white/40">(18)</span></>
                           </span>
                         </div>
 
                         {/* Specs & Amenities Line */}
                         <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-white/60">
                           <span className="inline-flex items-center gap-1 rounded-lg bg-white/5 px-2.5 py-1 border border-white/5">
-                            👥 Sleeps {capacityGuests}
+                            <><i className="fas fa-users" style={{ marginRight: 4 }} />Sleeps {capacityGuests}</>
                           </span>
                           <span className="inline-flex items-center gap-1 rounded-lg bg-white/5 px-2.5 py-1 border border-white/5">
-                            🛏️ Queen Suite
+                            <><i className="fas fa-bed" style={{ marginRight: 4 }} />Queen Suite</>
                           </span>
                           <span className="inline-flex items-center gap-1 rounded-lg bg-white/5 px-2.5 py-1 border border-white/5">
-                            ❄️ Aircon
+                            <><i className="fas fa-snowflake" style={{ marginRight: 4 }} />Aircon</>
                           </span>
                           <span className="inline-flex items-center gap-1 rounded-lg bg-white/5 px-2.5 py-1 border border-white/5">
-                            📶 Fast Wi-Fi
+                            <><i className="fas fa-wifi" style={{ marginRight: 4 }} />Fast Wi-Fi</>
                           </span>
                         </div>
 
@@ -1751,7 +1688,7 @@ export default function MobileResortApp() {
                           title={`Check calendar & reserved dates for ${roomTitle}`}
                           className="flex-1 py-2.5 px-3.5 rounded-xl border border-white/20 bg-white/5 hover:border-cyan hover:bg-cyan/10 text-xs font-semibold text-white/90 tracking-wide transition flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
                         >
-                          📅 Check Dates
+                          <><i className="fas fa-calendar-check" style={{ marginRight: 4 }} />Check Dates</>
                         </button>
                         <button
                           type="button"
@@ -1832,7 +1769,7 @@ export default function MobileResortApp() {
                 key={rev.name}
                 className="flex w-[85%] shrink-0 snap-start flex-col rounded-3xl border border-white/10 bg-ink p-6 sm:w-[60%] md:p-7 lg:w-auto"
               >
-                <span className="text-sm tracking-[0.3em] text-gold">★★★★★</span>
+                <span className="text-sm tracking-[0.2em] text-gold"><i className="fas fa-star" /><i className="fas fa-star" /><i className="fas fa-star" /><i className="fas fa-star" /><i className="fas fa-star" /></span>
                 <blockquote className="mt-4 font-serif text-xl italic leading-relaxed text-white/90">"{rev.quote}"</blockquote>
                 <figcaption className="mt-auto flex items-center gap-3 border-t border-white/10 pt-5">
                   <span className="flex h-10 w-10 items-center justify-center rounded-full border border-cyan/40 bg-cyan/10 font-serif text-base text-cyan">
@@ -2066,7 +2003,7 @@ export default function MobileResortApp() {
               <div className="flex flex-wrap gap-2">
                 {site.footer.badges.map((b) => (
                   <span key={b} className="rounded-full border border-gold/30 bg-gold/10 px-3 py-1 text-[10px] text-gold">
-                    ★ {b}
+                    <><i className="fas fa-star" style={{ marginRight: 4 }} />{b}</>
                   </span>
                 ))}
               </div>
@@ -2116,9 +2053,7 @@ export default function MobileResortApp() {
                 aria-label="Close menu"
                 className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white"
               >
-                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                  <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
-                </svg>
+                <i className="fas fa-xmark text-sm" aria-hidden="true" />
               </button>
             </div>
 
@@ -2323,7 +2258,7 @@ export default function MobileResortApp() {
                 aria-label="Close profile modal"
                 className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition cursor-pointer"
               >
-                ✕
+                <i className="fas fa-xmark" />
               </button>
             </div>
 
@@ -2336,7 +2271,7 @@ export default function MobileResortApp() {
                   profileTab === 'manifest' ? 'bg-cyan text-navy font-semibold shadow-sm' : 'text-white/60 hover:text-white'
                 }`}
               >
-                📋 Manifest
+                <><i className="fas fa-clipboard-list" style={{ marginRight: 6 }} />Manifest</>
               </button>
               <button
                 type="button"
@@ -2345,7 +2280,7 @@ export default function MobileResortApp() {
                   profileTab === 'bookings' ? 'bg-cyan text-navy font-semibold shadow-sm' : 'text-white/60 hover:text-white'
                 }`}
               >
-                📅 My Stays {myBookings.length > 0 && `(${myBookings.length})`}
+                <><i className="fas fa-calendar-alt" style={{ marginRight: 6 }} />My Stays</> {myBookings.length > 0 && `(${myBookings.length})`}
               </button>
               <button
                 type="button"
@@ -2354,7 +2289,7 @@ export default function MobileResortApp() {
                   profileTab === 'contact' ? 'bg-cyan text-navy font-semibold shadow-sm' : 'text-white/60 hover:text-white'
                 }`}
               >
-                🛎️ Services
+                <><i className="fas fa-bell-concierge" style={{ marginRight: 6 }} />Services</>
               </button>
             </div>
 
@@ -2453,7 +2388,7 @@ export default function MobileResortApp() {
 
                   {confirmDeleteProf ? (
                     <div className="pt-2 p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-center">
-                      <b className="block text-sm text-rose-400 mb-1">⚠️ Permanently Delete Account?</b>
+                      <b className="block text-sm text-rose-400 mb-1"><i className="fas fa-triangle-exclamation" style={{ marginRight: 6 }} />Permanently Delete Account?</b>
                       <p className="text-[11px] text-rose-200/80 mb-3">All your reservations, manifest profile, and account data will be permanently wiped.</p>
                       <div className="flex gap-2 justify-center">
                         <button
@@ -2491,21 +2426,21 @@ export default function MobileResortApp() {
                         disabled={profSaving}
                         className={`${BTN_PRIMARY} py-3 text-center justify-center cursor-pointer text-xs font-semibold`}
                       >
-                        {profSaving ? 'Saving…' : '💾 Save'}
+                        {profSaving ? 'Saving…' : <><i className="fas fa-floppy-disk" style={{ marginRight: 4 }} />Save</>}
                       </button>
                       <button
                         type="button"
                         onClick={() => setConfirmDeleteProf(true)}
                         className="rounded-2xl border border-rose-500/40 bg-rose-500/15 text-rose-400 hover:bg-rose-500/25 py-3 text-center font-semibold text-xs transition cursor-pointer"
                       >
-                        🗑️ Delete
+                        <><i className="fas fa-trash-can" style={{ marginRight: 4 }} />Delete</>
                       </button>
                       <button
                         type="button"
                         onClick={() => setProfileModalOpen(false)}
                         className={`${BTN_GHOST} py-3 text-center justify-center cursor-pointer text-white/70 hover:text-white text-xs font-semibold`}
                       >
-                        ✕ Cancel
+                        <><i className="fas fa-xmark" style={{ marginRight: 4 }} />Cancel</>
                       </button>
                     </div>
                   )}
@@ -2646,7 +2581,7 @@ export default function MobileResortApp() {
                   {/* Resort Location Note */}
                   <div className="p-3.5 rounded-2xl border border-white/10 bg-white/[0.02] text-xs text-white/70">
                     <p className="font-semibold text-white flex items-center gap-1.5">
-                      <span>📍 Patar Beach, Bolinao, Pangasinan</span>
+                      <span><i className="fas fa-location-dot" style={{ marginRight: 6 }} />Patar Beach, Bolinao, Pangasinan</span>
                     </p>
                     <p className="mt-1 text-[11px] text-white/50">
                       Check-in starts at 2:00 PM. Check-out is at 12:00 PM. Complimentary Wi-Fi, fresh coconut welcome drinks, and sunset bonfire.
@@ -2730,7 +2665,7 @@ export default function MobileResortApp() {
                 aria-label="Close reservation modal"
                 className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition cursor-pointer"
               >
-                ✕
+                <i className="fas fa-xmark" />
               </button>
             </div>
 
@@ -2840,7 +2775,7 @@ export default function MobileResortApp() {
                           title="Tap to select check-in date on marked calendar"
                         >
                           <span className="text-[10px] uppercase tracking-wider text-cyan font-bold flex items-center justify-between">
-                            Check-In <span>📅</span>
+                            Check-In <i className="fas fa-calendar-alt" style={{ marginLeft: 4 }} />
                           </span>
                           <span className="text-xs sm:text-sm font-semibold text-white truncate">
                             {checkIn}
@@ -2859,7 +2794,7 @@ export default function MobileResortApp() {
                           title="Tap to select check-out date on marked calendar"
                         >
                           <span className="text-[10px] uppercase tracking-wider text-cyan font-bold flex items-center justify-between">
-                            Check-Out <span>📅</span>
+                            Check-Out <i className="fas fa-calendar-alt" style={{ marginLeft: 4 }} />
                           </span>
                           <span className="text-xs sm:text-sm font-semibold text-white truncate">
                             {checkOut}
@@ -2879,7 +2814,7 @@ export default function MobileResortApp() {
                             : 'border-cyan/40 bg-cyan/15 text-cyan hover:bg-cyan hover:text-navy'
                         }`}
                       >
-                        📅 {showModalCalendar ? 'Hide Marked Calendar' : 'View Marked Calendar (🔴 Reserved vs 🟢 Open)'}
+                        <><i className="fas fa-calendar-alt" style={{ marginRight: 6 }} />{showModalCalendar ? 'Hide Marked Calendar' : 'View Marked Calendar'}</>
                       </button>
                     </div>
 
@@ -2888,7 +2823,7 @@ export default function MobileResortApp() {
                       <div className="mt-1 animate-fade-in overflow-hidden">
                         <div className="mb-1.5 flex items-center justify-between px-1 text-[11px] font-medium text-cyan">
                           <span>✦ Tap dates below to set stay dates:</span>
-                          <span className="text-[10px] text-white/70 font-normal">🔴 = Reserved · 🟢 = Open</span>
+                          <span className="text-[10px] text-white/70 font-normal"><i className="fas fa-circle text-rose-500 text-[8px] mr-1" />Reserved · <i className="fas fa-circle text-emerald-400 text-[8px] mx-1" />Open</span>
                         </div>
                         <AvailabilityCalendar
                           selectedRoomId={resRoom?.id}

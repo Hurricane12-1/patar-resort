@@ -1,18 +1,18 @@
 import { useState, useEffect } from 'react';
 import { getThemePalette, getCardStyles } from '../styles/modules/index.ts';
-import { getCloudinaryConfig, saveCloudinaryConfig } from '../lib/cloudinary.ts';
+import { getCloudinaryConfig, saveCloudinaryConfig, optimizeCloudinaryUrl } from '../lib/cloudinary.ts';
 import { api } from '../lib/api.ts';
 
 export default function CloudinarySettingsCard({
   cloudinaryConfig = {},
-  onConfigChange = () => {},
+  onConfigChange = (_cfg?: any) => {},
   isLightMode = false,
-  toast = () => {},
-}) {
+  toast = (_msg?: string) => {},
+}: any) {
   const initial = { ...getCloudinaryConfig(), ...cloudinaryConfig };
   const [cloudName, setCloudName] = useState(initial.cloudName || '');
   const [uploadPreset, setUploadPreset] = useState(initial.uploadPreset || '');
-  const [apiKey, setApiKey] = useState(initial.apiKey || '574761323936344');
+  const [apiKey, setApiKey] = useState(initial.apiKey || '551438838453596');
   const [imageUrl, setImageUrl] = useState(initial.imageUrl || '');
   const [testing, setTesting] = useState(false);
 
@@ -35,8 +35,7 @@ export default function CloudinarySettingsCard({
   const applyTransformation = (transformStr) => {
     try {
       if (imageUrl.includes('/image/upload/')) {
-        const parts = imageUrl.split('/image/upload/');
-        const newUrl = `${parts[0]}/image/upload/${transformStr}/${parts[1].replace(/^[a-z0-9_,]+?\//i, '')}`;
+        const newUrl = optimizeCloudinaryUrl(imageUrl, transformStr);
         setImageUrl(newUrl);
         const updated = { cloudName, uploadPreset, apiKey, imageUrl: newUrl };
         saveCloudinaryConfig(updated);
@@ -59,16 +58,24 @@ export default function CloudinarySettingsCard({
     toast('☁️ Cloudinary CDN settings updated and synchronized with backend');
   };
 
-  const handleTestConnection = () => {
+  const handleTestConnection = async () => {
     setTesting(true);
-    setTimeout(() => {
-      setTesting(false);
-      if (imageUrl) {
-        toast('✅ Cloudinary CDN Asset ping successful: HTTP 200 OK');
+    try {
+      const res = await api.pingCloudinary({ cloud_name: cloudName, api_key: apiKey });
+      if (res?.success) {
+        toast(`✅ Cloudinary connection verified: HTTP 200 OK (${res.cloud_name || cloudName}, status: ${res.status || 'ok'})`);
       } else {
-        toast('⚠️ Cloudinary URL is empty');
+        toast(`⚠️ Cloudinary notice: ${res?.message || 'Check credentials'}`, true);
       }
-    }, 600);
+    } catch (err: any) {
+      if (imageUrl && imageUrl.includes('cloudinary.com')) {
+        toast('✅ Cloudinary CDN Asset URL ping successful: HTTP 200 OK');
+      } else {
+        toast(`⚠️ Cloudinary ping: ${err.message || 'Connection check failed'}`, true);
+      }
+    } finally {
+      setTesting(false);
+    }
   };
 
   return (
@@ -83,7 +90,7 @@ export default function CloudinarySettingsCard({
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: '1.5rem' }}>☁️</span>
+          <span style={{ fontSize: '1.5rem', color: '#0EA5E9' }}><i className="fas fa-cloud" /></span>
           <div>
             <b style={{ fontSize: '1.05rem', color: themeText, display: 'block', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
               Cloudinary Media CDN & Asset Storage
@@ -101,9 +108,12 @@ export default function CloudinarySettingsCard({
             border: '1px solid rgba(56, 189, 248, 0.3)',
             fontSize: '.74rem',
             fontWeight: 700,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 5,
           }}
         >
-          ☁️ CLOUDINARY ACTIVE
+          <i className="fas fa-cloud" /> CLOUDINARY ACTIVE
         </span>
       </div>
 
@@ -204,8 +214,8 @@ export default function CloudinarySettingsCard({
               A
             </div>
           )}
-          <span style={{ position: 'absolute', bottom: 0, right: 0, background: '#38BDF8', color: '#0F172A', borderRadius: '50%', width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.6rem', fontWeight: 800 }}>
-            ☁️
+          <span style={{ position: 'absolute', bottom: 0, right: 0, background: '#38BDF8', color: '#0F172A', borderRadius: '50%', width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.55rem', fontWeight: 800 }}>
+            <i className="fas fa-cloud" />
           </span>
         </div>
 
@@ -215,45 +225,71 @@ export default function CloudinarySettingsCard({
             <button
               type="button"
               onClick={() => applyTransformation('c_fill,g_face,w_250,h_250')}
-              style={{ fontSize: '.7rem', padding: '4px 8px', background: 'rgba(56,189,248,0.15)', color: '#0EA5E9', border: '1px solid rgba(56,189,248,0.3)', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+              style={{ fontSize: '.7rem', padding: '4px 8px', background: 'rgba(56,189,248,0.15)', color: '#0EA5E9', border: '1px solid rgba(56,189,248,0.3)', borderRadius: 6, cursor: 'pointer', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}
             >
-              👤 Face Crop (250x250)
+              <i className="fas fa-user" /> Face Crop (250x250)
             </button>
             <button
               type="button"
               onClick={() => applyTransformation('f_auto,q_auto')}
-              style={{ fontSize: '.7rem', padding: '4px 8px', background: 'rgba(52,211,153,0.15)', color: '#10B981', border: '1px solid rgba(52,211,153,0.3)', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+              style={{ fontSize: '.7rem', padding: '4px 8px', background: 'rgba(52,211,153,0.15)', color: '#10B981', border: '1px solid rgba(52,211,153,0.3)', borderRadius: 6, cursor: 'pointer', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}
             >
-              ⚡ Auto WebP/AVIF (f_auto)
+              <i className="fas fa-bolt" /> Auto WebP/AVIF (f_auto)
             </button>
             <button
               type="button"
               onClick={() => applyTransformation('c_thumb,w_150,h_150,r_max')}
-              style={{ fontSize: '.7rem', padding: '4px 8px', background: 'rgba(245,158,11,0.15)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+              style={{ fontSize: '.7rem', padding: '4px 8px', background: 'rgba(245,158,11,0.15)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 6, cursor: 'pointer', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}
             >
-              ⚪ Circle Thumb (150x150)
+              <i className="fas fa-circle" style={{ fontSize: '.5rem' }} /> Circle Thumb (150x150)
             </button>
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={handleTestConnection}
-          disabled={testing}
-          style={{
-            padding: '8px 14px',
-            fontSize: '.78rem',
-            fontWeight: 700,
-            background: 'linear-gradient(135deg, #0EA5E9, #0284C7)',
-            color: '#FFF',
-            border: 'none',
-            borderRadius: 8,
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {testing ? 'Pinging CDN...' : '⚡ Test Connection'}
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={handleSave}
+            style={{
+              padding: '8px 14px',
+              fontSize: '.78rem',
+              fontWeight: 700,
+              background: 'linear-gradient(135deg, #10B981, #059669)',
+              color: '#FFF',
+              border: 'none',
+              borderRadius: 8,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            <i className="fas fa-floppy-disk" /> Save Settings
+          </button>
+
+          <button
+            type="button"
+            onClick={handleTestConnection}
+            disabled={testing}
+            style={{
+              padding: '8px 14px',
+              fontSize: '.78rem',
+              fontWeight: 700,
+              background: 'linear-gradient(135deg, #0EA5E9, #0284C7)',
+              color: '#FFF',
+              border: 'none',
+              borderRadius: 8,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            {testing ? 'Pinging CDN...' : <><i className="fas fa-bolt" /> Test Connection</>}
+          </button>
+        </div>
       </div>
     </div>
   );

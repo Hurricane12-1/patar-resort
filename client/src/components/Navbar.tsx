@@ -32,10 +32,10 @@ export default function Navbar() {
     <>
       <div className="tagbar">
         <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-          <span>☀️ Bolinao 29°C · Sunset 6:24 PM · High Tide 4:15 PM · Front desk 24/7</span>
+          <span><i className="fas fa-sun" style={{ color: '#F59E0B', marginRight: 6 }} />Bolinao 29°C · Sunset 6:24 PM · High Tide 4:15 PM · Front desk 24/7</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <LiveClock isLightMode={false} showSeconds={true} style={{ padding: '2px 10px', fontSize: '.72rem', background: 'transparent', border: '1px solid rgba(255,255,255,0.18)' }} />
-            <span>📟 SMS pings on every reservation · +63 900 555 0123</span>
+            <span><i className="fas fa-comment-sms" style={{ color: '#38BDF8', marginRight: 6 }} />SMS pings on every reservation · +63 900 555 0123</span>
           </div>
         </div>
       </div>
@@ -44,11 +44,7 @@ export default function Navbar() {
         <div className="container">
           <Link to="/" className="logo" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
             <span className="logo-mark" style={{ background: 'linear-gradient(135deg, rgba(56,189,248,.25), rgba(14,165,233,.4))', border: '1px solid rgba(255,255,255,.35)' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="7" r="3" fill="#F59E0B" />
-                <path d="M2 17c3-3 6-3 9 0s6 3 9 0" stroke="#7DD3FC" strokeWidth="2" strokeLinecap="round" />
-                <path d="M2 12c3-2 6-2 9 0s6 2 9 0" stroke="#38BDF8" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
+              <i className="fas fa-umbrella-beach" style={{ fontSize: '1.15rem', color: '#38BDF8' }} />
             </span>
             <span style={{ display: 'flex', flexDirection: 'column', gap: 4, justifyContent: 'center' }}>
               <span className="serif" style={{ fontSize: '1.32rem', lineHeight: 1.15, letterSpacing: '.06em', fontWeight: 600, color: '#FFFFFF' }}>Rock View</span>
@@ -67,9 +63,7 @@ export default function Navbar() {
             {session && !['administrator', 'receptionist', 'accounting', 'staff'].includes(profile?.role) && (
               <div style={{ position: 'relative' }}>
                 <button className="bell" aria-label="Notifications" onClick={() => setMenu((m) => !m)}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0" />
-                  </svg>
+                  <i className="fas fa-bell" style={{ fontSize: '1.05rem', color: '#E2E8F0' }} />
                   {notes.length > 0 && <span className="bell-badge">{notes.length}</span>}
                 </button>
                 {menu && (
@@ -137,7 +131,7 @@ export default function Navbar() {
                     }}
                     title="Active Executive Administrator Session"
                   >
-                    <span>🛡️</span>
+                    <i className="fas fa-shield-halved" />
                     <span>Admin Console</span>
                   </Link>
                 )}
@@ -152,7 +146,9 @@ export default function Navbar() {
             )}
 
             <Link to="/" className="btn btn-sky btn-sm">Book stay</Link>
-            <button className="burger" aria-label="Menu" onClick={() => setOpen((o) => !o)}>☰</button>
+            <button className="burger" aria-label="Menu" onClick={() => setOpen((o) => !o)}>
+              <i className="fas fa-bars" />
+            </button>
           </div>
         </div>
       </header>

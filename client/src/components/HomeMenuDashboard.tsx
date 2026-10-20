@@ -75,8 +75,8 @@ export default function HomeMenuDashboard({ isOpen, onClose, currentScene = 0, o
         {/* MODAL HEADER */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 16, marginBottom: 20 }}>
           <div>
-            <span style={{ fontSize: '.72rem', textTransform: 'uppercase', letterSpacing: '.22em', color: '#38BDF8', fontWeight: 800 }}>
-              ⚡ OPERATIONS COMMAND CENTER
+            <span style={{ fontSize: '.72rem', textTransform: 'uppercase', letterSpacing: '.22em', color: '#38BDF8', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <i className="fas fa-bolt" /> OPERATIONS COMMAND CENTER
             </span>
             <h2 className="serif" style={{ fontSize: '1.8rem', color: '#F8FAFC', margin: '2px 0 0' }}>
               Home Menu & Real-Time Telemetry System
@@ -84,9 +84,9 @@ export default function HomeMenuDashboard({ isOpen, onClose, currentScene = 0, o
           </div>
           <button
             onClick={onClose}
-            style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', color: '#FFF', width: 36, height: 36, borderRadius: '50%', fontSize: '1.2rem', cursor: 'pointer' }}
+            style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', color: '#FFF', width: 36, height: 36, borderRadius: '50%', fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
-            ×
+            <i className="fas fa-xmark" />
           </button>
         </div>
 
@@ -120,8 +120,10 @@ export default function HomeMenuDashboard({ isOpen, onClose, currentScene = 0, o
         {/* LIVE STATE CONTROLS */}
         <div style={{ background: 'rgba(15,23,42,0.6)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, padding: 18, marginBottom: 22 }}>
           <h4 style={{ margin: '0 0 14px', fontSize: '1rem', color: '#F8FAFC', display: 'flex', alignItems: 'center', gap: 8 }}>
-            🎛️ Live State Configuration Controls
-            <span style={{ fontSize: '.72rem', color: '#34D399', fontWeight: 600, marginLeft: 'auto' }}>⚡ Real-time Sync Active</span>
+            <i className="fas fa-sliders" style={{ color: '#38BDF8' }} /> Live State Configuration Controls
+            <span style={{ fontSize: '.72rem', color: '#34D399', fontWeight: 600, marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <i className="fas fa-bolt" /> Real-time Sync Active
+            </span>
           </h4>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -134,16 +136,16 @@ export default function HomeMenuDashboard({ isOpen, onClose, currentScene = 0, o
                 <button
                   onClick={() => setAudioMode('waves')}
                   className={`btn btn-sm ${audioMode === 'waves' ? 'btn-sky' : ''}`}
-                  style={{ flex: 1, padding: '8px 12px', fontSize: '.8rem', background: audioMode === 'waves' ? '#0EA5E9' : 'rgba(255,255,255,0.08)' }}
+                  style={{ flex: 1, padding: '8px 12px', fontSize: '.8rem', background: audioMode === 'waves' ? '#0EA5E9' : 'rgba(255,255,255,0.08)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                 >
-                  🌊 Waves Playing
+                  <i className="fas fa-water" /> Waves Playing
                 </button>
                 <button
                   onClick={() => setAudioMode('off')}
                   className={`btn btn-sm ${audioMode === 'off' ? 'btn-sky' : ''}`}
-                  style={{ flex: 1, padding: '8px 12px', fontSize: '.8rem', background: audioMode === 'off' ? '#0EA5E9' : 'rgba(255,255,255,0.08)' }}
+                  style={{ flex: 1, padding: '8px 12px', fontSize: '.8rem', background: audioMode === 'off' ? '#0EA5E9' : 'rgba(255,255,255,0.08)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                 >
-                  🔇 Muted
+                  <i className="fas fa-volume-xmark" /> Muted
                 </button>
               </div>
             </div>
@@ -180,15 +182,15 @@ export default function HomeMenuDashboard({ isOpen, onClose, currentScene = 0, o
 
         {/* MODULE QUICK LAUNCHERS */}
         <div style={{ marginBottom: 24 }}>
-          <span style={{ fontSize: '.72rem', textTransform: 'uppercase', letterSpacing: '.14em', color: '#94A3B8', fontWeight: 700, display: 'block', marginBottom: 10 }}>
-            🚀 MODULE QUICK LAUNCHERS
+          <span style={{ fontSize: '.72rem', textTransform: 'uppercase', letterSpacing: '.14em', color: '#94A3B8', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+            <i className="fas fa-rocket" style={{ color: '#38BDF8' }} /> MODULE QUICK LAUNCHERS
           </span>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10 }}>
             {[
-              ['/rooms', '🏨 Rooms & Suites', 'Cottages, Villas & Suites'],
-              ['/my-bookings', '📅 My Bookings', 'Digital Keycodes'],
-              ['/administrator', '🛡️ Administration', 'Control Center & Telemetry'],
-            ].map(([path, title, desc]) => (
+              { path: '/rooms', icon: 'fas fa-hotel', title: 'Rooms & Suites', desc: 'Cottages, Villas & Suites' },
+              { path: '/my-bookings', icon: 'fas fa-calendar-alt', title: 'My Bookings', desc: 'Digital Keycodes' },
+              { path: '/administrator', icon: 'fas fa-shield-halved', title: 'Administration', desc: 'Control Center & Telemetry' },
+            ].map(({ path, icon, title, desc }) => (
               <button
                 key={path}
                 onClick={() => { onClose(); navigate(path); }}
@@ -210,7 +212,9 @@ export default function HomeMenuDashboard({ isOpen, onClose, currentScene = 0, o
                   e.currentTarget.style.boxShadow = 'none';
                 }}
               >
-                <b style={{ display: 'block', fontSize: '.88rem', color: '#F8FAFC' }}>{title}</b>
+                <b style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '.88rem', color: '#F8FAFC' }}>
+                  <i className={icon} style={{ color: '#38BDF8', fontSize: '.8rem' }} /> {title}
+                </b>
                 <small style={{ fontSize: '.72rem', color: '#94A3B8' }}>{desc}</small>
               </button>
             ))}
@@ -229,9 +233,12 @@ export default function HomeMenuDashboard({ isOpen, onClose, currentScene = 0, o
               padding: '10px 24px',
               fontWeight: 700,
               boxShadow: '0 0 20px rgba(14, 165, 233, 0.4)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
             }}
           >
-            Apply & Sync Live State ⚡
+            <i className="fas fa-bolt" /> Apply & Sync Live State
           </button>
         </div>
       </div>

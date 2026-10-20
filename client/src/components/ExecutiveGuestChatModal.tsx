@@ -28,7 +28,7 @@ export function ExecutiveGuestChatModal({ guest, onClose, isLightMode }) {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSendMessage = (textToSend) => {
+  const handleSendMessage = (textToSend?: string) => {
     const content = textToSend || inputText;
     if (!content.trim()) return;
 
@@ -84,7 +84,7 @@ export function ExecutiveGuestChatModal({ guest, onClose, isLightMode }) {
                     fontWeight: 700,
                   }}
                 >
-                  {isResolved ? 'RESOLVED ✓' : 'ACTIVE TICKET'}
+                  {isResolved ? <><i className="fas fa-check" style={{ marginRight: 4 }} />RESOLVED</> : 'ACTIVE TICKET'}
                 </span>
               </div>
               <span style={{ fontSize: '.76rem', color: themeMuted }}>
@@ -104,7 +104,7 @@ export function ExecutiveGuestChatModal({ guest, onClose, isLightMode }) {
               padding: 4,
             }}
           >
-            ✕
+            <i className="fas fa-xmark" />
           </button>
         </div>
 
@@ -168,21 +168,21 @@ export function ExecutiveGuestChatModal({ guest, onClose, isLightMode }) {
             className="btn btn-sm"
             style={{ fontSize: '.74rem', padding: '5px 10px', background: 'rgba(16, 185, 129, 0.12)', color: '#10B981', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 12 }}
           >
-            ✅ Approve Early Check-In
+            <><i className="fas fa-check" style={{ marginRight: 4 }} />Approve Early Check-In</>
           </button>
           <button
             onClick={() => handleCannedReply('🍽️ Beachfront candlelight dinner for 2 confirmed at 7:00 PM.')}
             className="btn btn-sm"
             style={{ fontSize: '.74rem', padding: '5px 10px', background: 'rgba(99, 102, 241, 0.12)', color: '#6366F1', border: '1px solid rgba(99, 102, 241, 0.3)', borderRadius: 12 }}
           >
-            🍽️ Confirm Dining
+            <><i className="fas fa-utensils" style={{ marginRight: 4 }} />Confirm Dining</>
           </button>
           <button
             onClick={() => handleCannedReply('🚐 Private executive van pickup details have been dispatched to your SMS.')}
             className="btn btn-sm"
             style={{ fontSize: '.74rem', padding: '5px 10px', background: 'rgba(56, 189, 248, 0.12)', color: '#0EA5E9', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: 12 }}
           >
-            🚐 Send Van Details
+            <><i className="fas fa-van-shuttle" style={{ marginRight: 4 }} />Send Van Details</>
           </button>
           {!isResolved && (
             <button
@@ -190,7 +190,7 @@ export function ExecutiveGuestChatModal({ guest, onClose, isLightMode }) {
               className="btn btn-sm"
               style={{ fontSize: '.74rem', padding: '5px 10px', background: 'rgba(245, 158, 11, 0.12)', color: '#D97706', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: 12 }}
             >
-              ✔️ Resolve Ticket
+              <><i className="fas fa-check" style={{ marginRight: 4 }} />Resolve Ticket</>
             </button>
           )}
         </div>

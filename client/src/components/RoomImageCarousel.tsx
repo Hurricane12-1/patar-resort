@@ -201,11 +201,11 @@ export default function RoomImageCarousel({
           }}
           title={`${carouselImages.length} photos in gallery (auto-scrolling every ${(interval / 1000).toFixed(1)}s)`}
         >
-          <span>📷</span>
+          <span><i className="fas fa-camera" /></span>
           <span>
             {currentIndex + 1} / {carouselImages.length}
           </span>
-          {isHovered && <span style={{ color: '#38BDF8', fontSize: '.64rem' }}>⏸</span>}
+          {isHovered && <i className="fas fa-pause" style={{ color: '#38BDF8', fontSize: '.64rem' }} />}
         </div>
       )}
 

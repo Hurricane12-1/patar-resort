@@ -111,11 +111,11 @@ export function AnalyticsGlossaryModal({ isLightMode = false, onClose }) {
           <div>
             <span className="label light" style={{ letterSpacing: '.18em' }}>Executive Business Intelligence</span>
             <h2 style={{ fontSize: '1.6rem', margin: '4px 0 0', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800 }}>
-              📖 Executive Data Analytics Glossary & Definitions
+              <><i className="fas fa-book-open" style={{ marginRight: 8, color: '#0EA5E9' }} />Executive Data Analytics Glossary & Definitions</>
             </h2>
           </div>
           <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.1)', border: `1px solid ${themeBorder}`, color: themeText, borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', cursor: 'pointer' }}>
-            ✕
+            <i className="fas fa-xmark" />
           </button>
         </div>
 
@@ -150,17 +150,17 @@ export function AnalyticsGlossaryModal({ isLightMode = false, onClose }) {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: '.8rem', background: isLightMode ? '#FFFFFF' : 'rgba(15,23,42,0.8)', border: `1px solid ${themeBorder}`, borderRadius: 10, padding: 12 }}>
                 <div>
-                  <b style={{ color: '#0EA5E9', display: 'block', marginBottom: 2 }}>🧮 Formula / Calculation:</b>
+                  <b style={{ color: '#0EA5E9', display: 'block', marginBottom: 2 }}><><i className="fas fa-calculator" style={{ marginRight: 6 }} />Formula / Calculation:</></b>
                   <code style={{ fontSize: '.78rem', color: themeText }}>{item.formula}</code>
                 </div>
                 <div>
-                  <b style={{ color: '#F59E0B', display: 'block', marginBottom: 2 }}>🎯 Executive Business Meaning:</b>
+                  <b style={{ color: '#F59E0B', display: 'block', marginBottom: 2 }}><><i className="fas fa-bullseye" style={{ marginRight: 6 }} />Executive Business Meaning:</></b>
                   <span style={{ color: themeMuted }}>{item.businessMeaning}</span>
                 </div>
               </div>
 
               <div style={{ marginTop: 10, fontSize: '.8rem', color: '#10B981', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <b>💡 Recommended Management Action:</b> <span>{item.actionableGuidance}</span>
+                <b><i className="fas fa-lightbulb" style={{ marginRight: 6, color: '#F59E0B' }} />Recommended Management Action:</b> <span>{item.actionableGuidance}</span>
               </div>
             </div>
           ))}

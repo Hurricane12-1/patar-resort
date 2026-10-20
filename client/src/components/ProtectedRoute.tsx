@@ -152,11 +152,7 @@ export default function ProtectedRoute({ children, allowedRoles = [], portalTitl
             boxShadow: `0 0 40px rgba(${accentRgb},0.25)`,
             marginBottom: 14,
           }}>
-            <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="7" r="3" fill="#F59E0B" />
-              <path d="M2 17c3-3 6-3 9 0s6 3 9 0" stroke={accent} strokeWidth="2" strokeLinecap="round" opacity="0.9" />
-              <path d="M2 12c3-2 6-2 9 0s6 2 9 0" stroke={accent} strokeWidth="1.5" strokeLinecap="round" opacity="0.6" />
-            </svg>
+            <i className={`fas ${isCustomer ? 'fa-umbrella-beach' : 'fa-shield-halved'}`} style={{ fontSize: '1.6rem', color: accent }} />
           </div>
           <h1 className="serif" style={{ fontSize: 'clamp(1.6rem,3vw,2rem)', color: '#FFF', margin: 0, letterSpacing: '.06em' }}>
             ROCK VIEW BEACH RESORT
@@ -215,7 +211,7 @@ export default function ProtectedRoute({ children, allowedRoles = [], portalTitl
                 <span style={{
                   position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
                   color: '#475569', fontSize: '1rem', pointerEvents: 'none',
-                }}>✉</span>
+                }}><i className="fas fa-envelope" /></span>
                 <input
                   type="email"
                   value={email}
@@ -245,7 +241,7 @@ export default function ProtectedRoute({ children, allowedRoles = [], portalTitl
                 <span style={{
                   position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
                   color: '#475569', fontSize: '1rem', pointerEvents: 'none',
-                }}>🔑</span>
+                }}><i className="fas fa-key" /></span>
                 <input
                   type={showPwd ? 'text' : 'password'}
                   value={password}
@@ -265,7 +261,7 @@ export default function ProtectedRoute({ children, allowedRoles = [], portalTitl
                   background: 'none', border: 'none', color: '#64748B', cursor: 'pointer',
                   fontSize: '.82rem', padding: 4,
                 }}>
-                  {showPwd ? '🙈' : '👁'}
+                  {showPwd ? <i className="fas fa-eye-slash" /> : <i className="fas fa-eye" />}
                 </button>
               </div>
             </div>
@@ -284,8 +280,8 @@ export default function ProtectedRoute({ children, allowedRoles = [], portalTitl
                 boxShadow: loading ? 'none' : `0 6px 24px rgba(${accentRgb},0.3)`,
                 transition: 'all 0.3s ease', transform: 'scale(1)',
               }}
-              onMouseEnter={(e) => { if (!loading) { e.target.style.transform = 'scale(1.02)'; e.target.style.boxShadow = `0 8px 32px rgba(${accentRgb},0.45)`; }}}
-              onMouseLeave={(e) => { e.target.style.transform = 'scale(1)'; e.target.style.boxShadow = `0 6px 24px rgba(${accentRgb},0.3)`; }}
+              onMouseEnter={(e) => { if (!loading) { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = `0 8px 32px rgba(${accentRgb},0.45)`; }}}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = `0 6px 24px rgba(${accentRgb},0.3)`; }}
             >
               {loading && (
                 <span style={{
@@ -307,8 +303,8 @@ export default function ProtectedRoute({ children, allowedRoles = [], portalTitl
               fontSize: '.8rem', color: '#64748B', textDecoration: 'none',
               transition: 'color 0.2s',
             }}
-              onMouseEnter={(e) => e.target.style.color = accent}
-              onMouseLeave={(e) => e.target.style.color = '#64748B'}
+              onMouseEnter={(e) => e.currentTarget.style.color = accent}
+              onMouseLeave={(e) => e.currentTarget.style.color = '#64748B'}
             >
               ← Return to Public Guest Website
             </Link>
@@ -321,9 +317,9 @@ export default function ProtectedRoute({ children, allowedRoles = [], portalTitl
             display: 'flex', justifyContent: 'center', gap: 24, marginTop: 20,
             opacity: 0.5, fontSize: '.72rem', color: '#64748B', letterSpacing: '.05em',
           }}>
-            <span>🔒 SSL Encrypted</span>
-            <span>🏨 Verified Resort</span>
-            <span>📟 SMS Alerts</span>
+            <span><i className="fas fa-shield-halved" style={{ marginRight: 4 }} />SSL Encrypted</span>
+            <span><i className="fas fa-hotel" style={{ marginRight: 4 }} />Verified Resort</span>
+            <span><i className="fas fa-mobile-screen-button" style={{ marginRight: 4 }} />SMS Alerts</span>
           </div>
         )}
       </div>
