@@ -22,13 +22,14 @@ const rawApiBase = (
   )) || ''
 ).replace(/\/+$/, '');
 
+const isLocalHost = typeof window !== 'undefined' &&
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.endsWith('.localhost'));
+
 export const API_BASE = (
-  typeof window !== 'undefined' &&
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.endsWith('.localhost')) &&
-  (!rawApiBase || rawApiBase.includes('localhost') || rawApiBase.includes('127.0.0.1'))
-)
-  ? ''
-  : rawApiBase;
+  isLocalHost
+    ? (rawApiBase && !rawApiBase.includes('localhost') ? rawApiBase : '')
+    : (rawApiBase || (typeof window !== 'undefined' && window.location.hostname.includes('pages.dev') ? 'https://patar-resort.onrender.com' : ''))
+);
 
 let inMemoryCsrfToken = '';
 let backendApiAvailable: boolean | null = null;

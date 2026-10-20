@@ -6,7 +6,8 @@
  * ============================================================================
  */
 
-const API_BASE = import.meta.env.VITE_API_URL || '';
+const rawBase = import.meta.env.VITE_API_URL || '';
+const API_BASE = (rawBase || (typeof window !== 'undefined' && window.location.hostname.includes('pages.dev') ? 'https://patar-resort.onrender.com' : '')).replace(/\/+$/, '');
 
 export interface RestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';

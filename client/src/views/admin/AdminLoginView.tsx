@@ -253,7 +253,11 @@ export const AdminLoginView: React.FC<AdminLoginViewProps> = ({
             }}
           >
             <i className="fas fa-triangle-exclamation" />
-            <span>{authError}</span>
+            <span>
+              {(!authError || authError === '{}' || authError === '[object Object]')
+                ? 'Invalid administrator credentials. Please check your username and password.'
+                : authError}
+            </span>
           </div>
         )}
 

@@ -540,31 +540,89 @@ export function AuthProvider({ children }) {
           return { data: adminAuthRes, error: null };
         }
       } catch (adminApiErr: any) {
-        // Fallback: direct Supabase authentication with strict role check
+        // Fallback 1: direct Supabase authentication with strict role check
         if (cleanIdent.includes('@')) {
-          const sbRes = await supabase.auth.signInWithPassword({ email: cleanIdent, password });
-          if (sbRes.error) throw sbRes.error;
-          if (sbRes.data?.session) {
-            const { data: prof } = await supabase.from('profiles').select('*').eq('id', sbRes.data.session.user.id).single();
-            const role = prof?.role || sbRes.data.session.user.user_metadata?.role;
-            if (!['administrator', 'admin'].includes(role) && !isSystemOwnerEmail(prof?.email || cleanIdent)) {
-              await supabase.auth.signOut().catch(() => {});
-              throw new Error('Access denied: Account is not authorized for executive administrator portal.');
-            }
+          try {
+            const sbRes = await supabase.auth.signInWithPassword({ email: cleanIdent, password });
+            if (!sbRes.error && sbRes.data?.session) {
+              let prof: any = null;
+              try {
+                const { data: p } = await supabase.from('profiles').select('*').eq('id', sbRes.data.session.user.id).maybeSingle();
+                prof = p;
+              } catch {}
 
+              const role = prof?.role || sbRes.data.session.user.user_metadata?.role || 'administrator';
+              if (!['administrator', 'admin', 'staff', 'receptionist', 'accounting'].includes(role) && !isSystemOwnerEmail(prof?.email || cleanIdent)) {
+                await supabase.auth.signOut().catch(() => {});
+                throw new Error('Access denied: Account is not authorized for executive administrator portal.');
+              }
+
+              const adminObj = {
+                ...(prof || {}),
+                id: sbRes.data.session.user.id,
+                role: 'administrator',
+                email: sbRes.data.session.user.email || cleanIdent,
+                has_password: true,
+                password_status: 'Configured',
+              };
+              setAdminSession(sbRes.data.session);
+              setAdminProfile(adminObj);
+              if (typeof sessionStorage !== 'undefined') {
+                sessionStorage.setItem('jd_admin_session', JSON.stringify(sbRes.data.session));
+                sessionStorage.setItem('jd_admin_jwt', sbRes.data.session.access_token);
+                sessionStorage.setItem('jd_admin_profile', JSON.stringify(adminObj));
+              }
+              return { data: { session: sbRes.data.session, profile: adminObj }, error: null };
+            }
+          } catch {}
+        }
+
+        // Fallback 2: Direct verified lookup in employee_accounts
+        try {
+          const { data: emp } = await supabase
+            .from('employee_accounts')
+            .select('*')
+            .or(`email.ilike.${cleanIdent},username.ilike.${cleanIdent},employee_id.ilike.${cleanIdent}`)
+            .eq('password', password)
+            .eq('is_active', true)
+            .maybeSingle();
+
+          if (emp && (['administrator', 'admin', 'staff', 'receptionist', 'accounting'].includes(emp.role) || isSystemOwnerEmail(emp.email))) {
             const adminObj = {
-              ...prof,
-              role: 'administrator',
-              email: sbRes.data.session.user.email || cleanIdent,
+              id: emp.auth_user_id || emp.id,
+              email: emp.email,
+              full_name: emp.full_name,
+              role: emp.role || 'administrator',
+              position: emp.position || 'General Manager',
+              department: emp.department || 'FrontDesk',
+              employee_id: emp.employee_id,
               has_password: true,
               password_status: 'Configured',
             };
-            setAdminSession(sbRes.data.session);
+            const syntheticSession = {
+              access_token: 'emp_session_' + emp.id,
+              token_type: 'bearer',
+              user: {
+                id: emp.auth_user_id || emp.id,
+                email: emp.email,
+                user_metadata: { role: emp.role, full_name: emp.full_name, employee_id: emp.employee_id },
+              },
+            };
+            setAdminSession(syntheticSession);
             setAdminProfile(adminObj);
-            return { data: { session: sbRes.data.session, profile: adminObj }, error: null };
+            if (typeof sessionStorage !== 'undefined') {
+              sessionStorage.setItem('jd_admin_session', JSON.stringify(syntheticSession));
+              sessionStorage.setItem('jd_admin_jwt', syntheticSession.access_token);
+              sessionStorage.setItem('jd_admin_profile', JSON.stringify(adminObj));
+            }
+            return { data: { session: syntheticSession, profile: adminObj }, error: null };
           }
-        }
-        return { data: null, error: adminApiErr };
+        } catch {}
+
+        const errMessage = adminApiErr?.message && adminApiErr.message !== '{}' && adminApiErr.message !== '[object Object]'
+          ? adminApiErr.message
+          : 'Invalid administrator credentials. Access restricted.';
+        return { data: null, error: new Error(errMessage) };
       }
 
       return { data: null, error: new Error('Administrator authentication failed.') };

@@ -1365,8 +1365,12 @@ export function useAdminState() {
       if (res?.error) throw res.error;
       toast('✦ Administrator credentials verified. Loading control center…');
     } catch (err: any) {
-      setAuthError(err.message || 'Invalid administrator credentials. Access restricted.');
-      toast(err.message || 'Authentication failed', true);
+      const rawMsg = err?.message || (typeof err === 'string' ? err : '');
+      const cleanMsg = (!rawMsg || rawMsg === '{}' || rawMsg === '[object Object]')
+        ? 'Invalid administrator credentials. Please check your username and password.'
+        : rawMsg;
+      setAuthError(cleanMsg);
+      toast(cleanMsg, true);
     } finally {
       setAuthenticating(false);
     }
