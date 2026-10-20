@@ -6,16 +6,14 @@ import { animateTypewriterPrompt } from '../lib/wordPrompt.ts';
 import { useAuth } from '../context/AuthContext.tsx';
 
 export function ExecutiveGuestChatModal({ guest, onClose, isLightMode }) {
-  if (!guest) return null;
-
   const { profile, adminProfile } = useAuth();
   const currentProfile = adminProfile || profile;
   const adminDisplayName = currentProfile?.full_name ? `${currentProfile.full_name} (Executive Staff)` : 'Resort Staff';
 
-  const [messages, setMessages] = useState(guest.messages || guest.initialMessages || []);
+  const [messages, setMessages] = useState(guest?.messages || guest?.initialMessages || []);
   const [inputText, setInputText] = useState('');
   const [isResolved, setIsResolved] = useState(false);
-  const chatEndRef = useRef(null);
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (guest) {
@@ -27,6 +25,8 @@ export function ExecutiveGuestChatModal({ guest, onClose, isLightMode }) {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  if (!guest) return null;
 
   const handleSendMessage = (textToSend?: string) => {
     const content = textToSend || inputText;

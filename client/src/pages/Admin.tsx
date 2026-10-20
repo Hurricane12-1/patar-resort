@@ -893,6 +893,47 @@ export default function Admin() {
     }
   };
 
+  // Unified display bookings from either direct reservationsList or data.bookings
+  const rawDisplayBookings = reservationsList.length > 0 ? reservationsList : (data?.bookings || []);
+  const allBookings = rawDisplayBookings.map((b: any) => ({
+    ...b,
+    nights: b.nights || Math.max(1, Math.round((new Date(b.check_out).getTime() - new Date(b.check_in).getTime()) / 86400000)),
+  }));
+
+  // Real-time daily room revenue across October 2026 derived from live Supabase bookings and daily analytics
+  // MUST be called before any early returns to strictly satisfy React Rules of Hooks (#310)
+  const octoberSalesData = useMemo(() => {
+    const daysInOct = 31;
+    const days = [];
+    for (let day = 1; day <= daysInOct; day++) {
+      const dStr = `2026-10-${String(day).padStart(2, '0')}`;
+      let revOnDay = 0;
+      let bookingsOnDay = 0;
+      allBookings.forEach((b: any) => {
+        if (b.status === 'cancelled') return;
+        if (b.check_in <= dStr && b.check_out >= dStr) {
+          const nights = Math.max(1, Math.round((new Date(b.check_out).getTime() - new Date(b.check_in).getTime()) / 86400000));
+          const dailyRate = (Number(b.total_php) || 0) / nights;
+          revOnDay += dailyRate;
+          bookingsOnDay += 1;
+        }
+      });
+      const apiDaily = data?.daily?.find((d: any) => d.date === dStr);
+      if (apiDaily && apiDaily.revenue_php > 0) {
+        revOnDay = Math.max(revOnDay, Number(apiDaily.revenue_php));
+        bookingsOnDay = Math.max(bookingsOnDay, Number(apiDaily.bookings));
+      }
+      days.push({
+        date: dStr,
+        day,
+        label: `Oct ${day}`,
+        revenue: Math.round(revOnDay),
+        value: bookingsOnDay,
+      });
+    }
+    return days;
+  }, [allBookings, data?.daily]);
+
   // GUARD CHECK: Live database administrator verification
   if (!isAdministrator) {
     // Case 1: Authenticated session, but database profile role lacks administrator clearance
@@ -1796,46 +1837,6 @@ export default function Admin() {
       toast(err.message, true);
     }
   }
-
-  // Unified display bookings from either direct reservationsList or data.bookings
-  const rawDisplayBookings = reservationsList.length > 0 ? reservationsList : (data.bookings || []);
-  const allBookings = rawDisplayBookings.map((b: any) => ({
-    ...b,
-    nights: b.nights || Math.max(1, Math.round((new Date(b.check_out).getTime() - new Date(b.check_in).getTime()) / 86400000)),
-  }));
-
-  // Real-time daily room revenue across October 2026 derived from live Supabase bookings and daily analytics
-  const octoberSalesData = useMemo(() => {
-    const daysInOct = 31;
-    const days = [];
-    for (let day = 1; day <= daysInOct; day++) {
-      const dStr = `2026-10-${String(day).padStart(2, '0')}`;
-      let revOnDay = 0;
-      let bookingsOnDay = 0;
-      allBookings.forEach((b: any) => {
-        if (b.status === 'cancelled') return;
-        if (b.check_in <= dStr && b.check_out >= dStr) {
-          const nights = Math.max(1, Math.round((new Date(b.check_out).getTime() - new Date(b.check_in).getTime()) / 86400000));
-          const dailyRate = (Number(b.total_php) || 0) / nights;
-          revOnDay += dailyRate;
-          bookingsOnDay += 1;
-        }
-      });
-      const apiDaily = data.daily?.find((d: any) => d.date === dStr);
-      if (apiDaily && apiDaily.revenue_php > 0) {
-        revOnDay = Math.max(revOnDay, Number(apiDaily.revenue_php));
-        bookingsOnDay = Math.max(bookingsOnDay, Number(apiDaily.bookings));
-      }
-      days.push({
-        date: dStr,
-        day,
-        label: `Oct ${day}`,
-        revenue: Math.round(revOnDay),
-        value: bookingsOnDay,
-      });
-    }
-    return days;
-  }, [allBookings, data.daily]);
 
   const filteredBookings = allBookings.filter((b: any) => {
     if (reservationFilter !== 'all' && b.status !== reservationFilter) return false;
