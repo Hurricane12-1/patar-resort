@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { toast } from './Toasts.tsx';
 import { money, fmtDate } from '../lib/format.ts';
 import { supabase } from '../lib/supabaseClient.ts';
-import { api } from '../lib/api.ts';
+import { api, addDaysYMD } from '../lib/api.ts';
 import '../styles/availability-calendar.css';
 
 export interface CalendarStay {
@@ -95,9 +95,7 @@ export default function AvailabilityCalendar({
 
   // 14-day rolling window starting 3 days before today (e.g. Sat 17 to Fri 30 when today is Tue 20)
   const [windowStartDateStr, setWindowStartDateStr] = useState<string>(() => {
-    const d = new Date('2026-10-20T00:00:00');
-    d.setDate(d.getDate() - 3);
-    return d.toISOString().slice(0, 10);
+    return addDaysYMD('2026-10-20', -3);
   });
 
   const [selectedCell, setSelectedCell] = useState<{ unitId: string; dateStr: string } | null>(null);
@@ -157,17 +155,33 @@ export default function AvailabilityCalendar({
     };
   }, [fetchRealtimeData]);
 
-  // Combine live rooms with prop rooms if live is empty (strictly active, open rooms)
+  // Re-sync whenever parent rooms or bookings props change
+  useEffect(() => {
+    fetchRealtimeData();
+  }, [rooms?.length, bookings?.length, fetchRealtimeData]);
+
+  // Merge prop rooms and live rooms by id (strictly active, open rooms)
   const effectiveRooms = useMemo(() => {
-    const source = liveRooms.length > 0 ? liveRooms : (rooms && rooms.length > 0 ? rooms : []);
-    return source.filter((r) => r && r.is_active !== false);
+    const map = new Map<string, any>();
+    for (const r of liveRooms) {
+      if (r && r.id) map.set(r.id, r);
+    }
+    for (const r of rooms || []) {
+      if (r && r.id) map.set(r.id, { ...map.get(r.id), ...r });
+    }
+    return Array.from(map.values()).filter((r) => r && r.is_active !== false);
   }, [liveRooms, rooms]);
 
-  // Combine live bookings with prop bookings if live is empty
+  // Merge prop bookings and live bookings by id so newly created/edited bookings appear immediately
   const effectiveBookings = useMemo(() => {
-    if (liveBookings.length > 0) return liveBookings;
-    if (bookings && bookings.length > 0) return bookings;
-    return [];
+    const map = new Map<string, any>();
+    for (const b of liveBookings) {
+      if (b && b.id) map.set(b.id, b);
+    }
+    for (const b of bookings || []) {
+      if (b && b.id) map.set(b.id, { ...map.get(b.id), ...b });
+    }
+    return Array.from(map.values());
   }, [liveBookings, bookings]);
 
   // Total physical units count dynamically derived from open rooms and their units count
@@ -219,19 +233,18 @@ export default function AvailabilityCalendar({
     return list;
   }, [effectiveRooms, effectiveBookings]);
 
-  // Generate days array starting from windowStartDateStr
+  // Generate days array starting from windowStartDateStr (Timezone-safe UTC noon math)
   const daysArray = useMemo(() => {
     const days: { dateStr: string; dayNum: number; dayOfWeek: string; isToday: boolean }[] = [];
-    const cur = new Date(windowStartDateStr + 'T00:00:00');
 
     for (let i = 0; i < daysCount; i++) {
-      const dStr = cur.toISOString().slice(0, 10);
-      const dayNum = cur.getDate();
-      const dayOfWeek = cur.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+      const dStr = addDaysYMD(windowStartDateStr, i);
+      const noonUtc = new Date(`${dStr}T12:00:00Z`);
+      const dayNum = noonUtc.getUTCDate();
+      const dayOfWeek = noonUtc.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' }).toUpperCase();
       const isToday = dStr === todayStr;
 
       days.push({ dateStr: dStr, dayNum, dayOfWeek, isToday });
-      cur.setDate(cur.getDate() + 1);
     }
     return days;
   }, [windowStartDateStr, todayStr, daysCount]);
@@ -244,14 +257,14 @@ export default function AvailabilityCalendar({
   // Date Range Display Label: "Oct 17 – Oct 30, 2026"
   const dateRangeLabel = useMemo(() => {
     if (daysArray.length === 0) return '';
-    const startD = new Date(daysArray[0].dateStr + 'T00:00:00');
-    const endD = new Date(daysArray[daysArray.length - 1].dateStr + 'T00:00:00');
+    const startD = new Date(`${daysArray[0].dateStr}T12:00:00Z`);
+    const endD = new Date(`${daysArray[daysArray.length - 1].dateStr}T12:00:00Z`);
 
-    const startMonth = startD.toLocaleDateString('en-US', { month: 'short' });
-    const endMonth = endD.toLocaleDateString('en-US', { month: 'short' });
-    const year = endD.getFullYear();
+    const startMonth = startD.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
+    const endMonth = endD.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
+    const year = endD.getUTCFullYear();
 
-    return `${startMonth} ${startD.getDate()} – ${endMonth} ${endD.getDate()}, ${year}`;
+    return `${startMonth} ${startD.getUTCDate()} – ${endMonth} ${endD.getUTCDate()}, ${year}`;
   }, [daysArray]);
 
   // Parse check-in & check-out time annotations
@@ -398,21 +411,15 @@ export default function AvailabilityCalendar({
 
   // Navigation handlers: shift by daysCount
   const handlePrevWindow = () => {
-    const d = new Date(windowStartDateStr + 'T00:00:00');
-    d.setDate(d.getDate() - daysCount);
-    setWindowStartDateStr(d.toISOString().slice(0, 10));
+    setWindowStartDateStr(addDaysYMD(windowStartDateStr, -daysCount));
   };
 
   const handleNextWindow = () => {
-    const d = new Date(windowStartDateStr + 'T00:00:00');
-    d.setDate(d.getDate() + daysCount);
-    setWindowStartDateStr(d.toISOString().slice(0, 10));
+    setWindowStartDateStr(addDaysYMD(windowStartDateStr, daysCount));
   };
 
   const handleTodayClick = () => {
-    const d = new Date(todayStr + 'T00:00:00');
-    d.setDate(d.getDate() - 3);
-    setWindowStartDateStr(d.toISOString().slice(0, 10));
+    setWindowStartDateStr(addDaysYMD(todayStr, -3));
   };
 
   // Determine stay badge color variant matching PMS palette
@@ -436,12 +443,10 @@ export default function AvailabilityCalendar({
   // Cell click handler: selects single day or initiates booking
   const handleCellClick = (unitId: string, dateStr: string) => {
     setSelectedCell({ unitId, dateStr });
-    const nextDay = new Date(dateStr + 'T00:00:00');
-    nextDay.setDate(nextDay.getDate() + 1);
-    const coutStr = nextDay.toISOString().slice(0, 10);
+    const coutStr = addDaysYMD(dateStr, 1);
 
     const matchedUnit = units.find((u) => u.id === unitId);
-    toast(`Selected ${matchedUnit?.name || 'Unit'} on ${fmtDate(dateStr)}. Click "+ New booking" to reserve.`);
+    toast(`Selected ${matchedUnit?.name || 'Unit'} on ${fmtDate(dateStr)} → ${fmtDate(coutStr)}.`);
 
     if (onSelectDates) {
       onSelectDates(dateStr, coutStr, matchedUnit?.roomId, matchedUnit);

@@ -203,23 +203,21 @@ async function ensureSupabaseSession() {
   return supabase;
 }
 
+export function addDaysYMD(ymd: string, days: number): string {
+  const parts = String(ymd || '').slice(0, 10).split('-').map(Number);
+  if (parts.length !== 3 || parts.some(isNaN)) {
+    const d = new Date(Date.now() + days * 86400000);
+    return d.toISOString().slice(0, 10);
+  }
+  const utc = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2] + days));
+  return utc.toISOString().slice(0, 10);
+}
+
 export function normalizeRoom(room: any) {
   if (!room) return room;
   const rawAmenities = Array.isArray(room.amenities) ? room.amenities : [];
   const cleanAmenities: string[] = [];
   const images: string[] = [];
-
-  for (const item of rawAmenities) {
-    if (typeof item === 'string' && (item.startsWith('__img__:') || item.startsWith('img:'))) {
-      let url = item.replace(/^(__img__|img):/, '').trim();
-      if (url.includes('/uploads/')) {
-        url = 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209701/jd_beach_house_accommodations/uploads/img_9146060b-5718-452f-a663-e04f109c8ab5_1792173695555.jpg';
-      }
-      if (url && !images.includes(url)) images.push(url);
-    } else {
-      cleanAmenities.push(item);
-    }
-  }
 
   let fallbackImage = 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209696/jd_beach_house_accommodations/cottage.jpg';
   const cat = String(room.category || '').toLowerCase();
@@ -230,11 +228,25 @@ export function normalizeRoom(room: any) {
   else if (cat.includes('dorm') || cat.includes('bunk') || slug.includes('dorm')) fallbackImage = 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209699/jd_beach_house_accommodations/bunk.jpg';
   else fallbackImage = 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209696/jd_beach_house_accommodations/cottage.jpg';
 
+  for (const item of rawAmenities) {
+    if (typeof item === 'string' && (item.startsWith('__img__:') || item.startsWith('img:'))) {
+      let url = item.replace(/^(__img__|img):/, '').trim();
+      if (url.startsWith('/uploads/') || url.includes('img_9146060b-5718-452f-a663-e04f109c8ab5')) {
+        url = fallbackImage;
+      }
+      if (url && !images.includes(url)) images.push(url);
+    } else {
+      cleanAmenities.push(item);
+    }
+  }
+
   const rawImg = (room.image_url && String(room.image_url).trim()) || '';
-  const cleanImg = rawImg.includes('/uploads/') ? 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209701/jd_beach_house_accommodations/uploads/img_9146060b-5718-452f-a663-e04f109c8ab5_1792173695555.jpg' : rawImg;
+  const cleanImg = (rawImg.startsWith('/uploads/') || rawImg.includes('img_9146060b-5718-452f-a663-e04f109c8ab5'))
+    ? fallbackImage
+    : rawImg;
   const primaryImage = cleanImg || images[0] || fallbackImage;
   const allImages = Array.isArray(room.images) && room.images.length > 0
-    ? room.images
+    ? room.images.map((u: string) => (u.startsWith('/uploads/') || u.includes('img_9146060b-5718-452f-a663-e04f109c8ab5') ? fallbackImage : u))
     : (images.length > 0 ? images : [primaryImage]);
 
   return {
@@ -608,8 +620,15 @@ export const api = {
 
   // Reservations Management
   createReservation: async (body: any) => {
+    const checkIn = String(body.check_in || new Date().toISOString().slice(0, 10)).slice(0, 10);
+    let checkOut = String(body.check_out || '').slice(0, 10);
+    if (!checkOut || checkOut <= checkIn) {
+      checkOut = addDaysYMD(checkIn, 1);
+    }
+    const normalizedBody = { ...body, check_in: checkIn, check_out: checkOut };
+
     try {
-      const res = await req('/reservations', { method: 'POST', body });
+      const res = await req('/reservations', { method: 'POST', body: normalizedBody });
       if (res && res.id) return res;
     } catch (err: any) {
       if (err?.status && err.status !== 404 && err.status !== 405 && err.status < 500) {
@@ -617,28 +636,28 @@ export const api = {
       }
     }
     const sb = await ensureSupabaseSession();
-    const { data: sessionData } = await sb.auth.getSession().catch(() => ({ data: { session: null } }));
-    const targetRoomId = body.roomId || body.room_id;
-    const nights = Math.max(1, Math.round((new Date(body.check_out).getTime() - new Date(body.check_in).getTime()) / 86400000));
-    const total_php = Number(body.total_php) || 3500 * nights;
+    let targetRoomId = normalizedBody.roomId || normalizedBody.room_id;
+    if (!targetRoomId) {
+      const { data: firstRoom } = await sb.from('rooms').select('id').eq('is_active', true).limit(1).maybeSingle();
+      targetRoomId = firstRoom?.id;
+    }
+    const nights = Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000));
+    const total_php = Number(normalizedBody.total_php) || 3500 * nights;
     const insertPayload: Record<string, any> = {
       room_id: targetRoomId,
-      check_in: body.check_in,
-      check_out: body.check_out,
-      guests: Number(body.guests) || 2,
-      notes: (body.notes || '').trim(),
+      check_in: checkIn,
+      check_out: checkOut,
+      guests: Number(normalizedBody.guests) || 2,
+      notes: (normalizedBody.notes || '').trim(),
       total_php,
-      downpayment_php: body.downpayment_php !== undefined ? Number(body.downpayment_php) : Math.round(total_php * 0.3),
-      payment_method: body.payment_method || 'GCash',
-      payment_status: body.payment_status || 'confirmed',
-      status: body.status || 'confirmed',
-      guest_name: (body.guest_name || body.guestName || 'Resort Guest').trim(),
-      guest_email: (body.guest_email || '').trim(),
-      phone: (body.phone || '').trim(),
+      downpayment_php: normalizedBody.downpayment_php !== undefined ? Number(normalizedBody.downpayment_php) : Math.round(total_php * 0.3),
+      payment_method: normalizedBody.payment_method || 'GCash',
+      payment_status: normalizedBody.payment_status || 'confirmed',
+      status: normalizedBody.status || 'confirmed',
+      guest_name: (normalizedBody.guest_name || normalizedBody.guestName || 'Walk-In Guest').trim(),
+      guest_email: (normalizedBody.guest_email || '').trim(),
+      phone: (normalizedBody.phone || '09170000000').trim(),
     };
-    if (sessionData?.session?.user?.id) {
-      insertPayload.guest_id = sessionData.session.user.id;
-    }
     const { data, error } = await sb
       .from('reservations')
       .insert(insertPayload)
@@ -648,17 +667,21 @@ export const api = {
     return data;
   },
   updateReservation: async (id: string, body: any) => {
+    const nextBody = { ...body };
+    if (nextBody.check_in && nextBody.check_out && nextBody.check_out <= nextBody.check_in) {
+      nextBody.check_out = addDaysYMD(nextBody.check_in, 1);
+    }
     try {
-      const res = await req(`/reservations/${id}`, { method: 'PATCH', body });
+      const res = await req(`/reservations/${id}`, { method: 'PATCH', body: nextBody });
       if (res && res.id) return res;
     } catch {}
     const sb = await ensureSupabaseSession();
     const updatePayload: Record<string, any> = {
       updated_at: new Date().toISOString(),
     };
-    if (body.room_id !== undefined) updatePayload.room_id = body.room_id;
-    if (body.check_in !== undefined) updatePayload.check_in = body.check_in;
-    if (body.check_out !== undefined) updatePayload.check_out = body.check_out;
+    if (nextBody.room_id !== undefined) updatePayload.room_id = nextBody.room_id;
+    if (nextBody.check_in !== undefined) updatePayload.check_in = nextBody.check_in;
+    if (nextBody.check_out !== undefined) updatePayload.check_out = nextBody.check_out;
     if (body.guests !== undefined) updatePayload.guests = Number(body.guests) || 1;
     if (body.total_php !== undefined) updatePayload.total_php = Number(body.total_php) || 0;
     if (body.downpayment_php !== undefined) updatePayload.downpayment_php = Number(body.downpayment_php) || 0;

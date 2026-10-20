@@ -15,18 +15,6 @@ export function normalizeRoom(room) {
   const cleanAmenities = [];
   const images = [];
 
-  for (const item of rawAmenities) {
-    if (typeof item === 'string' && (item.startsWith('__img__:') || item.startsWith('img:'))) {
-      let url = item.replace(/^(__img__|img):/, '').trim();
-      if (url.includes('/uploads/')) {
-        url = 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209701/jd_beach_house_accommodations/uploads/img_9146060b-5718-452f-a663-e04f109c8ab5_1792173695555.jpg';
-      }
-      if (url && !images.includes(url)) images.push(url);
-    } else {
-      cleanAmenities.push(item);
-    }
-  }
-
   // Guaranteed resort fallback image based on room category / slug
   let fallbackImage = 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209696/jd_beach_house_accommodations/cottage.jpg';
   const cat = String(room.category || '').toLowerCase();
@@ -37,11 +25,23 @@ export function normalizeRoom(room) {
   else if (cat.includes('dorm') || cat.includes('bunk') || slug.includes('dorm')) fallbackImage = 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209699/jd_beach_house_accommodations/bunk.jpg';
   else fallbackImage = 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209696/jd_beach_house_accommodations/cottage.jpg';
 
+  for (const item of rawAmenities) {
+    if (typeof item === 'string' && (item.startsWith('__img__:') || item.startsWith('img:'))) {
+      let url = item.replace(/^(__img__|img):/, '').trim();
+      if (url.startsWith('/uploads/') || url.includes('img_9146060b')) {
+        url = fallbackImage;
+      }
+      if (url && !images.includes(url)) images.push(url);
+    } else {
+      cleanAmenities.push(item);
+    }
+  }
+
   const rawImg = (room.image_url && String(room.image_url).trim()) || '';
-  const cleanImg = rawImg.includes('/uploads/') ? 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209701/jd_beach_house_accommodations/uploads/img_9146060b-5718-452f-a663-e04f109c8ab5_1792173695555.jpg' : rawImg;
+  const cleanImg = (rawImg.startsWith('/uploads/') || rawImg.includes('img_9146060b')) ? fallbackImage : rawImg;
   const primaryImage = cleanImg || images[0] || fallbackImage;
   const allImages = Array.isArray(room.images) && room.images.length > 0
-    ? room.images
+    ? room.images.map(u => (String(u).startsWith('/uploads/') || String(u).includes('img_9146060b')) ? fallbackImage : u)
     : (images.length > 0 ? images : [primaryImage]);
 
   return {

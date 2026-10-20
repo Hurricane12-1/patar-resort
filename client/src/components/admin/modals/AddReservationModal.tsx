@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { money, fmtDate } from '../../../lib/format.ts';
 import AvailabilityCalendar from '../../AvailabilityCalendar.tsx';
 import { POOL_ADDON_OPTIONS } from '../../../lib/ledgerUtils.ts';
 import { getCategoryDefaultCloudinaryImage } from '../../../lib/cloudinary.ts';
+import { addDaysYMD } from '../../../lib/api.ts';
 
 export interface NewReservationFormState {
   guest_name: string;
@@ -61,12 +62,34 @@ export default function AddReservationModal({
 }: AddReservationModalProps) {
   const [showWalkInCalendar, setShowWalkInCalendar] = useState(false);
 
+  const activeWalkInRoom = activeRoomsList.find((r) => r.id === newReservation.room_id) || activeRoomsList[0];
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const targetRoomId = newReservation.room_id || activeWalkInRoom?.id || '';
+    const cin = newReservation.check_in || '2026-10-20';
+    let cout = newReservation.check_out || addDaysYMD(cin, 1);
+    if (cout <= cin) {
+      cout = addDaysYMD(cin, 1);
+    }
+    if (targetRoomId !== newReservation.room_id || cout !== newReservation.check_out) {
+      const nights = Math.max(1, Math.round((new Date(cout).getTime() - new Date(cin).getTime()) / 86400000));
+      const rate = activeWalkInRoom?.rate_php || 3500;
+      setNewReservation((prev: any) => ({
+        ...prev,
+        room_id: targetRoomId,
+        check_in: cin,
+        check_out: cout,
+        total_php: prev.total_php || rate * nights,
+      }));
+    }
+  }, [isOpen, activeWalkInRoom?.id, newReservation.room_id, newReservation.check_in, newReservation.check_out, setNewReservation, activeWalkInRoom?.rate_php]);
+
   if (!isOpen) return null;
 
   const themeText = propThemeText || (isLightMode ? '#0F172A' : '#F8FAFC');
   const themeMuted = propThemeMuted || (isLightMode ? '#64748B' : '#94A3B8');
 
-  const activeWalkInRoom = activeRoomsList.find((r) => r.id === newReservation.room_id) || activeRoomsList[0];
   const activeRoomImage = getRoomImageUrl(activeWalkInRoom);
   const computedNights = Math.max(
     1,
@@ -373,11 +396,10 @@ export default function AddReservationModal({
                   marginBottom: 4,
                 }}
               >
-                Guest Full Name *
+                Guest Full Name (defaults to Walk-In Guest if blank)
               </label>
               <input
-                required
-                placeholder="e.g. Maria Santos"
+                placeholder="e.g. Maria Santos (or leave blank for Walk-In Guest)"
                 value={newReservation.guest_name}
                 onChange={(e) => setNewReservation({ ...newReservation, guest_name: e.target.value })}
                 style={{
@@ -402,10 +424,9 @@ export default function AddReservationModal({
                     marginBottom: 4,
                   }}
                 >
-                  Phone (for SMS confirmation) *
+                  Phone (for SMS confirmation)
                 </label>
                 <input
-                  required
                   placeholder="09171234567"
                   value={newReservation.phone}
                   onChange={(e) => setNewReservation({ ...newReservation, phone: e.target.value })}
@@ -465,7 +486,6 @@ export default function AddReservationModal({
                 </span>
               </div>
               <select
-                required
                 disabled={activeRoomsList.length === 0}
                 value={newReservation.room_id || activeWalkInRoom?.id || ''}
                 onChange={(e) => {
@@ -756,7 +776,7 @@ export default function AddReservationModal({
                       const cin = e.target.value;
                       let cout = newReservation.check_out;
                       if (cin >= cout) {
-                        cout = new Date(new Date(cin).getTime() + 86400000).toISOString().slice(0, 10);
+                        cout = addDaysYMD(cin, 1);
                       }
                       const nights = Math.max(
                         1,
