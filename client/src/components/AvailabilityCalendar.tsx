@@ -56,9 +56,12 @@ interface AvailabilityCalendarProps {
   isLightMode?: boolean;
   onClose?: () => void;
   mode?: 'timeline' | 'picker';
+  numDays?: number;
+  statusFilter?: string;
+  showNewBookingInTopBar?: boolean;
 }
 
-const NUM_DAYS = 7; // Exactly 7-day spacious window matching executive PMS calendar
+const DEFAULT_NUM_DAYS = 14; // Default 14-day spacious window matching modern PMS calendar
 
 export default function AvailabilityCalendar({
   selectedRoomId,
@@ -69,7 +72,12 @@ export default function AvailabilityCalendar({
   onSelectBooking,
   onNewBooking,
   isLightMode = true,
+  numDays = DEFAULT_NUM_DAYS,
+  statusFilter = 'all',
+  showNewBookingInTopBar = false,
 }: AvailabilityCalendarProps) {
+  const daysCount = numDays || DEFAULT_NUM_DAYS;
+
   // Live states fetched directly from Supabase
   const [liveRooms, setLiveRooms] = useState<any[]>([]);
   const [liveBookings, setLiveBookings] = useState<any[]>([]);
@@ -78,7 +86,7 @@ export default function AvailabilityCalendar({
   // Dynamic today's date
   const todayStr = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
-  // 7-day rolling window starting 3 days before today (e.g. Sat 17 to Fri 23 when today is Tue 20)
+  // 14-day rolling window starting 3 days before today (e.g. Sat 17 to Fri 30 when today is Tue 20)
   const [windowStartDateStr, setWindowStartDateStr] = useState<string>(() => {
     const d = new Date();
     d.setDate(d.getDate() - 3);
@@ -178,12 +186,12 @@ export default function AvailabilityCalendar({
     return list;
   }, [effectiveRooms]);
 
-  // Generate 7-day array starting from windowStartDateStr
+  // Generate days array starting from windowStartDateStr
   const daysArray = useMemo(() => {
     const days: { dateStr: string; dayNum: number; dayOfWeek: string; isToday: boolean }[] = [];
     const cur = new Date(windowStartDateStr + 'T00:00:00');
 
-    for (let i = 0; i < NUM_DAYS; i++) {
+    for (let i = 0; i < daysCount; i++) {
       const dStr = cur.toISOString().slice(0, 10);
       const dayNum = cur.getDate();
       const dayOfWeek = cur.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
@@ -193,14 +201,14 @@ export default function AvailabilityCalendar({
       cur.setDate(cur.getDate() + 1);
     }
     return days;
-  }, [windowStartDateStr, todayStr]);
+  }, [windowStartDateStr, todayStr, daysCount]);
 
   const windowEndDateStr = useMemo(() => {
     if (daysArray.length === 0) return todayStr;
     return daysArray[daysArray.length - 1].dateStr;
   }, [daysArray, todayStr]);
 
-  // Date Range Display Label: "Oct 17 – Oct 23, 2026"
+  // Date Range Display Label: "Oct 17 – Oct 30, 2026"
   const dateRangeLabel = useMemo(() => {
     if (daysArray.length === 0) return '';
     const startD = new Date(daysArray[0].dateStr + 'T00:00:00');
@@ -324,6 +332,17 @@ export default function AvailabilityCalendar({
     return { assignedStays: assigned, unassignedStays: unassigned, maxUnassignedRows };
   }, [effectiveBookings, units]);
 
+  // Filter stays by statusFilter if specified
+  const visibleAssignedStays = useMemo(() => {
+    if (!statusFilter || statusFilter === 'all') return assignedStays;
+    return assignedStays.filter((s) => s.status === statusFilter);
+  }, [assignedStays, statusFilter]);
+
+  const visibleUnassignedStays = useMemo(() => {
+    if (!statusFilter || statusFilter === 'all') return unassignedStays;
+    return unassignedStays.filter((s) => s.status === statusFilter);
+  }, [unassignedStays, statusFilter]);
+
   // Combined stays in view
   const allStays = useMemo(() => {
     return [...assignedStays, ...unassignedStays];
@@ -338,22 +357,22 @@ export default function AvailabilityCalendar({
     ).length;
 
     return {
-      arriving: arriving || 8,
-      departing: departing || 2,
-      staysInView: staysInView || 22,
+      arriving,
+      departing,
+      staysInView,
     };
   }, [allStays, todayStr, windowEndDateStr, windowStartDateStr]);
 
-  // Navigation handlers: shift 7 days
+  // Navigation handlers: shift by daysCount
   const handlePrevWindow = () => {
     const d = new Date(windowStartDateStr + 'T00:00:00');
-    d.setDate(d.getDate() - NUM_DAYS);
+    d.setDate(d.getDate() - daysCount);
     setWindowStartDateStr(d.toISOString().slice(0, 10));
   };
 
   const handleNextWindow = () => {
     const d = new Date(windowStartDateStr + 'T00:00:00');
-    d.setDate(d.getDate() + NUM_DAYS);
+    d.setDate(d.getDate() + daysCount);
     setWindowStartDateStr(d.toISOString().slice(0, 10));
   };
 
@@ -391,14 +410,14 @@ export default function AvailabilityCalendar({
     const endIdx = daysArray.findIndex((d) => d.dateStr === stay.checkOut);
 
     let effectiveStart = startIdx >= 0 ? startIdx : 0;
-    let effectiveEnd = endIdx >= 0 ? endIdx : NUM_DAYS;
+    let effectiveEnd = endIdx >= 0 ? endIdx : daysCount;
 
     if (stay.checkIn < windowStartDateStr) effectiveStart = 0;
-    if (stay.checkOut > windowEndDateStr) effectiveEnd = NUM_DAYS;
+    if (stay.checkOut > windowEndDateStr) effectiveEnd = daysCount;
 
     const spanDays = Math.max(1, effectiveEnd - effectiveStart);
-    const leftPercent = (effectiveStart / NUM_DAYS) * 100;
-    const widthPercent = (spanDays / NUM_DAYS) * 100;
+    const leftPercent = (effectiveStart / daysCount) * 100;
+    const widthPercent = (spanDays / daysCount) * 100;
 
     return {
       left: `calc(${leftPercent}% + 2px)`,
@@ -409,7 +428,7 @@ export default function AvailabilityCalendar({
 
   return (
     <div className={`pms-calendar-card ${!isLightMode ? 'dark' : ''}`}>
-      {/* 1. TOP HEADER: Navigation, Date Range, Inline Metrics & New Booking Button */}
+      {/* 1. TOP HEADER: Navigation, Date Range, Inline Metrics & Optional New Booking */}
       <div className="pms-top-bar">
         {/* Left: < Today > and Date Range */}
         <div className="pms-nav-group">
@@ -417,7 +436,7 @@ export default function AvailabilityCalendar({
             type="button"
             className="pms-nav-btn icon-only"
             onClick={handlePrevWindow}
-            title="Previous 7 days"
+            title={`Previous ${daysCount} days`}
           >
             <i className="fas fa-chevron-left" />
           </button>
@@ -434,58 +453,62 @@ export default function AvailabilityCalendar({
             type="button"
             className="pms-nav-btn icon-only"
             onClick={handleNextWindow}
-            title="Next 7 days"
+            title={`Next ${daysCount} days`}
           >
             <i className="fas fa-chevron-right" />
           </button>
 
           <h2 className="pms-date-title">{dateRangeLabel}</h2>
-
-          {/* Real-time Inline Metrics */}
-          <div className="pms-metrics-group">
-            <div>
-              <span className="pms-metric-val">{metrics.arriving}</span> arriving today
-            </div>
-            <div>
-              <span className="pms-metric-val">{metrics.departing}</span> departing
-            </div>
-            <div>
-              <span className="pms-metric-val">{metrics.staysInView}</span> stays in view
-            </div>
-          </div>
         </div>
 
-        {/* Right: + New Booking */}
-        <button
-          type="button"
-          className="pms-new-booking-btn"
-          onClick={() => {
-            if (units.length === 0) {
-              toast("There's no present room around. Please add a room in Room Management first.", true);
-              return;
-            }
-            if (onNewBooking) {
-              onNewBooking();
-            } else if (onSelectDates) {
-              const nextDay = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
-              onSelectDates(todayStr, nextDay, units[0]?.roomId);
-            }
-          }}
-          title={units.length === 0 ? "There's no present room around" : "New booking"}
-          style={units.length === 0 ? { opacity: 0.65, cursor: 'not-allowed' } : undefined}
-        >
-          <i className="fas fa-plus" />
-          <span>New booking</span>
-        </button>
+        {/* Right: Real-time Inline Metrics & Optional New Booking */}
+        <div className="pms-metrics-group">
+          <div>
+            <span className="pms-metric-val">{metrics.arriving}</span> arriving today
+          </div>
+          <div>
+            <span className="pms-metric-val">{metrics.departing}</span> departing
+          </div>
+          <div>
+            <span className="pms-metric-val">{metrics.staysInView}</span> stays in view
+          </div>
+
+          {showNewBookingInTopBar && (
+            <button
+              type="button"
+              className="pms-new-booking-btn"
+              onClick={() => {
+                if (units.length === 0) {
+                  toast("There's no present room around. Please add a room in Room Management first.", true);
+                  return;
+                }
+                if (onNewBooking) {
+                  onNewBooking();
+                } else if (onSelectDates) {
+                  const nextDay = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+                  onSelectDates(todayStr, nextDay, units[0]?.roomId);
+                }
+              }}
+              title={units.length === 0 ? "There's no present room around" : "New booking"}
+              style={units.length === 0 ? { opacity: 0.65, cursor: 'not-allowed' } : undefined}
+            >
+              <i className="fas fa-plus" />
+              <span>New booking</span>
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* 2. CALENDAR MATRIX: 7 Days & Physical Units + Unassigned Rows */}
+      {/* 2. CALENDAR MATRIX: 14 Days & Physical Units + Unassigned Rows */}
       <div className="pms-grid-container">
         <div className="pms-grid-table">
-          {/* HEADER ROW: UNIT + 7 DAYS */}
+          {/* HEADER ROW: UNIT + 14 DAYS */}
           <div className="pms-grid-header">
             <div className="pms-col-unit-header">UNIT</div>
-            <div className="pms-days-header-track">
+            <div
+              className="pms-days-header-track"
+              style={{ gridTemplateColumns: `repeat(${daysCount}, 1fr)` }}
+            >
               {daysArray.map((day) => (
                 <div
                   key={day.dateStr}
@@ -515,8 +538,8 @@ export default function AvailabilityCalendar({
             </div>
           ) : (
             units.map((unit) => {
-            // Visible stays allocated to this unit
-            const unitStays = assignedStays.filter((s) => {
+            // Visible stays allocated to this unit filtered by status
+            const unitStays = visibleAssignedStays.filter((s) => {
               if (s.assignedUnitNumber !== unit.unitNumber) return false;
               return s.checkIn <= windowEndDateStr && s.checkOut >= windowStartDateStr;
             });
@@ -528,8 +551,11 @@ export default function AvailabilityCalendar({
                   {unit.name}
                 </div>
 
-                {/* 7 Days Slots & Floating Stay Pills */}
-                <div className="pms-days-track">
+                {/* Days Slots & Floating Stay Pills */}
+                <div
+                  className="pms-days-track"
+                  style={{ gridTemplateColumns: `repeat(${daysCount}, 1fr)` }}
+                >
                   {daysArray.map((day) => {
                     const isSelected = selectedCell?.unitId === unit.id && selectedCell?.dateStr === day.dateStr;
 
@@ -571,12 +597,10 @@ export default function AvailabilityCalendar({
                         title={`${stay.guestName} (${stay.checkIn} to ${stay.checkOut}) · Status: ${stay.status}`}
                       >
                         <span className="pms-stay-name">{stay.guestName}</span>
-                        {spanDays >= 2 ? (
+                        {spanDays >= 2 && (
                           <span className="pms-stay-time">
-                            {stay.checkInTime} → {stay.checkOutTime}
+                            {stay.checkInTime} — {stay.checkOutTime}
                           </span>
-                        ) : (
-                          <span className="pms-stay-time">{stay.checkInTime}</span>
                         )}
                       </div>
                     );
@@ -589,7 +613,7 @@ export default function AvailabilityCalendar({
 
           {/* UNASSIGNED ROWS (⚠ Unassigned) */}
           {Array.from({ length: maxUnassignedRows }).map((_, rowIndex) => {
-            const rowStays = unassignedStays.filter((s) => {
+            const rowStays = visibleUnassignedStays.filter((s) => {
               if (s.unassignedRowIndex !== rowIndex) return false;
               return s.checkIn <= windowEndDateStr && s.checkOut >= windowStartDateStr;
             });
@@ -603,8 +627,11 @@ export default function AvailabilityCalendar({
                   </span>
                 </div>
 
-                {/* 7 Days Slots & Floating Stay Pills */}
-                <div className="pms-days-track">
+                {/* Days Slots & Floating Stay Pills */}
+                <div
+                  className="pms-days-track"
+                  style={{ gridTemplateColumns: `repeat(${daysCount}, 1fr)` }}
+                >
                   {daysArray.map((day) => (
                     <div
                       key={day.dateStr}
@@ -629,12 +656,10 @@ export default function AvailabilityCalendar({
                         title={`[Unassigned] ${stay.guestName} (${stay.checkIn} to ${stay.checkOut}) · Status: ${stay.status}`}
                       >
                         <span className="pms-stay-name">{stay.guestName}</span>
-                        {spanDays >= 2 ? (
+                        {spanDays >= 2 && (
                           <span className="pms-stay-time">
-                            {stay.checkInTime} → {stay.checkOutTime}
+                            {stay.checkInTime} — {stay.checkOutTime}
                           </span>
-                        ) : (
-                          <span className="pms-stay-time">{stay.checkInTime}</span>
                         )}
                       </div>
                     );
@@ -646,10 +671,10 @@ export default function AvailabilityCalendar({
         </div>
       </div>
 
-      {/* 3. BOTTOM LEGEND: Confirmed, Pending, Checked in, Checked out, Cancelled */}
+      {/* 3. BOTTOM LEGEND: Confirmed, Pending, Checked in, Checked out */}
       <div className="pms-bottom-legend">
         <div className="pms-legend-item">
-          <span className="pms-legend-bar" style={{ background: '#3B82F6' }} />
+          <span className="pms-legend-bar" style={{ background: '#10B981' }} />
           <span>Confirmed</span>
         </div>
         <div className="pms-legend-item">
@@ -657,16 +682,12 @@ export default function AvailabilityCalendar({
           <span>Pending</span>
         </div>
         <div className="pms-legend-item">
-          <span className="pms-legend-bar" style={{ background: '#10B981' }} />
+          <span className="pms-legend-bar" style={{ background: '#6366F1' }} />
           <span>Checked in</span>
         </div>
         <div className="pms-legend-item">
-          <span className="pms-legend-bar" style={{ background: '#334155' }} />
+          <span className="pms-legend-bar" style={{ background: '#94A3B8' }} />
           <span>Checked out</span>
-        </div>
-        <div className="pms-legend-item">
-          <span className="pms-legend-bar" style={{ background: '#EF4444' }} />
-          <span>Cancelled</span>
         </div>
       </div>
 
