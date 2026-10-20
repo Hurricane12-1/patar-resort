@@ -81,13 +81,19 @@ async function req<T = any>(path: string, { method = 'GET', body }: { method?: s
   const adminTokenKey = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_token_key') : null;
   const adminJwt = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_jwt') : null;
   const customerJwt = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_customer_jwt') : null;
-  const isAdminContext = (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) || path.startsWith('/admin') || path.includes('admin');
+  const isAdminPath = typeof window !== 'undefined' && (
+    window.location.pathname.startsWith('/admin') ||
+    window.location.pathname.startsWith('/administrator') ||
+    window.location.pathname.startsWith('/receptionist') ||
+    window.location.pathname.startsWith('/accounting')
+  );
+  const isAdminContext = isAdminPath || path.startsWith('/admin') || path.includes('admin') || Boolean(adminJwt);
   
-  if (adminTokenKey || isAdminContext) {
-    headers['x-admin-token-key'] = adminTokenKey || 'etc-34';
+  if (adminTokenKey) {
+    headers['x-admin-token-key'] = adminTokenKey;
   }
 
-  if (isAdminContext && adminJwt) {
+  if (adminJwt && (isAdminContext || !customerJwt)) {
     headers['Authorization'] = `Bearer ${adminJwt}`;
   } else if (!isAdminContext && customerJwt) {
     headers['Authorization'] = `Bearer ${customerJwt}`;
@@ -474,7 +480,11 @@ export const api = {
     try {
       const res = await req('/rooms', { method: 'POST', body });
       if (res && res.id) return normalizeRoom(res);
-    } catch {}
+    } catch (err: any) {
+      if (err.status && err.status !== 404) {
+        throw new Error(err.message || 'Could not create room in database');
+      }
+    }
     const sb = await ensureSupabaseSession();
     const baseSlug = String(body.slug || body.name || 'room')
       .toLowerCase()

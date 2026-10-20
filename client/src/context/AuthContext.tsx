@@ -537,6 +537,14 @@ export function AuthProvider({ children }) {
           };
           setAdminSession(adminAuthRes.session);
           setAdminProfile(userObj);
+          if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.setItem('jd_admin_session', JSON.stringify(adminAuthRes.session));
+            if (adminAuthRes.session.access_token) {
+              sessionStorage.setItem('jd_admin_jwt', adminAuthRes.session.access_token);
+            }
+            sessionStorage.setItem('jd_admin_profile', JSON.stringify(userObj));
+            sessionStorage.setItem('jd_admin_token_key', key || 'etc-34');
+          }
           return { data: adminAuthRes, error: null };
         }
       } catch (adminApiErr: any) {

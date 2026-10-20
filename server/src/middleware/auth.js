@@ -59,6 +59,7 @@ export async function authenticate(req, _res, next) {
     let userId = null;
     let userEmail = null;
     let userMetadata = {};
+    let isLiveSupabaseToken = false;
 
     // 1. Try local JWT verification if secret is configured
     if (env.SUPABASE_JWT_SECRET) {
@@ -81,6 +82,7 @@ export async function authenticate(req, _res, next) {
           userId = data.user.id;
           userEmail = data.user.email;
           userMetadata = data.user.user_metadata || {};
+          isLiveSupabaseToken = true;
         }
       } catch {}
     }
@@ -104,9 +106,11 @@ export async function authenticate(req, _res, next) {
     // Fetch user profile from database using user's authenticated token (or system admin client)
     let profile = null;
     try {
-      const sbUser = userClient(token);
-      const { data } = await sbUser.from('profiles').select('*').eq('id', userId).maybeSingle();
-      profile = data;
+      if (isLiveSupabaseToken) {
+        const sbUser = userClient(token);
+        const { data } = await sbUser.from('profiles').select('*').eq('id', userId).maybeSingle();
+        profile = data;
+      }
       if (!profile) {
         const sysClient = await getSystemAdminClient();
         const { data: sysData } = await sysClient.from('profiles').select('*').eq('id', userId).maybeSingle();
@@ -233,7 +237,7 @@ export async function authenticate(req, _res, next) {
 
     req.user = profile;
     req.token = token;
-    req.sb = userClient(token);
+    req.sb = isLiveSupabaseToken ? userClient(token) : ((await getSystemAdminClient().catch(() => null)) || admin);
     next();
   } catch (err) {
     next(err instanceof ApiError ? err : new ApiError(401, 'Invalid or expired session'));
