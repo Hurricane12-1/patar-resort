@@ -200,39 +200,27 @@ export async function authenticate(req, _res, next) {
     delete profile.password;
     delete profile.password_hash;
 
-    const isElevatedAdminEmail = (userEmail && (
-      userEmail.toLowerCase() === 'admin@janddbeachhouse.ph' ||
-      userEmail.toLowerCase() === 'admin@rockviewresort.ph' ||
-      userEmail.toLowerCase() === 'admin@rockview.ph' ||
-      userEmail.toLowerCase().includes('admin') ||
-      userEmail.toLowerCase().endsWith('@rockviewresort.ph') ||
-      userEmail.toLowerCase().endsWith('@rockview.ph') ||
-      userEmail.toLowerCase() === 'sheepermichigun@gmail.com' ||
-      userEmail.toLowerCase() === 'juliannygeljdeleon@gmail.com'
-    )) || (profile?.email && (
-      profile.email.toLowerCase() === 'admin@janddbeachhouse.ph' ||
-      profile.email.toLowerCase() === 'admin@rockviewresort.ph' ||
-      profile.email.toLowerCase() === 'admin@rockview.ph' ||
-      profile.email.toLowerCase().includes('admin') ||
-      profile.email.toLowerCase().endsWith('@rockviewresort.ph') ||
-      profile.email.toLowerCase().endsWith('@rockview.ph') ||
-      profile.email.toLowerCase() === 'sheepermichigun@gmail.com' ||
-      profile.email.toLowerCase() === 'juliannygeljdeleon@gmail.com'
-    ));
-
     if (!profile.avatar_url) {
       profile.avatar_url = userMetadata.avatar_url || userMetadata.picture || '';
     }
 
-    if (profile.role === 'administrator' || profile.role === 'admin' || isElevatedAdminEmail) {
+    // Strict Employee / Administrator RBAC Enforcement:
+    // Only verified accounts linked to active records in employee_accounts can hold employee/admin privileges
+    const isVerifiedEmployee = Boolean(empRecord && empRecord.is_active);
+    if (isVerifiedEmployee && (empRecord.role === 'administrator' || empRecord.role === 'admin')) {
       profile.role = 'administrator';
       profile.admin_token_verified = true;
       profile.admin_token_key = process.env.ADMIN_TOKEN_KEY || 'etc-34';
-      if (!profile.domain_account) {
-        profile.domain_account = 'admin@janddbeachhouse.ph';
-      }
-    } else if (!profile.domain_account) {
-      profile.domain_account = profile.email || 'staff@janddbeachhouse.ph';
+      profile.domain_account = empRecord.email || profile.email || 'admin@janddbeachhouse.ph';
+    } else if (isVerifiedEmployee) {
+      profile.role = empRecord.role || 'staff';
+      profile.domain_account = empRecord.email || profile.email || 'staff@janddbeachhouse.ph';
+    } else {
+      // Any account not in employee_accounts is STRICTLY customer
+      profile.role = 'customer';
+      profile.position = 'Customer';
+      profile.admin_token_verified = false;
+      delete profile.admin_token_key;
     }
 
     req.user = profile;

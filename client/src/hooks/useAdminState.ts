@@ -40,8 +40,10 @@ export function useAdminState() {
     refreshProfile,
   } = useAuth();
 
-  const currentAdminSession = adminSession || session;
-  const currentAdminProfile = adminProfile || profile;
+  // Strict Isolation: Admin State MUST ONLY rely on explicit employee admin session
+  // Customer public sessions (Google, Facebook, guest) CAN NEVER access the administrator portal!
+  const currentAdminSession = adminSession;
+  const currentAdminProfile = adminProfile;
   const user = currentAdminSession?.user;
 
   const [data, setData] = useState<any>(emptyAnalytics);
@@ -53,13 +55,11 @@ export function useAdminState() {
   const [authError, setAuthError] = useState('');
   const [authenticating, setAuthenticating] = useState(false);
 
-  // Live database profile role validation
+  // Live database profile role validation: strictly verified employee administrator only
   const isAdministrator = Boolean(
-    currentAdminSession &&
-      currentAdminProfile &&
-      (['administrator', 'admin'].includes(currentAdminProfile?.role) ||
-        isSystemOwnerEmail(currentAdminProfile?.email) ||
-        isSystemOwnerEmail(user?.email))
+    adminSession &&
+      adminProfile &&
+      (['administrator', 'admin'].includes(adminProfile?.role))
   );
 
   // Navigation & Theme

@@ -74,21 +74,8 @@ export function generateUsername(
   return email.split('@')[0];
 }
 
-export function isSystemOwnerEmail(email?: string): boolean {
-  if (!email) return false;
-  const em = email.toLowerCase().trim();
-  return (
-    em === 'sheepermichigun@gmail.com' ||
-    em === 'juliannygeljdeleon@gmail.com' ||
-    em === 'admin@janddbeachhouse.ph' ||
-    em === 'admin@rockviewresort.ph' ||
-    em === 'admin@rockview.ph' ||
-    em.startsWith('jjd') ||
-    em.includes('admin') ||
-    em.includes('generalmanager') ||
-    em.endsWith('@rockviewresort.ph') ||
-    em.endsWith('@rockview.ph')
-  );
+export function isSystemOwnerEmail(_email?: string): boolean {
+  return false;
 }
 
 export function AuthProvider({ children }) {
@@ -142,11 +129,7 @@ export function AuthProvider({ children }) {
     try {
       const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_profile') : null;
       if (saved) {
-        const parsed = JSON.parse(saved);
-        if (isSystemOwnerEmail(parsed?.email)) {
-          parsed.role = 'administrator';
-        }
-        return parsed;
+        return JSON.parse(saved);
       }
       return null;
     } catch { return null; }
@@ -301,13 +284,13 @@ export function AuthProvider({ children }) {
           const freshMe = await api.me();
           if (freshMe && freshMe.id) {
             const role = freshMe.role || 'customer';
-            const isAdminRole = ['administrator', 'admin', 'staff', 'receptionist', 'accounting'].includes(role) || isSystemOwnerEmail(freshMe.email);
+            const isAdminRole = ['administrator', 'admin', 'staff', 'receptionist', 'accounting'].includes(role);
 
             if ((hasAdminJwt || onAdminPath || adminSession) && isAdminRole) {
               setAdminProfile((prev: any) => ({
                 ...(prev || {}),
                 ...freshMe,
-                role: isSystemOwnerEmail(freshMe.email) ? 'administrator' : role,
+                role: role,
               }));
               return freshMe;
             } else if (hasCustomerJwt || customerSession || !onAdminPath) {
@@ -578,8 +561,8 @@ export function AuthProvider({ children }) {
                 prof = p;
               } catch {}
 
-              const role = prof?.role || sbRes.data.session.user.user_metadata?.role || 'administrator';
-              if (!['administrator', 'admin', 'staff', 'receptionist', 'accounting'].includes(role) && !isSystemOwnerEmail(prof?.email || cleanIdent)) {
+              const role = prof?.role || sbRes.data.session.user.user_metadata?.role || 'customer';
+              if (!['administrator', 'admin', 'staff', 'receptionist', 'accounting'].includes(role)) {
                 await supabase.auth.signOut().catch(() => {});
                 throw new Error('Access denied: Account is not authorized for executive administrator portal.');
               }
@@ -620,7 +603,7 @@ export function AuthProvider({ children }) {
             .eq('is_active', true)
             .maybeSingle();
 
-          if (emp && (['administrator', 'admin', 'staff', 'receptionist', 'accounting'].includes(emp.role) || isSystemOwnerEmail(emp.email))) {
+          if (emp && ['administrator', 'admin', 'staff', 'receptionist', 'accounting'].includes(emp.role)) {
             const adminObj = {
               id: emp.auth_user_id || emp.id,
               email: emp.email,
