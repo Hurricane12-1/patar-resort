@@ -482,15 +482,7 @@ async function generateGeminiAIAnswer(userId, text, contextData = {}) {
 
   const roomsList = (contextData.rooms && contextData.rooms.length > 0)
     ? contextData.rooms.map((r) => `  • ${r.name} (${r.category || 'Cottage'}): Capacity ${r.capacity} guests, ₱${Number(r.rate_php).toLocaleString()}/night`).join('\n')
-    : `  • Grand Villa (Unit TEV): sleeps up to 60, ₱18,000/night (Events, big reunions)
-  • GEL Premier Suite: sleeps 25, ₱12,000/night (Large group suite)
-  • CAT Cottage / Papang: sleeps 10, ₱6,000/night (Barkada/family coastal cottage)
-  • Duyan Family Villa: sleeps 6, ₱4,800/night (Cozy beach house with hammocks)
-  • Sunset Pavilion: sleeps 2, ₱3,600/night (Beachfront couple suite with golden sunset view)
-  • Habagat Sea-View Suite: sleeps 3, ₱2,950/night (Private balcony facing ocean)
-  • Garden Breeze Room: sleeps 2, ₱1,850/night (Air-conditioned garden view)
-  • Nipa Cove Cottage: sleeps 2, ₱1,450/night (Authentic bamboo breeze cottage)
-  • Backpacker Bunk: sleeps 1, ₱650/night (Budget traveler air-conditioned dorm)`;
+    : '  • Live room rates and real-time inventory are fetched dynamically from the database. Please inquire about specific dates or room types.';
 
   const systemPrompt = `You are Rock View Bot, the fast, knowledgeable 24/7 AI Concierge for Rock View Beach Resort in Patar White Beach, Bolinao, Pangasinan, Philippines.
 You know the ENTIRE resort system and can assist in English, Tagalog, or Taglish.
@@ -819,4 +811,15 @@ function persist(userId, userText, botText, extraMeta = {}) {
   ]).then(() => {
     redis.del('analytics:overview').catch(() => {});
   }).catch(() => {});
+}
+
+/**
+ * Broadcast Real-Time Data Payload 1 over TCP WebSocket channel
+ * Transmits live room lock changes, booking signals, and ledger notifications
+ */
+export function broadcastPayload1(topic, payload) {
+  if (ioInstance) {
+    ioInstance.emit('payload1:stream', { topic, data: payload, timestamp: new Date().toISOString() });
+    ioInstance.emit(`payload1:${topic}`, payload);
+  }
 }

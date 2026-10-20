@@ -9,6 +9,7 @@ import { pingSMS } from '../lib/sms.js';
 import { redis } from '../lib/redis.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
 import { sendRefundRequestedEmail, sendRefundConfirmedEmail } from '../lib/mailer.js';
+import { broadcastPayload1 } from '../socket/chatbot.js';
 
 const r = Router();
 const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -194,6 +195,11 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
     req,
   });
 
+  // Broadcast real-time Data Payload 1 over TCP WebSocket channel
+  try {
+    broadcastPayload1('reservations:created', stay);
+  } catch {}
+
   pingSMS({
     profileId: req.user.id, reservationId: stay.id, toPhone: finalPhone,
     body: `Mabuhay! Rock View Beach Resort ✦ Confirmed: ${stay.rooms?.name || roomName}, ${check_in} → ${check_out} (${nights} night${nights > 1 ? 's' : ''}), ₱${total_php.toLocaleString()}. Check-in 2:00 PM.`,
@@ -246,6 +252,11 @@ r.patch('/reservations/:id/cancel', authenticate, asyncH(async (req, res) => {
     details: { reason: 'Guest cancelled reservation' },
     req,
   });
+
+  // Broadcast real-time Data Payload 1 over TCP WebSocket channel
+  try {
+    broadcastPayload1('reservations:created', stay);
+  } catch {}
 
   pingSMS({ profileId: req.user.id, reservationId: b.id, toPhone: req.user.phone,
     body: 'Rock View Beach Resort: your reservation was cancelled. The beach will miss you — rebook anytime.' }).catch(() => {});
@@ -506,6 +517,11 @@ r.delete('/reservations/:id', authenticate, requireStaffOrAdmin, asyncH(async (r
     details: { deleted: true },
     req,
   });
+
+  // Broadcast real-time Data Payload 1 over TCP WebSocket channel
+  try {
+    broadcastPayload1('reservations:created', stay);
+  } catch {}
 
   return res.json({ success: true, deleted_id: resId });
 }));

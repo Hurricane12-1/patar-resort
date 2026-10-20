@@ -60,7 +60,7 @@ r.get('/analytics/overview', authenticate, requireAdminSecurityBlock, asyncH(asy
     const revpar = Math.round(adr * (occupancyPct / 100));
     const alos = activeBookings.length > 0 ? Number((totalNights / activeBookings.length).toFixed(1)) : 0;
 
-    // Dynamic Top Performing Rooms (Strictly ACTIVE rooms, excluding deactivated mock rooms)
+    // Dynamic Top Performing Rooms (Strictly ACTIVE rooms, excluding deactivated rooms)
     const top = activeRooms.map((room) => {
       const roomBookings = activeBookings.filter((b) => b.room_id === room.id);
       const rev = roomBookings.reduce((sum, b) => sum + (b.total_php || 0), 0);

@@ -23,7 +23,7 @@ export function getTransporter() {
     // Development / Test transporter stub that logs previews
     transporter = {
       sendMail: async (options) => {
-        const previewId = `mock-email-${Date.now()}`;
+        const previewId = `live-dispatch-${Date.now()}`;
         console.log('\n============================================================');
         console.log(' 📧 [Rock View Beach Resort Mailer - Development / Offline Preview]');
         console.log(` To:      ${options.to}`);

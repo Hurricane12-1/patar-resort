@@ -523,7 +523,7 @@ export async function insertLedgerReservation(payload) {
         co_guests: record.co_guests,
       });
     } catch (dbErr) {
-      console.warn('[LedgerAgent] Supabase insert warning (offline/mock fallback active):', dbErr.message);
+      console.warn('[LedgerAgent] Supabase insert warning (offline fallback active):', dbErr.message);
     }
   }
 

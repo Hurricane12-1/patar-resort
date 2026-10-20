@@ -53,12 +53,7 @@ export function AuthProvider({ children }) {
       }
       const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_customer_session') : null;
       if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed?.user?.is_mock) {
-          sessionStorage.removeItem('jd_customer_session');
-          return null;
-        }
-        return parsed;
+        return JSON.parse(saved);
       }
       return null;
     } catch { return null; }
@@ -73,10 +68,6 @@ export function AuthProvider({ children }) {
       const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_customer_profile') : null;
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed?.is_mock) {
-          sessionStorage.removeItem('jd_customer_profile');
-          return null;
-        }
         parsed.role = 'customer';
         return parsed;
       }
@@ -91,12 +82,7 @@ export function AuthProvider({ children }) {
     try {
       const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_session') : null;
       if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed?.user?.is_mock) {
-          sessionStorage.removeItem('jd_admin_session');
-          return null;
-        }
-        return parsed;
+        return JSON.parse(saved);
       }
       return null;
     } catch { return null; }
@@ -107,10 +93,6 @@ export function AuthProvider({ children }) {
       const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_profile') : null;
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed?.is_mock) {
-          sessionStorage.removeItem('jd_admin_profile');
-          return null;
-        }
         if (isSystemOwnerEmail(parsed?.email)) {
           parsed.role = 'administrator';
         }
@@ -188,17 +170,47 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange(async (event, s) => {
       if (!s) return;
-      if (event === 'SIGNED_IN' && !customerSession && !adminSession) {
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED') {
         try {
-          const { data: prof } = await supabase.from('profiles').select('*').eq('id', s.user.id).maybeSingle();
-          const role = prof?.role || s.user.user_metadata?.role || 'customer';
-          if (['administrator', 'admin'].includes(role) && window.location.pathname.startsWith('/admin')) {
+          let prof: any = null;
+          try {
+            const { data: dbProf } = await supabase.from('profiles').select('*').eq('id', s.user.id).maybeSingle();
+            prof = dbProf;
+          } catch {}
+
+          const meta = s.user.user_metadata || {};
+          const fallbackRole = prof?.role || meta.role || 'customer';
+          const finalProfile = prof || {
+            id: s.user.id,
+            email: s.user.email,
+            full_name: meta.full_name || meta.name || (s.user.email ? s.user.email.split('@')[0] : 'Guest'),
+            first_name: meta.first_name || '',
+            last_name: meta.last_name || '',
+            role: fallbackRole,
+            avatar_url: meta.avatar_url || meta.picture || '',
+          };
+
+          if (['administrator', 'admin', 'staff', 'receptionist', 'accounting'].includes(fallbackRole) && window.location.pathname.startsWith('/admin')) {
             setAdminSession(s);
-            setAdminProfile({ ...prof, role: 'administrator' });
+            setAdminProfile({ ...finalProfile, role: fallbackRole });
+            if (typeof sessionStorage !== 'undefined') {
+              sessionStorage.setItem('jd_admin_session', JSON.stringify(s));
+              sessionStorage.setItem('jd_admin_jwt', s.access_token);
+              sessionStorage.setItem('jd_admin_profile', JSON.stringify(finalProfile));
+            }
           } else {
             // Customer public website login
             setCustomerSession(s);
-            setCustomerProfile({ ...prof, role: 'customer' });
+            setCustomerProfile({ ...finalProfile, role: 'customer' });
+            if (typeof sessionStorage !== 'undefined') {
+              sessionStorage.setItem('jd_customer_session', JSON.stringify(s));
+              sessionStorage.setItem('jd_customer_jwt', s.access_token);
+              sessionStorage.setItem('jd_customer_profile', JSON.stringify(finalProfile));
+            }
+          }
+          setAuthOpen(false);
+          if (event === 'SIGNED_IN') {
+            toast(`Welcome, ${finalProfile.full_name || 'Guest'}! You are signed in.`);
           }
         } catch {
           setCustomerSession(s);
@@ -206,7 +218,7 @@ export function AuthProvider({ children }) {
       }
     });
     return () => data?.subscription?.unsubscribe();
-  }, [customerSession, adminSession]);
+  }, []);
 
   // Live Database Profile Retrieval & Synchronization
   const refreshProfile = useCallback(async () => {
@@ -588,24 +600,33 @@ export function AuthProvider({ children }) {
     updatePassword,
     refreshProfile,
     switchActiveRole,
-    switchMockRole: switchActiveRole,
     authOpen,
     setAuthOpen,
     needsProfileCompletion,
     setNeedsProfileCompletion,
     signUp: (email: string, password: string, meta: any) => supabase.auth.signUp({ email, password, options: { data: meta } }),
     signInWithGoogle: async () => {
+      const redirectUrl = `${window.location.origin}/`;
       const res = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: window.location.origin },
+        options: {
+          redirectTo: redirectUrl,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'select_account',
+          },
+        },
       });
       if (res.error) throw res.error;
       return res.data;
     },
     signInWithFacebook: async () => {
+      const redirectUrl = `${window.location.origin}/`;
       const res = await supabase.auth.signInWithOAuth({
         provider: 'facebook',
-        options: { redirectTo: window.location.origin },
+        options: {
+          redirectTo: redirectUrl,
+        },
       });
       if (res.error) throw res.error;
       return res.data;

@@ -445,109 +445,119 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
             {/* Guest conversation cards list */}
             <div className="custom-scrollbar" style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 420, overflowY: 'auto', paddingRight: 4 }}>
-              {(guestConversations.length > 0 ? guestConversations : [
-                { id: 'c1', name: 'Camille Reyes', channel: 'Webchat', resort: 'Rock View Beach Resort', timeAgo: '4m ago', lastMessage: 'Can we request an early check-in for Villa 1?' },
-                { id: 'c2', name: 'Mark Dizon', channel: 'Webchat', resort: 'Rock View Beach Resort', timeAgo: '18m ago', lastMessage: 'Is beach campfire setup permitted this weekend?' },
-                { id: 'c3', name: 'Julian De Leon', channel: 'Mobile', resort: 'Rock View Beach Resort', timeAgo: '42m ago', lastMessage: 'Confirmed check-in dates for our family suite.' },
-                { id: 'c4', name: 'Sarah Tan', channel: 'Webchat', resort: 'Rock View Beach Resort', timeAgo: '1h ago', lastMessage: 'Inquiring about van transfer from Bolinao town.' },
-                { id: 'c5', name: 'Liza Fernandez', channel: 'Messenger', resort: 'Rock View Beach Resort', timeAgo: '3h ago', lastMessage: 'Thank you for accommodating our late departure.' },
-              ]).slice(0, 5).map((g: any, idx: number) => {
-                const initials = g.name.split(' ').filter(Boolean).map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'GU';
-                const avatarColors = [
-                  { bg: 'rgba(59, 130, 246, 0.12)', text: '#2563EB' },
-                  { bg: 'rgba(16, 185, 129, 0.12)', text: '#059669' },
-                  { bg: 'rgba(245, 158, 11, 0.12)', text: '#D97706' },
-                  { bg: 'rgba(139, 92, 246, 0.12)', text: '#7C3AED' },
-                  { bg: 'rgba(236, 72, 153, 0.12)', text: '#DB2777' },
-                ];
-                const colorPair = avatarColors[idx % avatarColors.length];
+              {guestConversations.length > 0 ? (
+                guestConversations.slice(0, 5).map((g: any, idx: number) => {
+                  const initials = g.name.split(' ').filter(Boolean).map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'GU';
+                  const avatarColors = [
+                    { bg: 'rgba(59, 130, 246, 0.12)', text: '#2563EB' },
+                    { bg: 'rgba(16, 185, 129, 0.12)', text: '#059669' },
+                    { bg: 'rgba(245, 158, 11, 0.12)', text: '#D97706' },
+                    { bg: 'rgba(139, 92, 246, 0.12)', text: '#7C3AED' },
+                    { bg: 'rgba(236, 72, 153, 0.12)', text: '#DB2777' },
+                  ];
+                  const colorPair = avatarColors[idx % avatarColors.length];
 
-                return (
-                  <div
-                    key={g.id || idx}
-                    onClick={() => {
-                      setSelectedPanelGuest(g);
-                      setActiveChatGuest(null);
-                      setActiveTab('conversations');
-                      toast(`💬 Opened conversation thread for ${g.name}`);
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '12px 14px',
-                      background: isLightMode ? '#F8FAFC' : 'rgba(15, 23, 42, 0.65)',
-                      borderRadius: 14,
-                      border: `1px solid ${themeBorder}`,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = '#3B82F6';
-                      e.currentTarget.style.boxShadow = isLightMode ? '0 4px 12px rgba(59, 130, 246, 0.12)' : '0 0 12px rgba(59, 130, 246, 0.25)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = themeBorder;
-                      e.currentTarget.style.boxShadow = 'none';
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-                      <div style={{ position: 'relative', flexShrink: 0 }}>
-                        <div style={{
-                          width: 38,
-                          height: 38,
-                          borderRadius: '50%',
-                          background: colorPair.bg,
-                          color: colorPair.text,
-                          fontWeight: 800,
-                          fontSize: '.82rem',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontFamily: "'Plus Jakarta Sans', sans-serif",
-                        }}>
-                          {initials}
+                  return (
+                    <div
+                      key={g.id || idx}
+                      onClick={() => {
+                        setSelectedPanelGuest(g);
+                        setActiveChatGuest(null);
+                        setActiveTab('conversations');
+                        toast(`💬 Opened conversation thread for ${g.name}`);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '12px 14px',
+                        background: isLightMode ? '#F8FAFC' : 'rgba(15, 23, 42, 0.65)',
+                        borderRadius: 14,
+                        border: `1px solid ${themeBorder}`,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = '#3B82F6';
+                        e.currentTarget.style.boxShadow = isLightMode ? '0 4px 12px rgba(59, 130, 246, 0.12)' : '0 0 12px rgba(59, 130, 246, 0.25)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = themeBorder;
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                        <div style={{ position: 'relative', flexShrink: 0 }}>
+                          <div style={{
+                            width: 38,
+                            height: 38,
+                            borderRadius: '50%',
+                            background: colorPair.bg,
+                            color: colorPair.text,
+                            fontWeight: 800,
+                            fontSize: '.82rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontFamily: "'Plus Jakarta Sans', sans-serif",
+                          }}>
+                            {initials}
+                          </div>
+                          <span style={{
+                            position: 'absolute',
+                            bottom: 0,
+                            right: 0,
+                            width: 9,
+                            height: 9,
+                            borderRadius: '50%',
+                            background: '#10B981',
+                            border: `2px solid ${isLightMode ? '#FFFFFF' : '#0F172A'}`,
+                          }} />
                         </div>
-                        <span style={{
-                          position: 'absolute',
-                          bottom: 0,
-                          right: 0,
-                          width: 9,
-                          height: 9,
-                          borderRadius: '50%',
-                          background: '#10B981',
-                          border: `2px solid ${isLightMode ? '#FFFFFF' : '#0F172A'}`,
-                        }} />
+
+                        <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <b style={{ fontSize: '.86rem', color: themeText, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {g.name}
+                            </b>
+                          </div>
+                          <span style={{ fontSize: '.74rem', color: themeMuted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block', marginTop: 2 }}>
+                            {g.lastMessage || `${g.channel} guest inquiry`}
+                          </span>
+                        </div>
                       </div>
 
-                      <div style={{ minWidth: 0, overflow: 'hidden' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <b style={{ fontSize: '.86rem', color: themeText, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {g.name}
-                          </b>
-                        </div>
-                        <span style={{ fontSize: '.74rem', color: themeMuted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block', marginTop: 2 }}>
-                          {g.lastMessage || `${g.channel} guest inquiry`}
-                        </span>
-                      </div>
+                      <span style={{
+                        fontSize: '.72rem',
+                        color: themeMuted,
+                        background: isLightMode ? '#F1F5F9' : 'rgba(255, 255, 255, 0.05)',
+                        border: `1px solid ${themeBorder}`,
+                        padding: '3px 8px',
+                        borderRadius: 12,
+                        fontWeight: 600,
+                        whiteSpace: 'nowrap',
+                        marginLeft: 8,
+                      }}>
+                        {g.timeAgo || 'Just now'}
+                      </span>
                     </div>
-
-                    <span style={{
-                      fontSize: '.72rem',
-                      color: themeMuted,
-                      background: isLightMode ? '#F1F5F9' : 'rgba(255, 255, 255, 0.05)',
-                      border: `1px solid ${themeBorder}`,
-                      padding: '3px 8px',
-                      borderRadius: 12,
-                      fontWeight: 600,
-                      whiteSpace: 'nowrap',
-                      marginLeft: 8,
-                    }}>
-                      {g.timeAgo || 'Just now'}
-                    </span>
-                  </div>
-                );
-              })}
+                  );
+                })
+              ) : (
+                <div style={{
+                  padding: '36px 16px',
+                  textAlign: 'center',
+                  background: isLightMode ? '#F8FAFC' : 'rgba(15, 23, 42, 0.4)',
+                  borderRadius: 12,
+                  border: `1px dashed ${themeBorder}`,
+                  color: themeMuted,
+                  fontSize: '0.82rem',
+                }}>
+                  <div style={{ fontSize: '1.4rem', marginBottom: 6 }}>💬</div>
+                  <div>No open guest conversations</div>
+                  <div style={{ fontSize: '0.74rem', marginTop: 4, opacity: 0.8 }}>Incoming guest chat inquiries will stream here in real time.</div>
+                </div>
+              )}
             </div>
           </div>
 

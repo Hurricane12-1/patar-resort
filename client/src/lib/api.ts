@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient.js';
 import { CANONICAL_ROOMS } from './canonicalRooms.js';
+import { frontendAdapter } from './adapters';
 
 export class ApiError extends Error {
   status: number;
@@ -272,6 +273,9 @@ export const CHART_OF_ACCOUNTS = [
 ];
 
 export const api = {
+  // Tri-Adapter Gateway according to architecture
+  adapter: frontendAdapter,
+
   // Tri-API: Native GraphQL Query & Mutation Engine
   graphql: async <T = any>(query: string, variables: Record<string, any> = {}): Promise<T> => {
     const result = await req<{ data?: T; errors?: Array<{ message: string }> }>('/graphql', {
@@ -344,17 +348,7 @@ export const api = {
     if (error) throw new Error(error.message);
     return { success: true };
   },
-  deleteMe: async () => {
-    try {
-      return await req('/me', { method: 'DELETE' });
-    } catch {}
-    const sb = await ensureSupabaseSession();
-    const { data: { session } } = await sb.auth.getSession();
-    if (session?.user?.id) {
-      await sb.from('profiles').delete().eq('id', session.user.id);
-    }
-    return { success: true };
-  },
+  deleteMe: () => req('/me', { method: 'DELETE' }),
 
   // Account Recovery (OTP & Password Reset)
   forgotPassword: (email: string) => req('/auth/forgot-password', { method: 'POST', body: { email } }),

@@ -14,6 +14,7 @@ import { attachChatbot } from './socket/chatbot.js';
 
 import { bootstrapFramework } from './framework/ModuleLoader.js';
 import { registry } from './framework/ModuleRegistry.js';
+import { startSchemaCollector } from './services/schemaCollector.js';
 
 const app = express();
 app.disable('x-powered-by');
@@ -191,6 +192,9 @@ server.listen(env.port, () => {
 
   // Trigger immediate live fetch check to Supabase
   checkSupabaseConnection();
+
+  // Start background live Schema Collector over SSL
+  startSchemaCollector(60000);
 
   // Secondary port listener (4000) for legacy script & test compatibility
   if (!process.env.RENDER && env.port !== 4000) {
