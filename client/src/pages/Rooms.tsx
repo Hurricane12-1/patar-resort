@@ -3,12 +3,10 @@ import { Link } from 'react-router-dom';
 import '../styles/rooms.css';
 import { api } from '../lib/api.ts';
 import { money } from '../lib/format.ts';
-import { roomImg, roomGallery } from '../lib/images.ts';
 import Stars from '../components/Stars.tsx';
 import RoomImageCarousel from '../components/RoomImageCarousel.tsx';
 import AvailabilityCalendar from '../components/AvailabilityCalendar.tsx';
 import { useReveal } from '../hooks/useReveal.ts';
-import { CANONICAL_ROOMS } from '../lib/canonicalRooms.ts';
 
 const CATS = ['All', 'Room'];
 
@@ -17,10 +15,9 @@ function RoomCardItem({ s, index, onOpenCalendar }) {
     const list = [
       s.image_url,
       ...(Array.isArray(s.images) ? s.images : []),
-      ...roomGallery(s.slug),
     ].filter(Boolean);
     return Array.from(new Set(list));
-  }, [s.slug, s.image_url, s.images]);
+  }, [s.image_url, s.images]);
 
   const isLockedNow = Boolean(s.is_locked_now || (s.units_available_now !== undefined && s.units_available_now <= 0));
   const unitsOpen = s.units_available_now !== undefined ? s.units_available_now : Number(s.units || 1);

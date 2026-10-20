@@ -15,22 +15,9 @@ export function normalizeRoom(room) {
   const cleanAmenities = [];
   const images = [];
 
-  // Guaranteed resort fallback image based on room category / slug
-  let fallbackImage = 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209696/jd_beach_house_accommodations/cottage.jpg';
-  const cat = String(room.category || '').toLowerCase();
-  const slug = String(room.slug || '').toLowerCase();
-  if (cat.includes('villa') || slug.includes('villa')) fallbackImage = 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209697/jd_beach_house_accommodations/villa.jpg';
-  else if (cat.includes('suite') || slug.includes('suite') || slug.includes('gel')) fallbackImage = 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209695/jd_beach_house_accommodations/suite.jpg';
-  else if (cat.includes('garden') || slug.includes('garden')) fallbackImage = 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209698/jd_beach_house_accommodations/garden.jpg';
-  else if (cat.includes('dorm') || cat.includes('bunk') || slug.includes('dorm')) fallbackImage = 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209699/jd_beach_house_accommodations/bunk.jpg';
-  else fallbackImage = 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209696/jd_beach_house_accommodations/cottage.jpg';
-
   for (const item of rawAmenities) {
     if (typeof item === 'string' && (item.startsWith('__img__:') || item.startsWith('img:'))) {
-      let url = item.replace(/^(__img__|img):/, '').trim();
-      if (url.startsWith('/uploads/') || url.includes('img_9146060b')) {
-        url = fallbackImage;
-      }
+      const url = item.replace(/^(__img__|img):/, '').trim();
       if (url && !images.includes(url)) images.push(url);
     } else {
       cleanAmenities.push(item);
@@ -38,11 +25,10 @@ export function normalizeRoom(room) {
   }
 
   const rawImg = (room.image_url && String(room.image_url).trim()) || '';
-  const cleanImg = (rawImg.startsWith('/uploads/') || rawImg.includes('img_9146060b')) ? fallbackImage : rawImg;
-  const primaryImage = cleanImg || images[0] || fallbackImage;
+  const primaryImage = rawImg || images[0] || '';
   const allImages = Array.isArray(room.images) && room.images.length > 0
-    ? room.images.map(u => (String(u).startsWith('/uploads/') || String(u).includes('img_9146060b')) ? fallbackImage : u)
-    : (images.length > 0 ? images : [primaryImage]);
+    ? room.images.filter(Boolean)
+    : images;
 
   return {
     ...room,

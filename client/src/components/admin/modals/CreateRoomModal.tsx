@@ -2,8 +2,6 @@ import React, { useState, useRef } from 'react';
 import { money } from '../../../lib/format';
 import {
   uploadImageToCloudinary as defaultUploadToCloudinary,
-  getCategoryDefaultCloudinaryImage,
-  RESORT_PRESET_IMAGES,
 } from '../../../lib/cloudinary';
 import { toast as defaultToast } from '../../Toasts';
 
@@ -66,9 +64,9 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   const featuredImageUrl =
     newRoom.image_url ||
     imagesList[0] ||
-    getCategoryDefaultCloudinaryImage(newRoom.category, newRoom.name);
+    '';
 
-  const isCloudinaryFeatured = featuredImageUrl.includes('cloudinary.com');
+  const isCloudinaryFeatured = Boolean(featuredImageUrl && featuredImageUrl.includes('cloudinary.com'));
 
   const currentAmenities =
     typeof newRoom.amenities === 'string'
@@ -127,17 +125,6 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
       setUploadingPhoto(false);
       if (e.target) e.target.value = '';
     }
-  };
-
-  const handleSelectPreset = (presetUrl: string, presetTitle: string) => {
-    const nextImages = [...imagesList];
-    if (!nextImages.includes(presetUrl)) nextImages.unshift(presetUrl);
-    setNewRoom({
-      ...newRoom,
-      image_url: presetUrl,
-      images: nextImages,
-    });
-    toast(`☁️ Featured "${presetTitle}" Cloudinary image as background detail`);
   };
 
   const handleSetPrimary = (url: string) => {
@@ -212,27 +199,42 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
             flexShrink: 0,
           }}
         >
-          <img
-            key={featuredImageUrl}
-            src={featuredImageUrl}
-            alt={newRoom.name || 'Featured Room Background'}
-            onError={(e) => {
-              e.currentTarget.src =
-                'https://res.cloudinary.com/juynm9ab/image/upload/v1792209696/jd_beach_house_accommodations/cottage.jpg';
-            }}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              filter: 'brightness(0.84)',
-              transition: 'all 0.35s ease',
-            }}
-          />
+          {featuredImageUrl ? (
+            <img
+              key={featuredImageUrl}
+              src={featuredImageUrl}
+              alt={newRoom.name || 'Featured Room Background'}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                filter: 'brightness(0.84)',
+                transition: 'all 0.35s ease',
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: '100%',
+                height: '100%',
+                background: 'linear-gradient(135deg, #0b1528 0%, #172554 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexDirection: 'column',
+                gap: 8,
+                color: 'rgba(255, 255, 255, 0.45)',
+              }}
+            >
+              <i className="fas fa-camera" style={{ fontSize: '2.2rem' }} />
+              <span style={{ fontSize: '.8rem', fontWeight: 600 }}>No Room Photo Uploaded Yet</span>
+            </div>
+          )}
           <div
             style={{
               position: 'absolute',
               inset: 0,
-              background: 'linear-gradient(180deg, rgba(15,23,42,0.4) 0%, rgba(15,23,42,0.9) 100%)',
+              background: 'linear-gradient(180deg, rgba(15,23,42,0.3) 0%, rgba(15,23,42,0.9) 100%)',
               pointerEvents: 'none',
             }}
           />
@@ -620,11 +622,11 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 6 }}>
                 <div>
                   <b style={{ fontSize: '.88rem', color: themeText, display: 'block' }}>
-                    <i className="fas fa-cloud-arrow-up" style={{ marginRight: 6, color: '#0EA5E9' }} />
-                    Cloudinary Room Image Background Detail
+                    <i className="fas fa-camera" style={{ marginRight: 6, color: '#0EA5E9' }} />
+                    Room Photo & Background Detail
                   </b>
                   <span style={{ fontSize: '.73rem', color: themeMuted }}>
-                    Upload a custom photo to Cloudinary CDN or pick an existing Cloudinary resort background below.
+                    Upload your custom room photos directly. You decide the featured room photo and gallery.
                   </span>
                 </div>
                 <span
@@ -683,99 +685,6 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                 <span style={{ fontSize: '.71rem', color: themeMuted }}>
                   Automatically sets as featured room background • JPG, PNG, WebP up to 5MB
                 </span>
-              </div>
-
-              {/* QUICK-SELECT CLOUDINARY RESORT PRESET BACKGROUNDS */}
-              <div style={{ marginBottom: imagesList.length > 0 ? 14 : 0 }}>
-                <span
-                  style={{
-                    fontSize: '.71rem',
-                    color: themeMuted,
-                    fontWeight: 700,
-                    display: 'block',
-                    marginBottom: 6,
-                    textTransform: 'uppercase',
-                    letterSpacing: '.04em',
-                  }}
-                >
-                  Or Feature an Existing Cloudinary Resort Image:
-                </span>
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(92px, 1fr))',
-                    gap: 8,
-                  }}
-                >
-                  {RESORT_PRESET_IMAGES.map((preset) => {
-                    const isActive = featuredImageUrl === preset.url;
-                    return (
-                      <button
-                        key={preset.id}
-                        type="button"
-                        onClick={() => handleSelectPreset(preset.url, preset.title)}
-                        title={`Feature ${preset.title}`}
-                        style={{
-                          position: 'relative',
-                          padding: 0,
-                          borderRadius: 8,
-                          overflow: 'hidden',
-                          border: isActive ? '2px solid #0EA5E9' : `1px solid ${themeBorder}`,
-                          aspectRatio: '16/10',
-                          cursor: 'pointer',
-                          background: '#0F172A',
-                          boxShadow: isActive ? '0 0 0 2px rgba(14,165,233,0.3)' : 'none',
-                        }}
-                      >
-                        <img
-                          src={preset.url}
-                          alt={preset.title}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
-                        <div
-                          style={{
-                            position: 'absolute',
-                            inset: 0,
-                            background: 'linear-gradient(180deg, transparent 35%, rgba(2,6,23,0.85) 100%)',
-                            display: 'flex',
-                            alignItems: 'flex-end',
-                            padding: '3px 5px',
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontSize: '.58rem',
-                              color: '#FFFFFF',
-                              fontWeight: 700,
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                            }}
-                          >
-                            {preset.category}
-                          </span>
-                        </div>
-                        {isActive && (
-                          <span
-                            style={{
-                              position: 'absolute',
-                              top: 3,
-                              right: 3,
-                              background: '#0EA5E9',
-                              color: '#FFF',
-                              fontSize: '.55rem',
-                              fontWeight: 800,
-                              padding: '1px 4px',
-                              borderRadius: 4,
-                            }}
-                          >
-                            ✓
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
               </div>
 
               {/* UPLOADED / SELECTED GALLERY */}

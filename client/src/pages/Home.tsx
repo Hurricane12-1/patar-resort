@@ -221,13 +221,20 @@ export default function Home() {
           ) : (
             displayRooms.slice(0, 4).map((s, i) => (
               <div className={`spread reveal ${i % 2 ? 'flip' : ''}`} key={s.id || s.slug} style={{ marginBottom: 48 }}>
-                <div className="sp-img" onClick={() => setPreviewRoom(s)} style={{ cursor: 'pointer' }}>
-                  <img
-                    src={getRoomImageUrl(s)}
-                    alt={s.name}
-                    loading="lazy"
-                    onError={handleImageError}
-                  />
+                <div className="sp-img" onClick={() => setPreviewRoom(s)} style={{ cursor: 'pointer', background: '#0B132B', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {getRoomImageUrl(s) ? (
+                    <img
+                      src={getRoomImageUrl(s)}
+                      alt={s.name}
+                      loading="lazy"
+                      onError={handleImageError}
+                    />
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, color: 'rgba(255,255,255,0.35)', padding: 40 }}>
+                      <i className="fas fa-bed" style={{ fontSize: '3rem' }} />
+                      <span style={{ fontSize: '.85rem' }}>{s.name}</span>
+                    </div>
+                  )}
                   <span className="sp-tag">{money(s.rate_php)} / night</span>
                 </div>
                 <div className="sp-copy">
@@ -381,13 +388,20 @@ export default function Home() {
               <button style={{ color: '#fff', fontSize: '1.8rem', border: 'none', background: 'none', cursor: 'pointer' }}
                 onClick={() => setPreviewRoom(null)}>×</button>
             </div>
-            <div style={{ height: 220, overflow: 'hidden' }}>
-              <img
-                src={getRoomImageUrl(previewRoom)}
-                alt={previewRoom.name}
-                onError={handleImageError}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
+            <div style={{ height: 220, overflow: 'hidden', background: '#0B132B', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {getRoomImageUrl(previewRoom) ? (
+                <img
+                  src={getRoomImageUrl(previewRoom)}
+                  alt={previewRoom.name}
+                  onError={handleImageError}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.4)' }}>
+                  <i className="fas fa-bed" style={{ fontSize: '2.5rem' }} />
+                  <span style={{ fontSize: '.85rem' }}>{previewRoom.name}</span>
+                </div>
+              )}
             </div>
             <div className="modal-body">
               <p style={{ fontSize: '.95rem', color: '#E2E8F0', marginBottom: 16 }}>{previewRoom.description}</p>

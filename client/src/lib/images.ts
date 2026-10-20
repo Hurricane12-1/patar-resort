@@ -8,29 +8,20 @@ export const IMG = {
   island: 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209700/jd_beach_house_accommodations/island.jpg',
 };
 
-export const roomImg = (slug?: string) => {
-  if (!slug) return '';
-  const s = String(slug).toLowerCase();
-  if (s.includes('villa') || s.includes('tev')) return IMG.villa;
-  if (s.includes('suite') || s.includes('gel') || s.includes('sunset')) return IMG.suite;
-  if (s.includes('cottage') || s.includes('cat') || s.includes('nipa')) return IMG.cottage;
-  if (s.includes('garden') || s.includes('breeze')) return IMG.garden;
-  if (s.includes('bunk') || s.includes('dorm')) return IMG.bunk;
+export const roomImg = (_slug?: string) => {
   return '';
 };
 
-export const roomGallery = (slug?: string) => {
-  const primary = roomImg(slug);
-  return primary ? [primary] : [];
+export const roomGallery = (_slug?: string) => {
+  return [];
 };
 
 /**
- * High-resilience helper: Resolves the best available room image URL with multi-layer fallback.
- * Checks image_url, image, images array, slug-based images, category-based resort photos,
- * and always guarantees a valid scenic Patar beach house image.
+ * Resolves the room's uploaded image URL.
+ * Checks image_url, image, and images array. Returns empty string if none provided.
  */
 export const getRoomImageUrl = (room: any): string => {
-  if (!room) return IMG.hero;
+  if (!room) return '';
   if (typeof room === 'string' && room.trim()) return room.trim();
 
   // 1. Direct explicit image_url
@@ -48,33 +39,16 @@ export const getRoomImageUrl = (room: any): string => {
     return room.images[0].trim();
   }
 
-  // 4. By slug match
-  const fromSlug = roomImg(room.slug);
-  if (fromSlug) return fromSlug;
-
-  // 5. By category match
-  const cat = String(room.category || '').toLowerCase();
-  if (cat.includes('villa')) return IMG.villa;
-  if (cat.includes('suite') || cat.includes('gel')) return IMG.suite;
-  if (cat.includes('cottage') || cat.includes('nipa')) return IMG.cottage;
-  if (cat.includes('garden')) return IMG.garden;
-  if (cat.includes('dorm') || cat.includes('bunk')) return IMG.bunk;
-
-  // 6. Default scenic Patar cottage/hero
-  return IMG.cottage || IMG.hero;
+  return '';
 };
 
 /**
- * Prevents broken images from displaying ugly browser error icons.
- * Replaces the failed src with a guaranteed scenic resort photo.
+ * Handles broken images gracefully without forcing preset images.
  */
 export const handleImageError = (
-  e: React.SyntheticEvent<HTMLImageElement, Event>,
-  fallback = IMG.cottage
+  e: React.SyntheticEvent<HTMLImageElement, Event>
 ) => {
   const target = e.currentTarget;
-  if (target.src !== fallback && !target.src.endsWith(fallback)) {
-    target.src = fallback;
-  }
+  target.style.opacity = '0';
 };
 

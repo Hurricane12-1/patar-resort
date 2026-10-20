@@ -352,13 +352,17 @@ export default function BookingFlow({ initialSlug }) {
                     border: isLocked ? '1px solid rgba(244, 63, 94, 0.3)' : undefined,
                   }}
                 >
-                  <div className="im">
-                    <img
-                      src={getRoomImageUrl(m || r)}
-                      alt={r.name}
-                      loading="lazy"
-                      onError={handleImageError}
-                    />
+                  <div className="im" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0B132B' }}>
+                    {getRoomImageUrl(m || r) ? (
+                      <img
+                        src={getRoomImageUrl(m || r)}
+                        alt={r.name}
+                        loading="lazy"
+                        onError={handleImageError}
+                      />
+                    ) : (
+                      <i className="fas fa-bed" style={{ fontSize: '1.4rem', color: 'rgba(255,255,255,0.3)' }} />
+                    )}
                   </div>
                   <div>
                     <span className="label">{r.category}</span>

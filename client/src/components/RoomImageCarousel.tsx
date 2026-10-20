@@ -1,6 +1,4 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { roomImg, roomGallery, IMG } from '../lib/images.ts';
-import { RESORT_PRESET_IMAGES } from '../lib/cloudinary.ts';
 
 interface RoomImageCarouselProps {
   images?: string[];
@@ -36,11 +34,10 @@ export default function RoomImageCarousel({
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Compile rich gallery of images for this accommodation
+  // Use only the room's uploaded / provided images
   const carouselImages = useMemo(() => {
     const list: string[] = [];
 
-    // 1. Custom uploaded or assigned images
     if (Array.isArray(images)) {
       for (const img of images) {
         if (img && typeof img === 'string' && img.trim() && !list.includes(img.trim())) {
@@ -49,37 +46,8 @@ export default function RoomImageCarousel({
       }
     }
 
-    // 2. Slug-based images
-    if (slug) {
-      const g = roomGallery(slug);
-      for (const img of g) {
-        if (img && !list.includes(img)) list.push(img);
-      }
-    }
-
-    // 3. Category fallback image
-    const catLower = (category || '').toLowerCase();
-    const catImg = (IMG as Record<string, string>)[catLower];
-    if (catImg && !list.includes(catImg)) {
-      list.push(catImg);
-    }
-
-    // 4. If still only 1 image or empty, augment with scenic resort presets for auto-scrolling richness
-    if (list.length < 3) {
-      const presets = RESORT_PRESET_IMAGES.filter((p) =>
-        p.category.toLowerCase() === catLower || p.title.toLowerCase().includes(catLower)
-      );
-      for (const p of presets) {
-        if (!list.includes(p.url)) list.push(p.url);
-      }
-      // General fallbacks if needed
-      for (const fallback of [IMG.hero, IMG.island, IMG.suite]) {
-        if (!list.includes(fallback) && list.length < 3) list.push(fallback);
-      }
-    }
-
     return list.filter(Boolean);
-  }, [images, slug, category]);
+  }, [images]);
 
   // Keep index within bounds if image list changes
   useEffect(() => {
@@ -114,11 +82,9 @@ export default function RoomImageCarousel({
     setCurrentIndex((prev) => (prev + 1) % carouselImages.length);
   };
 
-  const catLower = (category || '').toLowerCase();
-  const catFallback = (IMG as Record<string, string>)[catLower] || IMG.cottage || IMG.hero;
-  const currentSrc = carouselImages[currentIndex] || roomImg(slug) || catFallback;
-  const isFailed = failedImages[currentSrc];
-  const displaySrc = isFailed ? (roomImg(slug) || catFallback) : currentSrc;
+  const currentSrc = carouselImages[currentIndex] || '';
+  const isFailed = Boolean(failedImages[currentSrc]);
+  const displaySrc = isFailed ? '' : currentSrc;
 
   return (
     <div
@@ -138,28 +104,43 @@ export default function RoomImageCarousel({
       }}
     >
       {/* BACKGROUND IMAGE SLIDE WITH SMOOTH TRANSITION */}
-      <img
-        key={displaySrc}
-        src={displaySrc}
-        alt={`${roomName} - View ${currentIndex + 1}`}
-        loading="lazy"
-        onError={(e) => {
-          setFailedImages((prev) => ({ ...prev, [currentSrc]: true }));
-          const target = e.currentTarget;
-          if (target.src !== IMG.cottage && target.src !== IMG.hero) {
-            target.src = IMG.cottage;
-          }
-        }}
-        style={{
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          display: 'block',
-          animation: 'roomCarouselFadeIn 0.4s ease-out',
-          transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-          transform: isHovered ? 'scale(1.03)' : 'scale(1)',
-        }}
-      />
+      {displaySrc ? (
+        <img
+          key={displaySrc}
+          src={displaySrc}
+          alt={`${roomName} - View ${currentIndex + 1}`}
+          loading="lazy"
+          onError={() => {
+            setFailedImages((prev) => ({ ...prev, [currentSrc]: true }));
+          }}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            display: 'block',
+            animation: 'roomCarouselFadeIn 0.4s ease-out',
+            transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+            transform: isHovered ? 'scale(1.03)' : 'scale(1)',
+          }}
+        />
+      ) : (
+        <div
+          style={{
+            width: '100%',
+            height: '100%',
+            background: 'linear-gradient(135deg, #0b1528 0%, #172554 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexDirection: 'column',
+            gap: 8,
+            color: 'rgba(255, 255, 255, 0.45)',
+          }}
+        >
+          <i className="fas fa-bed" style={{ fontSize: '2.4rem' }} />
+          <span style={{ fontSize: '.82rem', fontWeight: 600 }}>{roomName}</span>
+        </div>
+      )}
 
       {/* TOP GRADIENT & BOTTOM GRADIENT SHADOW FOR LEGIBILITY */}
       <div

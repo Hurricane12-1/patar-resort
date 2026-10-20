@@ -11,7 +11,7 @@ import StatusTimelineModal from '../../StatusTimelineModal';
 import { AnalyticsGlossaryModal } from '../../AnalyticsGlossaryModal';
 import { ExecutiveGuestChatModal } from '../../ExecutiveGuestChatModal';
 import { AdminState } from '../../../hooks/useAdminState';
-import { uploadImageToCloudinary, getCategoryDefaultCloudinaryImage } from '../../../lib/cloudinary';
+import { uploadImageToCloudinary } from '../../../lib/cloudinary';
 import { api } from '../../../lib/api';
 import { toast } from '../../Toasts';
 
@@ -42,7 +42,7 @@ export const AdminModals: React.FC<AdminModalsProps> = ({ state }) => {
           getRoomImageUrl={(room: any) =>
             room?.image_url ||
             (Array.isArray(room?.images) && room.images[0]) ||
-            getCategoryDefaultCloudinaryImage(room?.category, room?.slug || room?.name)
+            ''
           }
         />
       )}

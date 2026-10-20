@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useAuth, generateAccountEmail, isSystemOwnerEmail } from '../context/AuthContext';
 import { api, API_BASE, addDaysYMD } from '../lib/api';
 import { supabase } from '../lib/supabaseClient';
-import { uploadImageToCloudinary, getCategoryDefaultCloudinaryImage } from '../lib/cloudinary';
+import { uploadImageToCloudinary } from '../lib/cloudinary';
 import { toast } from '../components/Toasts';
 
 export const emptyAnalytics = {
@@ -290,11 +290,10 @@ export function useAdminState() {
       const amenitiesArr = newRoom.amenities
         ? newRoom.amenities.split(',').map((s) => s.trim()).filter(Boolean)
         : [];
-      const fallbackCloudinaryImg = getCategoryDefaultCloudinaryImage(newRoom.category, newRoom.name);
-      const imagesArr = Array.isArray(newRoom.images) && newRoom.images.length > 0
+      const imagesArr = Array.isArray(newRoom.images)
         ? newRoom.images.filter(Boolean)
-        : [newRoom.image_url || fallbackCloudinaryImg];
-      const primaryImg = newRoom.image_url || imagesArr[0] || fallbackCloudinaryImg;
+        : (newRoom.image_url ? [newRoom.image_url] : []);
+      const primaryImg = newRoom.image_url || imagesArr[0] || '';
 
       const created = await api.createRoom({
         name: newRoom.name,
@@ -320,7 +319,7 @@ export function useAdminState() {
         image_url: '',
         images: [],
       });
-      toast(`✦ Room "${created.name}" created with Cloudinary image background detail!`);
+      toast(`✦ Room "${created.name}" created successfully!`);
     } catch (err: any) {
       toast(err.message, true);
     }
@@ -332,11 +331,10 @@ export function useAdminState() {
       typeof updatedRoomData.amenities === 'string'
         ? updatedRoomData.amenities.split(',').map((s: string) => s.trim()).filter(Boolean)
         : updatedRoomData.amenities || [];
-    const fallbackCloudinaryImg = getCategoryDefaultCloudinaryImage(updatedRoomData.category, updatedRoomData.name);
-    const imagesArr = Array.isArray(updatedRoomData.images) && updatedRoomData.images.length > 0
+    const imagesArr = Array.isArray(updatedRoomData.images)
       ? updatedRoomData.images.filter(Boolean)
-      : [updatedRoomData.image_url || fallbackCloudinaryImg];
-    const primaryImg = updatedRoomData.image_url || imagesArr[0] || fallbackCloudinaryImg;
+      : (updatedRoomData.image_url ? [updatedRoomData.image_url] : []);
+    const primaryImg = updatedRoomData.image_url || imagesArr[0] || '';
 
     const updated = await api.updateRoom(updatedRoomData.id, {
       name: updatedRoomData.name,
@@ -352,7 +350,7 @@ export function useAdminState() {
 
     setRoomsList((prev) => prev.map((r) => (r.id === updatedRoomData.id ? { ...r, ...updated } : r)));
     setEditingRoom(null);
-    toast(`✦ Room "${updatedRoomData.name}" updated & synchronized live!`);
+    toast(`✦ Room "${updatedRoomData.name}" updated successfully!`);
   };
 
   const handleUpdateRoomSubmit = async (e: React.FormEvent) => {

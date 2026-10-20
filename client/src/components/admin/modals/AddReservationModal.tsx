@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { money, fmtDate } from '../../../lib/format.ts';
 import AvailabilityCalendar from '../../AvailabilityCalendar.tsx';
 import { POOL_ADDON_OPTIONS } from '../../../lib/ledgerUtils.ts';
-import { getCategoryDefaultCloudinaryImage } from '../../../lib/cloudinary.ts';
 import { addDaysYMD } from '../../../lib/api.ts';
 import { toast } from '../../Toasts.tsx';
 
@@ -42,7 +41,7 @@ interface AddReservationModalProps {
 const defaultGetRoomImageUrl = (room: any): string =>
   room?.image_url ||
   (Array.isArray(room?.images) && room.images[0]) ||
-  getCategoryDefaultCloudinaryImage(room?.category, room?.slug || room?.name);
+  '';
 
 export default function AddReservationModal({
   isOpen,
@@ -247,18 +246,37 @@ export default function AddReservationModal({
             flexShrink: 0,
           }}
         >
-          <img
-            key={activeWalkInRoom?.id || 'room-hero'}
-            src={activeRoomImage}
-            alt={activeWalkInRoom?.name || 'Selected Room'}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              filter: 'brightness(0.82)',
-              transition: 'opacity 0.35s ease, transform 0.4s ease',
-            }}
-          />
+          {activeRoomImage ? (
+            <img
+              key={activeWalkInRoom?.id || 'room-hero'}
+              src={activeRoomImage}
+              alt={activeWalkInRoom?.name || 'Selected Room'}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                filter: 'brightness(0.82)',
+                transition: 'opacity 0.35s ease, transform 0.4s ease',
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: '100%',
+                height: '100%',
+                background: 'linear-gradient(135deg, #0b1528 0%, #172554 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexDirection: 'column',
+                gap: 6,
+                color: 'rgba(255, 255, 255, 0.45)',
+              }}
+            >
+              <i className="fas fa-bed" style={{ fontSize: '2rem' }} />
+              <span style={{ fontSize: '.75rem', fontWeight: 600 }}>{activeWalkInRoom?.name || 'Reservation Room'}</span>
+            </div>
+          )}
           {/* Gradient Protection Layer */}
           <div
             style={{

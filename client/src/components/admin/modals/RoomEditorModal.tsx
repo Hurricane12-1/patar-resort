@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { money } from '../../../lib/format';
-import { getCategoryDefaultCloudinaryImage, RESORT_PRESET_IMAGES } from '../../../lib/cloudinary';
 
 export interface RoomEditorModalProps {
   room: any | null;
@@ -177,20 +176,9 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
   const featuredImageUrl =
     formData.image_url ||
     (Array.isArray(formData.images) && formData.images[0]) ||
-    getCategoryDefaultCloudinaryImage(formData.category, formData.name);
+    '';
 
-  const isCloudinaryFeatured = featuredImageUrl.includes('cloudinary.com');
-
-  const handleSelectPreset = (presetUrl: string, presetTitle: string) => {
-    const currentList = Array.isArray(formData.images) ? [...formData.images] : [];
-    if (!currentList.includes(presetUrl)) currentList.unshift(presetUrl);
-    setFormData({
-      ...formData,
-      image_url: presetUrl,
-      images: currentList,
-    });
-    toast(`☁️ Featured "${presetTitle}" Cloudinary image as background detail`);
-  };
+  const isCloudinaryFeatured = Boolean(featuredImageUrl && featuredImageUrl.includes('cloudinary.com'));
 
   return (
     <div
@@ -233,22 +221,37 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
             flexShrink: 0,
           }}
         >
-          <img
-            key={featuredImageUrl}
-            src={featuredImageUrl}
-            alt={formData.name || 'Room Background Detail'}
-            onError={(e) => {
-              e.currentTarget.src =
-                'https://res.cloudinary.com/juynm9ab/image/upload/v1792209696/jd_beach_house_accommodations/cottage.jpg';
-            }}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              filter: 'brightness(0.84)',
-              transition: 'all 0.35s ease',
-            }}
-          />
+          {featuredImageUrl ? (
+            <img
+              key={featuredImageUrl}
+              src={featuredImageUrl}
+              alt={formData.name || 'Room Background Detail'}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                filter: 'brightness(0.84)',
+                transition: 'all 0.35s ease',
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: '100%',
+                height: '100%',
+                background: 'linear-gradient(135deg, #0b1528 0%, #172554 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexDirection: 'column',
+                gap: 8,
+                color: 'rgba(255, 255, 255, 0.45)',
+              }}
+            >
+              <i className="fas fa-camera" style={{ fontSize: '2.2rem' }} />
+              <span style={{ fontSize: '.8rem', fontWeight: 600 }}>No Room Photo Uploaded Yet</span>
+            </div>
+          )}
           <div
             style={{
               position: 'absolute',
@@ -592,99 +595,6 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
               <span style={{ fontSize: '.74rem', color: themeMuted }}>
                 Cloudinary CDN delivery • JPG, PNG, WebP up to 5MB
               </span>
-            </div>
-
-            {/* QUICK-SELECT CLOUDINARY RESORT PRESET BACKGROUNDS */}
-            <div style={{ marginBottom: 14 }}>
-              <span
-                style={{
-                  fontSize: '.71rem',
-                  color: themeMuted,
-                  fontWeight: 700,
-                  display: 'block',
-                  marginBottom: 6,
-                  textTransform: 'uppercase',
-                  letterSpacing: '.04em',
-                }}
-              >
-                Or Feature an Existing Cloudinary Resort Image:
-              </span>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(92px, 1fr))',
-                  gap: 8,
-                }}
-              >
-                {RESORT_PRESET_IMAGES.map((preset) => {
-                  const isActive = featuredImageUrl === preset.url;
-                  return (
-                    <button
-                      key={preset.id}
-                      type="button"
-                      onClick={() => handleSelectPreset(preset.url, preset.title)}
-                      title={`Feature ${preset.title}`}
-                      style={{
-                        position: 'relative',
-                        padding: 0,
-                        borderRadius: 8,
-                        overflow: 'hidden',
-                        border: isActive ? '2px solid #0EA5E9' : `1px solid ${themeBorder}`,
-                        aspectRatio: '16/10',
-                        cursor: 'pointer',
-                        background: '#0F172A',
-                        boxShadow: isActive ? '0 0 0 2px rgba(14,165,233,0.3)' : 'none',
-                      }}
-                    >
-                      <img
-                        src={preset.url}
-                        alt={preset.title}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
-                      <div
-                        style={{
-                          position: 'absolute',
-                          inset: 0,
-                          background: 'linear-gradient(180deg, transparent 35%, rgba(2,6,23,0.85) 100%)',
-                          display: 'flex',
-                          alignItems: 'flex-end',
-                          padding: '3px 5px',
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontSize: '.58rem',
-                            color: '#FFFFFF',
-                            fontWeight: 700,
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}
-                        >
-                          {preset.category}
-                        </span>
-                      </div>
-                      {isActive && (
-                        <span
-                          style={{
-                            position: 'absolute',
-                            top: 3,
-                            right: 3,
-                            background: '#0EA5E9',
-                            color: '#FFF',
-                            fontSize: '.55rem',
-                            fontWeight: 800,
-                            padding: '1px 4px',
-                            borderRadius: 4,
-                          }}
-                        >
-                          ✓
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
             </div>
 
             {/* CURRENT UPLOADED PHOTOS GALLERY */}
