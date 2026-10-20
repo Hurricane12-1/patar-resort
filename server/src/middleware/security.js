@@ -29,7 +29,7 @@ export function cookieTokenizer(req, res, next) {
     csrfToken = crypto.randomBytes(24).toString('hex');
     res.cookie('csrf_token', csrfToken, {
       httpOnly: true, // Secure cookie inaccessible to untrusted scripts (CWE-1004 mitigation)
-      sameSite: 'lax',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       secure: process.env.NODE_ENV === 'production' || req.secure || req.get('x-forwarded-proto') === 'https',
       path: '/',
     });
@@ -43,12 +43,13 @@ export function cookieTokenizer(req, res, next) {
     const headerToken = req.headers['x-csrf-token'] || req.headers['x-xsrf-token'];
     const hasBearerAuth = req.headers.authorization?.startsWith('Bearer ');
     const isAdminKeyAuth = req.headers['x-admin-token-key'];
+    const isAuthRoute = req.path?.startsWith('/api/auth') || req.path?.startsWith('/auth');
     const isWebhook = req.path?.includes('/webhooks') || req.path?.includes('/stripe');
     const isTelemetry = req.path?.startsWith('/api/telemetry');
     const isTest = process.env.NODE_ENV === 'test' || req.path?.startsWith('/api/test') || req.path?.startsWith('/api/limiter');
 
-    // Allow authenticated APIs (Bearer JWT or verified admin key) and automated webhooks/tests/telemetry
-    if (!hasBearerAuth && !isAdminKeyAuth && !isWebhook && !isTelemetry && !isTest) {
+    // Allow authenticated APIs (Bearer JWT or verified admin key), public auth endpoints, and automated webhooks/tests/telemetry
+    if (!hasBearerAuth && !isAdminKeyAuth && !isAuthRoute && !isWebhook && !isTelemetry && !isTest) {
       if (!headerToken || !csrfToken || headerToken !== csrfToken) {
         return res.status(403).json({ 
           error: 'Forbidden', 

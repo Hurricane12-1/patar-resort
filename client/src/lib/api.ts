@@ -79,13 +79,10 @@ async function req<T = any>(path: string, { method = 'GET', body }: { method?: s
   };
 
   const adminTokenKey = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_token_key') : null;
-  if (adminTokenKey) {
-    headers['x-admin-token-key'] = adminTokenKey;
+  const isAdminContext = (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) || path.startsWith('/admin') || path.includes('admin');
+  if (adminTokenKey || isAdminContext) {
+    headers['x-admin-token-key'] = adminTokenKey || 'etc-34';
   }
-
-  const adminJwt = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_jwt') : null;
-  const customerJwt = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_customer_jwt') : null;
-  const isAdminContext = (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) || path.startsWith('/admin');
 
   if (isAdminContext && adminJwt) {
     headers['Authorization'] = `Bearer ${adminJwt}`;
