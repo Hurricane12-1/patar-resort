@@ -169,7 +169,7 @@ export default function StatusTimelineModal({
                   Reservation Status & Lifecycle Architecture
                 </h3>
                 <small style={{ color: '#94A3B8', fontSize: '.78rem' }}>
-                  J&D Beach House Resort • Bolinao, Pangasinan
+                  Rock View Beach Resort • Bolinao, Pangasinan
                 </small>
               </div>
             </div>

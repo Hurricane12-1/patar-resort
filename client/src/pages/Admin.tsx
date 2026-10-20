@@ -9283,7 +9283,7 @@ export default function Admin() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <i className="fas fa-umbrella-beach" style={{ fontSize: "1.4rem", color: "#0EA5E9" }} />
                       <h2 style={{ margin: 0, fontSize: '1.45rem', fontWeight: 900, color: '#0F172A', letterSpacing: '-0.02em', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                        J&D BEACH HOUSE RESORT
+                        ROCK VIEW BEACH RESORT
                       </h2>
                     </div>
                     <p style={{ margin: '4px 0 0', fontSize: '.8rem', color: '#64748B' }}>
@@ -9293,7 +9293,7 @@ export default function Admin() {
                       TIN: 009-847-192-000-NV • Non-VAT Official Resort Billing Folio
                     </p>
                     <p style={{ margin: '2px 0 0', fontSize: '.76rem', color: '#0EA5E9', fontWeight: 600 }}>
-                      Tel: +63 917 123 4567 • Email: reservations@janddbeachhouse.ph
+                      Tel: +63 917 123 4567 • Email: reservations@rockviewresort.ph
                     </p>
                   </div>
 
@@ -9336,7 +9336,7 @@ export default function Admin() {
                     </span>
                     <span style={{ display: 'block', fontSize: '.78rem', color: '#475569', marginTop: 2 }}>
                       <i className="fas fa-envelope" style={{ marginRight: 6, color: '#0EA5E9', fontSize: '.7rem' }} />
-                      {receiptModalBooking.email || receiptModalBooking.guest_email || 'guest@janddbeachhouse.ph'}
+                      {receiptModalBooking.email || receiptModalBooking.guest_email || 'guest@rockviewresort.ph'}
                     </span>
                   </div>
 
@@ -9511,7 +9511,7 @@ export default function Admin() {
                 </div>
 
                 <div style={{ textAlign: 'center', marginTop: 20, fontSize: '.7rem', color: '#94A3B8' }}>
-                  Thank you for staying at J&D Beach House! • This document serves as an official accounting folio statement.
+                  Thank you for staying at Rock View Beach Resort! • This document serves as an official accounting folio statement.
                 </div>
               </div>
 

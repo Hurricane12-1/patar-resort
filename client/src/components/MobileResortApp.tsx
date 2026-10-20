@@ -2565,7 +2565,7 @@ export default function MobileResortApp() {
                     </a>
 
                     <a
-                      href="mailto:concierge@janddbeachhouse.ph"
+                      href="mailto:concierge@rockviewresort.ph"
                       className="flex items-center gap-3 p-3.5 rounded-2xl border border-white/10 bg-white/[0.03] hover:border-cyan/40 transition group"
                     >
                       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-cyan/15 text-cyan text-sm">
@@ -2573,7 +2573,7 @@ export default function MobileResortApp() {
                       </span>
                       <div>
                         <span className="text-[10px] uppercase tracking-wider text-white/50 block">Resort Concierge</span>
-                        <span className="text-xs font-semibold text-white group-hover:text-cyan transition truncate block">concierge@jandd.ph</span>
+                        <span className="text-xs font-semibold text-white group-hover:text-cyan transition truncate block">concierge@rockviewresort.ph</span>
                       </div>
                     </a>
                   </div>
