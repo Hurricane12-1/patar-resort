@@ -476,13 +476,17 @@ r.delete('/rooms/:id', authenticate, requireAdmin, asyncH(async (req, res) => {
 
   if (isHard) {
     try {
-      // 1. Clean up locks, reviews, tasks referencing this room
-      await sysClient.from('room_locks').delete().eq('room_id', req.params.id);
-      await sysClient.from('reviews').delete().eq('room_id', req.params.id);
-      await sysClient.from('department_tasks').delete().eq('room_id', req.params.id);
+      // 1. Clean up locks, reviews, tasks referencing this room (safe non-blocking cleanup)
+      try { await sysClient.from('room_locks').delete().eq('room_id', req.params.id); } catch {}
+      try { await sysClient.from('reviews').delete().eq('room_id', req.params.id); } catch {}
+      try { await sysClient.from('department_tasks').delete().eq('room_id', req.params.id); } catch {}
 
       // 2. Unlink reservations to satisfy foreign key constraint ON DELETE RESTRICT
-      await sysClient.from('reservations').update({ room_id: null }).eq('room_id', req.params.id);
+      try {
+        await sysClient.from('reservations').update({ room_id: null }).eq('room_id', req.params.id);
+      } catch (unErr) {
+        console.warn('[Rooms API] Unlink reservations warning:', unErr.message);
+      }
 
       // 3. Delete room permanently
       const { error: hardErr } = await sysClient.from('rooms').delete().eq('id', req.params.id);

@@ -93,10 +93,11 @@ export default function AvailabilityCalendar({
     try {
       setLoading(true);
 
-      // 1. Fetch Rooms directly from Supabase
+      // 1. Fetch Rooms directly from Supabase (strictly active, open rooms)
       const { data: dbRooms, error: rErr } = await supabase
         .from('rooms')
         .select('*')
+        .eq('is_active', true)
         .order('created_at', { ascending: true });
 
       if (rErr) throw rErr;
@@ -140,11 +141,10 @@ export default function AvailabilityCalendar({
     };
   }, [fetchRealtimeData]);
 
-  // Combine live rooms with prop rooms if live is empty
+  // Combine live rooms with prop rooms if live is empty (strictly active, open rooms)
   const effectiveRooms = useMemo(() => {
-    if (liveRooms.length > 0) return liveRooms;
-    if (rooms && rooms.length > 0) return rooms;
-    return [];
+    const source = liveRooms.length > 0 ? liveRooms : (rooms && rooms.length > 0 ? rooms : []);
+    return source.filter((r) => r && r.is_active !== false);
   }, [liveRooms, rooms]);
 
   // Combine live bookings with prop bookings if live is empty
@@ -154,12 +154,12 @@ export default function AvailabilityCalendar({
     return [];
   }, [liveBookings, bookings]);
 
-  // Total physical units count across rooms (at least 18 units as shown in resort map/PMS)
+  // Total physical units count dynamically derived from open rooms and their units count
   const units: UnitInfo[] = useMemo(() => {
     const list: UnitInfo[] = [];
     let unitCounter = 1;
 
-    // Expand physical units from effectiveRooms
+    // Expand physical units from active open rooms based on each room's configured units count
     effectiveRooms.forEach((r) => {
       const numUnits = Math.max(1, Number(r.units) || 1);
       for (let u = 1; u <= numUnits; u++) {
@@ -174,20 +174,6 @@ export default function AvailabilityCalendar({
         unitCounter++;
       }
     });
-
-    // Ensure at least 18 physical units for full resort representation
-    while (unitCounter <= 18) {
-      const defaultRoom = effectiveRooms[0];
-      list.push({
-        id: `unit_${unitCounter}`,
-        roomId: defaultRoom?.id || `room_${unitCounter}`,
-        unitNumber: unitCounter,
-        name: `Unit ${unitCounter}`,
-        label: `Unit ${unitCounter}`,
-        ratePhp: defaultRoom?.rate_php || 3500,
-      });
-      unitCounter++;
-    }
 
     return list;
   }, [effectiveRooms]);
@@ -510,8 +496,14 @@ export default function AvailabilityCalendar({
             </div>
           </div>
 
-          {/* PHYSICAL UNIT ROWS (Unit 1 to Unit 18) */}
-          {units.map((unit) => {
+          {/* PHYSICAL UNIT ROWS (Dynamically generated based on open rooms count) */}
+          {units.length === 0 ? (
+            <div style={{ padding: '36px 20px', textAlign: 'center', color: '#94A3B8', fontSize: '.84rem' }}>
+              <i className="fas fa-door-closed" style={{ fontSize: '1.4rem', display: 'block', marginBottom: 8, opacity: 0.6 }} />
+              No open accommodation units currently configured. Open or create rooms in Room Management.
+            </div>
+          ) : (
+            units.map((unit) => {
             // Visible stays allocated to this unit
             const unitStays = assignedStays.filter((s) => {
               if (s.assignedUnitNumber !== unit.unitNumber) return false;
@@ -581,7 +573,8 @@ export default function AvailabilityCalendar({
                 </div>
               </div>
             );
-          })}
+          })
+        )}
 
           {/* UNASSIGNED ROWS (⚠ Unassigned) */}
           {Array.from({ length: maxUnassignedRows }).map((_, rowIndex) => {

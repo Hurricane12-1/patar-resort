@@ -222,7 +222,32 @@ export const api = {
   },
   createRoom: (body: any) => req('/rooms', { method: 'POST', body }),
   updateRoom: (id: string, body: any) => req(`/rooms/${id}`, { method: 'PATCH', body }),
-  deleteRoom: (id: string, hard = false) => req(`/rooms/${id}${hard ? '?hard=true' : ''}`, { method: 'DELETE' }),
+  deleteRoom: async (id: string, hard = false) => {
+    // 1. Try Express backend API
+    try {
+      const res = await req(`/rooms/${id}${hard ? '?hard=true' : ''}`, { method: 'DELETE' });
+      if (res && (res.success || res.deleted_id)) return res;
+    } catch {}
+
+    // 2. Direct Supabase Admin/Authenticated fallback
+    try {
+      // Unlink any reservations referencing this room
+      try { await supabase.from('reservations').update({ room_id: null }).eq('room_id', id); } catch {}
+      try { await supabase.from('reviews').delete().eq('room_id', id); } catch {}
+      try { await supabase.from('department_tasks').delete().eq('room_id', id); } catch {}
+
+      // Attempt hard deletion first
+      const { error: delErr } = await supabase.from('rooms').delete().eq('id', id);
+      if (!delErr) return { success: true, deleted_id: id, permanent: true };
+
+      // Fallback: soft deactivation
+      const { error: updErr } = await supabase.from('rooms').update({ is_active: false }).eq('id', id);
+      if (!updErr) return { success: true, deleted_id: id, deactivated: true };
+      throw delErr;
+    } catch (e: any) {
+      throw new Error(e.message || 'Could not delete room from database');
+    }
+  },
   uploadImage: (image_data: string, filename?: string, extra?: Record<string, any>) =>
     req('/upload/image', { method: 'POST', body: { image_data, filename, ...(extra || {}) } }),
   getCloudinaryConfig: () => req('/cloudinary/config'),

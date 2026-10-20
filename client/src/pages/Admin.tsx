@@ -646,7 +646,7 @@ export default function Admin() {
 
   const refreshRoomsAndInventory = useCallback(() => {
     setLoadingRoomsAndInv(true);
-    Promise.all([api.rooms(true), api.departmentInventory()])
+    Promise.all([api.rooms(false), api.departmentInventory()])
       .then(([r, inv]) => {
         setRoomsList(Array.isArray(r) ? r : []);
         setInventoryList(Array.isArray(inv) ? inv : []);
@@ -663,7 +663,7 @@ export default function Admin() {
       refreshReservations();
       refreshLedgerEntries();
       if (roomsList.length === 0) {
-        api.rooms(true).then((r: any) => setRoomsList(Array.isArray(r) ? r : [])).catch(() => {});
+        api.rooms(false).then((r: any) => setRoomsList(Array.isArray(r) ? r : [])).catch(() => {});
       }
     }
     if (activeTab === 'notifications') {
@@ -727,7 +727,7 @@ export default function Admin() {
         api.analyticsOverview().catch(() => null),
         api.allReservations().catch(() => null),
         api.myNotifications().catch(() => null),
-        api.rooms(true).catch(() => null),
+        api.rooms(false).catch(() => null),
         api.departmentInventory().catch(() => null),
         api.conversations().catch(() => null),
       ]);
@@ -1733,13 +1733,15 @@ export default function Admin() {
 
   async function handleConfirmRemoveRoom() {
     if (!roomToRemove?.id) return;
+    const targetRoom = roomToRemove;
     setRemovingRoom(true);
     try {
-      await api.deleteRoom(roomToRemove.id, true);
-      setRoomsList((prev) => prev.filter((r) => r.id !== roomToRemove.id));
-      if (editingRoom?.id === roomToRemove.id) setEditingRoom(null);
-      toast(`Room "${roomToRemove.name}" removed successfully`);
+      await api.deleteRoom(targetRoom.id, true);
+      setRoomsList((prev) => prev.filter((r) => r.id !== targetRoom.id));
+      if (editingRoom?.id === targetRoom.id) setEditingRoom(null);
+      toast(`Room "${targetRoom.name}" removed successfully`);
       setRoomToRemove(null);
+      refreshRoomsAndInventory();
     } catch (err: any) {
       toast(`Remove failed: ${err.message || 'Error removing room'}`, true);
     } finally {
@@ -1786,6 +1788,7 @@ export default function Admin() {
       setRoomsList((prev) => prev.filter((r) => r.id !== room.id));
       if (editingRoom?.id === room.id) setEditingRoom(null);
       toast(`Room "${room.name}" deleted successfully`);
+      refreshRoomsAndInventory();
     } catch (err: any) {
       toast(`Delete failed: ${err.message || 'Error deleting room'}`, true);
     }
@@ -5228,7 +5231,7 @@ export default function Admin() {
                         className="btn btn-sm btn-ghost"
                         onClick={() => {
                           refreshReservations();
-                          if (roomsList.length === 0) api.rooms(true).then((r: any) => setRoomsList(Array.isArray(r) ? r : [])).catch(() => {});
+                          if (roomsList.length === 0) api.rooms(false).then((r: any) => setRoomsList(Array.isArray(r) ? r : [])).catch(() => {});
                         }}
                         style={{ color: themeText, border: `1px solid ${themeBorder}`, fontWeight: 600 }}
                       >
