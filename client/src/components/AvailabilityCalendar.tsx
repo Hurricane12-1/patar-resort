@@ -266,7 +266,7 @@ export default function AvailabilityCalendar({
   };
 
   // Stays & Unassigned Allocation
-  const { assignedStays, unassignedStays, maxUnassignedRows } = useMemo(() => {
+  const { assignedStays, unassignedStays, unassignedTracksCount } = useMemo(() => {
     const assigned: CalendarStay[] = [];
     const unassigned: CalendarStay[] = [];
 
