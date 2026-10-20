@@ -1002,9 +1002,10 @@ export const api = {
     } catch {}
     try {
       const sb = await ensureSupabaseSession();
-      const [profilesRes, empRes] = await Promise.all([
+      const [profilesRes, empRes, custRes] = await Promise.all([
         sb.from('profiles').select('*').order('created_at', { ascending: false }),
         sb.from('employee_accounts').select('*').order('created_at', { ascending: false }),
+        sb.from('customers').select('*').order('created_at', { ascending: false }).catch(() => ({ data: [] })),
       ]);
       const combined = new Map<string, any>();
       for (const emp of empRes.data || []) {
@@ -1014,6 +1015,12 @@ export const api = {
           emp_record_id: emp.id,
           role: emp.role || 'staff',
         });
+      }
+      for (const c of (custRes as any)?.data || []) {
+        const key = c.email || c.id;
+        if (!combined.has(key)) {
+          combined.set(key, { ...c, role: 'customer' });
+        }
       }
       for (const p of profilesRes.data || []) {
         const key = p.email || p.id;

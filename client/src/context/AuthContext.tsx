@@ -257,6 +257,26 @@ export function AuthProvider({ children }) {
               sessionStorage.setItem('jd_customer_jwt', s.access_token);
               sessionStorage.setItem('jd_customer_profile', JSON.stringify(finalProfile));
             }
+
+            // Automatically synchronize new Google / Facebook / OAuth customer with Supabase database
+            if (!prof && s.user?.id) {
+              supabase.from('profiles').upsert({
+                id: s.user.id,
+                email: s.user.email,
+                full_name: finalProfile.full_name,
+                first_name: finalProfile.first_name,
+                last_name: finalProfile.last_name,
+                avatar_url: finalProfile.avatar_url,
+                role: 'customer',
+              }, { onConflict: 'id' }).then(() => {}).catch(() => {});
+
+              supabase.from('customers').upsert({
+                id: s.user.id,
+                email: s.user.email,
+                full_name: finalProfile.full_name,
+                avatar_url: finalProfile.avatar_url,
+              }, { onConflict: 'id' }).then(() => {}).catch(() => {});
+            }
           }
           setAuthOpen(false);
           if (event === 'SIGNED_IN') {

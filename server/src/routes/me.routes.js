@@ -31,6 +31,25 @@ r.get('/me', authenticate, asyncH(async (req, res) => {
         ...user,
         avatar_url: prof.avatar_url || user.avatar_url,
       };
+    } else if (lookupId && req.user.email) {
+      try {
+        const newProf = {
+          id: lookupId,
+          email: req.user.email,
+          full_name: req.user.full_name || req.user.name || req.user.email.split('@')[0],
+          first_name: req.user.first_name || '',
+          last_name: req.user.last_name || '',
+          role: req.user.role || 'customer',
+          avatar_url: req.user.avatar_url || '',
+        };
+        await client.from('profiles').upsert(newProf, { onConflict: 'id' }).catch(() => {});
+        await client.from('customers').upsert({
+          id: lookupId,
+          email: req.user.email,
+          full_name: newProf.full_name,
+          avatar_url: newProf.avatar_url,
+        }, { onConflict: 'id' }).catch(() => {});
+      } catch {}
     }
   } catch {}
   res.json(user);
