@@ -1,6 +1,7 @@
 import React from 'react';
 import { fmtDate } from '../../../lib/format';
 import { dispatchWordPrompt } from '../../../lib/wordPrompt';
+import { generateAccountEmail, generateEmployeeId } from '../../../context/AuthContext';
 
 export interface AdminDialogsProps {
   isLightMode: boolean;
@@ -391,7 +392,7 @@ export const AdminDialogs: React.FC<AdminDialogsProps> = ({
             </div>
 
             <form onSubmit={handleProvisionStaff} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
                 <div>
                   <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>
                     First Name *
@@ -408,7 +409,25 @@ export const AdminDialogs: React.FC<AdminDialogsProps> = ({
                     }}
                     value={newStaff.first_name}
                     onChange={(e) => setNewStaff({ ...newStaff, first_name: e.target.value })}
-                    placeholder="e.g. Maria"
+                    placeholder="e.g. Julian"
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>
+                    Middle Name
+                  </label>
+                  <input
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      borderRadius: 8,
+                      border: `1px solid ${themeBorder}`,
+                      background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)',
+                      color: themeText,
+                    }}
+                    value={newStaff.middle_name || ''}
+                    onChange={(e) => setNewStaff({ ...newStaff, middle_name: e.target.value })}
+                    placeholder="e.g. Jimenez"
                   />
                 </div>
                 <div>
@@ -427,14 +446,39 @@ export const AdminDialogs: React.FC<AdminDialogsProps> = ({
                     }}
                     value={newStaff.last_name}
                     onChange={(e) => setNewStaff({ ...newStaff, last_name: e.target.value })}
-                    placeholder="e.g. Santos"
+                    placeholder="e.g. Deleon"
                   />
                 </div>
               </div>
 
+              {/* Live Employee Identifier & Username Preview */}
+              {(newStaff.first_name || newStaff.last_name) && (
+                <div style={{
+                  padding: '10px 12px',
+                  borderRadius: 8,
+                  background: isLightMode ? '#F0FDFA' : 'rgba(13, 148, 136, 0.1)',
+                  border: '1px solid rgba(13, 148, 136, 0.25)',
+                  fontSize: '.75rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 3,
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#0D9488', fontWeight: 700 }}>
+                    <span>Badge ID: {generateEmployeeId(1)}</span>
+                    <span>Role: {newStaff.role || 'receptionist'}</span>
+                  </div>
+                  <div style={{ color: themeText, fontFamily: 'monospace' }}>
+                    Email: {generateAccountEmail(newStaff.first_name, newStaff.middle_name, newStaff.last_name, 1, true, newStaff.role)}
+                  </div>
+                  <div style={{ color: themeMuted, fontSize: '.7rem' }}>
+                    Username: {generateAccountEmail(newStaff.first_name, newStaff.middle_name, newStaff.last_name, 1, true, newStaff.role).split('@')[0]}
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>
-                  Official Email Address
+                  Official Email Address (Leave blank to auto-generate)
                 </label>
                 <input
                   type="email"
@@ -448,7 +492,7 @@ export const AdminDialogs: React.FC<AdminDialogsProps> = ({
                   }}
                   value={newStaff.email}
                   onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })}
-                  placeholder="auto-generated if left blank"
+                  placeholder={generateAccountEmail(newStaff.first_name, newStaff.middle_name, newStaff.last_name, 1, true, newStaff.role || 'staff')}
                 />
               </div>
 

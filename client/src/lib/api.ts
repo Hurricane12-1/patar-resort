@@ -1035,21 +1035,46 @@ export const api = {
       if (res && res.id) return res;
     } catch {}
     const sb = await ensureSupabaseSession();
-    const empId = `EMP-${Date.now().toString().slice(-4)}`;
+
+    let seq = 1;
+    try {
+      const { count } = await sb.from('employee_accounts').select('*', { count: 'exact', head: true });
+      if (typeof count === 'number' && count >= 0) seq = count + 1;
+    } catch {}
+
+    const empId = body.employee_id || `RCR-000-000-000-${String(seq).padStart(3, '0')}`;
     const fullName =
       [body.first_name, body.middle_name, body.last_name].filter(Boolean).join(' ') ||
       body.full_name ||
       'Staff Member';
+
+    const cleanPos = (body.position || body.role || 'staff')
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '');
+
+    const f = (body.first_name || '').trim().charAt(0).toLowerCase() || 'x';
+    const mClean = (body.middle_name || '').trim();
+    const mParts = mClean.split(/\s+/).filter(Boolean);
+    const m = mParts.length > 1
+      ? (mParts[mParts.length - 1].charAt(0).toLowerCase() || 'x')
+      : (mClean.charAt(0).toLowerCase() || 'x');
+    const l = (body.last_name || '').trim().charAt(0).toLowerCase() || 'x';
+
+    const paddedSeq = String(seq).padStart(3, '0');
+    const targetEmail = body.email || `${f}${m}${l}${paddedSeq}.${cleanPos}@rockview.ph`;
+    const username = body.username || `${f}${m}${l}${paddedSeq}.${cleanPos}`;
+
     const payload = {
       employee_id: empId,
       first_name: body.first_name || '',
       middle_name: body.middle_name || '',
       last_name: body.last_name || '',
       full_name: fullName,
-      email: body.email,
-      password: body.password || 'RockView2026!',
+      username: username,
+      email: targetEmail,
+      password: body.password || 'theneckron123',
       role: body.role || 'receptionist',
-      department: body.department || 'front_desk',
+      department: body.department || 'FrontDesk',
       position: body.position || String(body.role || 'Staff').toUpperCase(),
       phone: body.phone || '',
       is_active: true,

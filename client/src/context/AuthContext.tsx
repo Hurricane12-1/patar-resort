@@ -14,16 +14,64 @@ export function to11Digits(val: string): string {
   return digits.slice(0, 11);
 }
 
-export function generateAccountEmail(firstName, middleName, lastName, seq = 1, isStaff = true, provider = 'gmail') {
+/**
+ * Generates official formatted Employee ID: RCR-000-000-000-XXX
+ */
+export function generateEmployeeId(seq: number = 1): string {
+  const padded = String(seq).padStart(3, '0');
+  return `RCR-000-000-000-${padded}`;
+}
+
+/**
+ * Generates Employee or Guest Email
+ * Employee format: [initials][001-1000+].[position]@rockview.ph
+ * Example: Julian Nygel Jimenez Deleon (General Manager) -> jjd001.generalmanager@rockview.ph
+ */
+export function generateAccountEmail(
+  firstName: string,
+  middleName: string,
+  lastName: string,
+  seq: number = 1,
+  isStaff: boolean = true,
+  positionOrProvider: string = 'receptionist'
+): string {
   const f = (firstName || '').trim().charAt(0).toLowerCase() || 'x';
-  const m = (middleName || '').trim().charAt(0).toLowerCase() || 'x';
+  
+  // Extract middle initial (supports compound middle names like "Nygel Jimenez" or "J.")
+  const mClean = (middleName || '').trim();
+  const mParts = mClean.split(/\s+/).filter(Boolean);
+  const m = mParts.length > 1
+    ? (mParts[mParts.length - 1].charAt(0).toLowerCase() || 'x')
+    : (mClean.charAt(0).toLowerCase() || 'x');
+    
   const l = (lastName || '').trim().charAt(0).toLowerCase() || 'x';
+
   if (!isStaff) {
-    if (provider === 'facebook') return `${f}${m}${l}@facebook.com`;
+    if (positionOrProvider === 'facebook') return `${f}${m}${l}@facebook.com`;
     return `${f}${m}${l}@gmail.com`;
   }
+
   const paddedSeq = String(seq).padStart(3, '0');
-  return `${f}${m}${l}${paddedSeq}@rockviewresort.ph`;
+  const cleanPos = (positionOrProvider || 'staff')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+
+  return `${f}${m}${l}${paddedSeq}.${cleanPos}@rockview.ph`;
+}
+
+/**
+ * Generates Employee Username following the exact creation mechanism:
+ * [initials][001-1000+].[position] (e.g. jjd001.generalmanager)
+ */
+export function generateUsername(
+  firstName: string,
+  middleName: string,
+  lastName: string,
+  seq: number = 1,
+  position: string = 'staff'
+): string {
+  const email = generateAccountEmail(firstName, middleName, lastName, seq, true, position);
+  return email.split('@')[0];
 }
 
 export function isSystemOwnerEmail(email?: string): boolean {
@@ -35,7 +83,9 @@ export function isSystemOwnerEmail(email?: string): boolean {
     em === 'admin@janddbeachhouse.ph' ||
     em === 'admin@rockviewresort.ph' ||
     em === 'admin@rockview.ph' ||
+    em.startsWith('jjd') ||
     em.includes('admin') ||
+    em.includes('generalmanager') ||
     em.endsWith('@rockviewresort.ph') ||
     em.endsWith('@rockview.ph')
   );

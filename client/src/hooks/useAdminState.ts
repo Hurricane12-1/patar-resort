@@ -922,7 +922,7 @@ export function useAdminState() {
         newStaff.full_name ||
         'Staff User';
       const targetEmail =
-        newStaff.email || generateAccountEmail(newStaff.first_name, newStaff.middle_name, newStaff.last_name, users.length + 1);
+        newStaff.email || generateAccountEmail(newStaff.first_name, newStaff.middle_name, newStaff.last_name, users.length + 1, true, newStaff.role);
       const created = await api.createStaffAccount({ ...newStaff, full_name, email: targetEmail });
       toast(`Staff Account Created for ${created.full_name || full_name} (${created.role}) ✦`);
       setUsers((prev) => [created, ...prev]);
