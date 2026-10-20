@@ -47,7 +47,6 @@ r.get('/me', authenticate, asyncH(async (req, res) => {
           id: lookupId,
           email: req.user.email,
           full_name: newProf.full_name,
-          avatar_url: newProf.avatar_url,
         }, { onConflict: 'id' }).catch(() => {});
       } catch {}
     }

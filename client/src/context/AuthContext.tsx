@@ -274,7 +274,6 @@ export function AuthProvider({ children }) {
                 id: s.user.id,
                 email: s.user.email,
                 full_name: finalProfile.full_name,
-                avatar_url: finalProfile.avatar_url,
               }, { onConflict: 'id' }).then(() => {}).catch(() => {});
             }
           }
