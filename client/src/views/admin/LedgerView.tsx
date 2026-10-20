@@ -757,10 +757,13 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                         />
                       </td>
                       <td>
-                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                          <button
-                            className="act-btn"
-                            onClick={() =>
+                        <select
+                          aria-label="Front Desk Actions"
+                          value=""
+                          onChange={(e) => {
+                            const action = e.target.value;
+                            if (!action) return;
+                            if (action === 'edit') {
                               setEditingBooking({
                                 ...b,
                                 guest_name: b.guest_name || b.profiles?.full_name || 'Guest',
@@ -773,74 +776,72 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                                 status: b.status || 'confirmed',
                                 payment_method: b.payment_method || 'GCash',
                                 notes: b.notes || '',
-                              })
+                              });
+                            } else if (action === 'receipt') {
+                              setReceiptModalBooking(b);
+                            } else if (action === 'timeline') {
+                              setTimelineBooking(b);
+                            } else if (action === 'checked_in') {
+                              updateStatus(b.id, 'checked_in');
+                            } else if (action === 'checked_out') {
+                              updateStatus(b.id, 'checked_out');
+                            } else if (action === 'confirmed') {
+                              updateStatus(b.id, 'confirmed');
+                            } else if (action === 'pending') {
+                              updateStatus(b.id, 'pending');
+                            } else if (action === 'cancelled') {
+                              updateStatus(b.id, 'cancelled');
+                            } else if (action === 'refund_request') {
+                              setRefundTarget(b);
+                              setRefundMode('request');
+                              setRefundAmount(b.downpayment_php || b.total_php || '');
+                            } else if (action === 'refund_confirm') {
+                              setRefundTarget(b);
+                              setRefundMode('confirm');
+                              setRefundAmount(b.downpayment_php || b.total_php || '');
+                              setRefundMethod(b.payment_method || 'GCash');
+                            } else if (action === 'remove') {
+                              setReservationToRemove(b);
                             }
-                            style={{ color: '#4F46E5', borderColor: '#4F46E5', background: 'rgba(79,70,229,0.08)' }}
-                            title="Edit reservation details, dates, room, or status"
-                          >
-                            <i className="fas fa-pen-to-square" /> Edit
-                          </button>
-                          {/* Official Receipt & Folio Generator */}
-                          <button
-                            className="act-btn"
-                            onClick={() => setReceiptModalBooking(b)}
-                            style={{ color: '#0EA5E9', borderColor: '#0EA5E9', background: 'rgba(14,165,233,0.08)' }}
-                            title="Generate official guest receipt & PDF folio"
-                          >
-                            <i className="fas fa-file-invoice-dollar" /> Receipt
-                          </button>
-                          {['pending', 'confirmed'].includes(b.status) && (
-                            <button className="act-btn" onClick={() => updateStatus(b.id, 'checked_in')} style={{ color: '#10B981', borderColor: '#10B981' }}>
-                              <i className="fas fa-bell-concierge" /> Check-in
-                            </button>
-                          )}
-                          {b.status === 'checked_in' && (
-                            <button className="act-btn" onClick={() => updateStatus(b.id, 'checked_out')} style={{ color: '#6366F1', borderColor: '#6366F1' }}>
-                              <i className="fas fa-sign-out-alt" /> Check-out
-                            </button>
-                          )}
-                          {['pending', 'confirmed'].includes(b.status) && (
-                            <button className="act-btn" onClick={() => updateStatus(b.id, 'cancelled')} style={{ color: '#EF4444', borderColor: '#EF4444' }}>
-                              <i className="fas fa-times" /> Cancel
-                            </button>
-                          )}
-                          <button
-                            className="act-btn"
-                            onClick={() => setReservationToRemove(b)}
-                            style={{ color: '#EF4444', borderColor: 'rgba(239, 68, 68, 0.4)' }}
-                            title="Remove booking folio permanently"
-                          >
-                            <i className="fas fa-trash-alt" /> Remove
-                          </button>
-                          {b.payment_status === 'refund_pending' ? (
-                            <button
-                              className="act-btn"
-                              onClick={() => {
-                                setRefundTarget(b);
-                                setRefundMode('confirm');
-                                setRefundAmount(b.downpayment_php || b.total_php || '');
-                                setRefundMethod(b.payment_method || 'GCash');
-                              }}
-                              style={{ color: '#10B981', borderColor: '#10B981', background: 'rgba(16,185,129,0.1)' }}
-                              title="Approve & confirm refund with automated email"
-                            >
-                              <i className="fas fa-check-double" /> Confirm Refund
-                            </button>
-                          ) : b.payment_status !== 'refunded' && (
-                            <button
-                              className="act-btn"
-                              onClick={() => {
-                                setRefundTarget(b);
-                                setRefundMode('request');
-                                setRefundAmount(b.downpayment_php || b.total_php || '');
-                              }}
-                              style={{ color: '#F59E0B', borderColor: '#F59E0B' }}
-                              title="Request refund with automated email on the day requested"
-                            >
-                              <i className="fas fa-hand-holding-dollar" /> Refund
-                            </button>
-                          )}
-                        </div>
+                          }}
+                          style={{
+                            padding: '8px 12px',
+                            borderRadius: 10,
+                            border: `1.5px solid ${isLightMode ? '#CBD5E1' : '#334155'}`,
+                            background: isLightMode ? '#F8FAFC' : '#1E293B',
+                            color: themeText,
+                            fontSize: '.8rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            minWidth: 165,
+                            outline: 'none',
+                          }}
+                        >
+                          <option value="">⚡ Front Desk Actions ▾</option>
+                          <option value="edit">✏️ Edit Reservation</option>
+                          <option value="receipt">🧾 Receipt &amp; Folio</option>
+                          <option value="timeline">🕒 Status Timeline</option>
+                          <option value="checked_in">
+                            🛎️ Check-in{b.status === 'checked_in' ? ' (Active)' : ''}
+                          </option>
+                          <option value="checked_out">
+                            🚪 Check-out{b.status === 'checked_out' ? ' (Active)' : ''}
+                          </option>
+                          <option value="confirmed">
+                            ✅ Confirm{b.status === 'confirmed' ? ' (Active)' : ''}
+                          </option>
+                          <option value="pending">
+                            ⏳ Mark Pending{b.status === 'pending' ? ' (Active)' : ''}
+                          </option>
+                          <option value="refund_request">💰 Request Refund</option>
+                          <option value="refund_confirm">
+                            ✔️ Confirm Refund{b.payment_status === 'refund_pending' ? ' (Pending)' : ''}
+                          </option>
+                          <option value="cancelled">
+                            ❌ Cancel{b.status === 'cancelled' ? ' (Cancelled)' : ''}
+                          </option>
+                          <option value="remove">🗑️ Remove Permanently</option>
+                        </select>
                       </td>
                     </tr>
                   ))}
