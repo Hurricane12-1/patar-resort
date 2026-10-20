@@ -223,16 +223,37 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
               const d = new Date(b.check_in || b.created_at);
               return !isNaN(d.getTime()) && d.getMonth() === currentMonth && d.getFullYear() === currentYear;
             });
-            const monthlyCount = monthlyBookings.length > 0 ? monthlyBookings.length : 18;
-            const monthlyNights = monthlyBookings.reduce((sum, b) => sum + (b.nights || 1), 0) || 42;
-            const totalUnits = roomsList.reduce((sum, r) => sum + (r.units || 1), 0) || 10;
+            const monthlyCount = monthlyBookings.length;
+            const monthlyNights = monthlyBookings.reduce((sum, b) => sum + (Number(b.nights) || 1), 0);
+            const totalUnits = roomsList.reduce((sum, r) => sum + (Number(r.units) || 1), 0);
             const totalMonthCapacity = totalUnits * 30;
-            const occupancyPct = Math.min(100, Math.max(15, Math.round((monthlyNights / totalMonthCapacity) * 100))) || 74;
-            const monthlyRev = monthlyBookings.reduce((sum, b) => sum + (b.total_php || 0), 0) || 126000;
+            const occupancyPct = totalMonthCapacity > 0 ? Math.min(100, Math.round((monthlyNights / totalMonthCapacity) * 100)) : 0;
+            const monthlyRev = monthlyBookings.reduce((sum, b) => sum + (Number(b.total_php) || 0), 0);
 
-            const predictedNextMonthCount = Math.round(monthlyCount * 1.22);
-            const predictedNextMonthOccupancy = Math.min(96, Math.round(occupancyPct * 1.15));
-            const predictedRevenue = Math.round(monthlyRev * 1.25);
+            // Dynamically derive real room category metrics from database
+            const catMap = new Map<string, number>();
+            for (const r of roomsList) {
+              const cName = r.category || 'Room';
+              catMap.set(cName, (catMap.get(cName) || 0) + Number(r.units || 1));
+            }
+            const catColors = ['#0EA5E9', '#8B5CF6', '#10B981', '#F59E0B', '#EC4899', '#06B6D4'];
+            const categoryGroups: { label: string; filter: string; units: number; pct: number; color: string }[] = [];
+            let colorIdx = 0;
+            catMap.forEach((units, cat) => {
+              const pct = totalUnits > 0 ? Math.round((units / totalUnits) * 100) : 0;
+              categoryGroups.push({
+                label: cat,
+                filter: cat,
+                units,
+                pct,
+                color: catColors[colorIdx % catColors.length],
+              });
+              colorIdx++;
+            });
+
+            const predictedNextMonthCount = monthlyCount > 0 ? Math.round(monthlyCount * 1.22) : 0;
+            const predictedNextMonthOccupancy = monthlyCount > 0 ? Math.min(100, Math.round(occupancyPct * 1.15)) : 0;
+            const predictedRevenue = monthlyRev > 0 ? Math.round(monthlyRev * 1.25) : 0;
 
             const radius = 68;
             const circumference = 2 * Math.PI * radius;
@@ -391,43 +412,45 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
                       </div>
                     </div>
 
-                    {/* Mini Category Sphere Bars */}
+                    {/* Dynamic Real Category Velocity Bars */}
                     <div style={{ background: isLightMode ? '#FFFFFF' : 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: 12, border: `1px solid ${themeBorder}` }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                         <span style={{ fontSize: '.72rem', fontWeight: 700, color: themeText }}>Category Capacity Velocity</span>
                         <span style={{ fontSize: '.68rem', color: '#0EA5E9', fontWeight: 700 }}>Telemetry Ratio</span>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        {[
-                          { label: 'Beachfront Cottages', filter: 'Cottage', pct: Math.min(100, occupancyPct + 6), color: '#0EA5E9' },
-                          { label: 'Executive Family Villas', filter: 'Villa', pct: Math.min(100, occupancyPct + 14), color: '#8B5CF6' },
-                          { label: 'Standard Beach Suites', filter: 'Suite', pct: Math.max(30, occupancyPct - 12), color: '#10B981' },
-                        ].map((cat) => (
-                          <div
-                            key={cat.label}
-                            onClick={() => {
-                              setInventoryRoomFilter(cat.filter);
-                              toast(`Filtered rooms by ${cat.label}`);
-                            }}
-                            style={{ cursor: 'pointer', padding: '2px 4px', borderRadius: 6, transition: 'background 0.2s ease' }}
-                            title={`Click to filter by ${cat.label}`}
-                          >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.68rem', color: themeMuted, marginBottom: 2 }}>
-                              <span style={{ fontWeight: inventoryRoomFilter.toLowerCase() === cat.filter.toLowerCase() ? 800 : 500, color: inventoryRoomFilter.toLowerCase() === cat.filter.toLowerCase() ? cat.color : undefined }}>
-                                {cat.label} {inventoryRoomFilter.toLowerCase() === cat.filter.toLowerCase() ? '✦' : ''}
-                              </span>
-                              <b style={{ color: cat.color }}>{cat.pct}%</b>
+                        {categoryGroups.length === 0 ? (
+                          <span style={{ fontSize: '.72rem', color: themeMuted, fontStyle: 'italic', padding: '6px 0' }}>
+                            No active rooms provisioned yet. Add your resort rooms below to track category velocity.
+                          </span>
+                        ) : (
+                          categoryGroups.map((cat) => (
+                            <div
+                              key={cat.label}
+                              onClick={() => {
+                                setInventoryRoomFilter(cat.filter);
+                                toast(`Filtered rooms by ${cat.label}`);
+                              }}
+                              style={{ cursor: 'pointer', padding: '2px 4px', borderRadius: 6, transition: 'background 0.2s ease' }}
+                              title={`Click to filter by ${cat.label}`}
+                            >
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.68rem', color: themeMuted, marginBottom: 2 }}>
+                                <span style={{ fontWeight: inventoryRoomFilter.toLowerCase() === cat.filter.toLowerCase() ? 800 : 500, color: inventoryRoomFilter.toLowerCase() === cat.filter.toLowerCase() ? cat.color : undefined }}>
+                                  {cat.label} ({cat.units} {cat.units === 1 ? 'unit' : 'units'}) {inventoryRoomFilter.toLowerCase() === cat.filter.toLowerCase() ? '✦' : ''}
+                                </span>
+                                <b style={{ color: cat.color }}>{cat.pct}%</b>
+                              </div>
+                              <div style={{ height: 5, borderRadius: 4, background: isLightMode ? '#E2E8F0' : 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+                                <div style={{ width: `${cat.pct}%`, height: '100%', background: cat.color, borderRadius: 4, transition: 'width 0.8s ease' }} />
+                              </div>
                             </div>
-                            <div style={{ height: 5, borderRadius: 4, background: isLightMode ? '#E2E8F0' : 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
-                              <div style={{ width: `${cat.pct}%`, height: '100%', background: cat.color, borderRadius: 4, transition: 'width 0.8s ease' }} />
-                            </div>
-                          </div>
-                        ))}
+                          ))
+                        )}
                       </div>
                     </div>
                   </div>
 
-                  {/* 3. PREDICTIONS & ANALYSIS MODEL (DATA PRESENCE INTELLIGENCE) */}
+                  {/* 3. PREDICTIONS & ANALYSIS MODEL (GROUNDED IN LIVE DATABASE) */}
                   <div
                     style={{
                       background: isLightMode ? '#F0FDF4' : 'rgba(16,185,129,0.06)',
@@ -445,23 +468,33 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
                       </div>
                       <span style={{ fontSize: '.68rem', color: '#10B981', fontWeight: 800 }}>
                         <i className="fas fa-arrow-trend-up" style={{ marginRight: 3 }} />
-                        +22% FORECAST
+                        {monthlyCount > 0 ? '+22% FORECAST' : 'LIVE SYNC'}
                       </span>
                     </div>
 
-                    <p style={{ margin: '0 0 10px', fontSize: '.76rem', color: themeText, lineHeight: 1.45 }}>
-                      Based on historical booking cadence and seasonal Patar beach trends, demand is projected to reach{' '}
-                      <b style={{ color: '#0EA5E9' }}>{predictedNextMonthCount} bookings</b> next month ({predictedNextMonthOccupancy}% occupancy, ~₱{predictedRevenue.toLocaleString()} value).
-                    </p>
+                    {totalUnits === 0 ? (
+                      <p style={{ margin: '0 0 10px', fontSize: '.76rem', color: themeText, lineHeight: 1.45 }}>
+                        Room inventory is currently empty (0 rooms in database). Provision your resort rooms below to activate automated occupancy forecasting and demand intelligence.
+                      </p>
+                    ) : monthlyCount === 0 ? (
+                      <p style={{ margin: '0 0 10px', fontSize: '.76rem', color: themeText, lineHeight: 1.45 }}>
+                        No guest bookings recorded for this monthly cycle yet. With <b>{totalUnits} active room units</b> ready, occupancy metrics will calibrate live as reservations are placed.
+                      </p>
+                    ) : (
+                      <p style={{ margin: '0 0 10px', fontSize: '.76rem', color: themeText, lineHeight: 1.45 }}>
+                        Based on current booking cadence of {monthlyCount} stays, demand is projected to reach{' '}
+                        <b style={{ color: '#0EA5E9' }}>{predictedNextMonthCount} bookings</b> next month ({predictedNextMonthOccupancy}% occupancy, ~₱{predictedRevenue.toLocaleString()} value).
+                      </p>
+                    )}
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, fontSize: '.72rem', color: themeMuted }}>
-                        <i className="fas fa-bolt" style={{ color: '#F59E0B', marginTop: 2, flexShrink: 0 }} />
-                        <span><b>Peak Weekend Surge:</b> Saturday villa occupancy at 92% capacity. Room availability will tighten rapidly.</span>
+                        <i className="fas fa-database" style={{ color: '#0EA5E9', marginTop: 2, flexShrink: 0 }} />
+                        <span><b>Live Database Synced:</b> Telemetry reflects real records from Supabase (<code style={{ color: '#38BDF8' }}>public.rooms</code> & <code style={{ color: '#38BDF8' }}>public.reservations</code>).</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, fontSize: '.72rem', color: themeMuted }}>
-                        <i className="fas fa-lightbulb" style={{ color: '#0EA5E9', marginTop: 2, flexShrink: 0 }} />
-                        <span><b>Dynamic Optimization:</b> Midweek cottage slots available (Tue–Thu). Deploy 2-night beachfront extension packages.</span>
+                        <i className="fas fa-chart-line" style={{ color: '#10B981', marginTop: 2, flexShrink: 0 }} />
+                        <span><b>Inventory Status:</b> {totalUnits > 0 ? `${totalUnits} room units active & ready for reservation.` : '0 units currently provisioned.'}</span>
                       </div>
                     </div>
                   </div>

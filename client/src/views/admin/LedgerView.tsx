@@ -230,9 +230,9 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
         const netDifference = Math.abs(totalDebits - totalCredits);
         const isBalanced = trialBalance ? trialBalance.is_balanced : netDifference === 0;
 
-        const totalResortUnits = Math.max(1, activeRoomsList.reduce((acc, r) => acc + (Number(r.units) || 1), 0)) || 18;
+        const totalResortUnits = activeRoomsList.reduce((acc, r) => acc + (Number(r.units) || 1), 0);
         const daysInMonth = 31;
-        const availableUnitNights = totalResortUnits * daysInMonth; // e.g. 18 * 31 = 558
+        const availableUnitNights = totalResortUnits * daysInMonth;
 
         // Calculate dynamic real analytics from allBookings
         const nonCancelled = allBookings.filter((b: any) => b.status !== 'cancelled');
@@ -243,7 +243,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
         });
 
         const computedRevenue = octoberStays.reduce((sum: number, b: any) => sum + (Number(b.total_php) || 0), 0);
-        const roomRevenue = computedRevenue > 0 ? computedRevenue : 844032;
+        const roomRevenue = computedRevenue;
 
         let computedNights = 0;
         octoberStays.forEach((b: any) => {
@@ -253,20 +253,20 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
           const endD = Math.min(31, cout.startsWith('2026-10') ? parseInt(cout.slice(8, 10), 10) : 31);
           computedNights += Math.max(1, endD - startD);
         });
-        const roomNightsSold = computedNights > 0 ? computedNights : 102;
+        const roomNightsSold = computedNights;
         const occupiedUnitNights = Math.min(roomNightsSold, availableUnitNights);
-        const occupancyPct = Number(((occupiedUnitNights / availableUnitNights) * 100).toFixed(1));
-        const adr = Math.round(roomRevenue / roomNightsSold);
-        const revPar = Math.round(roomRevenue / availableUnitNights);
+        const occupancyPct = availableUnitNights > 0 ? Number(((occupiedUnitNights / availableUnitNights) * 100).toFixed(1)) : 0;
+        const adr = roomNightsSold > 0 ? Math.round(roomRevenue / roomNightsSold) : 0;
+        const revPar = availableUnitNights > 0 ? Math.round(roomRevenue / availableUnitNights) : 0;
 
-        const arrivalsCount = octoberStays.filter((b: any) => String(b.check_in || '').startsWith('2026-10')).length || 35;
-        const avgLengthOfStay = (roomNightsSold / arrivalsCount).toFixed(1);
-        const totalGuests = octoberStays.reduce((sum: number, b: any) => sum + (Number(b.guests) || 2), 0);
-        const avgPartySize = (totalGuests / (octoberStays.length || 1) || 2.7).toFixed(1);
+        const arrivalsCount = octoberStays.filter((b: any) => String(b.check_in || '').startsWith('2026-10')).length;
+        const avgLengthOfStay = arrivalsCount > 0 ? (roomNightsSold / arrivalsCount).toFixed(1) : '0.0';
+        const totalGuests = octoberStays.reduce((sum: number, b: any) => sum + (Number(b.guests) || 0), 0);
+        const avgPartySize = octoberStays.length > 0 ? (totalGuests / octoberStays.length).toFixed(1) : '0.0';
 
-        const billedAmount = Math.round(roomRevenue * 0.9945);
-        const collectedAmount = Math.round(billedAmount * 0.878);
-        const outstandingAmount = billedAmount - collectedAmount;
+        const billedAmount = totalCredits > 0 ? totalCredits : computedRevenue;
+        const collectedAmount = totalDebits > 0 ? totalDebits : computedRevenue;
+        const outstandingAmount = Math.max(0, billedAmount - collectedAmount);
 
         // Daily occupancy simulation curve (31 days) matching resort occupancy
         const dailyOccupancy = Array.from({ length: 31 }, (_, i) => {

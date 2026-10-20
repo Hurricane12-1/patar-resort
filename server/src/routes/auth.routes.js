@@ -1028,6 +1028,7 @@ r.post('/auth/forgot-password',
     // Look up user in Supabase auth users
     let targetUser = null;
     let targetProfile = null;
+    let targetEmail = email;
 
     try {
       const { data: usersData, error: usersErr } = await admin.auth.admin.listUsers();
@@ -1036,36 +1037,54 @@ r.post('/auth/forgot-password',
       }
     } catch {}
 
+    // Check employee_accounts for staff/admin email or employee_id
+    try {
+      const { data: emp } = await admin.from('employee_accounts')
+        .select('*')
+        .or(`email.ilike.${email},employee_id.ilike.${email}`)
+        .single();
+      if (emp) {
+        if (!targetUser && emp.auth_user_id) {
+          try {
+            const { data: u } = await admin.auth.admin.getUserById(emp.auth_user_id);
+            if (u?.user) targetUser = u.user;
+          } catch {}
+        }
+        targetProfile = emp;
+        if (emp.email) targetEmail = emp.email.toLowerCase();
+      }
+    } catch {}
+
     // Also look up profile in profiles table
     try {
-      if (targetUser) {
+      if (targetUser && !targetProfile) {
         const { data: p } = await admin.from('profiles').select('*').eq('id', targetUser.id).single();
-        targetProfile = p;
+        if (p) targetProfile = p;
       }
     } catch {}
 
     // Generate secure 6-digit verification code
     const code = crypto.randomInt(100000, 999999).toString();
-    const cacheKey = `recovery:${email}`;
+    const cacheKey = `recovery:${targetEmail}`;
 
     // Store in Redis / in-memory cache with 900s (15 min) TTL
     await redis.set(cacheKey, {
       code,
       userId: targetUser?.id || null,
-      email,
+      email: targetEmail,
       attempts: 0,
       createdAt: Date.now(),
     }, 900);
 
-    const guestName = targetProfile?.full_name || targetUser?.user_metadata?.full_name || 'Guest';
+    const guestName = targetProfile?.full_name || targetUser?.user_metadata?.full_name || 'Valued User';
 
     // 1. Dispatch Email OTP via Nodemailer (Google Mail / SMTP)
     sendRecoveryOTP({
-      to: email,
+      to: targetEmail,
       code,
       name: guestName,
     }).catch((err) => {
-      console.warn(`[Nodemailer Warning] Could not send OTP to ${email}:`, err.message);
+      console.warn(`[Nodemailer Warning] Could not send OTP to ${targetEmail}:`, err.message);
     });
 
     // 2. Dispatch SMS ping if target has a registered mobile number
@@ -1149,9 +1168,9 @@ r.post('/auth/reset-password',
       throw new ApiError(400, 'Invalid or expired recovery code. Please request a new code.');
     }
 
-    // Resolve user ID
+    // Resolve user ID & account details
     let userId = record.userId;
-    let guestName = 'Guest';
+    let guestName = 'Valued User';
     let targetPhone = null;
 
     if (!userId) {
@@ -1162,26 +1181,54 @@ r.post('/auth/reset-password',
       } catch {}
     }
 
-    if (!userId) {
+    // Check employee_accounts
+    let targetEmployee = null;
+    try {
+      const { data: emp } = await admin.from('employee_accounts')
+        .select('*')
+        .or(`email.ilike.${cleanEmail},employee_id.ilike.${cleanEmail}`)
+        .single();
+      if (emp) {
+        targetEmployee = emp;
+        if (!userId && emp.auth_user_id) userId = emp.auth_user_id;
+        guestName = emp.full_name || guestName;
+      }
+    } catch {}
+
+    if (!userId && !targetEmployee) {
       throw new ApiError(404, 'No account matching this email address was found.');
     }
 
     // Fetch profile for notification personalization
+    if (userId) {
+      try {
+        const { data: prof } = await admin.from('profiles').select('phone, full_name').eq('id', userId).single();
+        if (prof) {
+          guestName = prof.full_name || guestName;
+          targetPhone = prof.phone;
+        }
+      } catch {}
+    }
+
+    let authUpdated = false;
+    if (userId) {
+      const { error: updateErr } = await admin.auth.admin.updateUserById(userId, {
+        password: new_password,
+      });
+      if (!updateErr) authUpdated = true;
+    }
+
+    // Also synchronize password to employee_accounts if an employee record exists
+    let empUpdated = false;
     try {
-      const { data: prof } = await admin.from('profiles').select('phone, full_name').eq('id', userId).single();
-      if (prof) {
-        guestName = prof.full_name || guestName;
-        targetPhone = prof.phone;
-      }
+      const { error: empErr } = await admin.from('employee_accounts')
+        .update({ password: new_password })
+        .or(`email.ilike.${cleanEmail},auth_user_id.eq.${userId || '00000000-0000-0000-0000-000000000000'}`);
+      if (!empErr) empUpdated = true;
     } catch {}
 
-    // Update password in Supabase Auth
-    const { error: updateErr } = await admin.auth.admin.updateUserById(userId, {
-      password: new_password,
-    });
-
-    if (updateErr) {
-      throw new ApiError(500, `Failed to update password: ${updateErr.message}`);
+    if (!authUpdated && !empUpdated) {
+      throw new ApiError(500, 'Failed to update security password in database.');
     }
 
     // Invalidate the recovery code from Redis immediately

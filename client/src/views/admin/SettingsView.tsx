@@ -43,8 +43,26 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   themeMuted,
   toast,
 }) => {
-  const [confirmDeleteSelf, setConfirmDeleteSelf] = useState(false);
-  const [deletingSelf, setDeletingSelf] = useState(false);
+  const [sendingRecoveryEmail, setSendingRecoveryEmail] = useState(false);
+  const [recoverySent, setRecoverySent] = useState(false);
+
+  const handleTriggerEmailRecovery = async () => {
+    const emailToRecover = adminProfileState.email || currentAdminProfile?.email;
+    if (!emailToRecover) {
+      toast('No registered email address found for this account.', true);
+      return;
+    }
+    try {
+      setSendingRecoveryEmail(true);
+      await api.forgotPassword(emailToRecover);
+      setRecoverySent(true);
+      toast(`📧 Security password recovery OTP code sent to ${emailToRecover}! Check your inbox.`);
+    } catch (err: any) {
+      toast(err.message || 'Failed to dispatch email recovery code.', true);
+    } finally {
+      setSendingRecoveryEmail(false);
+    }
+  };
 
   return (
     <div className="panel" style={{ background: themeCardBg, border: `1px solid ${themeBorder}`, borderRadius: 20, padding: 28, boxShadow: themeShadow }}>
@@ -292,95 +310,68 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               Update Password Now
             </button>
           )}
+
+          {/* EMAIL RECOVERY ASSISTANCE */}
+          <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px dashed ${themeBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+            <div>
+              <span style={{ fontSize: '.78rem', fontWeight: 700, color: themeText, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <i className="fas fa-envelope-circle-check" style={{ color: '#0EA5E9' }} /> Account Email Recovery
+              </span>
+              <span style={{ fontSize: '.72rem', color: themeMuted, display: 'block', marginTop: 2 }}>
+                Dispatches a 6-digit recovery OTP verification code to {adminProfileState.email || currentAdminProfile?.email || 'your registered email'}.
+              </span>
+            </div>
+            <button
+              type="button"
+              disabled={sendingRecoveryEmail}
+              onClick={handleTriggerEmailRecovery}
+              className="btn btn-sm"
+              style={{
+                background: 'rgba(14, 165, 233, 0.12)',
+                color: '#0EA5E9',
+                border: '1px solid rgba(14, 165, 233, 0.35)',
+                fontWeight: 700,
+                fontSize: '.78rem',
+                padding: '7px 14px',
+                borderRadius: 10,
+                cursor: sendingRecoveryEmail ? 'wait' : 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              {sendingRecoveryEmail ? (
+                <>Sending Recovery Email…</>
+              ) : recoverySent ? (
+                <>✓ Recovery Code Sent</>
+              ) : (
+                <><i className="fas fa-paper-plane" /> Send Recovery Code via Email</>
+              )}
+            </button>
+          </div>
         </div>
 
-        {/* 3. Action Buttons: SAVE, REMOVE, CANCEL */}
-        {confirmDeleteSelf ? (
-          <div style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: 18, padding: 20, textAlign: 'center' }}>
-            <b style={{ color: '#F87171', display: 'block', fontSize: '1.05rem', marginBottom: 6 }}>
-              <i className="fas fa-triangle-exclamation" style={{ marginRight: 6 }} /> Remove This Administrative Account?
-            </b>
-            <p style={{ color: '#FECACA', fontSize: '.84rem', margin: '0 0 16px', maxWidth: 480, marginLeft: 'auto', marginRight: 'auto' }}>
-              This action will permanently purge your profile and administrative credentials from the database. You will be signed out immediately.
-            </p>
-            <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-              <button
-                type="button"
-                disabled={deletingSelf}
-                onClick={async () => {
-                  setDeletingSelf(true);
-                  try {
-                    if (deleteAccount) await deleteAccount();
-                    window.location.href = '/';
-                  } catch (err: any) {
-                    toast(err.message, true);
-                  } finally {
-                    setDeletingSelf(false);
-                    setConfirmDeleteSelf(false);
-                  }
-                }}
-                className="btn"
-                style={{ background: '#EF4444', color: '#FFF', fontWeight: 800, padding: '10px 24px', borderRadius: 9999 }}
-              >
-                {deletingSelf ? 'Removing Account…' : 'Yes, Remove My Account'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setConfirmDeleteSelf(false)}
-                className="btn btn-ghost"
-                style={{ border: `1px solid ${themeBorder}`, color: themeText, padding: '10px 24px', borderRadius: 9999 }}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginTop: 10 }}>
-            <button
-              type="submit"
-              disabled={savingSettings}
-              className="btn btn-sky"
-              style={{ justifyContent: 'center', padding: '14px 20px', fontWeight: 800, fontSize: '.95rem', borderRadius: 9999, display: 'inline-flex', alignItems: 'center', gap: 6 }}
-            >
-              {savingSettings ? 'Saving to Database…' : <><i className="fas fa-floppy-disk" /> Save Profile</>}
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirmDeleteSelf(true)}
-              className="btn"
-              style={{
-                background: 'rgba(239, 68, 68, 0.15)',
-                border: '1px solid rgba(239, 68, 68, 0.4)',
-                color: '#F87171',
-                justifyContent: 'center',
-                padding: '14px 20px',
-                fontWeight: 800,
-                fontSize: '.95rem',
-                borderRadius: 9999,
-                cursor: 'pointer',
-              }}
-            >
-              Remove Account
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('overview')}
-              className="btn btn-ghost"
-              style={{
-                border: `1px solid ${themeBorder}`,
-                color: themeText,
-                justifyContent: 'center',
-                padding: '14px 20px',
-                fontWeight: 800,
-                fontSize: '.95rem',
-                borderRadius: 9999,
-                cursor: 'pointer',
-              }}
-            >
-              Cancel
-            </button>
-          </div>
-        )}
+        {/* Action Button: SAVE PROFILE */}
+        <div style={{ marginTop: 16 }}>
+          <button
+            type="submit"
+            disabled={savingSettings}
+            className="btn btn-sky"
+            style={{
+              width: '100%',
+              justifyContent: 'center',
+              padding: '14px 20px',
+              fontWeight: 800,
+              fontSize: '.95rem',
+              borderRadius: 14,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+            }}
+          >
+            {savingSettings ? 'Saving to Database…' : <><i className="fas fa-floppy-disk" /> Save Profile</>}
+          </button>
+        </div>
       </form>
     </div>
   );
