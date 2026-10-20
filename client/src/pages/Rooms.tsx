@@ -182,13 +182,13 @@ export default function Rooms() {
           ))}
         </div>
         {!loading && all.length === 0 && (
-          <div className="reveal" style={{ padding: '60px 24px', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: 16, border: '1px dashed rgba(255,255,255,0.15)', margin: '30px 0 60px' }}>
-            <div style={{ fontSize: '3rem', marginBottom: 12, color: '#38BDF8' }}>
-              <i className="fas fa-umbrella-beach" />
+          <div className="reveal" style={{ padding: '60px 24px', textAlign: 'center', background: 'rgba(239, 68, 68, 0.05)', borderRadius: 16, border: '1.5px dashed rgba(244, 63, 94, 0.35)', margin: '30px 0 60px' }}>
+            <div style={{ fontSize: '3rem', marginBottom: 12, color: '#F43F5E' }}>
+              <i className="fas fa-triangle-exclamation" />
             </div>
-            <h3 className="serif" style={{ fontSize: '1.6rem', margin: '0 0 8px' }}>Rooms Awaiting Provisioning</h3>
-            <p className="muted" style={{ maxWidth: 540, margin: '0 auto 20px', fontSize: '.92rem', lineHeight: 1.6 }}>
-              Resort management is currently updating our active beachfront inventory. Villas, suites, and cottages will be published here upon provisioning.
+            <h3 className="serif" style={{ fontSize: '1.6rem', margin: '0 0 8px', color: '#F43F5E' }}>There's No Present Room Around</h3>
+            <p className="muted" style={{ maxWidth: 540, margin: '0 auto 20px', fontSize: '.92rem', lineHeight: 1.6, color: '#CBD5E1' }}>
+              No accommodations are currently active or present in the resort inventory. Rooms will be published here upon provisioning by resort management.
             </p>
             <Link to="/contact" className="btn btn-sky btn-sm">Contact Concierge</Link>
           </div>

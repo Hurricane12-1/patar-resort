@@ -168,8 +168,8 @@ r.get('/rooms/:slug', asyncH(async (req, res) => {
   } catch (err) {
     console.warn('[Rooms Slug API] Error fetching slug:', err?.message);
   }
-  if (!room) {
-    throw new ApiError(404, 'Room not found');
+  if (!room || room.is_active === false) {
+    throw new ApiError(404, "There's no present room around matching this slug.");
   }
   return res.json(room);
 }));

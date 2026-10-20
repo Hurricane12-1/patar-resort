@@ -610,7 +610,8 @@ export default function Admin() {
   const [showCampaignsModal, setShowCampaignsModal] = useState(false);
 
   // Accommodations & Inventory State (Live Synchronized with Supabase & Backend)
-  const [roomsList, setRoomsList] = useState([]);
+  const [roomsList, setRoomsList] = useState<any[]>([]);
+  const activeRoomsList = useMemo(() => (Array.isArray(roomsList) ? roomsList : []).filter((r: any) => r && r.is_active !== false), [roomsList]);
   const [inventoryList, setInventoryList] = useState([]);
   const [loadingRoomsAndInv, setLoadingRoomsAndInv] = useState(false);
   const [inventorySubTab, setInventorySubTab] = useState('accommodations'); // 'accommodations' | 'supplies'
@@ -1306,8 +1307,15 @@ export default function Admin() {
     e.preventDefault();
     setCreatingReservation(true);
     try {
+      if (activeRoomsList.length === 0) {
+        throw new Error("There's no present room around. Please create and activate a room in Room Management first.");
+      }
       if (!newReservation.room_id) {
         throw new Error('Please select a room.');
+      }
+      const roomMatch = activeRoomsList.find((r: any) => r.id === newReservation.room_id);
+      if (!roomMatch) {
+        throw new Error("The selected room is absent or inactive. Please select a valid active accommodation.");
       }
       if (isModalRoomLocked) {
         throw new Error('All units for this accommodation are already booked for those dates. Overbooking is strictly prevented.');
@@ -2779,11 +2787,15 @@ export default function Admin() {
                   {/* LEFT: RESORT AVAILABILITY & PMS CALENDAR */}
                   <div style={{ minWidth: 0 }}>
                     <AvailabilityCalendar
-                      rooms={roomsList}
+                      rooms={activeRoomsList}
                       bookings={allBookings}
                       isLightMode={isLightMode}
                       onNewBooking={() => {
-                        const activeRoom = roomsList[0];
+                        if (activeRoomsList.length === 0) {
+                          toast("There's no present room around. Please add a room in Room Management first.", true);
+                          return;
+                        }
+                        const activeRoom = activeRoomsList[0];
                         setNewReservation((prev) => ({
                           ...prev,
                           room_id: prev.room_id || activeRoom?.id || '',
@@ -2800,7 +2812,11 @@ export default function Admin() {
                         }
                       }}
                       onSelectDates={(cin, cout, targetRoomId, unitInfo) => {
-                        const activeRoom = (targetRoomId ? roomsList.find((r) => r.id === targetRoomId) : null) || roomsList.find((r) => r.id === newReservation.room_id) || roomsList[0];
+                        if (activeRoomsList.length === 0) {
+                          toast("There's no present room around. Please add a room in Room Management first.", true);
+                          return;
+                        }
+                        const activeRoom = (targetRoomId ? activeRoomsList.find((r) => r.id === targetRoomId) : null) || activeRoomsList.find((r) => r.id === newReservation.room_id) || activeRoomsList[0];
                         const nights = Math.max(1, Math.round((new Date(cout).getTime() - new Date(cin).getTime()) / 86400000));
                         const unitTag = unitInfo && unitInfo.unitNumber ? `[Unit ${unitInfo.unitNumber}]` : '';
                         const cleanNotes = (newReservation.notes || '').replace(/\[Unit\s*\d+\]\s*/g, '').trim();
@@ -5133,8 +5149,12 @@ export default function Admin() {
                           const val = e.target.value;
                           e.target.value = '';
                           if (val === 'book') {
-                            if (!newReservation.room_id && roomsList.length > 0) {
-                              const firstRoom = roomsList[0];
+                            if (activeRoomsList.length === 0) {
+                              toast("There's no present room around. Please add a room in Room Management first.", true);
+                              return;
+                            }
+                            if (!newReservation.room_id && activeRoomsList.length > 0) {
+                              const firstRoom = activeRoomsList[0];
                               const nights = Math.max(1, Math.round((new Date(newReservation.check_out).getTime() - new Date(newReservation.check_in).getTime()) / 86400000));
                               setNewReservation((prev) => ({
                                 ...prev,
@@ -5215,7 +5235,13 @@ export default function Admin() {
                     <>
                       <button
                         className="btn btn-sky btn-sm"
-                        onClick={() => setShowAddReservationModal(true)}
+                        onClick={() => {
+                          if (activeRoomsList.length === 0) {
+                            toast("There's no present room around. Please add a room in Room Management first.", true);
+                            return;
+                          }
+                          setShowAddReservationModal(true);
+                        }}
                         style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
                       >
                         <><i className="fas fa-plus" /> Walk-In Booking</>
@@ -6047,13 +6073,17 @@ export default function Admin() {
               {ledgerSubView === 'availability' && (
                 <div>
                   <AvailabilityCalendar
-                    rooms={roomsList}
+                    rooms={activeRoomsList}
                     bookings={allBookings}
                     isLightMode={isLightMode}
                     onClose={() => setLedgerSubView('stay_folios')}
                     onViewList={() => setLedgerSubView('stay_folios')}
                     onNewBooking={() => {
-                      const activeRoom = roomsList[0];
+                      if (activeRoomsList.length === 0) {
+                        toast("There's no present room around. Please add a room in Room Management first.", true);
+                        return;
+                      }
+                      const activeRoom = activeRoomsList[0];
                       setNewReservation((prev) => ({
                         ...prev,
                         room_id: prev.room_id || activeRoom?.id || '',
@@ -6070,7 +6100,11 @@ export default function Admin() {
                       }
                     }}
                     onSelectDates={(cin, cout, targetRoomId, unitInfo) => {
-                      const activeRoom = (targetRoomId ? roomsList.find((r) => r.id === targetRoomId) : null) || roomsList.find((r) => r.id === newReservation.room_id) || roomsList[0];
+                      if (activeRoomsList.length === 0) {
+                        toast("There's no present room around. Please add a room in Room Management first.", true);
+                        return;
+                      }
+                      const activeRoom = (targetRoomId ? activeRoomsList.find((r) => r.id === targetRoomId) : null) || activeRoomsList.find((r) => r.id === newReservation.room_id) || activeRoomsList[0];
                       const nights = Math.max(1, Math.round((new Date(cout).getTime() - new Date(cin).getTime()) / 86400000));
                       const unitTag = unitInfo && unitInfo.unitNumber ? `[Unit ${unitInfo.unitNumber}]` : '';
                       const cleanNotes = (newReservation.notes || '').replace(/\[Unit\s*\d+\]\s*/g, '').trim();
@@ -6381,7 +6415,7 @@ export default function Admin() {
               onClick={() => setShowAddReservationModal(false)}
             >
               {(() => {
-                const activeWalkInRoom = roomsList.find((r) => r.id === newReservation.room_id) || roomsList[0];
+                const activeWalkInRoom = activeRoomsList.find((r) => r.id === newReservation.room_id) || activeRoomsList[0];
                 const activeRoomImage = getRoomImageUrl(activeWalkInRoom);
                 const computedNights = Math.max(1, Math.round((new Date(newReservation.check_out).getTime() - new Date(newReservation.check_in).getTime()) / 86400000));
 
@@ -6578,6 +6612,32 @@ export default function Admin() {
                       }}
                     >
                       <form onSubmit={handleCreateReservation} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                        {/* WARNING: IF NO ROOMS PRESENT IN SYSTEM */}
+                        {activeRoomsList.length === 0 && (
+                          <div
+                            style={{
+                              padding: '14px 18px',
+                              borderRadius: 14,
+                              background: 'rgba(239, 68, 68, 0.12)',
+                              border: '1.5px solid rgba(239, 68, 68, 0.4)',
+                              color: '#FECDD3',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 12,
+                            }}
+                          >
+                            <i className="fas fa-triangle-exclamation" style={{ color: '#F43F5E', fontSize: '1.3rem', flexShrink: 0 }} />
+                            <div>
+                              <strong style={{ color: '#F43F5E', fontSize: '.88rem', display: 'block', marginBottom: 2 }}>
+                                There's No Present Room Around
+                              </strong>
+                              <span style={{ fontSize: '.78rem', color: '#CBD5E1', lineHeight: 1.45 }}>
+                                No accommodations are currently active or present in the resort system. Please create and activate a room under <strong>Room Management</strong> before booking a walk-in or guest stay.
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
                         <div>
                           <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Guest Full Name *</label>
                           <input
@@ -6622,10 +6682,11 @@ export default function Admin() {
                           </div>
                           <select
                             required
+                            disabled={activeRoomsList.length === 0}
                             value={newReservation.room_id || activeWalkInRoom?.id || ''}
                             onChange={(e) => {
                               const rId = e.target.value;
-                              const room = roomsList.find((r) => r.id === rId);
+                              const room = activeRoomsList.find((r) => r.id === rId);
                               const rate = room?.rate_php || 3500;
                               const nights = Math.max(1, Math.round((new Date(newReservation.check_out).getTime() - new Date(newReservation.check_in).getTime()) / 86400000));
                               setNewReservation({
@@ -6636,8 +6697,8 @@ export default function Admin() {
                             }}
                             style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#1E293B', color: themeText, fontWeight: 600 }}
                           >
-                            <option value="">-- Select Room / Cottage / Villa --</option>
-                            {roomsList.map((r) => (
+                            <option value="">{activeRoomsList.length === 0 ? "-- There's no present room around (add in Room Management) --" : "-- Select Room / Cottage / Villa --"}</option>
+                            {activeRoomsList.map((r) => (
                               <option key={r.id} value={r.id}>
                                 {r.name} ({r.category || 'Standard'}) — {money(r.rate_php)}/night
                               </option>
@@ -6757,12 +6818,12 @@ export default function Admin() {
                             >
                               <AvailabilityCalendar
                                 selectedRoomId={newReservation.room_id || activeWalkInRoom?.id || 'all'}
-                                rooms={roomsList}
+                                rooms={activeRoomsList}
                                 initialCheckIn={newReservation.check_in}
                                 initialCheckOut={newReservation.check_out}
                                 isLightMode={isLightMode}
                                 onSelectDates={(cin, cout, targetRoomId, unitInfo) => {
-                                  const room = (targetRoomId ? roomsList.find((r) => r.id === targetRoomId) : null) || roomsList.find((r) => r.id === newReservation.room_id) || activeWalkInRoom;
+                                  const room = (targetRoomId ? activeRoomsList.find((r) => r.id === targetRoomId) : null) || activeRoomsList.find((r) => r.id === newReservation.room_id) || activeWalkInRoom;
                                   const rate = room?.rate_php || 3500;
                                   const nights = Math.max(1, Math.round((new Date(cout).getTime() - new Date(cin).getTime()) / 86400000));
                                   const unitTag = unitInfo && unitInfo.unitNumber ? `[Unit ${unitInfo.unitNumber}]` : '';
@@ -6779,7 +6840,7 @@ export default function Admin() {
                                   }));
                                 }}
                                 onRoomChange={(roomId) => {
-                                  const room = roomsList.find((r) => r.id === roomId);
+                                  const room = activeRoomsList.find((r) => r.id === roomId);
                                   const rate = room?.rate_php || 3500;
                                   const nights = Math.max(1, Math.round((new Date(newReservation.check_out).getTime() - new Date(newReservation.check_in).getTime()) / 86400000));
                                   setNewReservation((prev) => ({
@@ -6999,16 +7060,16 @@ export default function Admin() {
                           </button>
                           <button
                             type="submit"
-                            disabled={creatingReservation || isModalRoomLocked || isSelectedUnitTaken}
+                            disabled={creatingReservation || isModalRoomLocked || isSelectedUnitTaken || activeRoomsList.length === 0}
                             className="btn btn-sky btn-sm"
                             style={{
                               fontWeight: 700,
-                              background: (isModalRoomLocked || isSelectedUnitTaken) ? '#94A3B8' : undefined,
-                              cursor: (isModalRoomLocked || isSelectedUnitTaken) ? 'not-allowed' : 'pointer',
-                              borderColor: (isModalRoomLocked || isSelectedUnitTaken) ? '#94A3B8' : undefined,
+                              background: (isModalRoomLocked || isSelectedUnitTaken || activeRoomsList.length === 0) ? '#94A3B8' : undefined,
+                              cursor: (isModalRoomLocked || isSelectedUnitTaken || activeRoomsList.length === 0) ? 'not-allowed' : 'pointer',
+                              borderColor: (isModalRoomLocked || isSelectedUnitTaken || activeRoomsList.length === 0) ? '#94A3B8' : undefined,
                             }}
                           >
-                            {creatingReservation ? 'Saving to Ledger…' : isModalRoomLocked ? <><i className="fas fa-lock" style={{ marginRight: 6 }} />All Units Booked</> : isSelectedUnitTaken ? <><i className="fas fa-ban" style={{ marginRight: 6 }} />Unit Occupied</> : 'Save & Log to Ledger ✦'}
+                            {creatingReservation ? 'Saving to Ledger…' : activeRoomsList.length === 0 ? <><i className="fas fa-triangle-exclamation" style={{ marginRight: 6 }} />No Rooms Around</> : isModalRoomLocked ? <><i className="fas fa-lock" style={{ marginRight: 6 }} />All Units Booked</> : isSelectedUnitTaken ? <><i className="fas fa-ban" style={{ marginRight: 6 }} />Unit Occupied</> : 'Save & Log to Ledger ✦'}
                           </button>
                         </div>
                       </form>

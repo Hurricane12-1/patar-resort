@@ -460,6 +460,10 @@ export default function AvailabilityCalendar({
           type="button"
           className="pms-new-booking-btn"
           onClick={() => {
+            if (units.length === 0) {
+              toast("There's no present room around. Please add a room in Room Management first.", true);
+              return;
+            }
             if (onNewBooking) {
               onNewBooking();
             } else if (onSelectDates) {
@@ -467,6 +471,8 @@ export default function AvailabilityCalendar({
               onSelectDates(todayStr, nextDay, units[0]?.roomId);
             }
           }}
+          title={units.length === 0 ? "There's no present room around" : "New booking"}
+          style={units.length === 0 ? { opacity: 0.65, cursor: 'not-allowed' } : undefined}
         >
           <i className="fas fa-plus" />
           <span>New booking</span>
@@ -498,9 +504,14 @@ export default function AvailabilityCalendar({
 
           {/* PHYSICAL UNIT ROWS (Dynamically generated based on open rooms count) */}
           {units.length === 0 ? (
-            <div style={{ padding: '36px 20px', textAlign: 'center', color: '#94A3B8', fontSize: '.84rem' }}>
-              <i className="fas fa-door-closed" style={{ fontSize: '1.4rem', display: 'block', marginBottom: 8, opacity: 0.6 }} />
-              No open accommodation units currently configured. Open or create rooms in Room Management.
+            <div style={{ padding: '40px 20px', textAlign: 'center', color: '#F43F5E', fontSize: '.88rem' }}>
+              <i className="fas fa-triangle-exclamation" style={{ fontSize: '1.8rem', display: 'block', marginBottom: 10, color: '#F43F5E' }} />
+              <strong style={{ display: 'block', marginBottom: 4, fontSize: '1rem', color: isLightMode ? '#DC2626' : '#F87171' }}>
+                There's No Present Room Around
+              </strong>
+              <span style={{ color: isLightMode ? '#64748B' : '#94A3B8', fontSize: '.82rem' }}>
+                No open accommodation units are currently configured or active in resort inventory. Open or create rooms in Room Management.
+              </span>
             </div>
           ) : (
             units.map((unit) => {

@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import '../styles/home.css';
 import BookingFlow from '../components/BookingFlow.tsx';
 import Stars from '../components/Stars.tsx';
@@ -63,9 +63,10 @@ const EXP = [
 ];
 
 export default function Home() {
+  const location = useLocation();
   const [rooms, setRooms] = useState<any[]>([]);
   const [reviews, setReviews] = useState([]);
-  const [pick, setPick] = useState(null);
+  const [pick, setPick] = useState<string | null>(null);
   const [activeScene, setActiveScene] = useState(SCENES[0]);
   const [playingAudio, setPlayingAudio] = useState(false);
   const [previewRoom, setPreviewRoom] = useState(null);
@@ -88,6 +89,15 @@ export default function Home() {
       stopOceanSound();
     };
   }, []);
+
+  useEffect(() => {
+    if (location.state?.book) {
+      setPick(location.state.book);
+      setTimeout(() => {
+        document.getElementById('reserve')?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+  }, [location.state]);
 
   useReveal(rooms);
 
@@ -200,11 +210,11 @@ export default function Home() {
           </div>
 
           {displayRooms.length === 0 ? (
-            <div className="reveal" style={{ padding: '48px 24px', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: 16, border: '1px dashed rgba(255,255,255,0.15)', margin: '20px 0 40px' }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: 12 }}><i className="fas fa-umbrella-beach" style={{ color: '#38BDF8' }} /></div>
-              <h3 className="serif" style={{ fontSize: '1.5rem', margin: '0 0 8px' }}>Rooms Awaiting Provisioning</h3>
-              <p className="muted" style={{ maxWidth: 520, margin: '0 auto 20px', fontSize: '.9rem', lineHeight: 1.6 }}>
-                Resort management is currently updating our active beachfront inventory. Villas, suites, and cottages will be published here upon provisioning.
+            <div className="reveal" style={{ padding: '48px 24px', textAlign: 'center', background: 'rgba(239, 68, 68, 0.05)', borderRadius: 16, border: '1.5px dashed rgba(244, 63, 94, 0.35)', margin: '20px 0 40px' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: 12 }}><i className="fas fa-triangle-exclamation" style={{ color: '#F43F5E' }} /></div>
+              <h3 className="serif" style={{ fontSize: '1.5rem', margin: '0 0 8px', color: '#F43F5E' }}>There's No Present Room Around</h3>
+              <p className="muted" style={{ maxWidth: 520, margin: '0 auto 20px', fontSize: '.9rem', lineHeight: 1.6, color: '#CBD5E1' }}>
+                Resort management currently has no active accommodations listed. Villas, suites, and cottages will be published here once configured.
               </p>
               <Link to="/contact" className="btn btn-ghost btn-sm">Contact Concierge</Link>
             </div>

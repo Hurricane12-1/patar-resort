@@ -22,6 +22,7 @@ export default function BookingFlow({ initialSlug }) {
   const [guests, setGuests] = useState(2);
   const [poolAddonId, setPoolAddonId] = useState('none');
   const [catalog, setCatalog] = useState<any[]>([]);
+  const [catalogLoaded, setCatalogLoaded] = useState(false);
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [stage, setStage] = useState('search');   // search | results | details | done
@@ -35,7 +36,15 @@ export default function BookingFlow({ initialSlug }) {
   const preferred = useRef(null);
   const resultsRef = useRef(null);
 
-  useEffect(() => { api.rooms().then(setCatalog).catch(() => {}); }, []);
+  useEffect(() => {
+    api.rooms()
+      .then((data) => {
+        const activeOnly = (Array.isArray(data) ? data : []).filter((r: any) => r && r.is_active !== false);
+        setCatalog(activeOnly);
+      })
+      .catch(() => setCatalog([]))
+      .finally(() => setCatalogLoaded(true));
+  }, []);
   useEffect(() => { setPhone(to11Digits(profile?.phone || '')); }, [profile]);
 
   const nights = Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000));
@@ -47,27 +56,59 @@ export default function BookingFlow({ initialSlug }) {
   const totalWithAdjustments = baseRoomTotal + poolAdjustment;
 
   async function search(slug?: string, overrideCin?: string, overrideCout?: string) {
+    if (catalogLoaded && catalog.length === 0) {
+      toast("There's no present room around at the moment. Please check back later.", true);
+      setSearching(false);
+      setStage('results');
+      setResults([]);
+      setRoom(null);
+      return;
+    }
     if (slug) preferred.current = slug;
     const targetCin = overrideCin || checkIn;
     const targetCout = overrideCout || checkOut;
     setSearching(true); setStage('results'); setRoom(null);
     try {
       const list = await api.availability(targetCin, targetCout, guests);
-      setResults(list);
+      // Strictly exclude any absent/inactive rooms
+      const activeList = (Array.isArray(list) ? list : []).filter((x: any) => {
+        const c = catalog.find((cat) => cat.id === x.room_id);
+        return c && c.is_active !== false;
+      });
+      setResults(activeList);
       setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
       const want = slug || preferred.current;
       if (want) {
-        const hit = list.find((x) => catalog.find((c) => c.id === x.room_id)?.slug === want);
-        if (hit && !hit.is_locked && hit.units_left > 0) { setRoom(hit); setStage('details'); }
+        const hit = activeList.find((x) => catalog.find((c) => c.id === x.room_id)?.slug === want);
+        if (hit && !hit.is_locked && hit.units_left > 0) {
+          setRoom(hit);
+          setStage('details');
+        } else if (!catalog.some((c) => c.slug === want)) {
+          toast(`Room "${want}" is absent or no longer present around. Please browse our active rooms.`, true);
+        }
       }
     } catch (e: any) { toast(e.message, true); setResults([]); }
     finally { setSearching(false); }
   }
 
-  useEffect(() => { if (initialSlug) search(initialSlug); }, [initialSlug]); // eslint-disable-line
+  useEffect(() => {
+    if (!catalogLoaded) return;
+    if (initialSlug) {
+      const exists = catalog.some((c) => c.slug === initialSlug);
+      if (!exists) {
+        toast(`The requested room ("${initialSlug}") is absent or no longer present around.`, true);
+      }
+      search(initialSlug);
+    }
+  }, [initialSlug, catalogLoaded]); // eslint-disable-line
 
   async function confirm() {
     if (!session) { setAuthOpen(true); return; }
+    if (!room || !catalog.some((c) => c.id === room.room_id && c.is_active !== false)) {
+      toast("There's no present room around for this booking. Please select an active room.", true);
+      setStage('results');
+      return;
+    }
     if (room?.is_locked || room?.units_left <= 0) {
       toast('This room is already reserved / locked in for those dates. Please check the calendar for available dates.', true);
       return;
@@ -119,6 +160,52 @@ export default function BookingFlow({ initialSlug }) {
   return (
     <section id="reserve" className="reserve">
       <div className="container">
+        {/* ——— NOTICE: IF NO ROOMS PRESENT AT ALL ——— */}
+        {catalogLoaded && catalog.length === 0 && (
+          <div
+            style={{
+              maxWidth: 960,
+              margin: '0 auto 16px',
+              padding: '14px 20px',
+              borderRadius: 14,
+              background: 'rgba(244, 63, 94, 0.12)',
+              border: '1.5px solid rgba(244, 63, 94, 0.45)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 14,
+              color: '#FECDD3',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <i className="fas fa-triangle-exclamation" style={{ color: '#F43F5E', fontSize: '1.35rem', flexShrink: 0 }} />
+              <div>
+                <strong style={{ color: '#F43F5E', fontSize: '.94rem', display: 'block', marginBottom: 2 }}>
+                  There's No Present Room Around
+                </strong>
+                <span style={{ fontSize: '.83rem', color: '#CBD5E1', lineHeight: 1.5 }}>
+                  There are currently no active accommodations or rooms available in the resort system. Reservations are temporarily closed until rooms are published.
+                </span>
+              </div>
+            </div>
+            <span
+              style={{
+                background: 'rgba(244, 63, 94, 0.25)',
+                color: '#F43F5E',
+                border: '1px solid rgba(244, 63, 94, 0.5)',
+                padding: '4px 12px',
+                borderRadius: 20,
+                fontSize: '.72rem',
+                fontWeight: 800,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              0 Rooms Present
+            </span>
+          </div>
+        )}
+
         {/* ——— the reservation bar ——— */}
         <div className="reserve-bar">
           <div className="rb-cell" onClick={() => setShowCalendar(true)} style={{ cursor: 'pointer' }} title="Tap to select check-in date on marked calendar">
@@ -143,9 +230,19 @@ export default function BookingFlow({ initialSlug }) {
               <button onClick={() => setGuests((g) => Math.min(12, g + 1))}>+</button>
             </div>
           </div>
-          <button className="btn btn-sky rb-btn" disabled={searching || checkOut <= checkIn}
-            onClick={() => search()}>
-            {searching ? 'Searching…' : 'Check availability'}
+          <button
+            className="btn btn-sky rb-btn"
+            disabled={searching || checkOut <= checkIn || (catalogLoaded && catalog.length === 0)}
+            onClick={() => {
+              if (catalogLoaded && catalog.length === 0) {
+                toast("There's no present room around at the moment. Please check back later.", true);
+                return;
+              }
+              search();
+            }}
+            style={catalogLoaded && catalog.length === 0 ? { opacity: 0.65, cursor: 'not-allowed', background: '#475569' } : undefined}
+          >
+            {catalogLoaded && catalog.length === 0 ? "No Rooms Around" : searching ? 'Searching…' : 'Check availability'}
           </button>
         </div>
 
@@ -204,21 +301,43 @@ export default function BookingFlow({ initialSlug }) {
             {searching && [...Array(2)].map((_, i) =>
               <div key={i} className="skel" style={{ height: 170, marginBottom: 16 }} />)}
             {!searching && results.length === 0 && (
-              <div style={{ textAlign: 'center', padding: '30px 16px', background: 'rgba(255,255,255,0.03)', borderRadius: 14, border: '1px dashed rgba(255,255,255,0.15)' }}>
-                <p className="empty" style={{ margin: '0 0 10px', fontSize: '1.05rem', color: '#F43F5E', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                  <i className="fas fa-lock" /> All rooms are reserved / locked in until checkout for those dates.
-                </p>
-                <p className="muted small" style={{ margin: '0 0 14px' }}>
-                  Rooms are locked exclusively once reserved by a guest and remain locked until their checkout date. Check the calendar for open dates.
-                </p>
-                <button
-                  className="btn btn-sky btn-sm"
-                  onClick={() => setShowCalendar(true)}
-                  style={{ fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                >
-                  <i className="fas fa-calendar-alt" /> Browse Open Dates on Calendar
-                </button>
-              </div>
+              catalog.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '42px 24px', background: 'rgba(239, 68, 68, 0.08)', borderRadius: 16, border: '1.5px dashed rgba(244, 63, 94, 0.45)', margin: '14px 0' }}>
+                  <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(244, 63, 94, 0.18)', color: '#F43F5E', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', fontSize: '1.6rem' }}>
+                    <i className="fas fa-triangle-exclamation" />
+                  </div>
+                  <h3 style={{ margin: '0 0 8px', fontSize: '1.3rem', color: '#F43F5E', fontWeight: 800, fontFamily: 'var(--font-serif)' }}>
+                    There's No Present Room Around
+                  </h3>
+                  <p className="muted small" style={{ margin: '0 auto 18px', maxWidth: 480, lineHeight: 1.6, color: '#CBD5E1' }}>
+                    No accommodations are currently active or present in the resort system. Check back soon or contact our concierge for booking assistance.
+                  </p>
+                  <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <a href="/contact" className="btn btn-sky btn-sm" style={{ fontWeight: 700 }}>
+                      <i className="fas fa-headset" style={{ marginRight: 6 }} /> Contact Reception
+                    </a>
+                    <a href="/rooms" className="btn btn-ghost btn-sm" style={{ borderColor: 'rgba(255,255,255,0.2)' }}>
+                      Browse Catalog
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '30px 16px', background: 'rgba(255,255,255,0.03)', borderRadius: 14, border: '1px dashed rgba(255,255,255,0.15)' }}>
+                  <p className="empty" style={{ margin: '0 0 10px', fontSize: '1.05rem', color: '#F43F5E', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                    <i className="fas fa-lock" /> All rooms are reserved / locked in until checkout for those dates.
+                  </p>
+                  <p className="muted small" style={{ margin: '0 0 14px' }}>
+                    Rooms are locked exclusively once reserved by a guest and remain locked until their checkout date. Check the calendar for open dates.
+                  </p>
+                  <button
+                    className="btn btn-sky btn-sm"
+                    onClick={() => setShowCalendar(true)}
+                    style={{ fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                  >
+                    <i className="fas fa-calendar-alt" /> Browse Open Dates on Calendar
+                  </button>
+                </div>
+              )
             )}
             {!searching && results.map((r: any) => {
               const m = meta(r);
@@ -327,6 +446,18 @@ export default function BookingFlow({ initialSlug }) {
 
         {/* ——— stay summary + confirm ——— */}
         {stage === 'details' && room && (
+          !catalog.some((c) => c.id === room.room_id && c.is_active !== false) ? (
+            <div style={{ textAlign: 'center', padding: '42px 24px', background: 'rgba(239, 68, 68, 0.08)', borderRadius: 16, border: '1.5px dashed rgba(244, 63, 94, 0.45)', margin: '14px 0' }}>
+              <i className="fas fa-triangle-exclamation" style={{ fontSize: '2rem', color: '#F43F5E', display: 'block', marginBottom: 12 }} />
+              <h3 style={{ color: '#F43F5E', margin: '0 0 8px', fontSize: '1.3rem' }}>There's No Present Room Around</h3>
+              <p className="muted small" style={{ marginBottom: 18, color: '#CBD5E1' }}>
+                The accommodation you selected is absent or no longer active in the resort catalog.
+              </p>
+              <button className="btn btn-sky btn-sm" onClick={() => setStage('results')}>
+                ← Choose Available Room
+              </button>
+            </div>
+          ) : (
           <div className="detail-grid">
             <div className="detail-sum">
               <span className="label light">Your stay</span>
@@ -492,6 +623,7 @@ export default function BookingFlow({ initialSlug }) {
               </div>
             </div>
           </div>
+          )
         )}
 
         {/* ——— confirmation ——— */}

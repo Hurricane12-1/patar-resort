@@ -62,7 +62,9 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
     const { data } = await sysClient.from('rooms').select('*').eq('id', targetRoomId).single();
     if (data) room = data;
   } catch {}
-  if (!room) throw new ApiError(404, 'Room not found or inactive');
+  if (!room || room.is_active === false) {
+    throw new ApiError(404, "There's no present room around. This accommodation is absent or inactive.");
+  }
 
   // Hard overbooking check: count active bookings per night in requested date range
   let activeRes = [];
