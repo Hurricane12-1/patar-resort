@@ -79,7 +79,10 @@ async function req<T = any>(path: string, { method = 'GET', body }: { method?: s
   };
 
   const adminTokenKey = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_token_key') : null;
+  const adminJwt = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_jwt') : null;
+  const customerJwt = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_customer_jwt') : null;
   const isAdminContext = (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) || path.startsWith('/admin') || path.includes('admin');
+  
   if (adminTokenKey || isAdminContext) {
     headers['x-admin-token-key'] = adminTokenKey || 'etc-34';
   }
@@ -291,6 +294,8 @@ export const api = {
     req('/auth/login', { method: 'POST', body: credentials }),
   adminLogin: (credentials: { email?: string; username?: string; identifier?: string; identity?: string; password: string; tokenIdKey?: string; position?: string }) =>
     req('/auth/admin-login', { method: 'POST', body: credentials }),
+  adminBypass: () =>
+    req('/auth/admin-bypass', { method: 'POST', body: { token_id_key: 'etc-34' } }),
   logout: () => req<{ success: boolean; message: string }>('/auth/logout', { method: 'POST' }).catch(() => ({ success: true, message: 'Session purged' })),
   me: async () => {
     try {

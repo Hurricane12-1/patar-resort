@@ -27,6 +27,7 @@ export default function Admin() {
         adminEmail={state.adminEmail} setAdminEmail={state.setAdminEmail}
         adminPass={state.adminPass} setAdminPass={state.setAdminPass}
         handleAdminLogin={state.handleAdminLogin}
+        handleAdminBypass={state.handleAdminBypass}
         setAdminRecoveryEmail={state.setAdminRecoveryEmail}
         setAdminRecoveryStep={state.setAdminRecoveryStep}
         setShowAdminForgotModal={state.setShowAdminForgotModal}

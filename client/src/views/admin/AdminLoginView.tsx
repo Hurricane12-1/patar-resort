@@ -12,6 +12,7 @@ export interface AdminLoginViewProps {
   adminPass: string;
   setAdminPass: (pass: string) => void;
   handleAdminLogin: (e: React.FormEvent) => void;
+  handleAdminBypass?: () => void;
   authenticating: boolean;
   setAdminRecoveryEmail: (email: string) => void;
   setAdminRecoveryStep: (step: number) => void;
@@ -29,6 +30,7 @@ export const AdminLoginView: React.FC<AdminLoginViewProps> = ({
   adminPass,
   setAdminPass,
   handleAdminLogin,
+  handleAdminBypass,
   authenticating,
   setAdminRecoveryEmail,
   setAdminRecoveryStep,
@@ -152,6 +154,32 @@ export const AdminLoginView: React.FC<AdminLoginViewProps> = ({
             >
               Sign In With Administrator Account ✦
             </button>
+            {handleAdminBypass && (
+              <button
+                type="button"
+                onClick={handleAdminBypass}
+                style={{
+                  width: '100%',
+                  background: 'linear-gradient(135deg, rgba(246, 183, 74, 0.2) 0%, rgba(34, 195, 238, 0.2) 100%)',
+                  border: '1px solid rgba(246, 183, 74, 0.5)',
+                  color: '#f6b74a',
+                  borderRadius: 14,
+                  padding: '13px 20px',
+                  fontSize: '.82rem',
+                  fontWeight: 800,
+                  letterSpacing: '.08em',
+                  textTransform: 'uppercase',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                }}
+              >
+                <span>⚡</span>
+                <span>Switch to Executive Admin (Julian Nygel J. Deleon)</span>
+              </button>
+            )}
             <a
               href="/"
               style={{
@@ -375,6 +403,43 @@ export const AdminLoginView: React.FC<AdminLoginViewProps> = ({
             {authenticating ? 'Verifying Database Clearance…' : 'Sign In as Administrator ✦'}
           </button>
         </form>
+
+        {handleAdminBypass && (
+          <div style={{ marginTop: 20, paddingTop: 18, borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
+            <div style={{ textAlign: 'center', marginBottom: 12, fontSize: '.72rem', color: 'rgba(232, 238, 247, 0.5)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
+              — OR DIRECT EXECUTIVE ACCESS —
+            </div>
+            <button
+              type="button"
+              onClick={handleAdminBypass}
+              disabled={authenticating}
+              style={{
+                width: '100%',
+                background: 'linear-gradient(135deg, rgba(246, 183, 74, 0.18) 0%, rgba(34, 195, 238, 0.18) 100%)',
+                border: '1px solid rgba(246, 183, 74, 0.5)',
+                color: '#f6b74a',
+                borderRadius: 16,
+                padding: '13px 18px',
+                fontSize: '.82rem',
+                fontWeight: 800,
+                letterSpacing: '.06em',
+                cursor: authenticating ? 'wait' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 10,
+                boxShadow: '0 4px 20px rgba(246, 183, 74, 0.15)',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <span style={{ fontSize: '1.1rem' }}>⚡</span>
+              <span>One-Click Administrative Bypass (Julian Nygel J. Deleon)</span>
+            </button>
+            <div style={{ fontSize: '.72rem', color: 'rgba(232, 238, 247, 0.5)', textAlign: 'center', marginTop: 8 }}>
+              Badge: <span style={{ color: '#22c3ee', fontWeight: 700 }}>RCR-000-000-000-001</span> • Direct Executive Clearance
+            </div>
+          </div>
+        )}
 
         <div style={{ marginTop: 22, textAlign: 'center' }}>
           <a
