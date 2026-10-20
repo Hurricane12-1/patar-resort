@@ -119,7 +119,7 @@ r.get('/admin/customers', authenticate, requireAdmin, asyncH(async (req, res) =>
       .order('created_at', { ascending: false });
     
     if (query) {
-      q = q.or(`full_name.ilike.%${query}%,phone.ilike.%${query}%,username.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%,email.ilike.%${query}%`);
+      q = q.or(`full_name.ilike.%${query}%,phone.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%,email.ilike.%${query}%`);
     }
     if (roleFilter) {
       q = q.eq('role', roleFilter);
@@ -148,7 +148,7 @@ r.get('/admin/customers', authenticate, requireAdmin, asyncH(async (req, res) =>
   try {
     let q = client.from('profiles').select('*').order('created_at', { ascending: false });
     if (query) {
-      q = q.or(`full_name.ilike.%${query}%,phone.ilike.%${query}%,username.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%,email.ilike.%${query}%`);
+      q = q.or(`full_name.ilike.%${query}%,phone.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%,email.ilike.%${query}%`);
     }
     if (roleFilter) {
       q = q.eq('role', roleFilter);

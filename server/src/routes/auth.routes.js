@@ -57,39 +57,30 @@ r.post('/auth/admin-login', asyncH(async (req, res) => {
   }
 
   // 3. Resolve username to email if identifier is not an email
+  // 3. Resolve username/identifier to email
   let targetEmail = userIdent.toLowerCase();
   const localPart = targetEmail.includes('@') ? targetEmail.split('@')[0] : targetEmail;
 
   let targetProfile = null;
-  if (!targetEmail.includes('@')) {
+  const emailCandidates = [
+    `email.ilike.${targetEmail}`,
+    `email.ilike.${localPart}@rockview.ph`,
+    `email.ilike.${localPart}@rockviewresort.ph`,
+    `email.ilike.${localPart}@janddbeachhouse.ph`,
+  ];
+
+  try {
     const { data: matched } = await admin
       .from('profiles')
       .select('*')
-      .or(`username.ilike.${userIdent},email.ilike.${userIdent}@rockviewresort.ph,email.ilike.${userIdent}@janddbeachhouse.ph`)
-      .maybeSingle();
-    targetProfile = matched;
-    if (matched?.email) {
-      targetEmail = matched.email.toLowerCase();
-    } else {
-      const { data: userMatched } = await admin
-        .from('users')
-        .select('email')
-        .ilike('username', userIdent)
-        .maybeSingle();
-      if (userMatched?.email) {
-        targetEmail = userMatched.email.toLowerCase();
-      }
-    }
-  } else {
-    const { data: matched } = await admin
-      .from('profiles')
-      .select('*')
-      .or(`email.ilike.${targetEmail},email.ilike.${localPart}@rockviewresort.ph,email.ilike.${localPart}@janddbeachhouse.ph,username.ilike.${localPart}`)
+      .or(emailCandidates.join(','))
       .maybeSingle();
     targetProfile = matched;
     if (matched?.email) {
       targetEmail = matched.email.toLowerCase();
     }
+  } catch (err) {
+    console.warn('[Admin Login] Profile lookup notice:', err.message);
   }
 
   // 4. Live Supabase PostgreSQL Credential & RBAC Role Verification (Zero Hardcoded Accounts)
@@ -127,10 +118,16 @@ r.post('/auth/admin-login', asyncH(async (req, res) => {
   if (!authData) {
     // Check employee_accounts table directly for verified staff / administrator
     try {
-      const { data: empMatch } = await admin
+      const empCandidates = [
+        `email.ilike.${userIdent}`,
+        `employee_id.ilike.${userIdent}`,
+        `email.ilike.${localPart}@rockview.ph`,
+        `email.ilike.${localPart}@rockviewresort.ph`,
+      ];
+      const { data: empMatch, error: empErr } = await admin
         .from('employee_accounts')
         .select('*')
-        .or(`email.ilike.${userIdent},username.ilike.${userIdent},employee_id.ilike.${userIdent}`)
+        .or(empCandidates.join(','))
         .eq('password', rawPass)
         .eq('is_active', true)
         .maybeSingle();
@@ -307,12 +304,12 @@ r.post('/auth/login', asyncH(async (req, res) => {
   const localPart = targetEmail.includes('@') ? targetEmail.split('@')[0] : targetEmail;
 
   let targetProfile = null;
-  // If user entered a username (no '@'), look up registered email in profiles, customers, or users
+  // If user entered a username (no '@'), look up registered email in profiles or customers
   if (!targetEmail.includes('@')) {
     const { data: matched } = await admin
       .from('profiles')
       .select('*')
-      .or(`username.ilike.${userIdent},email.ilike.${userIdent}@rockviewresort.ph,email.ilike.${userIdent}@janddbeachhouse.ph`)
+      .or(`email.ilike.${userIdent}@rockview.ph,email.ilike.${userIdent}@rockviewresort.ph,email.ilike.${userIdent}@janddbeachhouse.ph`)
       .maybeSingle();
 
     targetProfile = matched;
@@ -326,22 +323,13 @@ r.post('/auth/login', asyncH(async (req, res) => {
         .maybeSingle();
       if (custMatched?.email) {
         targetEmail = custMatched.email.toLowerCase();
-      } else {
-        const { data: userMatched } = await admin
-          .from('users')
-          .select('email')
-          .ilike('username', userIdent)
-          .maybeSingle();
-        if (userMatched?.email) {
-          targetEmail = userMatched.email.toLowerCase();
-        }
       }
     }
   } else {
     const { data: matched } = await admin
       .from('profiles')
       .select('*')
-      .or(`email.ilike.${targetEmail},email.ilike.${localPart}@rockviewresort.ph,email.ilike.${localPart}@janddbeachhouse.ph,username.ilike.${localPart}`)
+      .or(`email.ilike.${targetEmail},email.ilike.${localPart}@rockview.ph,email.ilike.${localPart}@rockviewresort.ph,email.ilike.${localPart}@janddbeachhouse.ph`)
       .maybeSingle();
     targetProfile = matched;
     if (matched?.email) {

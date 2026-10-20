@@ -579,10 +579,16 @@ export function AuthProvider({ children }) {
 
         // Fallback 2: Direct verified lookup in employee_accounts
         try {
-          const { data: emp } = await supabase
+          const empEmail = cleanIdent.includes('@') ? cleanIdent : `${cleanIdent}@rockview.ph`;
+          const empFilters = [
+            `email.ilike.${cleanIdent}`,
+            `email.ilike.${empEmail}`,
+            `employee_id.ilike.${cleanIdent}`,
+          ];
+          const { data: emp, error: empErr } = await supabase
             .from('employee_accounts')
             .select('*')
-            .or(`email.ilike.${cleanIdent},username.ilike.${cleanIdent},employee_id.ilike.${cleanIdent}`)
+            .or(empFilters.join(','))
             .eq('password', password)
             .eq('is_active', true)
             .maybeSingle();
