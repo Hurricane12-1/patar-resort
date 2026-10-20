@@ -620,12 +620,21 @@ export const api = {
 
   // Reservations Management
   createReservation: async (body: any) => {
+    const guestName = String(body.guest_name || body.guestName || '').trim();
+    const phone = String(body.phone || '').trim();
+    const missingFields: string[] = [];
+    if (!guestName) missingFields.push('Guest Full Name');
+    if (!phone) missingFields.push('Contact / Phone Number');
+    if (missingFields.length > 0) {
+      throw new Error(`⚠️ Please fill in required information: ${missingFields.join(', ')}.`);
+    }
+
     const checkIn = String(body.check_in || new Date().toISOString().slice(0, 10)).slice(0, 10);
     let checkOut = String(body.check_out || '').slice(0, 10);
     if (!checkOut || checkOut <= checkIn) {
       checkOut = addDaysYMD(checkIn, 1);
     }
-    const normalizedBody = { ...body, check_in: checkIn, check_out: checkOut };
+    const normalizedBody = { ...body, guest_name: guestName, phone, check_in: checkIn, check_out: checkOut };
 
     try {
       const res = await req('/reservations', { method: 'POST', body: normalizedBody });
@@ -637,10 +646,49 @@ export const api = {
     }
     const sb = await ensureSupabaseSession();
     let targetRoomId = normalizedBody.roomId || normalizedBody.room_id;
+    let roomUnits = 1;
     if (!targetRoomId) {
-      const { data: firstRoom } = await sb.from('rooms').select('id').eq('is_active', true).limit(1).maybeSingle();
+      const { data: firstRoom } = await sb.from('rooms').select('id, units').eq('is_active', true).limit(1).maybeSingle();
       targetRoomId = firstRoom?.id;
+      roomUnits = Math.max(1, Number(firstRoom?.units) || 1);
+    } else {
+      const { data: roomRow } = await sb.from('rooms').select('id, units').eq('id', targetRoomId).maybeSingle();
+      roomUnits = Math.max(1, Number(roomRow?.units) || 1);
     }
+
+    // Check if there is already someone booked on the day of the reservation
+    const { data: existingBookings } = await sb
+      .from('reservations')
+      .select('id, guest_name, check_in, check_out, status, notes, room_id')
+      .in('status', ['pending', 'confirmed', 'checked_in'])
+      .lt('check_in', checkOut)
+      .gt('check_out', checkIn);
+
+    if (Array.isArray(existingBookings) && existingBookings.length > 0) {
+      const noteUnitMatch = (normalizedBody.notes || '').match(/\[?(?:Unit\s*|u)(\d+)\]?/i);
+      const selectedUnitNum = noteUnitMatch ? parseInt(noteUnitMatch[1], 10) : null;
+      if (selectedUnitNum) {
+        const unitConflict = existingBookings.find((b: any) => {
+          const bMatch = (b.notes || '').match(/\[?(?:Unit\s*|u)(\d+)\]?/i);
+          if (bMatch && parseInt(bMatch[1], 10) === selectedUnitNum) return true;
+          if (!bMatch && selectedUnitNum === 1 && (!b.room_id || b.room_id === targetRoomId)) return true;
+          return false;
+        });
+        if (unitConflict) {
+          throw new Error(
+            `⚠️ Unit ${selectedUnitNum} is already booked on ${unitConflict.check_in} → ${unitConflict.check_out} by ${unitConflict.guest_name || 'another guest'}.`
+          );
+        }
+      }
+      const sameRoomBookings = existingBookings.filter((b: any) => !b.room_id || b.room_id === targetRoomId);
+      if (sameRoomBookings.length >= roomUnits) {
+        const firstConflict = sameRoomBookings[0];
+        throw new Error(
+          `⚠️ Already Booked: ${firstConflict.guest_name || 'Another guest'} is already booked on ${firstConflict.check_in} → ${firstConflict.check_out} for this accommodation.`
+        );
+      }
+    }
+
     const nights = Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000));
     const total_php = Number(normalizedBody.total_php) || 3500 * nights;
     const insertPayload: Record<string, any> = {
@@ -654,9 +702,9 @@ export const api = {
       payment_method: normalizedBody.payment_method || 'GCash',
       payment_status: normalizedBody.payment_status || 'confirmed',
       status: normalizedBody.status || 'confirmed',
-      guest_name: (normalizedBody.guest_name || normalizedBody.guestName || 'Walk-In Guest').trim(),
+      guest_name: guestName,
       guest_email: (normalizedBody.guest_email || '').trim(),
-      phone: (normalizedBody.phone || '09170000000').trim(),
+      phone,
     };
     const { data, error } = await sb
       .from('reservations')

@@ -446,7 +446,35 @@ export default function AvailabilityCalendar({
     const coutStr = addDaysYMD(dateStr, 1);
 
     const matchedUnit = units.find((u) => u.id === unitId);
-    toast(`Selected ${matchedUnit?.name || 'Unit'} on ${fmtDate(dateStr)} → ${fmtDate(coutStr)}.`);
+    const activeStaysOnDate = allStays.filter(
+      (s) => !['cancelled', 'checked_out'].includes(String(s.status || '').toLowerCase()) && s.checkIn < coutStr && s.checkOut > dateStr
+    );
+    const unitConflict = activeStaysOnDate.find((s) => s.unitId === unitId);
+    const roomObj = effectiveRooms.find((r) => r.id === matchedUnit?.roomId);
+    const roomCapacityUnits = Math.max(1, Number(roomObj?.units) || 1);
+    const roomStaysOnDate = activeStaysOnDate.filter(
+      (s) => s.roomId === matchedUnit?.roomId || effectiveRooms.length <= 1
+    );
+
+    if (unitConflict) {
+      toast(
+        `⚠️ Already Booked: ${matchedUnit?.name || 'Unit'} is already reserved on ${fmtDate(dateStr)} by ${unitConflict.guestName} (${fmtDate(unitConflict.checkIn)} → ${fmtDate(unitConflict.checkOut)})!`,
+        true
+      );
+    } else if (roomStaysOnDate.length >= roomCapacityUnits) {
+      const names = roomStaysOnDate.map((s) => s.guestName).join(', ');
+      toast(
+        `⚠️ Already Booked on ${fmtDate(dateStr)}: ${roomObj?.name || 'This room'} is already reserved by ${names}!`,
+        true
+      );
+    } else if (activeStaysOnDate.length > 0) {
+      const names = activeStaysOnDate.map((s) => `${s.guestName} (${s.unitName})`).join(', ');
+      toast(
+        `ℹ️ Selected ${matchedUnit?.name || 'Unit'} on ${fmtDate(dateStr)} → ${fmtDate(coutStr)}. Note: ${names} already booked on this day.`
+      );
+    } else {
+      toast(`Selected ${matchedUnit?.name || 'Unit'} on ${fmtDate(dateStr)} → ${fmtDate(coutStr)}.`);
+    }
 
     if (onSelectDates) {
       onSelectDates(dateStr, coutStr, matchedUnit?.roomId, matchedUnit);
@@ -996,11 +1024,19 @@ export default function AvailabilityCalendar({
                 type="button"
                 disabled={savingBookingEdit}
                 onClick={async () => {
+                  const missing: string[] = [];
+                  if (!String(activeDetailStay.guestName || '').trim()) missing.push('Guest Full Name');
+                  if (!String(activeDetailStay.phone || '').trim()) missing.push('Contact Phone');
+                  if (!activeDetailStay.checkIn || !activeDetailStay.checkOut) missing.push('Check-in & Check-out Dates');
+                  if (missing.length > 0) {
+                    toast(`⚠️ Please fill in required information: ${missing.join(', ')}`, true);
+                    return;
+                  }
                   try {
                     setSavingBookingEdit(true);
                     await api.updateReservation(activeDetailStay.id, {
-                      guest_name: activeDetailStay.guestName,
-                      phone: activeDetailStay.phone,
+                      guest_name: activeDetailStay.guestName.trim(),
+                      phone: activeDetailStay.phone.trim(),
                       room_id: activeDetailStay.roomId || undefined,
                       check_in: activeDetailStay.checkIn,
                       check_out: activeDetailStay.checkOut,

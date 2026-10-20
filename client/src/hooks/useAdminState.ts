@@ -535,42 +535,78 @@ export function useAdminState() {
     }
   };
 
+  // Unified Bookings merged across analytics overview and live reservations list
+  const allBookings = useMemo(() => {
+    const map = new Map<string, any>();
+    for (const b of data?.bookings || []) {
+      if (b && b.id) map.set(b.id, b);
+    }
+    for (const b of reservationsList || []) {
+      if (b && b.id) map.set(b.id, { ...map.get(b.id), ...b });
+    }
+    return Array.from(map.values()).map((b: any) => ({
+      ...b,
+      nights:
+        b.nights ||
+        Math.max(1, Math.round((new Date(b.check_out).getTime() - new Date(b.check_in).getTime()) / 86400000)),
+    }));
+  }, [reservationsList, data?.bookings]);
+
   // Check room booking locks
   const isModalRoomLocked = useMemo(() => {
-    if (!newReservation.room_id || !newReservation.check_in || !newReservation.check_out) return false;
-    const room = roomsList.find((r) => r.id === newReservation.room_id);
-    const totalUnits = Number(room?.units) || 1;
-    const overlapping = reservationsList.filter(
-      (b: any) =>
-        b.room_id === newReservation.room_id &&
-        ['pending', 'confirmed', 'checked_in'].includes(b.status) &&
-        b.check_in < newReservation.check_out &&
-        b.check_out > newReservation.check_in
-    );
-    let cur = new Date(newReservation.check_in);
-    const end = new Date(newReservation.check_out);
-    while (cur < end) {
-      const night = cur.toISOString().slice(0, 10);
-      const busy = overlapping.filter((b: any) => b.check_in <= night && b.check_out > night).length;
+    const targetRoomId = newReservation.room_id || activeRoomsList[0]?.id;
+    if (!targetRoomId || !newReservation.check_in) return false;
+    const cin = String(newReservation.check_in).slice(0, 10);
+    const rawCout = String(newReservation.check_out || '').slice(0, 10);
+    const cout = rawCout > cin ? rawCout : addDaysYMD(cin, 1);
+
+    const room = roomsList.find((r) => r.id === targetRoomId) || activeRoomsList[0];
+    const totalUnits = Math.max(1, Number(room?.units) || 1);
+    const overlapping = allBookings.filter((b: any) => {
+      const status = String(b.status || '').toLowerCase();
+      if (['cancelled', 'rejected', 'checked_out'].includes(status)) return false;
+      const bCin = String(b.check_in || '').slice(0, 10);
+      const bCoutRaw = String(b.check_out || '').slice(0, 10);
+      const bCout = bCoutRaw > bCin ? bCoutRaw : addDaysYMD(bCin, 1);
+      const sameRoom = b.room_id === targetRoomId || activeRoomsList.length <= 1;
+      return sameRoom && bCin < cout && bCout > cin;
+    });
+    let night = cin;
+    while (night < cout) {
+      const busy = overlapping.filter((b: any) => {
+        const bCin = String(b.check_in || '').slice(0, 10);
+        const bCoutRaw = String(b.check_out || '').slice(0, 10);
+        const bCout = bCoutRaw > bCin ? bCoutRaw : addDaysYMD(bCin, 1);
+        return bCin <= night && bCout > night;
+      }).length;
       if (busy >= totalUnits) return true;
-      cur.setDate(cur.getDate() + 1);
+      night = addDaysYMD(night, 1);
     }
     return false;
-  }, [newReservation.room_id, newReservation.check_in, newReservation.check_out, roomsList, reservationsList]);
+  }, [newReservation.room_id, newReservation.check_in, newReservation.check_out, roomsList, activeRoomsList, allBookings]);
 
   const isSelectedUnitTaken = useMemo(() => {
-    const m = (newReservation.notes || '').match(/\[Unit\s*(\d+)\]/i);
-    if (!m || !newReservation.room_id || !newReservation.check_in || !newReservation.check_out) return false;
-    const uNum = m[1];
-    return reservationsList.some(
-      (b: any) =>
-        b.room_id === newReservation.room_id &&
-        ['pending', 'confirmed', 'checked_in'].includes(b.status) &&
-        b.check_in < newReservation.check_out &&
-        b.check_out > newReservation.check_in &&
-        (b.notes || '').includes(`[Unit ${uNum}]`)
-    );
-  }, [newReservation.notes, newReservation.room_id, newReservation.check_in, newReservation.check_out, reservationsList]);
+    const m = (newReservation.notes || '').match(/\[?(?:Unit\s*|u)(\d+)\]?/i);
+    const targetRoomId = newReservation.room_id || activeRoomsList[0]?.id;
+    if (!m || !targetRoomId || !newReservation.check_in) return false;
+    const uNum = parseInt(m[1], 10);
+    const cin = String(newReservation.check_in).slice(0, 10);
+    const rawCout = String(newReservation.check_out || '').slice(0, 10);
+    const cout = rawCout > cin ? rawCout : addDaysYMD(cin, 1);
+
+    return allBookings.some((b: any) => {
+      const status = String(b.status || '').toLowerCase();
+      if (['cancelled', 'rejected', 'checked_out'].includes(status)) return false;
+      const bCin = String(b.check_in || '').slice(0, 10);
+      const bCoutRaw = String(b.check_out || '').slice(0, 10);
+      const bCout = bCoutRaw > bCin ? bCoutRaw : addDaysYMD(bCin, 1);
+      if (!(bCin < cout && bCout > cin)) return false;
+      const bMatch = (b.notes || '').match(/\[?(?:Unit\s*|u)(\d+)\]?/i);
+      if (bMatch && parseInt(bMatch[1], 10) === uNum) return true;
+      if (!bMatch && uNum === 1 && (b.room_id === targetRoomId || activeRoomsList.length <= 1)) return true;
+      return false;
+    });
+  }, [newReservation.notes, newReservation.room_id, newReservation.check_in, newReservation.check_out, activeRoomsList, allBookings]);
 
   const autoReloadLive = useCallback(async () => {
     if (!isAdministrator) return;
@@ -612,19 +648,27 @@ export function useAdminState() {
         throw new Error("There's no present room around. Please create and activate a room in Room Management first.");
       }
       const targetRoomId = newReservation.room_id || activeRoomsList[0]?.id;
-      if (!targetRoomId) {
-        throw new Error('Please select a room.');
+      const missingFields: string[] = [];
+      if (!String(newReservation.guest_name || '').trim()) missingFields.push('Guest Full Name');
+      if (!String(newReservation.phone || '').trim()) missingFields.push('Contact / Phone Number');
+      if (!targetRoomId) missingFields.push('Accommodation Room');
+      if (!newReservation.check_in || !newReservation.check_out) missingFields.push('Check-In & Check-Out Dates');
+      if (!newReservation.guests || Number(newReservation.guests) < 1) missingFields.push('Number of Guests');
+
+      if (missingFields.length > 0) {
+        throw new Error(`⚠️ Please fill in the required blank information: ${missingFields.join(', ')}.`);
       }
+
       const roomMatch = activeRoomsList.find((r: any) => r.id === targetRoomId) || activeRoomsList[0];
       if (!roomMatch) {
         throw new Error('The selected room is absent or inactive. Please select a valid active accommodation.');
       }
       if (isModalRoomLocked) {
-        throw new Error('All units for this accommodation are already booked for those dates. Overbooking is strictly prevented.');
+        throw new Error('⚠️ Already Booked: All units for this accommodation are already reserved on the selected dates.');
       }
       if (isSelectedUnitTaken) {
-        const m = (newReservation.notes || '').match(/\[Unit\s*(\d+)\]/i);
-        throw new Error(`Unit ${m ? m[1] : ''} is already reserved for these dates. Please pick another unit or choose auto-assign.`);
+        const m = (newReservation.notes || '').match(/\[?(?:Unit\s*|u)(\d+)\]?/i);
+        throw new Error(`⚠️ Already Booked: Unit ${m ? m[1] : ''} is already reserved on these dates. Please pick another unit or date.`);
       }
       const checkIn = newReservation.check_in || '2026-10-20';
       const checkOut =
@@ -637,8 +681,8 @@ export function useAdminState() {
         room_id: targetRoomId,
         check_in: checkIn,
         check_out: checkOut,
-        guest_name: newReservation.guest_name.trim() || 'Walk-In Guest',
-        phone: newReservation.phone.trim() || '09170000000',
+        guest_name: newReservation.guest_name.trim(),
+        phone: newReservation.phone.trim(),
         total_php: Number(newReservation.total_php) || Number(roomMatch.rate_php) || 3500,
         guests: Number(newReservation.guests) || 2,
       });
@@ -1443,19 +1487,7 @@ export function useAdminState() {
     roomsList.length,
   ]);
 
-  // Unified Bookings and October Metrics
-  const rawDisplayBookings = reservationsList.length > 0 ? reservationsList : data?.bookings || [];
-  const allBookings = useMemo(
-    () =>
-      rawDisplayBookings.map((b: any) => ({
-        ...b,
-        nights:
-          b.nights ||
-          Math.max(1, Math.round((new Date(b.check_out).getTime() - new Date(b.check_in).getTime()) / 86400000)),
-      })),
-    [rawDisplayBookings]
-  );
-
+  // October Metrics
   const octoberSalesData = useMemo(() => {
     const daysInOct = 31;
     const days = [];

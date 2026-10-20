@@ -901,7 +901,6 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                 notes: nextNotes || prev.notes,
               }));
               setShowAddReservationModal(true);
-              toast(`✦ ${unitInfo?.name || activeRoom?.name || 'Unit'} selected: Check-in (${fmtDate(cin)}) and Check-out (${fmtDate(cout)})`);
             }}
           />
         </div>
@@ -927,11 +926,19 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
             onClick={(e) => e.stopPropagation()}
             onSubmit={async (e) => {
               e.preventDefault();
+              const missing: string[] = [];
+              if (!String(editingBooking.guest_name || '').trim()) missing.push('Guest Full Name');
+              if (!String(editingBooking.phone || '').trim()) missing.push('Contact Phone');
+              if (!editingBooking.check_in || !editingBooking.check_out) missing.push('Check-in & Check-out Dates');
+              if (missing.length > 0) {
+                toast(`⚠️ Please fill in required information: ${missing.join(', ')}`, true);
+                return;
+              }
               try {
                 setSavingBookingEdit(true);
                 await api.updateReservation(editingBooking.id, {
-                  guest_name: editingBooking.guest_name,
-                  phone: editingBooking.phone,
+                  guest_name: editingBooking.guest_name.trim(),
+                  phone: editingBooking.phone.trim(),
                   room_id: editingBooking.room_id,
                   check_in: editingBooking.check_in,
                   check_out: editingBooking.check_out,

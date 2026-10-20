@@ -32,7 +32,7 @@ export const AdminModals: React.FC<AdminModalsProps> = ({ state }) => {
           creatingReservation={state.creatingReservation}
           activeRoomsList={state.activeRoomsList}
           roomsList={state.roomsList}
-          reservationsList={state.reservationsList}
+          reservationsList={state.allBookings}
           walkInPoolAddon={state.walkInPoolAddon}
           setWalkInPoolAddon={state.setWalkInPoolAddon}
           isLightMode={state.isLightMode}

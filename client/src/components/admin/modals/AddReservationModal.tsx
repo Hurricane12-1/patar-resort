@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { money, fmtDate } from '../../../lib/format.ts';
 import AvailabilityCalendar from '../../AvailabilityCalendar.tsx';
 import { POOL_ADDON_OPTIONS } from '../../../lib/ledgerUtils.ts';
 import { getCategoryDefaultCloudinaryImage } from '../../../lib/cloudinary.ts';
 import { addDaysYMD } from '../../../lib/api.ts';
+import { toast } from '../../Toasts.tsx';
 
 export interface NewReservationFormState {
   guest_name: string;
@@ -61,11 +62,18 @@ export default function AddReservationModal({
   getRoomImageUrl = defaultGetRoomImageUrl,
 }: AddReservationModalProps) {
   const [showWalkInCalendar, setShowWalkInCalendar] = useState(false);
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
+  const guestNameInputRef = useRef<HTMLInputElement | null>(null);
+  const phoneInputRef = useRef<HTMLInputElement | null>(null);
+  const topWarningRef = useRef<HTMLDivElement | null>(null);
 
   const activeWalkInRoom = activeRoomsList.find((r) => r.id === newReservation.room_id) || activeRoomsList[0];
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      setAttemptedSubmit(false);
+      return;
+    }
     const targetRoomId = newReservation.room_id || activeWalkInRoom?.id || '';
     const cin = newReservation.check_in || '2026-10-20';
     let cout = newReservation.check_out || addDaysYMD(cin, 1);
@@ -91,37 +99,112 @@ export default function AddReservationModal({
   const themeMuted = propThemeMuted || (isLightMode ? '#64748B' : '#94A3B8');
 
   const activeRoomImage = getRoomImageUrl(activeWalkInRoom);
+  const effectiveCin = String(newReservation.check_in || '2026-10-20').slice(0, 10);
+  const rawCout = String(newReservation.check_out || '').slice(0, 10);
+  const effectiveCout = rawCout > effectiveCin ? rawCout : addDaysYMD(effectiveCin, 1);
+  const targetRoomId = newReservation.room_id || activeWalkInRoom?.id || '';
+
   const computedNights = Math.max(
     1,
-    Math.round((new Date(newReservation.check_out).getTime() - new Date(newReservation.check_in).getTime()) / 86400000)
+    Math.round((new Date(effectiveCout).getTime() - new Date(effectiveCin).getTime()) / 86400000)
   );
 
-  // Check overbooking / room locked
-  const overlappingStaysCount = reservationsList.filter(
+  // Check all active bookings overlapping the selected dates
+  const allOverlappingOnDates = (reservationsList || []).filter((b: any) => {
+    const status = String(b.status || '').toLowerCase();
+    if (['cancelled', 'rejected', 'checked_out'].includes(status)) return false;
+    const bCin = String(b.check_in || '').slice(0, 10);
+    const bCoutRaw = String(b.check_out || '').slice(0, 10);
+    const bCout = bCoutRaw > bCin ? bCoutRaw : addDaysYMD(bCin, 1);
+    return Boolean(bCin && bCout && bCin < effectiveCout && bCout > effectiveCin);
+  });
+
+  const overlappingRoomBookings = allOverlappingOnDates.filter(
     (b: any) =>
-      b.room_id === (newReservation.room_id || activeWalkInRoom?.id) &&
-      ['pending', 'confirmed', 'checked_in'].includes(b.status) &&
-      b.check_in < newReservation.check_out &&
-      b.check_out > newReservation.check_in
-  ).length;
+      b.room_id === targetRoomId ||
+      activeRoomsList.length <= 1 ||
+      (b.rooms?.name &&
+        activeWalkInRoom?.name &&
+        String(b.rooms.name).toLowerCase() === String(activeWalkInRoom.name).toLowerCase())
+  );
 
   const totalRoomUnits = Math.max(1, Number(activeWalkInRoom?.units) || 1);
-  const isModalRoomLocked = overlappingStaysCount >= totalRoomUnits;
+  const isModalRoomLocked = overlappingRoomBookings.length >= totalRoomUnits;
 
   // Check specific unit taken if user selected [Unit X]
-  const noteUnitMatch = (newReservation.notes || '').match(/\[Unit\s*(\d+)\]/i);
+  const noteUnitMatch = (newReservation.notes || '').match(/\[?(?:Unit\s*|u)(\d+)\]?/i);
   const selectedUnitNum = noteUnitMatch ? parseInt(noteUnitMatch[1], 10) : null;
-  const isSelectedUnitTaken = Boolean(
-    selectedUnitNum &&
-      reservationsList.some(
-        (b: any) =>
-          b.room_id === (newReservation.room_id || activeWalkInRoom?.id) &&
-          ['pending', 'confirmed', 'checked_in'].includes(b.status) &&
-          b.check_in < newReservation.check_out &&
-          b.check_out > newReservation.check_in &&
-          (b.notes || '').includes(`[Unit ${selectedUnitNum}]`)
-      )
+  const overlappingUnitBookings = selectedUnitNum
+    ? allOverlappingOnDates.filter((b: any) => {
+        const bMatch = (b.notes || '').match(/\[?(?:Unit\s*|u)(\d+)\]?/i);
+        if (bMatch && parseInt(bMatch[1], 10) === selectedUnitNum) return true;
+        if (
+          !bMatch &&
+          selectedUnitNum === 1 &&
+          (b.room_id === targetRoomId || activeRoomsList.length <= 1)
+        ) {
+          return true;
+        }
+        return false;
+      })
+    : [];
+  const isSelectedUnitTaken = Boolean(selectedUnitNum && overlappingUnitBookings.length > 0);
+
+  const conflictingBookings = Array.from(
+    new Map(
+      [...overlappingRoomBookings, ...overlappingUnitBookings].map((b: any, i: number) => [b.id || `c-${i}`, b])
+    ).values()
   );
+
+  // Required field validation checks
+  const isNameBlank = !String(newReservation.guest_name || '').trim();
+  const isPhoneBlank = !String(newReservation.phone || '').trim();
+  const isRoomBlank = !targetRoomId;
+  const isDatesInvalid = !newReservation.check_in || !newReservation.check_out || newReservation.check_out <= newReservation.check_in;
+  const isGuestsInvalid = !newReservation.guests || Number(newReservation.guests) < 1;
+
+  const missingFields: string[] = [];
+  if (isNameBlank) missingFields.push('Guest Full Name');
+  if (isPhoneBlank) missingFields.push('Contact / Phone Number');
+  if (isRoomBlank) missingFields.push('Room Selection');
+  if (isDatesInvalid) missingFields.push('Valid Stay Dates');
+  if (isGuestsInvalid) missingFields.push('Number of Guests');
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAttemptedSubmit(true);
+
+    if (activeRoomsList.length === 0) {
+      toast("⚠️ There's no present room around. Please create a room in Room Management first.", true);
+      return;
+    }
+
+    if (isModalRoomLocked || isSelectedUnitTaken) {
+      const guestNames = conflictingBookings
+        .map((b: any) => b.guest_name || b.profiles?.full_name || 'Another Guest')
+        .join(', ');
+      toast(
+        `⚠️ Already Booked: ${guestNames || 'Someone'} is already booked on ${fmtDate(effectiveCin)} → ${fmtDate(effectiveCout)} for this accommodation/unit!`,
+        true
+      );
+      topWarningRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    if (missingFields.length > 0) {
+      toast(`⚠️ Please fill in the required blank information: ${missingFields.join(', ')}`, true);
+      if (isNameBlank && guestNameInputRef.current) {
+        guestNameInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        guestNameInputRef.current.focus();
+      } else if (isPhoneBlank && phoneInputRef.current) {
+        phoneInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        phoneInputRef.current.focus();
+      }
+      return;
+    }
+
+    await onSubmit(e);
+  };
 
   return (
     <div
@@ -354,59 +437,167 @@ export default function AddReservationModal({
             flex: 1,
           }}
         >
-          <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {/* WARNING: IF NO ROOMS PRESENT IN SYSTEM */}
-            {activeRoomsList.length === 0 && (
-              <div
-                style={{
-                  padding: '14px 18px',
-                  borderRadius: 14,
-                  background: 'rgba(239, 68, 68, 0.12)',
-                  border: '1.5px solid rgba(239, 68, 68, 0.4)',
-                  color: '#FECDD3',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                }}
-              >
-                <i
-                  className="fas fa-triangle-exclamation"
-                  style={{ color: '#F43F5E', fontSize: '1.3rem', flexShrink: 0 }}
-                />
-                <div>
-                  <strong style={{ color: '#F43F5E', fontSize: '.88rem', display: 'block', marginBottom: 2 }}>
-                    There's No Present Room Around
-                  </strong>
-                  <span style={{ fontSize: '.78rem', color: '#CBD5E1', lineHeight: 1.45 }}>
-                    No accommodations are currently active or present in the resort system. Please create and
-                    activate a room under <strong>Room Management</strong> before booking a walk-in or guest
-                    stay.
-                  </span>
+          <form onSubmit={handleFormSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div ref={topWarningRef} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {/* WARNING: IF NO ROOMS PRESENT IN SYSTEM */}
+              {activeRoomsList.length === 0 && (
+                <div
+                  style={{
+                    padding: '14px 18px',
+                    borderRadius: 14,
+                    background: 'rgba(239, 68, 68, 0.12)',
+                    border: '1.5px solid rgba(239, 68, 68, 0.4)',
+                    color: '#FECDD3',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                  }}
+                >
+                  <i
+                    className="fas fa-triangle-exclamation"
+                    style={{ color: '#F43F5E', fontSize: '1.3rem', flexShrink: 0 }}
+                  />
+                  <div>
+                    <strong style={{ color: '#F43F5E', fontSize: '.88rem', display: 'block', marginBottom: 2 }}>
+                      There's No Present Room Around
+                    </strong>
+                    <span style={{ fontSize: '.78rem', color: '#CBD5E1', lineHeight: 1.45 }}>
+                      No accommodations are currently active or present in the resort system. Please create and
+                      activate a room under <strong>Room Management</strong> before booking a walk-in or guest
+                      stay.
+                    </span>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+
+              {/* PRE-ENTRY WARNING: IF ALREADY SOMEONE BOOKED ON THIS DAY FOR THIS ROOM / UNIT */}
+              {(isModalRoomLocked || isSelectedUnitTaken) && (
+                <div
+                  style={{
+                    padding: '14px 16px',
+                    borderRadius: 14,
+                    background: isLightMode ? '#FFF1F2' : 'rgba(244, 63, 94, 0.16)',
+                    border: '1.5px solid rgba(244, 63, 94, 0.55)',
+                    color: isLightMode ? '#BE123C' : '#FECDD3',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 12,
+                  }}
+                >
+                  <i
+                    className="fas fa-calendar-xmark"
+                    style={{ color: '#F43F5E', fontSize: '1.25rem', marginTop: 2, flexShrink: 0 }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <strong style={{ color: '#F43F5E', fontSize: '.86rem', display: 'block', marginBottom: 4 }}>
+                      ⚠️ Already Booked on This Day ({fmtDate(effectiveCin)} → {fmtDate(effectiveCout)})
+                    </strong>
+                    <span style={{ fontSize: '.78rem', display: 'block', lineHeight: 1.45, marginBottom: 6 }}>
+                      {isSelectedUnitTaken
+                        ? `Unit ${selectedUnitNum} is already occupied on the selected date(s):`
+                        : `All units of ${activeWalkInRoom?.name || 'this accommodation'} are already booked on the selected date(s):`}
+                    </span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {conflictingBookings.map((b: any, idx: number) => (
+                        <div
+                          key={b.id || idx}
+                          style={{
+                            fontSize: '.76rem',
+                            padding: '5px 10px',
+                            borderRadius: 8,
+                            background: isLightMode ? '#FFE4E6' : 'rgba(15, 23, 42, 0.55)',
+                            border: '1px solid rgba(244, 63, 94, 0.3)',
+                            fontWeight: 700,
+                          }}
+                        >
+                          👤 {b.guest_name || b.profiles?.full_name || 'Reserved Guest'} •{' '}
+                          {fmtDate(String(b.check_in).slice(0, 10))} → {fmtDate(String(b.check_out).slice(0, 10))}{' '}
+                          <span style={{ textTransform: 'uppercase', fontSize: '.68rem', opacity: 0.85 }}>
+                            ({b.status || 'confirmed'})
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* PRE-ENTRY HEADS-UP: IF OTHER UNITS HAVE BOOKINGS ON THIS DAY */}
+              {!isModalRoomLocked && !isSelectedUnitTaken && allOverlappingOnDates.length > 0 && (
+                <div
+                  style={{
+                    padding: '12px 16px',
+                    borderRadius: 12,
+                    background: isLightMode ? '#FFFBEB' : 'rgba(245, 158, 11, 0.14)',
+                    border: '1px solid rgba(245, 158, 11, 0.45)',
+                    color: isLightMode ? '#B45309' : '#FDE68A',
+                    fontSize: '.78rem',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 10,
+                  }}
+                >
+                  <i className="fas fa-circle-info" style={{ color: '#F59E0B', fontSize: '1.05rem', marginTop: 2 }} />
+                  <div>
+                    <strong style={{ display: 'block', marginBottom: 2 }}>
+                      Note — Existing Reservation(s) on {fmtDate(effectiveCin)}:
+                    </strong>
+                    <span>
+                      {allOverlappingOnDates
+                        .map(
+                          (b: any) =>
+                            `${b.guest_name || b.profiles?.full_name || 'Guest'} (${fmtDate(String(b.check_in).slice(0, 10))}–${fmtDate(String(b.check_out).slice(0, 10))})`
+                        )
+                        .join(', ')}{' '}
+                      already booked on this date. Ensure you assign an available unit.
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div>
-              <label
-                style={{
-                  fontSize: '.78rem',
-                  color: themeMuted,
-                  fontWeight: 700,
-                  display: 'block',
-                  marginBottom: 4,
-                }}
-              >
-                Guest Full Name (defaults to Walk-In Guest if blank)
-              </label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                <label
+                  style={{
+                    fontSize: '.78rem',
+                    color: isNameBlank && attemptedSubmit ? '#EF4444' : themeMuted,
+                    fontWeight: 700,
+                    margin: 0,
+                  }}
+                >
+                  Guest Full Name *
+                </label>
+                {isNameBlank && (
+                  <span
+                    style={{
+                      fontSize: '.7rem',
+                      fontWeight: 700,
+                      color: attemptedSubmit ? '#EF4444' : '#F59E0B',
+                    }}
+                  >
+                    <i className="fas fa-triangle-exclamation" style={{ marginRight: 4 }} />
+                    {attemptedSubmit ? 'Required — please enter guest name' : 'Required field'}
+                  </span>
+                )}
+              </div>
               <input
-                placeholder="e.g. Maria Santos (or leave blank for Walk-In Guest)"
+                ref={guestNameInputRef}
+                required
+                placeholder="e.g. Maria Santos (Required)"
                 value={newReservation.guest_name}
                 onChange={(e) => setNewReservation({ ...newReservation, guest_name: e.target.value })}
                 style={{
                   width: '100%',
                   padding: '10px 14px',
                   borderRadius: 10,
-                  border: `1px solid ${themeBorder}`,
+                  border: `1.5px solid ${
+                    isNameBlank && attemptedSubmit
+                      ? '#EF4444'
+                      : isNameBlank
+                      ? 'rgba(245, 158, 11, 0.5)'
+                      : themeBorder
+                  }`,
                   background: isLightMode ? '#FFF' : '#1E293B',
                   color: themeText,
                 }}
@@ -415,26 +606,47 @@ export default function AddReservationModal({
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
               <div>
-                <label
-                  style={{
-                    fontSize: '.78rem',
-                    color: themeMuted,
-                    fontWeight: 700,
-                    display: 'block',
-                    marginBottom: 4,
-                  }}
-                >
-                  Phone (for SMS confirmation)
-                </label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                  <label
+                    style={{
+                      fontSize: '.78rem',
+                      color: isPhoneBlank && attemptedSubmit ? '#EF4444' : themeMuted,
+                      fontWeight: 700,
+                      margin: 0,
+                    }}
+                  >
+                    Phone (for SMS confirmation) *
+                  </label>
+                  {isPhoneBlank && (
+                    <span
+                      style={{
+                        fontSize: '.7rem',
+                        fontWeight: 700,
+                        color: attemptedSubmit ? '#EF4444' : '#F59E0B',
+                      }}
+                    >
+                      <i className="fas fa-triangle-exclamation" style={{ marginRight: 4 }} />
+                      {attemptedSubmit ? 'Required' : 'Required'}
+                    </span>
+                  )}
+                </div>
                 <input
-                  placeholder="09171234567"
+                  ref={phoneInputRef}
+                  required
+                  placeholder="09171234567 (Required)"
                   value={newReservation.phone}
                   onChange={(e) => setNewReservation({ ...newReservation, phone: e.target.value })}
                   style={{
                     width: '100%',
                     padding: '10px 14px',
                     borderRadius: 10,
-                    border: `1px solid ${themeBorder}`,
+                    border: `1.5px solid ${
+                      isPhoneBlank && attemptedSubmit
+                        ? '#EF4444'
+                        : isPhoneBlank
+                        ? 'rgba(245, 158, 11, 0.5)'
+                        : themeBorder
+                    }`,
                     background: isLightMode ? '#FFF' : '#1E293B',
                     color: themeText,
                   }}
@@ -1063,9 +1275,9 @@ export default function AddReservationModal({
               >
                 <i className="fas fa-lock" style={{ fontSize: '1.2rem' }} />
                 <div>
-                  <strong>Overbooking Guard:</strong> All units of this accommodation are fully booked for these dates.
-                  Overlapping bookings are blocked. Please select another room or adjust the stay dates in the calendar
-                  above.
+                  <strong>Overbooking Guard — Already Booked on This Day:</strong> All units of this accommodation are
+                  already booked ({conflictingBookings.map((b: any) => b.guest_name || 'Guest').join(', ')}). Overlapping
+                  bookings are blocked. Please select another room or adjust the stay dates in the calendar above.
                 </div>
               </div>
             )}
@@ -1086,9 +1298,77 @@ export default function AddReservationModal({
               >
                 <i className="fas fa-triangle-exclamation" style={{ fontSize: '1.2rem' }} />
                 <div>
-                  <strong>Unit Occupied:</strong> The selected physical unit is already booked for these dates. Please
-                  select an available unit from the Physical Unit Selection dropdown or switch to Auto-assign.
+                  <strong>Unit {selectedUnitNum} Already Booked:</strong> Reserved by{' '}
+                  <strong>{conflictingBookings.map((b: any) => b.guest_name || 'Guest').join(', ')}</strong> for these
+                  dates. Please select an available unit or another date.
                 </div>
+              </div>
+            )}
+
+            {missingFields.length > 0 && (
+              <div
+                style={{
+                  padding: '12px 16px',
+                  borderRadius: 12,
+                  background: attemptedSubmit
+                    ? isLightMode
+                      ? '#FFF1F2'
+                      : 'rgba(239, 68, 68, 0.16)'
+                    : isLightMode
+                    ? '#FFFBEB'
+                    : 'rgba(245, 158, 11, 0.14)',
+                  border: `1.5px solid ${
+                    attemptedSubmit ? 'rgba(239, 68, 68, 0.5)' : 'rgba(245, 158, 11, 0.45)'
+                  }`,
+                  color: attemptedSubmit ? (isLightMode ? '#BE123C' : '#FECDD3') : isLightMode ? '#B45309' : '#FDE68A',
+                  fontSize: '.8rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 10,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
+                  <i
+                    className="fas fa-circle-exclamation"
+                    style={{
+                      fontSize: '1.1rem',
+                      color: attemptedSubmit ? '#EF4444' : '#F59E0B',
+                      flexShrink: 0,
+                    }}
+                  />
+                  <div>
+                    <strong>Required Information Blank:</strong> Please fill in{' '}
+                    <strong>{missingFields.join(', ')}</strong> before saving this reservation.
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAttemptedSubmit(true);
+                    if (isNameBlank && guestNameInputRef.current) {
+                      guestNameInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      guestNameInputRef.current.focus();
+                    } else if (isPhoneBlank && phoneInputRef.current) {
+                      phoneInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      phoneInputRef.current.focus();
+                    }
+                  }}
+                  style={{
+                    padding: '5px 10px',
+                    borderRadius: 8,
+                    border: '1px solid currentColor',
+                    background: 'transparent',
+                    color: 'inherit',
+                    fontSize: '.74rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  ↑ Fill Blank Fields
+                </button>
               </div>
             )}
 
@@ -1103,18 +1383,13 @@ export default function AddReservationModal({
               </button>
               <button
                 type="submit"
-                disabled={
-                  creatingReservation || isModalRoomLocked || isSelectedUnitTaken || activeRoomsList.length === 0
-                }
+                disabled={creatingReservation || activeRoomsList.length === 0}
                 className="btn btn-sky btn-sm"
                 style={{
                   fontWeight: 700,
                   background:
                     isModalRoomLocked || isSelectedUnitTaken || activeRoomsList.length === 0 ? '#94A3B8' : undefined,
-                  cursor:
-                    isModalRoomLocked || isSelectedUnitTaken || activeRoomsList.length === 0
-                      ? 'not-allowed'
-                      : 'pointer',
+                  cursor: activeRoomsList.length === 0 ? 'not-allowed' : 'pointer',
                   borderColor:
                     isModalRoomLocked || isSelectedUnitTaken || activeRoomsList.length === 0 ? '#94A3B8' : undefined,
                 }}
