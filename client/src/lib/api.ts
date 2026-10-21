@@ -85,24 +85,26 @@ async function req<T = any>(path: string, { method = 'GET', body }: { method?: s
     window.location.pathname.startsWith('/admin') ||
     window.location.pathname.startsWith('/administrator') ||
     window.location.pathname.startsWith('/receptionist') ||
-    window.location.pathname.startsWith('/accounting')
+    window.location.pathname.startsWith('/accounting') ||
+    window.location.pathname.startsWith('/resort-department')
   );
-  const isAdminContext = isAdminPath || path.startsWith('/admin') || path.includes('admin') || Boolean(adminJwt);
+  const isAdminEndpoint = path.startsWith('/admin') || path.includes('admin') || path.startsWith('/analytics') || path.startsWith('/audit') || path.startsWith('/department');
+  const isAdminContext = isAdminPath || isAdminEndpoint;
   
-  if (adminTokenKey) {
+  if (adminTokenKey && (isAdminContext || !customerJwt)) {
     headers['x-admin-token-key'] = adminTokenKey;
   }
 
-  if (adminJwt && (isAdminContext || !customerJwt)) {
+  if (isAdminContext && adminJwt) {
     headers['Authorization'] = `Bearer ${adminJwt}`;
   } else if (!isAdminContext && customerJwt) {
     headers['Authorization'] = `Bearer ${customerJwt}`;
-  } else if (session?.access_token) {
-    headers['Authorization'] = `Bearer ${session.access_token}`;
-  } else if (adminJwt) {
+  } else if (adminJwt && !customerJwt) {
     headers['Authorization'] = `Bearer ${adminJwt}`;
   } else if (customerJwt) {
     headers['Authorization'] = `Bearer ${customerJwt}`;
+  } else if (session?.access_token) {
+    headers['Authorization'] = `Bearer ${session.access_token}`;
   }
 
   if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase())) {

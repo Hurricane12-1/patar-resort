@@ -61,16 +61,15 @@ export async function authenticate(req, _res, next) {
     let userMetadata = {};
     let isLiveSupabaseToken = false;
 
-    // 1. Try local JWT verification if secret is configured
-    if (env.SUPABASE_JWT_SECRET) {
-      try {
-        const payload = jwt.verify(token, env.SUPABASE_JWT_SECRET);
-        userId = payload.sub;
-        userEmail = payload.email;
-        userMetadata = { ...(payload.user_metadata || {}), ...payload };
-      } catch {
-        // Fall back to live Supabase verification
-      }
+    // 1. Try local JWT verification with environment or resilient fallback secret
+    const jwtSecret = env.SUPABASE_JWT_SECRET || 'jd-beach-house-dev-jwt-secret-very-secure-2026';
+    try {
+      const payload = jwt.verify(token, jwtSecret);
+      userId = payload.sub;
+      userEmail = payload.email;
+      userMetadata = { ...(payload.user_metadata || {}), ...payload };
+    } catch {
+      // Fall back to live Supabase verification
     }
 
     // 2. Fall back to live Supabase Auth getUser() verification using anon key
@@ -126,11 +125,14 @@ export async function authenticate(req, _res, next) {
       const targetLookupEmail = userEmail || profile?.email;
       if (userId || targetLookupEmail) {
         const filter = [];
-        if (userId) filter.push(`auth_user_id.eq.${userId}`);
-        if (targetLookupEmail) filter.push(`email.eq.${targetLookupEmail}`);
+        if (userId) {
+          filter.push(`auth_user_id.eq.${userId}`);
+          filter.push(`id.eq.${userId}`);
+        }
+        if (targetLookupEmail) filter.push(`email.ilike.${targetLookupEmail}`);
         const { data: emp } = await db
           .from('employee_accounts')
-          .select('id, employee_id, department, position, shift, status, is_active, hire_date, password')
+          .select('*')
           .or(filter.join(','))
           .maybeSingle();
         empRecord = emp;
