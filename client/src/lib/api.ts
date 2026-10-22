@@ -698,6 +698,7 @@ export const api = {
 
     const nights = Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000));
     const total_php = Number(normalizedBody.total_php) || 3500 * nights;
+    const finalGuestEmail = (normalizedBody.email || normalizedBody.guest_email || '').trim();
     const insertPayload: Record<string, any> = {
       room_id: targetRoomId,
       check_in: checkIn,
@@ -710,15 +711,21 @@ export const api = {
       payment_status: normalizedBody.payment_status || 'confirmed',
       status: normalizedBody.status || 'confirmed',
       guest_name: guestName,
-      guest_email: (normalizedBody.guest_email || '').trim(),
+      email: finalGuestEmail,
       phone,
     };
+    if (normalizedBody.guest_id) {
+      insertPayload.guest_id = normalizedBody.guest_id;
+    }
     const { data, error } = await sb
       .from('reservations')
       .insert(insertPayload)
       .select('*, rooms(name), profiles(full_name, phone, email)')
       .single();
     if (error) throw new Error(error.message || 'Could not create reservation in database');
+    if (data) {
+      data.guest_email = data.email || finalGuestEmail;
+    }
     return data;
   },
   updateReservation: async (id: string, body: any) => {
@@ -745,7 +752,9 @@ export const api = {
     if (body.status !== undefined) updatePayload.status = body.status;
     if (body.notes !== undefined) updatePayload.notes = body.notes;
     if (body.guest_name !== undefined) updatePayload.guest_name = body.guest_name;
-    if (body.guest_email !== undefined) updatePayload.guest_email = body.guest_email;
+    if (body.guest_email !== undefined || body.email !== undefined) {
+      updatePayload.email = (body.email !== undefined ? body.email : body.guest_email || '').trim();
+    }
     if (body.phone !== undefined) updatePayload.phone = body.phone;
 
     const { data, error } = await sb
@@ -755,12 +764,20 @@ export const api = {
       .select('*, rooms(name), profiles(full_name, phone, email)')
       .single();
     if (error) throw new Error(error.message || 'Could not update reservation in database');
+    if (data) {
+      data.guest_email = data.email || data.guest_email;
+    }
     return data;
   },
   myReservations: async () => {
     try {
       const res = await req('/reservations/mine');
-      if (Array.isArray(res)) return res;
+      if (Array.isArray(res)) {
+        return res.map((r: any) => ({
+          ...r,
+          guest_email: r.email || r.guest_email || '',
+        }));
+      }
     } catch {}
     try {
       const sb = await ensureSupabaseSession();
@@ -768,7 +785,10 @@ export const api = {
         .from('reservations')
         .select('*, rooms(name, slug, capacity), reviews(id, rating)')
         .order('check_in', { ascending: false });
-      return data || [];
+      return (data || []).map((r: any) => ({
+        ...r,
+        guest_email: r.email || r.guest_email || '',
+      }));
     } catch {}
     return [];
   },
@@ -794,7 +814,12 @@ export const api = {
   allReservations: async () => {
     try {
       const res = await req('/reservations');
-      if (Array.isArray(res)) return res;
+      if (Array.isArray(res)) {
+        return res.map((r: any) => ({
+          ...r,
+          guest_email: r.email || r.guest_email || r.profiles?.email || '',
+        }));
+      }
     } catch {}
     try {
       const sb = await ensureSupabaseSession();
@@ -803,7 +828,12 @@ export const api = {
         .select('*, profiles(full_name, phone, email), rooms(name)')
         .order('check_in', { ascending: false })
         .limit(200);
-      if (!error && Array.isArray(data)) return data;
+      if (!error && Array.isArray(data)) {
+        return data.map((r: any) => ({
+          ...r,
+          guest_email: r.email || r.guest_email || r.profiles?.email || '',
+        }));
+      }
     } catch {}
     return [];
   },

@@ -1652,7 +1652,7 @@ export const AdminDialogs: React.FC<AdminDialogsProps> = ({
                   lineHeight: 1.4,
                 }}
               >
-                <i className="fas fa-envelope" style={{ marginRight: 4 }} /> <strong>Automated Email Notification:</strong> Submitting will immediately trigger an automated email to <strong>{refundTarget.guest_email || refundTarget.profiles?.email || 'guest email'}</strong> notifying them of this status update.
+                <i className="fas fa-envelope" style={{ marginRight: 4 }} /> <strong>Automated Email Notification:</strong> Submitting will immediately trigger an automated email to <strong>{refundTarget.email || refundTarget.guest_email || refundTarget.profiles?.email || 'guest email'}</strong> notifying them of this status update.
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 8 }}>

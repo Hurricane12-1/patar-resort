@@ -132,16 +132,22 @@ export async function logAuditEvent({ actor, action, resourceType = 'system', re
     const client = await getSystemAdminClient();
     const sbPayload = {
       action: entry.action,
-      actor_id: String(entry.actor_id),
-      actor_email: String(entry.actor_email),
-      actor_role: String(entry.role),
-      resource_type: String(entry.resource_type || ''),
-      resource_id: entry.resource_id ? String(entry.resource_id) : '',
-      details: entry.details,
-      ip_address: String(entry.ip_address || ''),
-      user_agent: String(entry.user_agent || ''),
+      resource: String(entry.resource_type || entry.action || 'system'),
+      details: {
+        ...(entry.details || {}),
+        actor_id: entry.actor_id,
+        actor_email: entry.actor_email,
+        actor_role: entry.role,
+        resource_type: entry.resource_type,
+        resource_id: entry.resource_id,
+        user_agent: entry.user_agent,
+      },
+      ip_address: entry.ip_address || null,
       created_at: entry.timestamp,
     };
+    if (entry.actor_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(entry.actor_id)) {
+      sbPayload.user_id = entry.actor_id;
+    }
     client.from('audit_logs').insert(sbPayload).then((res) => {
       if (res.error && res.status !== 404) {
         // Handled safely

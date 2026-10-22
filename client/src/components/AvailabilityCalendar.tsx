@@ -341,7 +341,7 @@ export default function AvailabilityCalendar({
         status: (b.status || 'confirmed') as CalendarStay['status'],
         totalPhp: b.total_php || b.rooms?.rate_php || 3500,
         phone: b.phone || b.profiles?.phone || '',
-        email: b.guest_email || b.profiles?.email || '',
+        email: b.email || b.guest_email || b.profiles?.email || '',
         notes: b.notes || '',
         paymentStatus: b.payment_status || 'unpaid',
         paymentMethod: b.payment_method || 'Cash',

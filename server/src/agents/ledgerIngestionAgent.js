@@ -507,6 +507,12 @@ export async function insertLedgerReservation(payload) {
   // Try Supabase if configured
   if (supabaseAdmin && process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('placeholder')) {
     try {
+      const combinedNotes = [
+        record.notes,
+        record.sub_unit_note ? `[Unit ${record.sub_unit_note}]` : '',
+        record.co_guests ? `Co-guests: ${record.co_guests}` : '',
+      ].filter(Boolean).join(' | ');
+
       await supabaseAdmin.from('reservations').insert({
         id: record.id,
         guest_id: record.guest_id,
@@ -518,9 +524,7 @@ export async function insertLedgerReservation(payload) {
         downpayment_php: record.downpayment_php,
         payment_status: record.payment_status,
         status: record.status,
-        notes: record.notes,
-        sub_unit_note: record.sub_unit_note,
-        co_guests: record.co_guests,
+        notes: combinedNotes || record.notes,
       });
     } catch (dbErr) {
       console.warn('[LedgerAgent] Supabase insert warning (offline fallback active):', dbErr.message);

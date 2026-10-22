@@ -191,7 +191,7 @@ export function exportReservationsCSV(allBookings: any[]): boolean {
     b.payment_status || 'unpaid',
     b.payment_method || 'Cash',
     `"${(b.phone || b.profiles?.phone || '').replace(/"/g, '""')}"`,
-    `"${(b.guest_email || b.profiles?.email || '').replace(/"/g, '""')}"`,
+    `"${(b.email || b.guest_email || b.profiles?.email || '').replace(/"/g, '""')}"`,
   ]);
 
   const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
