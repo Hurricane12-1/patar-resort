@@ -597,66 +597,10 @@ SUGGESTIONS: [Option 1] | [Option 2] | [Option 3]`;
  * Resolves questions with full system facts even if external AI network is unreachable.
  */
 function resortKnowledgeFallback(text, rooms = []) {
-  const t = text.toLowerCase();
+  const t = text.toLowerCase().trim();
 
-  // 1. Room Recommendation & Rates
-  if (/room|rate|magkano|how much|price|villa|cottage|stay|capacity|pax|pamilya|family|barkada|couple|tao/i.test(t)) {
-    if (/60|large group|event|reunion|50|40/i.test(t)) {
-      return {
-        text: 'Para sa malalaking grupo (up to 60 guests), aming inirerekomenda ang Grand Villa (Unit TEV) sa halagang ₱18,000/night. Mayroon itong private gathering area at direct beach access.',
-        chips: ['Book Grand Villa', 'Check 30% Downpayment', 'Resort Amenities'],
-      };
-    }
-    if (/25|20|15|premier/i.test(t)) {
-      return {
-        text: 'Para sa 15 hanggang 25 guests, perpekto ang GEL Premier Suite sa ₱12,000/night. Maluwag, air-conditioned, at ideal para sa company retreats o family reunions.',
-        chips: ['View GEL Suite', 'Book Now', 'Check In Policy'],
-      };
-    }
-    if (/10|8|9|papang|cat/i.test(t)) {
-      return {
-        text: 'Para sa 8 hanggang 10 guests, ang CAT Cottage (Papang) sa ₱6,000/night ang pinaka-popular. May sariling veranda at malapit sa swimming pool.',
-        chips: ['Book CAT Cottage', 'Pool Hours', 'Downpayment Info'],
-      };
-    }
-    if (/couple|dalawa|2 pax|mag-asawa|honeymoon/i.test(t)) {
-      return {
-        text: 'Para sa couples (2 guests), maaari kayong pumili sa Sunset Pavilion (₱3,600/night beachfront) o Garden Breeze Room (₱1,850/night air-conditioned garden view).',
-        chips: ['Sunset Pavilion', 'Garden Breeze', 'View All Rates'],
-      };
-    }
-    return {
-      text: 'Nag-aalok ang Rock View Beach Resort ng mga silid mula ₱650/night (Backpacker Bunk) hanggang ₱18,000/night (Grand Villa para sa 60 guests). May 30% downpayment via GCash o Maya para ma-reserve.',
-      chips: ['Recommend for 5 pax', 'Sunset Pavilion (Couple)', 'Grand Villa (Big Group)'],
-    };
-  }
-
-  // 2. Check-in / Check-out & Location
-  if (/check\s*in|check\s*out|oras|time|location|saan|where|directions|address/i.test(t)) {
-    return {
-      text: 'Ang standard Check-in ay 2:00 PM at ang Check-out ay 12:00 NN. Matatagpuan kami sa Patar White Beach, Bolinao, Pangasinan—10 minuto lamang mula sa Cape Bolinao Lighthouse at 5 minutong lakad sa Patar Rock Formations.',
-      chips: ['Cape Bolinao Lighthouse', 'Patar Rock Formations', 'Contact Front Desk'],
-    };
-  }
-
-  // 3. Payment & Booking Process
-  if (/payment|downpayment|bayad|gcash|maya|card|paano mag\s*book|reserve/i.test(t)) {
-    return {
-      text: 'Kailangan lamang ng 30% downpayment gamit ang GCash, Maya, o Online Bank Transfer upang ma-confirm ang inyong reservation. Ang natitirang 70% balanse ay babayaran pagdating sa resort.',
-      chips: ['Book a Room', 'GCash / Maya Info', 'Digital Pass'],
-    };
-  }
-
-  // 4. Amenities & Rules (Pool, Pets, Wi-Fi, Food)
-  if (/pool|pet|aso|pusa|wifi|pagkain|food|restaurant|lutuan|corkage|inuman|videoke/i.test(t)) {
-    return {
-      text: 'Bukas ang swimming pool mula 7:00 AM hanggang 10:00 PM. Pet-friendly kami (nakatali sa common areas), may libreng high-speed Wi-Fi, 24/7 generator backup, at in-house restaurant para sa masasarap na lutong-dagat.',
-      chips: ['Restaurant Menu', 'Pool Guidelines', 'Pet Policy'],
-    };
-  }
-
-  // 5. Contact Service Agent / Live Staff
-  if (/service\s*agent|contact\s*(the\s*)?(service\s*)?agent|kausap na tao|talk to (a )?human|speak with staff|human agent|live agent/i.test(t)) {
+  // 1. Contact Service Agent / Live Staff / Physical Concerns
+  if (/service\s*agent|contact\s*(the\s*)?(service\s*)?agent|kausap na tao|talk to (a )?human|speak with staff|human agent|live agent|receptionist|front desk personnel/i.test(t)) {
     return {
       text: '🛎️ Ikinokonekta kita sa aming 24/7 Front Desk service agent. May on-site personnel na na-notify para tumulong sa iyo. Maaari ka ring tumawag o mag-message agad sa aming hotline: +63 900 555 0123.',
       chips: ['Call Front Desk (+63 900 555 0123)', 'How to Get Here', 'Refund Policy'],
@@ -668,16 +612,7 @@ function resortKnowledgeFallback(text, rooms = []) {
     };
   }
 
-  // 6. How to Get Here (Directions)
-  if (/how to get here|directions|paano pumunta|commute|route|waze|maps|sakay|transport/i.test(t)) {
-    return {
-      text: '📍 Paano Pumunta sa Rock View Beach Resort (Patar, Bolinao, Pangasinan):\n\n• Public Bus: Sumakay ng Victory Liner, Solid North, o Five Star bus galing Cubao/Pasay papuntang Bolinao town proper (5-6 oras).\n• From Town Proper: Sumakay ng tricycle direkta sa Patar Rock View Beach Resort (25-30 mins, ₱250-₱300).\n• Private Vehicle: NLEX → SCTEX → TPLEX (Exit Paniqui/Urdaneta) → Alaminos → Bolinao. I-search ang "Rock View Beach Resort Patar" sa Waze o Google Maps.\n• Landmark: Katabi ng Patar Rock Formations at 10 minuto mula sa Cape Bolinao Lighthouse.',
-      chips: ['Cape Bolinao Lighthouse', 'Room Rates', 'Contact Service Agent'],
-      is_ai: true,
-    };
-  }
-
-  // 7. How to Refund
+  // 2. How to Refund
   if (/how to refund|paano mag\s*refund|process refund|request refund|soli bayad/i.test(t)) {
     return {
       text: '💸 Paano Mag-Request ng Refund sa Rock View Beach Resort:\n\n1. Ihanda ang inyong Booking Reference ID mula sa confirmation pass o email/SMS.\n2. Makipag-ugnayan sa aming Front Desk team o mag-email sa support@janddbeachhouse.ph kalakip ang inyong reference.\n3. Ive-verify ng reservation officer ang petsa at cancellation eligibility.\n4. Kapag aprubado, maibabalik ang pondo diretso sa inyong GCash, Maya, o Bank Account sa loob ng 3 hanggang 5 business days.',
@@ -686,7 +621,7 @@ function resortKnowledgeFallback(text, rooms = []) {
     };
   }
 
-  // 8. Refund & Cancellation Policy
+  // 3. Refund & Cancellation Policy
   if (/refund policy|cancellation policy|cancel policy|polisiya sa refund|kanselasyon/i.test(t)) {
     return {
       text: '📋 Rock View Beach Resort Refund & Cancellation Policy:\n\n• 100% Full Refund: Kanselasyon na ginawa 7 araw o higit pa bago ang check-in date.\n• 50% Refund: Kanselasyon 3 hanggang 6 na araw bago ang check-in.\n• Non-refundable: Kanselasyon sa loob ng 72 oras bago ang check-in (pinapayagan ang libreng rebooking ng petsa depende sa availability ng kuwarto).\n• Severe Weather / Force Majeure: Sakaling magkaroon ng opisyal na babala ng bagyo (PAGASA storm signal), libreng full refund o free rebooking ang ipagkakaloob.',
@@ -695,9 +630,152 @@ function resortKnowledgeFallback(text, rooms = []) {
     };
   }
 
+  // 4. Greetings & Pleasantries
+  if (/^(hi|hello|hey|musta|kamusta|good morning|good afternoon|good evening|magandang umaga|magandang hapon|magandang gabi|magandang araw|uy|hoy|yo)\b/i.test(t) || t === 'hi' || t === 'hello') {
+    return {
+      text: 'Mabuhay! Ako si Rock View Bot, ang iyong 24/7 AI Concierge dito sa Rock View Beach Resort sa Patar, Bolinao 🌊\n\nPaano kita matutulungan sa iyong beach getaway ngayon? Pwede kitang tulungan sa room rates, booking, swimming pool, in-house dining, o mga magagandang pasyalan dito sa Bolinao!',
+      chips: ['🏡 Room Rates & Cottages', '🏊 Swimming Pool & Beach', '💳 30% Downpayment Info', '📍 Bolinao Attractions'],
+    };
+  }
+
+  // 5. Downpayment & Payment Mechanics
+  if (/downpayment|down payment|30%|paano magbayad|payment method|mode of payment|gcash|maya|bank transfer|installment|balance|balanse/i.test(t)) {
+    return {
+      text: '💳 **30% Downpayment & Payment Process**:\n\n• **30% Downpayment**: Kailangan upang ma-secure at ma-guarantee ang inyong reservation slot gamit ang GCash, Maya, o Online Bank Transfer. Pagka-confirm, agad ma-iissue ang inyong opisyal na Digital Voucher at RFID booking pass.\n• **70% Remaining Balance**: Babayaran na lamang pagdating ninyo sa resort Front Desk upon check-in (Cash, GCash, o Card).\n• **Zero Hidden Fees**: Walang booking surcharge o surprise fees.',
+      chips: ['Book a Room Now', 'Check In & Out Times', 'Refund Policy'],
+    };
+  }
+
+  // 6. Food, Drinks, Corkage, Grilling & Dining
+  if (/pagkain|food|cook|luto|lutuan|ihaw|grill|corkage|magdala|drinks|alak|inuman|restaurant|almusal|breakfast|dinner|lunch|menu/i.test(t)) {
+    return {
+      text: '🍽️ **Food, Dining & Grilling Guidelines**:\n\n• **Pwedeng Magdala ng Pagkain**: Libreng magdala ng sariling cooked food, meryenda, at non-alcoholic drinks (ZERO corkage fee!).\n• **Grilling Stations**: May mga ihawan malapit sa tabing-dagat na libreng magamit ng guests. Magdala lamang ng sariling uling o bumili sa aming sari-sari store.\n• **In-house Seaside Kitchen**: Naghahain kami ng sariwang inihaw na bangus, pusit, hipon, crispy lechon kawali, at all-day Filipino silog breakfasts.\n• **Inuman / Alak**: Pinapayagan ang inuman sa inyong cottage o private veranda. Moderate drinking at strictly 10:00 PM quiet hours ordinance.',
+      chips: ['Room Rates & Capacity', 'Videoke Policy', 'Pool Hours'],
+    };
+  }
+
+  // 7. Swimming Pool & Beach Access
+  if (/pool|swimming|liguan|dagat|beach|sand|buhangin|snorkeling/i.test(t)) {
+    return {
+      text: '🏊 **Swimming Pool & Patar Beachfront**:\n\n• **Pool Hours**: Bukas ang aming swimming pool araw-araw mula **7:00 AM hanggang 10:00 PM** (regular na nililinis at sanitized).\n• **Patar White Beach**: Nasa harapan lamang ng resort ang tanyag na creamy white sand ng Patar, Bolinao. Swimmable sa low at mid-tide na may crystal-clear water.\n• **Snorkeling**: May buhay na coral reef malapit sa dalampasigan na paboritong puntahan ng mga snorkelers.',
+      chips: ['Book a Beachfront Villa', 'Check In Schedule', 'Cape Bolinao Lighthouse'],
+    };
+  }
+
+  // 8. Wi-Fi, Generator & Amenities
+  if (/wifi|internet|generator|kuryente|brownout|signal|data|aircon|amenities|facility/i.test(t)) {
+    return {
+      text: '⚡ **Resort Facilities & 24/7 Power Guarantee**:\n\n• **24/7 Heavy-Duty Generator**: Zero-brownout guarantee! Kahit mawalan ng kuryente sa bayan, laging may ilaw at tuluy-tuloy ang malamig na aircon sa mga kuwarto.\n• **High-Speed Wi-Fi**: Libreng internet access sa lobby, restaurant, at cottages.\n• **Cellular Signal**: Malakas ang 4G at 5G coverage para sa Smart at Globe.',
+      chips: ['Room Rates', 'Pool Hours', 'How to Get Here'],
+    };
+  }
+
+  // 9. Pets
+  if (/pet|aso|pusa|dog|cat|hayop/i.test(t)) {
+    return {
+      text: '🐾 **Pet Policy (Pet-Friendly Resort)**:\n\n• Malugod naming tinatanggap ang inyong mga furbabies (aso at pusa) sa Rock View Beach Resort!\n• Paalala lamang na nakatali (on leash) sila sa common areas at responsibilidad ng fur-parents ang paglinis.\n• Mangyaring magdala ng sariling pet bed o banig upang mapanatiling malinis ang beddings ng kuwarto.',
+      chips: ['Book Pet-Friendly Room', 'Beach Guidelines', 'Room Rates'],
+    };
+  }
+
+  // 10. Videoke & Music
+  if (/videoke|karaoke|kantahan|sound|music|ingay|quiet hour/i.test(t)) {
+    return {
+      text: '🎤 **Videoke & Music Policy**:\n\n• Pinapayagan ang videoke at musika sa mga designated cottages hanggang **10:00 PM** lamang alinsunod sa lokal na barangay noise ordinance.\n• Pagpatak ng 10:00 PM, ipinapatupad ang quiet hours upang makapagpahinga nang mahimbing ang lahat ng guests sa tunog ng alon.',
+      chips: ['Resort Guidelines', 'Food & Grilling', 'Room Rates'],
+    };
+  }
+
+  // 11. Check-in / Check-out Schedule
+  if (/check\s*in|check\s*out|oras|time|early check|late check|luggage/i.test(t)) {
+    return {
+      text: '⏰ **Check-in & Check-out Schedule**:\n\n• **Standard Check-in**: **2:00 PM**\n• **Standard Check-out**: **12:00 NN (Noon)**\n• **Early Check-in**: Kung maagang bakante at malinis na ang kuwarto, pinapayagan namin nang walang dagdag bayad. Pwede rin kayong mag-iwan ng gamit sa reception habang nagpapalipas ng oras sa beach.',
+      chips: ['Directions to Resort', 'Book a Stay', 'Downpayment Info'],
+    };
+  }
+
+  // 12. Tourist Attractions & Itinerary in Bolinao
+  if (/pasyalan|attraction|tourist|puntahan|gala|lighthouse|enchanted|falls|rock formation|itinerary|bapor|sightseeing|gabi/i.test(t)) {
+    return {
+      text: '📍 **Mga Magagandang Pasyalan sa Patar, Bolinao**:\n\n1. **Patar Rock Formations**: 5 minutong lakad lamang sa tabi ng resort. Natural limestone rock arches na pinakasikat na sunset photo spot.\n2. **Cape Bolinao Lighthouse**: 10 minutong biyahe. Makasaysayang 1905 parola na may 360° panoramic view ng West Philippine Sea.\n3. **Enchanted Cave**: 15–20 minuto. Natural freshwater underground swimming pool sa loob ng kuweba.\n4. **Bolinao Falls 1 & 2**: 25 minuto. Malamig at malinaw na talon para sa swimming at cliff jumping.\n5. **Balingasay River Cruise**: 20 minuto. Binisitang mangrove river eco-tour.',
+      chips: ['Cape Bolinao Lighthouse', 'Patar Rock Formations', 'Room Rates'],
+    };
+  }
+
+  // 13. Commute & Driving Directions
+  if (/commute|paano pumunta|how to get here|directions|saan|location|address|route|bus|tricycle|waze|maps|sakay|transport/i.test(t)) {
+    return {
+      text: '📍 **Paano Pumunta sa Rock View Beach Resort (Patar, Bolinao, Pangasinan)**:\n\n• **By Private Vehicle (4–5 oras mula Manila)**: NLEX → SCTEX → TPLEX (Exit Paniqui o Urdaneta) → Camiling → Alaminos → Bolinao. I-search sa Waze o Google Maps ang "Rock View Beach Resort Patar". May libreng gated parking.\n• **By Public Bus**: Sumakay ng Victory Liner o Five Star bus galing Cubao o Pasay papuntang Bolinao town proper (5-6 oras, ₱550-₱650).\n• **From Bolinao Town**: Sumakay ng tricycle direkta sa aming resort (25-30 mins, ₱250-₱300 kada tricycle).\n• **Landmark**: Katabi ng Patar Rock Formations at 10 minuto mula sa Cape Bolinao Lighthouse.',
+      chips: ['Check-in Schedule', 'Room Rates', '30% Downpayment'],
+    };
+  }
+
+  // 14. Room Rates & Dynamic Capacity / Nights Calculation
+  if (/room|rate|magkano|how much|price|villa|cottage|stay|capacity|pax|pamilya|family|barkada|couple|tao|night|gabi|bunk/i.test(t)) {
+    const numMatch = t.match(/\b(\d+)\s*(pax|tao|guest|person|people|katao)?\b/);
+    const count = numMatch ? parseInt(numMatch[1], 10) : 0;
+
+    const nightsMatch = t.match(/\b(\d+)\s*(night|nights|gabi|araw)\b/);
+    const nights = nightsMatch ? parseInt(nightsMatch[1], 10) : 1;
+
+    if (count >= 30) {
+      const total = 18000 * nights;
+      return {
+        text: `🏡 **Para sa malalaking grupo (${count} guests)**:\n\nAming inirerekomenda ang **Grand Villa (Unit TEV)** (₱18,000/night para sa up to 60 guests).\n• Kabuuang Halaga para sa ${nights} night(s): ₱${total.toLocaleString()}\n• 30% Downpayment: ₱${Math.round(total * 0.3).toLocaleString()}\n• 70% Balanse sa Check-in: ₱${Math.round(total * 0.7).toLocaleString()}`,
+        chips: ['Book Grand Villa', 'Downpayment Info', 'Resort Amenities'],
+      };
+    }
+
+    if (count >= 12 && count < 30) {
+      const total = 12000 * nights;
+      return {
+        text: `🏡 **Para sa ${count} guests (Company retreat / Reunion)**:\n\nPerpekto ang **GEL Premier Suite** sa halagang ₱12,000/night (capacity up to 25 guests). Maluwag, fully air-conditioned, at may private living area.\n• Halaga para sa ${nights} night(s): ₱${total.toLocaleString()}\n• 30% Downpayment: ₱${Math.round(total * 0.3).toLocaleString()}\n• 70% Balanse: ₱${Math.round(total * 0.7).toLocaleString()}`,
+        chips: ['Book GEL Suite', 'Pool Hours', 'Downpayment Info'],
+      };
+    }
+
+    if (count >= 6 && count <= 11) {
+      const total = 6000 * nights;
+      return {
+        text: `🏡 **Para sa ${count} guests (Barkada / Large Family)**:\n\nInirerekomenda namin ang **CAT Cottage (Papang)** sa halagang ₱6,000/night (capacity 8-10 guests). May sariling veranda at malapit sa swimming pool at dalampasigan.\n• Halaga para sa ${nights} night(s): ₱${total.toLocaleString()}\n• 30% Downpayment: ₱${Math.round(total * 0.3).toLocaleString()}\n• 70% Balanse: ₱${Math.round(total * 0.7).toLocaleString()}`,
+        chips: ['Book CAT Cottage', 'Pool Hours', 'Check-in Policy'],
+      };
+    }
+
+    if (count >= 3 && count <= 5) {
+      const total = 4500 * nights;
+      return {
+        text: `🏡 **Para sa ${count} guests (Pamilya / Maliit na Barkada)**:\n\nPinaka-angkop ang aming **Oceanview Family Suite** sa halagang ₱4,500/night (capacity 4-6 guests). Air-conditioned, may 2 queen beds, at tanaw ang dagat.\n• Halaga para sa ${nights} night(s): ₱${total.toLocaleString()}\n• 30% Downpayment: ₱${Math.round(total * 0.3).toLocaleString()}\n• 70% Balanse: ₱${Math.round(total * 0.7).toLocaleString()}`,
+        chips: ['Book Family Suite', 'Resort Amenities', '30% Downpayment'],
+      };
+    }
+
+    if (count === 1 || count === 2 || /couple|dalawa|mag-asawa|honeymoon/i.test(t)) {
+      const total = 3600 * nights;
+      return {
+        text: `🏡 **Para sa Couples o 2 Guests**:\n\n1. **Sunset Pavilion**: ₱3,600/night (beachfront view, private veranda)\n2. **Garden Breeze Room**: ₱1,850/night (air-conditioned, tahimik na garden setting)\n• Halaga para sa Sunset Pavilion (${nights} night(s)): ₱${total.toLocaleString()} (Downpayment: ₱${Math.round(total * 0.3).toLocaleString()})`,
+        chips: ['Sunset Pavilion', 'Garden Breeze', 'View All Rates'],
+      };
+    }
+
+    return {
+      text: '🏡 **Mga Kuwarto at Presyo sa Rock View Beach Resort**:\n\n• **Backpacker Bunk**: ₱650 / night (Solo travelers)\n• **Garden Breeze Room**: ₱1,850 / night (2 guests, air-conditioned)\n• **Sunset Pavilion**: ₱3,600 / night (2–3 guests, beachfront veranda)\n• **Oceanview Family Suite**: ₱4,500 / night (4–6 guests)\n• **CAT Cottage (Papang)**: ₱6,000 / night (8–10 guests)\n• **GEL Premier Suite**: ₱12,000 / night (15–25 guests)\n• **Grand Villa (TEV)**: ₱18,000 / night (up to 60 guests)\n\nLahat ng kwarto ay may access sa swimming pool at white beach! Kailangan lamang ng 30% downpayment via GCash/Maya para ma-reserve.',
+      chips: ['Family Suite (4-6 pax)', 'CAT Cottage (8-10 pax)', 'Couple Room (2 pax)', '30% Downpayment Info'],
+    };
+  }
+
+  // 15. Relax / Vacation Vibes
+  if (/relax|pahinga|bakasyon|ganda|view|tahimik|chill/i.test(t)) {
+    return {
+      text: '🌊 Dito sa Rock View Beach Resort sa Patar, Bolinao, sadyang idinisenyo ang paligid para sa tahimik at unhurried na bakasyon. Ilang hakbang lamang ang puting buhangin, sariwang simoy ng hanging-dagat, at ginintuang paglubog ng araw sa West Philippine Sea.\n\nNais mo bang tingnan ang aming mga beachfront cottages o kailangan mo ng gabay sa pag-book?',
+      chips: ['🏡 Beachfront Cottages', '📍 Bolinao Attractions', '💳 30% Downpayment'],
+    };
+  }
+
+  // 16. Default Warm Helpful Local Concierge Guidance
   return {
-    text: 'Mabuhay! Welcome to Rock View Beach Resort in Patar Beach, Bolinao. I am your 24/7 AI Concierge. How may I assist you with your vacation today? I can help you with room rates, villa options, 30% downpayment booking, amenities, or tourist destinations around Bolinao.',
-    chips: ['Room Rates & Capacity', 'Check-in & Check-out Times', '30% Downpayment Info', 'Resort Amenities & Pool'],
+    text: 'Salamat sa inyong mensahe! Nandito ako bilang 24/7 AI Concierge ng Rock View Beach Resort sa Patar, Bolinao. Matutulungan kita sa:\n\n• **Kuwarto & Presyo**: Rates para sa couples, pamilya, o malalaking barkada\n• **30% Downpayment**: GCash, Maya, at Bank Transfer booking process\n• **Resort Guidelines**: Swimming pool (7 AM–10 PM), pet policy, libreng pagdadala ng pagkain at ihawan\n• **Bolinao Attractions**: Cape Bolinao Lighthouse, Patar Rock Formations, at Enchanted Cave\n\nAno ang nais mong malaman para sa iyong bakasyon?',
+    chips: ['🏡 Room Rates', '🏊 Pool & Amenities', '💳 30% Downpayment', '📍 Bolinao Attractions'],
   };
 }
 
