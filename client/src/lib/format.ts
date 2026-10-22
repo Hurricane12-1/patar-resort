@@ -41,7 +41,11 @@ export const fmtTime = (d: any) => {
 
 export const formatTime12Hour = (timeStr?: string) => {
   if (!timeStr) return '';
-  const [hStr, mStr] = String(timeStr).split(':');
+  const trimmed = String(timeStr).trim();
+  if (/am|pm/i.test(trimmed)) {
+    return trimmed.replace(/\s*(am|pm)/i, (_, p1) => ` ${p1.toUpperCase()}`).trim();
+  }
+  const [hStr, mStr] = trimmed.split(':');
   const h = parseInt(hStr, 10);
   if (isNaN(h)) return timeStr;
   const period = h >= 12 ? 'PM' : 'AM';

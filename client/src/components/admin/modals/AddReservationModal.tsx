@@ -45,6 +45,282 @@ const defaultGetRoomImageUrl = (room: any): string =>
   (Array.isArray(room?.images) && room.images[0]) ||
   '';
 
+export const CHECK_IN_TIME_OPTIONS = [
+  { value: '14:00', label: '2:00 PM', desc: 'Standard Resort Check-In', popular: true },
+  { value: '13:00', label: '1:00 PM', desc: 'Early Check-In (-1hr)', popular: true },
+  { value: '12:00', label: '12:00 PM', desc: 'Early Noon Check-In', popular: true },
+  { value: '15:00', label: '3:00 PM', desc: 'Afternoon Check-In', popular: true },
+  { value: '16:00', label: '4:00 PM', desc: 'Sunset Arrival' },
+  { value: '17:00', label: '5:00 PM', desc: 'Late Afternoon' },
+  { value: '18:00', label: '6:00 PM', desc: 'Evening Check-In', popular: true },
+  { value: '19:00', label: '7:00 PM', desc: 'Dinner Arrival' },
+  { value: '20:00', label: '8:00 PM', desc: 'Night Check-In' },
+  { value: '21:00', label: '9:00 PM', desc: 'Late Arrival' },
+  { value: '22:00', label: '10:00 PM', desc: 'Late Night Check-In' },
+  { value: '06:00', label: '6:00 AM', desc: 'Dawn Arrival' },
+  { value: '07:00', label: '7:00 AM', desc: 'Early Morning' },
+  { value: '08:00', label: '8:00 AM', desc: 'Morning Arrival' },
+  { value: '09:00', label: '9:00 AM', desc: 'Morning Check-In' },
+  { value: '10:00', label: '10:00 AM', desc: 'Mid-Morning' },
+  { value: '11:00', label: '11:00 AM', desc: 'Pre-Noon Arrival' },
+];
+
+export const CHECK_OUT_TIME_OPTIONS = [
+  { value: '12:00', label: '12:00 PM', desc: 'Standard Resort Check-Out', popular: true },
+  { value: '13:00', label: '1:00 PM', desc: 'Late Check-Out (+1hr)', popular: true },
+  { value: '14:00', label: '2:00 PM', desc: 'Late Check-Out (+2hr)', popular: true },
+  { value: '15:00', label: '3:00 PM', desc: 'Late Check-Out (+3hr)' },
+  { value: '16:00', label: '4:00 PM', desc: 'Extended Afternoon' },
+  { value: '17:00', label: '5:00 PM', desc: 'Evening Departure' },
+  { value: '06:00', label: '6:00 AM', desc: 'Dawn Check-Out' },
+  { value: '07:00', label: '7:00 AM', desc: 'Early Morning' },
+  { value: '08:00', label: '8:00 AM', desc: 'Early Morning' },
+  { value: '09:00', label: '9:00 AM', desc: 'Morning Departure' },
+  { value: '10:00', label: '10:00 AM', desc: 'Morning Check-Out' },
+  { value: '11:00', label: '11:00 AM', desc: 'Pre-Noon Departure', popular: true },
+];
+
+interface TimeComboboxProps {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+  options: typeof CHECK_IN_TIME_OPTIONS;
+  defaultBadge: string;
+  isLightMode: boolean;
+  themeBorder: string;
+  themeText: string;
+  themeMuted: string;
+}
+
+const TimeCombobox: React.FC<TimeComboboxProps> = ({
+  id,
+  label,
+  value,
+  onChange,
+  options,
+  defaultBadge,
+  isLightMode,
+  themeBorder,
+  themeText,
+  themeMuted,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
+
+  const displayVal = formatTime12Hour(value) || value || '';
+
+  return (
+    <div ref={containerRef} style={{ position: 'relative' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+        <label
+          htmlFor={id}
+          style={{
+            fontSize: '.74rem',
+            color: themeMuted,
+            fontWeight: 700,
+          }}
+        >
+          {label} *
+        </label>
+        <span style={{ fontSize: '.68rem', color: '#0EA5E9', fontWeight: 600 }}>{defaultBadge}</span>
+      </div>
+
+      {/* COMBINED INPUT + DROPDOWN ARROW IN ONE */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          position: 'relative',
+          borderRadius: 10,
+          border: `1px solid ${isOpen ? '#0EA5E9' : themeBorder}`,
+          background: isLightMode ? '#FFF' : '#1E293B',
+          transition: 'all 0.2s ease',
+          boxShadow: isOpen ? '0 0 0 2px rgba(14, 165, 233, 0.25)' : 'none',
+        }}
+      >
+        <input
+          id={id}
+          type="text"
+          list={`${id}-datalist`}
+          value={displayVal}
+          placeholder="e.g. 2:00 PM or type time…"
+          onChange={(e) => onChange(e.target.value)}
+          onFocus={() => setIsOpen(true)}
+          style={{
+            flex: 1,
+            padding: '10px 14px',
+            border: 'none',
+            outline: 'none',
+            background: 'transparent',
+            color: themeText,
+            fontSize: '.85rem',
+            fontWeight: 600,
+            borderRadius: '10px 0 0 10px',
+          }}
+        />
+        <button
+          type="button"
+          tabIndex={-1}
+          onClick={() => setIsOpen((prev) => !prev)}
+          style={{
+            padding: '10px 14px',
+            border: 'none',
+            background: 'transparent',
+            color: isOpen ? '#0EA5E9' : themeMuted,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: '0 10px 10px 0',
+          }}
+          title="Open time dropdown options"
+        >
+          <i className={`fas fa-chevron-${isOpen ? 'up' : 'down'}`} style={{ fontSize: '.75rem' }} />
+        </button>
+      </div>
+
+      {/* NATIVE DATALIST AUTOCOMPLETE */}
+      <datalist id={`${id}-datalist`}>
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.label}>
+            {opt.desc}
+          </option>
+        ))}
+      </datalist>
+
+      {/* QUICK PRESET CHIPS */}
+      <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+        {options.filter((o) => o.popular).map((opt) => {
+          const isSelected = displayVal.toLowerCase() === opt.label.toLowerCase() || value === opt.value;
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => {
+                onChange(opt.label);
+                setIsOpen(false);
+              }}
+              style={{
+                border: `1px solid ${isSelected ? '#0EA5E9' : themeBorder}`,
+                background: isSelected
+                  ? (isLightMode ? 'rgba(14,165,233,0.15)' : 'rgba(14,165,233,0.25)')
+                  : (isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.05)'),
+                color: isSelected ? '#0284C7' : themeMuted,
+                borderRadius: 6,
+                padding: '2px 8px',
+                fontSize: '.68rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* LUXURY DROPDOWN POPOVER */}
+      {isOpen && (
+        <div
+          className="scrollbar-none"
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 4px)',
+            left: 0,
+            right: 0,
+            maxHeight: 220,
+            overflowY: 'auto',
+            background: isLightMode ? '#FFFFFF' : '#0F172A',
+            border: `1px solid ${isLightMode ? '#CBD5E1' : 'rgba(255,255,255,0.18)'}`,
+            borderRadius: 12,
+            boxShadow: isLightMode
+              ? '0 12px 28px -4px rgba(0,0,0,0.14), 0 6px 12px -4px rgba(0,0,0,0.08)'
+              : '0 20px 35px -5px rgba(0,0,0,0.7), 0 10px 15px -5px rgba(0,0,0,0.6)',
+            padding: '6px',
+            zIndex: 9999,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 2,
+            animation: 'fadein 0.15s ease',
+          }}
+        >
+          <div style={{ padding: '4px 8px 6px', borderBottom: `1px solid ${themeBorder}`, marginBottom: 2 }}>
+            <span style={{ fontSize: '.68rem', color: themeMuted, fontWeight: 700, textTransform: 'uppercase' }}>
+              Select Time or Type Custom
+            </span>
+          </div>
+          {options.map((opt) => {
+            const isSelected = displayVal.toLowerCase() === opt.label.toLowerCase() || value === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => {
+                  onChange(opt.label);
+                  setIsOpen(false);
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '7px 10px',
+                  borderRadius: 8,
+                  border: 'none',
+                  background: isSelected
+                    ? (isLightMode ? '#E0F2FE' : 'rgba(14,165,233,0.2)')
+                    : 'transparent',
+                  color: isSelected ? '#0284C7' : themeText,
+                  fontSize: '.8rem',
+                  fontWeight: isSelected ? 700 : 500,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'background 0.15s ease',
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSelected) {
+                    e.currentTarget.style.background = isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.08)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSelected) {
+                    e.currentTarget.style.background = 'transparent';
+                  }
+                }}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {opt.popular && <i className="fas fa-star" style={{ color: '#F59E0B', fontSize: '.65rem' }} />}
+                  <span>{opt.label}</span>
+                </span>
+                <span style={{ fontSize: '.7rem', color: themeMuted }}>{opt.desc}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function AddReservationModal({
   isOpen,
   onClose,
@@ -1079,75 +1355,43 @@ export default function AddReservationModal({
                   />
                 </div>
 
-                {/* 3. Check-In Time */}
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                    <label
-                      style={{
-                        fontSize: '.74rem',
-                        color: themeMuted,
-                        fontWeight: 700,
-                      }}
-                    >
-                      Check-In Time *
-                    </label>
-                    <span style={{ fontSize: '.68rem', color: '#0EA5E9', fontWeight: 600 }}>Standard 2:00 PM</span>
-                  </div>
-                  <input
-                    type="time"
-                    required
-                    value={newReservation.check_in_time || '14:00'}
-                    onChange={(e) => {
-                      setNewReservation({
-                        ...newReservation,
-                        check_in_time: e.target.value,
-                      });
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: 10,
-                      border: `1px solid ${themeBorder}`,
-                      background: isLightMode ? '#FFF' : '#1E293B',
-                      color: themeText,
-                    }}
-                  />
-                </div>
+                {/* 3. Check-In Time Combobox (Dropdown & Input at the same time) */}
+                <TimeCombobox
+                  id="walkin-check-in-time"
+                  label="Check-In Time"
+                  value={newReservation.check_in_time || '14:00'}
+                  onChange={(val) => {
+                    setNewReservation({
+                      ...newReservation,
+                      check_in_time: val,
+                    });
+                  }}
+                  options={CHECK_IN_TIME_OPTIONS}
+                  defaultBadge="Standard 2:00 PM"
+                  isLightMode={isLightMode}
+                  themeBorder={themeBorder}
+                  themeText={themeText}
+                  themeMuted={themeMuted}
+                />
 
-                {/* 4. Check-Out Time */}
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                    <label
-                      style={{
-                        fontSize: '.74rem',
-                        color: themeMuted,
-                        fontWeight: 700,
-                      }}
-                    >
-                      Check-Out Time *
-                    </label>
-                    <span style={{ fontSize: '.68rem', color: '#0EA5E9', fontWeight: 600 }}>Standard 12:00 PM</span>
-                  </div>
-                  <input
-                    type="time"
-                    required
-                    value={newReservation.check_out_time || '12:00'}
-                    onChange={(e) => {
-                      setNewReservation({
-                        ...newReservation,
-                        check_out_time: e.target.value,
-                      });
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: 10,
-                      border: `1px solid ${themeBorder}`,
-                      background: isLightMode ? '#FFF' : '#1E293B',
-                      color: themeText,
-                    }}
-                  />
-                </div>
+                {/* 4. Check-Out Time Combobox (Dropdown & Input at the same time) */}
+                <TimeCombobox
+                  id="walkin-check-out-time"
+                  label="Check-Out Time"
+                  value={newReservation.check_out_time || '12:00'}
+                  onChange={(val) => {
+                    setNewReservation({
+                      ...newReservation,
+                      check_out_time: val,
+                    });
+                  }}
+                  options={CHECK_OUT_TIME_OPTIONS}
+                  defaultBadge="Standard 12:00 PM"
+                  isLightMode={isLightMode}
+                  themeBorder={themeBorder}
+                  themeText={themeText}
+                  themeMuted={themeMuted}
+                />
               </div>
             </div>
 
