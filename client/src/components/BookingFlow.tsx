@@ -17,17 +17,77 @@ export const POOL_ADDON_OPTIONS = [
 export default function BookingFlow({ initialSlug }) {
   const { session, profile, setAuthOpen } = useAuth();
   const today = new Date().toISOString().slice(0, 10);
-  const [checkIn, setCheckIn] = useState(addDaysISO(today, 1));
-  const [checkOut, setCheckOut] = useState(addDaysISO(today, 3));
-  const [guests, setGuests] = useState(2);
-  const [poolAddonId, setPoolAddonId] = useState('none');
+  const [checkIn, setCheckIn] = useState(() => {
+    try {
+      return localStorage.getItem('jd_booking_checkin') || addDaysISO(today, 1);
+    } catch {
+      return addDaysISO(today, 1);
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_booking_checkin', checkIn);
+    } catch {}
+  }, [checkIn]);
+
+  const [checkOut, setCheckOut] = useState(() => {
+    try {
+      return localStorage.getItem('jd_booking_checkout') || addDaysISO(today, 3);
+    } catch {
+      return addDaysISO(today, 3);
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_booking_checkout', checkOut);
+    } catch {}
+  }, [checkOut]);
+
+  const [guests, setGuests] = useState<number>(() => {
+    try {
+      const g = Number(localStorage.getItem('jd_booking_guests'));
+      return g > 0 ? g : 2;
+    } catch {
+      return 2;
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_booking_guests', String(guests));
+    } catch {}
+  }, [guests]);
+
+  const [poolAddonId, setPoolAddonId] = useState<string>(() => {
+    try {
+      return localStorage.getItem('jd_booking_pool_addon') || 'none';
+    } catch {
+      return 'none';
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_booking_pool_addon', poolAddonId);
+    } catch {}
+  }, [poolAddonId]);
+
   const [catalog, setCatalog] = useState<any[]>([]);
   const [catalogLoaded, setCatalogLoaded] = useState(false);
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [stage, setStage] = useState('search');   // search | results | details | done
   const [room, setRoom] = useState(null);
-  const [notes, setNotes] = useState('');
+  const [notes, setNotes] = useState(() => {
+    try {
+      return localStorage.getItem('jd_booking_notes') || '';
+    } catch {
+      return '';
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_booking_notes', notes);
+    } catch {}
+  }, [notes]);
   const [phone, setPhone] = useState('');
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(null);
@@ -143,6 +203,13 @@ export default function BookingFlow({ initialSlug }) {
         guest_email: profile?.email || '',
       });
       setDone(stay); setStage('done');
+      try {
+        localStorage.removeItem('jd_booking_checkin');
+        localStorage.removeItem('jd_booking_checkout');
+        localStorage.removeItem('jd_booking_guests');
+        localStorage.removeItem('jd_booking_pool_addon');
+        localStorage.removeItem('jd_booking_notes');
+      } catch {}
       toast(`Reserved! SMS ping sent${phone ? ` to ${phone}` : ''} ✦`);
     } catch (e: any) { toast(e.message, true); }
     finally { setBusy(false); }
@@ -155,6 +222,13 @@ export default function BookingFlow({ initialSlug }) {
     setResults([]);
     setPoolAddonId('none');
     setSelectedUnitNumber('auto');
+    try {
+      localStorage.removeItem('jd_booking_checkin');
+      localStorage.removeItem('jd_booking_checkout');
+      localStorage.removeItem('jd_booking_guests');
+      localStorage.removeItem('jd_booking_pool_addon');
+      localStorage.removeItem('jd_booking_notes');
+    } catch {}
   }
 
   return (

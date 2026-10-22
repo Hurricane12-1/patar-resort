@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { money } from '../../lib/format';
 import RoomImageCarousel from '../../components/RoomImageCarousel';
 
@@ -45,10 +45,57 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
   themeMuted,
   toast,
 }) => {
-  const [inventorySearch, setInventorySearch] = useState('');
-  const [inventorySubTab, setInventorySubTab] = useState<'accommodations' | 'supplies'>('accommodations');
-  const [inventoryRoomFilter, setInventoryRoomFilter] = useState('all');
-  const [inventoryDeptFilter, setInventoryDeptFilter] = useState('all');
+  const [inventorySearch, setInventorySearch] = useState(() => {
+    try {
+      return localStorage.getItem('jd_admin_inv_search') || '';
+    } catch {
+      return '';
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_inv_search', inventorySearch);
+    } catch {}
+  }, [inventorySearch]);
+
+  const [inventorySubTab, setInventorySubTab] = useState<'accommodations' | 'supplies'>(() => {
+    try {
+      const saved = localStorage.getItem('jd_admin_inv_subtab');
+      if (saved === 'supplies' || saved === 'accommodations') return saved;
+    } catch {}
+    return 'accommodations';
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_inv_subtab', inventorySubTab);
+    } catch {}
+  }, [inventorySubTab]);
+
+  const [inventoryRoomFilter, setInventoryRoomFilter] = useState(() => {
+    try {
+      return localStorage.getItem('jd_admin_inv_room_filter') || 'all';
+    } catch {
+      return 'all';
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_inv_room_filter', inventoryRoomFilter);
+    } catch {}
+  }, [inventoryRoomFilter]);
+
+  const [inventoryDeptFilter, setInventoryDeptFilter] = useState(() => {
+    try {
+      return localStorage.getItem('jd_admin_inv_dept_filter') || 'all';
+    } catch {
+      return 'all';
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_inv_dept_filter', inventoryDeptFilter);
+    } catch {}
+  }, [inventoryDeptFilter]);
 
   return (
     <div className="panel" style={{ background: themeCardBg, border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 24, boxShadow: themeShadow }}>

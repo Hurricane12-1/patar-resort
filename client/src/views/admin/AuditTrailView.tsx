@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { api } from '../../lib/api';
 
 export interface AuditTrailViewProps {
@@ -36,10 +36,57 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({
   themeText,
   themeMuted,
 }) => {
-  const [auditRoleFilter, setAuditRoleFilter] = useState<string>('employee');
-  const [auditDateFilter, setAuditDateFilter] = useState<string>('ALL');
-  const [auditSearchQuery, setAuditSearchQuery] = useState<string>('');
-  const [auditActionFilter, setAuditActionFilter] = useState<string>('ALL');
+  const [auditRoleFilter, setAuditRoleFilter] = useState<string>(() => {
+    try {
+      return localStorage.getItem('jd_admin_audit_role_filter') || 'employee';
+    } catch {
+      return 'employee';
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_audit_role_filter', auditRoleFilter);
+    } catch {}
+  }, [auditRoleFilter]);
+
+  const [auditDateFilter, setAuditDateFilter] = useState<string>(() => {
+    try {
+      return localStorage.getItem('jd_admin_audit_date_filter') || 'ALL';
+    } catch {
+      return 'ALL';
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_audit_date_filter', auditDateFilter);
+    } catch {}
+  }, [auditDateFilter]);
+
+  const [auditSearchQuery, setAuditSearchQuery] = useState<string>(() => {
+    try {
+      return localStorage.getItem('jd_admin_audit_search') || '';
+    } catch {
+      return '';
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_audit_search', auditSearchQuery);
+    } catch {}
+  }, [auditSearchQuery]);
+
+  const [auditActionFilter, setAuditActionFilter] = useState<string>(() => {
+    try {
+      return localStorage.getItem('jd_admin_audit_action_filter') || 'ALL';
+    } catch {
+      return 'ALL';
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_audit_action_filter', auditActionFilter);
+    } catch {}
+  }, [auditActionFilter]);
   const [inspectAuditLog, setInspectAuditLog] = useState<any>(null);
 
   const filteredLogs = auditLogs.filter((log: any) => {

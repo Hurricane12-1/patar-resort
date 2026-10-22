@@ -63,8 +63,63 @@ export function useAdminState() {
   );
 
   // Navigation & Theme
-  const [activeTab, setActiveTab] = useState('overview');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const getInitialActiveTab = (): string => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash.replace('#', '').trim();
+      const validTabs = ['overview', 'ledger', 'inventory', 'conversations', 'settings', 'audit', 'accounts', 'notifications', 'csv'];
+      if (validTabs.includes(hash)) {
+        return hash;
+      }
+      const saved = localStorage.getItem('jd_admin_active_tab');
+      if (saved && validTabs.includes(saved)) {
+        return saved;
+      }
+    }
+    return 'overview';
+  };
+
+  const [activeTab, setActiveTab] = useState<string>(getInitialActiveTab);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('jd_admin_active_tab', activeTab);
+        if (window.location.pathname.includes('/admin')) {
+          const currentHash = window.location.hash.replace('#', '');
+          if (currentHash !== activeTab) {
+            window.history.replaceState(null, '', `#${activeTab}`);
+          }
+        }
+      } catch {}
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '').trim();
+      const validTabs = ['overview', 'ledger', 'inventory', 'conversations', 'settings', 'audit', 'accounts', 'notifications', 'csv'];
+      if (validTabs.includes(hash) && hash !== activeTab) {
+        setActiveTab(hash);
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [activeTab]);
+
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('jd_admin_sidebar_collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_sidebar_collapsed', String(sidebarCollapsed));
+    } catch {}
+  }, [sidebarCollapsed]);
+
   const [sidebarHidden, setSidebarHidden] = useState(false);
   const [sidebarMobileOpen, setSidebarMobileOpen] = useState(false);
 
@@ -160,10 +215,7 @@ export function useAdminState() {
   const [timelineBooking, setTimelineBooking] = useState<any>(null);
   const [reservationToRemove, setReservationToRemove] = useState<any>(null);
   const [removingReservation, setRemovingReservation] = useState(false);
-  const [showAddReservationModal, setShowAddReservationModal] = useState(false);
-  const [creatingReservation, setCreatingReservation] = useState(false);
-  const [walkInPoolAddon, setWalkInPoolAddon] = useState('none');
-  const [newReservation, setNewReservation] = useState({
+  const defaultReservationDraft = {
     guest_name: '',
     phone: '',
     guest_email: '',
@@ -175,7 +227,56 @@ export function useAdminState() {
     payment_method: 'GCash',
     payment_status: 'confirmed',
     notes: 'Direct Front Desk walk-in entry',
+  };
+
+  const [showAddReservationModal, setShowAddReservationModal] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('jd_admin_show_add_reservation') === 'true';
+    } catch {
+      return false;
+    }
   });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_show_add_reservation', String(showAddReservationModal));
+    } catch {}
+  }, [showAddReservationModal]);
+
+  const [creatingReservation, setCreatingReservation] = useState(false);
+
+  const [walkInPoolAddon, setWalkInPoolAddon] = useState<string>(() => {
+    try {
+      return localStorage.getItem('jd_admin_draft_pool_addon') || 'none';
+    } catch {
+      return 'none';
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_draft_pool_addon', walkInPoolAddon);
+    } catch {}
+  }, [walkInPoolAddon]);
+
+  const [newReservation, setNewReservation] = useState(() => {
+    try {
+      const saved = localStorage.getItem('jd_admin_draft_reservation');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') {
+          return { ...defaultReservationDraft, ...parsed };
+        }
+      }
+    } catch {}
+    return defaultReservationDraft;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_draft_reservation', JSON.stringify(newReservation));
+    } catch {}
+  }, [newReservation]);
 
   const refreshReservations = useCallback(async () => {
     setLoadingReservations(true);
@@ -235,7 +336,32 @@ export function useAdminState() {
   );
   const [inventoryList, setInventoryList] = useState<any[]>([]);
   const [loadingRoomsAndInv, setLoadingRoomsAndInv] = useState(false);
-  const [showCreateRoomModal, setShowCreateRoomModal] = useState(false);
+  const defaultRoomDraft = {
+    name: '',
+    category: 'Cottage',
+    description: '',
+    capacity: 2,
+    units: 1,
+    rate_php: 3500,
+    amenities: 'Air Conditioning, Free Wi-Fi, Private Bath, Sea View',
+    image_url: '',
+    images: [] as string[],
+  };
+
+  const [showCreateRoomModal, setShowCreateRoomModal] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('jd_admin_show_create_room') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_show_create_room', String(showCreateRoomModal));
+    } catch {}
+  }, [showCreateRoomModal]);
+
   const [newRoom, setNewRoom] = useState<{
     name: string;
     category: string;
@@ -246,30 +372,70 @@ export function useAdminState() {
     amenities: string;
     image_url: string;
     images: string[];
-  }>({
-    name: '',
-    category: 'Cottage',
-    description: '',
-    capacity: 2,
-    units: 1,
-    rate_php: 3500,
-    amenities: 'Air Conditioning, Free Wi-Fi, Private Bath, Sea View',
-    image_url: '',
-    images: [],
+  }>(() => {
+    try {
+      const saved = localStorage.getItem('jd_admin_draft_room');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') {
+          return { ...defaultRoomDraft, ...parsed };
+        }
+      }
+    } catch {}
+    return defaultRoomDraft;
   });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_draft_room', JSON.stringify(newRoom));
+    } catch {}
+  }, [newRoom]);
+
   const [editingRoom, setEditingRoom] = useState<any>(null);
   const [uploadingRoomPhoto, setUploadingRoomPhoto] = useState(false);
   const [roomToRemove, setRoomToRemove] = useState<any>(null);
   const [removingRoom, setRemovingRoom] = useState(false);
 
-  const [showCreateSupplyModal, setShowCreateSupplyModal] = useState(false);
-  const [newSupply, setNewSupply] = useState({
+  const defaultSupplyDraft = {
     item_name: '',
     category: 'housekeeping',
     stock_qty: 20,
     unit: 'pcs',
     reorder_at: 10,
+  };
+
+  const [showCreateSupplyModal, setShowCreateSupplyModal] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('jd_admin_show_create_supply') === 'true';
+    } catch {
+      return false;
+    }
   });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_show_create_supply', String(showCreateSupplyModal));
+    } catch {}
+  }, [showCreateSupplyModal]);
+
+  const [newSupply, setNewSupply] = useState(() => {
+    try {
+      const saved = localStorage.getItem('jd_admin_draft_supply');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') {
+          return { ...defaultSupplyDraft, ...parsed };
+        }
+      }
+    } catch {}
+    return defaultSupplyDraft;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_draft_supply', JSON.stringify(newSupply));
+    } catch {}
+  }, [newSupply]);
   const [supplyToRemove, setSupplyToRemove] = useState<any>(null);
   const [removingSupply, setRemovingSupply] = useState(false);
 
@@ -308,17 +474,11 @@ export function useAdminState() {
       });
       setRoomsList((prev) => [...prev, created]);
       setShowCreateRoomModal(false);
-      setNewRoom({
-        name: '',
-        category: 'Cottage',
-        description: '',
-        capacity: 2,
-        units: 1,
-        rate_php: 3500,
-        amenities: 'Air Conditioning, Free Wi-Fi, Private Bath, Sea View',
-        image_url: '',
-        images: [],
-      });
+      try {
+        localStorage.removeItem('jd_admin_draft_room');
+        localStorage.setItem('jd_admin_show_create_room', 'false');
+      } catch {}
+      setNewRoom(defaultRoomDraft);
       toast(`✦ Room "${created.name}" created successfully!`);
     } catch (err: any) {
       toast(err.message, true);
@@ -492,13 +652,11 @@ export function useAdminState() {
       });
       setInventoryList((prev) => [...prev, created]);
       setShowCreateSupplyModal(false);
-      setNewSupply({
-        item_name: '',
-        category: 'housekeeping',
-        stock_qty: 20,
-        unit: 'pcs',
-        reorder_at: 10,
-      });
+      try {
+        localStorage.removeItem('jd_admin_draft_supply');
+        localStorage.setItem('jd_admin_show_create_supply', 'false');
+      } catch {}
+      setNewSupply(defaultSupplyDraft);
       toast(`✦ Supply "${created.item_name}" registered`);
     } catch (err: any) {
       toast(err.message, true);
@@ -689,19 +847,17 @@ export function useAdminState() {
       }
       toast('✦ New reservation recorded and added to Ledger!');
       setShowAddReservationModal(false);
+      try {
+        localStorage.removeItem('jd_admin_draft_reservation');
+        localStorage.removeItem('jd_admin_draft_pool_addon');
+        localStorage.setItem('jd_admin_show_add_reservation', 'false');
+      } catch {}
       setNewReservation({
-        guest_name: '',
-        phone: '',
-        guest_email: '',
+        ...defaultReservationDraft,
         room_id: activeRoomsList[0]?.id || '',
-        check_in: '2026-10-20',
-        check_out: '2026-10-21',
-        guests: 2,
         total_php: Number(activeRoomsList[0]?.rate_php) || 3500,
-        payment_method: 'GCash',
-        payment_status: 'confirmed',
-        notes: 'Direct Front Desk walk-in entry',
       });
+      setWalkInPoolAddon('none');
       refreshReservations();
       autoReloadLive();
     } catch (err: any) {
@@ -716,15 +872,82 @@ export function useAdminState() {
   const [loadingLedger, setLoadingLedger] = useState(false);
   const [trialBalance, setTrialBalance] = useState<any>(null);
   const [chartOfAccounts, setChartOfAccounts] = useState<any[]>([]);
-  const [ledgerSubView, setLedgerSubView] = useState<'stay_folios' | 'availability' | 'debit_credit'>('availability');
-  const [ledgerAccountFilter, setLedgerAccountFilter] = useState('');
-  const [ledgerCategoryFilter, setLedgerCategoryFilter] = useState('');
-  const [ledgerTypeFilter, setLedgerTypeFilter] = useState<'all' | 'debit' | 'credit'>('all');
-  const [ledgerSearch, setLedgerSearch] = useState('');
 
-  const [showAddJournalModal, setShowAddJournalModal] = useState(false);
-  const [postingJournal, setPostingJournal] = useState(false);
-  const [journalForm, setJournalForm] = useState({
+  const [ledgerSubView, setLedgerSubView] = useState<'stay_folios' | 'availability' | 'debit_credit'>(() => {
+    try {
+      const saved = localStorage.getItem('jd_admin_ledger_subview');
+      if (saved && ['stay_folios', 'availability', 'debit_credit'].includes(saved)) {
+        return saved as 'stay_folios' | 'availability' | 'debit_credit';
+      }
+    } catch {}
+    return 'availability';
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_ledger_subview', ledgerSubView);
+    } catch {}
+  }, [ledgerSubView]);
+
+  const [ledgerAccountFilter, setLedgerAccountFilter] = useState(() => {
+    try {
+      return localStorage.getItem('jd_admin_ledger_account_filter') || '';
+    } catch {
+      return '';
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_ledger_account_filter', ledgerAccountFilter);
+    } catch {}
+  }, [ledgerAccountFilter]);
+
+  const [ledgerCategoryFilter, setLedgerCategoryFilter] = useState(() => {
+    try {
+      return localStorage.getItem('jd_admin_ledger_category_filter') || '';
+    } catch {
+      return '';
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_ledger_category_filter', ledgerCategoryFilter);
+    } catch {}
+  }, [ledgerCategoryFilter]);
+
+  const [ledgerTypeFilter, setLedgerTypeFilter] = useState<'all' | 'debit' | 'credit'>(() => {
+    try {
+      const saved = localStorage.getItem('jd_admin_ledger_type_filter');
+      if (saved && ['all', 'debit', 'credit'].includes(saved)) {
+        return saved as 'all' | 'debit' | 'credit';
+      }
+    } catch {}
+    return 'all';
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_ledger_type_filter', ledgerTypeFilter);
+    } catch {}
+  }, [ledgerTypeFilter]);
+
+  const [ledgerSearch, setLedgerSearch] = useState(() => {
+    try {
+      return localStorage.getItem('jd_admin_ledger_search') || '';
+    } catch {
+      return '';
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_ledger_search', ledgerSearch);
+    } catch {}
+  }, [ledgerSearch]);
+
+  const defaultJournalDraft = {
     mode: 'pair',
     debit_account_code: '1010',
     credit_account_code: '4010',
@@ -732,10 +955,71 @@ export function useAdminState() {
     particulars: '',
     category: 'REVENUE',
     reference_id: '',
+  };
+
+  const [showAddJournalModal, setShowAddJournalModal] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('jd_admin_show_add_journal') === 'true';
+    } catch {
+      return false;
+    }
   });
 
-  const [showBackupModal, setShowBackupModal] = useState(false);
-  const [backupTab, setBackupTab] = useState<'export' | 'import' | 'notation' | 'auto'>('export');
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_show_add_journal', String(showAddJournalModal));
+    } catch {}
+  }, [showAddJournalModal]);
+
+  const [postingJournal, setPostingJournal] = useState(false);
+  const [journalForm, setJournalForm] = useState(() => {
+    try {
+      const saved = localStorage.getItem('jd_admin_draft_journal');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') {
+          return { ...defaultJournalDraft, ...parsed };
+        }
+      }
+    } catch {}
+    return defaultJournalDraft;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_draft_journal', JSON.stringify(journalForm));
+    } catch {}
+  }, [journalForm]);
+
+  const [showBackupModal, setShowBackupModal] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('jd_admin_show_backup_modal') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_show_backup_modal', String(showBackupModal));
+    } catch {}
+  }, [showBackupModal]);
+
+  const [backupTab, setBackupTab] = useState<'export' | 'import' | 'notation' | 'auto'>(() => {
+    try {
+      const saved = localStorage.getItem('jd_admin_backup_tab');
+      if (saved && ['export', 'import', 'notation', 'auto'].includes(saved)) {
+        return saved as any;
+      }
+    } catch {}
+    return 'export';
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_backup_tab', backupTab);
+    } catch {}
+  }, [backupTab]);
   const [exportFormat, setExportFormat] = useState<'sql' | 'json' | 'csv'>('sql');
   const [previewSqlText, setPreviewSqlText] = useState('');
   const [loadingPreviewSql, setLoadingPreviewSql] = useState(false);
@@ -796,15 +1080,11 @@ export function useAdminState() {
       await api.createLedgerEntry(journalForm);
       toast('✦ Double-entry journal voucher recorded in General Ledger!');
       setShowAddJournalModal(false);
-      setJournalForm({
-        mode: 'pair',
-        debit_account_code: '1010',
-        credit_account_code: '4010',
-        amount_php: 1000,
-        particulars: '',
-        category: 'REVENUE',
-        reference_id: '',
-      });
+      try {
+        localStorage.removeItem('jd_admin_draft_journal');
+        localStorage.setItem('jd_admin_show_add_journal', 'false');
+      } catch {}
+      setJournalForm(defaultJournalDraft);
       await refreshLedgerEntries();
     } catch (err: any) {
       toast(err.message, true);
@@ -863,10 +1143,36 @@ export function useAdminState() {
   // Staff and User Accounts State
   const [users, setUsers] = useState<any[]>([]);
   const [searchingUsers, setSearchingUsers] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [roleFilter, setRoleFilter] = useState('');
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newStaff, setNewStaff] = useState({
+
+  const [searchQuery, setSearchQuery] = useState(() => {
+    try {
+      return localStorage.getItem('jd_admin_search_query') || '';
+    } catch {
+      return '';
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_search_query', searchQuery);
+    } catch {}
+  }, [searchQuery]);
+
+  const [roleFilter, setRoleFilter] = useState(() => {
+    try {
+      return localStorage.getItem('jd_admin_role_filter') || '';
+    } catch {
+      return '';
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_role_filter', roleFilter);
+    } catch {}
+  }, [roleFilter]);
+
+  const defaultStaffDraft = {
     first_name: '',
     middle_name: '',
     last_name: '',
@@ -875,7 +1181,41 @@ export function useAdminState() {
     password: '',
     phone: '',
     role: 'receptionist',
+  };
+
+  const [showCreateModal, setShowCreateModal] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('jd_admin_show_create_staff') === 'true';
+    } catch {
+      return false;
+    }
   });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_show_create_staff', String(showCreateModal));
+    } catch {}
+  }, [showCreateModal]);
+
+  const [newStaff, setNewStaff] = useState(() => {
+    try {
+      const saved = localStorage.getItem('jd_admin_draft_staff');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') {
+          return { ...defaultStaffDraft, ...parsed };
+        }
+      }
+    } catch {}
+    return defaultStaffDraft;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_draft_staff', JSON.stringify(newStaff));
+    } catch {}
+  }, [newStaff]);
+
   const [creatingStaff, setCreatingStaff] = useState(false);
 
   const [recoveryTarget, setRecoveryTarget] = useState<any>(null);
@@ -925,16 +1265,11 @@ export function useAdminState() {
       toast(`Staff Account Created for ${created.full_name || full_name} (${created.role}) ✦`);
       setUsers((prev) => [created, ...prev]);
       setShowCreateModal(false);
-      setNewStaff({
-        first_name: '',
-        middle_name: '',
-        last_name: '',
-        full_name: '',
-        email: '',
-        password: '',
-        phone: '',
-        role: 'receptionist',
-      });
+      try {
+        localStorage.removeItem('jd_admin_draft_staff');
+        localStorage.setItem('jd_admin_show_create_staff', 'false');
+      } catch {}
+      setNewStaff(defaultStaffDraft);
     } catch (err: any) {
       toast(err.message, true);
     } finally {

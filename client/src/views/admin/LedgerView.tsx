@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { money, fmtDate, fmtTime } from '../../lib/format';
 import { IconSearch } from '../../components/AdminIcons';
 import StatusPill from '../../components/StatusPill';
@@ -83,9 +83,45 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
   themeMuted,
   toast,
 }) => {
-  const [reservationFilter, setReservationFilter] = useState<string>('all');
-  const [reservationSearch, setReservationSearch] = useState<string>('');
-  const [folioViewLimit, setFolioViewLimit] = useState<number | 'all'>(25);
+  const [reservationFilter, setReservationFilter] = useState<string>(() => {
+    try {
+      return localStorage.getItem('jd_admin_res_filter') || 'all';
+    } catch {
+      return 'all';
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_res_filter', reservationFilter);
+    } catch {}
+  }, [reservationFilter]);
+
+  const [reservationSearch, setReservationSearch] = useState<string>(() => {
+    try {
+      return localStorage.getItem('jd_admin_res_search') || '';
+    } catch {
+      return '';
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_res_search', reservationSearch);
+    } catch {}
+  }, [reservationSearch]);
+
+  const [folioViewLimit, setFolioViewLimit] = useState<number | 'all'>(() => {
+    try {
+      const saved = localStorage.getItem('jd_admin_folio_limit');
+      if (saved === 'all') return 'all';
+      if (saved && !isNaN(Number(saved))) return Number(saved);
+    } catch {}
+    return 25;
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_folio_limit', String(folioViewLimit));
+    } catch {}
+  }, [folioViewLimit]);
   const [editingBooking, setEditingBooking] = useState<any>(null);
   const [savingBookingEdit, setSavingBookingEdit] = useState<boolean>(false);
 

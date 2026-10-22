@@ -32,12 +32,60 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
     if (initialGuest) {
       return { ...initialGuest, messages: getMessages(initialGuest), status: initialGuest.status || 'Active' };
     }
+    const savedId = typeof localStorage !== 'undefined' ? localStorage.getItem('jd_admin_chat_guest_id') : null;
+    if (savedId) {
+      const match = guestList.find((g) => g.id === savedId || String(g.id) === String(savedId));
+      if (match) return match;
+    }
     return guestList[0] || null;
   });
 
-  const [inputText, setInputText] = useState('');
-  const [filter, setFilter] = useState('All');
-  const [search, setSearch] = useState('');
+  useEffect(() => {
+    if (selectedGuest?.id) {
+      try {
+        localStorage.setItem('jd_admin_chat_guest_id', selectedGuest.id);
+      } catch {}
+    }
+  }, [selectedGuest]);
+
+  const [inputText, setInputText] = useState(() => {
+    try {
+      return localStorage.getItem('jd_admin_chat_input') || '';
+    } catch {
+      return '';
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_chat_input', inputText);
+    } catch {}
+  }, [inputText]);
+
+  const [filter, setFilter] = useState(() => {
+    try {
+      return localStorage.getItem('jd_admin_chat_filter') || 'All';
+    } catch {
+      return 'All';
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_chat_filter', filter);
+    } catch {}
+  }, [filter]);
+
+  const [search, setSearch] = useState(() => {
+    try {
+      return localStorage.getItem('jd_admin_chat_search') || '';
+    } catch {
+      return '';
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_chat_search', search);
+    } catch {}
+  }, [search]);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const messageStreamRef = useRef<HTMLDivElement>(null);
 
@@ -182,7 +230,12 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
 
     setSelectedGuest(updatedGuest);
     setGuestList((prev) => prev.map((g) => (g.id === updatedGuest.id ? updatedGuest : g)));
-    if (!textToSend) setInputText('');
+    if (!textToSend) {
+      setInputText('');
+      try {
+        localStorage.removeItem('jd_admin_chat_input');
+      } catch {}
+    }
 
     try {
       if (selectedGuest.profile_id) {

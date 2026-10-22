@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { money } from '../../lib/format';
 
 export interface AccountDirectoryViewProps {
@@ -42,8 +42,31 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
   themeText,
   themeMuted,
 }) => {
-  const [accountsSubTab, setAccountsSubTab] = useState<'staff' | 'customers'>('staff');
-  const [roleFilter, setRoleFilter] = useState<string>('');
+  const [accountsSubTab, setAccountsSubTab] = useState<'staff' | 'customers'>(() => {
+    try {
+      const saved = localStorage.getItem('jd_admin_accounts_subtab');
+      if (saved === 'staff' || saved === 'customers') return saved;
+    } catch {}
+    return 'staff';
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_accounts_subtab', accountsSubTab);
+    } catch {}
+  }, [accountsSubTab]);
+
+  const [roleFilter, setRoleFilter] = useState<string>(() => {
+    try {
+      return localStorage.getItem('jd_admin_accounts_role_filter') || '';
+    } catch {
+      return '';
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_accounts_role_filter', roleFilter);
+    } catch {}
+  }, [roleFilter]);
 
   return (
     <div className="panel" style={{ background: themeCardBg, border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 24, boxShadow: themeShadow }}>

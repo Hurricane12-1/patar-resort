@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { fmtDate, fmtTime } from '../../lib/format';
 import { api } from '../../lib/api';
 
@@ -37,7 +37,18 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
   themeMuted,
   toast,
 }) => {
-  const [notifFilter, setNotifFilter] = useState<string>('unread');
+  const [notifFilter, setNotifFilter] = useState<string>(() => {
+    try {
+      return localStorage.getItem('jd_admin_notif_filter') || 'unread';
+    } catch {
+      return 'unread';
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('jd_admin_notif_filter', notifFilter);
+    } catch {}
+  }, [notifFilter]);
 
   const unreadNotifsCount = notifications.filter((n: any) => !n.is_read).length;
   const readNotifsCount = notifications.filter((n: any) => Boolean(n.is_read)).length;
