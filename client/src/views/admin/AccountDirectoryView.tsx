@@ -68,6 +68,24 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
     } catch {}
   }, [roleFilter]);
 
+  const [openActionMenu, setOpenActionMenu] = useState<{ id: string; rect: DOMRect; user: any } | null>(null);
+
+  useEffect(() => {
+    if (!openActionMenu) return;
+    const handleClose = () => setOpenActionMenu(null);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpenActionMenu(null);
+    };
+    window.addEventListener('scroll', handleClose, true);
+    window.addEventListener('resize', handleClose);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('scroll', handleClose, true);
+      window.removeEventListener('resize', handleClose);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [openActionMenu]);
+
   return (
     <div className="panel" style={{ background: themeCardBg, border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 24, boxShadow: themeShadow }}>
       {/* Header */}
@@ -128,7 +146,7 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
         ].map((tab) => (
           <button
             key={tab.key}
-            onClick={() => { setAccountsSubTab(tab.key); setRoleFilter(''); }}
+            onClick={() => { setAccountsSubTab(tab.key); setRoleFilter(''); setOpenActionMenu(null); }}
             style={{
               flex: 1, padding: '10px 16px', border: 'none', borderRadius: 10, cursor: 'pointer',
               fontSize: '.84rem', fontWeight: 700, transition: 'all 0.25s ease',
@@ -209,24 +227,41 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
                           </select>
                         </td>
                         <td>
-                          <div style={{ display: 'flex', gap: 6 }}>
-                            <button className="act-btn" style={{ color: '#38BDF8', borderColor: '#38BDF8' }}
-                              title="Edit profile & contact details"
-                              onClick={() => setEditingUser(u)}>
-                              <i className="fas fa-pen-to-square" style={{ marginRight: 4 }} />Edit
-                            </button>
-                            <button className="act-btn" style={{ color: '#0EA5E9', borderColor: '#38BDF8' }}
-                              title="Reset user password"
-                              onClick={() => { setRecoveryTarget(u); setNewPassword(''); }}>
-                              <i className="fas fa-key" style={{ marginRight: 4 }} />Reset
-                            </button>
-                            <button className="act-btn" style={{ color: '#EF4444', borderColor: '#EF4444' }}
-                              title="Remove account permanently"
-                              aria-label="Delete"
-                              onClick={() => setUserToDelete(u)}>
-                              Remove
-                            </button>
-                          </div>
+                          <button
+                            type="button"
+                            className="btn btn-sm"
+                            title="Account Actions"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (openActionMenu?.id === u.id) {
+                                setOpenActionMenu(null);
+                              } else {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                setOpenActionMenu({ id: u.id, rect, user: u });
+                              }
+                            }}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              padding: '5px 12px',
+                              borderRadius: 8,
+                              fontSize: '.78rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              background: openActionMenu?.id === u.id
+                                ? (isLightMode ? '#E2E8F0' : 'rgba(255,255,255,0.15)')
+                                : (isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.06)'),
+                              border: `1px solid ${openActionMenu?.id === u.id ? '#38BDF8' : themeBorder}`,
+                              color: openActionMenu?.id === u.id ? '#0284C7' : themeText,
+                              transition: 'all 0.15s ease',
+                              boxShadow: openActionMenu?.id === u.id ? '0 0 0 2px rgba(56, 189, 248, 0.25)' : 'none',
+                            }}
+                          >
+                            <i className="fas fa-ellipsis-vertical" style={{ fontSize: '.8rem', color: openActionMenu?.id === u.id ? '#0284C7' : themeMuted }} />
+                            <span>Actions</span>
+                            <i className={`fas fa-chevron-${openActionMenu?.id === u.id ? 'up' : 'down'}`} style={{ fontSize: '.65rem', color: themeMuted }} />
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -294,24 +329,41 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
                         <td>{u.orders_count || 0}</td>
                         <td><b style={{ color: '#F59E0B' }}>{money(u.total_spent_php || 0)}</b></td>
                         <td>
-                          <div style={{ display: 'flex', gap: 6 }}>
-                            <button className="act-btn" style={{ color: '#38BDF8', borderColor: '#38BDF8' }}
-                              title="Edit guest profile & contact details"
-                              onClick={() => setEditingUser(u)}>
-                              <i className="fas fa-pen-to-square" style={{ marginRight: 4 }} />Edit
-                            </button>
-                            <button className="act-btn" style={{ color: '#0EA5E9', borderColor: '#38BDF8' }}
-                              title="Reset guest password"
-                              onClick={() => { setRecoveryTarget(u); setNewPassword(''); }}>
-                              <i className="fas fa-key" style={{ marginRight: 4 }} />Reset
-                            </button>
-                            <button className="act-btn" style={{ color: '#EF4444', borderColor: '#EF4444' }}
-                              title="Remove account permanently"
-                              aria-label="Delete"
-                              onClick={() => setUserToDelete(u)}>
-                              Remove
-                            </button>
-                          </div>
+                          <button
+                            type="button"
+                            className="btn btn-sm"
+                            title="Account Actions"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (openActionMenu?.id === u.id) {
+                                setOpenActionMenu(null);
+                              } else {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                setOpenActionMenu({ id: u.id, rect, user: u });
+                              }
+                            }}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              padding: '5px 12px',
+                              borderRadius: 8,
+                              fontSize: '.78rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              background: openActionMenu?.id === u.id
+                                ? (isLightMode ? '#E2E8F0' : 'rgba(255,255,255,0.15)')
+                                : (isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.06)'),
+                              border: `1px solid ${openActionMenu?.id === u.id ? '#38BDF8' : themeBorder}`,
+                              color: openActionMenu?.id === u.id ? '#0284C7' : themeText,
+                              transition: 'all 0.15s ease',
+                              boxShadow: openActionMenu?.id === u.id ? '0 0 0 2px rgba(56, 189, 248, 0.25)' : 'none',
+                            }}
+                          >
+                            <i className="fas fa-ellipsis-vertical" style={{ fontSize: '.8rem', color: openActionMenu?.id === u.id ? '#0284C7' : themeMuted }} />
+                            <span>Actions</span>
+                            <i className={`fas fa-chevron-${openActionMenu?.id === u.id ? 'up' : 'down'}`} style={{ fontSize: '.65rem', color: themeMuted }} />
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -322,6 +374,160 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
           })()}
         </>
       )}
+
+      {/* ═══ CONSOLIDATED ACTION DROPDOWN POPOVER ═══ */}
+      {openActionMenu && (() => {
+        const isNearBottom = window.innerHeight - openActionMenu.rect.bottom < 170;
+        const topPos = isNearBottom
+          ? Math.max(10, openActionMenu.rect.top - 145)
+          : openActionMenu.rect.bottom + 6;
+        const rightPos = Math.max(16, window.innerWidth - openActionMenu.rect.right);
+
+        return (
+          <>
+            {/* Backdrop to close when clicking outside */}
+            <div
+              onClick={() => setOpenActionMenu(null)}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                zIndex: 9998,
+                background: 'transparent',
+              }}
+            />
+
+            {/* Floating Dropdown Panel */}
+            <div
+              style={{
+                position: 'fixed',
+                top: topPos,
+                right: rightPos,
+                minWidth: 195,
+                background: isLightMode ? '#FFFFFF' : '#0F172A',
+                color: themeText,
+                border: `1px solid ${isLightMode ? '#CBD5E1' : 'rgba(255,255,255,0.18)'}`,
+                borderRadius: 12,
+                boxShadow: isLightMode
+                  ? '0 12px 28px -4px rgba(0, 0, 0, 0.14), 0 6px 12px -4px rgba(0, 0, 0, 0.08)'
+                  : '0 20px 35px -5px rgba(0, 0, 0, 0.7), 0 10px 15px -5px rgba(0, 0, 0, 0.6)',
+                padding: '6px',
+                zIndex: 9999,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+                animation: 'fadein 0.15s ease',
+              }}
+            >
+              {/* Profile summary header */}
+              <div style={{ padding: '6px 10px 8px', borderBottom: `1px solid ${themeBorder}`, marginBottom: 2 }}>
+                <span style={{ display: 'block', fontSize: '.76rem', fontWeight: 700, color: themeText, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 180 }}>
+                  {openActionMenu.user.full_name || openActionMenu.user.email || 'User Account'}
+                </span>
+                <span style={{ fontSize: '.68rem', color: themeMuted, textTransform: 'capitalize' }}>
+                  {openActionMenu.user.role || 'Guest'}
+                </span>
+              </div>
+
+              {/* 1. Edit */}
+              <button
+                type="button"
+                onClick={() => {
+                  const targetUser = openActionMenu.user;
+                  setOpenActionMenu(null);
+                  setEditingUser(targetUser);
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  width: '100%',
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  border: 'none',
+                  background: 'transparent',
+                  color: themeText,
+                  fontSize: '.82rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'background 0.15s ease',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.08)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+              >
+                <i className="fas fa-pen-to-square" style={{ color: '#0EA5E9', width: 16 }} />
+                <span>Edit Profile</span>
+              </button>
+
+              {/* 2. Reset Password */}
+              <button
+                type="button"
+                onClick={() => {
+                  const targetUser = openActionMenu.user;
+                  setOpenActionMenu(null);
+                  setRecoveryTarget(targetUser);
+                  setNewPassword('');
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  width: '100%',
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  border: 'none',
+                  background: 'transparent',
+                  color: themeText,
+                  fontSize: '.82rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'background 0.15s ease',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.08)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+              >
+                <i className="fas fa-key" style={{ color: '#F59E0B', width: 16 }} />
+                <span>Reset Password</span>
+              </button>
+
+              {/* Separator */}
+              <div style={{ height: 1, background: themeBorder, margin: '2px 0' }} />
+
+              {/* 3. Remove Account */}
+              <button
+                type="button"
+                onClick={() => {
+                  const targetUser = openActionMenu.user;
+                  setOpenActionMenu(null);
+                  setUserToDelete(targetUser);
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  width: '100%',
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  border: 'none',
+                  background: 'transparent',
+                  color: '#EF4444',
+                  fontSize: '.82rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'background 0.15s ease',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = isLightMode ? '#FEE2E2' : 'rgba(239,68,68,0.15)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+              >
+                <i className="fas fa-trash-can" style={{ color: '#EF4444', width: 16 }} />
+                <span>Remove Account</span>
+              </button>
+            </div>
+          </>
+        );
+      })()}
     </div>
   );
 };
