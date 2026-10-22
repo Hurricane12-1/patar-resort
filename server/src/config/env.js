@@ -30,7 +30,7 @@ const DEFAULT_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzd
 const isRealKey = (val) => Boolean(val && typeof val === 'string' && val.length > 50 && !val.includes('demo-'));
 
 export const env = {
-  port: parseInt(process.env.PORT || '8000', 10),
+  port: parseInt(process.env.PORT || '4000', 10),
   CLIENT_ORIGIN: (isRender && (!process.env.CLIENT_ORIGIN || process.env.CLIENT_ORIGIN.includes('localhost')))
     ? '*'
     : (getEnv('CLIENT_ORIGIN') || '*'),
@@ -43,7 +43,7 @@ export const env = {
   SUPABASE_ADMIN_EMAIL: getEnv('SUPABASE_ADMIN_EMAIL', ''),
   SUPABASE_ADMIN_PASSWORD: getEnv('SUPABASE_ADMIN_PASSWORD', ''),
   ADMIN_TOKEN_KEY: getEnv('ADMIN_TOKEN_KEY', 'etc-34'),
-  PUBLIC_API_URL: getEnv('PUBLIC_API_URL', 'https://localhost:8000'),
+  PUBLIC_API_URL: getEnv('PUBLIC_API_URL', 'https://localhost:4000'),
   TWILIO_ACCOUNT_SID: getEnv('TWILIO_ACCOUNT_SID', ''),
   TWILIO_AUTH_TOKEN: getEnv('TWILIO_AUTH_TOKEN', ''),
   TWILIO_FROM: getEnv('TWILIO_FROM', ''),
