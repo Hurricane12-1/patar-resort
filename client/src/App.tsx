@@ -6,7 +6,6 @@ import Chatbot from './components/Chatbot.tsx';
 import AuthModal from './components/AuthModal.tsx';
 import Toasts from './components/Toasts.tsx';
 import TelemetryTracker from './components/TelemetryTracker.tsx';
-import { NetworkStatusControl } from './components/NetworkStatusControl.tsx';
 import ProtectedRoute from './components/ProtectedRoute.tsx';
 import MobileResortApp from './components/MobileResortApp.tsx';
 import Home from './pages/Home.tsx';
@@ -72,8 +71,7 @@ function MainAppShell() {
       {!isStaffRoute && <Chatbot />}
       <AuthModal />
       <Toasts />
-      {!isGuestHome && <NetworkStatusControl />}
-    </div>
+          </div>
   );
 }
 
