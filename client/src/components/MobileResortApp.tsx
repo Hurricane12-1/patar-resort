@@ -948,36 +948,25 @@ export default function MobileResortApp() {
             <AmenityGrid />
           </section>
 
-          {/* REVIEW + OFFER */}
+          {/* GUEST REVIEWS */}
           <section className={`${WRAP} ${SECTION} grid gap-5 lg:grid-cols-2`}>
-            <div className="flex flex-col rounded-3xl bg-sand p-7 md:p-10 text-navy">
-              <span className="text-sm tracking-[0.2em] text-[#d9962b]"><i className="fas fa-star" /><i className="fas fa-star" /><i className="fas fa-star" /><i className="fas fa-star" /><i className="fas fa-star" /></span>
-              <p className="mt-4 font-serif text-2xl md:text-3xl italic leading-snug">
-                "{site.reviews.items[0].quote}"
-              </p>
-              <div className="mt-auto flex items-center justify-between border-t border-navy/10 pt-5">
-                <div className="mt-0">
-                  <span className="block text-xs font-semibold">{site.reviews.items[0].name}</span>
-                  <span className="block text-[11px] text-navy/60">{site.reviews.items[0].from}</span>
+            {site.reviews.items.slice(0, 2).map((rev) => (
+              <div key={rev.name} className="flex flex-col rounded-3xl bg-sand p-7 md:p-10 text-navy shadow-sm">
+                <span className="text-sm tracking-[0.2em] text-[#d9962b]">
+                  <i className="fas fa-star" /><i className="fas fa-star" /><i className="fas fa-star" /><i className="fas fa-star" /><i className="fas fa-star" />
+                </span>
+                <p className="mt-4 font-serif text-2xl md:text-3xl italic leading-snug">
+                  "{rev.quote}"
+                </p>
+                <div className="mt-auto flex items-center justify-between border-t border-navy/10 pt-5">
+                  <div className="mt-0">
+                    <span className="block text-xs font-semibold">{rev.name}</span>
+                    <span className="block text-[11px] text-navy/60">{rev.from}</span>
+                  </div>
+                  <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-navy/50">Verified guest</span>
                 </div>
-                <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-navy/50">Verified guest</span>
               </div>
-            </div>
-
-            <div className="flex flex-col rounded-3xl bg-gradient-to-br from-cyan to-sky-600 p-7 md:p-10 text-navy shadow-[0_15px_35px_-10px_rgba(34,195,238,.4)]">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-navy/70">
-                {site.offers.items[0].tag} · Members
-              </span>
-              <h3 className="mt-2 font-serif text-3xl md:text-4xl font-medium leading-tight">{site.offers.items[0].title}</h3>
-              <p className="mt-3 text-sm leading-relaxed text-navy/80">{site.offers.items[0].body}</p>
-              <button
-                type="button"
-                onClick={() => go('auth', 'signup')}
-                className="mt-8 w-full rounded-full bg-navy py-4 text-xs font-semibold uppercase tracking-[0.18em] text-white transition hover:brightness-125 active:scale-[.98] lg:mt-auto"
-              >
-                Sign up for privileges
-              </button>
-            </div>
+            ))}
           </section>
 
           {/* MINI FOOTER */}
