@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { admin, getSystemAdminClient } from './supabase.js';
 import { logAuditEvent } from './auditLogger.js';
 import { parseFinancialEquation, resolveRoomSlug } from '../agents/ledgerIngestionAgent.js';
+import { getLocalReservations } from './reservationStore.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -64,8 +65,8 @@ function loadPersistedEntries() {
     console.warn('[LedgerService] Failed to load local ledger file:', err.message);
   }
 
-  // Seed baseline entries if file is empty
-  seedBaselineEntries();
+  // Start with clean empty entries - lively populated from actual reservations
+  inMemoryEntries = [];
 }
 
 /**
@@ -557,19 +558,33 @@ export async function reconcileSystemTransactions(user = {}) {
   let newEntriesCount = 0;
   const existingRefs = new Set(inMemoryEntries.map((e) => e.reference_id).filter(Boolean));
 
-  // 1. Fetch Reservations from Supabase
+  // 1. Fetch Reservations from Supabase and resilient local store
   try {
+    let reservations = [];
     const sb = getSystemAdminClient() || admin;
     if (sb) {
-      const { data: reservations } = await sb
+      const { data } = await sb
         .from('reservations')
         .select('*, rooms(name, slug, rate_php), profiles(full_name, email)')
         .limit(100);
+      if (Array.isArray(data)) reservations = [...data];
+    }
 
-      if (Array.isArray(reservations)) {
-        for (const res of reservations) {
-          const refId = `RES-${res.id.slice(0, 8)}`;
-          if (existingRefs.has(refId)) continue;
+    try {
+      const localRes = getLocalReservations();
+      if (Array.isArray(localRes)) {
+        for (const lr of localRes) {
+          if (!reservations.some((r) => r.id === lr.id)) {
+            reservations.push(lr);
+          }
+        }
+      }
+    } catch {}
+
+    if (Array.isArray(reservations)) {
+      for (const res of reservations) {
+        const refId = `RES-${String(res.id || '').slice(0, 8)}`;
+        if (existingRefs.has(refId)) continue;
 
           const total = Number(res.total_php) || 0;
           const deposit = Number(res.downpayment_php) || 0;
@@ -608,7 +623,6 @@ export async function reconcileSystemTransactions(user = {}) {
           }
         }
       }
-    }
   } catch (err) {
     console.warn('[LedgerService] Reservation reconciliation notice:', err.message);
   }

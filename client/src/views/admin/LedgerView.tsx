@@ -266,7 +266,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
         const netDifference = Math.abs(totalDebits - totalCredits);
         const isBalanced = trialBalance ? trialBalance.is_balanced : netDifference === 0;
 
-        const totalResortUnits = activeRoomsList.reduce((acc, r) => acc + (Number(r.units) || 1), 0);
+        const totalResortUnits = Math.max(1, activeRoomsList.reduce((acc, r) => acc + (Number(r.units) || 1), 0));
         const daysInMonth = 31;
         const availableUnitNights = totalResortUnits * daysInMonth;
 
@@ -298,38 +298,94 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
         const arrivalsCount = octoberStays.filter((b: any) => String(b.check_in || '').startsWith('2026-10')).length;
         const avgLengthOfStay = arrivalsCount > 0 ? (roomNightsSold / arrivalsCount).toFixed(1) : '0.0';
         const totalGuests = octoberStays.reduce((sum: number, b: any) => sum + (Number(b.guests) || 0), 0);
-        const avgPartySize = octoberStays.length > 0 ? (totalGuests / octoberStays.length).toFixed(1) : '0.0';
+        const avgPartySize = arrivalsCount > 0 ? (totalGuests / arrivalsCount).toFixed(1) : (octoberStays.length > 0 ? (totalGuests / octoberStays.length).toFixed(1) : '0.0');
 
-        const billedAmount = totalCredits > 0 ? totalCredits : computedRevenue;
-        const collectedAmount = totalDebits > 0 ? totalDebits : computedRevenue;
+        // Dynamic Lead Time
+        let totalLeadDays = 0;
+        let leadCount = 0;
+        octoberStays.forEach((b: any) => {
+          if (b.check_in && b.created_at) {
+            const cin = new Date(String(b.check_in).slice(0, 10)).getTime();
+            const created = new Date(b.created_at).getTime();
+            const diffDays = Math.max(0, Math.round((cin - created) / 86400000));
+            totalLeadDays += diffDays;
+            leadCount++;
+          }
+        });
+        const avgLeadTime = leadCount > 0 ? (totalLeadDays / leadCount).toFixed(1) : '0.0';
+
+        // Dynamic Cancellation Rate
+        const monthBookings = allBookings.filter((b: any) => {
+          const cin = String(b.check_in || '').slice(0, 10);
+          return cin >= '2026-10-01' && cin <= '2026-10-31';
+        });
+        const cancelledCount = monthBookings.filter((b: any) => b.status === 'cancelled').length;
+        const cancellationRate = monthBookings.length > 0
+          ? ((cancelledCount / monthBookings.length) * 100).toFixed(1)
+          : '0.0';
+
+        // Dynamic Billed & Collected:
+        const billedAmount = octoberStays.reduce((sum: number, b: any) => sum + (Number(b.total_php) || 0), 0);
+        const collectedAmount = octoberStays
+          .filter((b: any) => ['confirmed', 'checked_in', 'checked_out'].includes(String(b.payment_status || b.status || '').toLowerCase()))
+          .reduce((sum: number, b: any) => sum + (Number(b.total_php) || 0), 0);
         const outstandingAmount = Math.max(0, billedAmount - collectedAmount);
+        const collectionRate = billedAmount > 0
+          ? ((collectedAmount / billedAmount) * 100).toFixed(1)
+          : '0.0';
 
-        // Daily occupancy simulation curve (31 days) matching resort occupancy
+        // Daily real occupancy (31 days) matching actual reservations
         const dailyOccupancy = Array.from({ length: 31 }, (_, i) => {
           const dayNum = i + 1;
           const dateStr = `2026-10-${String(dayNum).padStart(2, '0')}`;
-          const isWeekend = [3, 4, 10, 11, 17, 18, 24, 25, 31].includes(dayNum);
-          const baseOccupied = isWeekend ? 5 + (dayNum % 3) : 2 + (dayNum % 2);
           const realOccupied = octoberStays.filter((b: any) => {
             const cin = String(b.check_in || '').slice(0, 10);
             const cout = String(b.check_out || '').slice(0, 10);
             return cin <= dateStr && cout > dateStr;
           }).length;
-          const occupied = Math.max(realOccupied, baseOccupied);
-          const pct = Math.min(100, Math.round((occupied / totalResortUnits) * 100));
+          const occupied = realOccupied;
+          const pct = totalResortUnits > 0 ? Math.min(100, Math.round((occupied / totalResortUnits) * 100)) : 0;
           return { dayNum, dateStr, occupied, pct };
         });
 
-        // Arrivals by weekday distribution (Mon - Sun)
+        // Arrivals by weekday distribution (Mon - Sun) derived from real stays
+        const dayCounts: Record<string, number> = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 };
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        octoberStays.forEach((b: any) => {
+          if (b.check_in) {
+            const d = new Date(String(b.check_in).slice(0, 10) + 'T00:00:00');
+            const dayName = dayNames[d.getDay()];
+            if (dayName && dayCounts[dayName] !== undefined) {
+              dayCounts[dayName]++;
+            }
+          }
+        });
+
         const weekdayArrivals = [
-          { day: 'Mon', count: 6 },
-          { day: 'Tue', count: 10 },
-          { day: 'Wed', count: 4 },
-          { day: 'Thu', count: 4 },
-          { day: 'Fri', count: 5 },
-          { day: 'Sat', count: 4 },
-          { day: 'Sun', count: 2 },
+          { day: 'Mon', count: dayCounts.Mon },
+          { day: 'Tue', count: dayCounts.Tue },
+          { day: 'Wed', count: dayCounts.Wed },
+          { day: 'Thu', count: dayCounts.Thu },
+          { day: 'Fri', count: dayCounts.Fri },
+          { day: 'Sat', count: dayCounts.Sat },
+          { day: 'Sun', count: dayCounts.Sun },
         ];
+        const maxArrivals = Math.max(1, ...weekdayArrivals.map((w) => w.count));
+
+        const renderBadge = (val: number, label: string) => {
+          if (!val || val === 0) {
+            return (
+              <span style={{ fontSize: '.72rem', fontWeight: 700, padding: '2px 8px', borderRadius: 9999, background: isLightMode ? '#F1F5F9' : 'rgba(148, 163, 184, 0.15)', color: themeMuted, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                ● Live
+              </span>
+            );
+          }
+          return (
+            <span style={{ fontSize: '.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: 9999, background: 'rgba(16, 185, 129, 0.12)', color: '#10B981', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+              ▲ {label}
+            </span>
+          );
+        };
 
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -349,7 +405,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
               </div>
 
               <div className="pms-analytics-subtext">
-                Compared with September 2026 · excludes cancelled stays unless noted · amounts include 12% tax
+                Live Resort Ledger &amp; PMS Metrics · Real-time Database Synchronization
               </div>
             </div>
 
@@ -359,9 +415,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
               <div className="pms-analytics-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <span style={{ fontSize: '.84rem', fontWeight: 600, color: themeMuted }}>Room revenue</span>
-                  <span style={{ fontSize: '.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: 9999, background: 'rgba(16, 185, 129, 0.12)', color: '#10B981', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-                    ▲ 539%
-                  </span>
+                  {renderBadge(roomRevenue, 'Active')}
                 </div>
                 <div style={{ fontSize: '1.8rem', fontWeight: 800, color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", letterSpacing: '-0.02em', margin: '6px 0 4px' }}>
                   {money(roomRevenue)}
@@ -375,9 +429,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
               <div className="pms-analytics-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <span style={{ fontSize: '.84rem', fontWeight: 600, color: themeMuted }}>Occupancy</span>
-                  <span style={{ fontSize: '.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: 9999, background: 'rgba(16, 185, 129, 0.12)', color: '#10B981', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-                    ▲ 14.1 pts
-                  </span>
+                  {renderBadge(occupancyPct, `${occupancyPct}%`)}
                 </div>
                 <div style={{ fontSize: '1.8rem', fontWeight: 800, color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", letterSpacing: '-0.02em', margin: '6px 0 4px' }}>
                   {occupancyPct}%
@@ -391,9 +443,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
               <div className="pms-analytics-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <span style={{ fontSize: '.84rem', fontWeight: 600, color: themeMuted }}>ADR</span>
-                  <span style={{ fontSize: '.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: 9999, background: 'rgba(239, 68, 68, 0.12)', color: '#EF4444', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-                    ▼ 31%
-                  </span>
+                  {renderBadge(adr, 'Active')}
                 </div>
                 <div style={{ fontSize: '1.8rem', fontWeight: 800, color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", letterSpacing: '-0.02em', margin: '6px 0 4px' }}>
                   {money(adr)}
@@ -407,9 +457,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
               <div className="pms-analytics-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <span style={{ fontSize: '.84rem', fontWeight: 600, color: themeMuted }}>RevPAR</span>
-                  <span style={{ fontSize: '.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: 9999, background: 'rgba(16, 185, 129, 0.12)', color: '#10B981', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-                    ▲ 519%
-                  </span>
+                  {renderBadge(revPar, 'Active')}
                 </div>
                 <div style={{ fontSize: '1.8rem', fontWeight: 800, color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", letterSpacing: '-0.02em', margin: '6px 0 4px' }}>
                   {money(revPar)}
@@ -423,9 +471,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
               <div className="pms-analytics-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <span style={{ fontSize: '.84rem', fontWeight: 600, color: themeMuted }}>Room-nights sold</span>
-                  <span style={{ fontSize: '.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: 9999, background: 'rgba(16, 185, 129, 0.12)', color: '#10B981', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-                    ▲ 827%
-                  </span>
+                  {renderBadge(roomNightsSold, `${roomNightsSold} sold`)}
                 </div>
                 <div style={{ fontSize: '1.8rem', fontWeight: 800, color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", letterSpacing: '-0.02em', margin: '6px 0 4px' }}>
                   {roomNightsSold}
@@ -439,9 +485,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
               <div className="pms-analytics-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <span style={{ fontSize: '.84rem', fontWeight: 600, color: themeMuted }}>Arrivals</span>
-                  <span style={{ fontSize: '.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: 9999, background: 'rgba(16, 185, 129, 0.12)', color: '#10B981', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-                    ▲ 600%
-                  </span>
+                  {renderBadge(arrivalsCount, `${arrivalsCount} arrivals`)}
                 </div>
                 <div style={{ fontSize: '1.8rem', fontWeight: 800, color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", letterSpacing: '-0.02em', margin: '6px 0 4px' }}>
                   {arrivalsCount}
@@ -455,9 +499,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
               <div className="pms-analytics-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <span style={{ fontSize: '.84rem', fontWeight: 600, color: themeMuted }}>Avg. length of stay</span>
-                  <span style={{ fontSize: '.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: 9999, background: 'rgba(16, 185, 129, 0.12)', color: '#10B981', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-                    ▲ 23%
-                  </span>
+                  {renderBadge(Number(avgLengthOfStay), `${avgLengthOfStay} nights`)}
                 </div>
                 <div style={{ fontSize: '1.8rem', fontWeight: 800, color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", letterSpacing: '-0.02em', margin: '6px 0 4px' }}>
                   {avgLengthOfStay} nights
@@ -471,12 +513,10 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
               <div className="pms-analytics-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <span style={{ fontSize: '.84rem', fontWeight: 600, color: themeMuted }}>Avg. lead time</span>
-                  <span style={{ fontSize: '.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: 9999, background: 'rgba(16, 185, 129, 0.12)', color: '#10B981', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-                    ▲ 32%
-                  </span>
+                  {renderBadge(Number(avgLeadTime), `${avgLeadTime} days`)}
                 </div>
                 <div style={{ fontSize: '1.8rem', fontWeight: 800, color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", letterSpacing: '-0.02em', margin: '6px 0 4px' }}>
-                  9.7 days
+                  {avgLeadTime} days
                 </div>
                 <div style={{ fontSize: '.74rem', color: themeMuted, lineHeight: 1.4 }}>
                   Days between booking and check-in
@@ -487,9 +527,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
               <div className="pms-analytics-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <span style={{ fontSize: '.84rem', fontWeight: 600, color: themeMuted }}>Avg. party size</span>
-                  <span style={{ fontSize: '.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: 9999, background: 'rgba(239, 68, 68, 0.12)', color: '#EF4444', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-                    ▼ 29%
-                  </span>
+                  {renderBadge(Number(avgPartySize), `${avgPartySize} guests`)}
                 </div>
                 <div style={{ fontSize: '1.8rem', fontWeight: 800, color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", letterSpacing: '-0.02em', margin: '6px 0 4px' }}>
                   {avgPartySize} guests
@@ -503,15 +541,21 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
               <div className="pms-analytics-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <span style={{ fontSize: '.84rem', fontWeight: 600, color: themeMuted }}>Cancellation rate</span>
-                  <span style={{ fontSize: '.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: 9999, background: 'rgba(16, 185, 129, 0.12)', color: '#10B981', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-                    ▲ 16.7 pts
-                  </span>
+                  {cancelledCount > 0 ? (
+                    <span style={{ fontSize: '.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: 9999, background: 'rgba(239, 68, 68, 0.12)', color: '#EF4444', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                      ▲ {cancellationRate}%
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: '.72rem', fontWeight: 700, padding: '2px 8px', borderRadius: 9999, background: isLightMode ? '#F1F5F9' : 'rgba(148, 163, 184, 0.15)', color: themeMuted, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                      ● 0.0%
+                    </span>
+                  )}
                 </div>
                 <div style={{ fontSize: '1.8rem', fontWeight: 800, color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", letterSpacing: '-0.02em', margin: '6px 0 4px' }}>
-                  0.0%
+                  {cancellationRate}%
                 </div>
                 <div style={{ fontSize: '.74rem', color: themeMuted, lineHeight: 1.4 }}>
-                  0 of {arrivalsCount} bookings for this month cancelled
+                  {cancelledCount} of {monthBookings.length} bookings for this month cancelled
                 </div>
               </div>
 
@@ -519,12 +563,18 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
               <div className="pms-analytics-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <span style={{ fontSize: '.84rem', fontWeight: 600, color: themeMuted }}>Collection rate</span>
-                  <span style={{ fontSize: '.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: 9999, background: 'rgba(239, 68, 68, 0.12)', color: '#EF4444', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-                    ▼ 12.2 pts
-                  </span>
+                  {billedAmount > 0 ? (
+                    <span style={{ fontSize: '.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: 9999, background: Number(collectionRate) >= 80 ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)', color: Number(collectionRate) >= 80 ? '#10B981' : '#EF4444', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                      {collectionRate}%
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: '.72rem', fontWeight: 700, padding: '2px 8px', borderRadius: 9999, background: isLightMode ? '#F1F5F9' : 'rgba(148, 163, 184, 0.15)', color: themeMuted, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                      ● Live
+                    </span>
+                  )}
                 </div>
                 <div style={{ fontSize: '1.8rem', fontWeight: 800, color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", letterSpacing: '-0.02em', margin: '6px 0 4px' }}>
-                  87.8%
+                  {collectionRate}%
                 </div>
                 <div style={{ fontSize: '.74rem', color: themeMuted, lineHeight: 1.4 }}>
                   ₱{collectedAmount.toLocaleString()} collected of ₱{billedAmount.toLocaleString()} billed for arrivals
@@ -535,9 +585,15 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
               <div className="pms-analytics-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <span style={{ fontSize: '.84rem', fontWeight: 600, color: themeMuted }}>Outstanding</span>
-                  <span style={{ fontSize: '.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: 9999, background: 'rgba(148, 163, 184, 0.15)', color: themeMuted, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-                    new
-                  </span>
+                  {outstandingAmount > 0 ? (
+                    <span style={{ fontSize: '.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: 9999, background: 'rgba(239, 68, 68, 0.12)', color: '#EF4444', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                      Pending
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: '.72rem', fontWeight: 700, padding: '2px 8px', borderRadius: 9999, background: 'rgba(16, 185, 129, 0.12)', color: '#10B981', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                      Settled
+                    </span>
+                  )}
                 </div>
                 <div style={{ fontSize: '1.8rem', fontWeight: 800, color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", letterSpacing: '-0.02em', margin: '6px 0 4px' }}>
                   {money(outstandingAmount)}
@@ -565,9 +621,10 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                 {/* 31-day visual occupancy bar matrix */}
                 <div style={{ height: 160, display: 'flex', alignItems: 'flex-end', gap: 3, marginTop: 24, paddingBottom: 22, borderBottom: `1px solid ${themeBorder}`, position: 'relative' }}>
                   {dailyOccupancy.map((d) => {
+                    const hasOccupancy = d.occupied > 0;
                     const isPeak = d.occupied >= 4;
-                    const barColor = isPeak ? '#D97706' : d.occupied >= 2 ? '#6366F1' : '#94A3B8';
-                    const barHeightPct = Math.max(12, Math.round((d.occupied / totalResortUnits) * 100));
+                    const barColor = isPeak ? '#D97706' : d.occupied >= 2 ? '#6366F1' : hasOccupancy ? '#0EA5E9' : (isLightMode ? '#E2E8F0' : 'rgba(255,255,255,0.06)');
+                    const barHeightPct = hasOccupancy ? Math.max(10, Math.round((d.occupied / totalResortUnits) * 100)) : 3;
 
                     return (
                       <div
@@ -616,8 +673,9 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                 {/* 7-weekday vertical bar chart */}
                 <div style={{ height: 160, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', gap: 10, marginTop: 24, paddingBottom: 22, borderBottom: `1px solid ${themeBorder}` }}>
                   {weekdayArrivals.map((w) => {
-                    const maxVal = 12;
-                    const barHeightPct = Math.max(15, Math.round((w.count / maxVal) * 100));
+                    const hasArrivals = w.count > 0;
+                    const barHeightPct = hasArrivals ? Math.max(16, Math.round((w.count / maxArrivals) * 100)) : 3;
+                    const barColor = hasArrivals ? '#059669' : (isLightMode ? '#E2E8F0' : 'rgba(255,255,255,0.06)');
 
                     return (
                       <div
@@ -632,15 +690,15 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                           position: 'relative',
                         }}
                       >
-                        {/* Number badge on top of bar matching screenshot */}
-                        <span style={{ fontSize: '.78rem', fontWeight: 700, color: themeText, marginBottom: 4 }}>
+                        {/* Number badge on top of bar */}
+                        <span style={{ fontSize: '.78rem', fontWeight: 700, color: hasArrivals ? themeText : themeMuted, marginBottom: 4 }}>
                           {w.count}
                         </span>
                         <div
                           style={{
                             width: 22,
                             height: `${barHeightPct}%`,
-                            background: '#059669',
+                            background: barColor,
                             borderRadius: '4px 4px 0 0',
                             transition: 'height 0.25s ease',
                           }}
@@ -652,7 +710,9 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                     );
                   })}
                 </div>
-                <div style={{ marginTop: 24 }} />
+                <div style={{ textAlign: 'center', marginTop: 8, fontSize: '.72rem', color: themeMuted }}>
+                  Total Arrivals: {arrivalsCount}
+                </div>
               </div>
             </div>
 
