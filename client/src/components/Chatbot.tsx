@@ -579,17 +579,17 @@ export default function Chatbot() {
                       gap: 4,
                       marginBottom: 6,
                       padding: '3px 9px',
-                      background: m.category === 'OUT_OF_SCOPE' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                      border: `1px solid ${m.category === 'OUT_OF_SCOPE' ? 'rgba(56, 189, 248, 0.4)' : 'rgba(239, 68, 68, 0.4)'}`,
+                      background: 'rgba(239, 68, 68, 0.15)',
+                      border: '1px solid rgba(239, 68, 68, 0.4)',
                       borderRadius: 8,
                       fontSize: '0.65rem',
                       fontWeight: 800,
-                      color: m.category === 'OUT_OF_SCOPE' ? '#38BDF8' : '#F87171',
+                      color: '#F87171',
                     }}
                   >
                     <span>
-                      <i className={m.category === 'OUT_OF_SCOPE' ? "fas fa-hotel" : "fas fa-shield-halved"} style={{ marginRight: 6 }} />
-                      {m.category === 'OUT_OF_SCOPE' ? 'RESORT & HOTEL BUSINESS CONCIERGE' : 'AI SECURITY GUARDRAIL ENFORCED'}
+                      <i className="fas fa-shield-halved" style={{ marginRight: 6 }} />
+                      AI SECURITY GUARDRAIL ENFORCED
                     </span>
                   </div>
                 )}
