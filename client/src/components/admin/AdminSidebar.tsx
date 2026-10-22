@@ -322,31 +322,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
         }}
       >
         <button
-          onClick={() => setShowGlossaryModal(true)}
-          style={{
-            width: sidebarCollapsed ? 44 : '100%',
-            height: 40,
-            padding: sidebarCollapsed ? 0 : '0 14px',
-            borderRadius: 12,
-            background: 'linear-gradient(135deg, #4338CA, #6366F1)',
-            color: '#FFF',
-            border: 'none',
-            fontWeight: 700,
-            fontSize: '.84rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
-            gap: 10,
-            boxShadow: '0 4px 14px rgba(99, 102, 241, 0.35)',
-            margin: '0 auto',
-          }}
-        >
-          <i className="fas fa-circle-question" style={{ width: 18, textAlign: 'center' }} />
-          {!sidebarCollapsed && <span>Help &amp; Support</span>}
-        </button>
-
-        <button
           onClick={signOut}
           style={{
             width: '100%',
