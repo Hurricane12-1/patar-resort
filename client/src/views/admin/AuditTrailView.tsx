@@ -169,23 +169,6 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({
 
           <button
             className="btn btn-sm"
-            onClick={async () => {
-              if (!confirm('Empty all recorded audit logs and start fresh?')) return;
-              try {
-                await api.clearAuditLogs();
-                setAuditLogs([]);
-                toast('Audit log trail emptied successfully');
-              } catch (err: any) {
-                toast(err.message, true);
-              }
-            }}
-            style={{ border: '1px solid rgba(244,63,94,0.3)', color: '#F43F5E', background: 'rgba(244,63,94,0.08)', fontWeight: 700 }}
-          >
-            <i className="fas fa-trash-alt" style={{ marginRight: 6 }} /> Remove Logs
-          </button>
-
-          <button
-            className="btn btn-sm"
             onClick={() => {
               const blob = new Blob([JSON.stringify(auditLogs, null, 2)], { type: 'application/json' });
               const url = URL.createObjectURL(blob);
