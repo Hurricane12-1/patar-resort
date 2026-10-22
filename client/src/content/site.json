@@ -264,7 +264,7 @@
       "placeholder": "Enter your email address",
       "button": "Subscribe"
     },
-    "socials": ["Instagram", "Facebook", "TikTok"],
+    "socials": ["Instagram", "Facebook"],
     "payments": ["GCash", "Maya", "Visa", "Mastercard", "Bank Transfer"],
     "badges": ["Top Rated Beachfront 2026", "Bolinao Heritage Partner"],
     "legal": ["Privacy Policy", "Terms of Stay", "Cancellation Rules"],
