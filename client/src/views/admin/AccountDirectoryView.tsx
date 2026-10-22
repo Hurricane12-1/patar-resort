@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { money } from '../../lib/format';
 
 export interface AccountDirectoryViewProps {
@@ -375,159 +376,176 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
         </>
       )}
 
-      {/* ═══ CONSOLIDATED ACTION DROPDOWN POPOVER ═══ */}
-      {openActionMenu && (() => {
-        const isNearBottom = window.innerHeight - openActionMenu.rect.bottom < 170;
-        const topPos = isNearBottom
-          ? Math.max(10, openActionMenu.rect.top - 145)
-          : openActionMenu.rect.bottom + 6;
-        const rightPos = Math.max(16, window.innerWidth - openActionMenu.rect.right);
+      {/* ═══ CONSOLIDATED ACTION DROPDOWN POPOVER (PORTAL TO DOCUMENT.BODY) ═══ */}
+      {openActionMenu && typeof document !== 'undefined' && createPortal(
+        (() => {
+          const estimatedHeight = 195;
+          const spaceBelow = window.innerHeight - openActionMenu.rect.bottom;
+          const isNearBottom = spaceBelow < estimatedHeight + 12;
 
-        return (
-          <>
-            {/* Backdrop to close when clicking outside */}
-            <div
-              onClick={() => setOpenActionMenu(null)}
-              style={{
-                position: 'fixed',
-                inset: 0,
-                zIndex: 9998,
-                background: 'transparent',
-              }}
-            />
+          const topPos = isNearBottom ? undefined : Math.max(10, openActionMenu.rect.bottom + 6);
+          const bottomPos = isNearBottom ? Math.max(10, window.innerHeight - openActionMenu.rect.top + 6) : undefined;
 
-            {/* Floating Dropdown Panel */}
-            <div
-              style={{
-                position: 'fixed',
-                top: topPos,
-                right: rightPos,
-                minWidth: 195,
-                background: isLightMode ? '#FFFFFF' : '#0F172A',
-                color: themeText,
-                border: `1px solid ${isLightMode ? '#CBD5E1' : 'rgba(255,255,255,0.18)'}`,
-                borderRadius: 12,
-                boxShadow: isLightMode
-                  ? '0 12px 28px -4px rgba(0, 0, 0, 0.14), 0 6px 12px -4px rgba(0, 0, 0, 0.08)'
-                  : '0 20px 35px -5px rgba(0, 0, 0, 0.7), 0 10px 15px -5px rgba(0, 0, 0, 0.6)',
-                padding: '6px',
-                zIndex: 9999,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 2,
-                animation: 'fadein 0.15s ease',
-              }}
-            >
-              {/* Profile summary header */}
-              <div style={{ padding: '6px 10px 8px', borderBottom: `1px solid ${themeBorder}`, marginBottom: 2 }}>
-                <span style={{ display: 'block', fontSize: '.76rem', fontWeight: 700, color: themeText, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 180 }}>
-                  {openActionMenu.user.full_name || openActionMenu.user.email || 'User Account'}
-                </span>
-                <span style={{ fontSize: '.68rem', color: themeMuted, textTransform: 'capitalize' }}>
-                  {openActionMenu.user.role || 'Guest'}
-                </span>
+          // Responsive horizontal alignment
+          const dropdownWidth = 205;
+          let rightPos = window.innerWidth - openActionMenu.rect.right;
+          // Guard: ensure it doesn't push off left edge of screen
+          if (window.innerWidth - rightPos < dropdownWidth + 16) {
+            rightPos = Math.max(16, window.innerWidth - dropdownWidth - 16);
+          }
+          // Guard: ensure it doesn't push off right edge of screen
+          rightPos = Math.max(16, rightPos);
+
+          return (
+            <>
+              {/* Full-viewport invisible backdrop for click-outside dismissal */}
+              <div
+                onClick={() => setOpenActionMenu(null)}
+                style={{
+                  position: 'fixed',
+                  inset: 0,
+                  zIndex: 99998,
+                  background: 'transparent',
+                }}
+              />
+
+              {/* Floating Dropdown Panel anchored precisely to trigger button */}
+              <div
+                style={{
+                  position: 'fixed',
+                  top: topPos,
+                  bottom: bottomPos,
+                  right: rightPos,
+                  minWidth: dropdownWidth,
+                  maxWidth: 'calc(100vw - 32px)',
+                  background: isLightMode ? '#FFFFFF' : '#0F172A',
+                  color: themeText,
+                  border: `1px solid ${isLightMode ? '#CBD5E1' : 'rgba(255,255,255,0.18)'}`,
+                  borderRadius: 12,
+                  boxShadow: isLightMode
+                    ? '0 12px 28px -4px rgba(0, 0, 0, 0.14), 0 6px 12px -4px rgba(0, 0, 0, 0.08)'
+                    : '0 20px 35px -5px rgba(0, 0, 0, 0.7), 0 10px 15px -5px rgba(0, 0, 0, 0.6)',
+                  padding: '6px',
+                  zIndex: 99999,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 2,
+                  animation: 'fadein 0.15s ease',
+                  boxSizing: 'border-box',
+                }}
+              >
+                {/* Profile summary header */}
+                <div style={{ padding: '6px 10px 8px', borderBottom: `1px solid ${themeBorder}`, marginBottom: 2 }}>
+                  <span style={{ display: 'block', fontSize: '.76rem', fontWeight: 700, color: themeText, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 180 }}>
+                    {openActionMenu.user.full_name || openActionMenu.user.email || 'User Account'}
+                  </span>
+                  <span style={{ fontSize: '.68rem', color: themeMuted, textTransform: 'capitalize' }}>
+                    {openActionMenu.user.role || 'Guest'}
+                  </span>
+                </div>
+
+                {/* 1. Edit */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const targetUser = openActionMenu.user;
+                    setOpenActionMenu(null);
+                    setEditingUser(targetUser);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: 'transparent',
+                    color: themeText,
+                    fontSize: '.82rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'background 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.08)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <i className="fas fa-pen-to-square" style={{ color: '#0EA5E9', width: 16 }} />
+                  <span>Edit Profile</span>
+                </button>
+
+                {/* 2. Reset Password */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const targetUser = openActionMenu.user;
+                    setOpenActionMenu(null);
+                    setRecoveryTarget(targetUser);
+                    setNewPassword('');
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: 'transparent',
+                    color: themeText,
+                    fontSize: '.82rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'background 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.08)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <i className="fas fa-key" style={{ color: '#F59E0B', width: 16 }} />
+                  <span>Reset Password</span>
+                </button>
+
+                {/* Separator */}
+                <div style={{ height: 1, background: themeBorder, margin: '2px 0' }} />
+
+                {/* 3. Remove Account */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const targetUser = openActionMenu.user;
+                    setOpenActionMenu(null);
+                    setUserToDelete(targetUser);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: 'transparent',
+                    color: '#EF4444',
+                    fontSize: '.82rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'background 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = isLightMode ? '#FEE2E2' : 'rgba(239,68,68,0.15)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <i className="fas fa-trash-can" style={{ color: '#EF4444', width: 16 }} />
+                  <span>Remove Account</span>
+                </button>
               </div>
-
-              {/* 1. Edit */}
-              <button
-                type="button"
-                onClick={() => {
-                  const targetUser = openActionMenu.user;
-                  setOpenActionMenu(null);
-                  setEditingUser(targetUser);
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  width: '100%',
-                  padding: '8px 12px',
-                  borderRadius: 8,
-                  border: 'none',
-                  background: 'transparent',
-                  color: themeText,
-                  fontSize: '.82rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  transition: 'background 0.15s ease',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.08)')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-              >
-                <i className="fas fa-pen-to-square" style={{ color: '#0EA5E9', width: 16 }} />
-                <span>Edit Profile</span>
-              </button>
-
-              {/* 2. Reset Password */}
-              <button
-                type="button"
-                onClick={() => {
-                  const targetUser = openActionMenu.user;
-                  setOpenActionMenu(null);
-                  setRecoveryTarget(targetUser);
-                  setNewPassword('');
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  width: '100%',
-                  padding: '8px 12px',
-                  borderRadius: 8,
-                  border: 'none',
-                  background: 'transparent',
-                  color: themeText,
-                  fontSize: '.82rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  transition: 'background 0.15s ease',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.08)')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-              >
-                <i className="fas fa-key" style={{ color: '#F59E0B', width: 16 }} />
-                <span>Reset Password</span>
-              </button>
-
-              {/* Separator */}
-              <div style={{ height: 1, background: themeBorder, margin: '2px 0' }} />
-
-              {/* 3. Remove Account */}
-              <button
-                type="button"
-                onClick={() => {
-                  const targetUser = openActionMenu.user;
-                  setOpenActionMenu(null);
-                  setUserToDelete(targetUser);
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  width: '100%',
-                  padding: '8px 12px',
-                  borderRadius: 8,
-                  border: 'none',
-                  background: 'transparent',
-                  color: '#EF4444',
-                  fontSize: '.82rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  transition: 'background 0.15s ease',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = isLightMode ? '#FEE2E2' : 'rgba(239,68,68,0.15)')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-              >
-                <i className="fas fa-trash-can" style={{ color: '#EF4444', width: 16 }} />
-                <span>Remove Account</span>
-              </button>
-            </div>
-          </>
-        );
-      })()}
+            </>
+          );
+        })(),
+        document.body
+      )}
     </div>
   );
 };
