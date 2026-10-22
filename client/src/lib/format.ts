@@ -39,6 +39,16 @@ export const fmtTime = (d: any) => {
   return dt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 };
 
+export const formatTime12Hour = (timeStr?: string) => {
+  if (!timeStr) return '';
+  const [hStr, mStr] = String(timeStr).split(':');
+  const h = parseInt(hStr, 10);
+  if (isNaN(h)) return timeStr;
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hour12 = h % 12 || 12;
+  return `${hour12}:${mStr ? mStr.slice(0, 2) : '00'} ${period}`;
+};
+
 export const initials = (n = '?') => n.trim().split(/\s+/).map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
 
 export const addDaysISO = (base: any, days: number) => {

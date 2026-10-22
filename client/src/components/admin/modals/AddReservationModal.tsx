@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { money, fmtDate } from '../../../lib/format.ts';
+import { money, fmtDate, formatTime12Hour } from '../../../lib/format.ts';
 import AvailabilityCalendar from '../../AvailabilityCalendar.tsx';
 import { POOL_ADDON_OPTIONS } from '../../../lib/ledgerUtils.ts';
 import { addDaysYMD } from '../../../lib/api.ts';
@@ -12,6 +12,8 @@ export interface NewReservationFormState {
   room_id: string;
   check_in: string;
   check_out: string;
+  check_in_time?: string;
+  check_out_time?: string;
   guests: number;
   total_php: number;
   payment_method: string;
@@ -889,8 +891,8 @@ export default function AddReservationModal({
                     </span>
                   </div>
                   <span style={{ fontSize: '.72rem', color: themeMuted }}>
-                    {computedNights} night{computedNights > 1 ? 's' : ''}: {fmtDate(newReservation.check_in)} →{' '}
-                    {fmtDate(newReservation.check_out)}
+                    {computedNights} night{computedNights > 1 ? 's' : ''}: {fmtDate(newReservation.check_in)} ({formatTime12Hour(newReservation.check_in_time || '14:00')}) →{' '}
+                    {fmtDate(newReservation.check_out)} ({formatTime12Hour(newReservation.check_out_time || '12:00')})
                   </span>
                 </div>
 
@@ -986,6 +988,7 @@ export default function AddReservationModal({
               )}
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                {/* 1. Check-In Date */}
                 <div>
                   <label
                     style={{
@@ -1031,6 +1034,8 @@ export default function AddReservationModal({
                     }}
                   />
                 </div>
+
+                {/* 2. Check-Out Date */}
                 <div>
                   <label
                     style={{
@@ -1061,6 +1066,76 @@ export default function AddReservationModal({
                         ...newReservation,
                         check_out: cout,
                         total_php: rate * nights,
+                      });
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: 10,
+                      border: `1px solid ${themeBorder}`,
+                      background: isLightMode ? '#FFF' : '#1E293B',
+                      color: themeText,
+                    }}
+                  />
+                </div>
+
+                {/* 3. Check-In Time */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                    <label
+                      style={{
+                        fontSize: '.74rem',
+                        color: themeMuted,
+                        fontWeight: 700,
+                      }}
+                    >
+                      Check-In Time *
+                    </label>
+                    <span style={{ fontSize: '.68rem', color: '#0EA5E9', fontWeight: 600 }}>Standard 2:00 PM</span>
+                  </div>
+                  <input
+                    type="time"
+                    required
+                    value={newReservation.check_in_time || '14:00'}
+                    onChange={(e) => {
+                      setNewReservation({
+                        ...newReservation,
+                        check_in_time: e.target.value,
+                      });
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: 10,
+                      border: `1px solid ${themeBorder}`,
+                      background: isLightMode ? '#FFF' : '#1E293B',
+                      color: themeText,
+                    }}
+                  />
+                </div>
+
+                {/* 4. Check-Out Time */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                    <label
+                      style={{
+                        fontSize: '.74rem',
+                        color: themeMuted,
+                        fontWeight: 700,
+                      }}
+                    >
+                      Check-Out Time *
+                    </label>
+                    <span style={{ fontSize: '.68rem', color: '#0EA5E9', fontWeight: 600 }}>Standard 12:00 PM</span>
+                  </div>
+                  <input
+                    type="time"
+                    required
+                    value={newReservation.check_out_time || '12:00'}
+                    onChange={(e) => {
+                      setNewReservation({
+                        ...newReservation,
+                        check_out_time: e.target.value,
                       });
                     }}
                     style={{

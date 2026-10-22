@@ -21,6 +21,8 @@ const createSchema = z.object({
   room_id: z.string().optional(),
   check_in: dateStr,
   check_out: dateStr,
+  check_in_time: z.string().max(30).optional(),
+  check_out_time: z.string().max(30).optional(),
   guests: z.coerce.number().int().min(1).max(12).default(1),
   notes: z.string().max(500).default(''),
   phone: z.string().max(20).optional(),
@@ -42,6 +44,8 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
     room_id,
     check_in,
     check_out,
+    check_in_time,
+    check_out_time,
     guests,
     notes,
     phone,
@@ -130,6 +134,14 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
         }
       }
       finalNotes = `[Unit ${freeUnit}] ${finalNotes}`.trim();
+    }
+  }
+
+  if (check_in_time || check_out_time) {
+    const cinT = check_in_time || '14:00';
+    const coutT = check_out_time || '12:00';
+    if (!finalNotes.includes('[Check-In:')) {
+      finalNotes = `${finalNotes} [Check-In: ${cinT}, Check-Out: ${coutT}]`.trim();
     }
   }
 

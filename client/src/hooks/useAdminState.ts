@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useAuth, generateAccountEmail, isSystemOwnerEmail } from '../context/AuthContext';
 import { api, API_BASE, addDaysYMD } from '../lib/api';
+import { formatTime12Hour } from '../lib/format';
 import { supabase } from '../lib/supabaseClient';
 import { uploadImageToCloudinary } from '../lib/cloudinary';
 import { toast } from '../components/Toasts';
@@ -222,6 +223,8 @@ export function useAdminState() {
     room_id: '',
     check_in: new Date().toISOString().slice(0, 10),
     check_out: new Date(Date.now() + 86400000).toISOString().slice(0, 10),
+    check_in_time: '14:00',
+    check_out_time: '12:00',
     guests: 2,
     total_php: 3500,
     payment_method: 'GCash',
@@ -831,12 +834,22 @@ export function useAdminState() {
         newReservation.check_out && newReservation.check_out > checkIn
           ? newReservation.check_out
           : addDaysYMD(checkIn, 1);
+      const checkInTime = newReservation.check_in_time || '14:00';
+      const checkOutTime = newReservation.check_out_time || '12:00';
+      const timeTag = `[Check-In: ${formatTime12Hour(checkInTime)}, Check-Out: ${formatTime12Hour(checkOutTime)}]`;
+      let finalNotes = (newReservation.notes || '').trim();
+      if (!finalNotes.includes('[Check-In:')) {
+        finalNotes = finalNotes ? `${finalNotes} ${timeTag}` : timeTag;
+      }
 
       const created = await api.createReservation({
         ...newReservation,
         room_id: targetRoomId,
         check_in: checkIn,
         check_out: checkOut,
+        check_in_time: checkInTime,
+        check_out_time: checkOutTime,
+        notes: finalNotes,
         guest_name: newReservation.guest_name.trim(),
         phone: newReservation.phone.trim(),
         total_php: Number(newReservation.total_php) || Number(roomMatch.rate_php) || 3500,
