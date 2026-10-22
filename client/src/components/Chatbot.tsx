@@ -16,10 +16,12 @@ const DEFAULT_WELCOME = {
 };
 
 const DEFAULT_CHIPS = [
-  'Recommend a room for a family',
-  'How far is Cape Bolinao lighthouse?',
-  'What are the resort amenities?',
-  'Direct booking perks',
+  '🏡 Room Rates & Cottages',
+  '⏰ Check-in & Check-out Times',
+  '🏊 Resort Amenities & Pool',
+  '💳 30% Downpayment Info',
+  '📍 Cape Bolinao Lighthouse',
+  '👨‍👩‍👧‍👦 Recommend a room for a family',
 ];
 
 export default function Chatbot() {
@@ -421,64 +423,96 @@ export default function Chatbot() {
         <div className="chat-panel">
           {/* Header */}
           <div className="chat-head">
-            <span className="live-dot" />
-            <div>
-              <b style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                Rock View Bot
-                <span
-                  style={{
-                    fontSize: '0.62rem',
-                    background: 'linear-gradient(135deg, #38BDF8, #818CF8)',
-                    color: '#0F172A',
-                    fontWeight: 800,
-                    padding: '1px 6px',
-                    borderRadius: 999,
-                  }}
-                >
-                  Resort AI
-                </span>
-              </b>
-              <br />
-              <small style={{ opacity: 0.9, color: '#BAE6FD', fontSize: '.72rem' }}>
-                24/7 Concierge
-              </small>
-            </div>
-            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <button
-                type="button"
-                onClick={reloadAccountChat}
-                disabled={reloadingChat}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div
                 style={{
-                  color: '#BAE6FD',
-                  fontSize: '0.68rem',
-                  fontWeight: 600,
-                  background: 'rgba(255,255,255,0.08)',
-                  border: '1px solid rgba(255,255,255,0.18)',
-                  borderRadius: 6,
-                  padding: '3px 8px',
-                  cursor: reloadingChat ? 'wait' : 'pointer',
+                  width: 38,
+                  height: 38,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, rgba(56,189,248,0.25), rgba(14,165,233,0.4))',
+                  border: '1.5px solid rgba(56,189,248,0.4)',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 4,
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
                 }}
-                title="Reload and sync saved chat from account"
               >
-                {reloadingChat ? <><i className="fas fa-rotate" style={{ marginRight: 4 }} />Syncing…</> : <><i className="fas fa-floppy-disk" style={{ marginRight: 4 }} />Saved</>}
+                <i className="fas fa-umbrella-beach" style={{ color: '#38BDF8', fontSize: '1.05rem' }} />
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <b style={{ fontSize: '0.94rem', color: '#FFFFFF', letterSpacing: '-0.01em' }}>
+                    Rock View Bot
+                  </b>
+                  <span
+                    style={{
+                      fontSize: '0.6rem',
+                      background: 'linear-gradient(135deg, #38BDF8, #818CF8)',
+                      color: '#0F172A',
+                      fontWeight: 800,
+                      padding: '1px 6px',
+                      borderRadius: 999,
+                      letterSpacing: '0.04em',
+                    }}
+                  >
+                    Resort AI
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 1 }}>
+                  <span className="live-dot" style={{ width: 6, height: 6, margin: 0 }} />
+                  <small style={{ color: '#BAE6FD', fontSize: '0.72rem', fontWeight: 600 }}>
+                    Online · 24/7 Hotel Concierge
+                  </small>
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <button
+                type="button"
+                style={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: '50%',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'rgba(255,255,255,0.7)',
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  fontSize: '0.76rem',
+                }}
+                title="Start a fresh conversation"
+                aria-label="Restart chat"
+                onClick={() => {
+                  setMsgs([DEFAULT_WELCOME]);
+                  setChips(DEFAULT_CHIPS);
+                }}
+              >
+                <i className="fas fa-rotate" />
               </button>
               <button
+                type="button"
                 style={{
-                  color: '#fff',
-                  fontSize: '1.2rem',
-                  background: 'none',
-                  border: 'none',
+                  width: 30,
+                  height: 30,
+                  borderRadius: '50%',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'rgba(255,255,255,0.85)',
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.12)',
                   cursor: 'pointer',
-                  lineHeight: 1,
-                  padding: '0 4px',
+                  transition: 'all 0.15s ease',
+                  fontSize: '0.85rem',
                 }}
                 aria-label="Close chat"
                 onClick={() => setOpen(false)}
               >
-                ×
+                <i className="fas fa-xmark" />
               </button>
             </div>
           </div>
@@ -544,16 +578,19 @@ export default function Chatbot() {
                       alignItems: 'center',
                       gap: 4,
                       marginBottom: 6,
-                      padding: '2px 8px',
-                      background: 'rgba(239, 68, 68, 0.15)',
-                      border: '1px solid rgba(239, 68, 68, 0.4)',
-                      borderRadius: 6,
+                      padding: '3px 9px',
+                      background: m.category === 'OUT_OF_SCOPE' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                      border: `1px solid ${m.category === 'OUT_OF_SCOPE' ? 'rgba(56, 189, 248, 0.4)' : 'rgba(239, 68, 68, 0.4)'}`,
+                      borderRadius: 8,
                       fontSize: '0.65rem',
                       fontWeight: 800,
-                      color: '#F87171',
+                      color: m.category === 'OUT_OF_SCOPE' ? '#38BDF8' : '#F87171',
                     }}
                   >
-                    <span><i className="fas fa-shield-halved" style={{ marginRight: 6 }} />AI SECURITY GUARDRAIL ENFORCED</span>
+                    <span>
+                      <i className={m.category === 'OUT_OF_SCOPE' ? "fas fa-hotel" : "fas fa-shield-halved"} style={{ marginRight: 6 }} />
+                      {m.category === 'OUT_OF_SCOPE' ? 'RESORT & HOTEL BUSINESS CONCIERGE' : 'AI SECURITY GUARDRAIL ENFORCED'}
+                    </span>
                   </div>
                 )}
 
@@ -983,7 +1020,7 @@ export default function Chatbot() {
             <input
               ref={inputRef}
               value={text}
-              placeholder="Ask about system, booking, concerns, rates…"
+              placeholder="Ask about rooms, rates, amenities, check-in…"
               onChange={(e) => {
                 if (isTypingPrompt && cancelTypewriterRef.current) {
                   cancelTypewriterRef.current();
@@ -993,16 +1030,37 @@ export default function Chatbot() {
                 setText(e.target.value);
               }}
             />
-            <button className="btn btn-sky btn-sm" type="submit" disabled={!text.trim()}>
-              Send
+            <button
+              className="btn btn-sky btn-sm"
+              type="submit"
+              disabled={!text.trim()}
+              style={{
+                borderRadius: 9999,
+                padding: '8px 16px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                fontWeight: 700,
+                cursor: text.trim() ? 'pointer' : 'not-allowed',
+                opacity: text.trim() ? 1 : 0.6,
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <span>Send</span>
+              <i className="fas fa-paper-plane" style={{ fontSize: '0.74rem' }} />
             </button>
           </form>
         </div>
       )}
 
       {/* Floating Action Button */}
-      <button className="chat-fab" aria-label="Open chat" onClick={() => setOpen((o) => !o)}>
-        <i className={open ? "fas fa-xmark" : "fas fa-comments"} style={{ fontSize: '1.35rem', color: '#fff' }} />
+      <button
+        className="chat-fab"
+        aria-label="Open 24/7 Resort Concierge Chat"
+        onClick={() => setOpen((o) => !o)}
+        title="24/7 Rock View Bot Concierge"
+      >
+        <i className={open ? "fas fa-xmark" : "fas fa-comments"} style={{ fontSize: '1.35rem', color: '#fff', transition: 'transform 0.2s ease' }} />
       </button>
     </>
   );

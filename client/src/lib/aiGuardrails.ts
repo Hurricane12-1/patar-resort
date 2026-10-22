@@ -5,7 +5,7 @@
 
 export interface GuardrailEvaluation {
   blocked: boolean;
-  category?: 'PROMPT_INJECTION' | 'SYSTEM_EXFILTRATION' | 'CODE_INJECTION' | 'OFFENSIVE';
+  category?: 'PROMPT_INJECTION' | 'SYSTEM_EXFILTRATION' | 'CODE_INJECTION' | 'OFFENSIVE' | 'OUT_OF_SCOPE';
   reason?: string;
   safeMessage?: string;
 }
@@ -53,6 +53,19 @@ const CODE_INJECTION_PATTERNS = [
   /\b(eval\s*\(|new\s+Function\(|document\.cookie|window\.localStorage)\b/i,
 ];
 
+// Patterns indicative of questions strictly outside hotel & resort operations
+const OUT_OF_SCOPE_PATTERNS = [
+  /\b(write|create|debug|generate|fix|run|execute)\s+(a\s+|an\s+|the\s+|my\s+|some\s+)?(code|script|program|function|python|javascript|typescript|c\+\+|java|html|css|sql|algorithm|regex|app|website)\b/i,
+  /\b(python|javascript|typescript|c\+\+|golang|html|css|sql)\s+(code|script|program|function|syntax|error|bug)\b/i,
+  /\b(solve|calculate)\s+(the\s+|this\s+|my\s+)?(math|equation|calculus|derivative|integral|algebra|problem)\b/i,
+  /\b(write\s+an?\s+essay|homework\s+help|do\s+my\s+assignment|thesis\s+statement)\b/i,
+  /\b(who\s+won|latest\s+score|nba\s+finals|world\s+cup|super\s+bowl|premier\s+league)\b/i,
+  /\b(presidential\s+election|political\s+debate|democrats|republicans|congress\s+vote|who\s+is\s+the\s+president)\b/i,
+  /\b(stock\s+market|cryptocurrency|crypto|bitcoin|ethereum|trading\s+strategy)\b/i,
+  /\b(quantum\s+physics|theory\s+of\s+relativity|speed\s+of\s+light|thermodynamics|black\s+holes)\b/i,
+  /\b(medical\s+diagnosis|symptoms\s+of\s+cancer|prescribe\s+medication)\b/i,
+];
+
 /**
  * Evaluate guest prompt against anti-hacking and security guardrails
  */
@@ -95,6 +108,19 @@ export function evaluateClientGuardrails(input: string): GuardrailEvaluation {
         reason: 'Detected prompt injection or persona override attempt.',
         safeMessage:
           '🛡️ Security Guardrail: I am designed specifically to serve as your 24/7 Rock View Beach Resort concierge. I cannot alter my core safety guidelines or adopt unrestricted personas. How may I assist your stay in Bolinao today?',
+      };
+    }
+  }
+
+  // 4. Hotel Business Domain Guardrail
+  for (const pat of OUT_OF_SCOPE_PATTERNS) {
+    if (pat.test(text)) {
+      return {
+        blocked: true,
+        category: 'OUT_OF_SCOPE',
+        reason: 'Question outside hotel and beach resort business scope.',
+        safeMessage:
+          '🌊 Mabuhay! I am Rock View Bot, the dedicated 24/7 AI Concierge for Rock View Beach Resort in Bolinao, Pangasinan.\n\nMy assistance is strictly focused on our hotel operations: room rates, booking reservations, beachfront amenities, dining, check-in policies, and local Bolinao travel activities. I cannot assist with topics outside the resort business.\n\nHow may I help you plan your beach stay or room reservation today?',
       };
     }
   }
