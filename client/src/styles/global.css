@@ -2520,3 +2520,44 @@ input[type="date"] {
   outline: 2px solid #38BDF8 !important;
   outline-offset: 2px !important;
 }
+
+/* ==========================================================================
+   OFFICIAL RESORT VOUCHER & FOLIO PRINT STYLING
+   Enables 1-click clean PDF saving and printing without website chrome
+   ========================================================================== */
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  #receipt-printable-area,
+  #receipt-printable-area * {
+    visibility: visible !important;
+  }
+  #receipt-printable-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 24px !important;
+    background: #0B1E38 !important;
+    color: #FFFFFF !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    border-radius: 16px !important;
+    border: 1px solid #38BDF8 !important;
+    box-shadow: none !important;
+  }
+  .receipt-no-print,
+  .chat-fab,
+  .chat-panel,
+  .app-shell > header,
+  .app-shell > footer {
+    display: none !important;
+  }
+  @page {
+    margin: 1cm;
+    size: A4 portrait;
+  }
+}

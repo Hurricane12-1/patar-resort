@@ -6,6 +6,7 @@ import { CANONICAL_ROOMS } from '../lib/canonicalRooms.ts';
 import { toast } from './Toasts.tsx';
 import { getRoomImageUrl, handleImageError } from '../lib/images.ts';
 import AvailabilityCalendar from './AvailabilityCalendar.tsx';
+import { VoucherModal, LuxuryResortVoucher, ReceiptActions, normalizeVoucherData, VoucherData } from './receipt';
 
 // ==========================================================================
 // LAYOUT TOKENS
@@ -242,6 +243,8 @@ export default function MobileResortApp() {
   const [resConfirmed, setResConfirmed] = useState<any | null>(null);
   const [showModalCalendar, setShowModalCalendar] = useState(false);
   const [showHeroCalendar, setShowHeroCalendar] = useState(false);
+  const [selectedVoucher, setSelectedVoucher] = useState<VoucherData | null>(null);
+  const [showVoucherModal, setShowVoucherModal] = useState(false);
 
   // Sync profile fields whenever profile/session changes
   useEffect(() => {
@@ -2483,7 +2486,7 @@ export default function MobileResortApp() {
                                 {b.rooms?.name || 'Beachfront Room'}
                               </span>
                               <span className="text-[10px] uppercase tracking-wider text-cyan block mt-0.5">
-                                Ref: JD-RES-{b.id?.slice(0, 8).toUpperCase()}
+                                Ref: RV-RES-{b.id?.slice(0, 8).toUpperCase()}
                               </span>
                             </div>
                             <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider border ${
@@ -2518,8 +2521,19 @@ export default function MobileResortApp() {
                             </div>
                           </div>
 
-                          {['pending', 'confirmed'].includes(b.status) && (
-                            <div className="mt-3 flex justify-end">
+                          <div className="mt-3 flex items-center justify-between gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedVoucher(normalizeVoucherData(b));
+                                setShowVoucherModal(true);
+                              }}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-sky-400/40 bg-sky-950/40 hover:bg-sky-900/60 text-sky-300 text-[11px] font-semibold tracking-wide transition cursor-pointer"
+                            >
+                              <i className="fas fa-receipt" />
+                              <span>View & Save Voucher</span>
+                            </button>
+                            {['pending', 'confirmed'].includes(b.status) && (
                               <button
                                 type="button"
                                 onClick={() => handleCancelBooking(b.id)}
@@ -2527,8 +2541,8 @@ export default function MobileResortApp() {
                               >
                                 Cancel Stay
                               </button>
-                            </div>
-                          )}
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -2663,70 +2677,20 @@ export default function MobileResortApp() {
               {resConfirmed ? (
                 /* OFFICIAL CONFIRMED VOUCHER */
                 <div className="flex flex-col gap-4 animate-fade-in">
-                  <div className="rounded-2xl border border-cyan/40 bg-gradient-to-b from-cyan/15 via-ink to-ink p-4 sm:p-5 text-center relative overflow-hidden">
-                    <span className="font-serif text-3xl sm:text-4xl text-cyan block">✦</span>
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-cyan mt-1 block">Rock View Beach Resort · Patar Bolinao</span>
-                    <h4 className="font-serif text-xl sm:text-2xl font-medium text-white mt-1">Reservation Confirmed</h4>
-                    <div className="mt-2.5 inline-block rounded-full bg-cyan px-3.5 py-1 font-mono text-[11px] font-bold tracking-widest text-navy">
-                      REF: RV-RES-{resConfirmed.id ? resConfirmed.id.slice(0, 8).toUpperCase() : 'GUARANTEED'}
-                    </div>
-
-                    <div className="mt-4 grid grid-cols-2 gap-2 text-left text-xs bg-white/[0.03] p-3 rounded-xl border border-white/10">
-                      <div>
-                        <span className="text-[9px] uppercase text-white/40 block">Guest Resident</span>
-                        <span className="font-medium text-white truncate block">{resConfirmed.guest_name}</span>
-                      </div>
-                      <div>
-                        <span className="text-[9px] uppercase text-white/40 block">Room</span>
-                        <span className="font-medium text-cyan truncate block">{resConfirmed.roomName}</span>
-                      </div>
-                      <div>
-                        <span className="text-[9px] uppercase text-white/40 block">Check-in</span>
-                        <span className="font-medium text-white">{checkIn}</span>
-                      </div>
-                      <div>
-                        <span className="text-[9px] uppercase text-white/40 block">Check-out</span>
-                        <span className="font-medium text-white">{checkOut} ({resConfirmed.nights}N)</span>
-                      </div>
-                      <div>
-                        <span className="text-[9px] uppercase text-white/40 block">Total Est.</span>
-                        <span className="font-medium text-white">{peso(resConfirmed.total_php)}</span>
-                      </div>
-                      <div>
-                        <span className="text-[9px] uppercase text-white/40 block">30% Downpayment</span>
-                        <span className="font-medium text-cyan">{peso(resConfirmed.downpayment_php)}</span>
-                      </div>
-                    </div>
-
-                    <p className="mt-3 text-[10px] sm:text-[11px] text-white/60 leading-relaxed">
-                      We look forward to welcoming you! Present this digital voucher or SMS upon arrival at the Front Desk.
-                    </p>
-                  </div>
-
-                  <div className="flex gap-2 sm:gap-3">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        navigator.clipboard?.writeText(`JD-RES-${resConfirmed.id ? resConfirmed.id.slice(0, 8).toUpperCase() : 'GUARANTEED'}`);
-                        toast('Voucher Reference Copied to Clipboard ✦');
-                      }}
-                      className={`${BTN_GHOST} flex-1 py-3 text-xs`}
-                    >
-                      Copy Voucher Code
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setReservationModalOpen(false);
-                        setResConfirmed(null);
-                        setProfileTab('bookings');
-                        setProfileModalOpen(true);
-                      }}
-                      className={`${BTN_PRIMARY} flex-1 py-3 text-xs`}
-                    >
-                      View in My Stays
-                    </button>
-                  </div>
+                  <LuxuryResortVoucher voucher={normalizeVoucherData(resConfirmed)} />
+                  <ReceiptActions
+                    voucher={normalizeVoucherData(resConfirmed)}
+                    onClose={() => {
+                      setReservationModalOpen(false);
+                      setResConfirmed(null);
+                    }}
+                    onViewBookings={() => {
+                      setReservationModalOpen(false);
+                      setResConfirmed(null);
+                      setProfileTab('bookings');
+                      setProfileModalOpen(true);
+                    }}
+                  />
                 </div>
               ) : (
                 /* RESERVATION CHECKOUT FORM */
@@ -3062,6 +3026,16 @@ export default function MobileResortApp() {
           </div>
         </div>
       )}
+
+      {/* 11. STANDALONE LUXURY VOUCHER & FOLIO MODAL */}
+      <VoucherModal
+        voucher={selectedVoucher}
+        isOpen={showVoucherModal}
+        onClose={() => {
+          setShowVoucherModal(false);
+          setSelectedVoucher(null);
+        }}
+      />
     </div>
   );
 }
