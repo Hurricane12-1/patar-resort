@@ -55,6 +55,19 @@ export const formatTime12Hour = (timeStr?: string) => {
 
 export const initials = (n = '?') => n.trim().split(/\s+/).map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
 
+export function to11Digits(val: string): string {
+  if (!val) return '';
+  let digits = String(val).replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.startsWith('63')) {
+    digits = '0' + digits.slice(2);
+  }
+  if (!digits.startsWith('0')) {
+    digits = '0' + digits;
+  }
+  return digits.slice(0, 11);
+}
+
 export const addDaysISO = (base: any, days: number) => {
   const d = parseSafeDate(base) || new Date();
   d.setDate(d.getDate() + days);

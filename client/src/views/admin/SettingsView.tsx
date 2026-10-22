@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { optimizeCloudinaryUrl } from '../../lib/cloudinary';
 import { api } from '../../lib/api';
+import { to11Digits } from '../../lib/format';
 
 export interface SettingsViewProps {
   adminProfileState: any;
@@ -219,10 +220,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700 }}>MOBILE PHONE (11-DIGIT PH)</label>
               <input
                 type="tel"
+                inputMode="numeric"
                 maxLength={11}
                 style={{ background: isLightMode ? '#FFF' : undefined, color: themeText }}
                 value={adminProfileState.phone}
-                onChange={(e) => setAdminProfileState({ ...adminProfileState, phone: e.target.value.replace(/\D/g, '').slice(0, 11) })}
+                onChange={(e) => setAdminProfileState({ ...adminProfileState, phone: to11Digits(e.target.value) })}
               />
             </div>
           </div>

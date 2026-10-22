@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { money, fmtDate, formatTime12Hour } from '../../../lib/format.ts';
+import { money, fmtDate, formatTime12Hour, to11Digits } from '../../../lib/format.ts';
 import AvailabilityCalendar from '../../AvailabilityCalendar.tsx';
 import { POOL_ADDON_OPTIONS } from '../../../lib/ledgerUtils.ts';
 import { addDaysYMD } from '../../../lib/api.ts';
@@ -436,6 +436,7 @@ export default function AddReservationModal({
   // Required field validation checks
   const isNameBlank = !String(newReservation.guest_name || '').trim();
   const isPhoneBlank = !String(newReservation.phone || '').trim();
+  const isPhoneInvalid = isPhoneBlank || String(newReservation.phone).trim().length !== 11 || !String(newReservation.phone).startsWith('0');
   const isRoomBlank = !targetRoomId;
   const isDatesInvalid = !newReservation.check_in || !newReservation.check_out || newReservation.check_out <= newReservation.check_in;
   const isGuestsInvalid = !newReservation.guests || Number(newReservation.guests) < 1;
@@ -443,6 +444,7 @@ export default function AddReservationModal({
   const missingFields: string[] = [];
   if (isNameBlank) missingFields.push('Guest Full Name');
   if (isPhoneBlank) missingFields.push('Contact / Phone Number');
+  else if (isPhoneInvalid) missingFields.push('Valid 11-digit Phone (must start with 0)');
   if (isRoomBlank) missingFields.push('Room Selection');
   if (isDatesInvalid) missingFields.push('Valid Stay Dates');
   if (isGuestsInvalid) missingFields.push('Number of Guests');
@@ -913,7 +915,7 @@ export default function AddReservationModal({
                   >
                     Phone (for SMS confirmation) *
                   </label>
-                  {isPhoneBlank && (
+                  {isPhoneBlank ? (
                     <span
                       style={{
                         fontSize: '.7rem',
@@ -922,16 +924,40 @@ export default function AddReservationModal({
                       }}
                     >
                       <i className="fas fa-triangle-exclamation" style={{ marginRight: 4 }} />
-                      {attemptedSubmit ? 'Required' : 'Required'}
+                      Required
+                    </span>
+                  ) : String(newReservation.phone).length < 11 ? (
+                    <span
+                      style={{
+                        fontSize: '.7rem',
+                        fontWeight: 700,
+                        color: '#F59E0B',
+                      }}
+                    >
+                      {String(newReservation.phone).length}/11 digits
+                    </span>
+                  ) : (
+                    <span
+                      style={{
+                        fontSize: '.7rem',
+                        fontWeight: 700,
+                        color: '#10B981',
+                      }}
+                    >
+                      <i className="fas fa-check" style={{ marginRight: 4 }} />
+                      11/11 digits
                     </span>
                   )}
                 </div>
                 <input
                   ref={phoneInputRef}
+                  type="tel"
+                  inputMode="numeric"
+                  maxLength={11}
                   required
                   placeholder="09171234567 (Required)"
                   value={newReservation.phone}
-                  onChange={(e) => setNewReservation({ ...newReservation, phone: e.target.value })}
+                  onChange={(e) => setNewReservation({ ...newReservation, phone: to11Digits(e.target.value) })}
                   style={{
                     width: '100%',
                     padding: '10px 14px',

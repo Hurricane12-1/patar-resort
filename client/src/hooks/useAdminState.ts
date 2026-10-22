@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useAuth, generateAccountEmail, isSystemOwnerEmail } from '../context/AuthContext';
 import { api, API_BASE, addDaysYMD } from '../lib/api';
-import { formatTime12Hour } from '../lib/format';
+import { formatTime12Hour, to11Digits } from '../lib/format';
 import { supabase } from '../lib/supabaseClient';
 import { uploadImageToCloudinary } from '../lib/cloudinary';
 import { toast } from '../components/Toasts';
@@ -808,8 +808,12 @@ export function useAdminState() {
       }
       const targetRoomId = newReservation.room_id || activeRoomsList[0]?.id;
       const missingFields: string[] = [];
+      const cleanedPhone = to11Digits(newReservation.phone);
       if (!String(newReservation.guest_name || '').trim()) missingFields.push('Guest Full Name');
-      if (!String(newReservation.phone || '').trim()) missingFields.push('Contact / Phone Number');
+      if (!cleanedPhone) missingFields.push('Contact / Phone Number');
+      else if (cleanedPhone.length !== 11 || !cleanedPhone.startsWith('0')) {
+        missingFields.push('Valid 11-digit Phone (starts with 0, e.g. 0917xxxxxxx)');
+      }
       if (!targetRoomId) missingFields.push('Accommodation Room');
       if (!newReservation.check_in || !newReservation.check_out) missingFields.push('Check-In & Check-Out Dates');
       if (!newReservation.guests || Number(newReservation.guests) < 1) missingFields.push('Number of Guests');
@@ -851,7 +855,7 @@ export function useAdminState() {
         check_out_time: checkOutTime,
         notes: finalNotes,
         guest_name: newReservation.guest_name.trim(),
-        phone: newReservation.phone.trim(),
+        phone: cleanedPhone,
         total_php: Number(newReservation.total_php) || Number(roomMatch.rate_php) || 3500,
         guests: Number(newReservation.guests) || 2,
       });

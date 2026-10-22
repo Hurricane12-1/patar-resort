@@ -1,5 +1,5 @@
 import React from 'react';
-import { fmtDate } from '../../../lib/format';
+import { fmtDate, to11Digits } from '../../../lib/format';
 import { dispatchWordPrompt } from '../../../lib/wordPrompt';
 import { generateAccountEmail, generateEmployeeId } from '../../../context/AuthContext';
 
@@ -511,7 +511,10 @@ export const AdminDialogs: React.FC<AdminDialogsProps> = ({
                       color: themeText,
                     }}
                     value={newStaff.phone}
-                    onChange={(e) => setNewStaff({ ...newStaff, phone: e.target.value })}
+                    onChange={(e) => setNewStaff({ ...newStaff, phone: to11Digits(e.target.value) })}
+                    maxLength={11}
+                    type="tel"
+                    inputMode="numeric"
                     placeholder="09171234567"
                   />
                 </div>
@@ -852,7 +855,10 @@ export const AdminDialogs: React.FC<AdminDialogsProps> = ({
                       color: themeText,
                     }}
                     value={editingUser.phone || ''}
-                    onChange={(e) => setEditingUser({ ...editingUser, phone: e.target.value })}
+                    onChange={(e) => setEditingUser({ ...editingUser, phone: to11Digits(e.target.value) })}
+                    maxLength={11}
+                    type="tel"
+                    inputMode="numeric"
                     placeholder="09171234567"
                   />
                 </div>
