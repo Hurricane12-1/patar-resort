@@ -175,20 +175,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   </div>
                 </div>
               </div>
-
-              {/* Enterprise Domain Account Badge */}
-              <div style={{ background: isLightMode ? '#EFF6FF' : 'rgba(59, 130, 246, 0.1)', border: `1px solid ${isLightMode ? '#BFDBFE' : 'rgba(59, 130, 246, 0.3)'}`, borderRadius: 14, padding: '12px 18px', textAlign: 'right' }}>
-                <small style={{ fontSize: '.68rem', color: isLightMode ? '#1E40AF' : '#93C5FD', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em', display: 'block' }}>
-                  ENTERPRISE DOMAIN IDENTITY
-                </small>
-                <span style={{ fontSize: '.9rem', fontWeight: 800, color: isLightMode ? '#1E3A8A' : '#BFDBFE', display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-                  <i className="fas fa-shield-halved" style={{ color: '#10B981' }} />
-                  {adminProfileState.domainAccount || 'admin@janddbeachhouse.ph'}
-                </span>
-                <span style={{ fontSize: '.72rem', color: isLightMode ? '#475569' : '#94A3B8', marginTop: 2, display: 'block' }}>
-                  Security Clearance: Tier-1 Master Access
-                </span>
-              </div>
             </div>
           );
         })()}
