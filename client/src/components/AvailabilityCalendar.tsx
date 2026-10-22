@@ -169,8 +169,13 @@ export default function AvailabilityCalendar({
     for (const r of rooms || []) {
       if (r && r.id) map.set(r.id, { ...map.get(r.id), ...r });
     }
-    return Array.from(map.values()).filter((r) => r && r.is_active !== false);
-  }, [liveRooms, rooms]);
+    const all = Array.from(map.values()).filter((r) => r && r.is_active !== false);
+    if (selectedRoomId && selectedRoomId !== 'all') {
+      const filtered = all.filter((r) => r.id === selectedRoomId);
+      if (filtered.length > 0) return filtered;
+    }
+    return all;
+  }, [liveRooms, rooms, selectedRoomId]);
 
   // Merge prop bookings and live bookings by id so newly created/edited bookings appear immediately
   const effectiveBookings = useMemo(() => {
@@ -189,7 +194,7 @@ export default function AvailabilityCalendar({
     const list: UnitInfo[] = [];
     let unitCounter = 1;
 
-    // Expand physical units from active open rooms based on each room's configured units count
+    // Expand physical units from active open rooms based strictly on each room's configured units count
     effectiveRooms.forEach((r) => {
       const numUnits = Math.max(1, Number(r.units) || 1);
       for (let u = 1; u <= numUnits; u++) {
@@ -197,41 +202,16 @@ export default function AvailabilityCalendar({
           id: `unit_${unitCounter}`,
           roomId: r.id,
           unitNumber: unitCounter,
-          name: `Unit ${unitCounter}`,
-          label: `${r.name} (Unit ${unitCounter})`,
+          name: numUnits > 1 ? `Unit ${u}` : (effectiveRooms.length === 1 ? `Unit 1` : `Unit ${unitCounter}`),
+          label: numUnits > 1 ? `${r.name} (Unit ${u})` : `${r.name} (Unit ${unitCounter})`,
           ratePhp: r.rate_php || 3500,
         });
         unitCounter++;
       }
     });
 
-    // Check maximum booked unit referenced in notes (e.g. [Unit 13])
-    let maxBookingUnit = 0;
-    effectiveBookings.forEach((b: any) => {
-      const m = (b.notes || '').match(/\[?(?:Unit\s*|u)(\d+)\]?/i);
-      if (m) {
-        const uNum = parseInt(m[1], 10);
-        if (!isNaN(uNum) && uNum > maxBookingUnit) maxBookingUnit = uNum;
-      }
-    });
-
-    // If active open rooms exist, pad to at least 13 units matching the PMS calendar screenshot
-    const targetCount = effectiveRooms.length > 0 ? Math.max(list.length, maxBookingUnit, 13) : 0;
-    while (unitCounter <= targetCount && effectiveRooms.length > 0) {
-      const fallbackRoom = effectiveRooms[(unitCounter - 1) % effectiveRooms.length];
-      list.push({
-        id: `unit_${unitCounter}`,
-        roomId: fallbackRoom?.id || '',
-        unitNumber: unitCounter,
-        name: `Unit ${unitCounter}`,
-        label: `${fallbackRoom?.name || 'Standard Room'} (Unit ${unitCounter})`,
-        ratePhp: fallbackRoom?.rate_php || 3500,
-      });
-      unitCounter++;
-    }
-
     return list;
-  }, [effectiveRooms, effectiveBookings]);
+  }, [effectiveRooms]);
 
   // Generate days array starting from windowStartDateStr (Timezone-safe UTC noon math)
   const daysArray = useMemo(() => {
@@ -401,13 +381,19 @@ export default function AvailabilityCalendar({
     const staysInView = allStays.filter(
       (s) => s.checkIn <= windowEndDateStr && s.checkOut >= windowStartDateStr && s.status !== 'cancelled'
     ).length;
+    const occupiedToday = allStays.filter(
+      (s) => s.checkIn <= todayStr && s.checkOut > todayStr && s.status !== 'cancelled'
+    ).length;
+    const availableToday = Math.max(0, units.length - occupiedToday);
 
     return {
       arriving,
       departing,
       staysInView,
+      availableToday,
+      totalUnits: units.length,
     };
-  }, [allStays, todayStr, windowEndDateStr, windowStartDateStr]);
+  }, [allStays, todayStr, windowEndDateStr, windowStartDateStr, units.length]);
 
   // Navigation handlers: shift by daysCount
   const handlePrevWindow = () => {
@@ -547,6 +533,9 @@ export default function AvailabilityCalendar({
 
         {/* Right: Real-time Inline Metrics & Optional New Booking */}
         <div className="pms-metrics-group">
+          <div>
+            <span className="pms-metric-val" style={{ color: '#10B981' }}>{metrics.availableToday}</span> of {units.length} available
+          </div>
           <div>
             <span className="pms-metric-val">{metrics.arriving}</span> arriving today
           </div>
