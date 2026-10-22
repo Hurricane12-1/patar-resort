@@ -6,6 +6,7 @@ import { roomImg, getRoomImageUrl, handleImageError } from '../lib/images.ts';
 import { toast } from './Toasts.tsx';
 import { CANONICAL_ROOMS } from '../lib/canonicalRooms.ts';
 import AvailabilityCalendar from './AvailabilityCalendar.tsx';
+import { VoucherModal, normalizeVoucherData } from './receipt';
 
 export const POOL_ADDON_OPTIONS = [
   { id: 'none', label: 'Room Only (No Swimming Pool Access) — ₱0', shortName: 'Room Only', pricePerGuest: 0 },
@@ -91,6 +92,7 @@ export default function BookingFlow({ initialSlug }) {
   const [phone, setPhone] = useState('');
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(null);
+  const [showVoucherModal, setShowVoucherModal] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedUnitNumber, setSelectedUnitNumber] = useState<number | 'auto'>('auto');
   const preferred = useRef(null);
@@ -218,6 +220,7 @@ export default function BookingFlow({ initialSlug }) {
   function reset() {
     setStage('search');
     setDone(null);
+    setShowVoucherModal(false);
     setRoom(null);
     setResults([]);
     setPoolAddonId('none');
@@ -718,10 +721,58 @@ export default function BookingFlow({ initialSlug }) {
             <p className="muted" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
               <i className="fas fa-comment-sms" /> SMS ping sent{phone ? ` to ${phone}` : ''} · check-in 2:00 PM
             </p>
-            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 26 }}>
-              <button className="btn btn-ghost btn-sm" onClick={reset}>Book another stay</button>
-              <a className="btn btn-sky btn-sm" href="/my-bookings">My bookings</a>
+
+            {/* LUXURY RESORT VOUCHER & FOLIO TRIGGER CARD */}
+            <div style={{
+              margin: '22px auto',
+              maxWidth: 520,
+              padding: '16px 20px',
+              borderRadius: 16,
+              background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(15, 23, 42, 0.85))',
+              border: '1.5px solid rgba(56, 189, 248, 0.4)',
+              textAlign: 'left',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 16,
+              boxShadow: '0 8px 30px rgba(0,0,0,0.3)',
+            }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em', color: '#38BDF8' }}>
+                    <i className="fas fa-certificate" style={{ marginRight: 4 }} /> Official Folio Voucher Ready
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#FFFFFF' }}>
+                  Digital Pass & RFID Access Folio
+                </div>
+                <div style={{ fontSize: '0.78rem', color: '#94A3B8', marginTop: 2 }}>
+                  30% downpayment breakdown, printable PDF receipt & contactless pass.
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn btn-sky btn-sm"
+                onClick={() => setShowVoucherModal(true)}
+                style={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                <i className="fas fa-receipt" /> View Voucher
+              </button>
             </div>
+
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 18, flexWrap: 'wrap' }}>
+              <button className="btn btn-ghost btn-sm" onClick={reset}>Book another stay</button>
+              <button className="btn btn-sky btn-sm" onClick={() => setShowVoucherModal(true)}>
+                <i className="fas fa-receipt" style={{ marginRight: 5 }} /> Save / Print Voucher
+              </button>
+              <a className="btn btn-ghost btn-sm" href="/my-bookings">My bookings</a>
+            </div>
+
+            <VoucherModal
+              isOpen={showVoucherModal}
+              voucher={normalizeVoucherData(done)}
+              onClose={() => setShowVoucherModal(false)}
+            />
           </div>
         )}
       </div>

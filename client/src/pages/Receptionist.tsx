@@ -4,6 +4,7 @@ import '../styles/receptionist.css';
 import { api } from '../lib/api.ts';
 import { fmtDate } from '../lib/format.ts';
 import { toast } from '../components/Toasts.tsx';
+import { VoucherModal, normalizeVoucherData } from '../components/receipt';
 
 export default function Receptionist() {
   const { profile, adminProfile, signIn, adminSignIn } = useAuth();
@@ -13,6 +14,7 @@ export default function Receptionist() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
+  const [inspectedVoucher, setInspectedVoucher] = useState<any>(null);
 
   useEffect(() => {
     if (currentProf && ['receptionist', 'administrator', 'staff', 'admin'].includes(currentProf.role)) {
@@ -173,6 +175,22 @@ export default function Receptionist() {
                           <i className="fas fa-key" style={{ marginRight: 5 }} /> Check-out
                         </button>
                       )}
+                      <button
+                        className="act-btn"
+                        onClick={() => setInspectedVoucher(b)}
+                        style={{
+                          marginLeft: 6,
+                          borderColor: '#38BDF8',
+                          color: '#38BDF8',
+                          background: 'rgba(56, 189, 248, 0.08)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                        }}
+                        title="Inspect or print guest folio voucher"
+                      >
+                        <i className="fas fa-receipt" /> Folio
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -181,6 +199,13 @@ export default function Receptionist() {
           </div>
         )}
       </div>
+
+      {/* GUEST FOLIO VOUCHER INSPECTION MODAL */}
+      <VoucherModal
+        isOpen={Boolean(inspectedVoucher)}
+        voucher={inspectedVoucher ? normalizeVoucherData(inspectedVoucher) : null}
+        onClose={() => setInspectedVoucher(null)}
+      />
     </div>
   );
 }

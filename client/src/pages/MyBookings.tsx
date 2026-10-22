@@ -9,6 +9,7 @@ import { money, fmtDate } from '../lib/format.ts';
 import { toast } from '../components/Toasts.tsx';
 import StatusPill from '../components/StatusPill.tsx';
 import StatusTimelineModal from '../components/StatusTimelineModal.tsx';
+import { VoucherModal, normalizeVoucherData } from '../components/receipt';
 
 function to11Digits(val: string): string {
   if (!val) return '';
@@ -28,6 +29,7 @@ export default function MyBookings() {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [timelineBooking, setTimelineBooking] = useState<any>(null);
+  const [selectedVoucher, setSelectedVoucher] = useState<any>(null);
   const [revModal, setRevModal] = useState(null);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
@@ -350,13 +352,23 @@ export default function MyBookings() {
                 <strong>Manifest Pass:</strong> {profile?.full_name || 'Guest'} · <strong>Phone:</strong> {profile?.phone || '09XXXXXXXXX'} · <strong>Emergency:</strong> {profile?.emergency_contact || 'None'}
               </span>
             </div>
-            <button
-              type="button"
-              onClick={() => setProfOpen(true)}
-              style={{ background: 'none', border: 'none', color: '#38BDF8', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', padding: 0 }}
-            >
-              Update Pass Details →
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="btn btn-sky btn-sm"
+                onClick={() => setSelectedVoucher(activeStay)}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.78rem', padding: '5px 12px' }}
+              >
+                <i className="fas fa-receipt" /> View Voucher & Pass
+              </button>
+              <button
+                type="button"
+                onClick={() => setProfOpen(true)}
+                style={{ background: 'none', border: 'none', color: '#38BDF8', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+              >
+                Update Pass Details →
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -432,6 +444,24 @@ export default function MyBookings() {
                     />
                   </div>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <button
+                      className="act-btn"
+                      style={{
+                        padding: '6px 14px',
+                        borderRadius: 8,
+                        fontSize: '.82rem',
+                        borderColor: '#38BDF8',
+                        color: '#38BDF8',
+                        background: 'rgba(56, 189, 248, 0.08)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                      }}
+                      onClick={() => setSelectedVoucher(b)}
+                      title="View and print luxury folio voucher"
+                    >
+                      <i className="fas fa-receipt" /> Voucher
+                    </button>
                     {['pending', 'confirmed'].includes(b.status) && b.payment_status !== 'refund_pending' && b.payment_status !== 'refunded' && (
                       <button className="act-btn" style={{ padding: '6px 14px', borderRadius: 8, fontSize: '.82rem' }} onClick={() => cancel(b.id)}>
                         Cancel
@@ -863,6 +893,13 @@ export default function MyBookings() {
         isOpen={Boolean(timelineBooking)}
         onClose={() => setTimelineBooking(null)}
         viewerRole="customer"
+      />
+
+      {/* LUXURY RESORT VOUCHER & FOLIO MODAL */}
+      <VoucherModal
+        isOpen={Boolean(selectedVoucher)}
+        voucher={selectedVoucher ? normalizeVoucherData(selectedVoucher) : null}
+        onClose={() => setSelectedVoucher(null)}
       />
     </div>
   );
