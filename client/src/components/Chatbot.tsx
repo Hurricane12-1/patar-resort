@@ -15,14 +15,64 @@ const DEFAULT_WELCOME = {
   is_ai: true,
 };
 
-const DEFAULT_CHIPS = [
-  '🏡 Room Rates & Cottages',
-  '⏰ Check-in & Check-out Times',
-  '🏊 Resort Amenities & Pool',
-  '💳 30% Downpayment Info',
-  '📍 Cape Bolinao Lighthouse',
-  '👨‍👩‍👧‍👦 Recommend a room for a family',
+export interface ChatChip {
+  icon: string;
+  label: string;
+}
+
+const DEFAULT_CHIPS: ChatChip[] = [
+  { icon: 'fas fa-house-chimney', label: 'Room Rates & Cottages' },
+  { icon: 'fas fa-clock', label: 'Check-in & Check-out Times' },
+  { icon: 'fas fa-person-swimming', label: 'Resort Amenities & Pool' },
+  { icon: 'fas fa-credit-card', label: '30% Downpayment Info' },
+  { icon: 'fas fa-location-dot', label: 'Cape Bolinao Lighthouse' },
+  { icon: 'fas fa-users', label: 'Recommend a room for a family' },
 ];
+
+const getChipDetails = (chip: ChatChip | string): ChatChip => {
+  if (typeof chip !== 'string') {
+    return {
+      icon: chip.icon || 'fas fa-comment-dots',
+      label: chip.label,
+    };
+  }
+
+  let label = chip.trim();
+  let icon = 'fas fa-comment-dots';
+
+  // Emoji prefix matches & removal
+  if (/^(?:\uD83C\uDFE1|\uD83C\uDFE0)\s*/.test(label) || /room|cottage|villa|suite|rate/i.test(label)) {
+    icon = 'fas fa-house-chimney';
+    label = label.replace(/^(?:\uD83C\uDFE1|\uD83C\uDFE0)\s*/, '');
+  } else if (/^\u23F0\s*/.test(label) || /check-in|check-out|time|hour|schedule/i.test(label)) {
+    icon = 'fas fa-clock';
+    label = label.replace(/^\u23F0\s*/, '');
+  } else if (/^\uD83C\uDFCA\s*/.test(label) || /pool|amenit|swim|beach/i.test(label)) {
+    icon = 'fas fa-person-swimming';
+    label = label.replace(/^\uD83C\uDFCA\s*/, '');
+  } else if (/^\uD83D\uDCB3\s*/.test(label) || /downpayment|payment|credit|card|refund/i.test(label)) {
+    icon = 'fas fa-credit-card';
+    label = label.replace(/^\uD83D\uDCB3\s*/, '');
+  } else if (/^\uD83D\uDCCD\s*/.test(label) || /lighthouse|bolinao|attraction|direction|location|how to get/i.test(label)) {
+    icon = 'fas fa-location-dot';
+    label = label.replace(/^\uD83D\uDCCD\s*/, '');
+  } else if (/^(?:\uD83D\uDC68[\u200D\uD83D\uDC69\uD83D\uDC67\uD83D\uDC66]+|\uD83D\uDC68\uD83D\uDC69\uD83D\uDC67\uD83D\uDC66)\s*/.test(label) || /family|group|guest|pax|people/i.test(label)) {
+    icon = 'fas fa-users';
+    label = label.replace(/^(?:\uD83D\uDC68[\u200D\uD83D\uDC69\uD83D\uDC67\uD83D\uDC66]+|\uD83D\uDC68\uD83D\uDC69\uD83D\uDC67\uD83D\uDC66)\s*/, '');
+  } else if (/reservation|booking|status/i.test(label)) {
+    icon = 'fas fa-calendar-check';
+  } else if (/manager|agent|duty|staff|concierge/i.test(label)) {
+    icon = 'fas fa-user-tie';
+  } else if (/ai|bot/i.test(label)) {
+    icon = 'fas fa-robot';
+  } else if (/phone|call|hotline/i.test(label)) {
+    icon = 'fas fa-phone';
+  } else if (/policy|rules|guideline/i.test(label)) {
+    icon = 'fas fa-clipboard-list';
+  }
+
+  return { icon, label };
+};
 
 export default function Chatbot() {
   const { session } = useAuth();
@@ -45,7 +95,7 @@ export default function Chatbot() {
     } catch {}
     return [DEFAULT_WELCOME];
   });
-  const [chips, setChips] = useState<string[]>(DEFAULT_CHIPS);
+  const [chips, setChips] = useState<Array<ChatChip | string>>(DEFAULT_CHIPS);
   const [typing, setTyping] = useState(false);
   const [text, setText] = useState('');
   const [isTypingPrompt, setIsTypingPrompt] = useState(false);
@@ -976,17 +1026,20 @@ export default function Chatbot() {
               >
                 <span>✦ Suggested prompts:</span>
               </div>
-              {chips.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => typePrompt(c)}
-                  title={`Click word to type prompt: "${c}"`}
-                  className="chat-chip-btn"
-                >
-                  {c}
-                </button>
-              ))}
+              {chips.map((c, idx) => {
+                const item = getChipDetails(c);
+                return (
+                  <button
+                    key={`${item.label}-${idx}`}
+                    type="button"
+                    onClick={() => typePrompt(item.label)}
+                    title={`Click word to type prompt: "${item.label}"`}
+                    className="chat-chip-btn"
+                  >
+                    <i className={item.icon} style={{ marginRight: 6 }} />{item.label}
+                  </button>
+                );
+              })}
             </div>
           )}
 

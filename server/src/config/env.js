@@ -52,7 +52,7 @@ export const env = {
   SMTP_SECURE: process.env.SMTP_SECURE !== 'false',
   SMTP_USER: getEnv('SMTP_USER') || getEnv('GOOGLE_SMTP_USER') || getEnv('GMAIL_USER') || '',
   SMTP_PASS: getEnv('SMTP_PASS') || getEnv('GOOGLE_SMTP_PASS') || getEnv('GMAIL_APP_PASSWORD') || '',
-  SMTP_FROM: getEnv('SMTP_FROM') || getEnv('GOOGLE_SMTP_FROM') || 'J & D Beach House <noreply@jdbeachhouse.ph>',
+  SMTP_FROM: getEnv('SMTP_FROM') || getEnv('GOOGLE_SMTP_FROM') || 'Rock View Beach Resort <noreply@rockviewresort.ph>',
   REDIS_URL: getEnv('REDIS_URL', 'redis://127.0.0.1:6379'),
   REDIS_ENABLED: process.env.REDIS_ENABLED === 'true' || (!isRender && process.env.REDIS_ENABLED !== 'false' && Boolean(process.env.REDIS_URL)),
   LOAD_BALANCER_PORT: parseInt(process.env.LOAD_BALANCER_PORT || '8080', 10),

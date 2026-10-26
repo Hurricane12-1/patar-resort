@@ -141,6 +141,8 @@ export function AuthProvider({ children }) {
 
   const [authOpen, setAuthOpen] = useState(false);
   const [needsProfileCompletion, setNeedsProfileCompletion] = useState(false);
+  const [pendingGoogleUser, setPendingGoogleUser] = useState<any>(null);
+  const [googleDevCode, setGoogleDevCode] = useState<string>('');
 
   // Synchronize Customer Session & Profile with sessionStorage
   useEffect(() => {
@@ -237,6 +239,34 @@ export function AuthProvider({ children }) {
             }
           } else {
             // Customer public website login
+            const userEmail = s.user?.email || '';
+            const isGoogleUser = s.user?.app_metadata?.provider === 'google' || userEmail.endsWith('@gmail.com');
+            const isRemembered = Boolean(
+              typeof localStorage !== 'undefined' &&
+              localStorage.getItem('jd_remember_device_' + userEmail) &&
+              Number(localStorage.getItem('jd_remember_device_' + userEmail)) > Date.now()
+            );
+            const isSessionVerified = Boolean(
+              typeof sessionStorage !== 'undefined' &&
+              sessionStorage.getItem('jd_2fa_verified_' + userEmail) === 'true'
+            );
+
+            // Mandatory 2FA for Google login proposed entry unless remembered/verified
+            if (isGoogleUser && !isRemembered && !isSessionVerified) {
+              setPendingGoogleUser({ session: s, profile: finalProfile });
+              api.initiateGoogle2FA({
+                email: userEmail,
+                fullName: finalProfile.full_name,
+                userId: s.user.id,
+                provider: 'google',
+              }).then((res: any) => {
+                if (res?.dev_code_preview) setGoogleDevCode(res.dev_code_preview);
+              }).catch(() => {});
+
+              setAuthOpen(true);
+              toast(`🔐 2FA verification code dispatched to your Gmail (${userEmail}) for proposed entry! You have 1 minute to confirm.`);
+              return;
+            }
             setCustomerSession(s);
             setCustomerProfile({ ...finalProfile, role: 'customer' });
             if (typeof sessionStorage !== 'undefined') {
@@ -747,6 +777,54 @@ export function AuthProvider({ children }) {
       });
       if (res.error) throw res.error;
       return res.data;
+    },
+    pendingGoogleUser,
+    googleDevCode,
+    confirmGoogle2FA: async (code: string, rememberDevice: boolean) => {
+      if (!pendingGoogleUser) throw new Error('No pending Google entry session found.');
+      const { session: s, profile: finalProfile } = pendingGoogleUser;
+      const userEmail = s.user?.email || '';
+
+      const res = await api.confirmSignup2FA(userEmail, code, rememberDevice);
+
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem('jd_2fa_verified_' + userEmail, 'true');
+        sessionStorage.setItem('jd_customer_session', JSON.stringify(s));
+        if (s.access_token) sessionStorage.setItem('jd_customer_jwt', s.access_token);
+        sessionStorage.setItem('jd_customer_profile', JSON.stringify(finalProfile));
+      }
+
+      if (rememberDevice && typeof localStorage !== 'undefined') {
+        localStorage.setItem('jd_remember_device_' + userEmail, String(Date.now() + 30 * 86400000));
+      }
+
+      if (s.user?.id) {
+        supabase.from('profiles').upsert({
+          id: s.user.id,
+          email: s.user.email,
+          full_name: finalProfile.full_name,
+          first_name: finalProfile.first_name,
+          last_name: finalProfile.last_name,
+          avatar_url: finalProfile.avatar_url,
+          role: 'customer',
+          two_factor_verified: true,
+        }, { onConflict: 'id' }).then(() => {}).catch(() => {});
+      }
+
+      setCustomerSession(s);
+      setCustomerProfile({ ...finalProfile, role: 'customer' });
+      setPendingGoogleUser(null);
+      setGoogleDevCode('');
+      setAuthOpen(false);
+      toast(`Welcome to Rock View Beach Resort, ${finalProfile.full_name || 'Guest'}! 2FA verified ✦`);
+      return res;
+    },
+    cancelGoogle2FA: async () => {
+      setPendingGoogleUser(null);
+      setGoogleDevCode('');
+      await supabase.auth.signOut().catch(() => {});
+      setAuthOpen(false);
+      toast('Google sign-in cancelled. Account entry requires 2FA confirmation.', true);
     },
     signInWithFacebook: async () => {
       const redirectUrl = `${window.location.origin}/`;

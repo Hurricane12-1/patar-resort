@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuth, generateAccountEmail, to11Digits } from '../context/AuthContext.tsx';
 import { api } from '../lib/api.ts';
 import { toast } from './Toasts.tsx';
@@ -8,6 +8,7 @@ export default function AuthModal() {
     session, profile, authOpen, setAuthOpen,
     needsProfileCompletion, setNeedsProfileCompletion,
     signIn, signInWithGoogle, signInWithFacebook, updateProfile,
+    pendingGoogleUser, googleDevCode, confirmGoogle2FA, cancelGoogle2FA,
   } = useAuth();
 
   const [mode, setMode] = useState<'in' | 'up' | '2fa' | 'recovery'>('in');
@@ -39,6 +40,15 @@ export default function AuthModal() {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [confirmationTimeLeft, setConfirmationTimeLeft] = useState(60); // 1-minute (60s) confirmation gate
   const [confirmationExpiredMsg, setConfirmationExpiredMsg] = useState('');
+  const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
+  const [rememberDevice, setRememberDevice] = useState<boolean>(true);
+  const digit0Ref = useRef<HTMLInputElement>(null);
+  const digit1Ref = useRef<HTMLInputElement>(null);
+  const digit2Ref = useRef<HTMLInputElement>(null);
+  const digit3Ref = useRef<HTMLInputElement>(null);
+  const digit4Ref = useRef<HTMLInputElement>(null);
+  const digit5Ref = useRef<HTMLInputElement>(null);
+  const digitRefs = [digit0Ref, digit1Ref, digit2Ref, digit3Ref, digit4Ref, digit5Ref];
 
   // Account Recovery State
   const [recoveryStep, setRecoveryStep] = useState(1); // 1 = Request Code, 2 = Verify Code & Reset
@@ -75,8 +85,84 @@ export default function AuthModal() {
     toast('⏱️ 1-Minute confirmation time expired! Unconfirmed account was removed. Try Again, please make sure you confirm.', true);
   }
 
+  // Synchronize Google OAuth pending 2FA state
+  useEffect(() => {
+    if (pendingGoogleUser) {
+      setMode('2fa');
+      setSignupEmail(pendingGoogleUser.session?.user?.email || '');
+      setSignupName(pendingGoogleUser.profile?.full_name || 'Valued Guest');
+      setSignupProvider('gmail');
+      setConfirmationTimeLeft(60);
+      setResendCooldown(30);
+      if (googleDevCode) {
+        setDevCodePreview(googleDevCode);
+      }
+    }
+  }, [pendingGoogleUser, googleDevCode]);
+
+  function handleDigitChange(index: number, val: string) {
+    const clean = val.replace(/\D/g, '');
+    if (clean.length > 1) {
+      const digits = clean.slice(0, 6).split('');
+      const next = ['', '', '', '', '', ''];
+      for (let i = 0; i < 6; i++) {
+        next[i] = digits[i] || '';
+      }
+      setOtpDigits(next);
+      setSignupCode(next.join(''));
+      const nextIdx = Math.min(5, digits.length);
+      digitRefs[nextIdx]?.current?.focus();
+      return;
+    }
+
+    const next = [...otpDigits];
+    next[index] = clean.slice(-1);
+    setOtpDigits(next);
+    setSignupCode(next.join(''));
+
+    if (clean && index < 5) {
+      digitRefs[index + 1]?.current?.focus();
+    }
+  }
+
+  function handleDigitKeyDown(index: number, e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Backspace' && !otpDigits[index] && index > 0) {
+      digitRefs[index - 1]?.current?.focus();
+    }
+  }
+
+  function handleDigitPaste(e: React.ClipboardEvent<HTMLInputElement>) {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (!pasted) return;
+    const digits = pasted.split('');
+    const next = ['', '', '', '', '', ''];
+    for (let i = 0; i < 6; i++) {
+      next[i] = digits[i] || '';
+    }
+    setOtpDigits(next);
+    setSignupCode(next.join(''));
+    const focusIdx = Math.min(5, digits.length);
+    digitRefs[focusIdx]?.current?.focus();
+  }
+
+  function handleAutoFillOTP(codeToFill: string) {
+    const clean = String(codeToFill).trim().slice(0, 6);
+    setSignupCode(clean);
+    const digits = clean.split('');
+    const next = ['', '', '', '', '', ''];
+    for (let i = 0; i < 6; i++) {
+      next[i] = digits[i] || '';
+    }
+    setOtpDigits(next);
+  }
+
   // Handle manual cancel from 2FA: auto-remove unconfirmed account
   async function handleCancel2FA() {
+    if (pendingGoogleUser) {
+      await cancelGoogle2FA();
+      return;
+    }
     if (signupEmail) {
       try {
         await api.expireSignup(signupEmail);
@@ -358,14 +444,23 @@ export default function AuthModal() {
   // Submit 2FA Confirmation Code & Finalize Account Creation
   async function submitSignup2FA(e: React.FormEvent) {
     e.preventDefault();
-    if (!signupCode || signupCode.trim().length !== 6) {
+    const finalCode = (signupCode.trim() || otpDigits.join('')).trim();
+    if (!finalCode || finalCode.length !== 6) {
       toast('Please enter the 6-digit 2FA confirmation code.', true);
       return;
     }
 
     setBusy(true);
     try {
-      const res = await api.confirmSignup2FA(signupEmail, signupCode.trim());
+      if (pendingGoogleUser) {
+        await confirmGoogle2FA(finalCode, rememberDevice);
+        return;
+      }
+
+      const res = await api.confirmSignup2FA(signupEmail, finalCode, rememberDevice);
+      if (rememberDevice && typeof localStorage !== 'undefined') {
+        localStorage.setItem('jd_remember_device_' + signupEmail, String(Date.now() + 30 * 86400000));
+      }
       toast(res.message || 'Account verified and finalized! Logging you in…');
 
       // Automatically sign in the newly finalized client account
@@ -1093,166 +1188,268 @@ export default function AuthModal() {
           {/* ============================================================ */}
           {/* MODE: 2FA CONFIRMATION STEP BEFORE ACCOUNT FINALIZATION */}
           {/* ============================================================ */}
-          {mode === '2fa' && (
-            <div style={{ marginTop: 4 }}>
-              {/* 1-MINUTE TIME-GATED CONFIRMATION COUNTDOWN */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                background: confirmationTimeLeft < 15 ? 'rgba(239, 68, 68, 0.22)' : 'rgba(2, 132, 199, 0.16)',
-                border: confirmationTimeLeft < 15 ? '1.5px solid #EF4444' : '1px solid rgba(56, 189, 248, 0.4)',
-                borderRadius: 10,
-                padding: '10px 14px',
-                marginBottom: 14,
-                transition: 'all 0.3s ease',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: '1.4rem' }}>{confirmationTimeLeft < 15 ? '⏳' : '⏱️'}</span>
-                  <div>
-                    <div style={{ fontSize: '0.8rem', fontWeight: 800, color: confirmationTimeLeft < 15 ? '#FCA5A5' : '#7DD3FC' }}>
-                      1-MINUTE CONFIRMATION GATE
-                    </div>
-                    <div style={{ fontSize: '0.72rem', color: '#94A3B8' }}>
-                      Account registered inside system. Must confirm within 60s or it is auto-removed.
-                    </div>
-                  </div>
-                </div>
-                <div style={{
-                  fontFamily: 'Consolas, monospace',
-                  fontSize: '1.4rem',
-                  fontWeight: 800,
-                  color: confirmationTimeLeft < 15 ? '#EF4444' : '#38BDF8',
-                }}>
-                  00:{confirmationTimeLeft.toString().padStart(2, '0')}
-                </div>
-              </div>
-
-              <div style={{
-                background: 'rgba(14, 165, 233, 0.12)',
-                border: '1px solid rgba(56, 189, 248, 0.35)',
-                borderRadius: 12,
-                padding: '16px',
-                marginBottom: 16,
-                textAlign: 'center',
-              }}>
-                <i className="fas fa-lock" style={{ fontSize: '1.6rem', display: 'block', marginBottom: 4, color: '#38BDF8' }} />
-                <h4 style={{ color: '#FFFFFF', margin: '0 0 6px', fontSize: '1.1rem' }}>Two-Factor Confirmation</h4>
-                <p style={{ color: '#CBD5E1', fontSize: '0.82rem', margin: 0, lineHeight: 1.5 }}>
-                  A secure 6-digit confirmation code was sent to <strong>{signupEmail}</strong> via Google Mail (SMTP)
-                  and your mobile phone. Enter it below to finalize your client account creation.
-                </p>
-                <div style={{ marginTop: 8, fontSize: '0.74rem', color: '#94A3B8' }}>
-                  Client Name: <strong style={{ color: '#38BDF8' }}>{signupName}</strong>
-                </div>
-              </div>
-
-              {/* DEV PREVIEW HELPER FOR AUTOMATION TESTING */}
-              {devCodePreview && (
+          {mode === '2fa' && (() => {
+            const isGoogleEntry = Boolean(pendingGoogleUser || signupProvider === 'gmail' || signupEmail.toLowerCase().endsWith('@gmail.com'));
+            return (
+              <div style={{ marginTop: 4 }}>
+                {/* 1-MINUTE TIME-GATED CONFIRMATION COUNTDOWN */}
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  background: 'rgba(16, 185, 129, 0.15)',
-                  border: '1px solid rgba(16, 185, 129, 0.4)',
-                  padding: '8px 12px',
-                  borderRadius: 8,
+                  background: confirmationTimeLeft < 15 ? 'rgba(239, 68, 68, 0.22)' : 'rgba(2, 132, 199, 0.16)',
+                  border: confirmationTimeLeft < 15 ? '1.5px solid #EF4444' : '1px solid rgba(56, 189, 248, 0.4)',
+                  borderRadius: 12,
+                  padding: '10px 14px',
                   marginBottom: 14,
+                  transition: 'all 0.3s ease',
                 }}>
-                  <span style={{ fontSize: '0.76rem', color: '#6EE7B7' }}>
-                    <><i className="fas fa-bolt" style={{ color: '#F59E0B', marginRight: 4 }} /> <strong>Automated Dev Preview:</strong></> Code is <code>{devCodePreview}</code>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setSignupCode(devCodePreview)}
-                    style={{
-                      background: '#10B981',
-                      border: 'none',
-                      color: '#FFFFFF',
-                      fontSize: '0.72rem',
-                      fontWeight: 700,
-                      padding: '4px 8px',
-                      borderRadius: 6,
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <i
+                      className={confirmationTimeLeft < 15 ? 'fas fa-hourglass-half' : 'fas fa-stopwatch'}
+                      style={{
+                        fontSize: '1.4rem',
+                        color: confirmationTimeLeft < 15 ? '#EF4444' : '#38BDF8',
+                        animation: confirmationTimeLeft < 15 ? 'pulse 1s infinite' : 'none',
+                      }}
+                    />
+                    <div>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 800, color: confirmationTimeLeft < 15 ? '#FCA5A5' : '#7DD3FC', letterSpacing: '0.04em' }}>
+                        1-MINUTE TIME-GATED SECURITY GATE
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: '#94A3B8' }}>
+                        {isGoogleEntry ? 'Google entry proposal active. Code auto-expires in 60s.' : 'Account registered inside system. Must confirm within 60s.'}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{
+                    fontFamily: 'Consolas, monospace',
+                    fontSize: '1.4rem',
+                    fontWeight: 800,
+                    color: confirmationTimeLeft < 15 ? '#EF4444' : '#38BDF8',
+                    letterSpacing: '0.05em',
+                  }}>
+                    00:{confirmationTimeLeft.toString().padStart(2, '0')}
+                  </div>
+                </div>
+
+                {/* DYNAMIC CONTEXT CARD WITH FAS & GA ICONS */}
+                <div style={{
+                  background: 'rgba(14, 165, 233, 0.12)',
+                  border: '1px solid rgba(56, 189, 248, 0.35)',
+                  borderRadius: 14,
+                  padding: '16px',
+                  marginBottom: 16,
+                  textAlign: 'center',
+                }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44, borderRadius: '50%', background: 'rgba(2, 132, 199, 0.25)', marginBottom: 8 }}>
+                    {isGoogleEntry ? (
+                      <i className="fab fa-google" style={{ fontSize: '1.4rem', color: '#EA4335' }} />
+                    ) : (
+                      <i className="fas fa-shield-halved" style={{ fontSize: '1.4rem', color: '#38BDF8' }} />
+                    )}
+                  </div>
+                  <h4 style={{ color: '#FFFFFF', margin: '0 0 6px', fontSize: '1.15rem', fontWeight: 800 }}>
+                    {isGoogleEntry ? 'Google Sign-In Entry Proposal' : 'Two-Factor Authentication'}
+                  </h4>
+                  <p style={{ color: '#CBD5E1', fontSize: '0.82rem', margin: 0, lineHeight: 1.5 }}>
+                    <i className="fas fa-paper-plane" style={{ color: '#38BDF8', marginRight: 6 }} />
+                    A 6-digit verification code was dispatched to <strong>{signupEmail}</strong> via Google Mail (SMTP).
+                    Authorize this entry proposal to activate your resort access.
+                  </p>
+                  <div style={{ marginTop: 8, fontSize: '0.76rem', color: '#94A3B8', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                    <i className="fas fa-user-check" style={{ color: '#10B981' }} />
+                    Account Owner: <strong style={{ color: '#38BDF8' }}>{signupName}</strong>
+                  </div>
+                </div>
+
+                {/* DEV PREVIEW HELPER FOR AUTOMATION TESTING */}
+                {devCodePreview && (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    background: 'rgba(16, 185, 129, 0.15)',
+                    border: '1px solid rgba(16, 185, 129, 0.4)',
+                    padding: '8px 12px',
+                    borderRadius: 8,
+                    marginBottom: 14,
+                  }}>
+                    <span style={{ fontSize: '0.76rem', color: '#6EE7B7' }}>
+                      <><i className="fas fa-bolt" style={{ color: '#F59E0B', marginRight: 4 }} /> <strong>Automated Dev Preview:</strong></> Code is <code>{devCodePreview}</code>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleAutoFillOTP(devCodePreview)}
+                      style={{
+                        background: '#10B981',
+                        border: 'none',
+                        color: '#FFFFFF',
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        padding: '4px 10px',
+                        borderRadius: 6,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                      }}
+                    >
+                      <i className="fas fa-magic" /> Auto-Fill 2FA
+                    </button>
+                  </div>
+                )}
+
+                <form onSubmit={submitSignup2FA}>
+                  <div className="field">
+                    <label style={{ textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, letterSpacing: '0.08em', fontSize: '0.76rem' }}>
+                      <i className="fas fa-key" style={{ color: '#38BDF8' }} /> ENTER 6-DIGIT VERIFICATION CODE
+                    </label>
+
+                    {/* SEGMENTED 6-DIGIT OTP INPUT BOXES */}
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: 8, margin: '12px 0 6px' }}>
+                      {otpDigits.map((digit, idx) => (
+                        <input
+                          key={idx}
+                          ref={digitRefs[idx]}
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          maxLength={1}
+                          value={digit}
+                          autoFocus={idx === 0}
+                          onChange={(e) => handleDigitChange(idx, e.target.value)}
+                          onKeyDown={(e) => handleDigitKeyDown(idx, e)}
+                          onPaste={handleDigitPaste}
+                          style={{
+                            width: '46px',
+                            height: '56px',
+                            fontSize: '1.65rem',
+                            fontWeight: 800,
+                            textAlign: 'center',
+                            borderRadius: '10px',
+                            background: 'rgba(15, 23, 42, 0.85)',
+                            border: digit ? '2px solid #38BDF8' : '1.5px solid rgba(56, 189, 248, 0.35)',
+                            color: '#38BDF8',
+                            boxShadow: digit ? '0 0 12px rgba(56, 189, 248, 0.35)' : 'none',
+                            transition: 'all 0.2s ease',
+                            outline: 'none',
+                          }}
+                        />
+                      ))}
+                    </div>
+
+                    <span className="small muted" style={{ display: 'block', textAlign: 'center', marginTop: 6, fontSize: '0.72rem' }}>
+                      ⏱️ Token strictly valid for 1 minute (60s) · Auto-advances across digits
+                    </span>
+                  </div>
+
+                  {/* ============================================================ */}
+                  {/* REMEMBER NOTICE INFO & SECURITY ADVISORY (THE MUST) */}
+                  {/* ============================================================ */}
+                  <div style={{
+                    background: 'rgba(15, 23, 42, 0.75)',
+                    border: '1px solid rgba(245, 158, 11, 0.4)',
+                    borderRadius: 12,
+                    padding: '12px 14px',
+                    margin: '16px 0',
+                    textAlign: 'left',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                      <i className="fas fa-user-shield" style={{ color: '#F59E0B', fontSize: '1rem' }} />
+                      <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#F59E0B', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                        Remember Notice & Security Info
+                      </span>
+                    </div>
+
+                    {/* TRUSTED DEVICE REMEMBER CHECKBOX */}
+                    <label style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
                       cursor: 'pointer',
-                    }}
-                  >
-                    Auto-Fill 2FA
-                  </button>
-                </div>
-              )}
+                      padding: '8px 10px',
+                      background: 'rgba(2, 132, 199, 0.12)',
+                      border: '1px solid rgba(56, 189, 248, 0.3)',
+                      borderRadius: 8,
+                      marginBottom: 10,
+                      userSelect: 'none',
+                    }}>
+                      <input
+                        type="checkbox"
+                        checked={rememberDevice}
+                        onChange={(e) => setRememberDevice(e.target.checked)}
+                        style={{ accentColor: '#0EA5E9', width: 16, height: 16, cursor: 'pointer' }}
+                      />
+                      <span style={{ fontSize: '0.78rem', color: '#E2E8F0', fontWeight: 600 }}>
+                        <i className="fas fa-laptop-code" style={{ color: '#38BDF8', marginRight: 6 }} />
+                        Remember this trusted device for 30 days
+                      </span>
+                    </label>
 
-              <form onSubmit={submitSignup2FA}>
-                <div className="field">
-                  <label style={{ textAlign: 'center', display: 'block', letterSpacing: '0.08em' }}>
-                    ENTER 6-DIGIT 2FA CONFIRMATION CODE
-                  </label>
-                  <input
-                    type="text"
-                    maxLength={6}
-                    required
-                    autoFocus
-                    value={signupCode}
-                    placeholder="••••••"
-                    style={{
-                      letterSpacing: '0.38em',
-                      fontSize: '1.5rem',
-                      textAlign: 'center',
-                      fontWeight: 800,
-                      background: 'rgba(15, 23, 42, 0.8)',
-                      borderColor: '#0284C7',
-                      color: '#38BDF8',
-                    }}
-                    onChange={(e) => setSignupCode(e.target.value.trim())}
-                  />
-                  <span className="small muted" style={{ display: 'block', textAlign: 'center', marginTop: 6, fontSize: '0.72rem' }}>
-                    ⏱️ Token strictly valid for 1 minute (60s) · Account automatically removed if unconfirmed
-                  </span>
-                </div>
-
-                <button
-                  className="btn btn-sky"
-                  style={{ width: '100%', justifyContent: 'center', marginTop: 14, padding: '12px', fontSize: '0.96rem' }}
-                  disabled={busy}
-                >
-                  {busy ? 'Verifying 2FA & Finalizing…' : 'Verify 2FA & Finalize Sign-Up ✦'}
-                </button>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
-                  <button
-                    type="button"
-                    disabled={resendCooldown > 0 || busy}
-                    onClick={handleResendSignup2FA}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: resendCooldown > 0 ? '#64748B' : '#38BDF8',
-                      fontSize: '0.82rem',
-                      fontWeight: 600,
-                      cursor: resendCooldown > 0 ? 'default' : 'pointer',
-                      padding: 0,
-                    }}
-                  >
-                    {resendCooldown > 0 ? `Resend Code in ${resendCooldown}s` : 'Resend 2FA Code (1 min)'}
-                  </button>
+                    {/* SECURITY GUIDELINES */}
+                    <ul style={{ margin: 0, paddingLeft: 18, fontSize: '0.73rem', color: '#CBD5E1', lineHeight: 1.55 }}>
+                      <li><strong style={{ color: '#FFFFFF' }}>Keep Code Private:</strong> Never share this 6-digit OTP. Resort staff will <em>never</em> ask for it.</li>
+                      <li><strong style={{ color: '#FFFFFF' }}>Entry Proposal Ping:</strong> An authorization email was dispatched to your Gmail.</li>
+                      <li><strong style={{ color: '#FFFFFF' }}>60s Auto-Expiry:</strong> Unverified proposals are rejected and purged automatically.</li>
+                      <li><strong style={{ color: '#FFFFFF' }}>Unrecognized Activity?</strong> If you did not propose entry, ignore this email and secure your Google account.</li>
+                    </ul>
+                  </div>
 
                   <button
-                    type="button"
-                    onClick={handleCancel2FA}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: 'var(--muted)',
-                      fontSize: '0.82rem',
-                      cursor: 'pointer',
-                      padding: 0,
-                    }}
+                    className="btn btn-sky"
+                    style={{ width: '100%', justifyContent: 'center', marginTop: 10, padding: '12px', fontSize: '0.96rem', display: 'flex', alignItems: 'center', gap: 8 }}
+                    disabled={busy}
                   >
-                    ← Edit Details / Cancel
+                    <i className="fas fa-circle-check" />
+                    {busy ? 'Verifying 2FA & Authorizing Entry…' : isGoogleEntry ? 'Verify 2FA & Authorize Entry ✦' : 'Verify 2FA & Finalize Sign-Up ✦'}
                   </button>
-                </div>
-              </form>
-            </div>
-          )}
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 }}>
+                    <button
+                      type="button"
+                      disabled={resendCooldown > 0 || busy}
+                      onClick={handleResendSignup2FA}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: resendCooldown > 0 ? '#64748B' : '#38BDF8',
+                        fontSize: '0.82rem',
+                        fontWeight: 600,
+                        cursor: resendCooldown > 0 ? 'default' : 'pointer',
+                        padding: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                      }}
+                    >
+                      <i className="fas fa-redo-alt" />
+                      {resendCooldown > 0 ? `Resend Code in ${resendCooldown}s` : 'Resend 2FA Code (60s)'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleCancel2FA}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--muted)',
+                        fontSize: '0.82rem',
+                        cursor: 'pointer',
+                        padding: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                      }}
+                    >
+                      <i className="fas fa-arrow-left" />
+                      {isGoogleEntry ? 'Cancel Entry Proposal' : 'Edit Details / Cancel'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            );
+          })()}
 
 
           {/* ============================================================ */}

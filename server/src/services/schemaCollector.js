@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * J & D Beach House · Schema Collector Service
+ * Rock View Beach Resort · Schema Collector Service
  * Target Architecture: Supabase -> SSL/CERTS -> Schema Collector -> SSL/CERTS -> API
  * Dynamic Table Introspection, Relational Health & SSL Telemetry Engine
  * ============================================================================

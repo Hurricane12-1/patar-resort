@@ -299,7 +299,7 @@ export default function MyBookings() {
                 RFID / ROOM KEYCODE
               </span>
               <div className="keycode-badge" style={{ fontSize: '1.25rem', letterSpacing: '.14em', padding: '10px 18px' }}>
-                {`JD-${activeStay.id.slice(0, 4).toUpperCase()}-${activeStay.check_in.replace(/-/g, '')}`}
+                {`RV-${activeStay.id.slice(0, 4).toUpperCase()}-${activeStay.check_in.replace(/-/g, '')}`}
               </div>
             </div>
           </div>

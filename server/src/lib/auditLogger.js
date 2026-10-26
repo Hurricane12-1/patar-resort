@@ -103,7 +103,7 @@ export async function logAuditEvent({ actor, action, resourceType = 'system', re
     created_at: nowIso,
     action: String(action || 'UNKNOWN_ACTION').toUpperCase(),
     actor_id: reqActor.id || 'system',
-    actor_email: reqActor.email || 'system@janddbeachhouse.ph',
+    actor_email: reqActor.email || 'system@rockviewresort.ph',
     actor_name: reqActor.full_name || reqActor.name || (reqActor.first_name ? `${reqActor.first_name} ${reqActor.last_name || ''}`.trim() : (reqActor.email ? reqActor.email.split('@')[0] : 'System Administrator')),
     role: reqActor.role || 'system',
     actor_role: reqActor.role || 'system',

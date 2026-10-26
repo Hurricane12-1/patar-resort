@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * J & D Beach House · Isolated Modularity Base
+ * Rock View Beach Resort · Isolated Modularity Base
  * Dynamic Module Loader & Fault-Tolerant Auto-Discovery Engine
  * Location: Brgy. Patar, Bolinao, Pangasinan (16.3042° N, 119.7821° E)
  * ============================================================================
@@ -141,7 +141,7 @@ export async function loadDomainPlugin(app, moduleDirPath) {
  * @returns {Promise<Object>} Summary of bootstrap results
  */
 export async function bootstrapFramework(app) {
-  console.log('\n[IMF Framework] Initializing J & D Reserve Isolated Modular Framework (IMF)...');
+  console.log('\n[IMF Framework] Initializing Rock View Isolated Modular Framework (IMF)...');
 
   // 1. Mount framework system inspector routes first (ensures /api/system/modules is always accessible)
   app.use('/api', inspectorRoutes);

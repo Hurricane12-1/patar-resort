@@ -47,7 +47,7 @@ export async function findAvailableServiceAgent() {
           name: receptionist.full_name || `${receptionist.first_name || ''} ${receptionist.last_name || ''}`.trim() || 'Maria Santos',
           role: 'Front Desk Receptionist',
           phone: receptionist.phone || '+63 900 555 0123',
-          email: receptionist.email || 'receptionist@janddbeachhouse.ph',
+          email: receptionist.email || 'receptionist@rockviewresort.ph',
           is_online: true,
         };
       }
@@ -59,7 +59,7 @@ export async function findAvailableServiceAgent() {
           name: staffAgent.full_name || `${staffAgent.first_name || ''} ${staffAgent.last_name || ''}`.trim() || 'Elena Reyes',
           role: 'Front Desk & Guest Concierge',
           phone: staffAgent.phone || '+63 900 555 0123',
-          email: staffAgent.email || 'staff@janddbeachhouse.ph',
+          email: staffAgent.email || 'staff@rockviewresort.ph',
           is_online: true,
         };
       }
@@ -70,7 +70,7 @@ export async function findAvailableServiceAgent() {
         name: adminAgent.full_name || 'Executive Duty Manager',
         role: 'Front Desk Duty Manager',
         phone: adminAgent.phone || '+63 900 555 0123',
-        email: adminAgent.email || 'admin@janddbeachhouse.ph',
+        email: adminAgent.email || 'admin@rockviewresort.ph',
         is_online: true,
       };
     }
@@ -84,7 +84,7 @@ export async function findAvailableServiceAgent() {
     name: 'Maria Santos',
     role: 'Front Desk Receptionist & Guest Concierge',
     phone: '+63 900 555 0123',
-    email: 'receptionist@janddbeachhouse.ph',
+    email: 'receptionist@rockviewresort.ph',
     is_online: true,
   };
 }
@@ -615,7 +615,7 @@ function resortKnowledgeFallback(text, rooms = []) {
   // 2. How to Refund
   if (/how to refund|paano mag\s*refund|process refund|request refund|soli bayad/i.test(t)) {
     return {
-      text: '💸 Paano Mag-Request ng Refund sa Rock View Beach Resort:\n\n1. Ihanda ang inyong Booking Reference ID mula sa confirmation pass o email/SMS.\n2. Makipag-ugnayan sa aming Front Desk team o mag-email sa support@janddbeachhouse.ph kalakip ang inyong reference.\n3. Ive-verify ng reservation officer ang petsa at cancellation eligibility.\n4. Kapag aprubado, maibabalik ang pondo diretso sa inyong GCash, Maya, o Bank Account sa loob ng 3 hanggang 5 business days.',
+      text: '💸 Paano Mag-Request ng Refund sa Rock View Beach Resort:\n\n1. Ihanda ang inyong Booking Reference ID mula sa confirmation pass o email/SMS.\n2. Makipag-ugnayan sa aming Front Desk team o mag-email sa support@rockviewresort.ph kalakip ang inyong reference.\n3. Ive-verify ng reservation officer ang petsa at cancellation eligibility.\n4. Kapag aprubado, maibabalik ang pondo diretso sa inyong GCash, Maya, o Bank Account sa loob ng 3 hanggang 5 business days.',
       chips: ['Refund Policy', 'Contact Service Agent', 'Booking Status'],
       is_ai: true,
     };
@@ -634,7 +634,7 @@ function resortKnowledgeFallback(text, rooms = []) {
   if (/^(hi|hello|hey|musta|kamusta|good morning|good afternoon|good evening|magandang umaga|magandang hapon|magandang gabi|magandang araw|uy|hoy|yo)\b/i.test(t) || t === 'hi' || t === 'hello') {
     return {
       text: 'Mabuhay! Ako si Rock View Bot, ang iyong 24/7 AI Concierge dito sa Rock View Beach Resort sa Patar, Bolinao 🌊\n\nPaano kita matutulungan sa iyong beach getaway ngayon? Pwede kitang tulungan sa room rates, booking, swimming pool, in-house dining, o mga magagandang pasyalan dito sa Bolinao!',
-      chips: ['🏡 Room Rates & Cottages', '🏊 Swimming Pool & Beach', '💳 30% Downpayment Info', '📍 Bolinao Attractions'],
+      chips: ['Room Rates & Cottages', 'Swimming Pool & Beach', '30% Downpayment Info', 'Bolinao Attractions'],
     };
   }
 
@@ -768,14 +768,14 @@ function resortKnowledgeFallback(text, rooms = []) {
   if (/relax|pahinga|bakasyon|ganda|view|tahimik|chill/i.test(t)) {
     return {
       text: '🌊 Dito sa Rock View Beach Resort sa Patar, Bolinao, sadyang idinisenyo ang paligid para sa tahimik at unhurried na bakasyon. Ilang hakbang lamang ang puting buhangin, sariwang simoy ng hanging-dagat, at ginintuang paglubog ng araw sa West Philippine Sea.\n\nNais mo bang tingnan ang aming mga beachfront cottages o kailangan mo ng gabay sa pag-book?',
-      chips: ['🏡 Beachfront Cottages', '📍 Bolinao Attractions', '💳 30% Downpayment'],
+      chips: ['Beachfront Cottages', 'Bolinao Attractions', '30% Downpayment'],
     };
   }
 
   // 16. Default Warm Helpful Local Concierge Guidance
   return {
     text: 'Salamat sa inyong mensahe! Nandito ako bilang 24/7 AI Concierge ng Rock View Beach Resort sa Patar, Bolinao. Matutulungan kita sa:\n\n• **Kuwarto & Presyo**: Rates para sa couples, pamilya, o malalaking barkada\n• **30% Downpayment**: GCash, Maya, at Bank Transfer booking process\n• **Resort Guidelines**: Swimming pool (7 AM–10 PM), pet policy, libreng pagdadala ng pagkain at ihawan\n• **Bolinao Attractions**: Cape Bolinao Lighthouse, Patar Rock Formations, at Enchanted Cave\n\nAno ang nais mong malaman para sa iyong bakasyon?',
-    chips: ['🏡 Room Rates', '🏊 Pool & Amenities', '💳 30% Downpayment', '📍 Bolinao Attractions'],
+    chips: ['Room Rates', 'Pool & Amenities', '30% Downpayment', 'Bolinao Attractions'],
   };
 }
 

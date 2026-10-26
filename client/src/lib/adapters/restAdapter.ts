@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * J & D Beach House · REST API Frontend Adapter
+ * Rock View Beach Resort · REST API Frontend Adapter
  * Consumes: Data Payload 2 (Transactional HTTP/JSON over TCP)
  * Handles: Standard CRUD, authentication, admin endpoints, room inventory
  * ============================================================================

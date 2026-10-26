@@ -44,11 +44,11 @@ export function getCertificateStatus() {
   const certPath = process.env.SSL_CERT_PATH || path.join(certDir, 'cert.pem');
   const caPath = process.env.SSL_CA_PATH || path.join(certDir, 'ca-cert.pem');
 
-  let subject = 'CN=localhost, O=J & D Beach House Management, L=Bolinao, ST=Pangasinan, C=PH';
-  let issuer = 'J & D Beach House Local Root CA - Brgy. Patar, Bolinao';
+  let subject = 'CN=localhost, O=Rock View Beach Resort Management, L=Bolinao, ST=Pangasinan, C=PH';
+  let issuer = 'Rock View Beach Resort Local Root CA - Brgy. Patar, Bolinao';
   let validTo = new Date(Date.now() + 825 * 24 * 60 * 60 * 1000).toISOString();
   let fingerprint = 'SHA256:53:52:D9:01:26:AE:CA:7F:81:E4:0B:4E:F3:61:77:E2:05:DA:4D:B1';
-  let subjectAltName = 'DNS:localhost, DNS:*.localhost, DNS:janddbeachhouse.local, IP:127.0.0.1';
+  let subjectAltName = 'DNS:localhost, DNS:*.localhost, DNS:rockviewresort.local, IP:127.0.0.1';
 
   if (credentials.isSecure && fs.existsSync(certPath)) {
     try {
@@ -66,7 +66,7 @@ export function getCertificateStatus() {
   return {
     ssl_enabled: credentials.isSecure,
     protocol: credentials.isSecure ? 'HTTPS (TLS v1.3)' : 'HTTP (Reverse Proxy SSL)',
-    issuer: credentials.isSecure ? (issuer || 'J & D Beach House Authority') : 'Self-Signed / External Proxy',
+    issuer: credentials.isSecure ? (issuer || 'Rock View Beach Resort Authority') : 'Self-Signed / External Proxy',
     subject,
     subject_alt_names: subjectAltName,
     fingerprint,

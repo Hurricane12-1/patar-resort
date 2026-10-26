@@ -366,7 +366,10 @@ export const api = {
 
   // Client User Sign-Up & 2FA Finalization
   initiateSignup: (body: any) => req('/auth/signup/initiate', { method: 'POST', body }),
-  confirmSignup2FA: (email: string, code: string) => req('/auth/signup/confirm-2fa', { method: 'POST', body: { email, code } }),
+  initiateGoogle2FA: (body: { email: string; fullName?: string; userId?: string; provider?: string }) =>
+    req('/auth/google/initiate-2fa', { method: 'POST', body }),
+  confirmSignup2FA: (email: string, code: string, rememberDevice?: boolean) =>
+    req('/auth/signup/confirm-2fa', { method: 'POST', body: { email, code, rememberDevice } }),
   resendSignup2FA: (email: string) => req('/auth/signup/resend-2fa', { method: 'POST', body: { email } }),
   expireSignup: (email: string) => req('/auth/signup/expire-unconfirmed', { method: 'POST', body: { email } }),
 

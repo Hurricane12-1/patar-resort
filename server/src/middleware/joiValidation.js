@@ -140,6 +140,7 @@ export const joiSchemas = {
       'string.length': '2FA verification code must be exactly 6 digits',
       'any.required': '2FA verification code is required',
     }),
+    rememberDevice: Joi.boolean().optional(),
   }),
 
   resendSignup2FA: Joi.object({

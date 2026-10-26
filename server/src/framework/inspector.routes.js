@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * J & D Beach House · Isolated Modularity Base
+ * Rock View Beach Resort · Isolated Modularity Base
  * Framework Telemetry & Diagnostic Inspector Routes
  * Location: Brgy. Patar, Bolinao, Pangasinan (16.3042° N, 119.7821° E)
  * ============================================================================
@@ -36,7 +36,7 @@ r.get('/system/modules', (_req, res) => {
   }));
 
   res.json({
-    framework: 'J & D Reserve Isolated Modular Framework (IMF)',
+    framework: 'Rock View Isolated Modular Framework (IMF)',
     version: '1.2.0',
     summary,
     modules,

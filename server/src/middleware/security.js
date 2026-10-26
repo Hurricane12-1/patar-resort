@@ -200,7 +200,7 @@ const allowedOrigins = [
   'http://localhost:5176',
   'http://127.0.0.1:5173',
   'http://127.0.0.1:5174',
-  'https://janddbeachhouse.localhost:8000',
+  'https://rockviewresort.localhost:4000',
   'https://localhost:8000',
   'http://localhost:8000',
   'https://localhost:4000',
