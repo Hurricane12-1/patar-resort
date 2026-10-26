@@ -217,7 +217,7 @@ export const corsPolicy = cors({
     if (
       allowedOrigins.includes(origin) ||
       /^https:\/\/([a-z0-9-]+\.)?patar-resort\.pages\.dev$/.test(origin) ||
-      /^https?:\/\/(localhost|127\.0\.0\.1|janddbeachhouse\.localhost)(:\d+)?$/.test(origin)
+      /^https?:\/\/(localhost|127\.0\.0\.1|rockviewresort\.localhost)(:\d+)?$/.test(origin)
     ) {
       return callback(null, true);
     }
