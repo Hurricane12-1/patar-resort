@@ -141,6 +141,12 @@ export const cspDirectives = {
     "'self'",
     'https://patar-resort.onrender.com',
     'wss://patar-resort.onrender.com',
+    'https://*.onrender.com',
+    'wss://*.onrender.com',
+    'https://*.trycloudflare.com',
+    'wss://*.trycloudflare.com',
+    'https://*.pages.dev',
+    'wss://*.pages.dev',
     'https://api.cloudinary.com',
     'https://res.cloudinary.com',
     'https://*.cloudinary.com',
@@ -217,6 +223,8 @@ export const corsPolicy = cors({
     if (
       allowedOrigins.includes(origin) ||
       /^https:\/\/([a-z0-9-]+\.)?patar-resort\.pages\.dev$/.test(origin) ||
+      /^https:\/\/([a-z0-9-]+\.)?trycloudflare\.com$/.test(origin) ||
+      /^https:\/\/([a-z0-9-]+\.)?onrender\.com$/.test(origin) ||
       /^https?:\/\/(localhost|127\.0\.0\.1|rockviewresort\.localhost)(:\d+)?$/.test(origin)
     ) {
       return callback(null, true);

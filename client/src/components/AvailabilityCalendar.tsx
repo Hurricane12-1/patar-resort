@@ -69,6 +69,8 @@ export default function AvailabilityCalendar({
   selectedRoomId,
   rooms = [],
   bookings = [],
+  initialCheckIn,
+  initialCheckOut,
   onSelectDates,
   onRoomChange,
   onSelectBooking,
