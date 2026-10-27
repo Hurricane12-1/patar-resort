@@ -34,6 +34,7 @@ const createSchema = z.object({
   downpayment_php: z.coerce.number().optional(),
   payment_method: z.string().min(1, 'Preferred downpayment method is required'),
   payment_status: z.string().max(50).optional(),
+  terms_accepted: z.boolean().optional(),
   status: z.string().max(50).optional(),
 }).refine((d) => Boolean(d.roomId || d.room_id), { message: 'Room selection is required (roomId or room_id)' })
   .refine((d) => d.check_out > d.check_in, { message: 'Check-out date must be strictly after check-in date' })
@@ -71,6 +72,7 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
     payment_method,
     payment_status,
     status: customStatus,
+    terms_accepted,
   } = req.body;
   const targetRoomId = roomId || room_id;
 
@@ -147,6 +149,12 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
         }
       }
       finalNotes = `[Unit ${freeUnit}] ${finalNotes}`.trim();
+    }
+  }
+
+  if (terms_accepted) {
+    if (!finalNotes.includes('[Terms: Accepted]')) {
+      finalNotes = `${finalNotes} [Terms: Accepted]`.trim();
     }
   }
 

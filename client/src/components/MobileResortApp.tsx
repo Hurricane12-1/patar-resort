@@ -246,6 +246,9 @@ export default function MobileResortApp() {
   const [showHeroCalendar, setShowHeroCalendar] = useState(false);
   const [selectedVoucher, setSelectedVoucher] = useState<VoucherData | null>(null);
   const [showVoucherModal, setShowVoucherModal] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showPolicyModal, setShowPolicyModal] = useState(false);
+  const [policyTab, setPolicyTab] = useState<'cancellation' | 'checkin' | 'rules' | 'privacy'>('cancellation');
 
   // Sync profile fields whenever profile/session changes
   useEffect(() => {
@@ -742,6 +745,11 @@ export default function MobileResortApp() {
       return;
     }
 
+    if (!termsAccepted) {
+      toast('⚠️ Please review and accept the Resort Terms of Stay and Cancellation Policy to confirm.', true);
+      return;
+    }
+
     const targetRoomId = resRoom?.id || '';
     if (!targetRoomId) {
       toast('Please select an active room to reserve.', true);
@@ -796,6 +804,7 @@ export default function MobileResortApp() {
         guest_email: cleanEmail,
         email: cleanEmail,
         payment_method: resPaymentMethod,
+        terms_accepted: true,
       };
 
       const result = await api.createReservation(payload);
@@ -3246,6 +3255,89 @@ export default function MobileResortApp() {
                     />
                   </label>
 
+                  {/* Resort Terms & Policy Accordion / Quick Highlights */}
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 sm:p-3.5 flex flex-col gap-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-cyan flex items-center gap-1.5">
+                        <i className="fas fa-shield-halved text-xs text-cyan" />
+                        Resort Terms & Booking Policy
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setShowPolicyModal(true)}
+                        className="text-[10px] text-cyan hover:underline font-medium cursor-pointer inline-flex items-center gap-1"
+                      >
+                        Read Full Policy <i className="fas fa-arrow-up-right-from-square text-[8px]" />
+                      </button>
+                    </div>
+
+                    {/* Quick Policy Highlights Badges */}
+                    <div className="grid grid-cols-2 gap-2 text-[10px]">
+                      <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-2 text-emerald-300 flex flex-col gap-0.5">
+                        <span className="font-semibold flex items-center gap-1">
+                          <i className="fas fa-check-circle text-[9px]" /> 100% Free Refund
+                        </span>
+                        <span className="text-emerald-300/70 text-[9px] leading-tight">
+                          Cancel 7+ days before check-in for full downpayment refund
+                        </span>
+                      </div>
+                      <div className="rounded-lg bg-cyan/10 border border-cyan/20 p-2 text-cyan flex flex-col gap-0.5">
+                        <span className="font-semibold flex items-center gap-1">
+                          <i className="fas fa-clock text-[9px]" /> Check-In: 2 PM · Out: 12 PM
+                        </span>
+                        <span className="text-cyan/70 text-[9px] leading-tight">
+                          Standard stay times; free luggage drop-off anytime
+                        </span>
+                      </div>
+                      <div className="rounded-lg bg-white/5 border border-white/10 p-2 text-white/80 flex flex-col gap-0.5">
+                        <span className="font-semibold flex items-center gap-1 text-white">
+                          <i className="fas fa-umbrella-beach text-[9px] text-amber-400" /> Eco & House Rules
+                        </span>
+                        <span className="text-white/50 text-[9px] leading-tight">
+                          10 PM quiet hours · Non-smoking rooms · Patar Clean Sand Pledge
+                        </span>
+                      </div>
+                      <div className="rounded-lg bg-white/5 border border-white/10 p-2 text-white/80 flex flex-col gap-0.5">
+                        <span className="font-semibold flex items-center gap-1 text-white">
+                          <i className="fas fa-cloud-bolt text-[9px] text-sky-400" /> Storm Protection
+                        </span>
+                        <span className="text-white/50 text-[9px] leading-tight">
+                          100% refund or free date move if PAGASA storm signal raised
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Agreement Checkbox */}
+                    <label
+                      className={`flex items-start gap-2.5 cursor-pointer select-none text-left rounded-xl border p-2.5 transition mt-0.5 ${
+                        termsAccepted
+                          ? 'border-emerald-500/40 bg-emerald-950/20'
+                          : 'border-white/10 bg-white/[0.02] hover:border-white/20'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={termsAccepted}
+                        onChange={(e) => setTermsAccepted(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded border-white/20 bg-white/10 text-cyan focus:ring-cyan focus:ring-offset-0 cursor-pointer accent-cyan shrink-0"
+                      />
+                      <div className="text-[11px] text-white/80 leading-snug">
+                        <span>I have read and agree to the </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowPolicyModal(true);
+                          }}
+                          className="font-semibold text-cyan hover:underline cursor-pointer inline-flex items-center gap-0.5"
+                        >
+                          Resort Terms of Stay, Cancellation & Refund Policy
+                        </button>
+                        <span> and agree to register for the official guest manifest.</span>
+                      </div>
+                    </label>
+                  </div>
+
                   <div className="pt-1.5">
                     <button
                       type="submit"
@@ -3255,11 +3347,221 @@ export default function MobileResortApp() {
                       {resSubmitting ? 'Confirming Reservation…' : 'Confirm Stay & Generate Voucher ✦'}
                     </button>
                     <p className="mt-1.5 text-center text-[10px] text-white/40">
-                      No cancellation fee up to 48 hours before check-in. Instant confirmation.
+                      100% refund up to 7 days before check-in · Direct booking guarantee · Official digital voucher
                     </p>
                   </div>
                 </form>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+            {/* RESORT TERMS OF STAY & CANCELLATION POLICY MODAL */}
+      {showPolicyModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-navy/90 backdrop-blur-md animate-fade-in overflow-y-auto"
+          onClick={() => setShowPolicyModal(false)}
+        >
+          <div
+            className="relative w-full max-w-xl rounded-2xl sm:rounded-3xl border border-white/15 bg-ink p-5 sm:p-7 shadow-2xl text-white my-auto max-h-[90vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between pb-3 sm:pb-4 border-b border-white/10 gap-3">
+              <div>
+                <span className="text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.2em] text-cyan block">
+                  Rock View Beach Resort · Patar, Bolinao
+                </span>
+                <h3 className="font-serif text-xl sm:text-2xl font-medium text-white mt-0.5">
+                  Terms of Stay & Resort Policies
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPolicyModal(false)}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition cursor-pointer"
+                aria-label="Close policy modal"
+              >
+                <i className="fas fa-xmark" />
+              </button>
+            </div>
+
+            {/* Policy Navigation Tabs */}
+            <div className="flex items-center gap-1.5 pt-3 pb-2 border-b border-white/5 overflow-x-auto scrollbar-none">
+              {[
+                { id: 'cancellation', label: 'Refunds & Cancellation', icon: 'fa-money-bill-transfer' },
+                { id: 'checkin', label: 'Check-In & Payment', icon: 'fa-clock' },
+                { id: 'rules', label: 'House Rules & Eco', icon: 'fa-umbrella-beach' },
+                { id: 'privacy', label: 'Manifest & Privacy', icon: 'fa-shield-halved' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setPolicyTab(tab.id as any)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 ${
+                    policyTab === tab.id
+                      ? 'bg-cyan text-slate-950 font-semibold shadow-sm'
+                      : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  <i className={`fas ${tab.icon} text-[10px]`} />
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Policy Tab Content */}
+            <div className="mt-4 overflow-y-auto scrollbar-none flex-1 pr-1 text-xs text-white/80 leading-relaxed flex flex-col gap-3.5">
+              {policyTab === 'cancellation' && (
+                <div className="flex flex-col gap-3 animate-fade-in">
+                  <div className="rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-3">
+                    <h4 className="font-semibold text-emerald-400 text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-circle-check" /> 100% Full Refund Window
+                    </h4>
+                    <p className="text-white/80 text-[11px]">
+                      Cancellations made <strong>7 days or more</strong> prior to the official check-in date receive a full 100% refund of the downpayment deposit, processed within 3 to 5 business days via your original payment channel (GCash, Maya, or Bank Transfer).
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 p-3">
+                    <h4 className="font-semibold text-amber-300 text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-clock-rotate-left" /> 50% Refund Window (3 to 6 Days)
+                    </h4>
+                    <p className="text-white/80 text-[11px]">
+                      Cancellations submitted between <strong>3 to 6 days</strong> prior to check-in are eligible for a 50% refund, or you may opt for a <strong>free rebooking</strong> of your stay dates within 6 months.
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-rose-500/30 bg-rose-950/20 p-3">
+                    <h4 className="font-semibold text-rose-300 text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-ban" /> Within 72 Hours & No-Show
+                    </h4>
+                    <p className="text-white/80 text-[11px]">
+                      Cancellations within <strong>72 hours of check-in</strong> are non-refundable due to reserved inventory, but date rebooking is allowed subject to room availability and seasonal rate adjustment.
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-sky-500/30 bg-sky-950/20 p-3">
+                    <h4 className="font-semibold text-sky-300 text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-cloud-bolt" /> Severe Weather & Force Majeure Guarantee
+                    </h4>
+                    <p className="text-white/80 text-[11px]">
+                      If the Philippine Atmospheric, Geophysical and Astronomical Services Administration (PAGASA) raises an official typhoon or storm signal over Pangasinan or local maritime authorities suspend sea travel, guests are entitled to a <strong>100% full refund or free rebooking without penalty</strong>.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {policyTab === 'checkin' && (
+                <div className="flex flex-col gap-3 animate-fade-in">
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                    <h4 className="font-semibold text-white text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-door-open text-cyan" /> Operating Hours
+                    </h4>
+                    <ul className="list-disc list-inside text-[11px] text-white/70 space-y-1">
+                      <li><strong>Standard Check-In:</strong> 2:00 PM onwards</li>
+                      <li><strong>Standard Check-Out:</strong> Strictly 12:00 PM (Noon)</li>
+                      <li>Early arrivals may drop luggage with the Front Desk and relax by the beach while rooms are prepared.</li>
+                      <li>Late check-outs after 12:00 PM are subject to room availability and half-day rate rules.</li>
+                    </ul>
+                  </div>
+
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                    <h4 className="font-semibold text-white text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-credit-card text-emerald-400" /> Downpayment & Payment Rules
+                    </h4>
+                    <ul className="list-disc list-inside text-[11px] text-white/70 space-y-1">
+                      <li>A <strong>30% downpayment</strong> is required upon reservation to lock your accommodation and generate your official digital voucher pass.</li>
+                      <li>Payment options include GCash, Maya, Visa/Mastercard, and BDO/BPI Bank Transfer.</li>
+                      <li>The remaining <strong>70% balance</strong> is settled at the Front Desk upon physical arrival.</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {policyTab === 'rules' && (
+                <div className="flex flex-col gap-3 animate-fade-in">
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                    <h4 className="font-semibold text-white text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-volume-xmark text-cyan" /> Quiet Sanctuary Hours
+                    </h4>
+                    <p className="text-[11px] text-white/70">
+                      To preserve the tranquil ambiance of Patar Beach, quiet hours are observed from <strong>10:00 PM to 7:00 AM</strong>. Loud music, videoke, and excessive noise are prohibited during these hours.
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                    <h4 className="font-semibold text-white text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-ban-smoking text-rose-400" /> Non-Smoking Policy
+                    </h4>
+                    <p className="text-[11px] text-white/70">
+                      All indoor suites, villas, cottages, and enclosed restrooms are strictly non-smoking. Designated outdoor smoking spaces are provided on resort grounds. A ₱3,000 cleaning fee applies for indoor smoking violations.
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                    <h4 className="font-semibold text-white text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-water text-cyan" /> Patar Beach Clean Sand Pledge
+                    </h4>
+                    <p className="text-[11px] text-white/70">
+                      Rock View observes a strict "Leave No Trace" policy along the white sand coast. Littering, bringing single-use plastic bottles onto the tidal reef, or disturbing marine life is strictly prohibited.
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                    <h4 className="font-semibold text-white text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-paw text-amber-400" /> Pet Policy
+                    </h4>
+                    <p className="text-[11px] text-white/70">
+                      Well-behaved small pets on leash are welcome in designated ground-level beach cottages with prior coordination with the concierge. Pets must be supervised at all times.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {policyTab === 'privacy' && (
+                <div className="flex flex-col gap-3 animate-fade-in">
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                    <h4 className="font-semibold text-white text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-id-card text-emerald-400" /> Tourism Manifest Compliance
+                    </h4>
+                    <p className="text-[11px] text-white/70">
+                      Under local tourism regulations (Municipality of Bolinao) and DOT guidelines, all arriving resident guests must be registered on the official resort manifest. Valid government-issued photo ID is requested at front-desk check-in.
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                    <h4 className="font-semibold text-white text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-user-shield text-cyan" /> Data Privacy Act (RA 10173)
+                    </h4>
+                    <p className="text-[11px] text-white/70">
+                      Your personal data (Full Name, Philippine Mobile Number, Email Address) is securely handled in compliance with Republic Act No. 10173 (Data Privacy Act of 2012). It is strictly used to process your reservation voucher, send SMS check-in updates, and maintain stay manifests. We never sell or distribute your data.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer Action */}
+            <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between gap-3">
+              <span className="text-[10px] text-white/50 hidden sm:inline">
+                Rock View Beach Resort · Official Guest Agreement
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setTermsAccepted(true);
+                  setShowPolicyModal(false);
+                  toast('✦ Terms of Stay and Cancellation Policy accepted.');
+                }}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-cyan text-slate-950 font-semibold text-xs tracking-wider uppercase hover:brightness-110 transition cursor-pointer flex items-center justify-center gap-2 shadow-md"
+              >
+                <i className="fas fa-check" />
+                <span>I Understand & Agree</span>
+              </button>
             </div>
           </div>
         </div>
