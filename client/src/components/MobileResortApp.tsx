@@ -716,12 +716,21 @@ export default function MobileResortApp() {
   };
 
   const handleResetCalendarSelection = () => {
-    const today = new Date().toISOString().slice(0, 10);
-    const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
-    setCheckIn(today);
-    setCheckOut(tomorrow);
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    const todayLocal = `${y}-${m}-${d}`;
+    const tomorrowDate = new Date(now.getTime() + 86400000);
+    const ty = tomorrowDate.getFullYear();
+    const tm = String(tomorrowDate.getMonth() + 1).padStart(2, '0');
+    const td = String(tomorrowDate.getDate()).padStart(2, '0');
+    const tomorrowLocal = `${ty}-${tm}-${td}`;
+
+    setCheckIn(todayLocal);
+    setCheckOut(tomorrowLocal);
     setCalendarTarget('checkIn');
-    toast('✦ Calendar click queue reset: Returned to 1 Night (today → tomorrow). Ready to pick Check-In.');
+    toast('✦ Calendar selection reset: Ready to pick Check-In.');
   };
 
   const handleConfirmReservation = async (e: React.FormEvent) => {
@@ -2964,10 +2973,10 @@ export default function MobileResortApp() {
                         <button
                           type="button"
                           onClick={handleResetCalendarSelection}
-                          className="ml-auto px-2.5 py-1 rounded-lg text-[10px] font-semibold text-rose-300 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 transition cursor-pointer flex items-center gap-1 shrink-0"
-                          title="Reset calendar click queue and stay dates"
+                          className="ml-auto px-2.5 py-1 rounded-lg text-[10px] font-semibold text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition cursor-pointer flex items-center gap-1 shrink-0"
+                          title="Reset stay selection and dates to default"
                         >
-                          <i className="fas fa-rotate-left text-[9px]" />
+                          <i className="fas fa-rotate-left text-[9px] text-cyan" />
                           <span>Reset</span>
                         </button>
                       </div>
@@ -2988,25 +2997,17 @@ export default function MobileResortApp() {
 
                     {/* Visual Availability Calendar with Reserved / Available Markings & Target Selection */}
                     {showModalCalendar && (
-                      <div className="mt-1 animate-fade-in overflow-hidden">
-                        <div className="mb-1.5 flex items-center justify-between px-1 text-[11px] font-medium text-cyan">
-                          <span>
-                            ✦ Currently selecting: <strong className="text-white uppercase tracking-wider underline underline-offset-2">{calendarTarget === 'checkIn' ? 'Check-In' : 'Check-Out'}</strong> (Tap any date)
-                          </span>
+                      <div className="mt-2 animate-fade-in overflow-hidden">
+                        <div className="mb-2 flex items-center justify-between px-1 text-xs font-medium text-cyan">
                           <div className="flex items-center gap-2">
-                            <span className="text-[10px] text-white/70 font-normal hidden sm:inline">
-                              <i className="fas fa-circle text-rose-500 text-[8px] mr-1" />Reserved · <i className="fas fa-circle text-emerald-400 text-[8px] mx-1" />Open
+                            <i className="fas fa-calendar-alt text-cyan/80" />
+                            <span>
+                              Selecting: <strong className="text-white font-semibold underline underline-offset-4 tracking-wide">{calendarTarget === 'checkIn' ? 'Check-In Date' : 'Check-Out Date'}</strong>
                             </span>
-                            <button
-                              type="button"
-                              onClick={handleResetCalendarSelection}
-                              className="px-2.5 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/40 hover:bg-rose-500/30 text-[10px] font-semibold flex items-center gap-1 transition cursor-pointer shadow-sm"
-                              title="Reset calendar click queue and start fresh"
-                            >
-                              <i className="fas fa-rotate-left text-[9px]" />
-                              <span>Reset Queue</span>
-                            </button>
                           </div>
+                          <span className="text-[11px] text-white/50 font-normal">
+                            Tap any date to select
+                          </span>
                         </div>
                         <AvailabilityCalendar
                           selectedRoomId={resRoom?.id}

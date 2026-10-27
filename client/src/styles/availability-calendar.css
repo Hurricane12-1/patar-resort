@@ -310,6 +310,31 @@
   color: #FFFFFF;
 }
 
+.pms-nav-btn.pms-reset-btn {
+  color: #06B6D4;
+  border-color: rgba(6, 182, 212, 0.35);
+  background: rgba(6, 182, 212, 0.08);
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+.pms-nav-btn.pms-reset-btn:hover {
+  color: #FFFFFF;
+  border-color: #06B6D4;
+  background: rgba(6, 182, 212, 0.2);
+}
+.pms-calendar-card.dark .pms-nav-btn.pms-reset-btn,
+.dark-mode .pms-nav-btn.pms-reset-btn {
+  color: #38BDF8;
+  border-color: rgba(56, 189, 248, 0.35);
+  background: rgba(56, 189, 248, 0.08);
+}
+.pms-calendar-card.dark .pms-nav-btn.pms-reset-btn:hover,
+.dark-mode .pms-nav-btn.pms-reset-btn:hover {
+  color: #FFFFFF;
+  border-color: #38BDF8;
+  background: rgba(56, 189, 248, 0.22);
+}
+
 .pms-date-title {
   font-size: 1rem;
   font-weight: 700;
@@ -342,6 +367,38 @@
 .pms-calendar-card.dark .pms-metric-val,
 .dark-mode .pms-metric-val {
   color: #F8FAFC;
+}
+
+.pms-calendar-legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 0.8rem;
+  color: #64748B;
+}
+.pms-calendar-card.dark .pms-calendar-legend,
+.dark-mode .pms-calendar-legend {
+  color: #94A3B8;
+}
+.pms-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+.pms-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.pms-legend-dot.open {
+  background-color: #10B981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+}
+.pms-legend-dot.reserved {
+  background-color: #F43F5E;
+  box-shadow: 0 0 6px rgba(244, 63, 94, 0.4);
 }
 
 /* 4. GRID CONTAINER & TABLE */
@@ -422,12 +479,13 @@
   letter-spacing: 0.03em;
 }
 .pms-day-header-cell.is-today .pms-day-name {
-  color: #4F46E5;
+  color: #0284C7;
   font-weight: 700;
 }
 .pms-calendar-card.dark .pms-day-header-cell.is-today .pms-day-name,
 .dark-mode .pms-day-header-cell.is-today .pms-day-name {
-  color: #818CF8;
+  color: #38BDF8;
+  font-weight: 700;
 }
 
 .pms-day-num {
@@ -445,7 +503,7 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: #4F46E5;
+  background: #0284C7;
   color: #FFFFFF;
   font-size: 0.74rem;
   font-weight: 700;
@@ -453,7 +511,13 @@
   align-items: center;
   justify-content: center;
   margin: 2px auto 0;
-  box-shadow: 0 1px 3px rgba(79, 70, 229, 0.4);
+  box-shadow: 0 1px 4px rgba(2, 132, 199, 0.4);
+}
+.pms-calendar-card.dark .pms-day-num-today-badge,
+.dark-mode .pms-day-num-today-badge {
+  background: #0284C7;
+  color: #FFFFFF;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
 }
 
 /* 5. UNIT ROWS */
@@ -562,7 +626,19 @@
 }
 .pms-calendar-card.dark .pms-cell.is-today,
 .dark-mode .pms-cell.is-today {
-  background: rgba(99, 102, 241, 0.12);
+  background: rgba(56, 189, 248, 0.12);
+}
+
+.pms-cell.is-past {
+  opacity: 0.35;
+  background: rgba(0, 0, 0, 0.08);
+  cursor: not-allowed;
+}
+.pms-calendar-card.dark .pms-cell.is-past,
+.dark-mode .pms-cell.is-past {
+  opacity: 0.3;
+  background: rgba(0, 0, 0, 0.35);
+  cursor: not-allowed;
 }
 
 /* 6. STAY PILLS */

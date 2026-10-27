@@ -61,10 +61,19 @@ interface AvailabilityCalendarProps {
   numDays?: number;
   statusFilter?: string;
   showNewBookingInTopBar?: boolean;
+  showMetrics?: boolean;
   selectionTarget?: 'checkIn' | 'checkOut' | 'auto';
 }
 
 const DEFAULT_NUM_DAYS = 14; // Default 14-day spacious window matching modern PMS calendar
+
+// Helper to get local date string YYYY-MM-DD
+const getLocalDateString = (d: Date = new Date()): string => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 export default function AvailabilityCalendar({
   selectedRoomId,
@@ -81,6 +90,7 @@ export default function AvailabilityCalendar({
   numDays = DEFAULT_NUM_DAYS,
   statusFilter = 'all',
   showNewBookingInTopBar = false,
+  showMetrics = false,
   selectionTarget = 'auto',
 }: AvailabilityCalendarProps) {
   const daysCount = numDays || DEFAULT_NUM_DAYS;
@@ -90,18 +100,18 @@ export default function AvailabilityCalendar({
   const [liveBookings, setLiveBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Dynamic today's date (defaults to October 2026 operational period)
+  // Dynamic today's date in local system time (literal live day)
   const todayStr = useMemo(() => {
-    const now = new Date();
-    if (now.getFullYear() === 2026 && now.getMonth() === 9) {
-      return now.toISOString().slice(0, 10);
-    }
-    return '2026-10-20';
+    return getLocalDateString();
   }, []);
 
-  // 14-day rolling window starting 3 days before today (e.g. Sat 17 to Fri 30 when today is Tue 20)
+  // 14-day rolling window starting directly on today's live date (or initialCheckIn if today/future)
   const [windowStartDateStr, setWindowStartDateStr] = useState<string>(() => {
-    return addDaysYMD('2026-10-20', -3);
+    const liveToday = getLocalDateString();
+    if (initialCheckIn && initialCheckIn >= liveToday) {
+      return initialCheckIn;
+    }
+    return liveToday;
   });
 
   const [selectedCell, setSelectedCell] = useState<{ unitId: string; dateStr: string } | null>(null);
@@ -411,7 +421,7 @@ export default function AvailabilityCalendar({
   };
 
   const handleTodayClick = () => {
-    setWindowStartDateStr(addDaysYMD(todayStr, -3));
+    setWindowStartDateStr(todayStr);
   };
 
   // Determine stay badge color variant matching PMS palette
@@ -434,6 +444,10 @@ export default function AvailabilityCalendar({
 
   // Cell click handler: selects single day or initiates booking
   const handleCellClick = (unitId: string, dateStr: string) => {
+    if (dateStr < todayStr) {
+      toast("⚠️ That date has already passed. Please select today or an upcoming date for your stay.", true);
+      return;
+    }
     setSelectedCell({ unitId, dateStr });
     const matchedUnit = units.find((u) => u.id === unitId);
 
@@ -557,62 +571,76 @@ export default function AvailabilityCalendar({
             <i className="fas fa-chevron-right" />
           </button>
 
-          <button
-            type="button"
-            className="pms-nav-btn"
-            onClick={() => {
-              setSelectedCell(null);
-              if (onReset) onReset();
-            }}
-            title="Reset calendar click queue and selections"
-            style={{ color: '#F43F5E', borderColor: 'rgba(244, 63, 94, 0.4)', background: 'rgba(244, 63, 94, 0.1)' }}
-          >
-            <i className="fas fa-rotate-left" style={{ marginRight: 4 }} />
-            Reset
-          </button>
+          {onReset && (
+            <button
+              type="button"
+              className="pms-nav-btn pms-reset-btn"
+              onClick={() => {
+                setSelectedCell(null);
+                if (onReset) onReset();
+              }}
+              title="Reset stay selection queue and start fresh"
+            >
+              <i className="fas fa-rotate-left" style={{ marginRight: 5 }} />
+              Reset
+            </button>
+          )}
 
           <h2 className="pms-date-title">{dateRangeLabel}</h2>
         </div>
 
-        {/* Right: Real-time Inline Metrics & Optional New Booking */}
-        <div className="pms-metrics-group">
-          <div>
-            <span className="pms-metric-val" style={{ color: '#10B981' }}>{metrics.availableToday}</span> of {units.length} available
-          </div>
-          <div>
-            <span className="pms-metric-val">{metrics.arriving}</span> arriving today
-          </div>
-          <div>
-            <span className="pms-metric-val">{metrics.departing}</span> departing
-          </div>
-          <div>
-            <span className="pms-metric-val">{metrics.staysInView}</span> stays in view
-          </div>
+        {/* Right: Real-time Inline Metrics OR Clean Legend */}
+        {showMetrics ? (
+          <div className="pms-metrics-group">
+            <div>
+              <span className="pms-metric-val" style={{ color: '#10B981' }}>{metrics.availableToday}</span> of {units.length} available
+            </div>
+            <div>
+              <span className="pms-metric-val">{metrics.arriving}</span> arriving today
+            </div>
+            <div>
+              <span className="pms-metric-val">{metrics.departing}</span> departing
+            </div>
+            <div>
+              <span className="pms-metric-val">{metrics.staysInView}</span> stays in view
+            </div>
 
-          {showNewBookingInTopBar && (
-            <button
-              type="button"
-              className="pms-new-booking-btn"
-              onClick={() => {
-                if (units.length === 0) {
-                  toast("There's no present room around. Please add a room in Room Management first.", true);
-                  return;
-                }
-                if (onNewBooking) {
-                  onNewBooking();
-                } else if (onSelectDates) {
-                  const nextDay = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
-                  onSelectDates(todayStr, nextDay, units[0]?.roomId);
-                }
-              }}
-              title={units.length === 0 ? "There's no present room around" : "New booking"}
-              style={units.length === 0 ? { opacity: 0.65, cursor: 'not-allowed' } : undefined}
-            >
-              <i className="fas fa-plus" />
-              <span>New booking</span>
-            </button>
-          )}
-        </div>
+            {showNewBookingInTopBar && (
+              <button
+                type="button"
+                className="pms-new-booking-btn"
+                onClick={() => {
+                  if (units.length === 0) {
+                    toast("There's no present room around. Please add a room in Room Management first.", true);
+                    return;
+                  }
+                  if (onNewBooking) {
+                    onNewBooking();
+                  } else if (onSelectDates) {
+                    const nextDay = addDaysYMD(todayStr, 1);
+                    onSelectDates(todayStr, nextDay, units[0]?.roomId);
+                  }
+                }}
+                title={units.length === 0 ? "There's no present room around" : "New booking"}
+                style={units.length === 0 ? { opacity: 0.65, cursor: 'not-allowed' } : undefined}
+              >
+                <i className="fas fa-plus" />
+                <span>New booking</span>
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="pms-calendar-legend">
+            <span className="pms-legend-item">
+              <span className="pms-legend-dot open" />
+              Available
+            </span>
+            <span className="pms-legend-item">
+              <span className="pms-legend-dot reserved" />
+              Reserved
+            </span>
+          </div>
+        )}
       </div>
 
       {/* 2. CALENDAR MATRIX: 14 Days & Physical Units + Unassigned Rows */}
@@ -677,11 +705,12 @@ export default function AvailabilityCalendar({
                     const isCheckOutDay = initialCheckOut ? day.dateStr === initialCheckOut : false;
                     const isInStayRange = initialCheckIn && initialCheckOut && day.dateStr >= initialCheckIn && day.dateStr < initialCheckOut;
                     const isSelected = (selectedCell?.unitId === unit.id && selectedCell?.dateStr === day.dateStr) || isCheckInDay;
+                    const isPast = day.dateStr < todayStr;
 
                     return (
                       <div
                         key={day.dateStr}
-                        className={`pms-cell ${day.isToday ? 'is-today' : ''}`}
+                        className={`pms-cell ${day.isToday ? 'is-today' : ''} ${isPast ? 'is-past' : ''}`}
                         onClick={() => handleCellClick(unit.id, day.dateStr)}
                         title={`${day.dateStr}: ${isCheckInDay ? 'Check-In' : isCheckOutDay ? 'Check-Out' : isInStayRange ? 'Stay Date' : 'Click to select'}`}
                       >
