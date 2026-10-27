@@ -715,6 +715,15 @@ export default function MobileResortApp() {
     setReservationModalOpen(true);
   };
 
+  const handleResetCalendarSelection = () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+    setCheckIn(today);
+    setCheckOut(tomorrow);
+    setCalendarTarget('checkIn');
+    toast('✦ Calendar click queue reset: Returned to 1 Night (today → tomorrow). Ready to pick Check-In.');
+  };
+
   const handleConfirmReservation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!session) {
@@ -2926,7 +2935,7 @@ export default function MobileResortApp() {
                         </label>
                       </div>
 
-                      {/* Quick Duration Preset Pills */}
+                      {/* Quick Duration Preset Pills & Reset Button */}
                       <div className="flex items-center gap-1.5 pt-0.5 overflow-x-auto scrollbar-none">
                         <span className="text-[10px] text-white/40 shrink-0 font-medium">Nights:</span>
                         {[1, 2, 3, 4, 5, 7].map((numNights) => {
@@ -2952,6 +2961,15 @@ export default function MobileResortApp() {
                             </button>
                           );
                         })}
+                        <button
+                          type="button"
+                          onClick={handleResetCalendarSelection}
+                          className="ml-auto px-2.5 py-1 rounded-lg text-[10px] font-semibold text-rose-300 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 transition cursor-pointer flex items-center gap-1 shrink-0"
+                          title="Reset calendar click queue and stay dates"
+                        >
+                          <i className="fas fa-rotate-left text-[9px]" />
+                          <span>Reset</span>
+                        </button>
                       </div>
 
                       <button
@@ -2975,9 +2993,20 @@ export default function MobileResortApp() {
                           <span>
                             ✦ Currently selecting: <strong className="text-white uppercase tracking-wider underline underline-offset-2">{calendarTarget === 'checkIn' ? 'Check-In' : 'Check-Out'}</strong> (Tap any date)
                           </span>
-                          <span className="text-[10px] text-white/70 font-normal">
-                            <i className="fas fa-circle text-rose-500 text-[8px] mr-1" />Reserved · <i className="fas fa-circle text-emerald-400 text-[8px] mx-1" />Open
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-white/70 font-normal hidden sm:inline">
+                              <i className="fas fa-circle text-rose-500 text-[8px] mr-1" />Reserved · <i className="fas fa-circle text-emerald-400 text-[8px] mx-1" />Open
+                            </span>
+                            <button
+                              type="button"
+                              onClick={handleResetCalendarSelection}
+                              className="px-2.5 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/40 hover:bg-rose-500/30 text-[10px] font-semibold flex items-center gap-1 transition cursor-pointer shadow-sm"
+                              title="Reset calendar click queue and start fresh"
+                            >
+                              <i className="fas fa-rotate-left text-[9px]" />
+                              <span>Reset Queue</span>
+                            </button>
+                          </div>
                         </div>
                         <AvailabilityCalendar
                           selectedRoomId={resRoom?.id}
@@ -2986,6 +3015,7 @@ export default function MobileResortApp() {
                           initialCheckOut={checkOut}
                           selectionTarget={calendarTarget}
                           isLightMode={false}
+                          onReset={handleResetCalendarSelection}
                           onSelectDates={(newIn, newOut) => {
                             setCheckIn(newIn);
                             setCheckOut(newOut);

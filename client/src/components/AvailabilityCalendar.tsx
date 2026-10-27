@@ -50,6 +50,7 @@ interface AvailabilityCalendarProps {
     roomId?: string,
     unitInfo?: UnitInfo
   ) => void;
+  onReset?: () => void;
   onRoomChange?: (roomId: string) => void;
   onSelectBooking?: (booking: any) => void;
   onNewBooking?: () => void;
@@ -72,6 +73,7 @@ export default function AvailabilityCalendar({
   initialCheckIn,
   initialCheckOut,
   onSelectDates,
+  onReset,
   onRoomChange,
   onSelectBooking,
   onNewBooking,
@@ -553,6 +555,20 @@ export default function AvailabilityCalendar({
             title={`Next ${daysCount} days`}
           >
             <i className="fas fa-chevron-right" />
+          </button>
+
+          <button
+            type="button"
+            className="pms-nav-btn"
+            onClick={() => {
+              setSelectedCell(null);
+              if (onReset) onReset();
+            }}
+            title="Reset calendar click queue and selections"
+            style={{ color: '#F43F5E', borderColor: 'rgba(244, 63, 94, 0.4)', background: 'rgba(244, 63, 94, 0.1)' }}
+          >
+            <i className="fas fa-rotate-left" style={{ marginRight: 4 }} />
+            Reset
           </button>
 
           <h2 className="pms-date-title">{dateRangeLabel}</h2>
