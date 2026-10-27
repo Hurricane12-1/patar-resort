@@ -3006,7 +3006,7 @@ export default function MobileResortApp() {
                             </span>
                           </div>
                           <span className="text-[11px] text-white/50 font-normal">
-                            Tap any date to select
+                            Tap to select · Tap again to unselect
                           </span>
                         </div>
                         <AvailabilityCalendar
@@ -3018,11 +3018,21 @@ export default function MobileResortApp() {
                           isLightMode={false}
                           onReset={handleResetCalendarSelection}
                           onSelectDates={(newIn, newOut) => {
+                            if (!newIn && !newOut) {
+                              handleResetCalendarSelection();
+                              return;
+                            }
+                            if (newIn && !newOut) {
+                              setCheckIn(newIn);
+                              setCheckOut('');
+                              setCalendarTarget('checkOut');
+                              return;
+                            }
                             setCheckIn(newIn);
                             setCheckOut(newOut);
                             if (calendarTarget === 'checkIn') {
                               setCalendarTarget('checkOut');
-                              toast(`✦ Check-in set to ${newIn}. Now tap your check-out date on the calendar.`);
+                              toast(`✦ Check-in set to ${newIn}. Now tap your check-out date on the calendar (or tap ${newIn} to unselect).`);
                             } else {
                               const nights = Math.max(1, Math.round((new Date(newOut).getTime() - new Date(newIn).getTime()) / 86400000));
                               toast(`✦ Stay updated: ${newIn} → ${newOut} (${nights} Night${nights > 1 ? 's' : ''})`);

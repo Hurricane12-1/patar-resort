@@ -442,14 +442,46 @@ export default function AvailabilityCalendar({
     return 'pms-stay-confirmed';
   };
 
-  // Cell click handler: selects single day or initiates booking
+  // Cell click handler: selects single day or toggles unselect if already chosen
   const handleCellClick = (unitId: string, dateStr: string) => {
     if (dateStr < todayStr) {
       toast("⚠️ That date has already passed. Please select today or an upcoming date for your stay.", true);
       return;
     }
-    setSelectedCell({ unitId, dateStr });
     const matchedUnit = units.find((u) => u.id === unitId);
+
+    // ==========================================
+    // SELECT / UNSELECT TOGGLE LOGIC
+    // ==========================================
+    const isSameCheckOut = initialCheckOut && dateStr === initialCheckOut;
+    const isSameCheckIn = initialCheckIn && dateStr === initialCheckIn;
+    const isSameCell = selectedCell?.unitId === unitId && selectedCell?.dateStr === dateStr;
+
+    // 1. Tapping the already-selected Check-Out date -> UNSELECT Check-Out
+    if (isSameCheckOut) {
+      setSelectedCell(null);
+      if (onSelectDates && initialCheckIn) {
+        onSelectDates(initialCheckIn, '', matchedUnit?.roomId, matchedUnit);
+      } else if (onReset) {
+        onReset();
+      }
+      toast(`✦ Unselected Check-Out (${fmtDate(dateStr)}). Tap any date to pick Check-Out.`);
+      return;
+    }
+
+    // 2. Tapping the already-selected Check-In date or the active selected cell -> UNSELECT Check-In / clear
+    if (isSameCheckIn || isSameCell) {
+      setSelectedCell(null);
+      if (onReset) {
+        onReset();
+      } else if (onSelectDates) {
+        onSelectDates('', '', undefined, undefined);
+      }
+      toast(`✦ Unselected ${fmtDate(dateStr)}. Tap any open date to select.`);
+      return;
+    }
+
+    setSelectedCell({ unitId, dateStr });
 
     let newInStr = dateStr;
     let newOutStr = addDaysYMD(dateStr, 1);
@@ -724,13 +756,13 @@ export default function AvailabilityCalendar({
                     const isCheckInDay = initialCheckIn ? day.dateStr === initialCheckIn : false;
                     const isCheckOutDay = initialCheckOut ? day.dateStr === initialCheckOut : false;
                     const isInStayRange = initialCheckIn && initialCheckOut && day.dateStr >= initialCheckIn && day.dateStr < initialCheckOut;
-                    const isSelected = (selectedCell?.unitId === unit.id && selectedCell?.dateStr === day.dateStr) || isCheckInDay;
+                    const isSelected = (selectedCell?.unitId === unit.id && selectedCell?.dateStr === day.dateStr) || isCheckInDay || isCheckOutDay;
                     const isPast = day.dateStr < todayStr;
 
                     return (
                       <div
                         key={day.dateStr}
-                        className={`pms-cell ${day.isToday ? 'is-today' : ''} ${isPast ? 'is-past' : ''}`}
+                        className={`pms-cell ${day.isToday ? 'is-today' : ''} ${isPast ? 'is-past' : ''} ${isSelected ? 'is-selected' : ''}`}
                         onClick={() => handleCellClick(unit.id, day.dateStr)}
                         title={`${day.dateStr}: ${isCheckInDay ? 'Check-In' : isCheckOutDay ? 'Check-Out' : isInStayRange ? 'Stay Date' : 'Click to select'}`}
                       >
