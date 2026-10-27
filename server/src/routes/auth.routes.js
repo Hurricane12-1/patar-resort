@@ -7,7 +7,7 @@ import { validateJoi, joiSchemas } from '../middleware/joiValidation.js';
 import { admin, userClient } from '../lib/supabase.js';
 import { redis } from '../lib/redis.js';
 import { pingSMS } from '../lib/sms.js';
-import { sendRecoveryOTP, sendPasswordResetSuccess, sendSignup2FAOTP, sendWelcomeClientEmail, sendSignupExpiredEmail, sendOwnerEntryAlert } from '../lib/mailer.js';
+import { sendRecoveryOTP, sendPasswordResetSuccess, sendSignup2FAOTP, sendWelcomeClientEmail, sendSignupExpiredEmail } from '../lib/mailer.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
 import { checkBruteForceLockout, recordFailedAttempt, recordSuccessfulAttempt } from '../middleware/bruteForceGuard.js';
 import { hashPassword, verifyPassword } from '../lib/passwords.js';
@@ -282,85 +282,6 @@ r.post('/auth/signup/initiate',
  * Verifies code within the 1-minute window. If token expired, auto-removes the unconfirmed account,
  * sends an expiration notification email, and instructs user to "Try Again, please make sure you confirm".
  */
-/**
- * Step 1-B: Initiate 2FA for Google Sign-In / OAuth Entry Proposal
- * Dispatches 6-digit verification code to the user's Gmail and notifies resort owners.
- */
-r.post('/auth/google/initiate-2fa', asyncH(async (req, res) => {
-  const { email, fullName, userId, provider = 'google' } = req.body;
-  if (!email || typeof email !== 'string' || !email.includes('@')) {
-    throw new ApiError(400, 'Valid Gmail address is required for 2FA proposed entry.');
-  }
-
-  const cleanEmail = email.trim().toLowerCase();
-  const cleanName = (fullName && typeof fullName === 'string') ? fullName.trim() : (cleanEmail.split('@')[0] || 'Valued Guest');
-
-  // Generate secure 6-digit OTP code
-  const code = crypto.randomInt(100000, 999999).toString();
-  const cacheKey = `signup_2fa:${cleanEmail}`;
-  const ttlSeconds = 60; // Strictly 1 minute (time-gated)
-  const expiresAt = Date.now() + ttlSeconds * 1000;
-
-  // Store in Redis / in-memory cache
-  await redis.set(cacheKey, {
-    code,
-    email: cleanEmail,
-    userId: userId || null,
-    profile: {
-      first_name: cleanName.split(' ')[0] || cleanName,
-      last_name: cleanName.split(' ').slice(1).join(' ') || 'Guest',
-      full_name: cleanName,
-      provider: 'google',
-    },
-    attempts: 0,
-    createdAt: Date.now(),
-    expiresAt,
-    confirmed: false,
-    isGoogleEntry: true,
-  }, ttlSeconds);
-
-  // 1. Dispatch 2FA OTP Email to the user's Gmail
-  sendSignup2FAOTP({
-    to: cleanEmail,
-    code,
-    name: cleanName,
-    provider: 'google',
-  }).catch((err) => {
-    console.warn(`[Nodemailer Warning] Could not send Google 2FA OTP to ${cleanEmail}:`, err.message);
-  });
-
-  // 2. Dispatch entry alert copy to resort owners' Gmail
-  sendOwnerEntryAlert({
-    userEmail: cleanEmail,
-    name: cleanName,
-    provider: 'Google Sign-In',
-  }).catch(() => {});
-
-  logAuditEvent({
-    action: 'ENTRY_PROPOSAL_INITIATED',
-    resourceType: 'authentication',
-    resourceId: userId || cleanEmail,
-    details: {
-      process: 'Google Sign-In 2FA Entry Proposal',
-      message: `User ${cleanName} (${cleanEmail}) initiated Google login. 2FA verification dispatched.`,
-      email: cleanEmail,
-      provider: 'google',
-    },
-    req,
-  }).catch(() => {});
-
-  const isDev = process.env.NODE_ENV !== 'production';
-
-  return res.json({
-    success: true,
-    message: `2FA verification code dispatched to your Gmail (${cleanEmail}) for proposed entry. You have 1 minute to confirm.`,
-    email: cleanEmail,
-    provider: 'google',
-    expires_in_seconds: 60,
-    ...(isDev ? { dev_code_preview: code } : {}),
-  });
-}));
-
 r.post('/auth/signup/confirm-2fa',
   validateJoi(joiSchemas.verifySignup2FA),
   asyncH(async (req, res) => {
@@ -411,34 +332,6 @@ r.post('/auth/signup/confirm-2fa',
 
     // Mark confirmed in record
     record.confirmed = true;
-
-    if (record.isGoogleEntry) {
-      await redis.del(cacheKey);
-      logAuditEvent({
-        action: 'ENTRY_PROPOSAL_VERIFIED',
-        resourceType: 'authentication',
-        resourceId: record.userId || cleanEmail,
-        details: {
-          process: 'Google Sign-In 2FA Verification',
-          message: `User ${record.profile?.full_name || cleanEmail} successfully confirmed 2FA entry proposal`,
-          email: cleanEmail,
-        },
-        req,
-      }).catch(() => {});
-
-      return res.status(200).json({
-        success: true,
-        finalized: true,
-        message: 'Google account entry verified with 2FA! Welcome to Rock View Beach Resort.',
-        user: {
-          id: record.userId,
-          email: cleanEmail,
-          ...record.profile,
-          role: 'customer',
-        },
-        remember_device: Boolean(req.body.rememberDevice),
-      });
-    }
 
     // Finalize Account in Supabase Auth (set email_confirm = true)
     let userId = record.userId;

@@ -203,20 +203,11 @@ export async function sendPasswordResetSuccess({ to, name = 'Guest' }) {
 export async function sendSignup2FAOTP({ to, code, name = 'Guest', provider = 'email' }) {
   const mail = getTransporter();
 
-  const isGoogle = provider === 'google' || provider === 'gmail';
   const providerLabel = provider === 'facebook'
     ? 'Facebook Integrated Sign-Up'
-    : isGoogle
-    ? 'Google Sign-In Entry'
+    : provider === 'google' || provider === 'gmail'
+    ? 'Google / Gmail Sign-Up'
     : 'Client Guest Registration';
-
-  const actionHeadline = isGoogle
-    ? 'Proposed Account Entry · 2FA Verification'
-    : 'Finalize Account Sign-Up · 2FA Security';
-
-  const introText = isGoogle
-    ? `We received a proposal to access or register your account at <strong>Rock View Beach Resort</strong> via Google Sign-In. To authorize this entry and verify ownership of your Gmail, please enter the 6-digit verification code below:`
-    : `Thank you for choosing Rock View Beach Resort. To finalize your client account creation and activate your reservation portal, please enter the two-factor authentication (2FA) verification code below:`;
 
   const html = `
 <!DOCTYPE html>
@@ -224,7 +215,7 @@ export async function sendSignup2FAOTP({ to, code, name = 'Guest', provider = 'e
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${actionHeadline}</title>
+  <title>2FA Sign-Up Confirmation</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #0F172A; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #F8FAFC;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0F172A; padding: 36px 16px;">
@@ -234,8 +225,8 @@ export async function sendSignup2FAOTP({ to, code, name = 'Guest', provider = 'e
           <!-- Header Banner -->
           <tr>
             <td style="background: linear-gradient(135deg, #0284C7, #0EA5E9, #38BDF8); padding: 26px 30px; text-align: left;">
-              <span style="font-size: 11px; letter-spacing: 0.15em; color: rgba(255,255,255,0.9); text-transform: uppercase; font-weight: 700;">Rock View Beach Resort · Patar Beach, Bolinao</span>
-              <h1 style="margin: 6px 0 0; color: #FFFFFF; font-size: 22px; font-weight: 800; letter-spacing: -0.02em;">${actionHeadline}</h1>
+              <span style="font-size: 11px; letter-spacing: 0.15em; color: rgba(255,255,255,0.9); text-transform: uppercase; font-weight: 700;">Rock View Beach Resort · Patar Beach</span>
+              <h1 style="margin: 6px 0 0; color: #FFFFFF; font-size: 22px; font-weight: 800; letter-spacing: -0.02em;">Finalize Account Sign-Up · 2FA Security</h1>
             </td>
           </tr>
 
@@ -245,42 +236,34 @@ export async function sendSignup2FAOTP({ to, code, name = 'Guest', provider = 'e
               <p style="margin: 0 0 12px; font-size: 15px; color: #E2E8F0; line-height: 1.5;">
                 Mabuhay, <strong>${name}</strong>!
               </p>
-              <p style="margin: 0 0 12px; font-size: 14px; color: #38BDF8; font-weight: 600;">
-                Authentication Method: ${providerLabel}
+              <p style="margin: 0 0 8px; font-size: 14px; color: #38BDF8; font-weight: 600;">
+                Method: ${providerLabel}
               </p>
               <p style="margin: 0 0 24px; font-size: 14px; color: #94A3B8; line-height: 1.6;">
-                ${introText}
+                Thank you for choosing Rock View Beach Resort. To finalize your client account creation and activate your reservation portal, please enter the two-factor authentication (2FA) verification code below:
               </p>
 
               <!-- OTP Code Display Card -->
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 24px;">
                 <tr>
-                  <td align="center" style="background-color: #0F172A; border: 1.5px solid #0284C7; border-radius: 14px; padding: 22px 16px;">
-                    <span style="display: block; font-size: 11px; letter-spacing: 0.15em; color: #38BDF8; text-transform: uppercase; font-weight: 700; margin-bottom: 8px;">6-Digit Entry Verification Code</span>
-                    <span style="display: block; font-family: Consolas, 'Liberation Mono', Menlo, Courier, monospace; font-size: 40px; font-weight: 800; letter-spacing: 0.35em; color: #38BDF8;">
+                  <td align="center" style="background-color: #0F172A; border: 1px solid #0284C7; border-radius: 12px; padding: 22px 16px;">
+                    <span style="display: block; font-size: 11px; letter-spacing: 0.15em; color: #38BDF8; text-transform: uppercase; font-weight: 700; margin-bottom: 8px;">2FA Finalization Code</span>
+                    <span style="display: block; font-family: Consolas, 'Liberation Mono', Menlo, Courier, monospace; font-size: 38px; font-weight: 800; letter-spacing: 0.35em; color: #38BDF8;">
                       ${code}
                     </span>
                     <span style="display: block; font-size: 12px; color: #64748B; margin-top: 8px;">
-                      ⏱️ Strictly valid for 60 seconds · Proposed Account Entry Gate
+                      ⏱️ Valid for 15 minutes · Confirms Client Identity & Guest Manifest
                     </span>
                   </td>
                 </tr>
               </table>
 
-              <!-- Remember & Security Notice -->
-              <div style="background-color: rgba(245, 158, 11, 0.1); border-left: 4px solid #F59E0B; padding: 14px 16px; border-radius: 6px; margin-bottom: 20px;">
-                <span style="display: block; font-size: 12px; font-weight: 700; color: #F59E0B; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">
-                  🔒 Remember Notice & Security Advisory
-                </span>
-                <ul style="margin: 0; padding-left: 18px; font-size: 12px; color: #CBD5E1; line-height: 1.6;">
-                  <li><strong>Never share this code:</strong> Resort staff will never request your 2FA verification code.</li>
-                  <li><strong>Strict time-window:</strong> Code expires in 60s. Unconfirmed entries are auto-purged.</li>
-                  <li><strong>Unrecognized Attempt?</strong> If you did not propose this entry, please ignore this notice and secure your Google account immediately.</li>
-                </ul>
-              </div>
+              <p style="margin: 0 0 16px; font-size: 13px; color: #F59E0B; line-height: 1.5; font-weight: 500;">
+                🔒 <strong>Account Security:</strong> Your resort profile requires 2FA confirmation before the account is finalized. Never share this code.
+              </p>
 
               <p style="margin: 0; font-size: 12px; color: #64748B; line-height: 1.5;">
-                This message was automatically generated by the Rock View Beach Resort Security & Access Engine.
+                If you did not request this account creation, please ignore this email.
               </p>
             </td>
           </tr>
@@ -304,71 +287,24 @@ export async function sendSignup2FAOTP({ to, code, name = 'Guest', provider = 'e
 `;
 
   const text = `
-Rock View Beach Resort · ${actionHeadline}
+Rock View Beach Resort · 2FA Account Sign-Up Confirmation
 
 Mabuhay, ${name}!
 
-Your 2FA verification code for proposed entry is: ${code}
+Your 2FA verification code to finalize account sign-up is: ${code}
 
-This code is strictly valid for 60 seconds.
-REMEMBER: Never share this verification code with anyone. Staff will never ask for your code.
-If you did not request this account entry, please ignore this email.
+This code is valid for 15 minutes. Never share this code with anyone.
 
 Rock View Beach Resort
 Brgy. Patar, Bolinao, Pangasinan, Philippines
 `;
 
-  const subject = isGoogle
-    ? `Proposed Account Entry & 2FA Verification: ${code} · Rock View Beach Resort`
-    : `Your 2FA Sign-Up Code: ${code} · Rock View Beach Resort`;
-
   return await mail.sendMail({
     from: env.SMTP_FROM,
     to,
-    subject,
+    subject: `Your 2FA Sign-Up Code: ${code} · Rock View Beach Resort`,
     text,
     html,
-  });
-}
-
-/**
- * Dispatches an entry notification to the resort owners / admin Gmail
- * when a new account proposes entry or requests 2FA verification.
- */
-export async function sendOwnerEntryAlert({ userEmail, name = 'Guest', provider = 'google' }) {
-  const mail = getTransporter();
-  const ownerEmail = env.SUPABASE_ADMIN_EMAIL || env.SMTP_USER || 'admin@rockviewresort.ph';
-  if (!ownerEmail) return;
-
-  const html = `
-<!DOCTYPE html>
-<html lang="en">
-<body style="background-color: #0F172A; font-family: sans-serif; color: #F8FAFC; padding: 20px;">
-  <div style="max-width: 500px; background-color: #1E293B; border: 1px solid #334155; border-radius: 12px; padding: 24px; margin: auto;">
-    <h3 style="color: #38BDF8; margin-top: 0;">🔔 New Account Entry Proposed</h3>
-    <p style="color: #E2E8F0; font-size: 14px; line-height: 1.5;">
-      A new user has proposed entry to the guest portal:
-    </p>
-    <div style="background-color: #0F172A; border-left: 4px solid #0EA5E9; padding: 12px 16px; border-radius: 4px; font-size: 13px; line-height: 1.6;">
-      <strong>Name:</strong> ${name}<br>
-      <strong>Account Gmail:</strong> ${userEmail}<br>
-      <strong>Provider:</strong> ${provider}<br>
-      <strong>Timestamp:</strong> ${new Date().toISOString()}<br>
-      <strong>Status:</strong> 2FA Verification Code Dispatched (60s gate)
-    </div>
-  </div>
-</body>
-</html>
-  `;
-
-  return await mail.sendMail({
-    from: env.SMTP_FROM,
-    to: ownerEmail,
-    subject: `🔔 New Account Entry Proposed (${provider}): ${userEmail}`,
-    text: `New Account Entry Proposed: User ${name} (${userEmail}) via ${provider}. 2FA verification code dispatched.`,
-    html,
-  }).catch((err) => {
-    console.warn('[Mailer Warning] Could not dispatch owner entry alert:', err.message);
   });
 }
 
@@ -615,7 +551,7 @@ export async function sendRefundRequestedEmail({
               </table>
 
               <p style="margin: 0; font-size: 12px; color: #64748B; line-height: 1.5;">
-                Need assistance with this claim? Contact our Accounting & Concierge desk directly at concierge@rockviewresort.ph or call +63 900 555 0123.
+                Need assistance with this claim? Contact our Accounting & Concierge desk directly at concierge@janddbeachhouse.ph or call +63 900 555 0123.
               </p>
             </td>
           </tr>
@@ -654,7 +590,7 @@ ${checkIn && checkOut ? `- Stay Dates: ${checkIn} → ${checkOut}\n` : ''}- Refu
 - Processing Timeline: 1 to 3 banking business days
 
 You will receive an automated confirmation email once the refund is finalized.
-For inquiries, contact: concierge@rockviewresort.ph | +63 900 555 0123
+For inquiries, contact: concierge@janddbeachhouse.ph | +63 900 555 0123
 
 Rock View Beach Resort
 Brgy. Patar, Bolinao, Pangasinan, Philippines
@@ -753,7 +689,7 @@ export async function sendRefundConfirmedEmail({
               </table>
 
               <p style="margin: 0; font-size: 12px; color: #64748B; line-height: 1.5;">
-                We hope to welcome you to Rock View Beach Resort in the future! For further inquiries, contact us at concierge@rockviewresort.ph.
+                We hope to welcome you to Rock View Beach Resort in the future! For further inquiries, contact us at concierge@janddbeachhouse.ph.
               </p>
             </td>
           </tr>
