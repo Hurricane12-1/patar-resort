@@ -543,7 +543,7 @@ export default function AvailabilityCalendar({
     <div className={`pms-calendar-card ${!isLightMode ? 'dark' : ''}`}>
       {/* 1. TOP HEADER: Navigation, Date Range, Inline Metrics & Optional New Booking */}
       <div className="pms-top-bar">
-        {/* Left: < Today > Segmented Control + Reset Pill + Date Range */}
+        {/* Left: < Today > Segmented Control + Clean Date Range Heading */}
         <div className="pms-nav-group">
           <div className="pms-segmented-nav">
             <button
@@ -574,25 +574,10 @@ export default function AvailabilityCalendar({
             </button>
           </div>
 
-          {onReset && (
-            <button
-              type="button"
-              className="pms-reset-pill"
-              onClick={() => {
-                setSelectedCell(null);
-                if (onReset) onReset();
-              }}
-              title="Reset stay selection queue and start fresh"
-            >
-              <i className="fas fa-rotate-left" />
-              <span>Reset</span>
-            </button>
-          )}
-
           <h2 className="pms-date-title">{dateRangeLabel}</h2>
         </div>
 
-        {/* Right: Real-time Inline Metrics OR Clean Legend */}
+        {/* Right: Legend + Luxury Reset Button (or Metrics in staff view) */}
         {showMetrics ? (
           <div className="pms-metrics-group">
             <div>
@@ -607,6 +592,21 @@ export default function AvailabilityCalendar({
             <div>
               <span className="pms-metric-val">{metrics.staysInView}</span> stays in view
             </div>
+
+            {onReset && (
+              <button
+                type="button"
+                className="pms-reset-pill"
+                onClick={() => {
+                  setSelectedCell(null);
+                  if (onReset) onReset();
+                }}
+                title="Reset stay selection queue and start fresh"
+              >
+                <i className="fas fa-rotate-left" />
+                <span>Reset</span>
+              </button>
+            )}
 
             {showNewBookingInTopBar && (
               <button
@@ -633,15 +633,32 @@ export default function AvailabilityCalendar({
             )}
           </div>
         ) : (
-          <div className="pms-calendar-legend">
-            <span className="pms-legend-item">
-              <span className="pms-legend-dot open" />
-              Available
-            </span>
-            <span className="pms-legend-item">
-              <span className="pms-legend-dot reserved" />
-              Reserved
-            </span>
+          <div className="pms-calendar-actions-right">
+            <div className="pms-calendar-legend">
+              <span className="pms-legend-item">
+                <span className="pms-legend-dot open" />
+                Available
+              </span>
+              <span className="pms-legend-item">
+                <span className="pms-legend-dot reserved" />
+                Reserved
+              </span>
+            </div>
+
+            {onReset && (
+              <button
+                type="button"
+                className="pms-reset-pill"
+                onClick={() => {
+                  setSelectedCell(null);
+                  if (onReset) onReset();
+                }}
+                title="Reset stay selection queue and start fresh"
+              >
+                <i className="fas fa-rotate-left" />
+                <span>Reset</span>
+              </button>
+            )}
           </div>
         )}
       </div>

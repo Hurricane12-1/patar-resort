@@ -333,51 +333,79 @@
   transform: scale(0.96);
 }
 
-/* SLEEK RESET PILL BUTTON */
+/* ACTIONS CONTAINER (RIGHT SIDE) */
+.pms-calendar-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* LUXURY RESORT RESET PILL BUTTON */
 .pms-reset-pill {
-  height: 32px;
+  height: 28px;
   padding: 0 13px;
   border-radius: 9999px;
   border: 1px solid rgba(6, 182, 212, 0.35);
-  background: rgba(6, 182, 212, 0.08);
+  background: linear-gradient(180deg, rgba(6, 182, 212, 0.12) 0%, rgba(6, 182, 212, 0.04) 100%);
   color: #0891B2;
-  font-size: 0.78rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 0.76rem;
   font-weight: 600;
+  letter-spacing: 0.01em;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   cursor: pointer;
+  outline: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   user-select: none;
 }
 .pms-reset-pill i {
-  font-size: 0.74rem;
-  transition: transform 0.25s ease;
+  font-size: 0.7rem;
+  color: #0891B2;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .pms-reset-pill:hover {
-  background: rgba(6, 182, 212, 0.18);
+  background: linear-gradient(180deg, rgba(6, 182, 212, 0.22) 0%, rgba(6, 182, 212, 0.1) 100%);
   border-color: #06B6D4;
   color: #0E7490;
-  box-shadow: 0 0 10px rgba(6, 182, 212, 0.2);
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.22);
+  transform: translateY(-1px);
 }
 .pms-reset-pill:hover i {
-  transform: rotate(-60deg);
+  color: #0E7490;
+  transform: rotate(-180deg);
 }
+
 .pms-calendar-card.dark .pms-reset-pill,
 .dark-mode .pms-reset-pill {
   border-color: rgba(56, 189, 248, 0.35);
-  background: rgba(56, 189, 248, 0.09);
+  background: linear-gradient(180deg, rgba(56, 189, 248, 0.14) 0%, rgba(56, 189, 248, 0.04) 100%);
+  color: #38BDF8;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(6px);
+}
+.pms-calendar-card.dark .pms-reset-pill i,
+.dark-mode .pms-reset-pill i {
   color: #38BDF8;
 }
 .pms-calendar-card.dark .pms-reset-pill:hover,
 .dark-mode .pms-reset-pill:hover {
-  background: rgba(56, 189, 248, 0.22);
-  border-color: #38BDF8;
+  background: linear-gradient(180deg, rgba(56, 189, 248, 0.28) 0%, rgba(56, 189, 248, 0.14) 100%);
+  border-color: rgba(56, 189, 248, 0.65);
   color: #FFFFFF;
-  box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+.pms-calendar-card.dark .pms-reset-pill:hover i,
+.dark-mode .pms-reset-pill:hover i {
+  color: #FFFFFF;
+  transform: rotate(-180deg);
 }
 .pms-reset-pill:active {
-  transform: scale(0.96);
+  transform: translateY(0) scale(0.96);
 }
 
 /* Fallback .pms-nav-btn in case used elsewhere */
