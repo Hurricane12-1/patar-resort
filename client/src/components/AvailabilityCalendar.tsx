@@ -148,21 +148,25 @@ export default function AvailabilityCalendar({
     }
   }, []);
 
-  // Subscribe to real-time postgres changes
+  // Subscribe to real-time postgres changes with unique channel per instance
   useEffect(() => {
+    let active = true;
     fetchRealtimeData();
 
+    // Use unique channel topic to prevent "Cannot add postgres_changes callbacks after subscribe()" when multiple calendars mount
+    const channelName = `pms_calendar_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const channel = supabase
-      .channel('realtime:availability_pms_calendar')
+      .channel(channelName)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'reservations' }, () => {
-        fetchRealtimeData();
+        if (active) fetchRealtimeData();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, () => {
-        fetchRealtimeData();
+        if (active) fetchRealtimeData();
       })
       .subscribe();
 
     return () => {
+      active = false;
       supabase.removeChannel(channel);
     };
   }, [fetchRealtimeData]);
