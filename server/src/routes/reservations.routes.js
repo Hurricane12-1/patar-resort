@@ -23,20 +23,33 @@ const createSchema = z.object({
   check_out: dateStr,
   check_in_time: z.string().max(30).optional(),
   check_out_time: z.string().max(30).optional(),
-  guests: z.coerce.number().int().min(1).max(12).default(1),
+  guests: z.coerce.number().int().min(1, 'Number of guests must be at least 1').max(12, 'Maximum 12 guests allowed per room').default(1),
   notes: z.string().max(500).default(''),
-  phone: z.string().max(20).optional(),
-  guest_name: z.string().max(200).optional(),
-  guestName: z.string().max(200).optional(),
-  guest_email: z.string().max(200).optional(),
-  email: z.string().max(200).optional(),
+  phone: z.string().min(1, 'Mobile phone is required'),
+  guest_name: z.string().optional(),
+  guestName: z.string().optional(),
+  guest_email: z.string().optional(),
+  email: z.string().optional(),
   total_php: z.coerce.number().optional(),
   downpayment_php: z.coerce.number().optional(),
-  payment_method: z.string().max(50).optional(),
+  payment_method: z.string().min(1, 'Preferred downpayment method is required'),
   payment_status: z.string().max(50).optional(),
   status: z.string().max(50).optional(),
-}).refine((d) => Boolean(d.roomId || d.room_id), { message: 'roomId or room_id is required' })
-  .refine((d) => d.check_out > d.check_in, { message: 'Check-out must be after check-in' });
+}).refine((d) => Boolean(d.roomId || d.room_id), { message: 'Room selection is required (roomId or room_id)' })
+  .refine((d) => d.check_out > d.check_in, { message: 'Check-out date must be strictly after check-in date' })
+  .refine((d) => {
+    const name = (d.guest_name || d.guestName || '').trim();
+    return name.length >= 2;
+  }, { message: 'Primary guest name is required for booking manifest (minimum 2 characters)' })
+  .refine((d) => {
+    const raw = String(d.phone || '').replace(/\D/g, '').replace(/^63(?=\d{10})/, '0');
+    return /^09\d{9}$/.test(raw);
+  }, { message: 'Mobile phone must be strictly an 11-digit Philippine mobile number starting with 09 (e.g. 09171234567)' })
+  .refine((d) => {
+    const mail = (d.email || d.guest_email || '').trim();
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail);
+  }, { message: 'A valid email address is required for official booking voucher delivery' })
+  .refine((d) => Boolean(d.payment_method && d.payment_method.trim().length > 0), { message: 'Preferred downpayment method is required' });
 
 r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), asyncH(async (req, res) => {
   const {
@@ -152,10 +165,26 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
   const total_php = customTotal && customTotal > 0 ? Number(customTotal) : calculatedTotal;
   const downpayment_php = customDownpayment !== undefined ? Number(customDownpayment) : Math.round(total_php * 0.3);
 
-  const finalGuestName = (guest_name || guestName || req.user.full_name || req.user.name || '').trim();
-  const finalGuestEmail = (email || guest_email || req.user.email || '').trim();
-  const finalPhone = (phone || req.user.phone || '').trim();
-  const finalPaymentMethod = payment_method || 'GCash';
+  const finalGuestName = (guest_name || guestName || req.user?.full_name || req.user?.name || '').trim();
+  if (!finalGuestName || finalGuestName.length < 2) {
+    throw new ApiError(400, 'Primary guest name is required for booking manifest (minimum 2 characters).');
+  }
+
+  const finalGuestEmail = (email || guest_email || req.user?.email || '').trim();
+  if (!finalGuestEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(finalGuestEmail)) {
+    throw new ApiError(400, 'A valid guest email address is required for official booking voucher delivery.');
+  }
+
+  const rawPhone = (phone || req.user?.phone || '').trim();
+  const finalPhone = rawPhone ? rawPhone.replace(/\D/g, '').replace(/^63(?=\d{10})/, '0').slice(0, 11) : '';
+  if (!/^09\d{9}$/.test(finalPhone)) {
+    throw new ApiError(400, 'Mobile phone must be strictly an 11-digit Philippine mobile number starting with 09 (e.g. 09171234567).');
+  }
+
+  const finalPaymentMethod = (payment_method || 'GCash').trim();
+  if (!finalPaymentMethod) {
+    throw new ApiError(400, 'Preferred downpayment method is required.');
+  }
 
   if (req.user?.id) {
     const profileUpdates = {};

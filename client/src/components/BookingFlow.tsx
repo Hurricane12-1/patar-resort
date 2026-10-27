@@ -173,8 +173,8 @@ export default function BookingFlow({ initialSlug }) {
       toast('This room is already reserved / locked in for those dates. Please check the calendar for available dates.', true);
       return;
     }
-    if (phone && phone.length !== 11) {
-      toast('Phone number must be strictly an 11-digit number (e.g. 09XXXXXXXXX).', true);
+    if (phone && (phone.length !== 11 || !phone.startsWith('09'))) {
+      toast('Phone number must be strictly an 11-digit Philippine mobile number starting with 09 (e.g. 09XXXXXXXXX).', true);
       return;
     }
     setBusy(true);

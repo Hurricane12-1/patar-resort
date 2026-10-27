@@ -12,10 +12,9 @@ function to11Digits(val: string): string {
   if (!val) return '';
   let digits = String(val).replace(/\D/g, '');
   if (!digits) return '';
-  if (digits.startsWith('63')) {
+  if (digits.startsWith('63') && digits.length >= 3) {
     digits = '0' + digits.slice(2);
-  }
-  if (!digits.startsWith('0')) {
+  } else if (digits.startsWith('9')) {
     digits = '0' + digits;
   }
   return digits.slice(0, 11);
@@ -103,12 +102,12 @@ export default function ResortCustomer() {
 
   async function saveProfileDetails(e) {
     e.preventDefault();
-    if (profForm.phone && profForm.phone.length !== 11) {
-      toast('Mobile phone must be strictly an 11-digit number (e.g. 09XXXXXXXXX).', true);
+    if (profForm.phone && (profForm.phone.length !== 11 || !profForm.phone.startsWith('09'))) {
+      toast('Mobile phone must strictly be an 11-digit Philippine mobile number starting with 09 (e.g. 09XXXXXXXXX).', true);
       return;
     }
-    if (profForm.emergency_contact && profForm.emergency_contact.length !== 11) {
-      toast('Emergency contact must be strictly an 11-digit number (e.g. 09XXXXXXXXX).', true);
+    if (profForm.emergency_contact && (profForm.emergency_contact.length !== 11 || !profForm.emergency_contact.startsWith('09'))) {
+      toast('Emergency contact must strictly be an 11-digit Philippine mobile number starting with 09 (e.g. 09XXXXXXXXX).', true);
       return;
     }
     setSavingProf(true);

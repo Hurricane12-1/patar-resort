@@ -60,6 +60,7 @@ interface AvailabilityCalendarProps {
   numDays?: number;
   statusFilter?: string;
   showNewBookingInTopBar?: boolean;
+  selectionTarget?: 'checkIn' | 'checkOut' | 'auto';
 }
 
 const DEFAULT_NUM_DAYS = 14; // Default 14-day spacious window matching modern PMS calendar
@@ -76,6 +77,7 @@ export default function AvailabilityCalendar({
   numDays = DEFAULT_NUM_DAYS,
   statusFilter = 'all',
   showNewBookingInTopBar = false,
+  selectionTarget = 'auto',
 }: AvailabilityCalendarProps) {
   const daysCount = numDays || DEFAULT_NUM_DAYS;
 
@@ -429,11 +431,39 @@ export default function AvailabilityCalendar({
   // Cell click handler: selects single day or initiates booking
   const handleCellClick = (unitId: string, dateStr: string) => {
     setSelectedCell({ unitId, dateStr });
-    const coutStr = addDaysYMD(dateStr, 1);
-
     const matchedUnit = units.find((u) => u.id === unitId);
+
+    let newInStr = dateStr;
+    let newOutStr = addDaysYMD(dateStr, 1);
+
+    if (selectionTarget === 'checkOut') {
+      if (initialCheckIn && dateStr > initialCheckIn) {
+        newInStr = initialCheckIn;
+        newOutStr = dateStr;
+      } else {
+        newInStr = dateStr;
+        newOutStr = addDaysYMD(dateStr, 1);
+      }
+    } else if (selectionTarget === 'checkIn') {
+      if (initialCheckOut && dateStr < initialCheckOut) {
+        newInStr = dateStr;
+        newOutStr = initialCheckOut;
+      } else {
+        newInStr = dateStr;
+        newOutStr = addDaysYMD(dateStr, 1);
+      }
+    } else {
+      if (initialCheckIn && dateStr > initialCheckIn) {
+        newInStr = initialCheckIn;
+        newOutStr = dateStr;
+      } else {
+        newInStr = dateStr;
+        newOutStr = addDaysYMD(dateStr, 1);
+      }
+    }
+
     const activeStaysOnDate = allStays.filter(
-      (s) => !['cancelled', 'checked_out'].includes(String(s.status || '').toLowerCase()) && s.checkIn < coutStr && s.checkOut > dateStr
+      (s) => !['cancelled', 'checked_out'].includes(String(s.status || '').toLowerCase()) && s.checkIn < newOutStr && s.checkOut > newInStr
     );
     const unitConflict = activeStaysOnDate.find((s) => s.unitId === unitId);
     const roomObj = effectiveRooms.find((r) => r.id === matchedUnit?.roomId);
@@ -444,26 +474,21 @@ export default function AvailabilityCalendar({
 
     if (unitConflict) {
       toast(
-        `⚠️ Already Booked: ${matchedUnit?.name || 'Unit'} is already reserved on ${fmtDate(dateStr)} by ${unitConflict.guestName} (${fmtDate(unitConflict.checkIn)} → ${fmtDate(unitConflict.checkOut)})!`,
+        `⚠️ Already Booked: ${matchedUnit?.name || 'Unit'} is reserved between ${fmtDate(newInStr)} and ${fmtDate(newOutStr)} by ${unitConflict.guestName}!`,
         true
       );
     } else if (roomStaysOnDate.length >= roomCapacityUnits) {
       const names = roomStaysOnDate.map((s) => s.guestName).join(', ');
       toast(
-        `⚠️ Already Booked on ${fmtDate(dateStr)}: ${roomObj?.name || 'This room'} is already reserved by ${names}!`,
+        `⚠️ Fully Booked (${fmtDate(newInStr)} → ${fmtDate(newOutStr)}): ${roomObj?.name || 'Room'} is occupied by ${names}!`,
         true
       );
-    } else if (activeStaysOnDate.length > 0) {
-      const names = activeStaysOnDate.map((s) => `${s.guestName} (${s.unitName})`).join(', ');
-      toast(
-        `ℹ️ Selected ${matchedUnit?.name || 'Unit'} on ${fmtDate(dateStr)} → ${fmtDate(coutStr)}. Note: ${names} already booked on this day.`
-      );
     } else {
-      toast(`Selected ${matchedUnit?.name || 'Unit'} on ${fmtDate(dateStr)} → ${fmtDate(coutStr)}.`);
+      toast(`✦ Stay Range: ${fmtDate(newInStr)} → ${fmtDate(newOutStr)} (${matchedUnit?.name || 'Unit'}).`);
     }
 
     if (onSelectDates) {
-      onSelectDates(dateStr, coutStr, matchedUnit?.roomId, matchedUnit);
+      onSelectDates(newInStr, newOutStr, matchedUnit?.roomId, matchedUnit);
     }
   };
 
@@ -630,23 +655,63 @@ export default function AvailabilityCalendar({
                   style={{ gridTemplateColumns: `repeat(${daysCount}, 1fr)` }}
                 >
                   {daysArray.map((day) => {
-                    const isSelected = selectedCell?.unitId === unit.id && selectedCell?.dateStr === day.dateStr;
+                    const isCheckInDay = initialCheckIn ? day.dateStr === initialCheckIn : false;
+                    const isCheckOutDay = initialCheckOut ? day.dateStr === initialCheckOut : false;
+                    const isInStayRange = initialCheckIn && initialCheckOut && day.dateStr >= initialCheckIn && day.dateStr < initialCheckOut;
+                    const isSelected = (selectedCell?.unitId === unit.id && selectedCell?.dateStr === day.dateStr) || isCheckInDay;
 
                     return (
                       <div
                         key={day.dateStr}
                         className={`pms-cell ${day.isToday ? 'is-today' : ''}`}
                         onClick={() => handleCellClick(unit.id, day.dateStr)}
+                        title={`${day.dateStr}: ${isCheckInDay ? 'Check-In' : isCheckOutDay ? 'Check-Out' : isInStayRange ? 'Stay Date' : 'Click to select'}`}
                       >
-                        {isSelected && (
+                        {isInStayRange && (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              inset: 1,
+                              borderTop: '2px solid rgba(34, 195, 238, 0.85)',
+                              borderBottom: '2px solid rgba(34, 195, 238, 0.85)',
+                              background: isCheckInDay ? 'rgba(34, 195, 238, 0.32)' : 'rgba(34, 195, 238, 0.16)',
+                              borderRadius: isCheckInDay ? '4px 0 0 4px' : 0,
+                              pointerEvents: 'none',
+                              zIndex: 1,
+                            }}
+                          >
+                            {isCheckInDay && (
+                              <span style={{ position: 'absolute', top: 2, left: 3, fontSize: '8px', fontWeight: 800, color: '#22d3ee', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                IN
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {!isInStayRange && isCheckOutDay && (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              top: 1,
+                              bottom: 1,
+                              left: 0,
+                              width: 3,
+                              background: '#38bdf8',
+                              borderRadius: '0 4px 4px 0',
+                              pointerEvents: 'none',
+                              zIndex: 1,
+                            }}
+                          />
+                        )}
+                        {isSelected && !isInStayRange && (
                           <div
                             style={{
                               position: 'absolute',
                               inset: 2,
-                              border: '1.5px solid #6366F1',
-                              background: 'rgba(99, 102, 241, 0.08)',
+                              border: '1.5px solid #22d3ee',
+                              background: 'rgba(34, 211, 238, 0.12)',
                               borderRadius: 4,
                               pointerEvents: 'none',
+                              zIndex: 1,
                             }}
                           />
                         )}
