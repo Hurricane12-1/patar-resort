@@ -105,13 +105,9 @@ export default function AvailabilityCalendar({
     return getLocalDateString();
   }, []);
 
-  // 14-day rolling window starting directly on today's live date (or initialCheckIn if today/future)
+  // 14-day rolling window starting directly on today's live date
   const [windowStartDateStr, setWindowStartDateStr] = useState<string>(() => {
-    const liveToday = getLocalDateString();
-    if (initialCheckIn && initialCheckIn >= liveToday) {
-      return initialCheckIn;
-    }
-    return liveToday;
+    return getLocalDateString();
   });
 
   const [selectedCell, setSelectedCell] = useState<{ unitId: string; dateStr: string } | null>(null);
@@ -543,46 +539,49 @@ export default function AvailabilityCalendar({
     <div className={`pms-calendar-card ${!isLightMode ? 'dark' : ''}`}>
       {/* 1. TOP HEADER: Navigation, Date Range, Inline Metrics & Optional New Booking */}
       <div className="pms-top-bar">
-        {/* Left: < Today > and Date Range */}
+        {/* Left: < Today > Segmented Control + Reset Pill + Date Range */}
         <div className="pms-nav-group">
-          <button
-            type="button"
-            className="pms-nav-btn icon-only"
-            onClick={handlePrevWindow}
-            title={`Previous ${daysCount} days`}
-          >
-            <i className="fas fa-chevron-left" />
-          </button>
+          <div className="pms-segmented-nav">
+            <button
+              type="button"
+              className="pms-seg-btn icon-only"
+              onClick={handlePrevWindow}
+              title={`Previous ${daysCount} days`}
+            >
+              <i className="fas fa-chevron-left" />
+            </button>
 
-          <button
-            type="button"
-            className="pms-nav-btn"
-            onClick={handleTodayClick}
-          >
-            Today
-          </button>
+            <button
+              type="button"
+              className="pms-seg-btn text-btn"
+              onClick={handleTodayClick}
+              title="Jump to today's live date"
+            >
+              Today
+            </button>
 
-          <button
-            type="button"
-            className="pms-nav-btn icon-only"
-            onClick={handleNextWindow}
-            title={`Next ${daysCount} days`}
-          >
-            <i className="fas fa-chevron-right" />
-          </button>
+            <button
+              type="button"
+              className="pms-seg-btn icon-only"
+              onClick={handleNextWindow}
+              title={`Next ${daysCount} days`}
+            >
+              <i className="fas fa-chevron-right" />
+            </button>
+          </div>
 
           {onReset && (
             <button
               type="button"
-              className="pms-nav-btn pms-reset-btn"
+              className="pms-reset-pill"
               onClick={() => {
                 setSelectedCell(null);
                 if (onReset) onReset();
               }}
               title="Reset stay selection queue and start fresh"
             >
-              <i className="fas fa-rotate-left" style={{ marginRight: 5 }} />
-              Reset
+              <i className="fas fa-rotate-left" />
+              <span>Reset</span>
             </button>
           )}
 

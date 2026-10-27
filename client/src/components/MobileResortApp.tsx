@@ -151,8 +151,8 @@ export default function MobileResortApp() {
     return toISO(d);
   };
   const today = toISO(new Date());
-  const [checkIn, setCheckIn] = useState(addDays(today, 1));
-  const [checkOut, setCheckOut] = useState(addDays(today, 3));
+  const [checkIn, setCheckIn] = useState(today);
+  const [checkOut, setCheckOut] = useState(addDays(today, 1));
   const [guests, setGuests] = useState('2 Guests');
   const [selectedRoom, setSelectedRoom] = useState(site.rooms.items[0]?.name ?? '');
   const [quote, setQuote] = useState<{ ok: boolean; text: string } | null>(null);
