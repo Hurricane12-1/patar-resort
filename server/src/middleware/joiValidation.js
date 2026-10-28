@@ -128,7 +128,6 @@ export const joiSchemas = {
       'string.pattern.base': 'Emergency contact must strictly be an 11-digit Philippine mobile number starting with 09 (e.g. 09181234567)',
     }),
     provider: Joi.string().valid('email', 'gmail', 'google', 'facebook').default('email'),
-    is_automated: Joi.boolean().default(false),
   }),
 
   verifySignup2FA: Joi.object({

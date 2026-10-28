@@ -129,7 +129,7 @@ r.post('/auth/signup/initiate',
   asyncH(async (req, res) => {
     const {
       email, password, first_name, middle_name, last_name, username,
-      phone, address, city, emergency_contact, provider = 'email', is_automated = false,
+      phone, address, city, emergency_contact, provider = 'email',
     } = req.body;
 
     const cleanEmail = email.trim().toLowerCase();
@@ -285,7 +285,6 @@ r.post('/auth/signup/initiate',
         city: city || '',
         emergency_contact: normEmergency,
         provider,
-        is_automated: Boolean(is_automated),
       },
       attempts: 0,
       createdAt: Date.now(),
@@ -345,7 +344,6 @@ r.post('/auth/signup/initiate',
       provider,
       expires_in_seconds: 60,
       channel: phone ? 'email_and_sms' : 'email',
-      ...(isDev ? { dev_code_preview: code } : {}),
     });
   }));
 
@@ -597,7 +595,6 @@ r.post('/auth/signup/resend-2fa',
       success: true,
       message: `A new confirmation code has been dispatched to ${cleanEmail}. You have 1 minute to confirm.`,
       expires_in_seconds: 60,
-      ...(isDev ? { dev_code_preview: newCode } : {}),
     });
   }));
 
@@ -734,9 +731,6 @@ r.post('/auth/forgot-password',
       }).catch(() => {});
     }
 
-    // In local development or standalone mode, return code preview for smooth testing
-    const isDev = process.env.NODE_ENV !== 'production';
-
     return res.json({
       success: true,
       message: targetPhone
@@ -744,7 +738,6 @@ r.post('/auth/forgot-password',
         : `Recovery code dispatched to your email (${email}).`,
       expires_in_seconds: 900,
       channel: targetPhone ? 'email_and_sms' : 'email',
-      ...(isDev ? { dev_code_preview: code } : {}),
     });
   }));
 

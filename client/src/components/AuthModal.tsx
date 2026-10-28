@@ -26,17 +26,11 @@ export default function AuthModal() {
 
   const [busy, setBusy] = useState(false);
 
-  // Automation Control State
-  const [automationOpen, setAutomationOpen] = useState(false);
-  const [automationEnabled, setAutomationEnabled] = useState(true);
-  const [autoDispatch2FA, setAutoDispatch2FA] = useState(true);
-
   // 2FA Confirmation State
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupName, setSignupName] = useState('');
   const [signupCode, setSignupCode] = useState('');
-  const [devCodePreview, setDevCodePreview] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
   const [confirmationTimeLeft, setConfirmationTimeLeft] = useState(60); // 1-minute (60s) confirmation gate
   const [confirmationExpiredMsg, setConfirmationExpiredMsg] = useState('');
@@ -175,108 +169,6 @@ export default function AuthModal() {
     return null;
   }
 
-  // Automation Control: Auto-Collect Google Account Information
-  async function handleAutoCollectGoogleInfo() {
-    toast('⚡ Connecting to Google API… auto-collecting user identity…');
-    // If user already typed an email, parse from it directly
-    if (f.email && f.email.includes('@')) {
-      const parsed = parseNameFromEmail(f.email);
-      if (parsed) {
-        setF((prev) => ({
-          ...prev,
-          first_name: parsed.first,
-          last_name: parsed.last || prev.last_name || 'Guest',
-          full_name: parsed.full || `${parsed.first} ${prev.last_name || 'Guest'}`,
-        }));
-        toast(`✅ Automated Google collection: Verified "${parsed.full}" for guest manifest!`);
-        return;
-      }
-    }
-
-    try {
-      await signInWithGoogle();
-    } catch {
-      toast('Please enter your Google email address and real name for the guest manifest.', true);
-    }
-  }
-
-  // Automated Social Sign-Up (Google / Facebook)
-  async function handleAutoSignUp(provider: 'google' | 'facebook') {
-    const chosenProvider = provider === 'google' ? 'gmail' : 'facebook';
-    setSignupProvider(chosenProvider);
-    setConfirmationExpiredMsg('');
-
-    let firstName = f.first_name.trim();
-    let lastName = f.last_name.trim();
-
-    // If names are not typed, intelligently infer from email or assign authentic guest identity
-    if (!firstName || !lastName) {
-      if (f.email && f.email.includes('@')) {
-        const parsed = parseNameFromEmail(f.email);
-        if (parsed) {
-          firstName = firstName || parsed.first;
-          lastName = lastName || parsed.last || (provider === 'google' ? 'Google' : 'Facebook');
-        }
-      }
-      firstName = firstName || (provider === 'google' ? 'Google' : 'Facebook');
-      lastName = lastName || 'Guest';
-    }
-
-    const targetEmail = f.email || (chosenProvider === 'facebook'
-      ? generateAccountEmail(firstName, f.middle_name, lastName, 1, false, 'facebook')
-      : generateAccountEmail(firstName, f.middle_name, lastName, 1, false, 'gmail'));
-    const targetPass = f.password || 'ClientPassword123!';
-    const phone = to11Digits(f.phone) || '09175558899';
-    const address = f.address || 'Patar Beach';
-    const city = (f.city || 'Bolinao').replace(/[^a-zA-Z\s\-]/g, '');
-    const emergencyContact = to11Digits(f.emergency_contact) || '09185550123';
-
-    // Automatically fill form state with entire user profile information
-    setF((prev) => ({
-      ...prev,
-      first_name: firstName,
-      last_name: lastName,
-      full_name: `${firstName} ${lastName}`,
-      email: targetEmail,
-      password: targetPass,
-      phone,
-      address,
-      city,
-      emergency_contact: emergencyContact,
-    }));
-
-    setBusy(true);
-    try {
-      const res = await api.initiateSignup({
-        email: targetEmail,
-        password: targetPass,
-        first_name: firstName,
-        middle_name: f.middle_name,
-        last_name: lastName,
-        phone,
-        address,
-        city,
-        emergency_contact: emergencyContact,
-        provider: chosenProvider,
-        is_automated: true,
-      });
-
-      setSignupEmail(targetEmail);
-      setSignupPassword(targetPass);
-      setSignupName([firstName, f.middle_name, lastName].filter(Boolean).join(' '));
-      setDevCodePreview(res.dev_code_preview || '');
-      setMode('2fa');
-      setSignupCode('');
-      setConfirmationTimeLeft(60); // 1-minute countdown
-      setResendCooldown(30);
-      toast(res.message || `2FA confirmation code dispatched to ${targetEmail}! You have 1 minute to confirm.`);
-    } catch (err: any) {
-      toast(err.message, true);
-    } finally {
-      setBusy(false);
-    }
-  }
-
   // Standard Form Submit (Sign In or Initiate Sign Up)
   async function submitAuth(e: React.FormEvent) {
     e.preventDefault();
@@ -361,13 +253,11 @@ export default function AuthModal() {
           city: f.city,
           emergency_contact: f.emergency_contact,
           provider: signupProvider,
-          is_automated: automationEnabled,
         });
 
         setSignupEmail(targetEmail);
         setSignupPassword(f.password);
         setSignupName(fullName);
-        setDevCodePreview(res.dev_code_preview || '');
         setMode('2fa');
         setSignupCode('');
         setConfirmationTimeLeft(60); // 1-minute countdown
@@ -422,7 +312,6 @@ export default function AuthModal() {
     setBusy(true);
     try {
       const res = await api.resendSignup2FA(signupEmail);
-      if (res.dev_code_preview) setDevCodePreview(res.dev_code_preview);
       setConfirmationTimeLeft(60); // Reset to full 1 minute on resend
       setResendCooldown(30);
       setConfirmationExpiredMsg('');
@@ -639,129 +528,6 @@ export default function AuthModal() {
                 </button>
               </div>
 
-              {/* AUTOMATION CONTROLS PANEL FOR CLIENT ONBOARDING */}
-              {mode === 'up' && (
-                <div style={{
-                  background: 'rgba(15, 23, 42, 0.75)',
-                  border: '1px solid rgba(56, 189, 248, 0.35)',
-                  borderRadius: 12,
-                  padding: '12px 14px',
-                  marginBottom: 16,
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <i className="fas fa-bolt" style={{ fontSize: '1.1rem', color: '#F59E0B' }} />
-                      <div>
-                        <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#38BDF8', letterSpacing: '0.04em' }}>
-                          AUTOMATION CONTROLS
-                        </span>
-                        <span style={{ display: 'block', fontSize: '0.7rem', color: '#94A3B8' }}>
-                          One-Click Google & Facebook Auto Sign-Up Engine
-                        </span>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setAutomationOpen(!automationOpen)}
-                      style={{
-                        background: 'rgba(56, 189, 248, 0.15)',
-                        border: '1px solid rgba(56, 189, 248, 0.4)',
-                        color: '#7DD3FC',
-                        fontSize: '0.74rem',
-                        fontWeight: 600,
-                        padding: '4px 9px',
-                        borderRadius: 6,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {automationOpen ? 'Hide Controls ▲' : 'Open Controls ▼'}
-                    </button>
-                  </div>
-
-                  {/* QUICK AUTO SIGN-UP ACTION BUTTONS */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10 }}>
-                    <button
-                      type="button"
-                      onClick={() => handleAutoSignUp('google')}
-                      disabled={busy}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 6,
-                        background: 'linear-gradient(135deg, rgba(234, 67, 53, 0.2), rgba(251, 188, 5, 0.15))',
-                        border: '1px solid rgba(234, 67, 53, 0.5)',
-                        color: '#F8FAFC',
-                        fontSize: '0.78rem',
-                        fontWeight: 700,
-                        padding: '8px 10px',
-                        borderRadius: 8,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <span><i className="fab fa-google" style={{ marginRight: 6 }} />Auto Sign-Up (Google)</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleAutoSignUp('facebook')}
-                      disabled={busy}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 6,
-                        background: 'linear-gradient(135deg, rgba(24, 119, 242, 0.25), rgba(56, 189, 248, 0.15))',
-                        border: '1px solid rgba(24, 119, 242, 0.5)',
-                        color: '#F8FAFC',
-                        fontSize: '0.78rem',
-                        fontWeight: 700,
-                        padding: '8px 10px',
-                        borderRadius: 8,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <span><i className="fab fa-facebook-f" style={{ marginRight: 6 }} />Auto Sign-Up (Facebook)</span>
-                    </button>
-                  </div>
-
-                  {/* EXPANDED AUTOMATION SETTINGS */}
-                  {automationOpen && (
-                    <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                        <span style={{ fontSize: '0.75rem', color: '#CBD5E1' }}><i className="fas fa-robot" style={{ marginRight: 6 }} />Auto Sign-Up Automation Engine</span>
-                        <button
-                          type="button"
-                          onClick={() => setAutomationEnabled(!automationEnabled)}
-                          style={{
-                            background: automationEnabled ? '#10B981' : '#475569',
-                            color: '#FFFFFF',
-                            border: 'none',
-                            borderRadius: 12,
-                            padding: '2px 10px',
-                            fontSize: '0.7rem',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          {automationEnabled ? 'ENABLED' : 'PAUSED'}
-                        </button>
-                      </div>
-
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                        <span style={{ fontSize: '0.75rem', color: '#CBD5E1' }}><i className="fas fa-envelope" style={{ marginRight: 6 }} />Auto-Dispatch 2FA to Gmail</span>
-                        <span style={{ fontSize: '0.7rem', color: '#10B981', fontWeight: 700 }}>ACTIVE (SMTP)</span>
-                      </div>
-
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                        <span style={{ fontSize: '0.75rem', color: '#CBD5E1' }}><i className="fas fa-shield-halved" style={{ marginRight: 6 }} />Mandatory Name Sentinel</span>
-                        <span style={{ fontSize: '0.7rem', color: '#38BDF8', fontWeight: 700 }}>ENFORCED (GUEST MANIFEST)</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '12px 0 14px' }}>
                 <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
                 <span style={{ fontSize: '.72rem', letterSpacing: '.18em', color: 'var(--muted)', textTransform: 'uppercase' }}>
@@ -875,48 +641,6 @@ export default function AuthModal() {
               <form onSubmit={submitAuth}>
                 {mode === 'up' && (
                   <>
-                    {/* AUTOMATED GOOGLE/GMAIL COLLECTION TRIGGER */}
-                    {signupProvider === 'gmail' && (
-                      <div style={{
-                        background: 'rgba(234, 67, 53, 0.1)',
-                        border: '1px solid rgba(234, 67, 53, 0.35)',
-                        borderRadius: 8,
-                        padding: '10px 12px',
-                        marginBottom: 12,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: 10,
-                      }}>
-                        <div style={{ fontSize: '0.76rem', color: '#FECACA' }}>
-                          <strong style={{ color: '#FCA5A5', display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <><i className="fas fa-bolt" style={{ color: '#F59E0B', marginRight: 6 }} />Automated Google Account Collection</>
-                          </strong>
-                          <div style={{ color: '#94A3B8', fontSize: '0.72rem', marginTop: 2 }}>
-                            Automatically collect and verify user information from your Google account.
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={handleAutoCollectGoogleInfo}
-                          style={{
-                            background: '#EA4335',
-                            color: '#FFFFFF',
-                            border: 'none',
-                            borderRadius: 6,
-                            padding: '6px 12px',
-                            fontSize: '0.74rem',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            whiteSpace: 'nowrap',
-                            boxShadow: '0 2px 6px rgba(234, 67, 53, 0.3)',
-                          }}
-                        >
-                          Auto-Collect Google Info
-                        </button>
-                      </div>
-                    )}
-
                     {/* MANDATORY NAME BANNER */}
                     <div style={{
                       padding: '8px 12px',
@@ -1186,40 +910,6 @@ export default function AuthModal() {
                   Client Name: <strong style={{ color: '#38BDF8' }}>{signupName}</strong>
                 </div>
               </div>
-
-              {/* DEV PREVIEW HELPER FOR AUTOMATION TESTING */}
-              {devCodePreview && (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  background: 'rgba(16, 185, 129, 0.15)',
-                  border: '1px solid rgba(16, 185, 129, 0.4)',
-                  padding: '8px 12px',
-                  borderRadius: 8,
-                  marginBottom: 14,
-                }}>
-                  <span style={{ fontSize: '0.76rem', color: '#6EE7B7' }}>
-                    <><i className="fas fa-bolt" style={{ color: '#F59E0B', marginRight: 4 }} /> <strong>Automated Dev Preview:</strong></> Code is <code>{devCodePreview}</code>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setSignupCode(devCodePreview)}
-                    style={{
-                      background: '#10B981',
-                      border: 'none',
-                      color: '#FFFFFF',
-                      fontSize: '0.72rem',
-                      fontWeight: 700,
-                      padding: '4px 8px',
-                      borderRadius: 6,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Auto-Fill 2FA
-                  </button>
-                </div>
-              )}
 
               <form onSubmit={submitSignup2FA}>
                 <div className="field">
