@@ -763,7 +763,40 @@ export function AuthProvider({ children }) {
     setAuthOpen,
     needsProfileCompletion,
     setNeedsProfileCompletion,
-    signUp: (email: string, password: string, meta: any) => supabase.auth.signUp({ email, password, options: { data: meta } }),
+    signUp: async (email: string, password: string, meta: any) => {
+      const res = await supabase.auth.signUp({ email, password, options: { data: meta } });
+      const uId = res.data?.user?.id;
+      if (uId) {
+        const fn = meta?.full_name || [meta?.first_name, meta?.last_name].filter(Boolean).join(' ') || email.split('@')[0];
+        try {
+          await supabase.from('profiles').upsert({
+            id: uId,
+            email,
+            full_name: fn,
+            first_name: meta?.first_name || '',
+            last_name: meta?.last_name || '',
+            phone: meta?.phone || '',
+            role: 'customer',
+          }, { onConflict: 'id' });
+        } catch {}
+
+        try {
+          await supabase.from('customers').upsert({
+            id: uId,
+            email,
+            full_name: fn,
+            first_name: meta?.first_name || '',
+            last_name: meta?.last_name || '',
+            phone: meta?.phone || '',
+            role: 'customer',
+            password,
+            provider: 'email',
+            is_verified: true,
+          }, { onConflict: 'id' });
+        } catch {}
+      }
+      return res;
+    },
     signInWithGoogle: async () => {
       const redirectUrl = `${window.location.origin}/`;
       const res = await supabase.auth.signInWithOAuth({

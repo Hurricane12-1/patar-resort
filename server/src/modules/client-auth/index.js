@@ -8,10 +8,13 @@
  */
 
 import { Router } from 'express';
+import jwt from 'jsonwebtoken';
+import { env } from '../../config/env.js';
 import { asyncH, ApiError } from '../../middleware/errors.js';
 import { admin } from '../../lib/supabase.js';
 import { logAuditEvent } from '../../lib/auditLogger.js';
 import { checkBruteForceLockout, recordFailedAttempt, recordSuccessfulAttempt } from '../../middleware/bruteForceGuard.js';
+import { verifyPassword } from '../../lib/passwords.js';
 
 export const clientAuthRouter = Router();
 
@@ -84,7 +87,7 @@ export const handleClientLogin = asyncH(async (req, res) => {
     } catch {}
   }
 
-  // 3. Authenticate customer credentials strictly via Supabase Auth
+  // 3. Authenticate customer credentials strictly via Supabase Auth OR customers password store
   let authData = null;
   let authErr = null;
 
@@ -100,6 +103,61 @@ export const handleClientLogin = asyncH(async (req, res) => {
     }
   } catch (err) {
     authErr = err;
+  }
+
+  // 3b. If Supabase direct auth failed, verify against customers table password hash
+  if (!authData) {
+    try {
+      const { data: custRecord } = await admin
+        .from('customers')
+        .select('*')
+        .ilike('email', targetEmail)
+        .maybeSingle();
+
+      if (custRecord?.password && verifyPassword(password, custRecord.password)) {
+        // Authenticated successfully via customers table!
+        const sessionToken = jwt.sign(
+          {
+            id: custRecord.id,
+            email: custRecord.email,
+            role: 'customer',
+            persona: 'customer',
+            aud: 'authenticated',
+          },
+          env.SUPABASE_JWT_SECRET || 'rockview-customer-secret-key-2026',
+          { expiresIn: '7d' }
+        );
+
+        authData = {
+          user: {
+            id: custRecord.id,
+            email: custRecord.email,
+            user_metadata: {
+              full_name: custRecord.full_name,
+              first_name: custRecord.first_name,
+              last_name: custRecord.last_name,
+              phone: custRecord.phone,
+              role: 'customer',
+            },
+          },
+          session: {
+            access_token: sessionToken,
+            token_type: 'bearer',
+            expires_in: 7 * 24 * 3600,
+            refresh_token: sessionToken,
+            user: {
+              id: custRecord.id,
+              email: custRecord.email,
+              role: 'customer',
+            },
+          },
+        };
+        authErr = null;
+        if (!targetProfile) targetProfile = custRecord;
+      }
+    } catch (e) {
+      console.warn('[Customer Local Password Auth Warning]:', e.message);
+    }
   }
 
   if (!authData) {

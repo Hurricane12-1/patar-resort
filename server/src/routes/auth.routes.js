@@ -400,6 +400,30 @@ r.post('/auth/signup/confirm-2fa',
       console.warn('[Database Warning] Profile upsert notice:', profErr.message);
     }
 
+    // Upsert customer record into customers table with password hash
+    try {
+      await admin.from('customers').upsert({
+        id: userId,
+        email: cleanEmail,
+        username: record.profile?.username || cleanEmail.split('@')[0],
+        first_name,
+        middle_name: middle_name || '',
+        last_name,
+        full_name,
+        role: 'customer',
+        phone: phone || '',
+        address: address || '',
+        city: city || '',
+        emergency_contact: emergency_contact || '',
+        provider: provider || 'email',
+        is_verified: true,
+        password: hashPassword(record.password),
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'id' });
+    } catch (custUpsertErr) {
+      console.warn('[Customers Table Sync Warning]:', custUpsertErr.message);
+    }
+
     // Clean up 2FA cache state
     await redis.del(cacheKey);
 
@@ -757,6 +781,16 @@ r.post('/auth/reset-password',
         password: new_password,
       });
       if (!updateErr) authUpdated = true;
+    }
+
+    // Also update password hash in customers table
+    try {
+      await admin.from('customers')
+        .update({ password: hashPassword(new_password), updated_at: new Date().toISOString() })
+        .ilike('email', cleanEmail);
+      authUpdated = true;
+    } catch (custErr) {
+      console.warn('[Customers Table Password Reset Warning]:', custErr.message);
     }
 
     // Also synchronize password to employee_accounts if an employee record exists
