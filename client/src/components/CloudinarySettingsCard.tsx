@@ -128,7 +128,7 @@ export default function CloudinarySettingsCard({
               setCloudName(e.target.value);
               onConfigChange({ cloudName: e.target.value, uploadPreset, apiKey, imageUrl });
             }}
-            placeholder="e.g. jd-beach-house-cloud"
+            placeholder="e.g. rock-view-resort-cloud"
             style={{ background: inputBg, color: themeText, border: `1px solid ${themeBorder}` }}
           />
         </div>

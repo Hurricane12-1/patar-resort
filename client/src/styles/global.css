@@ -1644,6 +1644,8 @@ body.light-mode .hbar,
 }
 
 .chat-chips button {
+  display: inline-flex;
+  align-items: center;
   border: 1px solid rgba(56, 189, 248, 0.35);
   color: #7DD3FC;
   border-radius: 9999px;

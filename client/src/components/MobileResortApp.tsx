@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import site from '../content/site.json';
-import { useAuth, to11Digits } from '../context/AuthContext.tsx';
+import { useAuth, to11Digits, isValidPHMobile } from '../context/AuthContext.tsx';
 import { api } from '../lib/api.ts';
 import { CANONICAL_ROOMS } from '../lib/canonicalRooms.ts';
 import { toast } from './Toasts.tsx';
@@ -151,8 +151,8 @@ export default function MobileResortApp() {
     return toISO(d);
   };
   const today = toISO(new Date());
-  const [checkIn, setCheckIn] = useState(addDays(today, 1));
-  const [checkOut, setCheckOut] = useState(addDays(today, 3));
+  const [checkIn, setCheckIn] = useState(today);
+  const [checkOut, setCheckOut] = useState(addDays(today, 1));
   const [guests, setGuests] = useState('2 Guests');
   const [selectedRoom, setSelectedRoom] = useState(site.rooms.items[0]?.name ?? '');
   const [quote, setQuote] = useState<{ ok: boolean; text: string } | null>(null);
@@ -242,9 +242,13 @@ export default function MobileResortApp() {
   const [resSubmitting, setResSubmitting] = useState(false);
   const [resConfirmed, setResConfirmed] = useState<any | null>(null);
   const [showModalCalendar, setShowModalCalendar] = useState(false);
+  const [calendarTarget, setCalendarTarget] = useState<'checkIn' | 'checkOut'>('checkIn');
   const [showHeroCalendar, setShowHeroCalendar] = useState(false);
   const [selectedVoucher, setSelectedVoucher] = useState<VoucherData | null>(null);
   const [showVoucherModal, setShowVoucherModal] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showPolicyModal, setShowPolicyModal] = useState(false);
+  const [policyTab, setPolicyTab] = useState<'cancellation' | 'checkin' | 'rules' | 'privacy'>('cancellation');
 
   // Sync profile fields whenever profile/session changes
   useEffect(() => {
@@ -583,13 +587,13 @@ export default function MobileResortApp() {
       return;
     }
     const cleanPhone = to11Digits(profPhone);
-    if (!cleanPhone || cleanPhone.length !== 11) {
-      toast('Mobile number must be strictly 11 digits (e.g. 0917xxxxxxx)', true);
+    if (!cleanPhone || cleanPhone.length !== 11 || !cleanPhone.startsWith('09')) {
+      toast('Mobile number must be strictly an 11-digit Philippine mobile number starting with 09 (e.g. 0917xxxxxxx)', true);
       return;
     }
     const cleanEmergency = profEmergency ? to11Digits(profEmergency) : '';
-    if (profEmergency && cleanEmergency.length !== 11) {
-      toast('Emergency contact must be 11 digits (e.g. 0918xxxxxxx)', true);
+    if (profEmergency && (cleanEmergency.length !== 11 || !cleanEmergency.startsWith('09'))) {
+      toast('Emergency contact must be strictly an 11-digit Philippine mobile number starting with 09 (e.g. 0918xxxxxxx)', true);
       return;
     }
     setProfSaving(true);
@@ -714,6 +718,24 @@ export default function MobileResortApp() {
     setReservationModalOpen(true);
   };
 
+  const handleResetCalendarSelection = () => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    const todayLocal = `${y}-${m}-${d}`;
+    const tomorrowDate = new Date(now.getTime() + 86400000);
+    const ty = tomorrowDate.getFullYear();
+    const tm = String(tomorrowDate.getMonth() + 1).padStart(2, '0');
+    const td = String(tomorrowDate.getDate()).padStart(2, '0');
+    const tomorrowLocal = `${ty}-${tm}-${td}`;
+
+    setCheckIn(todayLocal);
+    setCheckOut(tomorrowLocal);
+    setCalendarTarget('checkIn');
+    toast('✦ Calendar selection reset: Ready to pick Check-In.');
+  };
+
   const handleConfirmReservation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!session) {
@@ -722,17 +744,47 @@ export default function MobileResortApp() {
       go('auth', 'login');
       return;
     }
-    const cleanPhone = to11Digits(resPhone || profile?.phone || '');
-    if (!cleanPhone || cleanPhone.length !== 11) {
-      toast('Please enter an 11-digit mobile phone for SMS booking verification (09xxxxxxxxx)', true);
+
+    if (!termsAccepted) {
+      toast('⚠️ Please review and accept the Resort Terms of Stay and Cancellation Policy to confirm.', true);
       return;
     }
-    const nights = Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000));
+
     const targetRoomId = resRoom?.id || '';
     if (!targetRoomId) {
       toast('Please select an active room to reserve.', true);
       return;
     }
+
+    if (!checkIn || !checkOut || checkOut <= checkIn) {
+      toast('Please select valid stay dates (check-out must be after check-in).', true);
+      return;
+    }
+
+    const cleanGuestName = (resName || profile?.full_name || '').trim();
+    if (!cleanGuestName || cleanGuestName.length < 2) {
+      toast('Please enter the primary guest name for the official manifest.', true);
+      return;
+    }
+
+    const cleanPhone = to11Digits(resPhone || profile?.phone || '');
+    if (!cleanPhone || cleanPhone.length !== 11 || !cleanPhone.startsWith('09')) {
+      toast('Mobile phone must strictly be an 11-digit Philippine mobile number starting with 09 (e.g. 09171234567).', true);
+      return;
+    }
+
+    const cleanEmail = (resEmail || profile?.email || session?.user?.email || '').trim();
+    if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      toast('Please enter a valid email address to receive your official voucher.', true);
+      return;
+    }
+
+    if (!resPaymentMethod) {
+      toast('Please choose a preferred downpayment method.', true);
+      return;
+    }
+
+    const nights = Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000));
     const rate = resRoom?.rate_php || resRoom?.price || 4200;
     const totalPhp = nights * rate;
     const downpaymentPhp = Math.round(totalPhp * 0.3);
@@ -747,9 +799,12 @@ export default function MobileResortApp() {
         guests: parseInt(guests) || 2,
         notes: resNotes ? `${resNotes} [Payment: ${resPaymentMethod}]` : `Payment method: ${resPaymentMethod}`,
         phone: cleanPhone,
-        guest_name: (resName || profile?.full_name || '').trim(),
-        guest_email: profile?.email || '',
+        guest_name: cleanGuestName,
+        guestName: cleanGuestName,
+        guest_email: cleanEmail,
+        email: cleanEmail,
         payment_method: resPaymentMethod,
+        terms_accepted: true,
       };
 
       const result = await api.createReservation(payload);
@@ -2330,17 +2385,68 @@ export default function MobileResortApp() {
                   </div>
 
                   <label className="flex flex-col gap-1.5">
-                    <span className={LABEL}>Mobile Phone (11-Digit PH Format) *</span>
-                    <input
-                      required
-                      type="tel"
-                      maxLength={11}
-                      value={profPhone}
-                      onChange={(e) => setProfPhone(to11Digits(e.target.value))}
-                      placeholder="09171234567"
-                      className={FIELD}
-                    />
-                    <span className="text-[10px] text-white/40">Used for official booking voucher & front desk SMS updates</span>
+                    <div className="flex items-center justify-between gap-1">
+                      <span className={LABEL}>Mobile Phone (11-Digit PH Format) *</span>
+                      <span
+                        className={`text-[10px] font-semibold tracking-wide whitespace-nowrap transition-colors duration-200 ${
+                          profPhone.length === 11 && /^09\d{9}$/.test(profPhone)
+                            ? 'text-emerald-400'
+                            : profPhone.length > 0
+                              ? 'text-amber-400'
+                              : 'text-white/40'
+                        }`}
+                      >
+                        {profPhone.length === 11 && /^09\d{9}$/.test(profPhone) ? (
+                          <><i className="fas fa-circle-check text-[9px] mr-1" />11/11 PH Mobile</>
+                        ) : (
+                          `${profPhone.length}/11 digits`
+                        )}
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <input
+                        required
+                        type="tel"
+                        inputMode="numeric"
+                        autoComplete="tel"
+                        maxLength={11}
+                        minLength={11}
+                        pattern="^09[0-9]{9}$"
+                        title="Must be an 11-digit Philippine mobile number starting with 09 (e.g. 09171234567)"
+                        value={profPhone}
+                        onChange={(e) => setProfPhone(to11Digits(e.target.value))}
+                        placeholder="09171234567"
+                        className={`${FIELD} pr-8 ${
+                          profPhone.length === 11 && /^09\d{9}$/.test(profPhone)
+                            ? '!border-emerald-500/70 focus:!border-emerald-400 !bg-emerald-950/20'
+                            : profPhone.length > 0 && (!profPhone.startsWith('09') || profPhone.length < 11)
+                              ? '!border-amber-500/70 focus:!border-amber-400 !bg-amber-950/20'
+                              : ''
+                        }`}
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-xs">
+                        {profPhone.length === 11 && /^09\d{9}$/.test(profPhone) ? (
+                          <i className="fas fa-check text-emerald-400" />
+                        ) : profPhone.length > 0 && !profPhone.startsWith('09') ? (
+                          <i className="fas fa-triangle-exclamation text-amber-400" />
+                        ) : (
+                          <span className="text-[10px] font-mono text-white/30">PH</span>
+                        )}
+                      </div>
+                    </div>
+                    {profPhone.length > 0 && !profPhone.startsWith('09') ? (
+                      <span className="text-[10px] text-amber-300 flex items-center gap-1 mt-0.5">
+                        <i className="fas fa-circle-info text-[9px]" />
+                        Philippine mobile numbers must start with 09 (e.g. 09171234567)
+                      </span>
+                    ) : profPhone.length > 0 && profPhone.length < 11 ? (
+                      <span className="text-[10px] text-amber-300/80 flex items-center gap-1 mt-0.5">
+                        <i className="fas fa-circle-info text-[9px]" />
+                        Enter {11 - profPhone.length} more digit{11 - profPhone.length > 1 ? 's' : ''} to reach 11-digit PH mobile ruling
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-white/40">Used for official booking voucher & front desk SMS updates</span>
+                    )}
                   </label>
 
                   <div className="grid grid-cols-2 gap-3">
@@ -2367,15 +2473,53 @@ export default function MobileResortApp() {
                   </div>
 
                   <label className="flex flex-col gap-1.5">
-                    <span className={LABEL}>Emergency Contact (11-Digit Mobile)</span>
-                    <input
-                      type="tel"
-                      maxLength={11}
-                      value={profEmergency}
-                      onChange={(e) => setProfEmergency(to11Digits(e.target.value))}
-                      placeholder="09181234567"
-                      className={FIELD}
-                    />
+                    <div className="flex items-center justify-between gap-1">
+                      <span className={LABEL}>Emergency Contact (11-Digit Mobile)</span>
+                      {profEmergency.length > 0 && (
+                        <span
+                          className={`text-[10px] font-semibold tracking-wide whitespace-nowrap transition-colors duration-200 ${
+                            profEmergency.length === 11 && /^09\d{9}$/.test(profEmergency)
+                              ? 'text-emerald-400'
+                              : 'text-amber-400'
+                          }`}
+                        >
+                          {profEmergency.length === 11 && /^09\d{9}$/.test(profEmergency) ? (
+                            <><i className="fas fa-circle-check text-[9px] mr-1" />11/11 PH Mobile</>
+                          ) : (
+                            `${profEmergency.length}/11 digits`
+                          )}
+                        </span>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="tel"
+                        inputMode="numeric"
+                        autoComplete="tel"
+                        maxLength={11}
+                        pattern="^09[0-9]{9}$"
+                        title="Must be an 11-digit Philippine mobile number starting with 09 (e.g. 09181234567)"
+                        value={profEmergency}
+                        onChange={(e) => setProfEmergency(to11Digits(e.target.value))}
+                        placeholder="09181234567"
+                        className={`${FIELD} pr-8 ${
+                          profEmergency.length === 11 && /^09\d{9}$/.test(profEmergency)
+                            ? '!border-emerald-500/70 focus:!border-emerald-400 !bg-emerald-950/20'
+                            : profEmergency.length > 0 && (!profEmergency.startsWith('09') || profEmergency.length < 11)
+                              ? '!border-amber-500/70 focus:!border-amber-400 !bg-amber-950/20'
+                              : ''
+                        }`}
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-xs">
+                        {profEmergency.length === 11 && /^09\d{9}$/.test(profEmergency) ? (
+                          <i className="fas fa-check text-emerald-400" />
+                        ) : profEmergency.length > 0 && !profEmergency.startsWith('09') ? (
+                          <i className="fas fa-triangle-exclamation text-amber-400" />
+                        ) : (
+                          <span className="text-[10px] font-mono text-white/30">PH</span>
+                        )}
+                      </div>
+                    </div>
                   </label>
 
                   {confirmDeleteProf ? (
@@ -2716,14 +2860,19 @@ export default function MobileResortApp() {
                       </div>
                     </div>
 
-                    {/* Interactive Date Adjuster Bar - 2 columns adapting cleanly to phone screens */}
+                    {/* Interactive Date Adjuster Bar - 2 columns with active Selection Target & Direct Pickers */}
                     <div className="pt-2.5 border-t border-white/10 flex flex-col gap-2">
                       <div className="grid grid-cols-2 gap-2 w-full">
                         <button
                           type="button"
-                          onClick={() => setShowModalCalendar(true)}
+                          onClick={() => {
+                            setCalendarTarget('checkIn');
+                            setShowModalCalendar(true);
+                          }}
                           className={`flex flex-col text-left gap-0.5 min-w-0 p-2.5 rounded-xl border transition cursor-pointer ${
-                            showModalCalendar ? 'border-cyan bg-cyan/15 ring-1 ring-cyan/40' : 'border-white/15 bg-white/5 hover:border-white/30'
+                            showModalCalendar && calendarTarget === 'checkIn'
+                              ? 'border-cyan bg-cyan/20 ring-2 ring-cyan/60 shadow-[0_0_15px_rgba(34,195,238,0.3)]'
+                              : 'border-white/15 bg-white/5 hover:border-white/30'
                           }`}
                           title="Tap to select check-in date on marked calendar"
                         >
@@ -2733,16 +2882,21 @@ export default function MobileResortApp() {
                           <span className="text-xs sm:text-sm font-semibold text-white truncate">
                             {checkIn}
                           </span>
-                          <span className="text-[9px] text-white/50">
-                            Tap to pick on calendar
+                          <span className="text-[9px] text-white/60">
+                            {showModalCalendar && calendarTarget === 'checkIn' ? '✦ Picking Check-In below' : 'Tap to select'}
                           </span>
                         </button>
 
                         <button
                           type="button"
-                          onClick={() => setShowModalCalendar(true)}
+                          onClick={() => {
+                            setCalendarTarget('checkOut');
+                            setShowModalCalendar(true);
+                          }}
                           className={`flex flex-col text-left gap-0.5 min-w-0 p-2.5 rounded-xl border transition cursor-pointer ${
-                            showModalCalendar ? 'border-cyan bg-cyan/15 ring-1 ring-cyan/40' : 'border-white/15 bg-white/5 hover:border-white/30'
+                            showModalCalendar && calendarTarget === 'checkOut'
+                              ? 'border-cyan bg-cyan/20 ring-2 ring-cyan/60 shadow-[0_0_15px_rgba(34,195,238,0.3)]'
+                              : 'border-white/15 bg-white/5 hover:border-white/30'
                           }`}
                           title="Tap to select check-out date on marked calendar"
                         >
@@ -2752,42 +2906,146 @@ export default function MobileResortApp() {
                           <span className="text-xs sm:text-sm font-semibold text-white truncate">
                             {checkOut}
                           </span>
-                          <span className="text-[9px] text-white/50">
-                            Tap to pick on calendar
+                          <span className="text-[9px] text-white/60">
+                            {showModalCalendar && calendarTarget === 'checkOut' ? '✦ Picking Check-Out below' : 'Tap to select'}
                           </span>
+                        </button>
+                      </div>
+
+                      {/* Direct HTML5 Date Pickers */}
+                      <div className="grid grid-cols-2 gap-2 pt-0.5">
+                        <label className="flex flex-col gap-1 min-w-0">
+                          <span className="text-[10px] uppercase tracking-wider text-white/60 font-medium">Check-In Date *</span>
+                          <input
+                            type="date"
+                            min={new Date().toISOString().slice(0, 10)}
+                            value={checkIn}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (!val) return;
+                              setCheckIn(val);
+                              if (val >= checkOut) {
+                                const next = new Date(new Date(val).getTime() + 86400000).toISOString().slice(0, 10);
+                                setCheckOut(next);
+                              }
+                            }}
+                            className="w-full rounded-xl border border-white/15 bg-white/5 px-2.5 py-1.5 text-xs text-white outline-none focus:border-cyan [color-scheme:dark]"
+                          />
+                        </label>
+
+                        <label className="flex flex-col gap-1 min-w-0">
+                          <span className="text-[10px] uppercase tracking-wider text-white/60 font-medium">Check-Out Date *</span>
+                          <input
+                            type="date"
+                            min={new Date(new Date(checkIn).getTime() + 86400000).toISOString().slice(0, 10)}
+                            value={checkOut}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (!val) return;
+                              if (val <= checkIn) {
+                                toast('Check-out must be after check-in date.', true);
+                                return;
+                              }
+                              setCheckOut(val);
+                            }}
+                            className="w-full rounded-xl border border-white/15 bg-white/5 px-2.5 py-1.5 text-xs text-white outline-none focus:border-cyan [color-scheme:dark]"
+                          />
+                        </label>
+                      </div>
+
+                      {/* Quick Duration Preset Pills & Reset Button */}
+                      <div className="flex items-center gap-1.5 pt-0.5 overflow-x-auto scrollbar-none">
+                        <span className="text-[10px] text-white/40 shrink-0 font-medium">Nights:</span>
+                        {[1, 2, 3, 4, 5, 7].map((numNights) => {
+                          const currentNights = Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000));
+                          const isActive = currentNights === numNights;
+                          return (
+                            <button
+                              key={numNights}
+                              type="button"
+                              onClick={() => {
+                                const inTime = new Date(checkIn).getTime();
+                                const newOut = new Date(inTime + numNights * 86400000).toISOString().slice(0, 10);
+                                setCheckOut(newOut);
+                                toast(`✦ Stay duration set to ${numNights} night${numNights > 1 ? 's' : ''} (${checkIn} → ${newOut})`);
+                              }}
+                              className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold tracking-wide transition cursor-pointer shrink-0 ${
+                                isActive
+                                  ? 'bg-cyan text-navy font-bold shadow-sm'
+                                  : 'bg-white/5 text-white/70 hover:bg-white/10 hover:text-white border border-white/10'
+                              }`}
+                            >
+                              {numNights} Night${numNights > 1 ? 's' : ''}
+                            </button>
+                          );
+                        })}
+                        <button
+                          type="button"
+                          onClick={handleResetCalendarSelection}
+                          className="ml-auto px-2.5 py-1 rounded-lg text-[10px] font-semibold text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition cursor-pointer flex items-center gap-1 shrink-0"
+                          title="Reset stay selection and dates to default"
+                        >
+                          <i className="fas fa-rotate-left text-[9px] text-cyan" />
+                          <span>Reset</span>
                         </button>
                       </div>
 
                       <button
                         type="button"
                         onClick={() => setShowModalCalendar((prev) => !prev)}
-                        className={`w-full py-2 px-3 rounded-xl border text-xs font-semibold tracking-wide transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                        className={`w-full py-2 px-3 rounded-xl border text-xs font-semibold tracking-wide transition cursor-pointer flex items-center justify-center gap-1.5 mt-0.5 ${
                           showModalCalendar
                             ? 'border-cyan/50 bg-cyan text-navy shadow-sm'
                             : 'border-cyan/40 bg-cyan/15 text-cyan hover:bg-cyan hover:text-navy'
                         }`}
                       >
-                        <><i className="fas fa-calendar-alt" style={{ marginRight: 6 }} />{showModalCalendar ? 'Hide Marked Calendar' : 'View Marked Calendar'}</>
+                        <i className="fas fa-calendar-alt" style={{ marginRight: 6 }} />
+                        {showModalCalendar ? 'Hide Marked Calendar' : 'View Marked Calendar (Interactive Visual Grid)'}
                       </button>
                     </div>
 
-                    {/* Visual Availability Calendar with Reserved / Available Markings */}
+                    {/* Visual Availability Calendar with Reserved / Available Markings & Target Selection */}
                     {showModalCalendar && (
-                      <div className="mt-1 animate-fade-in overflow-hidden">
-                        <div className="mb-1.5 flex items-center justify-between px-1 text-[11px] font-medium text-cyan">
-                          <span>✦ Tap dates below to set stay dates:</span>
-                          <span className="text-[10px] text-white/70 font-normal"><i className="fas fa-circle text-rose-500 text-[8px] mr-1" />Reserved · <i className="fas fa-circle text-emerald-400 text-[8px] mx-1" />Open</span>
+                      <div className="mt-2 animate-fade-in overflow-hidden">
+                        <div className="mb-2 flex items-center justify-between px-1 text-xs font-medium text-cyan">
+                          <div className="flex items-center gap-2">
+                            <i className="fas fa-calendar-alt text-cyan/80" />
+                            <span>
+                              Selecting: <strong className="text-white font-semibold underline underline-offset-4 tracking-wide">{calendarTarget === 'checkIn' ? 'Check-In Date' : 'Check-Out Date'}</strong>
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-white/50 font-normal">
+                            Tap to select · Tap again to unselect
+                          </span>
                         </div>
                         <AvailabilityCalendar
                           selectedRoomId={resRoom?.id}
                           rooms={displayRooms}
                           initialCheckIn={checkIn}
                           initialCheckOut={checkOut}
+                          selectionTarget={calendarTarget}
                           isLightMode={false}
+                          onReset={handleResetCalendarSelection}
                           onSelectDates={(newIn, newOut) => {
+                            if (!newIn && !newOut) {
+                              handleResetCalendarSelection();
+                              return;
+                            }
+                            if (newIn && !newOut) {
+                              setCheckIn(newIn);
+                              setCheckOut('');
+                              setCalendarTarget('checkOut');
+                              return;
+                            }
                             setCheckIn(newIn);
                             setCheckOut(newOut);
-                            toast(`✦ Stay dates adjusted: ${newIn} → ${newOut}`);
+                            if (calendarTarget === 'checkIn') {
+                              setCalendarTarget('checkOut');
+                              toast(`✦ Check-in set to ${newIn}. Now tap your check-out date on the calendar (or tap ${newIn} to unselect).`);
+                            } else {
+                              const nights = Math.max(1, Math.round((new Date(newOut).getTime() - new Date(newIn).getTime()) / 86400000));
+                              toast(`✦ Stay updated: ${newIn} → ${newOut} (${nights} Night${nights > 1 ? 's' : ''})`);
+                            }
                           }}
                           onClose={() => setShowModalCalendar(false)}
                         />
@@ -2816,41 +3074,145 @@ export default function MobileResortApp() {
 
                   {/* Guest Info */}
                   <label className="flex flex-col gap-1.5">
-                    <span className={LABEL}>Guest Name for Manifest *</span>
-                    <input
-                      required
-                      type="text"
-                      value={resName}
-                      onChange={(e) => setResName(e.target.value)}
-                      placeholder="Full Name"
-                      className={FIELD}
-                    />
+                    <div className="flex items-center justify-between gap-1">
+                      <span className={LABEL}>Guest Name for Manifest *</span>
+                      {resName.trim().length >= 2 ? (
+                        <span className="text-[10px] font-semibold text-emerald-400">
+                          <i className="fas fa-circle-check text-[9px] mr-1" />Verified Name
+                        </span>
+                      ) : resName.trim().length > 0 ? (
+                        <span className="text-[10px] text-amber-400">Min 2 characters</span>
+                      ) : (
+                        <span className="text-[10px] text-rose-400 font-medium">Required</span>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <input
+                        required
+                        type="text"
+                        minLength={2}
+                        value={resName}
+                        onChange={(e) => setResName(e.target.value)}
+                        placeholder="Full Name (e.g. Juan Dela Cruz)"
+                        className={`${FIELD} pr-8 ${
+                          resName.trim().length >= 2
+                            ? '!border-emerald-500/70 focus:!border-emerald-400 !bg-emerald-950/20'
+                            : resName.trim().length > 0
+                              ? '!border-amber-500/70 focus:!border-amber-400 !bg-amber-950/20'
+                              : ''
+                        }`}
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-xs">
+                        {resName.trim().length >= 2 ? (
+                          <i className="fas fa-check text-emerald-400" />
+                        ) : null}
+                      </div>
+                    </div>
                   </label>
 
                   {/* Mobile & Email - Stacks smoothly on phone without squishing */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <label className="flex flex-col gap-1.5 min-w-0">
-                      <span className={LABEL}>Mobile Phone (11 Digits) *</span>
-                      <input
-                        required
-                        type="tel"
-                        maxLength={11}
-                        value={resPhone}
-                        onChange={(e) => setResPhone(to11Digits(e.target.value))}
-                        placeholder="09171234567"
-                        className={FIELD}
-                      />
+                      <div className="flex items-center justify-between gap-1">
+                        <span className={LABEL}>Mobile Phone (11 Digits) *</span>
+                        <span
+                          className={`text-[10px] font-semibold tracking-wide whitespace-nowrap transition-colors duration-200 ${
+                            resPhone.length === 11 && /^09\d{9}$/.test(resPhone)
+                              ? 'text-emerald-400'
+                              : resPhone.length > 0
+                                ? 'text-amber-400'
+                                : 'text-white/40'
+                          }`}
+                        >
+                          {resPhone.length === 11 && /^09\d{9}$/.test(resPhone) ? (
+                            <><i className="fas fa-circle-check text-[9px] mr-1" />11/11 PH Mobile</>
+                          ) : (
+                            `${resPhone.length}/11 digits`
+                          )}
+                        </span>
+                      </div>
+                      <div className="relative">
+                        <input
+                          required
+                          type="tel"
+                          inputMode="numeric"
+                          autoComplete="tel"
+                          maxLength={11}
+                          minLength={11}
+                          pattern="^09[0-9]{9}$"
+                          title="Must be strictly an 11-digit Philippine mobile number starting with 09 (e.g. 09171234567)"
+                          value={resPhone}
+                          onChange={(e) => setResPhone(to11Digits(e.target.value))}
+                          placeholder="09171234567"
+                          className={`${FIELD} pr-8 ${
+                            resPhone.length === 11 && /^09\d{9}$/.test(resPhone)
+                              ? '!border-emerald-500/70 focus:!border-emerald-400 !bg-emerald-950/20'
+                              : resPhone.length > 0 && (!resPhone.startsWith('09') || resPhone.length < 11)
+                                ? '!border-amber-500/70 focus:!border-amber-400 !bg-amber-950/20'
+                                : ''
+                          }`}
+                        />
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-xs">
+                          {resPhone.length === 11 && /^09\d{9}$/.test(resPhone) ? (
+                            <i className="fas fa-check text-emerald-400" />
+                          ) : resPhone.length > 0 && !resPhone.startsWith('09') ? (
+                            <i className="fas fa-triangle-exclamation text-amber-400" />
+                          ) : (
+                            <span className="text-[10px] font-mono text-white/30">PH</span>
+                          )}
+                        </div>
+                      </div>
+                      {resPhone.length > 0 && !resPhone.startsWith('09') ? (
+                        <span className="text-[10px] text-amber-300 flex items-center gap-1 mt-0.5 animate-fade-in">
+                          <i className="fas fa-circle-info text-[9px]" />
+                          Philippine mobile numbers must start with 09 (e.g. 09171234567)
+                        </span>
+                      ) : resPhone.length > 0 && resPhone.length < 11 ? (
+                        <span className="text-[10px] text-amber-300/80 flex items-center gap-1 mt-0.5 animate-fade-in">
+                          <i className="fas fa-circle-info text-[9px]" />
+                          Enter {11 - resPhone.length} more digit{11 - resPhone.length > 1 ? 's' : ''} to reach 11-digit PH mobile ruling
+                        </span>
+                      ) : resPhone.length === 11 && /^09\d{9}$/.test(resPhone) ? (
+                        <span className="text-[10px] text-emerald-400/90 flex items-center gap-1 mt-0.5 animate-fade-in">
+                          <i className="fas fa-circle-check text-[9px]" />
+                          Valid Philippine mobile — ready for SMS voucher updates
+                        </span>
+                      ) : null}
                     </label>
                     <label className="flex flex-col gap-1.5 min-w-0">
-                      <span className={LABEL}>Email Address *</span>
-                      <input
-                        required
-                        type="email"
-                        value={resEmail}
-                        onChange={(e) => setResEmail(e.target.value)}
-                        placeholder="name@email.com"
-                        className={FIELD}
-                      />
+                      <div className="flex items-center justify-between gap-1">
+                        <span className={LABEL}>Email Address *</span>
+                        {/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(resEmail) ? (
+                          <span className="text-[10px] font-semibold text-emerald-400">
+                            <i className="fas fa-circle-check text-[9px] mr-1" />Voucher Target
+                          </span>
+                        ) : resEmail.length > 0 ? (
+                          <span className="text-[10px] text-amber-400">Invalid email</span>
+                        ) : (
+                          <span className="text-[10px] text-rose-400 font-medium">Required</span>
+                        )}
+                      </div>
+                      <div className="relative">
+                        <input
+                          required
+                          type="email"
+                          value={resEmail}
+                          onChange={(e) => setResEmail(e.target.value)}
+                          placeholder="name@email.com"
+                          className={`${FIELD} pr-8 ${
+                            /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(resEmail)
+                              ? '!border-emerald-500/70 focus:!border-emerald-400 !bg-emerald-950/20'
+                              : resEmail.length > 0
+                                ? '!border-amber-500/70 focus:!border-amber-400 !bg-amber-950/20'
+                                : ''
+                          }`}
+                        />
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-xs">
+                          {/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(resEmail) ? (
+                            <i className="fas fa-check text-emerald-400" />
+                          ) : null}
+                        </div>
+                      </div>
                     </label>
                   </div>
 
@@ -2893,6 +3255,89 @@ export default function MobileResortApp() {
                     />
                   </label>
 
+                  {/* Resort Terms & Policy Accordion / Quick Highlights */}
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 sm:p-3.5 flex flex-col gap-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-cyan flex items-center gap-1.5">
+                        <i className="fas fa-shield-halved text-xs text-cyan" />
+                        Resort Terms & Booking Policy
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setShowPolicyModal(true)}
+                        className="text-[10px] text-cyan hover:underline font-medium cursor-pointer inline-flex items-center gap-1"
+                      >
+                        Read Full Policy <i className="fas fa-arrow-up-right-from-square text-[8px]" />
+                      </button>
+                    </div>
+
+                    {/* Quick Policy Highlights Badges */}
+                    <div className="grid grid-cols-2 gap-2 text-[10px]">
+                      <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-2 text-emerald-300 flex flex-col gap-0.5">
+                        <span className="font-semibold flex items-center gap-1">
+                          <i className="fas fa-check-circle text-[9px]" /> 100% Free Refund
+                        </span>
+                        <span className="text-emerald-300/70 text-[9px] leading-tight">
+                          Cancel 7+ days before check-in for full downpayment refund
+                        </span>
+                      </div>
+                      <div className="rounded-lg bg-cyan/10 border border-cyan/20 p-2 text-cyan flex flex-col gap-0.5">
+                        <span className="font-semibold flex items-center gap-1">
+                          <i className="fas fa-clock text-[9px]" /> Check-In: 2 PM · Out: 12 PM
+                        </span>
+                        <span className="text-cyan/70 text-[9px] leading-tight">
+                          Standard stay times; free luggage drop-off anytime
+                        </span>
+                      </div>
+                      <div className="rounded-lg bg-white/5 border border-white/10 p-2 text-white/80 flex flex-col gap-0.5">
+                        <span className="font-semibold flex items-center gap-1 text-white">
+                          <i className="fas fa-umbrella-beach text-[9px] text-amber-400" /> Eco & House Rules
+                        </span>
+                        <span className="text-white/50 text-[9px] leading-tight">
+                          10 PM quiet hours · Non-smoking rooms · Patar Clean Sand Pledge
+                        </span>
+                      </div>
+                      <div className="rounded-lg bg-white/5 border border-white/10 p-2 text-white/80 flex flex-col gap-0.5">
+                        <span className="font-semibold flex items-center gap-1 text-white">
+                          <i className="fas fa-cloud-bolt text-[9px] text-sky-400" /> Storm Protection
+                        </span>
+                        <span className="text-white/50 text-[9px] leading-tight">
+                          100% refund or free date move if PAGASA storm signal raised
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Agreement Checkbox */}
+                    <label
+                      className={`flex items-start gap-2.5 cursor-pointer select-none text-left rounded-xl border p-2.5 transition mt-0.5 ${
+                        termsAccepted
+                          ? 'border-emerald-500/40 bg-emerald-950/20'
+                          : 'border-white/10 bg-white/[0.02] hover:border-white/20'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={termsAccepted}
+                        onChange={(e) => setTermsAccepted(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded border-white/20 bg-white/10 text-cyan focus:ring-cyan focus:ring-offset-0 cursor-pointer accent-cyan shrink-0"
+                      />
+                      <div className="text-[11px] text-white/80 leading-snug">
+                        <span>I have read and agree to the </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowPolicyModal(true);
+                          }}
+                          className="font-semibold text-cyan hover:underline cursor-pointer inline-flex items-center gap-0.5"
+                        >
+                          Resort Terms of Stay, Cancellation & Refund Policy
+                        </button>
+                        <span> and agree to register for the official guest manifest.</span>
+                      </div>
+                    </label>
+                  </div>
+
                   <div className="pt-1.5">
                     <button
                       type="submit"
@@ -2902,11 +3347,221 @@ export default function MobileResortApp() {
                       {resSubmitting ? 'Confirming Reservation…' : 'Confirm Stay & Generate Voucher ✦'}
                     </button>
                     <p className="mt-1.5 text-center text-[10px] text-white/40">
-                      No cancellation fee up to 48 hours before check-in. Instant confirmation.
+                      100% refund up to 7 days before check-in · Direct booking guarantee · Official digital voucher
                     </p>
                   </div>
                 </form>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+            {/* RESORT TERMS OF STAY & CANCELLATION POLICY MODAL */}
+      {showPolicyModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-navy/90 backdrop-blur-md animate-fade-in overflow-y-auto"
+          onClick={() => setShowPolicyModal(false)}
+        >
+          <div
+            className="relative w-full max-w-xl rounded-2xl sm:rounded-3xl border border-white/15 bg-ink p-5 sm:p-7 shadow-2xl text-white my-auto max-h-[90vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between pb-3 sm:pb-4 border-b border-white/10 gap-3">
+              <div>
+                <span className="text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.2em] text-cyan block">
+                  Rock View Beach Resort · Patar, Bolinao
+                </span>
+                <h3 className="font-serif text-xl sm:text-2xl font-medium text-white mt-0.5">
+                  Terms of Stay & Resort Policies
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPolicyModal(false)}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition cursor-pointer"
+                aria-label="Close policy modal"
+              >
+                <i className="fas fa-xmark" />
+              </button>
+            </div>
+
+            {/* Policy Navigation Tabs */}
+            <div className="flex items-center gap-1.5 pt-3 pb-2 border-b border-white/5 overflow-x-auto scrollbar-none">
+              {[
+                { id: 'cancellation', label: 'Refunds & Cancellation', icon: 'fa-money-bill-transfer' },
+                { id: 'checkin', label: 'Check-In & Payment', icon: 'fa-clock' },
+                { id: 'rules', label: 'House Rules & Eco', icon: 'fa-umbrella-beach' },
+                { id: 'privacy', label: 'Manifest & Privacy', icon: 'fa-shield-halved' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setPolicyTab(tab.id as any)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 ${
+                    policyTab === tab.id
+                      ? 'bg-cyan text-slate-950 font-semibold shadow-sm'
+                      : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  <i className={`fas ${tab.icon} text-[10px]`} />
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Policy Tab Content */}
+            <div className="mt-4 overflow-y-auto scrollbar-none flex-1 pr-1 text-xs text-white/80 leading-relaxed flex flex-col gap-3.5">
+              {policyTab === 'cancellation' && (
+                <div className="flex flex-col gap-3 animate-fade-in">
+                  <div className="rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-3">
+                    <h4 className="font-semibold text-emerald-400 text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-circle-check" /> 100% Full Refund Window
+                    </h4>
+                    <p className="text-white/80 text-[11px]">
+                      Cancellations made <strong>7 days or more</strong> prior to the official check-in date receive a full 100% refund of the downpayment deposit, processed within 3 to 5 business days via your original payment channel (GCash, Maya, or Bank Transfer).
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 p-3">
+                    <h4 className="font-semibold text-amber-300 text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-clock-rotate-left" /> 50% Refund Window (3 to 6 Days)
+                    </h4>
+                    <p className="text-white/80 text-[11px]">
+                      Cancellations submitted between <strong>3 to 6 days</strong> prior to check-in are eligible for a 50% refund, or you may opt for a <strong>free rebooking</strong> of your stay dates within 6 months.
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-rose-500/30 bg-rose-950/20 p-3">
+                    <h4 className="font-semibold text-rose-300 text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-ban" /> Within 72 Hours & No-Show
+                    </h4>
+                    <p className="text-white/80 text-[11px]">
+                      Cancellations within <strong>72 hours of check-in</strong> are non-refundable due to reserved inventory, but date rebooking is allowed subject to room availability and seasonal rate adjustment.
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-sky-500/30 bg-sky-950/20 p-3">
+                    <h4 className="font-semibold text-sky-300 text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-cloud-bolt" /> Severe Weather & Force Majeure Guarantee
+                    </h4>
+                    <p className="text-white/80 text-[11px]">
+                      If the Philippine Atmospheric, Geophysical and Astronomical Services Administration (PAGASA) raises an official typhoon or storm signal over Pangasinan or local maritime authorities suspend sea travel, guests are entitled to a <strong>100% full refund or free rebooking without penalty</strong>.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {policyTab === 'checkin' && (
+                <div className="flex flex-col gap-3 animate-fade-in">
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                    <h4 className="font-semibold text-white text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-door-open text-cyan" /> Operating Hours
+                    </h4>
+                    <ul className="list-disc list-inside text-[11px] text-white/70 space-y-1">
+                      <li><strong>Standard Check-In:</strong> 2:00 PM onwards</li>
+                      <li><strong>Standard Check-Out:</strong> Strictly 12:00 PM (Noon)</li>
+                      <li>Early arrivals may drop luggage with the Front Desk and relax by the beach while rooms are prepared.</li>
+                      <li>Late check-outs after 12:00 PM are subject to room availability and half-day rate rules.</li>
+                    </ul>
+                  </div>
+
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                    <h4 className="font-semibold text-white text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-credit-card text-emerald-400" /> Downpayment & Payment Rules
+                    </h4>
+                    <ul className="list-disc list-inside text-[11px] text-white/70 space-y-1">
+                      <li>A <strong>30% downpayment</strong> is required upon reservation to lock your accommodation and generate your official digital voucher pass.</li>
+                      <li>Payment options include GCash, Maya, Visa/Mastercard, and BDO/BPI Bank Transfer.</li>
+                      <li>The remaining <strong>70% balance</strong> is settled at the Front Desk upon physical arrival.</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {policyTab === 'rules' && (
+                <div className="flex flex-col gap-3 animate-fade-in">
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                    <h4 className="font-semibold text-white text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-volume-xmark text-cyan" /> Quiet Sanctuary Hours
+                    </h4>
+                    <p className="text-[11px] text-white/70">
+                      To preserve the tranquil ambiance of Patar Beach, quiet hours are observed from <strong>10:00 PM to 7:00 AM</strong>. Loud music, videoke, and excessive noise are prohibited during these hours.
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                    <h4 className="font-semibold text-white text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-ban-smoking text-rose-400" /> Non-Smoking Policy
+                    </h4>
+                    <p className="text-[11px] text-white/70">
+                      All indoor suites, villas, cottages, and enclosed restrooms are strictly non-smoking. Designated outdoor smoking spaces are provided on resort grounds. A ₱3,000 cleaning fee applies for indoor smoking violations.
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                    <h4 className="font-semibold text-white text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-water text-cyan" /> Patar Beach Clean Sand Pledge
+                    </h4>
+                    <p className="text-[11px] text-white/70">
+                      Rock View observes a strict "Leave No Trace" policy along the white sand coast. Littering, bringing single-use plastic bottles onto the tidal reef, or disturbing marine life is strictly prohibited.
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                    <h4 className="font-semibold text-white text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-paw text-amber-400" /> Pet Policy
+                    </h4>
+                    <p className="text-[11px] text-white/70">
+                      Well-behaved small pets on leash are welcome in designated ground-level beach cottages with prior coordination with the concierge. Pets must be supervised at all times.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {policyTab === 'privacy' && (
+                <div className="flex flex-col gap-3 animate-fade-in">
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                    <h4 className="font-semibold text-white text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-id-card text-emerald-400" /> Tourism Manifest Compliance
+                    </h4>
+                    <p className="text-[11px] text-white/70">
+                      Under local tourism regulations (Municipality of Bolinao) and DOT guidelines, all arriving resident guests must be registered on the official resort manifest. Valid government-issued photo ID is requested at front-desk check-in.
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                    <h4 className="font-semibold text-white text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-user-shield text-cyan" /> Data Privacy Act (RA 10173)
+                    </h4>
+                    <p className="text-[11px] text-white/70">
+                      Your personal data (Full Name, Philippine Mobile Number, Email Address) is securely handled in compliance with Republic Act No. 10173 (Data Privacy Act of 2012). It is strictly used to process your reservation voucher, send SMS check-in updates, and maintain stay manifests. We never sell or distribute your data.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer Action */}
+            <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between gap-3">
+              <span className="text-[10px] text-white/50 hidden sm:inline">
+                Rock View Beach Resort · Official Guest Agreement
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setTermsAccepted(true);
+                  setShowPolicyModal(false);
+                  toast('✦ Terms of Stay and Cancellation Policy accepted.');
+                }}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-cyan text-slate-950 font-semibold text-xs tracking-wider uppercase hover:brightness-110 transition cursor-pointer flex items-center justify-center gap-2 shadow-md"
+              >
+                <i className="fas fa-check" />
+                <span>I Understand & Agree</span>
+              </button>
             </div>
           </div>
         </div>

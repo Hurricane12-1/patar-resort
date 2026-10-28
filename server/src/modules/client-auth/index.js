@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * J & D Beach House · Isolated Modular Framework (IMF)
+ * Rock View Beach Resort · Isolated Modular Framework (IMF)
  * Module: Client & Customer Authentication Service
  * Scope: Strictly Customer & Guest Persona Authentication Only
  * Location: Brgy. Patar, Bolinao, Pangasinan (16.3042° N, 119.7821° E)

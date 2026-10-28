@@ -1504,9 +1504,9 @@ export function useAdminState() {
     currentAdminProfile?.title || currentAdminProfile?.position || 'General Manager & System Administrator';
   const defaultAdminDomain =
     currentAdminProfile?.domain_account ||
-    (currentAdminProfile?.email?.endsWith('@janddbeachhouse.ph')
+    (currentAdminProfile?.email?.endsWith('@rockviewresort.ph')
       ? currentAdminProfile.email
-      : 'admin@janddbeachhouse.ph');
+      : 'admin@rockviewresort.ph');
   const defaultAdminAvatar =
     currentAdminProfile?.avatar_url ||
     currentAdminProfile?.picture ||
@@ -1519,11 +1519,11 @@ export function useAdminState() {
     title: defaultAdminTitle,
     avatarKey: 'crown',
     customAvatarUrl: defaultAdminAvatar,
-    email: currentAdminProfile?.email || user?.email || 'admin@janddbeachhouse.ph',
+    email: currentAdminProfile?.email || user?.email || 'admin@rockviewresort.ph',
     domainAccount: defaultAdminDomain,
     phone: currentAdminProfile?.phone || user?.user_metadata?.phone || '09171234567',
     department: currentAdminProfile?.department || 'Executive Operations & IT',
-    employeeId: currentAdminProfile?.employee_id || 'JD-ADM-001',
+    employeeId: currentAdminProfile?.employee_id || 'RV-ADM-001',
     statusBio: currentAdminProfile?.status_bio || 'Executive resort administration & active defense security.',
     location: 'Brgy. Patar, Bolinao, Pangasinan',
     refreshRate: '5',
@@ -1554,9 +1554,9 @@ export function useAdminState() {
         user?.user_metadata?.picture;
       const resolvedDomain =
         currentAdminProfile.domain_account ||
-        (currentAdminProfile.email?.endsWith('@janddbeachhouse.ph')
+        (currentAdminProfile.email?.endsWith('@rockviewresort.ph')
           ? currentAdminProfile.email
-          : 'admin@janddbeachhouse.ph');
+          : 'admin@rockviewresort.ph');
       setAdminProfileState((prev) => ({
         ...prev,
         fullName: resolvedName || prev.fullName,
@@ -1582,7 +1582,7 @@ export function useAdminState() {
           const freshName = fresh.full_name || [fresh.first_name, fresh.last_name].filter(Boolean).join(' ');
           const freshDomain =
             fresh.domain_account ||
-            (fresh.email?.endsWith('@janddbeachhouse.ph') ? fresh.email : 'admin@janddbeachhouse.ph');
+            (fresh.email?.endsWith('@rockviewresort.ph') ? fresh.email : 'admin@rockviewresort.ph');
           setAdminProfileState((prev) => ({
             ...prev,
             fullName: freshName || prev.fullName,

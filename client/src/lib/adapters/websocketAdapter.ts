@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * J & D Beach House · WebSocket Frontend Adapter
+ * Rock View Beach Resort · WebSocket Frontend Adapter
  * Consumes: Data Payload 1 (Live streaming over TCP WebSocket channel)
  * Handles: Real-time room locks, live booking updates, AI concierge chat
  * ============================================================================

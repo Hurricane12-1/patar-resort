@@ -312,13 +312,13 @@ export default function AuthModal() {
           }
         }
 
-        if (f.phone && f.phone.length !== 11) {
-          toast('Mobile phone must be strictly an 11-digit number (e.g. 09XXXXXXXXX).', true);
+        if (f.phone && (f.phone.length !== 11 || !f.phone.startsWith('09'))) {
+          toast('Mobile phone must strictly be an 11-digit Philippine mobile number starting with 09 (e.g. 09XXXXXXXXX).', true);
           setBusy(false);
           return;
         }
-        if (f.emergency_contact && f.emergency_contact.length !== 11) {
-          toast('Emergency contact must be strictly an 11-digit number (e.g. 09XXXXXXXXX).', true);
+        if (f.emergency_contact && (f.emergency_contact.length !== 11 || !f.emergency_contact.startsWith('09'))) {
+          toast('Emergency contact must strictly be an 11-digit Philippine mobile number starting with 09 (e.g. 09XXXXXXXXX).', true);
           setBusy(false);
           return;
         }
@@ -412,12 +412,12 @@ export default function AuthModal() {
   // Profile Completion Handler
   async function submitCompletion(e: React.FormEvent) {
     e.preventDefault();
-    if (comp.phone && comp.phone.length !== 11) {
-      toast('Mobile phone must be strictly an 11-digit number (e.g. 09XXXXXXXXX).', true);
+    if (comp.phone && (comp.phone.length !== 11 || !comp.phone.startsWith('09'))) {
+      toast('Mobile phone must strictly be an 11-digit Philippine mobile number starting with 09 (e.g. 09XXXXXXXXX).', true);
       return;
     }
-    if (comp.emergency_contact && comp.emergency_contact.length !== 11) {
-      toast('Emergency contact must be strictly an 11-digit number (e.g. 09XXXXXXXXX).', true);
+    if (comp.emergency_contact && (comp.emergency_contact.length !== 11 || !comp.emergency_contact.startsWith('09'))) {
+      toast('Emergency contact must strictly be an 11-digit Philippine mobile number starting with 09 (e.g. 09XXXXXXXXX).', true);
       return;
     }
     setBusy(true);

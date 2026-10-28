@@ -62,7 +62,7 @@ export async function authenticate(req, _res, next) {
     let isLiveSupabaseToken = false;
 
     // 1. Try local JWT verification with environment or resilient fallback secret
-    const jwtSecret = env.SUPABASE_JWT_SECRET || 'jd-beach-house-dev-jwt-secret-very-secure-2026';
+    const jwtSecret = env.SUPABASE_JWT_SECRET || 'rock-view-dev-jwt-secret-very-secure-2026';
     try {
       const payload = jwt.verify(token, jwtSecret);
       userId = payload.sub;
@@ -213,10 +213,10 @@ export async function authenticate(req, _res, next) {
       profile.role = 'administrator';
       profile.admin_token_verified = true;
       profile.admin_token_key = process.env.ADMIN_TOKEN_KEY || 'etc-34';
-      profile.domain_account = empRecord.email || profile.email || 'admin@janddbeachhouse.ph';
+      profile.domain_account = empRecord.email || profile.email || 'admin@rockviewresort.ph';
     } else if (isVerifiedEmployee) {
       profile.role = empRecord.role || 'staff';
-      profile.domain_account = empRecord.email || profile.email || 'staff@janddbeachhouse.ph';
+      profile.domain_account = empRecord.email || profile.email || 'staff@rockviewresort.ph';
     } else {
       // Any account not in employee_accounts is STRICTLY customer
       profile.role = 'customer';
@@ -296,7 +296,7 @@ export const requireAdminSecurityBlock = (req, _res, next) => {
   const expectedKey = process.env.ADMIN_TOKEN_KEY || 'etc-34';
   const headerKey = req.headers['x-admin-token-key'] || req.query.admin_token_key;
   const isOwnerEmail = req.user.email && (
-    req.user.email.toLowerCase() === 'admin@janddbeachhouse.ph' ||
+    req.user.email.toLowerCase() === 'admin@rockviewresort.ph' ||
     req.user.email.toLowerCase() === 'admin@rockviewresort.ph' ||
     req.user.email.toLowerCase() === 'admin@rockview.ph' ||
     req.user.email.toLowerCase().includes('admin') ||

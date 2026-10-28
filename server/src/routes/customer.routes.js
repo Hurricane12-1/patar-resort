@@ -50,7 +50,7 @@ r.get('/customer/digital-pass', authenticate, asyncH(async (req, res) => {
     return res.json({ active: false });
   }
 
-  const passCode = `JD-${stay.id.slice(0, 4).toUpperCase()}-${stay.check_in.replace(/-/g, '')}`;
+  const passCode = `RV-${stay.id.slice(0, 4).toUpperCase()}-${stay.check_in.replace(/-/g, '')}`;
   return res.json({
     active: true,
     reservation_id: stay.id,

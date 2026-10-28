@@ -46,7 +46,7 @@ app.get('/api/security/certificates/ca.pem', (_req, res) => {
   const ca = getCaCertificatePem();
   if (!ca) return res.status(404).send('CA Certificate not found');
   res.setHeader('Content-Type', 'application/x-x509-ca-cert');
-  res.setHeader('Content-Disposition', 'attachment; filename="jd-beach-house-root-ca.crt"');
+  res.setHeader('Content-Disposition', 'attachment; filename="rock-view-root-ca.crt"');
   res.send(ca);
 });
 
@@ -54,7 +54,7 @@ app.get('/api/security/certificates/cert.pem', (_req, res) => {
   const cert = getCertificatePem();
   if (!cert) return res.status(404).send('Certificate not found');
   res.setHeader('Content-Type', 'application/x-x509-user-cert');
-  res.setHeader('Content-Disposition', 'attachment; filename="jd-beach-house-server.crt"');
+  res.setHeader('Content-Disposition', 'attachment; filename="rock-view-server.crt"');
   res.send(cert);
 });
 
@@ -124,7 +124,7 @@ app.post('/api/limiter/reset', (_req, res) => {
 });
 
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', service: 'J & D Beach House API', version: '1.5.1', timestamp: new Date().toISOString() });
+  res.json({ status: 'ok', service: 'Rock View Beach Resort API', version: '1.5.1', timestamp: new Date().toISOString() });
 });
 
 // Bootstrap Isolated Modular Framework (IMF) with dynamic auto-discovery & bulkhead error boundaries
@@ -165,7 +165,7 @@ app.use((req, res, next) => {
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       return res.sendFile(indexPath);
     }
-    return res.json({ status: 'ok', service: 'J & D Beach House API', version: '1.5.1' });
+    return res.json({ status: 'ok', service: 'Rock View Beach Resort API', version: '1.5.1' });
   }
   next();
 });
@@ -181,11 +181,11 @@ const server = tlsCreds.isSecure
 attachChatbot(server);
 server.listen(env.port, () => {
   console.log('\n============================================================');
-  console.log(' 🏖️  J & D RESERVE · RESORT MANAGEMENT PLATFORM');
+  console.log(' 🏖️  ROCK VIEW BEACH RESORT · MANAGEMENT PLATFORM');
   console.log('    Location: Brgy. Patar, Bolinao, Pangasinan (16.3042° N, 119.7821° E)');
   console.log('============================================================');
   console.log(` ✦ Primary Port     : ${env.port} (${tlsCreds.isSecure ? 'HTTPS/TLS' : 'HTTP/NGWF'})`);
-  console.log(` ✦ Local Domain URL : https://janddbeachhouse.localhost:${env.port}`);
+  console.log(` ✦ Local Domain URL : https://rockviewresort.localhost:${env.port}`);
   console.log(` ✦ Direct Local URL : https://localhost:${env.port}`);
   console.log(` ✦ Supabase URL     : ${env.SUPABASE_URL}`);
   console.log('============================================================\n');

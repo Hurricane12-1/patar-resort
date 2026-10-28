@@ -53,3 +53,6 @@ scripts/
 # Uploads
 server/uploads/*
 !server/uploads/.gitkeep
+
+# Version Control offline copies
+Version Control/

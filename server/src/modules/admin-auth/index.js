@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * J & D Beach House · Isolated Modular Framework (IMF)
+ * Rock View Beach Resort · Isolated Modular Framework (IMF)
  * Module: Executive Administrator & Staff RBAC Authentication
  * Scope: Strictly Executive Administrator Accounts Only (employee_accounts)
  * Location: Brgy. Patar, Bolinao, Pangasinan (16.3042° N, 119.7821° E)
@@ -76,7 +76,7 @@ export const handleAdminLogin = asyncH(async (req, res) => {
       `employee_id.ilike.${userIdent}`,
       `email.ilike.${localPart}@rockview.ph`,
       `email.ilike.${localPart}@rockviewresort.ph`,
-      `email.ilike.${localPart}@janddbeachhouse.ph`,
+      `email.ilike.${localPart}@rockviewresort.ph`,
     ];
     const { data: empsFound } = await admin
       .from('employee_accounts')
@@ -120,8 +120,8 @@ export const handleAdminLogin = asyncH(async (req, res) => {
   if (!authData) {
     const emailsToTry = [targetEmail];
     if (targetEmail.endsWith('@rockviewresort.ph') || targetEmail.endsWith('@rockview.ph')) {
-      emailsToTry.push(`${localPart}@janddbeachhouse.ph`);
-    } else if (targetEmail.endsWith('@janddbeachhouse.ph')) {
+      emailsToTry.push(`${localPart}@rockviewresort.ph`);
+    } else if (targetEmail.endsWith('@rockviewresort.ph')) {
       emailsToTry.push(`${localPart}@rockviewresort.ph`);
     }
     if (env.SUPABASE_ADMIN_EMAIL && !emailsToTry.includes(env.SUPABASE_ADMIN_EMAIL.toLowerCase())) {
@@ -194,7 +194,7 @@ export const handleAdminLogin = asyncH(async (req, res) => {
   };
 
   // 7. Generate Signed Admin JWT containing verified executive security claims
-  const jwtSecret = env.SUPABASE_JWT_SECRET || 'jd-beach-house-dev-jwt-secret-very-secure-2026';
+  const jwtSecret = env.SUPABASE_JWT_SECRET || 'rock-view-dev-jwt-secret-very-secure-2026';
   const tokenPayload = {
     sub: verifiedUser.id,
     email: verifiedUser.email,

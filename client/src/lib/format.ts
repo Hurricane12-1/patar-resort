@@ -59,13 +59,21 @@ export function to11Digits(val: string): string {
   if (!val) return '';
   let digits = String(val).replace(/\D/g, '');
   if (!digits) return '';
-  if (digits.startsWith('63')) {
+  if (digits.startsWith('63') && digits.length >= 3) {
     digits = '0' + digits.slice(2);
-  }
-  if (!digits.startsWith('0')) {
+  } else if (digits.startsWith('9')) {
     digits = '0' + digits;
   }
   return digits.slice(0, 11);
+}
+
+export function isValidPHMobile(val: string): boolean {
+  if (!val) return false;
+  const digits = String(val).replace(/\D/g, '');
+  if (digits.startsWith('63') && digits.length === 12) {
+    return /^639\d{9}$/.test(digits);
+  }
+  return /^09\d{9}$/.test(digits);
 }
 
 export const addDaysISO = (base: any, days: number) => {

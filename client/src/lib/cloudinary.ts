@@ -155,7 +155,7 @@ export async function uploadImageToCloudinary(
   }
 
   // 1B. Attempt Direct Unsigned Cloudinary Upload if cloudName and uploadPreset are explicitly configured
-  if (cfg.cloudName && cfg.uploadPreset && !cfg.cloudName.includes('demo-') && cfg.cloudName !== 'jd-beach-house') {
+  if (cfg.cloudName && cfg.uploadPreset && !cfg.cloudName.includes('demo-') && cfg.cloudName !== 'rock-view-resort') {
     try {
       const formData = new FormData();
       formData.append('file', file);

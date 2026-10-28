@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * J & D Beach House · Isolated Modularity Base
+ * Rock View Beach Resort · Isolated Modularity Base
  * Module Sandbox: Per-Module Bulkhead & Error Boundary
  * Location: Brgy. Patar, Bolinao, Pangasinan (16.3042° N, 119.7821° E)
  * ============================================================================
@@ -116,7 +116,7 @@ export function createModuleSandbox(moduleName, innerRouter, options = {}) {
 
     // Deliver structured RFC 7807 compliant Problem Details
     const problemDetails = {
-      type: `https://janddbeachhouse.ph/errors/${isServerError ? 'module-error' : 'request-error'}`,
+      type: `https://rockviewresort.ph/errors/${isServerError ? 'module-error' : 'request-error'}`,
       title: isServerError ? 'Isolated Module Processing Exception' : (err.name || 'Request Error'),
       status: statusCode,
       detail: err.message || 'An error occurred during module request execution.',

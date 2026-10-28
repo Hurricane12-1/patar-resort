@@ -270,17 +270,153 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
 }
 
-.pms-nav-btn {
-  height: 32px;
-  padding: 0 14px;
-  border-radius: 8px;
+/* UNIFIED SEGMENTED NAVIGATION CONTROL */
+.pms-segmented-nav {
+  display: inline-flex;
+  align-items: center;
+  background: #F1F5F9;
   border: 1px solid #E2E8F0;
+  border-radius: 9999px;
+  padding: 3px;
+  gap: 2px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.pms-calendar-card.dark .pms-segmented-nav,
+.dark-mode .pms-segmented-nav {
+  background: rgba(30, 41, 59, 0.85);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.pms-seg-btn {
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: #64748B;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+.pms-seg-btn.icon-only {
+  width: 28px;
+  padding: 0;
+  font-size: 0.74rem;
+}
+.pms-seg-btn.text-btn {
+  padding: 0 13px;
+  letter-spacing: 0.01em;
+}
+.pms-seg-btn:hover {
   background: #FFFFFF;
-  color: #374151;
-  font-size: 0.84rem;
+  color: #0F172A;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+.pms-calendar-card.dark .pms-seg-btn,
+.dark-mode .pms-seg-btn {
+  color: #94A3B8;
+}
+.pms-calendar-card.dark .pms-seg-btn:hover,
+.dark-mode .pms-seg-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #FFFFFF;
+}
+.pms-seg-btn:active {
+  transform: scale(0.96);
+}
+
+/* ACTIONS CONTAINER (RIGHT SIDE) */
+.pms-calendar-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* LUXURY RESORT RESET PILL BUTTON */
+.pms-reset-pill {
+  height: 28px;
+  padding: 0 13px;
+  border-radius: 9999px;
+  border: 1px solid rgba(6, 182, 212, 0.35);
+  background: linear-gradient(180deg, rgba(6, 182, 212, 0.12) 0%, rgba(6, 182, 212, 0.04) 100%);
+  color: #0891B2;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  outline: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+.pms-reset-pill i {
+  font-size: 0.7rem;
+  color: #0891B2;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.pms-reset-pill:hover {
+  background: linear-gradient(180deg, rgba(6, 182, 212, 0.22) 0%, rgba(6, 182, 212, 0.1) 100%);
+  border-color: #06B6D4;
+  color: #0E7490;
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.22);
+  transform: translateY(-1px);
+}
+.pms-reset-pill:hover i {
+  color: #0E7490;
+  transform: rotate(-180deg);
+}
+
+.pms-calendar-card.dark .pms-reset-pill,
+.dark-mode .pms-reset-pill {
+  border-color: rgba(56, 189, 248, 0.35);
+  background: linear-gradient(180deg, rgba(56, 189, 248, 0.14) 0%, rgba(56, 189, 248, 0.04) 100%);
+  color: #38BDF8;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(6px);
+}
+.pms-calendar-card.dark .pms-reset-pill i,
+.dark-mode .pms-reset-pill i {
+  color: #38BDF8;
+}
+.pms-calendar-card.dark .pms-reset-pill:hover,
+.dark-mode .pms-reset-pill:hover {
+  background: linear-gradient(180deg, rgba(56, 189, 248, 0.28) 0%, rgba(56, 189, 248, 0.14) 100%);
+  border-color: rgba(56, 189, 248, 0.65);
+  color: #FFFFFF;
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+.pms-calendar-card.dark .pms-reset-pill:hover i,
+.dark-mode .pms-reset-pill:hover i {
+  color: #FFFFFF;
+  transform: rotate(-180deg);
+}
+.pms-reset-pill:active {
+  transform: translateY(0) scale(0.96);
+}
+
+/* Fallback .pms-nav-btn in case used elsewhere */
+.pms-nav-btn {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: #CBD5E1;
+  font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
   display: inline-flex;
@@ -289,37 +425,23 @@
   transition: all 0.15s ease;
 }
 .pms-nav-btn:hover {
-  background: #F8FAFC;
-  border-color: #CBD5E1;
-  color: #0F172A;
-}
-.pms-nav-btn.icon-only {
-  width: 32px;
-  padding: 0;
-  color: #4B5563;
-}
-.pms-calendar-card.dark .pms-nav-btn,
-.dark-mode .pms-nav-btn {
-  background: #1E293B;
-  border-color: #334155;
-  color: #CBD5E1;
-}
-.pms-calendar-card.dark .pms-nav-btn:hover,
-.dark-mode .pms-nav-btn:hover {
-  background: #334155;
+  background: rgba(255, 255, 255, 0.12);
   color: #FFFFFF;
 }
 
+/* MODERN CLEAN SANS-SERIF DATE TITLE */
 .pms-date-title {
-  font-size: 1rem;
-  font-weight: 700;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  font-size: 0.94rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   color: #111827;
-  margin: 0 0 0 12px;
+  margin: 0 0 0 8px;
   white-space: nowrap;
 }
 .pms-calendar-card.dark .pms-date-title,
 .dark-mode .pms-date-title {
-  color: #F8FAFC;
+  color: #F1F5F9;
 }
 
 .pms-metrics-group {
@@ -342,6 +464,38 @@
 .pms-calendar-card.dark .pms-metric-val,
 .dark-mode .pms-metric-val {
   color: #F8FAFC;
+}
+
+.pms-calendar-legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 0.8rem;
+  color: #64748B;
+}
+.pms-calendar-card.dark .pms-calendar-legend,
+.dark-mode .pms-calendar-legend {
+  color: #94A3B8;
+}
+.pms-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+.pms-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.pms-legend-dot.open {
+  background-color: #10B981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+}
+.pms-legend-dot.reserved {
+  background-color: #F43F5E;
+  box-shadow: 0 0 6px rgba(244, 63, 94, 0.4);
 }
 
 /* 4. GRID CONTAINER & TABLE */
@@ -422,12 +576,13 @@
   letter-spacing: 0.03em;
 }
 .pms-day-header-cell.is-today .pms-day-name {
-  color: #4F46E5;
+  color: #0284C7;
   font-weight: 700;
 }
 .pms-calendar-card.dark .pms-day-header-cell.is-today .pms-day-name,
 .dark-mode .pms-day-header-cell.is-today .pms-day-name {
-  color: #818CF8;
+  color: #38BDF8;
+  font-weight: 700;
 }
 
 .pms-day-num {
@@ -445,7 +600,7 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: #4F46E5;
+  background: #0284C7;
   color: #FFFFFF;
   font-size: 0.74rem;
   font-weight: 700;
@@ -453,7 +608,13 @@
   align-items: center;
   justify-content: center;
   margin: 2px auto 0;
-  box-shadow: 0 1px 3px rgba(79, 70, 229, 0.4);
+  box-shadow: 0 1px 4px rgba(2, 132, 199, 0.4);
+}
+.pms-calendar-card.dark .pms-day-num-today-badge,
+.dark-mode .pms-day-num-today-badge {
+  background: #0284C7;
+  color: #FFFFFF;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
 }
 
 /* 5. UNIT ROWS */
@@ -562,7 +723,27 @@
 }
 .pms-calendar-card.dark .pms-cell.is-today,
 .dark-mode .pms-cell.is-today {
-  background: rgba(99, 102, 241, 0.12);
+  background: rgba(56, 189, 248, 0.12);
+}
+
+.pms-cell.is-past {
+  opacity: 0.35;
+  background: rgba(0, 0, 0, 0.08);
+  cursor: not-allowed;
+}
+.pms-cell.is-selected {
+  outline: 2px solid #38BDF8;
+  outline-offset: -2px;
+  background: rgba(56, 189, 248, 0.12) !important;
+  z-index: 2;
+  border-radius: 3px;
+  box-shadow: inset 0 0 8px rgba(56, 189, 248, 0.25);
+}
+.pms-calendar-card.dark .pms-cell.is-past,
+.dark-mode .pms-cell.is-past {
+  opacity: 0.3;
+  background: rgba(0, 0, 0, 0.35);
+  cursor: not-allowed;
 }
 
 /* 6. STAY PILLS */

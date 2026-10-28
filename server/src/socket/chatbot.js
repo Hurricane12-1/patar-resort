@@ -47,7 +47,7 @@ export async function findAvailableServiceAgent() {
           name: receptionist.full_name || `${receptionist.first_name || ''} ${receptionist.last_name || ''}`.trim() || 'Maria Santos',
           role: 'Front Desk Receptionist',
           phone: receptionist.phone || '+63 900 555 0123',
-          email: receptionist.email || 'receptionist@janddbeachhouse.ph',
+          email: receptionist.email || 'receptionist@rockviewresort.ph',
           is_online: true,
         };
       }
@@ -59,7 +59,7 @@ export async function findAvailableServiceAgent() {
           name: staffAgent.full_name || `${staffAgent.first_name || ''} ${staffAgent.last_name || ''}`.trim() || 'Elena Reyes',
           role: 'Front Desk & Guest Concierge',
           phone: staffAgent.phone || '+63 900 555 0123',
-          email: staffAgent.email || 'staff@janddbeachhouse.ph',
+          email: staffAgent.email || 'staff@rockviewresort.ph',
           is_online: true,
         };
       }
@@ -70,7 +70,7 @@ export async function findAvailableServiceAgent() {
         name: adminAgent.full_name || 'Executive Duty Manager',
         role: 'Front Desk Duty Manager',
         phone: adminAgent.phone || '+63 900 555 0123',
-        email: adminAgent.email || 'admin@janddbeachhouse.ph',
+        email: adminAgent.email || 'admin@rockviewresort.ph',
         is_online: true,
       };
     }
@@ -84,7 +84,7 @@ export async function findAvailableServiceAgent() {
     name: 'Maria Santos',
     role: 'Front Desk Receptionist & Guest Concierge',
     phone: '+63 900 555 0123',
-    email: 'receptionist@janddbeachhouse.ph',
+    email: 'receptionist@rockviewresort.ph',
     is_online: true,
   };
 }
@@ -663,9 +663,10 @@ function resortKnowledgeFallback(text, rooms = []) {
   // 6. CONTACT NUMBER, HOTLINE, PHONE & VIBER (Informational - Does NOT lock chat)
   if (has('number', 'cellphone', 'contact', 'telepono', 'phone', 'hotline', 'viber', 'whatsapp', 'email', 'tawag', 'tawagan')) {
     return {
-      text: '🛎️ **Rock View Beach Resort 24/7 Contact Channels**:\n\n• **Front Desk Hotline**: **+63 900 555 0123**\n• **Viber / WhatsApp**: **+63 917 123 4567**\n• **Email**: support@jdbeachhouse.com\n• **Address**: Front Desk Lobby, Patar White Beach, Bolinao, Pangasinan\n\nNakatutok ang aming on-site reception at front desk team 24 oras araw-araw para mag-assist sa inyong inquiries at booking!',
+      text: '🛎️ **Rock View Beach Resort 24/7 Contact Channels**:\n\n• **Front Desk Hotline**: **+63 900 555 0123**\n• **Viber / WhatsApp**: **+63 917 123 4567**\n• **Email**: support@rockviewresort.ph\n• **Address**: Front Desk Lobby, Patar White Beach, Bolinao, Pangasinan\n\nNakatutok ang aming on-site reception at front desk team 24 oras araw-araw para mag-assist sa inyong inquiries at booking!',
       chips: ['Call Front Desk (+63 900 555 0123)', 'Room Rates', 'How to Get Here'],
       contact_card: true,
+
       is_ai: true,
     };
   }

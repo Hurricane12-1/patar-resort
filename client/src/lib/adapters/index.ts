@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * J & D Beach House · Unified Frontend Adapter
+ * Rock View Beach Resort · Unified Frontend Adapter
  * Implements Architecture:
  *   - websocket  -> data payload 1 -> FRONTEND ADAPTER (websocketAdapter)
  *   - REST API   -> data payload 2 -> FRONTEND ADAPTER (restAdapter)

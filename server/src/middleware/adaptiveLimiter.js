@@ -1,5 +1,5 @@
 /**
- * J & D Beach House — Enterprise Adaptive Limiter & Concurrency Framework
+ * Rock View Beach Resort — Enterprise Adaptive Limiter & Concurrency Framework
  * 
  * Algorithms & Architecture:
  * 1. Adaptive Concurrency Control (TCP Vegas / AIMD Dynamic Auto-Tuning):

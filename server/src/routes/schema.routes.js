@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * J & D Beach House · Schema Collector API Routes
+ * Rock View Beach Resort · Schema Collector API Routes
  * Exposes live schema catalog and SSL health to Backend and Clients
  * ============================================================================
  */

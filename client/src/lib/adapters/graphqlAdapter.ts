@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * J & D Beach House · GraphQL Frontend Adapter
+ * Rock View Beach Resort · GraphQL Frontend Adapter
  * Consumes: Data Payload 3 (Query Graph & Relational Aggregation over TCP)
  * Handles: Complex nested queries, analytics aggregation, schema operations
  * ============================================================================

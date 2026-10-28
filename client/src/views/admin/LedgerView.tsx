@@ -1172,6 +1172,8 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
             rooms={activeRoomsList}
             bookings={allBookings}
             isLightMode={isLightMode}
+            showMetrics={true}
+            showNewBookingInTopBar={true}
             onClose={() => setLedgerSubView('stay_folios')}
             onViewList={() => setLedgerSubView('stay_folios')}
             onNewBooking={() => {

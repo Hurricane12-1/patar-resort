@@ -95,6 +95,7 @@ export default function BookingFlow({ initialSlug }) {
   const [showVoucherModal, setShowVoucherModal] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedUnitNumber, setSelectedUnitNumber] = useState<number | 'auto'>('auto');
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const preferred = useRef(null);
   const resultsRef = useRef(null);
 
@@ -175,8 +176,12 @@ export default function BookingFlow({ initialSlug }) {
       toast('This room is already reserved / locked in for those dates. Please check the calendar for available dates.', true);
       return;
     }
-    if (phone && phone.length !== 11) {
-      toast('Phone number must be strictly an 11-digit number (e.g. 09XXXXXXXXX).', true);
+    if (phone && (phone.length !== 11 || !phone.startsWith('09'))) {
+      toast('Phone number must be strictly an 11-digit Philippine mobile number starting with 09 (e.g. 09XXXXXXXXX).', true);
+      return;
+    }
+    if (!termsAccepted) {
+      toast('Please agree to the Resort Terms of Stay and Cancellation Policy before confirming your reservation.', true);
       return;
     }
     setBusy(true);
@@ -203,6 +208,7 @@ export default function BookingFlow({ initialSlug }) {
         total_php: totalWithAdjustments,
         guest_name: (profile?.full_name || '').trim(),
         guest_email: profile?.email || '',
+        terms_accepted: true,
       });
       setDone(stay); setStage('done');
       try {
@@ -696,6 +702,20 @@ export default function BookingFlow({ initialSlug }) {
                 <textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)}
                   placeholder="early check-in, extra bed, anniversary setup…" />
               </div>
+              <div style={{ marginTop: 16, padding: '10px 14px', borderRadius: 10, background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', fontSize: '0.8rem', color: '#E2E8F0', userSelect: 'none' }}>
+                  <input
+                    type="checkbox"
+                    checked={termsAccepted}
+                    onChange={(e) => setTermsAccepted(e.target.checked)}
+                    style={{ marginTop: 2, accentColor: '#38BDF8', width: 16, height: 16, cursor: 'pointer' }}
+                  />
+                  <span>
+                    I have read and agree to the <strong>Resort Terms of Stay, Cancellation & Refund Policy</strong> (100% refund up to 7 days before check-in) and Patar Beach eco-sanctuary rules.
+                  </span>
+                </label>
+              </div>
+
               <div className="bc-nav" style={{ marginTop: 22 }}>
                 <button className="btn btn-ghost btn-sm" onClick={() => setStage('results')}>← Rooms</button>
                 <button className="btn btn-sky" disabled={busy} onClick={confirm}>

@@ -1,4 +1,4 @@
-# 🌊 J & D Beach House — Full-Stack Resort Management Platform
+# 🌊 Rock View Beach Resort — Full-Stack Resort Management Platform
 
 **Location**: Bolinao, Pangasinan, Philippines  
 **Architecture**: React 18 (Vite + TypeScript) + Node.js (Express + Socket.io) + Supabase (PostgreSQL 15+ with RLS & GiST) + Twilio SMS

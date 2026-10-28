@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * J & D Beach House · Isolated Modularity Base
+ * Rock View Beach Resort · Isolated Modularity Base
  * Module Registry: Central State & Telemetry Authority
  * Location: Brgy. Patar, Bolinao, Pangasinan (16.3042° N, 119.7821° E)
  * ============================================================================
