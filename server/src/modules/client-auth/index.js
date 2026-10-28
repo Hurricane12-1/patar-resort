@@ -107,14 +107,6 @@ export const handleClientLogin = asyncH(async (req, res) => {
     if (authErr?.message?.includes('Email not confirmed') || authErr?.code === 'email_not_confirmed') {
       throw new ApiError(400, 'Your email address has not been confirmed yet. Please check your inbox for the confirmation link.');
     }
-    const isOAuthUser = targetProfile?.avatar_url && (
-      targetProfile.avatar_url.includes('google') ||
-      targetProfile.avatar_url.includes('lh3.googleusercontent.com') ||
-      targetProfile.avatar_url.includes('facebook')
-    );
-    if (isOAuthUser) {
-      throw new ApiError(400, 'This account was registered with Google / Facebook Sign-In. Please click the Google or Facebook button above, or click "Forgot password?" to set a password.');
-    }
     if (authErr instanceof ApiError) throw authErr;
     throw new ApiError(401, 'Invalid login credentials. Please check your customer email/username and password.');
   }

@@ -541,51 +541,10 @@ export function AuthProvider({ children }) {
           return { data: serverAuth, error: null };
         }
       } catch (serverErr: any) {
-        // Check if this account was registered with Google or Facebook
-        if (targetEmail.includes('@')) {
-          try {
-            const { data: prof } = await supabase
-              .from('profiles')
-              .select('avatar_url')
-              .ilike('email', targetEmail)
-              .maybeSingle();
-            if (prof?.avatar_url && (
-              prof.avatar_url.includes('google') ||
-              prof.avatar_url.includes('lh3.googleusercontent.com') ||
-              prof.avatar_url.includes('facebook')
-            )) {
-              return {
-                data: null,
-                error: new Error('This account was registered with Google / Facebook Sign-In. Please click the Google or Facebook button above, or click "Forgot password?" to set a password.'),
-              };
-            }
-          } catch {}
-        }
         return { data: null, error: serverErr };
       }
 
-      // Final check for OAuth registration if server fallback did not return error
-      if (targetEmail.includes('@')) {
-        try {
-          const { data: prof } = await supabase
-            .from('profiles')
-            .select('avatar_url')
-            .ilike('email', targetEmail)
-            .maybeSingle();
-          if (prof?.avatar_url && (
-            prof.avatar_url.includes('google') ||
-            prof.avatar_url.includes('lh3.googleusercontent.com') ||
-            prof.avatar_url.includes('facebook')
-          )) {
-            return {
-              data: null,
-              error: new Error('This account was registered with Google / Facebook Sign-In. Please click the Google or Facebook button above, or click "Forgot password?" to set a password.'),
-            };
-          }
-        } catch {}
-      }
-
-      return { data: null, error: new Error('Customer sign-in failed. Please verify your credentials.') };
+      return { data: null, error: new Error('Invalid email or password. Please verify your credentials.') };
     } catch (err) {
       return { data: null, error: err };
     }
