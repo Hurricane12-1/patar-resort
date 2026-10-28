@@ -754,6 +754,23 @@ export default function AuthModal() {
                 </button>
               </div>
 
+              {mode === 'in' && (
+                <div style={{
+                  background: 'rgba(2, 132, 199, 0.08)',
+                  border: '1px solid rgba(56, 189, 248, 0.25)',
+                  borderRadius: 8,
+                  padding: '8px 12px',
+                  marginBottom: 12,
+                  fontSize: '0.74rem',
+                  color: '#94A3B8',
+                  lineHeight: 1.4,
+                  textAlign: 'center',
+                }}>
+                  <strong style={{ color: '#7DD3FC' }}>Signed up via Google or Facebook?</strong> Use the buttons above.<br />
+                  Using email & password? Enter your credentials below.
+                </div>
+              )}
+
               {/* SIGN UP PROVIDER SELECTION */}
               {mode === 'up' && (
                 <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>

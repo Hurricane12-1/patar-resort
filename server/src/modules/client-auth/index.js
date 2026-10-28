@@ -43,35 +43,45 @@ export const handleClientLogin = asyncH(async (req, res) => {
 
   // 2. Resolve Customer Identifier (Username or Email) strictly via Customer Stores
   if (!targetEmail.includes('@')) {
-    // Check customers table by username
-    const { data: custMatched } = await admin
-      .from('customers')
-      .select('email')
-      .ilike('username', userIdent)
-      .maybeSingle();
-
-    if (custMatched?.email) {
-      targetEmail = custMatched.email.toLowerCase();
-    } else {
-      // Check profiles table by username
-      const { data: matched } = await admin
-        .from('profiles')
-        .select('*')
+    let resolved = null;
+    // Check customers table by username if column exists
+    try {
+      const { data: custMatched } = await admin
+        .from('customers')
+        .select('email')
         .ilike('username', userIdent)
         .maybeSingle();
-      targetProfile = matched;
-      if (matched?.email) {
-        targetEmail = matched.email.toLowerCase();
-      }
+      if (custMatched?.email) resolved = custMatched.email.toLowerCase();
+    } catch {}
+
+    // Check profiles table by matching email prefix or full_name
+    if (!resolved) {
+      try {
+        const { data: matched } = await admin
+          .from('profiles')
+          .select('*')
+          .or(`email.ilike.${userIdent}@%,full_name.ilike.${userIdent}`)
+          .maybeSingle();
+        targetProfile = matched;
+        if (matched?.email) {
+          resolved = matched.email.toLowerCase();
+        }
+      } catch {}
+    }
+
+    if (resolved) {
+      targetEmail = resolved;
     }
   } else {
     // Lookup profile by email
-    const { data: matched } = await admin
-      .from('profiles')
-      .select('*')
-      .ilike('email', targetEmail)
-      .maybeSingle();
-    targetProfile = matched;
+    try {
+      const { data: matched } = await admin
+        .from('profiles')
+        .select('*')
+        .ilike('email', targetEmail)
+        .maybeSingle();
+      targetProfile = matched;
+    } catch {}
   }
 
   // 3. Authenticate customer credentials strictly via Supabase Auth
@@ -94,6 +104,17 @@ export const handleClientLogin = asyncH(async (req, res) => {
 
   if (!authData) {
     await recordFailedAttempt(req.ip, userIdent, req);
+    if (authErr?.message?.includes('Email not confirmed') || authErr?.code === 'email_not_confirmed') {
+      throw new ApiError(400, 'Your email address has not been confirmed yet. Please check your inbox for the confirmation link.');
+    }
+    const isOAuthUser = targetProfile?.avatar_url && (
+      targetProfile.avatar_url.includes('google') ||
+      targetProfile.avatar_url.includes('lh3.googleusercontent.com') ||
+      targetProfile.avatar_url.includes('facebook')
+    );
+    if (isOAuthUser) {
+      throw new ApiError(400, 'This account was registered with Google / Facebook Sign-In. Please click the Google or Facebook button above, or click "Forgot password?" to set a password.');
+    }
     if (authErr instanceof ApiError) throw authErr;
     throw new ApiError(401, 'Invalid login credentials. Please check your customer email/username and password.');
   }

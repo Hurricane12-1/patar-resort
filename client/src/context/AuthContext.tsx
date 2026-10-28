@@ -470,10 +470,25 @@ export function AuthProvider({ children }) {
   const customerSignIn = async (emailOrUsername: string, password: string) => {
     try {
       const cleanIdent = (emailOrUsername || '').trim();
+      let targetEmail = cleanIdent;
+
+      // If user provided a username without @, resolve to email via profiles table
+      if (!cleanIdent.includes('@')) {
+        try {
+          const { data: matched } = await supabase
+            .from('profiles')
+            .select('email')
+            .or(`email.ilike.${cleanIdent}@%,full_name.ilike.${cleanIdent}`)
+            .maybeSingle();
+          if (matched?.email) {
+            targetEmail = matched.email;
+          }
+        } catch {}
+      }
 
       // 1. Direct Supabase Auth
-      if (cleanIdent.includes('@')) {
-        const res = await supabase.auth.signInWithPassword({ email: cleanIdent, password });
+      if (targetEmail.includes('@')) {
+        const res = await supabase.auth.signInWithPassword({ email: targetEmail, password });
         if (!res.error && res.data?.session) {
           const s = res.data.session;
           setCustomerSession(s);
@@ -487,7 +502,7 @@ export function AuthProvider({ children }) {
           const custUser = {
             ...sbProfile,
             id: s.user.id,
-            email: s.user.email || cleanIdent,
+            email: s.user.email || targetEmail,
             role: 'customer',
             has_password: true,
             password_status: 'Configured',
@@ -496,13 +511,21 @@ export function AuthProvider({ children }) {
           setNeedsProfileCompletion(false);
           return res;
         }
+
+        // Check if error is email_not_confirmed
+        if (res.error?.message?.includes('Email not confirmed') || (res.error as any)?.code === 'email_not_confirmed') {
+          return {
+            data: null,
+            error: new Error('Your email address has not been confirmed yet. Please check your inbox for the Supabase confirmation link.'),
+          };
+        }
       }
 
       // 2. Server Auth endpoint /auth/login
       try {
         const serverAuth = await api.login({
-          email: cleanIdent.includes('@') ? cleanIdent : undefined,
-          username: !cleanIdent.includes('@') ? cleanIdent : undefined,
+          email: targetEmail.includes('@') ? targetEmail : undefined,
+          username: !targetEmail.includes('@') ? cleanIdent : undefined,
           identifier: cleanIdent,
           password,
         });
@@ -517,8 +540,49 @@ export function AuthProvider({ children }) {
           setNeedsProfileCompletion(false);
           return { data: serverAuth, error: null };
         }
-      } catch (serverErr) {
+      } catch (serverErr: any) {
+        // Check if this account was registered with Google or Facebook
+        if (targetEmail.includes('@')) {
+          try {
+            const { data: prof } = await supabase
+              .from('profiles')
+              .select('avatar_url')
+              .ilike('email', targetEmail)
+              .maybeSingle();
+            if (prof?.avatar_url && (
+              prof.avatar_url.includes('google') ||
+              prof.avatar_url.includes('lh3.googleusercontent.com') ||
+              prof.avatar_url.includes('facebook')
+            )) {
+              return {
+                data: null,
+                error: new Error('This account was registered with Google / Facebook Sign-In. Please click the Google or Facebook button above, or click "Forgot password?" to set a password.'),
+              };
+            }
+          } catch {}
+        }
         return { data: null, error: serverErr };
+      }
+
+      // Final check for OAuth registration if server fallback did not return error
+      if (targetEmail.includes('@')) {
+        try {
+          const { data: prof } = await supabase
+            .from('profiles')
+            .select('avatar_url')
+            .ilike('email', targetEmail)
+            .maybeSingle();
+          if (prof?.avatar_url && (
+            prof.avatar_url.includes('google') ||
+            prof.avatar_url.includes('lh3.googleusercontent.com') ||
+            prof.avatar_url.includes('facebook')
+          )) {
+            return {
+              data: null,
+              error: new Error('This account was registered with Google / Facebook Sign-In. Please click the Google or Facebook button above, or click "Forgot password?" to set a password.'),
+            };
+          }
+        } catch {}
       }
 
       return { data: null, error: new Error('Customer sign-in failed. Please verify your credentials.') };
