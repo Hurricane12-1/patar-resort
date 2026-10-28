@@ -51,6 +51,7 @@ function savePersistedReservations() {
 loadPersistedReservations();
 
 export function getLocalReservations() {
+  loadPersistedReservations();
   return inMemoryReservations;
 }
 

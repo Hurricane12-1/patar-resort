@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import site from '../content/site.json';
 import { useAuth, to11Digits, isValidPHMobile } from '../context/AuthContext.tsx';
 import { api } from '../lib/api.ts';
+import { supabase } from '../lib/supabaseClient.ts';
 import { CANONICAL_ROOMS } from '../lib/canonicalRooms.ts';
 import { toast } from './Toasts.tsx';
 import { getRoomImageUrl, handleImageError } from '../lib/images.ts';
@@ -157,17 +158,79 @@ export default function MobileResortApp() {
   const [selectedRoom, setSelectedRoom] = useState(site.rooms.items[0]?.name ?? '');
   const [quote, setQuote] = useState<{ ok: boolean; text: string } | null>(null);
   const [rooms, setRooms] = useState<any[]>([]);
+  const [bookedRanges, setBookedRanges] = useState<any[]>([]);
 
-  useEffect(() => {
-    api.rooms().then((data) => {
-      if (Array.isArray(data)) {
-        setRooms(data);
-        if (data.length > 0 && !selectedRoom) {
-          setSelectedRoom(data[0].name);
+  const refreshAvailabilityData = useCallback(async () => {
+    try {
+      const [roomsData, calData] = await Promise.all([
+        api.rooms(),
+        api.availabilityCalendar(),
+      ]);
+      if (Array.isArray(roomsData)) {
+        setRooms(roomsData);
+        if (roomsData.length > 0 && !selectedRoom) {
+          setSelectedRoom(roomsData[0].name);
         }
       }
-    }).catch(() => {});
-  }, []);
+      if (calData && Array.isArray(calData.booked_ranges)) {
+        setBookedRanges(calData.booked_ranges);
+      }
+    } catch {}
+  }, [selectedRoom]);
+
+  useEffect(() => {
+    refreshAvailabilityData();
+  }, [refreshAvailabilityData]);
+
+  // Real-time synchronization when bookings or rooms change
+  useEffect(() => {
+    const channelName = `mobile_app_avail_${Date.now()}`;
+    const channel = supabase
+      .channel(channelName)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reservations' }, () => {
+        refreshAvailabilityData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, () => {
+        refreshAvailabilityData();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [refreshAvailabilityData]);
+
+  // 1. Check if room is occupied on today's live date
+  const isRoomOccupiedToday = useCallback((room: any): boolean => {
+    if (!room) return false;
+    if (room.is_locked_now) return true;
+    if (room.units_available_now !== undefined && room.units_available_now <= 0) return true;
+    const totalUnits = Number(room.units) || 1;
+    const activeToday = bookedRanges.filter(
+      (b) => b.room_id === room.id && b.check_in <= today && b.check_out > today && b.status !== 'cancelled'
+    ).length;
+    return activeToday >= totalUnits;
+  }, [bookedRanges, today]);
+
+  // 2. Check if room is occupied / fully reserved across requested stay dates [inDate, outDate)
+  const isRoomOccupiedForDates = useCallback((room: any, inDate: string, outDate: string): boolean => {
+    if (!room || !inDate || !outDate || outDate <= inDate) return false;
+    const totalUnits = Number(room.units) || 1;
+    const overlapping = bookedRanges.filter(
+      (b) => b.room_id === room.id && b.check_in < outDate && b.check_out > inDate && b.status !== 'cancelled'
+    );
+    if (overlapping.length === 0) return false;
+
+    let cur = new Date(inDate);
+    const end = new Date(outDate);
+    while (cur < end) {
+      const nightStr = cur.toISOString().slice(0, 10);
+      const busyTonight = overlapping.filter((b) => b.check_in <= nightStr && b.check_out > nightStr).length;
+      if (busyTonight >= totalUnits) return true;
+      cur.setDate(cur.getDate() + 1);
+    }
+    return false;
+  }, [bookedRanges]);
 
   const displayRooms = rooms.length > 0 ? rooms : (site.rooms.items || []);
 
@@ -754,10 +817,13 @@ export default function MobileResortApp() {
       const rate = chosen?.rate_php || 4200;
       const units = chosen?.units_left ?? 1;
 
-      if (units <= 0) {
+      const targetRoomObj = displayRooms.find((r) => r.name.toLowerCase() === selectedRoom.toLowerCase()) || chosen;
+      const isOccupied = units <= 0 || (targetRoomObj && isRoomOccupiedForDates(targetRoomObj, checkIn, checkOut));
+
+      if (isOccupied) {
         setQuote({
           ok: false,
-          text: `${selectedRoom} is fully booked for those dates. Please select other dates or explore our other villas.`,
+          text: `⚠️ ${selectedRoom} is fully occupied for those dates (${checkIn} → ${checkOut}). Please select other dates on the calendar or explore our other villas.`,
         });
       } else {
         setQuote({
@@ -767,12 +833,20 @@ export default function MobileResortApp() {
       }
     } catch (err: any) {
       const room = displayRooms.find((r) => r.name === selectedRoom) ?? displayRooms[0];
-      setQuote({
-        ok: !!room,
-        text: room
-          ? `${room.name} · ${nights} night${nights > 1 ? 's' : ''} — est. ${peso((room.rate_php || room.price || 4200) * nights)}`
-          : 'Please select an available room.',
-      });
+      const isOccupied = room && isRoomOccupiedForDates(room, checkIn, checkOut);
+      if (isOccupied) {
+        setQuote({
+          ok: false,
+          text: `⚠️ ${room?.name || selectedRoom} is fully occupied from ${checkIn} to ${checkOut}. Please select open dates on the calendar.`,
+        });
+      } else {
+        setQuote({
+          ok: !!room,
+          text: room
+            ? `${room.name} · ${nights} night${nights > 1 ? 's' : ''} — est. ${peso((room.rate_php || room.price || 4200) * nights)}`
+            : 'Please select an available room.',
+        });
+      }
     } finally {
       setCheckingAvailability(false);
     }
@@ -796,21 +870,11 @@ export default function MobileResortApp() {
   };
 
   const handleResetCalendarSelection = () => {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
-    const todayLocal = `${y}-${m}-${d}`;
-    const tomorrowDate = new Date(now.getTime() + 86400000);
-    const ty = tomorrowDate.getFullYear();
-    const tm = String(tomorrowDate.getMonth() + 1).padStart(2, '0');
-    const td = String(tomorrowDate.getDate()).padStart(2, '0');
-    const tomorrowLocal = `${ty}-${tm}-${td}`;
-
-    setCheckIn(todayLocal);
-    setCheckOut(tomorrowLocal);
+    setCheckIn('');
+    setCheckOut('');
+    setQuote(null);
     setCalendarTarget('checkIn');
-    toast('✦ Calendar selection reset: Ready to pick Check-In.');
+    toast('✦ Calendar selection cleared: Ready to pick Check-In.');
   };
 
   const handleConfirmReservation = async (e: React.FormEvent) => {
@@ -835,6 +899,12 @@ export default function MobileResortApp() {
 
     if (!checkIn || !checkOut || checkOut <= checkIn) {
       toast('Please select valid stay dates (check-out must be after check-in).', true);
+      return;
+    }
+
+    if (isRoomOccupiedForDates(resRoom, checkIn, checkOut)) {
+      toast('⚠️ That villa is already reserved for the selected dates. Please select open dates on the calendar.', true);
+      setShowModalCalendar(true);
       return;
     }
 
@@ -897,6 +967,7 @@ export default function MobileResortApp() {
       });
       toast('Reservation Confirmed! Your Official Voucher is Ready ✦');
       fetchMyBookings();
+      refreshAvailabilityData();
     } catch (err: any) {
       toast(err.message || 'Reservation failed. Please check room availability.', true);
     } finally {
@@ -1030,11 +1101,6 @@ export default function MobileResortApp() {
                 </article>
               ))}
             </div>
-          </section>
-
-          {/* STATS */}
-          <section className={`${WRAP} pt-10 md:pt-14`}>
-            <StatRow />
           </section>
 
           {/* ROOMS TEASER */}
@@ -2025,11 +2091,16 @@ export default function MobileResortApp() {
                   {displayRooms.length === 0 ? (
                     <option value="">No rooms available</option>
                   ) : (
-                    displayRooms.map((r) => (
-                      <option key={r.id || r.name} value={r.name}>
-                        {r.name}
-                      </option>
-                    ))
+                    displayRooms.map((r) => {
+                      const occupiedForStay = checkIn && checkOut && isRoomOccupiedForDates(r, checkIn, checkOut);
+                      const occupiedToday = isRoomOccupiedToday(r);
+                      const statusTag = occupiedForStay ? ' · [Occupied for selected dates]' : occupiedToday ? ' · [Occupied today]' : ' · [Available]';
+                      return (
+                        <option key={r.id || r.name} value={r.name} className={occupiedForStay ? 'text-rose-400 font-semibold' : ''}>
+                          {r.name}{statusTag}
+                        </option>
+                      );
+                    })
                   )}
                 </select>
               </label>
@@ -2059,9 +2130,10 @@ export default function MobileResortApp() {
               <button
                 type="button"
                 onClick={() => setShowHeroCalendar((prev) => !prev)}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-cyan hover:text-white transition cursor-pointer"
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider text-cyan hover:text-white bg-cyan/10 hover:bg-cyan/20 border border-cyan/30 transition cursor-pointer"
               >
-                <><i className="fas fa-calendar-alt" style={{ marginRight: 6 }} />{showHeroCalendar ? 'Hide Availability Calendar' : 'View Calendar (Check Reserved vs Open Dates)'}</>
+                <i className="fas fa-calendar-alt text-cyan" />
+                <span>{showHeroCalendar ? 'Hide Availability Calendar' : 'View Calendar (Check Reserved vs Open Dates)'}</span>
               </button>
             </div>
 
@@ -2069,14 +2141,18 @@ export default function MobileResortApp() {
               <div className="mt-4 animate-fade-in">
                 <AvailabilityCalendar
                   rooms={displayRooms}
+                  bookings={bookedRanges}
                   initialCheckIn={checkIn}
                   initialCheckOut={checkOut}
                   isLightMode={false}
+                  onReset={handleResetCalendarSelection}
                   onSelectDates={(newIn, newOut) => {
                     setCheckIn(newIn);
                     setCheckOut(newOut);
                     setQuote(null);
-                    toast(`✦ Dates selected: ${newIn} → ${newOut}`);
+                    if (newIn && newOut) {
+                      toast(`✦ Dates selected: ${newIn} → ${newOut}`);
+                    }
                   }}
                   onClose={() => setShowHeroCalendar(false)}
                 />
@@ -2110,12 +2186,7 @@ export default function MobileResortApp() {
           </div>
         </section>
 
-        {/* 5. STATS */}
-        <section className={`${WRAP} pt-10 md:pt-14`}>
-          <StatRow />
-        </section>
-
-        {/* 6. ROOMS */}
+        {/* 5. ROOMS */}
         <section id="rooms-section" className={`${WRAP} ${SECTION} scroll-mt-16`}>
           <div className="flex items-end justify-between gap-4">
             <div>
@@ -2174,6 +2245,8 @@ export default function MobileResortApp() {
                   room.description ||
                   room.meta ||
                   'Private coastal sanctuary featuring tranquil seaside ambiance, plush bedding, and direct beach trail access.';
+                const isOccupiedForSelectedStay = Boolean(checkIn && checkOut && isRoomOccupiedForDates(room, checkIn, checkOut));
+                const isOccupiedRightNow = isRoomOccupiedToday(room);
 
                 return (
                   <article
@@ -2196,10 +2269,22 @@ export default function MobileResortApp() {
                         <span className="rounded-full border border-white/15 bg-black/60 px-3 py-1 font-mono text-[10px] font-semibold tracking-wider uppercase text-cyan backdrop-blur-md shadow-sm">
                           ✦ {categoryLabel}
                         </span>
-                        <span className="rounded-full border border-emerald-500/30 bg-emerald-950/80 px-2.5 py-1 text-[10px] font-semibold text-emerald-300 backdrop-blur-md flex items-center gap-1.5 shadow-sm">
-                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                          Available
-                        </span>
+                        {isOccupiedForSelectedStay ? (
+                          <span className="rounded-full border border-rose-500/40 bg-rose-950/85 px-2.5 py-1 text-[10px] font-semibold text-rose-300 backdrop-blur-md flex items-center gap-1.5 shadow-sm">
+                            <span className="h-1.5 w-1.5 rounded-full bg-rose-400" />
+                            Occupied for Dates
+                          </span>
+                        ) : isOccupiedRightNow ? (
+                          <span className="rounded-full border border-amber-500/40 bg-amber-950/85 px-2.5 py-1 text-[10px] font-semibold text-amber-300 backdrop-blur-md flex items-center gap-1.5 shadow-sm">
+                            <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                            Occupied Today
+                          </span>
+                        ) : (
+                          <span className="rounded-full border border-emerald-500/30 bg-emerald-950/80 px-2.5 py-1 text-[10px] font-semibold text-emerald-300 backdrop-blur-md flex items-center gap-1.5 shadow-sm">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            Available
+                          </span>
+                        )}
                       </div>
 
                       {/* Bottom Price Tag */}
@@ -2262,17 +2347,32 @@ export default function MobileResortApp() {
                         >
                           <><i className="fas fa-calendar-check" style={{ marginRight: 4 }} />Check Dates</>
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedRoom(room.name);
-                            openReservation(room.name, false);
-                          }}
-                          title={`Reserve ${roomTitle}`}
-                          className="flex-1 py-2.5 px-3.5 rounded-xl bg-cyan hover:bg-cyan-light text-navy font-bold text-xs tracking-wide transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-cyan/20 whitespace-nowrap"
-                        >
-                          Book Villa →
-                        </button>
+                        {isOccupiedForSelectedStay ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedRoom(room.name);
+                              openReservation(room.name, true);
+                            }}
+                            title={`This villa is already occupied from ${checkIn} to ${checkOut}. Click to view calendar and pick open dates.`}
+                            className="flex-1 py-2.5 px-3.5 rounded-xl border border-rose-500/40 bg-rose-950/50 hover:bg-rose-950/80 text-rose-200 font-bold text-xs tracking-wide transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm whitespace-nowrap"
+                          >
+                            <i className="fas fa-lock text-[10px] text-rose-400" />
+                            <span>Occupied · View Dates</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedRoom(room.name);
+                              openReservation(room.name, false);
+                            }}
+                            title={`Reserve ${roomTitle}`}
+                            className="flex-1 py-2.5 px-3.5 rounded-xl bg-cyan hover:bg-cyan-light text-navy font-bold text-xs tracking-wide transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-cyan/20 whitespace-nowrap"
+                          >
+                            Book Villa →
+                          </button>
+                        )}
                       </div>
                     </div>
                   </article>
@@ -3385,6 +3485,19 @@ export default function MobileResortApp() {
                       </div>
                     </div>
 
+                    {/* Occupancy Alert Banner if room is reserved for chosen dates */}
+                    {isRoomOccupiedForDates(resRoom, checkIn, checkOut) && (
+                      <div className="rounded-xl border border-rose-500/50 bg-rose-950/60 p-3 text-xs text-rose-200 flex items-start gap-2.5 animate-fade-in shadow-md">
+                        <i className="fas fa-triangle-exclamation text-rose-400 text-sm mt-0.5 shrink-0" />
+                        <div className="flex-1">
+                          <strong className="block text-rose-300 font-semibold mb-0.5">Villa Occupied for Selected Dates</strong>
+                          <p className="text-[11px] leading-relaxed text-rose-200/90">
+                            <strong>{resRoom?.name || 'This villa'}</strong> is already reserved for these dates ({checkIn} → {checkOut}). Please pick open dates using the calendar below.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Interactive Date Adjuster Bar - 2 columns with active Selection Target & Direct Pickers */}
                     <div className="pt-2.5 border-t border-white/10 flex flex-col gap-2">
                       <div className="grid grid-cols-2 gap-2 w-full">
@@ -3546,6 +3659,7 @@ export default function MobileResortApp() {
                         <AvailabilityCalendar
                           selectedRoomId={resRoom?.id}
                           rooms={displayRooms}
+                          bookings={bookedRanges}
                           initialCheckIn={checkIn}
                           initialCheckOut={checkOut}
                           selectionTarget={calendarTarget}
@@ -3864,13 +3978,24 @@ export default function MobileResortApp() {
                   </div>
 
                   <div className="pt-1.5">
-                    <button
-                      type="submit"
-                      disabled={resSubmitting}
-                      className={`${BTN_PRIMARY} w-full py-3.5 sm:py-4 text-xs font-semibold uppercase tracking-[0.18em] cursor-pointer`}
-                    >
-                      {resSubmitting ? 'Confirming Reservation…' : 'Confirm Stay & Generate Voucher ✦'}
-                    </button>
+                    {isRoomOccupiedForDates(resRoom, checkIn, checkOut) ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowModalCalendar(true)}
+                        className="w-full py-3.5 sm:py-4 rounded-xl border border-rose-500/50 bg-rose-950/70 text-rose-200 font-semibold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer hover:bg-rose-950/90 transition shadow-lg"
+                      >
+                        <i className="fas fa-calendar-xmark text-rose-400" />
+                        <span>Villa Occupied on Dates — Open Calendar to Pick Free Dates</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="submit"
+                        disabled={resSubmitting}
+                        className={`${BTN_PRIMARY} w-full py-3.5 sm:py-4 text-xs font-semibold uppercase tracking-[0.18em] cursor-pointer`}
+                      >
+                        {resSubmitting ? 'Confirming Reservation…' : 'Confirm Stay & Generate Voucher ✦'}
+                      </button>
+                    )}
                     <p className="mt-1.5 text-center text-[10px] text-white/40">
                       100% refund up to 7 days before check-in · Direct booking guarantee · Official digital voucher
                     </p>
@@ -3901,18 +4026,7 @@ export default function MobileResortApp() {
 // SHARED SECTIONS
 // ==========================================================================
 function StatRow() {
-  return (
-    <div className="mx-auto grid max-w-4xl grid-cols-3 divide-x divide-white/10 rounded-3xl border border-white/10 bg-ink px-2 py-6 text-center md:py-8">
-      {site.stats.map((st) => (
-        <div key={st.label} className="px-2">
-          <span className="block font-serif text-3xl md:text-5xl font-medium text-cyan">{st.value}</span>
-          <span className="mt-1.5 block text-[10px] md:text-xs uppercase leading-tight tracking-[0.2em] text-white/50">
-            {st.label}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
+  return null;
 }
 
 function AmenityGrid() {

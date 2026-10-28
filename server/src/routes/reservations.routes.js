@@ -99,8 +99,21 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
       .in('status', ['pending', 'confirmed', 'checked_in'])
       .lt('check_in', check_out)
       .gt('check_out', check_in);
-    if (data) activeRes = data;
+    if (data) activeRes = [...data];
   } catch {}
+
+  // Resilient local store active bookings merge for zero overbooking
+  const localActive = getLocalReservations().filter((b) =>
+    b.room_id === targetRoomId &&
+    ['pending', 'confirmed', 'checked_in'].includes(b.status) &&
+    b.check_in < check_out &&
+    b.check_out > check_in
+  );
+  for (const lb of localActive) {
+    if (!activeRes.some((ar) => ar.id === lb.id)) {
+      activeRes.push(lb);
+    }
+  }
 
   const nightsList = [];
   let cur = new Date(check_in);

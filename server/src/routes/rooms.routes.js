@@ -6,6 +6,7 @@ import { admin, getSystemAdminClient } from '../lib/supabase.js';
 import { authenticate, requireStaffOrAdmin, requireAdmin } from '../middleware/auth.js';
 import { redis } from '../lib/redis.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
+import { getLocalReservations } from '../lib/reservationStore.js';
 
 const r = Router();
 
@@ -116,8 +117,20 @@ r.get('/rooms', asyncH(async (req, res) => {
           .in('status', ['pending', 'confirmed', 'checked_in'])
           .lte('check_in', today)
           .gt('check_out', today);
-        if (Array.isArray(resData)) activeBookings = resData;
+        if (Array.isArray(resData)) activeBookings = [...resData];
       } catch {}
+
+      // Resilient local store active bookings merge
+      const localActive = getLocalReservations().filter((b) =>
+        ['pending', 'confirmed', 'checked_in'].includes(b.status) &&
+        b.check_in <= today &&
+        b.check_out > today
+      );
+      for (const lb of localActive) {
+        if (!activeBookings.some((ab) => ab.id === lb.id)) {
+          activeBookings.push(lb);
+        }
+      }
 
       result = normalized.map((r) => {
         const occupied = activeBookings.filter((b) => b.room_id === r.id).length;
@@ -196,9 +209,21 @@ r.get('/availability', validate(rangeSchema, 'query'), asyncH(async (req, res) =
       .in('status', ['pending', 'confirmed', 'checked_in'])
       .lt('check_in', check_out)
       .gt('check_out', check_in);
-    if (data) overlappingRes = data;
+    if (data) overlappingRes = [...data];
   } catch (err) {
     console.warn('[Availability] Overlapping reservations notice:', err.message);
+  }
+
+  // Resilient local store overlapping reservations merge
+  const localOverlapping = getLocalReservations().filter((b) =>
+    ['pending', 'confirmed', 'checked_in'].includes(b.status) &&
+    b.check_in < check_out &&
+    b.check_out > check_in
+  );
+  for (const lb of localOverlapping) {
+    if (!overlappingRes.some((ob) => ob.id === lb.id)) {
+      overlappingRes.push(lb);
+    }
   }
 
   // 3. Generate date sequence for each night: [check_in, check_out)
@@ -295,15 +320,28 @@ r.get('/availability/calendar', asyncH(async (req, res) => {
   let reservations = [];
   try {
     let q = sysClient.from('reservations')
-      .select('id, room_id, check_in, check_out, status, guests, rooms(id, name, units)')
+      .select('id, room_id, check_in, check_out, status, guests, notes, rooms(id, name, units)')
       .in('status', ['pending', 'confirmed', 'checked_in'])
       .lt('check_in', endDate)
       .gt('check_out', startDate);
     if (room_id) q = q.eq('room_id', room_id);
     const { data } = await q;
-    if (data) reservations = data;
+    if (data) reservations = [...data];
   } catch (err) {
     console.warn('[Calendar API] Reservations notice:', err.message);
+  }
+
+  // Resilient local store calendar reservations merge
+  const localCalRes = getLocalReservations().filter((b) =>
+    (!room_id || b.room_id === room_id) &&
+    ['pending', 'confirmed', 'checked_in'].includes(b.status) &&
+    b.check_in < endDate &&
+    b.check_out > startDate
+  );
+  for (const lb of localCalRes) {
+    if (!reservations.some((r) => r.id === lb.id)) {
+      reservations.push(lb);
+    }
   }
 
   // 3. Build daily map: date -> room availability & lock status
@@ -361,6 +399,7 @@ r.get('/availability/calendar', asyncH(async (req, res) => {
       check_in: b.check_in,
       check_out: b.check_out,
       status: b.status,
+      notes: b.notes || '',
     })),
     daily_status: dailyStatus,
   };

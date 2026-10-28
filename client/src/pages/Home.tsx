@@ -185,14 +185,6 @@ export default function Home() {
               a kitchen that smells of grilled bangus, and the sea exactly fifty steps away.
             </p>
           </div>
-          <div className="steps" style={{ marginTop: 32 }}>
-            {[['18', 'rooms & cottages'], ['50', 'steps to the sand'], ['2016', 'welcoming guests since']].map(([n, l], i) => (
-              <div className="step-item reveal" key={l} style={{ transitionDelay: `${i * 120}ms` }}>
-                <b className="serif" style={{ fontSize: '2.8rem', color: '#38BDF8' }}>{n}</b>
-                <p style={{ textTransform: 'uppercase', letterSpacing: '.18em', fontSize: '.72rem', color: '#94A3B8' }}>{l}</p>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
