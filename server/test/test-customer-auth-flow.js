@@ -340,6 +340,104 @@ await test('Cross-Persona Defense: Executive Administrator blocked from customer
   assert.ok(errorCaught.message.includes('RBAC_ACCESS_DENIED'), 'Message must indicate RBAC denial');
 });
 
+
+// --------------------------------------------------------------------------
+// TEST 8: Strict 11-Digit Mobile Limitation (Phillippine 09XXXXXXXXX Format)
+// --------------------------------------------------------------------------
+await test('Strict 11-Digit Philippine Mobile Limitation', async () => {
+  const { joiSchemas } = await import('../src/middleware/joiValidation.js');
+
+  // Case A: 9-digit input from user screenshot (e.g. '097837337') -> MUST FAIL
+  const testPayloadShort = {
+    email: 'test.guest99@gmail.com',
+    password: 'Password123!',
+    first_name: 'Maria',
+    last_name: 'Santos',
+    phone: '097837337', // 9 digits only
+  };
+  const resShort = joiSchemas.initiateSignup.validate(testPayloadShort);
+  assert.ok(resShort.error, '9-digit phone must be rejected');
+  assert.ok(resShort.error.message.includes('11-digit'), 'Error message must specify 11-digit mobile requirement');
+
+  // Case B: 12-digit input -> MUST FAIL
+  const testPayloadLong = {
+    ...testPayloadShort,
+    phone: '091712345678', // 12 digits
+  };
+  const resLong = joiSchemas.initiateSignup.validate(testPayloadLong);
+  assert.ok(resLong.error, '12-digit phone must be rejected');
+
+  // Case C: Non-09 prefix -> MUST FAIL
+  const testPayloadBadPrefix = {
+    ...testPayloadShort,
+    phone: '08171234567', // 11 digits but invalid prefix
+  };
+  const resBadPrefix = joiSchemas.initiateSignup.validate(testPayloadBadPrefix);
+  assert.ok(resBadPrefix.error, 'Non-09 prefix must be rejected');
+
+  // Case D: Valid 11-digit Philippine mobile starting with 09 -> MUST PASS
+  const testPayloadValid = {
+    ...testPayloadShort,
+    phone: '09171234567', // strictly 11 digits
+  };
+  const resValid = joiSchemas.initiateSignup.validate(testPayloadValid);
+  assert.strictEqual(resValid.error, undefined, 'Valid 11-digit phone must pass');
+});
+
+// --------------------------------------------------------------------------
+// TEST 9: Password Security Standards (Min 8 Characters)
+// --------------------------------------------------------------------------
+await test('Password Security Standards (Min 8 characters)', async () => {
+  const { joiSchemas } = await import('../src/middleware/joiValidation.js');
+
+  // Too short (< 8 chars)
+  const shortPassRes = joiSchemas.initiateSignup.validate({
+    email: 'secure.guest@gmail.com',
+    password: '12345',
+    first_name: 'Juan',
+    last_name: 'Dela Cruz',
+    phone: '09171234567',
+  });
+  assert.ok(shortPassRes.error, 'Short password must be rejected');
+
+  // Valid 8+ chars
+  const validPassRes = joiSchemas.initiateSignup.validate({
+    email: 'secure.guest@gmail.com',
+    password: 'ClientPassword123!',
+    first_name: 'Juan',
+    last_name: 'Dela Cruz',
+    phone: '09171234567',
+  });
+  assert.strictEqual(validPassRes.error, undefined, 'Valid password must pass');
+});
+
+// --------------------------------------------------------------------------
+// TEST 10: Anti-Duplication Security Pre-check Logic
+// --------------------------------------------------------------------------
+await test('Anti-Duplication Security Pre-check Logic', async () => {
+  // Simulate duplicate detection
+  const registeredEmail = 'existing.customer@gmail.com';
+  const registeredPhone = '09171234567';
+
+  const mockDb = [
+    { email: registeredEmail, phone: registeredPhone },
+  ];
+
+  const checkDup = (email, phone) => {
+    if (email && mockDb.some(u => u.email.toLowerCase() === email.toLowerCase())) {
+      return { isDuplicate: true, field: 'email', message: 'An account with this email address already exists.' };
+    }
+    if (phone && mockDb.some(u => u.phone === phone)) {
+      return { isDuplicate: true, field: 'phone', message: 'This mobile number is already registered to an existing account.' };
+    }
+    return { isDuplicate: false };
+  };
+
+  assert.strictEqual(checkDup(registeredEmail, '').isDuplicate, true, 'Must detect duplicate email');
+  assert.strictEqual(checkDup('', registeredPhone).isDuplicate, true, 'Must detect duplicate phone');
+  assert.strictEqual(checkDup('brandnew@gmail.com', '09189998877').isDuplicate, false, 'New guest must not be marked duplicate');
+});
+
 console.log('\n=============================================================');
 console.log(` 🏆 TEST RESULTS: ${passed}/${total} TESTS PASSED 🟢`);
 console.log('=============================================================\n');

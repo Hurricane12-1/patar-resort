@@ -368,20 +368,97 @@ export default function MobileResortApp() {
         toast('Welcome back ✦');
         go('app');
       } else {
+        // 1. Mandatory Website Policy Agreement Check
+        if (!termsAccepted) {
+          setAuthError('You must review and accept the Website Terms of Stay and Privacy Policy before creating an account.');
+          setShowPolicyModal(true);
+          toast('⚠️ Please review and accept the Website Policy to continue.', true);
+          return;
+        }
+
+        // 2. Full Name Validation
         const fullName = authFullName.trim();
-        if (!fullName) {
+        if (!fullName || fullName.length < 2) {
           throw new Error('Full name is strictly required for the guest manifest.');
         }
-        const parts = fullName.split(/\s+/);
+        const parts = fullName.split(/\s+/).filter(Boolean);
         const firstName = parts[0] || 'Guest';
         const lastName = parts.slice(1).join(' ') || 'Resident';
 
+        // 3. Strict 11-Digit Philippine Mobile Limitation
+        const cleanPhone = authPhone.trim().replace(/\D/g, '');
+        if (!cleanPhone) {
+          throw new Error('Mobile phone number is strictly required for SMS reservation confirmations.');
+        }
+        if (cleanPhone.length !== 11 || !cleanPhone.startsWith('09')) {
+          throw new Error('Mobile number must strictly be an 11-digit Philippine mobile number starting with 09 (e.g. 09171234567).');
+        }
+
+        // 4. Password Security Requirement
+        if (!authPassword || authPassword.length < 8) {
+          throw new Error('Password must be at least 8 characters long for account security.');
+        }
+        if (!/[a-zA-Z]/.test(authPassword) || !/[0-9]/.test(authPassword)) {
+          throw new Error('Password must contain both letters and numbers for account security.');
+        }
+
+        const cleanEmail = authEmail.trim().toLowerCase();
+
+        // 5. Anti-Duplication Check: Email & Phone Number
+        try {
+          const { data: dupCustEmail } = await supabase
+            .from('customers')
+            .select('id, email')
+            .ilike('email', cleanEmail)
+            .maybeSingle();
+
+          if (dupCustEmail) {
+            throw new Error(`An account with the email "${cleanEmail}" already exists. Please sign in or use forgot password.`);
+          }
+
+          const { data: dupProfEmail } = await supabase
+            .from('profiles')
+            .select('id, email')
+            .ilike('email', cleanEmail)
+            .maybeSingle();
+
+          if (dupProfEmail) {
+            throw new Error(`An account with the email "${cleanEmail}" already exists. Please sign in or use forgot password.`);
+          }
+        } catch (dupEmailErr: any) {
+          if (dupEmailErr.message?.includes('already exists')) throw dupEmailErr;
+        }
+
+        try {
+          const { data: dupCustPhone } = await supabase
+            .from('customers')
+            .select('id, phone')
+            .eq('phone', cleanPhone)
+            .maybeSingle();
+
+          if (dupCustPhone) {
+            throw new Error(`Mobile number "${cleanPhone}" is already registered to an existing customer account. Please sign in or use another number.`);
+          }
+
+          const { data: dupProfPhone } = await supabase
+            .from('profiles')
+            .select('id, phone')
+            .eq('phone', cleanPhone)
+            .maybeSingle();
+
+          if (dupProfPhone) {
+            throw new Error(`Mobile number "${cleanPhone}" is already registered to an existing customer account. Please sign in or use another number.`);
+          }
+        } catch (dupPhoneErr: any) {
+          if (dupPhoneErr.message?.includes('already registered')) throw dupPhoneErr;
+        }
+
         if (!signUp) throw new Error('Registration service unavailable');
-        const res = await signUp(authEmail.trim(), authPassword, {
+        const res = await signUp(cleanEmail, authPassword, {
           first_name: firstName,
           last_name: lastName,
           full_name: fullName,
-          phone: authPhone.trim(),
+          phone: cleanPhone,
         });
         if (res?.error) throw res.error;
 
@@ -1060,6 +1137,337 @@ export default function MobileResortApp() {
   }
 
   // ========================================================================
+    const renderAuthModals = () => (
+    <>
+      {/* RESORT TERMS OF STAY & CANCELLATION POLICY MODAL */}
+      {showPolicyModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-navy/90 backdrop-blur-md animate-fade-in overflow-y-auto"
+          onClick={() => setShowPolicyModal(false)}
+        >
+          <div
+            className="relative w-full max-w-xl rounded-2xl sm:rounded-3xl border border-white/15 bg-ink p-5 sm:p-7 shadow-2xl text-white my-auto max-h-[90vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between pb-3 sm:pb-4 border-b border-white/10 gap-3">
+              <div>
+                <span className="text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.2em] text-cyan block">
+                  Rock View Beach Resort · Patar, Bolinao
+                </span>
+                <h3 className="font-serif text-xl sm:text-2xl font-medium text-white mt-0.5">
+                  Terms of Stay & Resort Policies
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPolicyModal(false)}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition cursor-pointer"
+                aria-label="Close policy modal"
+              >
+                <i className="fas fa-xmark" />
+              </button>
+            </div>
+
+            {/* Policy Navigation Tabs */}
+            <div className="flex items-center gap-1.5 pt-3 pb-2 border-b border-white/5 overflow-x-auto scrollbar-none">
+              {[
+                { id: 'cancellation', label: 'Refunds & Cancellation', icon: 'fa-money-bill-transfer' },
+                { id: 'checkin', label: 'Check-In & Payment', icon: 'fa-clock' },
+                { id: 'rules', label: 'House Rules & Eco', icon: 'fa-umbrella-beach' },
+                { id: 'privacy', label: 'Manifest & Privacy', icon: 'fa-shield-halved' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setPolicyTab(tab.id as any)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 ${
+                    policyTab === tab.id
+                      ? 'bg-cyan text-slate-950 font-semibold shadow-sm'
+                      : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  <i className={`fas ${tab.icon} text-[10px]`} />
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Policy Tab Content */}
+            <div className="mt-4 overflow-y-auto scrollbar-none flex-1 pr-1 text-xs text-white/80 leading-relaxed flex flex-col gap-3.5">
+              {policyTab === 'cancellation' && (
+                <div className="flex flex-col gap-3 animate-fade-in">
+                  <div className="rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-3">
+                    <h4 className="font-semibold text-emerald-400 text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-circle-check" /> 100% Full Refund Window
+                    </h4>
+                    <p className="text-white/80 text-[11px]">
+                      Cancellations made <strong>7 days or more</strong> prior to the official check-in date receive a full 100% refund of the downpayment deposit, processed within 3 to 5 business days via your original payment channel (GCash, Maya, or Bank Transfer).
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 p-3">
+                    <h4 className="font-semibold text-amber-300 text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-clock-rotate-left" /> 50% Refund Window (3 to 6 Days)
+                    </h4>
+                    <p className="text-white/80 text-[11px]">
+                      Cancellations submitted between <strong>3 to 6 days</strong> prior to check-in are eligible for a 50% refund, or you may opt for a <strong>free rebooking</strong> of your stay dates within 6 months.
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-rose-500/30 bg-rose-950/20 p-3">
+                    <h4 className="font-semibold text-rose-300 text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-ban" /> Within 72 Hours & No-Show
+                    </h4>
+                    <p className="text-white/80 text-[11px]">
+                      Cancellations within <strong>72 hours of check-in</strong> are non-refundable due to reserved inventory, but date rebooking is allowed subject to room availability and seasonal rate adjustment.
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-sky-500/30 bg-sky-950/20 p-3">
+                    <h4 className="font-semibold text-sky-300 text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-cloud-bolt" /> Severe Weather & Force Majeure Guarantee
+                    </h4>
+                    <p className="text-white/80 text-[11px]">
+                      If the Philippine Atmospheric, Geophysical and Astronomical Services Administration (PAGASA) raises an official typhoon or storm signal over Pangasinan or local maritime authorities suspend sea travel, guests are entitled to a <strong>100% full refund or free rebooking without penalty</strong>.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {policyTab === 'checkin' && (
+                <div className="flex flex-col gap-3 animate-fade-in">
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                    <h4 className="font-semibold text-white text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-door-open text-cyan" /> Operating Hours
+                    </h4>
+                    <ul className="list-disc list-inside text-[11px] text-white/70 space-y-1">
+                      <li><strong>Standard Check-In:</strong> 2:00 PM onwards</li>
+                      <li><strong>Standard Check-Out:</strong> Strictly 12:00 PM (Noon)</li>
+                      <li>Early arrivals may drop luggage with the Front Desk and relax by the beach while rooms are prepared.</li>
+                      <li>Late check-outs after 12:00 PM are subject to room availability and half-day rate rules.</li>
+                    </ul>
+                  </div>
+
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                    <h4 className="font-semibold text-white text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-credit-card text-emerald-400" /> Downpayment & Payment Rules
+                    </h4>
+                    <ul className="list-disc list-inside text-[11px] text-white/70 space-y-1">
+                      <li>A <strong>30% downpayment</strong> is required upon reservation to lock your accommodation and generate your official digital voucher pass.</li>
+                      <li>Payment options include GCash, Maya, Visa/Mastercard, and BDO/BPI Bank Transfer.</li>
+                      <li>The remaining <strong>70% balance</strong> is settled at the Front Desk upon physical arrival.</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {policyTab === 'rules' && (
+                <div className="flex flex-col gap-3 animate-fade-in">
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                    <h4 className="font-semibold text-white text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-volume-xmark text-cyan" /> Quiet Sanctuary Hours
+                    </h4>
+                    <p className="text-[11px] text-white/70">
+                      To preserve the tranquil ambiance of Patar Beach, quiet hours are observed from <strong>10:00 PM to 7:00 AM</strong>. Loud music, videoke, and excessive noise are prohibited during these hours.
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                    <h4 className="font-semibold text-white text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-ban-smoking text-rose-400" /> Non-Smoking Policy
+                    </h4>
+                    <p className="text-[11px] text-white/70">
+                      All indoor suites, villas, cottages, and enclosed restrooms are strictly non-smoking. Designated outdoor smoking spaces are provided on resort grounds. A ₱3,000 cleaning fee applies for indoor smoking violations.
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                    <h4 className="font-semibold text-white text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-water text-cyan" /> Patar Beach Clean Sand Pledge
+                    </h4>
+                    <p className="text-[11px] text-white/70">
+                      Rock View observes a strict "Leave No Trace" policy along the white sand coast. Littering, bringing single-use plastic bottles onto the tidal reef, or disturbing marine life is strictly prohibited.
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                    <h4 className="font-semibold text-white text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-paw text-amber-400" /> Pet Policy
+                    </h4>
+                    <p className="text-[11px] text-white/70">
+                      Well-behaved small pets on leash are welcome in designated ground-level beach cottages with prior coordination with the concierge. Pets must be supervised at all times.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {policyTab === 'privacy' && (
+                <div className="flex flex-col gap-3 animate-fade-in">
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                    <h4 className="font-semibold text-white text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-id-card text-emerald-400" /> Tourism Manifest Compliance
+                    </h4>
+                    <p className="text-[11px] text-white/70">
+                      Under local tourism regulations (Municipality of Bolinao) and DOT guidelines, all arriving resident guests must be registered on the official resort manifest. Valid government-issued photo ID is requested at front-desk check-in.
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                    <h4 className="font-semibold text-white text-sm flex items-center gap-2 mb-1">
+                      <i className="fas fa-user-shield text-cyan" /> Data Privacy Act (RA 10173)
+                    </h4>
+                    <p className="text-[11px] text-white/70">
+                      Your personal data (Full Name, Philippine Mobile Number, Email Address) is securely handled in compliance with Republic Act No. 10173 (Data Privacy Act of 2012). It is strictly used to process your reservation voucher, send SMS check-in updates, and maintain stay manifests. We never sell or distribute your data.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer Action */}
+            <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between gap-3">
+              <span className="text-[10px] text-white/50 hidden sm:inline">
+                Rock View Beach Resort · Official Guest Agreement
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setTermsAccepted(true);
+                  setShowPolicyModal(false);
+                  toast('✦ Terms of Stay and Cancellation Policy accepted.');
+                }}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-cyan text-slate-950 font-semibold text-xs tracking-wider uppercase hover:brightness-110 transition cursor-pointer flex items-center justify-center gap-2 shadow-md"
+              >
+                <i className="fas fa-check" />
+                <span>I Understand & Agree</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MOBILE FORGOT PASSWORD & OTP RECOVERY MODAL */}
+      {showForgotModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy/85 backdrop-blur-md animate-fade-in"
+          onClick={() => setShowForgotModal(false)}
+        >
+          <div
+            className="relative w-full max-w-md rounded-3xl border border-white/15 bg-navy-deep p-6 md:p-8 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-4 border-b border-white/10">
+              <div>
+                <span className="text-[10px] font-bold tracking-[0.2em] text-cyan uppercase">Account Security</span>
+                <h3 className="font-serif text-xl font-medium text-white mt-0.5">Reset Password via OTP</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowForgotModal(false)}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-white/70 hover:bg-white/10 cursor-pointer text-lg leading-none"
+                aria-label="Close recovery modal"
+              >
+                ×
+              </button>
+            </div>
+
+            {recoveryStep === 1 ? (
+              <form onSubmit={handleMobileForgotPassword} className="mt-5 flex flex-col gap-4">
+                <p className="text-xs font-light text-white/70 leading-relaxed">
+                  Enter your registered account email. A secure 6-digit OTP verification code will be dispatched to your inbox via Google Mail / SMTP.
+                </p>
+                <label className="flex flex-col gap-1.5">
+                  <span className={LABEL}>Account Email *</span>
+                  <input
+                    required
+                    type="email"
+                    value={recoveryEmail}
+                    onChange={(e) => setRecoveryEmail(e.target.value)}
+                    placeholder="guest@gmail.com"
+                    className={FIELD}
+                  />
+                </label>
+                <button
+                  type="submit"
+                  disabled={recoveryBusy}
+                  className={`${BTN_PRIMARY} mt-2 w-full py-3.5 text-xs font-semibold uppercase tracking-[0.16em] disabled:opacity-50 cursor-pointer`}
+                >
+                  {recoveryBusy ? 'Dispatching OTP…' : 'Send 6-Digit Email OTP ✦'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowForgotModal(false)}
+                  className="text-xs text-white/50 hover:text-white/80 text-center py-1 cursor-pointer"
+                >
+                  ← Back to Sign In
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleMobileResetPassword} className="mt-5 flex flex-col gap-4">
+                <p className="text-xs font-light text-white/70 leading-relaxed">
+                  Enter the 6-digit OTP verification code sent to <strong className="text-cyan">{recoveryEmail}</strong> and enter a new password.
+                </p>
+                <label className="flex flex-col gap-1.5">
+                  <span className={LABEL}>6-Digit OTP Verification Code *</span>
+                  <input
+                    required
+                    maxLength={6}
+                    value={recoveryCode}
+                    onChange={(e) => setRecoveryCode(e.target.value.trim())}
+                    placeholder="123456"
+                    className={`${FIELD} text-center text-xl font-bold tracking-[0.3em] text-cyan`}
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  <span className={LABEL}>New Password (min 6 characters) *</span>
+                  <input
+                    required
+                    type="password"
+                    minLength={6}
+                    value={recoveryNewPassword}
+                    onChange={(e) => setRecoveryNewPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className={FIELD}
+                  />
+                </label>
+                <button
+                  type="submit"
+                  disabled={recoveryBusy}
+                  className={`${BTN_PRIMARY} mt-2 w-full py-3.5 text-xs font-semibold uppercase tracking-[0.16em] disabled:opacity-50 cursor-pointer`}
+                >
+                  {recoveryBusy ? 'Updating Password…' : 'Verify OTP & Reset Password ✦'}
+                </button>
+                <div className="flex justify-between items-center pt-1 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setRecoveryStep(1)}
+                    className="text-cyan hover:underline cursor-pointer"
+                  >
+                    Resend Code
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotModal(false)}
+                    className="text-white/50 hover:text-white/80 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      
+    </>
+  );
+
   // STAGE 3 — AUTH (split screen on md+)
   // ========================================================================
   if (stage === 'auth') {
@@ -1109,15 +1517,72 @@ export default function MobileResortApp() {
               </div>
             )}
 
-            <form onSubmit={handleAuthSubmit} className="mt-8 flex flex-col gap-4">
+            {isSignup && (
+              <div className={`mt-5 rounded-2xl border p-4 transition-all ${
+                termsAccepted
+                  ? 'border-emerald-500/30 bg-emerald-500/10'
+                  : 'border-cyan/30 bg-cyan/[0.04]'
+              }`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${
+                      termsAccepted ? 'bg-emerald-500/20 text-emerald-300' : 'bg-cyan/20 text-cyan'
+                    }`}>
+                      <i className={`fas ${termsAccepted ? 'fa-circle-check' : 'fa-shield-halved'} text-sm`} />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-semibold tracking-wide text-white">
+                        Website Terms of Stay & Privacy Policy
+                      </h4>
+                      <p className="mt-0.5 text-[11px] text-white/60 leading-snug">
+                        Required before account entry: RA 10173 compliance, 11-digit mobile verification, and house rules.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between border-t border-white/10 pt-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowPolicyModal(true)}
+                    className="text-xs text-cyan hover:underline font-medium inline-flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <i className="fas fa-file-contract text-xs" />
+                    <span>Read Full Policy</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTermsAccepted((prev) => {
+                        const next = !prev;
+                        toast(next ? '✦ Website Terms & Policy accepted.' : 'Policy acceptance revoked.');
+                        return next;
+                      });
+                    }}
+                    className={`px-4 py-2 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
+                      termsAccepted
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30'
+                        : 'bg-cyan text-slate-950 hover:brightness-110 shadow-md active:scale-95'
+                    }`}
+                  >
+                    <i className={`fas ${termsAccepted ? 'fa-check' : 'fa-handshake'}`} />
+                    <span>{termsAccepted ? 'Policy Accepted ✓' : 'Accept Policy'}</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={handleAuthSubmit} className="mt-6 flex flex-col gap-4">
               {isSignup && (
                 <label className="flex flex-col gap-1.5">
                   <span className={LABEL}>Full name *</span>
                   <input
                     required
                     type="text"
+                    maxLength={60}
                     autoComplete="name"
-                    placeholder="Maria Santos"
+                    placeholder="e.g. Maria Santos"
                     value={authFullName}
                     onChange={(e) => setAuthFullName(e.target.value)}
                     disabled={authBusy}
@@ -1140,16 +1605,48 @@ export default function MobileResortApp() {
               </label>
               {isSignup && (
                 <label className="flex flex-col gap-1.5">
-                  <span className={LABEL}>Mobile (for SMS confirmations)</span>
+                  <div className="flex items-center justify-between">
+                    <span className={LABEL}>Mobile Phone (11-Digit PH Format) *</span>
+                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${
+                      authPhone.length === 11 && authPhone.startsWith('09')
+                        ? 'bg-emerald-500/20 text-emerald-300 font-bold'
+                        : 'bg-white/10 text-white/60'
+                    }`}>
+                      {authPhone.length}/11 digits
+                    </span>
+                  </div>
                   <input
+                    required
                     type="tel"
+                    inputMode="numeric"
+                    pattern="09[0-9]{9}"
+                    maxLength={11}
                     autoComplete="tel"
-                    placeholder="0917 123 4567"
+                    placeholder="09XXXXXXXXX"
                     value={authPhone}
-                    onChange={(e) => setAuthPhone(e.target.value)}
+                    onChange={(e) => setAuthPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
                     disabled={authBusy}
-                    className={FIELD}
+                    className={`${FIELD} font-mono tracking-wider`}
                   />
+                  <span className="text-[11px] leading-tight">
+                    {authPhone.length === 11 && authPhone.startsWith('09') ? (
+                      <span className="text-emerald-400 font-medium flex items-center gap-1">
+                        <i className="fas fa-circle-check text-[10px]" /> Valid 11-digit Philippine Mobile Number
+                      </span>
+                    ) : authPhone.length > 0 && !authPhone.startsWith('09') ? (
+                      <span className="text-rose-400 font-medium flex items-center gap-1">
+                        <i className="fas fa-triangle-exclamation text-[10px]" /> Philippine mobile numbers must start with 09
+                      </span>
+                    ) : authPhone.length > 0 ? (
+                      <span className="text-cyan font-medium">
+                        Enter {11 - authPhone.length} more digit{11 - authPhone.length > 1 ? 's' : ''} to complete 11 digits
+                      </span>
+                    ) : (
+                      <span className="text-white/40">
+                        Strict 11-digit mobile requirement (e.g. 09171234567) for official guest manifest
+                      </span>
+                    )}
+                  </span>
                 </label>
               )}
               <label className="flex flex-col gap-1.5">
@@ -1172,7 +1669,7 @@ export default function MobileResortApp() {
                 <input
                   required
                   type="password"
-                  minLength={6}
+                  minLength={8}
                   autoComplete={isSignup ? 'new-password' : 'current-password'}
                   placeholder="••••••••"
                   value={authPassword}
@@ -1180,7 +1677,34 @@ export default function MobileResortApp() {
                   disabled={authBusy}
                   className={FIELD}
                 />
+                {isSignup && (
+                  <span className="text-[10px] text-white/50">
+                    Must be at least 8 characters with letters & numbers for account security
+                  </span>
+                )}
               </label>
+
+              {isSignup && (
+                <label className="flex items-start gap-2.5 text-xs text-white/75 cursor-pointer mt-1 select-none">
+                  <input
+                    type="checkbox"
+                    checked={termsAccepted}
+                    onChange={(e) => setTermsAccepted(e.target.checked)}
+                    className="mt-0.5 rounded border-white/30 text-cyan focus:ring-cyan h-4 w-4"
+                  />
+                  <span className="leading-snug text-[11px]">
+                    I have read, understood, and accept the{' '}
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); setShowPolicyModal(true); }}
+                      className="text-cyan underline hover:text-cyan/80"
+                    >
+                      Website Terms of Stay & Privacy Policy
+                    </button>
+                    .
+                  </span>
+                </label>
+              )}
 
               <button
                 type="submit"
@@ -1240,6 +1764,7 @@ export default function MobileResortApp() {
             </p>
           </div>
         </main>
+        {renderAuthModals()}
       </div>
     );
   }
@@ -3357,330 +3882,7 @@ export default function MobileResortApp() {
         </div>
       )}
 
-            {/* RESORT TERMS OF STAY & CANCELLATION POLICY MODAL */}
-      {showPolicyModal && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-navy/90 backdrop-blur-md animate-fade-in overflow-y-auto"
-          onClick={() => setShowPolicyModal(false)}
-        >
-          <div
-            className="relative w-full max-w-xl rounded-2xl sm:rounded-3xl border border-white/15 bg-ink p-5 sm:p-7 shadow-2xl text-white my-auto max-h-[90vh] flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="flex items-start justify-between pb-3 sm:pb-4 border-b border-white/10 gap-3">
-              <div>
-                <span className="text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.2em] text-cyan block">
-                  Rock View Beach Resort · Patar, Bolinao
-                </span>
-                <h3 className="font-serif text-xl sm:text-2xl font-medium text-white mt-0.5">
-                  Terms of Stay & Resort Policies
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowPolicyModal(false)}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition cursor-pointer"
-                aria-label="Close policy modal"
-              >
-                <i className="fas fa-xmark" />
-              </button>
-            </div>
-
-            {/* Policy Navigation Tabs */}
-            <div className="flex items-center gap-1.5 pt-3 pb-2 border-b border-white/5 overflow-x-auto scrollbar-none">
-              {[
-                { id: 'cancellation', label: 'Refunds & Cancellation', icon: 'fa-money-bill-transfer' },
-                { id: 'checkin', label: 'Check-In & Payment', icon: 'fa-clock' },
-                { id: 'rules', label: 'House Rules & Eco', icon: 'fa-umbrella-beach' },
-                { id: 'privacy', label: 'Manifest & Privacy', icon: 'fa-shield-halved' },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setPolicyTab(tab.id as any)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 ${
-                    policyTab === tab.id
-                      ? 'bg-cyan text-slate-950 font-semibold shadow-sm'
-                      : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  <i className={`fas ${tab.icon} text-[10px]`} />
-                  <span>{tab.label}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Policy Tab Content */}
-            <div className="mt-4 overflow-y-auto scrollbar-none flex-1 pr-1 text-xs text-white/80 leading-relaxed flex flex-col gap-3.5">
-              {policyTab === 'cancellation' && (
-                <div className="flex flex-col gap-3 animate-fade-in">
-                  <div className="rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-3">
-                    <h4 className="font-semibold text-emerald-400 text-sm flex items-center gap-2 mb-1">
-                      <i className="fas fa-circle-check" /> 100% Full Refund Window
-                    </h4>
-                    <p className="text-white/80 text-[11px]">
-                      Cancellations made <strong>7 days or more</strong> prior to the official check-in date receive a full 100% refund of the downpayment deposit, processed within 3 to 5 business days via your original payment channel (GCash, Maya, or Bank Transfer).
-                    </p>
-                  </div>
-
-                  <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 p-3">
-                    <h4 className="font-semibold text-amber-300 text-sm flex items-center gap-2 mb-1">
-                      <i className="fas fa-clock-rotate-left" /> 50% Refund Window (3 to 6 Days)
-                    </h4>
-                    <p className="text-white/80 text-[11px]">
-                      Cancellations submitted between <strong>3 to 6 days</strong> prior to check-in are eligible for a 50% refund, or you may opt for a <strong>free rebooking</strong> of your stay dates within 6 months.
-                    </p>
-                  </div>
-
-                  <div className="rounded-xl border border-rose-500/30 bg-rose-950/20 p-3">
-                    <h4 className="font-semibold text-rose-300 text-sm flex items-center gap-2 mb-1">
-                      <i className="fas fa-ban" /> Within 72 Hours & No-Show
-                    </h4>
-                    <p className="text-white/80 text-[11px]">
-                      Cancellations within <strong>72 hours of check-in</strong> are non-refundable due to reserved inventory, but date rebooking is allowed subject to room availability and seasonal rate adjustment.
-                    </p>
-                  </div>
-
-                  <div className="rounded-xl border border-sky-500/30 bg-sky-950/20 p-3">
-                    <h4 className="font-semibold text-sky-300 text-sm flex items-center gap-2 mb-1">
-                      <i className="fas fa-cloud-bolt" /> Severe Weather & Force Majeure Guarantee
-                    </h4>
-                    <p className="text-white/80 text-[11px]">
-                      If the Philippine Atmospheric, Geophysical and Astronomical Services Administration (PAGASA) raises an official typhoon or storm signal over Pangasinan or local maritime authorities suspend sea travel, guests are entitled to a <strong>100% full refund or free rebooking without penalty</strong>.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {policyTab === 'checkin' && (
-                <div className="flex flex-col gap-3 animate-fade-in">
-                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                    <h4 className="font-semibold text-white text-sm flex items-center gap-2 mb-1">
-                      <i className="fas fa-door-open text-cyan" /> Operating Hours
-                    </h4>
-                    <ul className="list-disc list-inside text-[11px] text-white/70 space-y-1">
-                      <li><strong>Standard Check-In:</strong> 2:00 PM onwards</li>
-                      <li><strong>Standard Check-Out:</strong> Strictly 12:00 PM (Noon)</li>
-                      <li>Early arrivals may drop luggage with the Front Desk and relax by the beach while rooms are prepared.</li>
-                      <li>Late check-outs after 12:00 PM are subject to room availability and half-day rate rules.</li>
-                    </ul>
-                  </div>
-
-                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                    <h4 className="font-semibold text-white text-sm flex items-center gap-2 mb-1">
-                      <i className="fas fa-credit-card text-emerald-400" /> Downpayment & Payment Rules
-                    </h4>
-                    <ul className="list-disc list-inside text-[11px] text-white/70 space-y-1">
-                      <li>A <strong>30% downpayment</strong> is required upon reservation to lock your accommodation and generate your official digital voucher pass.</li>
-                      <li>Payment options include GCash, Maya, Visa/Mastercard, and BDO/BPI Bank Transfer.</li>
-                      <li>The remaining <strong>70% balance</strong> is settled at the Front Desk upon physical arrival.</li>
-                    </ul>
-                  </div>
-                </div>
-              )}
-
-              {policyTab === 'rules' && (
-                <div className="flex flex-col gap-3 animate-fade-in">
-                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                    <h4 className="font-semibold text-white text-sm flex items-center gap-2 mb-1">
-                      <i className="fas fa-volume-xmark text-cyan" /> Quiet Sanctuary Hours
-                    </h4>
-                    <p className="text-[11px] text-white/70">
-                      To preserve the tranquil ambiance of Patar Beach, quiet hours are observed from <strong>10:00 PM to 7:00 AM</strong>. Loud music, videoke, and excessive noise are prohibited during these hours.
-                    </p>
-                  </div>
-
-                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                    <h4 className="font-semibold text-white text-sm flex items-center gap-2 mb-1">
-                      <i className="fas fa-ban-smoking text-rose-400" /> Non-Smoking Policy
-                    </h4>
-                    <p className="text-[11px] text-white/70">
-                      All indoor suites, villas, cottages, and enclosed restrooms are strictly non-smoking. Designated outdoor smoking spaces are provided on resort grounds. A ₱3,000 cleaning fee applies for indoor smoking violations.
-                    </p>
-                  </div>
-
-                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                    <h4 className="font-semibold text-white text-sm flex items-center gap-2 mb-1">
-                      <i className="fas fa-water text-cyan" /> Patar Beach Clean Sand Pledge
-                    </h4>
-                    <p className="text-[11px] text-white/70">
-                      Rock View observes a strict "Leave No Trace" policy along the white sand coast. Littering, bringing single-use plastic bottles onto the tidal reef, or disturbing marine life is strictly prohibited.
-                    </p>
-                  </div>
-
-                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                    <h4 className="font-semibold text-white text-sm flex items-center gap-2 mb-1">
-                      <i className="fas fa-paw text-amber-400" /> Pet Policy
-                    </h4>
-                    <p className="text-[11px] text-white/70">
-                      Well-behaved small pets on leash are welcome in designated ground-level beach cottages with prior coordination with the concierge. Pets must be supervised at all times.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {policyTab === 'privacy' && (
-                <div className="flex flex-col gap-3 animate-fade-in">
-                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                    <h4 className="font-semibold text-white text-sm flex items-center gap-2 mb-1">
-                      <i className="fas fa-id-card text-emerald-400" /> Tourism Manifest Compliance
-                    </h4>
-                    <p className="text-[11px] text-white/70">
-                      Under local tourism regulations (Municipality of Bolinao) and DOT guidelines, all arriving resident guests must be registered on the official resort manifest. Valid government-issued photo ID is requested at front-desk check-in.
-                    </p>
-                  </div>
-
-                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                    <h4 className="font-semibold text-white text-sm flex items-center gap-2 mb-1">
-                      <i className="fas fa-user-shield text-cyan" /> Data Privacy Act (RA 10173)
-                    </h4>
-                    <p className="text-[11px] text-white/70">
-                      Your personal data (Full Name, Philippine Mobile Number, Email Address) is securely handled in compliance with Republic Act No. 10173 (Data Privacy Act of 2012). It is strictly used to process your reservation voucher, send SMS check-in updates, and maintain stay manifests. We never sell or distribute your data.
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Footer Action */}
-            <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between gap-3">
-              <span className="text-[10px] text-white/50 hidden sm:inline">
-                Rock View Beach Resort · Official Guest Agreement
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  setTermsAccepted(true);
-                  setShowPolicyModal(false);
-                  toast('✦ Terms of Stay and Cancellation Policy accepted.');
-                }}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-cyan text-slate-950 font-semibold text-xs tracking-wider uppercase hover:brightness-110 transition cursor-pointer flex items-center justify-center gap-2 shadow-md"
-              >
-                <i className="fas fa-check" />
-                <span>I Understand & Agree</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MOBILE FORGOT PASSWORD & OTP RECOVERY MODAL */}
-      {showForgotModal && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy/85 backdrop-blur-md animate-fade-in"
-          onClick={() => setShowForgotModal(false)}
-        >
-          <div
-            className="relative w-full max-w-md rounded-3xl border border-white/15 bg-navy-deep p-6 md:p-8 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between pb-4 border-b border-white/10">
-              <div>
-                <span className="text-[10px] font-bold tracking-[0.2em] text-cyan uppercase">Account Security</span>
-                <h3 className="font-serif text-xl font-medium text-white mt-0.5">Reset Password via OTP</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowForgotModal(false)}
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-white/70 hover:bg-white/10 cursor-pointer text-lg leading-none"
-                aria-label="Close recovery modal"
-              >
-                ×
-              </button>
-            </div>
-
-            {recoveryStep === 1 ? (
-              <form onSubmit={handleMobileForgotPassword} className="mt-5 flex flex-col gap-4">
-                <p className="text-xs font-light text-white/70 leading-relaxed">
-                  Enter your registered account email. A secure 6-digit OTP verification code will be dispatched to your inbox via Google Mail / SMTP.
-                </p>
-                <label className="flex flex-col gap-1.5">
-                  <span className={LABEL}>Account Email *</span>
-                  <input
-                    required
-                    type="email"
-                    value={recoveryEmail}
-                    onChange={(e) => setRecoveryEmail(e.target.value)}
-                    placeholder="guest@gmail.com"
-                    className={FIELD}
-                  />
-                </label>
-                <button
-                  type="submit"
-                  disabled={recoveryBusy}
-                  className={`${BTN_PRIMARY} mt-2 w-full py-3.5 text-xs font-semibold uppercase tracking-[0.16em] disabled:opacity-50 cursor-pointer`}
-                >
-                  {recoveryBusy ? 'Dispatching OTP…' : 'Send 6-Digit Email OTP ✦'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowForgotModal(false)}
-                  className="text-xs text-white/50 hover:text-white/80 text-center py-1 cursor-pointer"
-                >
-                  ← Back to Sign In
-                </button>
-              </form>
-            ) : (
-              <form onSubmit={handleMobileResetPassword} className="mt-5 flex flex-col gap-4">
-                <p className="text-xs font-light text-white/70 leading-relaxed">
-                  Enter the 6-digit OTP verification code sent to <strong className="text-cyan">{recoveryEmail}</strong> and enter a new password.
-                </p>
-                <label className="flex flex-col gap-1.5">
-                  <span className={LABEL}>6-Digit OTP Verification Code *</span>
-                  <input
-                    required
-                    maxLength={6}
-                    value={recoveryCode}
-                    onChange={(e) => setRecoveryCode(e.target.value.trim())}
-                    placeholder="123456"
-                    className={`${FIELD} text-center text-xl font-bold tracking-[0.3em] text-cyan`}
-                  />
-                </label>
-                <label className="flex flex-col gap-1.5">
-                  <span className={LABEL}>New Password (min 6 characters) *</span>
-                  <input
-                    required
-                    type="password"
-                    minLength={6}
-                    value={recoveryNewPassword}
-                    onChange={(e) => setRecoveryNewPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className={FIELD}
-                  />
-                </label>
-                <button
-                  type="submit"
-                  disabled={recoveryBusy}
-                  className={`${BTN_PRIMARY} mt-2 w-full py-3.5 text-xs font-semibold uppercase tracking-[0.16em] disabled:opacity-50 cursor-pointer`}
-                >
-                  {recoveryBusy ? 'Updating Password…' : 'Verify OTP & Reset Password ✦'}
-                </button>
-                <div className="flex justify-between items-center pt-1 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setRecoveryStep(1)}
-                    className="text-cyan hover:underline cursor-pointer"
-                  >
-                    Resend Code
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowForgotModal(false)}
-                    className="text-white/50 hover:text-white/80 cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
+            {renderAuthModals()}
 
       {/* 11. STANDALONE LUXURY VOUCHER & FOLIO MODAL */}
       <VoucherModal

@@ -39,8 +39,8 @@ export const joiSchemas = {
     email: Joi.string().allow('', null).optional(),
     username: Joi.string().allow('', null).optional(),
     identifier: Joi.string().allow('', null).optional(),
-    password: Joi.string().min(6).max(128).required().messages({
-      'string.min': 'Password must be at least 6 characters long',
+    password: Joi.string().min(8).max(128).required().messages({
+      'string.min': 'Password must be at least 8 characters long for account security',
       'any.required': 'Password is required',
     }),
   }).or('email', 'username', 'identifier'),
@@ -117,15 +117,15 @@ export const joiSchemas = {
     username: Joi.string().trim().pattern(/^[a-zA-Z0-9_.-]*$/).max(30).allow('', null).optional().messages({
       'string.pattern.base': 'Username can only contain alphanumeric characters, underscores, dots, or hyphens',
     }),
-    phone: Joi.string().pattern(/^[+\d\s\-()]{7,20}$/).allow('', null).optional().messages({
-      'string.pattern.base': 'Phone must contain numbers only',
+    phone: Joi.string().trim().pattern(/^09\d{9}$/).allow('', null).optional().messages({
+      'string.pattern.base': 'Mobile phone must strictly be an 11-digit Philippine mobile number starting with 09 (e.g. 09171234567)',
     }),
     address: Joi.string().max(200).allow('', null).optional(),
     city: Joi.string().pattern(/^[a-zA-Z\s\-,.]*$/).max(100).allow('', null).optional().messages({
       'string.pattern.base': 'City must contain characters only',
     }),
-    emergency_contact: Joi.string().pattern(/^[+\d\s\-()]{7,20}$/).allow('', null).optional().messages({
-      'string.pattern.base': 'Emergency contact must be emergency numbers only',
+    emergency_contact: Joi.string().trim().pattern(/^09\d{9}$/).allow('', null).optional().messages({
+      'string.pattern.base': 'Emergency contact must strictly be an 11-digit Philippine mobile number starting with 09 (e.g. 09181234567)',
     }),
     provider: Joi.string().valid('email', 'gmail', 'google', 'facebook').default('email'),
     is_automated: Joi.boolean().default(false),

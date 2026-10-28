@@ -12,6 +12,7 @@ export default function AuthModal() {
 
   const [mode, setMode] = useState<'in' | 'up' | '2fa' | 'recovery'>('in');
   const [signupProvider, setSignupProvider] = useState<'gmail' | 'facebook' | 'email'>('gmail');
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const [f, setF] = useState({
     first_name: '', middle_name: '', last_name: '', full_name: '',
@@ -312,11 +313,36 @@ export default function AuthModal() {
           }
         }
 
-        if (f.phone && (f.phone.length !== 11 || !f.phone.startsWith('09'))) {
-          toast('Mobile phone must strictly be an 11-digit Philippine mobile number starting with 09 (e.g. 09XXXXXXXXX).', true);
+        if (!termsAccepted) {
+          toast('Please agree to the Website Terms of Stay and Privacy Policy to proceed.', true);
           setBusy(false);
           return;
         }
+        if (!f.phone || f.phone.length !== 11 || !f.phone.startsWith('09')) {
+          toast('Mobile phone is required and must strictly be an 11-digit Philippine mobile number starting with 09 (e.g. 09171234567).', true);
+          setBusy(false);
+          return;
+        }
+        if (!f.password || f.password.length < 8) {
+          toast('Password must be at least 8 characters long for account security.', true);
+          setBusy(false);
+          return;
+        }
+        if (!/[a-zA-Z]/.test(f.password) || !/[0-9]/.test(f.password)) {
+          toast('Password must contain both letters and numbers for account security.', true);
+          setBusy(false);
+          return;
+        }
+
+        // Anti-Duplication Pre-check
+        try {
+          const dupRes = await api.checkDuplicate({ email: targetEmail, phone: f.phone });
+          if (dupRes.isDuplicate) {
+            toast(dupRes.message || 'An account with this email or mobile phone already exists. Please log in.', true);
+            setBusy(false);
+            return;
+          }
+        } catch {}
         if (f.emergency_contact && (f.emergency_contact.length !== 11 || !f.emergency_contact.startsWith('09'))) {
           toast('Emergency contact must strictly be an 11-digit Philippine mobile number starting with 09 (e.g. 09XXXXXXXXX).', true);
           setBusy(false);
@@ -1077,6 +1103,20 @@ export default function AuthModal() {
                       Forgot password?
                     </button>
                   </div>
+                )}
+
+                {mode === 'up' && (
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: '0.78rem', color: '#94A3B8', marginTop: 12, cursor: 'pointer', userSelect: 'none' }}>
+                    <input
+                      type="checkbox"
+                      checked={termsAccepted}
+                      onChange={(e) => setTermsAccepted(e.target.checked)}
+                      style={{ marginTop: 2 }}
+                    />
+                    <span>
+                      I have read, understood, and accept the Rock View Beach Resort Website Terms of Stay & Privacy Policy (RA 10173).
+                    </span>
+                  </label>
                 )}
 
                 <button

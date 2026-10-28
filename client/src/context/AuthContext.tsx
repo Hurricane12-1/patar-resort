@@ -764,18 +764,108 @@ export function AuthProvider({ children }) {
     needsProfileCompletion,
     setNeedsProfileCompletion,
     signUp: async (email: string, password: string, meta: any) => {
-      const res = await supabase.auth.signUp({ email, password, options: { data: meta } });
+      const cleanEmail = (email || '').trim().toLowerCase();
+      const rawPhone = meta?.phone ? String(meta.phone).replace(/\D/g, '') : '';
+      const cleanPhone = rawPhone.length === 11 && rawPhone.startsWith('09')
+        ? rawPhone
+        : (rawPhone.startsWith('63') && rawPhone.length === 12 ? '0' + rawPhone.slice(2) : rawPhone);
+
+      // 1. Strict 11-Digit Philippine Mobile Limitation
+      if (cleanPhone) {
+        if (cleanPhone.length !== 11 || !cleanPhone.startsWith('09')) {
+          return {
+            data: null,
+            error: new Error('Mobile number must strictly be an 11-digit Philippine mobile number starting with 09 (e.g. 09171234567).'),
+          };
+        }
+      }
+
+      // 2. Anti-Duplication Security Check: Email
+      try {
+        const { data: dupCustEmail } = await supabase
+          .from('customers')
+          .select('id, email')
+          .ilike('email', cleanEmail)
+          .maybeSingle();
+
+        if (dupCustEmail) {
+          return {
+            data: null,
+            error: new Error(`An account with the email "${cleanEmail}" is already registered. Please sign in or use forgot password.`),
+          };
+        }
+
+        const { data: dupProfEmail } = await supabase
+          .from('profiles')
+          .select('id, email')
+          .ilike('email', cleanEmail)
+          .maybeSingle();
+
+        if (dupProfEmail) {
+          return {
+            data: null,
+            error: new Error(`An account with the email "${cleanEmail}" is already registered. Please sign in or use forgot password.`),
+          };
+        }
+      } catch {}
+
+      // 3. Anti-Duplication Security Check: Phone Number
+      if (cleanPhone) {
+        try {
+          const { data: dupCustPhone } = await supabase
+            .from('customers')
+            .select('id, phone')
+            .eq('phone', cleanPhone)
+            .maybeSingle();
+
+          if (dupCustPhone) {
+            return {
+              data: null,
+              error: new Error(`Mobile number "${cleanPhone}" is already registered to an existing customer account. Please sign in or use a different phone number.`),
+            };
+          }
+
+          const { data: dupProfPhone } = await supabase
+            .from('profiles')
+            .select('id, phone')
+            .eq('phone', cleanPhone)
+            .maybeSingle();
+
+          if (dupProfPhone) {
+            return {
+              data: null,
+              error: new Error(`Mobile number "${cleanPhone}" is already registered to an existing customer account. Please sign in or use a different phone number.`),
+            };
+          }
+        } catch {}
+      }
+
+      // 4. Password Security Standards (min 8 chars, letters and numbers)
+      if (!password || password.length < 8) {
+        return {
+          data: null,
+          error: new Error('Password must be at least 8 characters long for account security.'),
+        };
+      }
+      if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
+        return {
+          data: null,
+          error: new Error('Password must contain both letters and numbers for account security.'),
+        };
+      }
+
+      const res = await supabase.auth.signUp({ email: cleanEmail, password, options: { data: { ...meta, phone: cleanPhone } } });
       const uId = res.data?.user?.id;
       if (uId) {
-        const fn = meta?.full_name || [meta?.first_name, meta?.last_name].filter(Boolean).join(' ') || email.split('@')[0];
+        const fn = meta?.full_name || [meta?.first_name, meta?.last_name].filter(Boolean).join(' ') || cleanEmail.split('@')[0];
         try {
           await supabase.from('profiles').upsert({
             id: uId,
-            email,
+            email: cleanEmail,
             full_name: fn,
             first_name: meta?.first_name || '',
             last_name: meta?.last_name || '',
-            phone: meta?.phone || '',
+            phone: cleanPhone || '',
             role: 'customer',
           }, { onConflict: 'id' });
         } catch {}
@@ -783,11 +873,11 @@ export function AuthProvider({ children }) {
         try {
           await supabase.from('customers').upsert({
             id: uId,
-            email,
+            email: cleanEmail,
             full_name: fn,
             first_name: meta?.first_name || '',
             last_name: meta?.last_name || '',
-            phone: meta?.phone || '',
+            phone: cleanPhone || '',
             role: 'customer',
             password,
             provider: 'email',

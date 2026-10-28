@@ -87,6 +87,43 @@ r.post('/auth/logout', asyncH(async (req, res) => {
  * A 1-minute (60s) time-gated token is issued. If not confirmed within 60s,
  * the unconfirmed account is automatically removed and a notification email is sent.
  */
+/**
+ * Pre-validation Endpoint: Anti-Duplication Security Gate
+ * Checks whether an email address or 11-digit mobile number is already registered.
+ */
+r.post('/auth/check-duplicate', asyncH(async (req, res) => {
+  const { email, phone } = req.body || {};
+  const cleanEmail = (email || '').trim().toLowerCase();
+  const cleanPhone = phone ? String(phone).replace(/\D/g, '').replace(/^63(?=\d{10})/, '0').slice(0, 11) : '';
+
+  if (cleanEmail) {
+    const { data: dupCust } = await admin.from('customers').select('id, email').ilike('email', cleanEmail).maybeSingle();
+    if (dupCust) {
+      return res.json({ isDuplicate: true, field: 'email', message: `An account with email "${cleanEmail}" already exists. Please sign in or reset your password.` });
+    }
+    const { data: dupProf } = await admin.from('profiles').select('id, email').ilike('email', cleanEmail).maybeSingle();
+    if (dupProf) {
+      return res.json({ isDuplicate: true, field: 'email', message: `An account with email "${cleanEmail}" already exists. Please sign in or reset your password.` });
+    }
+  }
+
+  if (cleanPhone) {
+    if (cleanPhone.length !== 11 || !cleanPhone.startsWith('09')) {
+      return res.json({ isDuplicate: false, invalidFormat: true, field: 'phone', message: 'Mobile number must strictly be an 11-digit Philippine mobile number starting with 09 (e.g. 09171234567).' });
+    }
+    const { data: dupCustPhone } = await admin.from('customers').select('id, phone').eq('phone', cleanPhone).maybeSingle();
+    if (dupCustPhone) {
+      return res.json({ isDuplicate: true, field: 'phone', message: `Mobile number "${cleanPhone}" is already registered to an existing customer account.` });
+    }
+    const { data: dupProfPhone } = await admin.from('profiles').select('id, phone').eq('phone', cleanPhone).maybeSingle();
+    if (dupProfPhone) {
+      return res.json({ isDuplicate: true, field: 'phone', message: `Mobile number "${cleanPhone}" is already registered to an existing customer account.` });
+    }
+  }
+
+  return res.json({ isDuplicate: false });
+}));
+
 r.post('/auth/signup/initiate',
   validateJoi(joiSchemas.initiateSignup),
   asyncH(async (req, res) => {
@@ -109,6 +146,41 @@ r.post('/auth/signup/initiate',
     const fullName = [cleanFirst, cleanMiddle, cleanLast].filter(Boolean).join(' ');
     const normPhone = phone ? String(phone).replace(/\D/g, '').replace(/^63(?=\d{10})/, '0').slice(0, 11) : '';
     const normEmergency = emergency_contact ? String(emergency_contact).replace(/\D/g, '').replace(/^63(?=\d{10})/, '0').slice(0, 11) : '';
+
+    // Strict 11-Digit Philippine Mobile Limitation
+    if (normPhone) {
+      if (normPhone.length !== 11 || !normPhone.startsWith('09')) {
+        throw new ApiError(400, 'Mobile phone must strictly be an 11-digit Philippine mobile number starting with 09 (e.g. 09171234567).');
+      }
+
+      // Anti-Duplication Security Check: Phone Number
+      try {
+        const { data: dupCustPhone } = await admin.from('customers').select('id, phone').eq('phone', normPhone).maybeSingle();
+        if (dupCustPhone) {
+          throw new ApiError(409, `Mobile number ${normPhone} is already linked to an existing customer account. Please sign in or use another number.`);
+        }
+        const { data: dupProfPhone } = await admin.from('profiles').select('id, phone').eq('phone', normPhone).maybeSingle();
+        if (dupProfPhone) {
+          throw new ApiError(409, `Mobile number ${normPhone} is already linked to an existing customer account. Please sign in or use another number.`);
+        }
+      } catch (phoneCheckErr) {
+        if (phoneCheckErr instanceof ApiError) throw phoneCheckErr;
+      }
+    }
+
+    // Anti-Duplication Security Check: Email in Customers and Profiles
+    try {
+      const { data: dupCustEmail } = await admin.from('customers').select('id, email').ilike('email', cleanEmail).maybeSingle();
+      if (dupCustEmail) {
+        throw new ApiError(409, 'An account with this email address already exists. Please sign in or use Account Recovery.');
+      }
+      const { data: dupProfEmail } = await admin.from('profiles').select('id, email').ilike('email', cleanEmail).maybeSingle();
+      if (dupProfEmail) {
+        throw new ApiError(409, 'An account with this email address already exists. Please sign in or use Account Recovery.');
+      }
+    } catch (emailCheckErr) {
+      if (emailCheckErr instanceof ApiError) throw emailCheckErr;
+    }
 
     // Gmail / Facebook provider domain guidance
     if (provider === 'gmail' || provider === 'google') {

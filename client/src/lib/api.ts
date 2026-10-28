@@ -365,6 +365,7 @@ export const api = {
   resetPassword: (email: string, code: string, new_password: string) => req('/auth/reset-password', { method: 'POST', body: { email, code, new_password } }),
 
   // Client User Sign-Up & 2FA Finalization
+  checkDuplicate: (body: { email?: string; phone?: string }) => req<{ isDuplicate: boolean; field?: 'email' | 'phone'; message?: string }>('/auth/check-duplicate', { method: 'POST', body }),
   initiateSignup: (body: any) => req('/auth/signup/initiate', { method: 'POST', body }),
   confirmSignup2FA: (email: string, code: string) => req('/auth/signup/confirm-2fa', { method: 'POST', body: { email, code } }),
   resendSignup2FA: (email: string) => req('/auth/signup/resend-2fa', { method: 'POST', body: { email } }),
