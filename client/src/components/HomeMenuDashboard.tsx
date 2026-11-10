@@ -188,8 +188,8 @@ export default function HomeMenuDashboard({ isOpen, onClose, currentScene = 0, o
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10 }}>
             {[
               { path: '/rooms', icon: 'fas fa-hotel', title: 'Rooms & Suites', desc: 'Cottages, Villas & Suites' },
-              { path: '/my-bookings', icon: 'fas fa-calendar-alt', title: 'My Bookings', desc: 'Digital Keycodes' },
-              { path: '/administrator', icon: 'fas fa-shield-halved', title: 'Administration', desc: 'Control Center & Telemetry' },
+              { path: '/client/bookings', icon: 'fas fa-calendar-alt', title: 'My Bookings', desc: 'Digital Keycodes' },
+              { path: '/admin', icon: 'fas fa-shield-halved', title: 'Administration', desc: 'Control Center & Telemetry' },
             ].map(({ path, icon, title, desc }) => (
               <button
                 key={path}

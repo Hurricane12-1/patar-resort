@@ -83,7 +83,8 @@ async function req<T = any>(path: string, { method = 'GET', body }: { method?: s
   const customerJwt = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_customer_jwt') : null;
   const isAdminPath = typeof window !== 'undefined' && (
     window.location.pathname.startsWith('/admin') ||
-    window.location.pathname.startsWith('/administrator') ||
+    window.location.pathname.startsWith('/staff') ||
+    window.location.pathname.startsWith('/recovery') ||
     window.location.pathname.startsWith('/receptionist') ||
     window.location.pathname.startsWith('/accounting') ||
     window.location.pathname.startsWith('/resort-department')

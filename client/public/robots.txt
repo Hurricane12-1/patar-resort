@@ -1,7 +1,9 @@
 User-agent: *
 Allow: /
 Disallow: /admin
-Disallow: /administrator
+Disallow: /staff
+Disallow: /recovery
+Disallow: /client
 Disallow: /accounting
 Disallow: /receptionist
 Disallow: /resort-department

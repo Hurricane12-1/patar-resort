@@ -24,8 +24,8 @@ export default function Navbar() {
   const links = [
     ['/', 'Home'],
     ['/rooms', 'Rooms'],
-    ['/my-bookings', 'My Bookings'],
-    ...(isStaffOrAdmin ? [['/administrator', 'Admin Console'], ['/resort-department', 'Operations']] : []),
+    ['/client/bookings', 'My Bookings'],
+    ...(isStaffOrAdmin ? [['/admin', 'Admin Console'], ['/staff', 'Operations']] : []),
   ];
 
   return (
@@ -87,7 +87,7 @@ export default function Navbar() {
                   isLightMode={false}
                 />
                 <Link
-                  to="/my-bookings"
+                  to="/client/bookings"
                   className="nav-user"
                   style={{
                     textDecoration: 'none',
@@ -118,7 +118,7 @@ export default function Navbar() {
               <>
                 {adminSession && (
                   <Link
-                    to="/administrator"
+                    to="/admin"
                     className="btn btn-sm"
                     style={{
                       color: '#FDE047',
