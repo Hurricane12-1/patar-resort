@@ -145,13 +145,7 @@ function MainAppShell() {
               </RecoveryLayout>
             </RecoveryGuard>
           } />
-          <Route path="/recovery/accounts" element={
-            <RecoveryGuard>
-              <RecoveryLayout>
-                <RecoveryPortal />
-              </RecoveryLayout>
-            </RecoveryGuard>
-          } />
+          <Route path="/recovery/accounts" element={<Navigate to="/recovery" replace />} />
           <Route path="/recovery/audit" element={
             <RecoveryGuard>
               <RecoveryLayout>

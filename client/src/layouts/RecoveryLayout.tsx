@@ -11,13 +11,13 @@ interface RecoveryLayoutProps {
  * Dedicated to resolving edge cases, disputed bookings, account restoration, and legal/financial escalations.
  */
 export default function RecoveryLayout({ children }: RecoveryLayoutProps) {
-  const { adminProfile, profile, signOutAdmin } = useAuth();
+  const { adminProfile, profile, signOut, setAuthOpen, session, adminSession, customerSession } = useAuth();
+  const isAuthenticated = Boolean(session || adminSession || customerSession);
   const activeProfile = adminProfile || profile;
 
   const recoveryNavItems = [
     { to: '/recovery', label: 'Resolution Console', icon: 'fas fa-shield-virus' },
     { to: '/recovery/cases', label: 'Flagged & Disputed Queue', icon: 'fas fa-folder-open' },
-    { to: '/recovery/accounts', label: 'Account Restoration', icon: 'fas fa-user-lock' },
     { to: '/recovery/audit', label: 'Escalation Logs', icon: 'fas fa-history' },
   ];
 
@@ -139,30 +139,57 @@ export default function RecoveryLayout({ children }: RecoveryLayoutProps) {
             alignItems: 'center',
             gap: 6,
           }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#F59E0B', display: 'inline-block' }} />
-            <span>Agent: <strong style={{ color: '#FFFFFF' }}>{activeProfile?.full_name || activeProfile?.username || 'Resolution Officer'}</strong></span>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: isAuthenticated ? '#10B981' : '#F59E0B', display: 'inline-block' }} />
+            <span>{isAuthenticated ? (
+              <>Status: <strong style={{ color: '#10B981' }}>Confirmed</strong> ({activeProfile?.full_name || activeProfile?.username || activeProfile?.email || 'Logged In'})</>
+            ) : (
+              <>Status: <strong style={{ color: '#F59E0B' }}>Guest</strong></>
+            )}</span>
           </div>
 
-          <button
-            onClick={signOutAdmin}
-            style={{
-              fontSize: '.74rem',
-              fontWeight: 700,
-              color: '#F87171',
-              background: 'rgba(239, 68, 68, 0.12)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              padding: '6px 12px',
-              borderRadius: 8,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              transition: 'all 0.2s ease',
-            }}
-          >
-            <i className="fas fa-arrow-right-from-bracket" />
-            Sign Out
-          </button>
+          {isAuthenticated ? (
+            <button
+              onClick={signOut}
+              style={{
+                fontSize: '.74rem',
+                fontWeight: 700,
+                color: '#F87171',
+                background: 'rgba(239, 68, 68, 0.12)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                padding: '6px 12px',
+                borderRadius: 8,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <i className="fas fa-arrow-right-from-bracket" />
+              Sign Out
+            </button>
+          ) : (
+            <button
+              onClick={() => setAuthOpen(true)}
+              style={{
+                fontSize: '.74rem',
+                fontWeight: 700,
+                color: '#38BDF8',
+                background: 'rgba(56, 189, 248, 0.12)',
+                border: '1px solid rgba(56, 189, 248, 0.3)',
+                padding: '6px 12px',
+                borderRadius: 8,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <i className="fas fa-sign-in-alt" />
+              Sign In
+            </button>
+          )}
         </div>
       </header>
 

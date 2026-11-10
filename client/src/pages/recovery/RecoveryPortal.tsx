@@ -4,15 +4,15 @@ import { supabase } from '../../lib/supabaseClient.ts';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { toast } from '../../components/Toasts.tsx';
 import { money, fmtDate } from '../../lib/format.ts';
-import { api } from '../../lib/api.ts';
 
 export default function RecoveryPortal() {
   const [searchParams] = useSearchParams();
   const filterRef = searchParams.get('ref');
-  const { adminProfile, profile } = useAuth();
+  const { adminProfile, profile, session, adminSession, customerSession, setAuthOpen } = useAuth();
+  const isAuthenticated = Boolean(session || adminSession || customerSession);
   const activeProfile = adminProfile || profile;
 
-  const [activeTab, setActiveTab] = useState<'cases' | 'accounts' | 'audit'>('cases');
+  const [activeTab, setActiveTab] = useState<'cases' | 'audit'>('cases');
   const [disputedBookings, setDisputedBookings] = useState<any[]>([]);
   const [auditEvents, setAuditEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,10 +22,6 @@ export default function RecoveryPortal() {
   const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
   const [resolutionNote, setResolutionNote] = useState('');
   const [actionBusy, setActionBusy] = useState(false);
-
-  // Emergency Account Unlock Tool
-  const [recoveryEmail, setRecoveryEmail] = useState('');
-  const [overrideBusy, setOverrideBusy] = useState(false);
 
   // Real 100% Live Database Fetch
   const fetchLiveRecoveryData = async () => {
@@ -176,27 +172,148 @@ export default function RecoveryPortal() {
     }
   };
 
-  // Action 3: Dispatch Real Live 2FA / Password Reset OTP to Customer
-  const handleAccountOverride = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!recoveryEmail.trim()) {
-      toast('Please enter the customer account email to restore.', true);
-      return;
-    }
-    setOverrideBusy(true);
-    try {
-      await api.forgotPassword(recoveryEmail.trim());
-      toast(`✅ Recovery OTP successfully dispatched to ${recoveryEmail}. Security lock lifted.`);
-      setRecoveryEmail('');
-    } catch (err: any) {
-      toast(err.message || 'Failed to dispatch recovery code to email', true);
-    } finally {
-      setOverrideBusy(false);
-    }
-  };
-
   return (
     <div className="container section" style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px' }}>
+      
+      {/* 1. AUTHENTICATED STATUS CONFIRMATION CARD */}
+      {isAuthenticated ? (
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.14), rgba(5, 150, 105, 0.22))',
+          border: '1px solid rgba(16, 185, 129, 0.45)',
+          borderRadius: 16,
+          padding: '20px 24px',
+          marginBottom: 24,
+          boxShadow: '0 8px 30px rgba(0, 0, 0, 0.35)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 16,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{
+              width: 50,
+              height: 50,
+              borderRadius: 14,
+              background: 'rgba(16, 185, 129, 0.22)',
+              border: '1px solid rgba(16, 185, 129, 0.55)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#10B981',
+              fontSize: '1.5rem',
+              flexShrink: 0,
+            }}>
+              <i className="fas fa-circle-check" />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '.72rem', fontWeight: 800, color: '#34D399', letterSpacing: '.18em', textTransform: 'uppercase' }}>
+                  AUTHENTICATED STATUS CONFIRMED
+                </span>
+                <span style={{
+                  fontSize: '.65rem',
+                  fontWeight: 700,
+                  padding: '2px 8px',
+                  borderRadius: 12,
+                  background: 'rgba(16, 185, 129, 0.25)',
+                  border: '1px solid #10B981',
+                  color: '#A7F3D0',
+                }}>
+                  🟢 Logged In
+                </span>
+                <span style={{
+                  fontSize: '.65rem',
+                  fontWeight: 700,
+                  padding: '2px 8px',
+                  borderRadius: 12,
+                  background: 'rgba(56, 189, 248, 0.2)',
+                  border: '1px solid rgba(56, 189, 248, 0.4)',
+                  color: '#BAE6FD',
+                }}>
+                  Namespace: /recovery
+                </span>
+              </div>
+              <h3 className="serif" style={{ fontSize: '1.35rem', color: '#FFFFFF', margin: '4px 0 2px' }}>
+                {activeProfile?.full_name || activeProfile?.username || activeProfile?.email || 'Authenticated User'}
+              </h3>
+              <div style={{ fontSize: '.82rem', color: '#CBD5E1' }}>
+                Role: <strong style={{ color: '#FBBF24', textTransform: 'capitalize' }}>{activeProfile?.role || 'Authenticated Member'}</strong> · Email: <span style={{ color: '#E2E8F0' }}>{activeProfile?.email || session?.user?.email || 'Active Verified'}</span> · Database: <span style={{ color: '#34D399' }}>Live Supabase Connected</span>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <div style={{
+              fontSize: '.75rem',
+              padding: '8px 14px',
+              borderRadius: 10,
+              background: 'rgba(15, 23, 42, 0.75)',
+              border: '1px solid rgba(16, 185, 129, 0.35)',
+              color: '#A7F3D0',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+            }}>
+              <i className="fas fa-shield-halved" style={{ color: '#10B981' }} />
+              Session Verified & Active
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(217, 119, 6, 0.18))',
+          border: '1px solid rgba(245, 158, 11, 0.35)',
+          borderRadius: 16,
+          padding: '20px 24px',
+          marginBottom: 24,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 16,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{
+              width: 50,
+              height: 50,
+              borderRadius: 14,
+              background: 'rgba(245, 158, 11, 0.2)',
+              border: '1px solid rgba(245, 158, 11, 0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#F59E0B',
+              fontSize: '1.5rem',
+              flexShrink: 0,
+            }}>
+              <i className="fas fa-circle-info" />
+            </div>
+            <div>
+              <span style={{ fontSize: '.72rem', fontWeight: 800, color: '#FBBF24', letterSpacing: '.18em', textTransform: 'uppercase' }}>
+                SESSION STATUS: GUEST (NOT LOGGED IN)
+              </span>
+              <h3 className="serif" style={{ fontSize: '1.25rem', color: '#FFFFFF', margin: '4px 0 2px' }}>
+                No Active Session Detected
+              </h3>
+              <p style={{ fontSize: '.82rem', color: '#CBD5E1', margin: 0 }}>
+                Sign in with your account to confirm your identity and access active operational resolution permissions.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="btn btn-sky"
+            onClick={() => setAuthOpen(true)}
+            style={{ fontWeight: 700 }}
+          >
+            <i className="fas fa-sign-in-alt" style={{ marginRight: 6 }} />
+            Sign In to Account
+          </button>
+        </div>
+      )}
+
       {/* Header Banner */}
       <div style={{
         background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(180, 83, 9, 0.25))',
@@ -269,24 +386,6 @@ export default function RecoveryPortal() {
         >
           <i className="fas fa-folder-open" style={{ marginRight: 6 }} />
           Disputed Reservations ({disputedBookings.length})
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('accounts')}
-          style={{
-            padding: '8px 16px',
-            borderRadius: 8,
-            fontSize: '.82rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-            border: activeTab === 'accounts' ? '1px solid #F59E0B' : '1px solid transparent',
-            background: activeTab === 'accounts' ? 'rgba(245, 158, 11, 0.2)' : 'transparent',
-            color: activeTab === 'accounts' ? '#FDE68A' : '#94A3B8',
-          }}
-        >
-          <i className="fas fa-user-lock" style={{ marginRight: 6 }} />
-          Account & Credential Overrides
         </button>
 
         <button
@@ -411,42 +510,7 @@ export default function RecoveryPortal() {
         </div>
       )}
 
-      {/* TAB 2: ACCOUNT OVERRIDES (LIVE BACKEND INTEGRATION) */}
-      {activeTab === 'accounts' && (
-        <div style={{ background: 'rgba(15, 23, 42, 0.85)', borderRadius: 16, border: '1px solid rgba(255, 255, 255, 0.1)', padding: 24, maxWidth: 600 }}>
-          <span className="label" style={{ color: '#F59E0B' }}>Live Account Access Override</span>
-          <h3 className="serif" style={{ fontSize: '1.4rem', margin: '4px 0 12px' }}>
-            Emergency Credential & 2FA Recovery
-          </h3>
-          <p style={{ color: '#94A3B8', fontSize: '.84rem', lineHeight: 1.5, marginBottom: 20 }}>
-            Allows authorized Recovery Officers to dispatch a secure 6-digit verification code directly to the customer's registered email via SMTP / Supabase.
-          </p>
-
-          <form onSubmit={handleAccountOverride}>
-            <div className="field">
-              <label>CUSTOMER REGISTERED EMAIL ADDRESS</label>
-              <input
-                type="email"
-                required
-                placeholder="client@gmail.com"
-                value={recoveryEmail}
-                onChange={(e) => setRecoveryEmail(e.target.value)}
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="btn btn-sky"
-              disabled={overrideBusy}
-              style={{ width: '100%', justifyContent: 'center', fontWeight: 800, marginTop: 10 }}
-            >
-              {overrideBusy ? 'Dispatching Recovery Code…' : 'Dispatch 6-Digit Recovery OTP ✦'}
-            </button>
-          </form>
-        </div>
-      )}
-
-      {/* TAB 3: AUDIT TRAIL (100% LIVE SUPABASE AUDIT LOGS) */}
+      {/* TAB 2: AUDIT TRAIL (100% LIVE SUPABASE AUDIT LOGS) */}
       {activeTab === 'audit' && (
         <div style={{ background: 'rgba(15, 23, 42, 0.85)', borderRadius: 16, border: '1px solid rgba(255, 255, 255, 0.1)', padding: 24 }}>
           <h3 className="serif" style={{ fontSize: '1.4rem', margin: '0 0 12px' }}>
