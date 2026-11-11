@@ -356,6 +356,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             isLightMode={isLightMode}
             showMetrics={true}
             showNewBookingInTopBar={true}
+            allowSameDay={true}
             onNewBooking={() => {
               if (activeRoomsList.length === 0) {
                 toast("There's no present room around. Please add a room in Room Management first.", true);

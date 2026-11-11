@@ -63,16 +63,16 @@ interface AvailabilityCalendarProps {
   showNewBookingInTopBar?: boolean;
   showMetrics?: boolean;
   selectionTarget?: 'checkIn' | 'checkOut' | 'auto';
+  allowSameDay?: boolean;
 }
 
 const DEFAULT_NUM_DAYS = 14; // Default 14-day spacious window matching modern PMS calendar
 
 // Helper to get local date string YYYY-MM-DD
+import { getManilaTodayISO } from '../lib/offeringSpecs';
+
 const getLocalDateString = (d: Date = new Date()): string => {
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return getManilaTodayISO(d);
 };
 
 export default function AvailabilityCalendar({
@@ -92,6 +92,7 @@ export default function AvailabilityCalendar({
   showNewBookingInTopBar = false,
   showMetrics = false,
   selectionTarget = 'auto',
+  allowSameDay = false,
 }: AvailabilityCalendarProps) {
   const daysCount = numDays || DEFAULT_NUM_DAYS;
 
@@ -530,7 +531,11 @@ export default function AvailabilityCalendar({
   // Cell click handler: selects single day or toggles unselect if already chosen
   const handleCellClick = (unitId: string, dateStr: string) => {
     if (dateStr < todayStr) {
-      toast("⚠️ That date has already passed. Please select today or an upcoming date for your stay.", true);
+      toast('⚠️ That date has already passed. Please select an upcoming date for your stay.', true);
+      return;
+    }
+    if (!allowSameDay && dateStr <= todayStr) {
+      toast('Same-day bookings are walk-in only and unavailable online. Please select tomorrow or a later date.', true);
       return;
     }
     const matchedUnit = units.find((u) => u.id === unitId);
@@ -736,8 +741,9 @@ export default function AvailabilityCalendar({
                   if (onNewBooking) {
                     onNewBooking();
                   } else if (onSelectDates) {
-                    const nextDay = addDaysYMD(todayStr, 1);
-                    onSelectDates(todayStr, nextDay, units[0]?.roomId);
+                    const startD = allowSameDay ? todayStr : addDaysYMD(todayStr, 1);
+                    const nextDay = addDaysYMD(startD, 1);
+                    onSelectDates(startD, nextDay, units[0]?.roomId);
                   }
                 }}
                 title={units.length === 0 ? "There's no present room around" : "New booking"}
@@ -860,6 +866,8 @@ export default function AvailabilityCalendar({
                       const isCheckOutDay = initialCheckOut ? day.dateStr === initialCheckOut : false;
                       const isInStayRange = initialCheckIn && initialCheckOut && day.dateStr >= initialCheckIn && day.dateStr < initialCheckOut;
                       const isPast = day.dateStr < todayStr;
+                      const isSameDayLocked = !allowSameDay && day.dateStr === todayStr;
+                      const isDateBlocked = isPast || isSameDayLocked;
                       const isWeekend = day.dayOfWeek === 'SAT' || day.dayOfWeek === 'SUN';
 
                       // Check if reserved (either mapped directly to this unit or belonging to this room)
@@ -873,9 +881,9 @@ export default function AvailabilityCalendar({
                       return (
                         <div
                           key={day.dateStr}
-                          className={`pms-cell ${day.isToday ? 'is-today' : ''} ${isWeekend ? 'is-weekend' : ''} ${isPast ? 'is-past' : ''} ${isReserved ? 'is-reserved' : 'is-open'}`}
-                          onClick={() => !isPast && !isReserved && handleCellClick(unit.id, day.dateStr)}
-                          title={`${day.dateStr}: ${isReserved ? 'Reserved' : isCheckInDay ? 'Check-In' : isCheckOutDay ? 'Check-Out' : isInStayRange ? 'Selected Stay' : isPast ? 'Past Date' : 'Click to select / unselect'}`}
+                          className={`pms-cell ${day.isToday ? 'is-today' : ''} ${isWeekend ? 'is-weekend' : ''} ${isDateBlocked ? 'is-past' : ''} ${isReserved ? 'is-reserved' : 'is-open'}`}
+                          onClick={() => !isDateBlocked && !isReserved && handleCellClick(unit.id, day.dateStr)}
+                          title={`${day.dateStr}: ${isReserved ? 'Reserved' : isCheckInDay ? 'Check-In' : isCheckOutDay ? 'Check-Out' : isInStayRange ? 'Selected Stay' : isPast ? 'Past Date' : isSameDayLocked ? 'Walk-In Only (Unavailable Online)' : 'Click to select / unselect'}`}
                         >
                           {/* Beautiful Luminous Stay Ribbon */}
                           {showStayRibbon && (

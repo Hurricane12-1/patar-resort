@@ -26,10 +26,22 @@ export const DEFAULT_CLOUDINARY_CONFIG: CloudinaryConfig = {
 export function getCategoryDefaultCloudinaryImage(category?: string, slug?: string): string {
   const cat = String(category || '').toLowerCase();
   const sl = String(slug || '').toLowerCase();
+  if (
+    cat.includes('tour') ||
+    cat.includes('island') ||
+    cat.includes('offer') ||
+    cat.includes('activity') ||
+    cat.includes('package') ||
+    sl.includes('tour') ||
+    sl.includes('island') ||
+    sl.includes('hopping')
+  ) {
+    return 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209700/jd_beach_house_accommodations/island.jpg';
+  }
   if (cat.includes('villa') || sl.includes('villa')) {
     return 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209697/jd_beach_house_accommodations/villa.jpg';
   }
-  if (cat.includes('suite') || sl.includes('suite') || sl.includes('gel')) {
+  if (cat.includes('suite') || cat.includes('room') || sl.includes('suite') || sl.includes('gel')) {
     return 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209695/jd_beach_house_accommodations/suite.jpg';
   }
   if (cat.includes('garden') || sl.includes('garden')) {

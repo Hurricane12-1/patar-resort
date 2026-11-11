@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { graphql } from 'graphql';
 import { schema } from '../graphql/schema.js';
 import { resolvers } from '../graphql/resolvers.js';
+import { authenticate, requireAdmin } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -45,7 +46,7 @@ async function handleGraphQLRequest(req, res) {
   }
 }
 
-router.post('/graphql', handleGraphQLRequest);
-router.get('/graphql', handleGraphQLRequest);
+router.post('/graphql', authenticate, requireAdmin, handleGraphQLRequest);
+router.get('/graphql', authenticate, requireAdmin, handleGraphQLRequest);
 
 export default router;

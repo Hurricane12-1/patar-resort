@@ -2,8 +2,16 @@ import React, { useState, useRef } from 'react';
 import { money } from '../../../lib/format';
 import {
   uploadImageToCloudinary as defaultUploadToCloudinary,
+  getCategoryDefaultCloudinaryImage,
 } from '../../../lib/cloudinary';
 import { toast as defaultToast } from '../../Toasts';
+import { OfferingSpecsFields, getCategoryOptionsForType } from './OfferingSpecsFields';
+import {
+  OfferingType,
+  getDefaultSpecs,
+  getRateUnitSuffix,
+  getOfferingLabel,
+} from '../../../lib/offeringSpecs';
 
 export interface CreateRoomModalProps {
   isOpen: boolean;
@@ -361,7 +369,13 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                   textShadow: '0 2px 6px rgba(0,0,0,0.65)',
                 }}
               >
-                {newRoom.name?.trim() ? newRoom.name : 'Add New Room'}
+                {newRoom.name?.trim()
+                  ? newRoom.name
+                  : newRoom.offering_type === 'cottage'
+                    ? 'Add New Cottage'
+                    : newRoom.offering_type === 'offer'
+                      ? 'Add Island Tour / Offer'
+                      : 'Add New Room'}
               </h3>
               <div
                 style={{
@@ -401,7 +415,9 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                 }}
               >
                 {money(Number(newRoom.rate_php) || 3500)}{' '}
-                <span style={{ fontSize: '.68rem', fontWeight: 600 }}>/ night</span>
+                <span style={{ fontSize: '.68rem', fontWeight: 600 }}>
+                  {getRateUnitSuffix((newRoom.offering_type || 'room') as OfferingType, newRoom.specs || {})}
+                </span>
               </div>
             </div>
           </div>
@@ -416,9 +432,33 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
           }}
         >
           <form onSubmit={onFormSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <OfferingSpecsFields
+              offeringType={(newRoom.offering_type || 'room') as OfferingType}
+              onOfferingTypeChange={(nextType, nextCategory, nextSpecs) => {
+                setNewRoom({
+                  ...newRoom,
+                  offering_type: nextType,
+                  category: nextCategory,
+                  specs: nextSpecs,
+                  image_url: newRoom.image_url || getCategoryDefaultCloudinaryImage(nextCategory),
+                });
+              }}
+              specs={newRoom.specs || getDefaultSpecs((newRoom.offering_type || 'room') as OfferingType)}
+              onSpecsChange={(nextSpecs) => setNewRoom({ ...newRoom, specs: nextSpecs })}
+              isLightMode={isLightMode}
+              themeBorder={themeBorder}
+              themeText={themeText}
+              themeMuted={themeMuted}
+              idPrefix="create-room"
+            />
+
             <div>
               <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>
-                Room Name *
+                {newRoom.offering_type === 'cottage'
+                  ? 'Cottage Name *'
+                  : newRoom.offering_type === 'offer'
+                    ? 'Island Tour / Offer Name *'
+                    : 'Room Name *'}
               </label>
               <input
                 required
@@ -433,7 +473,13 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                 }}
                 value={newRoom.name}
                 onChange={(e) => setNewRoom({ ...newRoom, name: e.target.value })}
-                placeholder="e.g. Sunset Luxury Cottage"
+                placeholder={
+                  newRoom.offering_type === 'cottage'
+                    ? 'e.g. Patar Beachfront Nipa Cottage'
+                    : newRoom.offering_type === 'offer'
+                      ? 'e.g. Hundred Islands & Reef Hopping Tour'
+                      : 'e.g. Rock View Seaview Room'
+                }
               />
             </div>
 
@@ -455,21 +501,28 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                   value={newRoom.category}
                   onChange={(e) => setNewRoom({ ...newRoom, category: e.target.value })}
                 >
-                  <option value="Cottage">Cottage</option>
-                  <option value="Villa">Villa</option>
-                  <option value="Suite">Suite</option>
-                  <option value="Garden">Garden</option>
-                  <option value="Dorm">Dorm</option>
+                  {(() => {
+                    const activeOpts = getCategoryOptionsForType((newRoom.offering_type || 'room') as OfferingType);
+                    const currentCat = newRoom.category || activeOpts[0];
+                    const mergedOpts = activeOpts.includes(currentCat) ? activeOpts : [currentCat, ...activeOpts];
+                    return mergedOpts.map((opt) => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ));
+                  })()}
                 </select>
               </div>
               <div>
                 <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>
-                  Nightly Rate (₱) *
+                  {newRoom.offering_type === 'offer'
+                    ? (newRoom.specs?.pricing_mode === 'per_pax' ? 'Per-Guest Rate (₱) *' : 'Package / Trip Rate (₱) *')
+                    : newRoom.offering_type === 'cottage'
+                      ? 'Cottage Rate (₱) *'
+                      : 'Nightly Rate (₱) *'}
                 </label>
                 <input
                   required
                   type="number"
-                  min={100}
+                  min={50}
                   style={{
                     width: '100%',
                     padding: '9px 12px',
@@ -834,7 +887,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                 }}
               >
                 <i className="fas fa-floppy-disk" style={{ marginRight: 4 }} />
-                {saving ? 'Saving Room…' : 'Save'}
+                {saving ? `Saving ${getOfferingLabel((newRoom.offering_type || 'room') as OfferingType)}…` : `Save ${getOfferingLabel((newRoom.offering_type || 'room') as OfferingType)}`}
               </button>
             </div>
           </form>

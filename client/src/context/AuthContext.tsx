@@ -183,7 +183,14 @@ export function AuthProvider({ children }) {
         if (adminSession.access_token) {
           sessionStorage.setItem('jd_admin_jwt', adminSession.access_token);
         }
-        sessionStorage.setItem('jd_admin_token_key', 'etc-34');
+        const storedRole = String(adminProfile?.role || adminSession?.user?.user_metadata?.role || '').toLowerCase();
+        if (storedRole === 'administrator' || storedRole === 'admin') {
+          if (!sessionStorage.getItem('jd_admin_token_key')) {
+            sessionStorage.setItem('jd_admin_token_key', 'etc-34');
+          }
+        } else {
+          sessionStorage.removeItem('jd_admin_token_key');
+        }
       } else {
         sessionStorage.removeItem('jd_admin_session');
         sessionStorage.removeItem('jd_admin_jwt');
@@ -556,7 +563,7 @@ export function AuthProvider({ children }) {
   const adminSignIn = async (emailOrUsername: string, password: string, tokenIdKey?: string) => {
     try {
       const cleanIdent = (emailOrUsername || '').trim();
-      const key = tokenIdKey || 'etc-34';
+      const key = (tokenIdKey || '').trim();
 
       // 1. Executive Admin Login route
       try {
@@ -564,13 +571,13 @@ export function AuthProvider({ children }) {
           identifier: cleanIdent,
           password,
           tokenIdKey: key,
-          position: 'administrator',
+          position: '',
         });
 
         if (adminAuthRes?.session) {
           const userObj = {
             ...(adminAuthRes.user || adminAuthRes.profile),
-            role: 'administrator',
+            role: String((adminAuthRes.user || adminAuthRes.profile)?.role || 'staff').toLowerCase() === 'admin' ? 'administrator' : String((adminAuthRes.user || adminAuthRes.profile)?.role || 'staff').toLowerCase(),
           };
           setAdminSession(adminAuthRes.session);
           setAdminProfile(userObj);
@@ -580,7 +587,7 @@ export function AuthProvider({ children }) {
               sessionStorage.setItem('jd_admin_jwt', adminAuthRes.session.access_token);
             }
             sessionStorage.setItem('jd_admin_profile', JSON.stringify(userObj));
-            sessionStorage.setItem('jd_admin_token_key', key || 'etc-34');
+            if (['administrator', 'admin'].includes(String(userObj.role || '').toLowerCase())) { sessionStorage.setItem('jd_admin_token_key', key || adminAuthRes.tokenIdKey || 'etc-34'); } else { sessionStorage.removeItem('jd_admin_token_key'); }
           }
           return { data: adminAuthRes, error: null };
         }
@@ -597,7 +604,7 @@ export function AuthProvider({ children }) {
               } catch {}
 
               const role = prof?.role || sbRes.data.session.user.user_metadata?.role || 'customer';
-              if (!['administrator', 'admin', 'staff', 'receptionist', 'accounting'].includes(role)) {
+              if (!['administrator', 'admin', 'staff', 'receptionist', 'accounting', 'housekeeping', 'kitchen', 'tours'].includes(role)) {
                 await supabase.auth.signOut().catch(() => {});
                 throw new Error('Access denied: Account is not authorized for executive administrator portal.');
               }
@@ -605,7 +612,8 @@ export function AuthProvider({ children }) {
               const adminObj = {
                 ...(prof || {}),
                 id: sbRes.data.session.user.id,
-                role: 'administrator',
+                role: role === 'admin' ? 'administrator' : role,
+                department: prof?.department || sbRes.data.session.user.user_metadata?.department,
                 email: sbRes.data.session.user.email || cleanIdent,
                 has_password: true,
                 password_status: 'Configured',
@@ -638,7 +646,7 @@ export function AuthProvider({ children }) {
             .eq('is_active', true)
             .maybeSingle();
 
-          if (emp && ['administrator', 'admin', 'staff', 'receptionist', 'accounting'].includes(emp.role)) {
+          if (emp && ['administrator', 'admin', 'staff', 'receptionist', 'accounting', 'housekeeping', 'kitchen', 'tours'].includes(emp.role)) {
             const adminObj = {
               id: emp.auth_user_id || emp.id,
               email: emp.email,
@@ -683,7 +691,7 @@ export function AuthProvider({ children }) {
   };
 
   const switchActiveRole = (roleKey: string) => {
-    if (adminProfile && ['administrator', 'staff', 'receptionist', 'accounting'].includes(adminProfile.role)) {
+    if (adminProfile && ['administrator', 'admin', 'staff', 'receptionist', 'accounting', 'housekeeping', 'kitchen', 'tours'].includes(adminProfile.role)) {
       const updated = { ...adminProfile, activeViewRole: roleKey };
       setAdminProfile(updated);
       toast(`Switched portal view to ${roleKey.toUpperCase()} ✦`);
@@ -742,7 +750,7 @@ export function AuthProvider({ children }) {
     adminSession,
     adminProfile,
     isAdminAuthenticated: Boolean(adminSession && adminProfile && ['administrator', 'admin'].includes(adminProfile.role)),
-    isStaffAuthenticated: Boolean(adminSession && adminProfile && ['administrator', 'admin', 'receptionist', 'accounting', 'staff'].includes(adminProfile.role)),
+    isStaffAuthenticated: Boolean(adminSession && adminProfile && ['administrator', 'admin', 'receptionist', 'accounting', 'staff', 'housekeeping', 'kitchen', 'tours'].includes(adminProfile.role)),
     adminSignIn,
     signOutAdmin: () => signOutScope('admin'),
 

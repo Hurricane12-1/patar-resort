@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.tsx';
 import { supabase } from '../lib/supabaseClient.ts';
 import { toast } from '../components/Toasts.tsx';
+import { canAccessPortal, canEscalateToRecovery, formatDepartmentBadge, PortalKey } from '../lib/rbac.ts';
 
 interface StaffLayoutProps {
   children?: React.ReactNode;
@@ -81,11 +82,15 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
     }
   };
 
-  const staffNavItems = [
-    { to: '/staff/operations', label: 'Department Tasks & Dispatch', icon: 'fas fa-tasks-alt' },
-    { to: '/staff/reception', label: 'Reception & Check-In Desk', icon: 'fas fa-bell-concierge' },
-    { to: '/staff/accounting', label: 'Folios, Billing & Audit', icon: 'fas fa-calculator' },
+  const allStaffNavItems: Array<{ to: string; label: string; icon: string; portal: PortalKey }> = [
+    { to: '/staff/operations', label: 'Department Tasks & Dispatch', icon: 'fas fa-tasks-alt', portal: 'operations' },
+    { to: '/staff/reception', label: 'Reception & Check-In Desk', icon: 'fas fa-bell-concierge', portal: 'reception' },
+    { to: '/staff/accounting', label: 'Folios, Billing & Audit', icon: 'fas fa-calculator', portal: 'accounting' },
   ];
+  const staffNavItems = allStaffNavItems.filter((item) => canAccessPortal(activeProfile, item.portal));
+
+  const allowEscalation = canEscalateToRecovery(activeProfile);
+  const deptBadge = formatDepartmentBadge(activeProfile);
 
   return (
     <div className="staff-namespace-wrapper" style={{ minHeight: '100vh', background: '#090D16', color: '#F8FAFC' }}>
@@ -172,29 +177,31 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {/* Explicit State Handoff Trigger: Escalate to Recovery */}
-          <button
-            type="button"
-            onClick={() => setShowEscalationModal(true)}
-            style={{
-              fontSize: '.76rem',
-              fontWeight: 700,
-              color: '#FDE047',
-              background: 'rgba(234, 179, 8, 0.15)',
-              border: '1px solid rgba(234, 179, 8, 0.45)',
-              padding: '6px 14px',
-              borderRadius: 8,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              boxShadow: '0 0 12px rgba(234, 179, 8, 0.15)',
-              transition: 'all 0.2s ease',
-            }}
-            title="Escalate a disputed stay, hold, or guest issue to the Recovery namespace"
-          >
-            <i className="fas fa-triangle-exclamation" style={{ color: '#FBBF24' }} />
-            Escalate to Recovery →
-          </button>
+          {allowEscalation && (
+            <button
+              type="button"
+              onClick={() => setShowEscalationModal(true)}
+              style={{
+                fontSize: '.76rem',
+                fontWeight: 700,
+                color: '#FDE047',
+                background: 'rgba(234, 179, 8, 0.15)',
+                border: '1px solid rgba(234, 179, 8, 0.45)',
+                padding: '6px 14px',
+                borderRadius: 8,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                boxShadow: '0 0 12px rgba(234, 179, 8, 0.15)',
+                transition: 'all 0.2s ease',
+              }}
+              title="Escalate a disputed stay, hold, or guest issue to the Recovery namespace"
+            >
+              <i className="fas fa-triangle-exclamation" style={{ color: '#FBBF24' }} />
+              Escalate to Recovery →
+            </button>
+          )}
 
           <div style={{
             fontSize: '.74rem',
@@ -208,7 +215,7 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
             gap: 6,
           }}>
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#38BDF8', display: 'inline-block' }} />
-            <span>Staff: <strong style={{ color: '#FFFFFF' }}>{activeProfile?.full_name || 'Active Duty'}</strong> ({activeProfile?.role || 'staff'})</span>
+            <span>{deptBadge}: <strong style={{ color: '#FFFFFF' }}>{activeProfile?.full_name || 'Active Duty'}</strong></span>
           </div>
 
           <button

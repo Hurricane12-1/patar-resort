@@ -7,8 +7,20 @@ import Stars from '../components/Stars.tsx';
 import RoomImageCarousel from '../components/RoomImageCarousel.tsx';
 import AvailabilityCalendar from '../components/AvailabilityCalendar.tsx';
 import { useReveal } from '../hooks/useReveal.ts';
+import {
+  inferOfferingType,
+  getOfferingLabel,
+  getRateUnitSuffix,
+  formatSpecHighlights,
+  OfferingType,
+} from '../lib/offeringSpecs';
 
-const CATS = ['All', 'Room'];
+const CATS: { key: 'All' | OfferingType; label: string }[] = [
+  { key: 'All', label: 'All Offerings' },
+  { key: 'room', label: 'Rooms' },
+  { key: 'cottage', label: 'Cottages' },
+  { key: 'offer', label: 'Island Tours & Offers' },
+];
 
 function RoomCardItem({ s, index, onOpenCalendar }) {
   const images = useMemo(() => {
@@ -57,11 +69,21 @@ function RoomCardItem({ s, index, onOpenCalendar }) {
             <small className="muted">{Number(s.rating_avg).toFixed(1)} ({s.rating_count || 12})</small>
           </span>
         </div>
+        <div style={{ marginBottom: 6 }}>
+          <span className="pill" style={{ background: inferOfferingType(s) === 'offer' ? '#FEF3C7' : inferOfferingType(s) === 'cottage' ? '#D1FAE5' : '#E0F2FE', color: inferOfferingType(s) === 'offer' ? '#78350F' : inferOfferingType(s) === 'cottage' ? '#065F46' : '#00517A', fontSize: '.72rem', fontWeight: 700, padding: '2px 8px', borderRadius: 9999 }}>
+            {getOfferingLabel(inferOfferingType(s))} · {s.category}
+          </span>
+        </div>
         <h3>{s.name}</h3>
         <p className="muted" style={{ fontSize: '.92rem' }}>{s.description}</p>
-        <div style={{ margin: '14px 0' }}>{s.amenities?.map((a) => <span key={a} className="tag">{a}</span>)}</div>
+        <div style={{ margin: '10px 0', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {formatSpecHighlights(s).slice(0, 3).map((sp) => (
+            <span key={sp.label} className="tag">{sp.label}: {sp.value}</span>
+          ))}
+        </div>
+        <div style={{ margin: '10px 0' }}>{s.amenities?.map((a) => <span key={a} className="tag">{a}</span>)}</div>
         <div className="rate-line">
-          <span className="serif">{money(s.rate_php)}<small className="muted" style={{ fontFamily: 'var(--font-sans)' }}> /night</small></span>
+          <span className="serif">{money(s.rate_php)}<small className="muted" style={{ fontFamily: 'var(--font-sans)' }}> {getRateUnitSuffix(inferOfferingType(s), s.specs)}</small></span>
           <span className="muted small">
             sleeps {s.capacity} · {isLockedNow ? '0 open now (locked until checkout)' : `${unitsOpen} of ${s.units} units open`}
           </span>
@@ -93,7 +115,7 @@ function RoomCardItem({ s, index, onOpenCalendar }) {
 export default function Rooms() {
   const [all, setAll] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [cat, setCat] = useState('All');
+  const [cat, setCat] = useState<'All' | OfferingType>('All');
   const [q, setQ] = useState('');
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedRoomId, setSelectedRoomId] = useState<string | undefined>(undefined);
@@ -108,7 +130,7 @@ export default function Rooms() {
   useReveal(all);
 
   const list = useMemo(() => all.filter((s) =>
-    (cat === 'All' || cat === 'Room' || s.category === cat) &&
+    (cat === 'All' || inferOfferingType(s) === cat || s.category === cat) &&
     (q === '' || s.name.toLowerCase().includes(q.toLowerCase()))), [all, cat, q]);
 
   return (
@@ -161,7 +183,7 @@ export default function Rooms() {
 
         <div className="chip-row">
           {CATS.map((c) => (
-            <button key={c} className={`chip ${cat === c ? 'sel' : ''}`} onClick={() => setCat(c)}>{c}</button>
+            <button key={c.key} className={`chip ${cat === c.key ? 'sel' : ''}`} onClick={() => setCat(c.key)}>{c.label}</button>
           ))}
         </div>
         <div className="rooms-grid">

@@ -18,8 +18,10 @@ export interface AdminSidebarProps {
   unreadNotifsCount: number;
   usersCount: number;
   conversationsCount: number;
+  pendingApprovalsCount?: number;
   setShowGlossaryModal: (show: boolean) => void;
   signOut: () => void;
+  isStaffRestricted?: boolean;
 }
 
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({
@@ -39,8 +41,10 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   unreadNotifsCount,
   usersCount,
   conversationsCount,
+  pendingApprovalsCount = 0,
   setShowGlossaryModal,
   signOut,
+  isStaffRestricted = false,
 }) => {
   const sidebarItems = [
     {
@@ -66,6 +70,13 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       key: 'inventory',
       label: 'Room Management',
       icon: <i className="fas fa-bed" style={{ fontSize: 17 }} />,
+    },
+    {
+      key: 'approvals',
+      label: 'Approval Requests',
+      icon: <i className="fas fa-key" style={{ fontSize: 17 }} />,
+      count: pendingApprovalsCount,
+      badgeColor: '#D97706',
     },
     {
       key: 'conversations',
@@ -199,10 +210,10 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               margin: '4px 8px 8px',
             }}
           >
-            EXECUTIVE MENU
+            {isStaffRestricted ? 'STAFF WORKSPACE' : 'EXECUTIVE MENU'}
           </span>
         )}
-        {sidebarItems.map((item) => {
+        {(isStaffRestricted ? sidebarItems.filter((i) => i.key === 'inventory' || i.key === 'conversations') : sidebarItems).map((item) => {
           const isActive = activeTab === item.key;
           return (
             <button

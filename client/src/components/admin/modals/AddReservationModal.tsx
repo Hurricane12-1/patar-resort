@@ -4,6 +4,7 @@ import AvailabilityCalendar from '../../AvailabilityCalendar.tsx';
 import { POOL_ADDON_OPTIONS } from '../../../lib/ledgerUtils.ts';
 import { addDaysYMD } from '../../../lib/api.ts';
 import { toast } from '../../Toasts.tsx';
+import { inferOfferingType, getOfferingLabel, getRateUnitSuffix } from '../../../lib/offeringSpecs';
 
 export interface NewReservationFormState {
   guest_name: string;
@@ -1056,7 +1057,7 @@ export default function AddReservationModal({
                 </option>
                 {activeRoomsList.map((r) => (
                   <option key={r.id} value={r.id}>
-                    {r.name} ({r.category || 'Standard'}) — {money(r.rate_php)}/night
+                    {r.name} [{getOfferingLabel(inferOfferingType(r))} · {r.category || 'Standard'}] - {money(r.rate_php)} {getRateUnitSuffix(inferOfferingType(r), r.specs)}
                   </option>
                 ))}
               </select>
@@ -1244,6 +1245,7 @@ export default function AddReservationModal({
                     initialCheckOut={newReservation.check_out}
                     isLightMode={isLightMode}
                     numDays={14}
+                    allowSameDay={true}
                     onSelectDates={(cin, cout, targetRoomId, unitInfo) => {
                       const room =
                         (targetRoomId ? activeRoomsList.find((r) => r.id === targetRoomId) : null) ||

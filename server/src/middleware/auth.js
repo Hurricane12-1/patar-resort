@@ -4,6 +4,38 @@ import { admin, userClient, getSystemAdminClient } from '../lib/supabase.js';
 import { ApiError } from './errors.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
 
+const VALID_DEPARTMENTS = new Set(['front_desk', 'housekeeping', 'kitchen', 'tours', 'accounting', 'management']);
+const STAFF_ROLES = new Set(['administrator', 'admin', 'staff', 'receptionist', 'accounting', 'housekeeping', 'kitchen', 'tours']);
+
+export function normalizeEmployeeRole(rawRole) {
+  const r = String(rawRole || '').trim().toLowerCase();
+  if (r === 'admin' || r === 'administrator') return 'administrator';
+  if (r === 'frontdesk' || r === 'front_desk') return 'receptionist';
+  if (STAFF_ROLES.has(r)) return r;
+  return 'customer';
+}
+
+export function normalizeEmployeeDepartment(rawRole, rawDepartment) {
+  const role = normalizeEmployeeRole(rawRole);
+  const dept = String(rawDepartment || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+  if (role === 'administrator') return 'management';
+  if (role === 'accounting') return 'accounting';
+  if (role === 'receptionist') return 'front_desk';
+  if (role === 'housekeeping') return 'housekeeping';
+  if (role === 'kitchen') return 'kitchen';
+  if (role === 'tours') return 'tours';
+  if (dept === 'frontdesk') return 'front_desk';
+  if (VALID_DEPARTMENTS.has(dept)) return dept;
+  return 'housekeeping';
+}
+
+export function resolveEmployeeDepartment(user) {
+  if (!user) return null;
+  const role = normalizeEmployeeRole(user.role);
+  if (role === 'administrator') return null;
+  return normalizeEmployeeDepartment(role, user.department);
+}
+
 export async function authenticate(req, _res, next) {
   try {
     const token = req.headers.authorization?.replace(/^Bearer\s+/i, '') || req.query.token || req.cookies?.session_token || req.cookies?.access_token;
@@ -43,12 +75,16 @@ export async function authenticate(req, _res, next) {
         .catch(() => ({ data: null }));
 
       if (empUser) {
+        const normalizedRole = normalizeEmployeeRole(empUser.role);
+        const normalizedDept = normalizeEmployeeDepartment(normalizedRole, empUser.department);
+        const isExecAdmin = normalizedRole === 'administrator';
         req.user = {
           ...empUser,
           id: empUser.auth_user_id || empUser.id,
-          role: empUser.role || 'administrator',
-          admin_token_verified: true,
-          admin_token_key: process.env.ADMIN_TOKEN_KEY || 'etc-34',
+          role: normalizedRole,
+          department: normalizedDept,
+          admin_token_verified: isExecAdmin,
+          admin_token_key: isExecAdmin ? (process.env.ADMIN_TOKEN_KEY || 'etc-34') : '',
         };
         req.token = token;
         req.sb = sysClient;
@@ -209,14 +245,20 @@ export async function authenticate(req, _res, next) {
     // Strict Employee / Administrator RBAC Enforcement:
     // Only verified accounts linked to active records in employee_accounts can hold employee/admin privileges
     const isVerifiedEmployee = Boolean(empRecord && empRecord.is_active);
-    if (isVerifiedEmployee && (empRecord.role === 'administrator' || empRecord.role === 'admin')) {
-      profile.role = 'administrator';
-      profile.admin_token_verified = true;
-      profile.admin_token_key = process.env.ADMIN_TOKEN_KEY || 'etc-34';
-      profile.domain_account = empRecord.email || profile.email || 'admin@rockviewresort.ph';
-    } else if (isVerifiedEmployee) {
-      profile.role = empRecord.role || 'staff';
-      profile.domain_account = empRecord.email || profile.email || 'staff@rockviewresort.ph';
+    if (isVerifiedEmployee) {
+      const normalizedRole = normalizeEmployeeRole(empRecord.role);
+      const normalizedDept = normalizeEmployeeDepartment(normalizedRole, empRecord.department || profile.department);
+      profile.role = normalizedRole;
+      profile.department = normalizedDept;
+      if (normalizedRole === 'administrator') {
+        profile.admin_token_verified = true;
+        profile.admin_token_key = process.env.ADMIN_TOKEN_KEY || 'etc-34';
+        profile.domain_account = empRecord.email || profile.email || 'admin@rockviewresort.ph';
+      } else {
+        profile.admin_token_verified = false;
+        delete profile.admin_token_key;
+        profile.domain_account = empRecord.email || profile.email || 'staff@rockviewresort.ph';
+      }
     } else {
       // Any account not in employee_accounts is STRICTLY customer
       profile.role = 'customer';
@@ -265,7 +307,41 @@ export const requireRole = (...allowedRoles) => (req, _res, next) => {
 };
 
 export const requireAdmin = requireRole('administrator', 'admin');
-export const requireStaffOrAdmin = requireRole('administrator', 'admin', 'staff', 'receptionist', 'accounting');
+export const requireRoomManager = requireAdmin;
+export const requireFinanceOrAdmin = requireRole('administrator', 'admin', 'accounting');
+export const requireRecoveryOfficer = requireRole('administrator', 'admin', 'receptionist', 'accounting');
+export const requireStaffOrAdmin = requireRole('administrator', 'admin', 'staff', 'receptionist', 'accounting', 'housekeeping', 'kitchen', 'tours');
+
+export const requireFrontDeskOrAdmin = (req, res, next) => {
+  if (!req.user) return next(new ApiError(401, 'Authentication required'));
+  const role = normalizeEmployeeRole(req.user.role);
+  const dept = resolveEmployeeDepartment(req.user);
+  if (role === 'administrator' || role === 'receptionist' || (role === 'staff' && dept === 'front_desk')) {
+    return next();
+  }
+  return requireRole('administrator', 'receptionist')(req, res, next);
+};
+
+export const requireCustomerService = requireFrontDeskOrAdmin;
+
+export const requireReservationDesk = (req, res, next) => {
+  if (!req.user) return next(new ApiError(401, 'Authentication required'));
+  const role = normalizeEmployeeRole(req.user.role);
+  const dept = resolveEmployeeDepartment(req.user);
+  if (role === 'administrator' || role === 'receptionist' || role === 'accounting' || (role === 'staff' && dept === 'front_desk')) {
+    return next();
+  }
+  return requireRole('administrator', 'receptionist', 'accounting')(req, res, next);
+};
+
+export const requireOperationalStaffOrAdmin = (req, res, next) => {
+  if (!req.user) return next(new ApiError(401, 'Authentication required'));
+  const role = normalizeEmployeeRole(req.user.role);
+  if (role === 'administrator' || role === 'receptionist' || role === 'housekeeping' || role === 'kitchen' || role === 'tours' || role === 'staff') {
+    return next();
+  }
+  return requireRole('administrator', 'receptionist', 'housekeeping', 'kitchen', 'staff')(req, res, next);
+};
 
 /**
  * Mandatory 4-Field Executive RBAC Security Block Middleware

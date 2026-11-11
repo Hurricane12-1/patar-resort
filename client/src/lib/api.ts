@@ -1,6 +1,13 @@
 import { supabase } from './supabaseClient.js';
 import { CANONICAL_ROOMS } from './canonicalRooms.js';
 import { frontendAdapter } from './adapters';
+import {
+  parseOfferingTags,
+  packOfferingAmenities,
+  getRateUnitSuffix,
+  calculateOfferingTotal,
+  getManilaTodayISO,
+} from './offeringSpecs';
 
 export class ApiError extends Error {
   status: number;
@@ -188,6 +195,12 @@ export function packRoomPayload(body: any, existingRoom?: any) {
     payload.amenities = [...cleanAmenities, ...existingImages];
   }
 
+  if ('offering_type' in body || 'specs' in body || hasImagesField || hasImageUrlField || Array.isArray(body.amenities)) {
+    const packedSpecs = packOfferingAmenities({ offering_type: body.offering_type ?? existingRoom?.offering_type, category: body.category ?? existingRoom?.category, specs: body.specs ?? existingRoom?.specs, amenities: Array.isArray(payload.amenities) ? payload.amenities : existingRoom?.amenities, existingAmenities: existingRoom?.amenities, images: hasImagesField ? body.images : undefined, image_url: hasImageUrlField ? body.image_url : undefined }); payload.amenities = packedSpecs.amenities; if ('category' in body || !existingRoom || 'offering_type' in body) { payload.category = packedSpecs.dbCategory; }
+  }
+  delete payload.offering_type;
+  delete payload.specs;
+  delete payload.rate_unit;
   delete payload.image_url;
   delete payload.images;
 
@@ -237,6 +250,7 @@ export function normalizeRoom(room: any) {
   else if (cat.includes('suite') || slug.includes('suite') || slug.includes('gel')) fallbackImage = 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209695/jd_beach_house_accommodations/suite.jpg';
   else if (cat.includes('garden') || slug.includes('garden')) fallbackImage = 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209698/jd_beach_house_accommodations/garden.jpg';
   else if (cat.includes('dorm') || cat.includes('bunk') || slug.includes('dorm')) fallbackImage = 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209699/jd_beach_house_accommodations/bunk.jpg';
+  else if (cat.includes('tour') || cat.includes('island') || cat.includes('offer') || cat.includes('activity') || cat.includes('package') || slug.includes('tour') || slug.includes('island')) fallbackImage = 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209700/jd_beach_house_accommodations/island.jpg';
   else fallbackImage = 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209696/jd_beach_house_accommodations/cottage.jpg';
 
   for (const item of rawAmenities) {
@@ -247,7 +261,7 @@ export function normalizeRoom(room: any) {
       }
       if (url && !images.includes(url)) images.push(url);
     } else {
-      cleanAmenities.push(item);
+      if (typeof item === 'string' && !item.startsWith('__type__:') && !item.startsWith('__spec__:')) cleanAmenities.push(item);
     }
   }
 
@@ -255,6 +269,8 @@ export function normalizeRoom(room: any) {
   const cleanImg = (rawImg.startsWith('/uploads/') || rawImg.includes('img_9146060b-5718-452f-a663-e04f109c8ab5'))
     ? fallbackImage
     : rawImg;
+  const parsedOffer = parseOfferingTags(room.amenities, room);
+  const displayCat = parsedOffer.displayCategory || room.category;
   const primaryImage = cleanImg || images[0] || fallbackImage;
   const allImages = Array.isArray(room.images) && room.images.length > 0
     ? room.images.map((u: string) => (u.startsWith('/uploads/') || u.includes('img_9146060b-5718-452f-a663-e04f109c8ab5') ? fallbackImage : u))
@@ -262,6 +278,10 @@ export function normalizeRoom(room: any) {
 
   return {
     ...room,
+    category: displayCat,
+    offering_type: room.offering_type || parsedOffer.offering_type,
+    specs: room.specs || parsedOffer.specs,
+    rate_unit: room.rate_unit || getRateUnitSuffix(room.offering_type || parsedOffer.offering_type, room.specs || parsedOffer.specs),
     image_url: primaryImage,
     images: allImages,
     amenities: cleanAmenities,
@@ -467,9 +487,10 @@ export const api = {
   },
 
   // Accommodations Catalog & Availability (Multi-Tier Resilient Architecture)
-  rooms: async (includeInactive = false) => {
+  rooms: async (includeInactive = false, offeringType?: string) => {
     try {
-      const data = await req(`/rooms${includeInactive ? '?include_inactive=true' : ''}`);
+      const qs = new URLSearchParams(); if (includeInactive) qs.append('include_inactive', 'true'); if (offeringType && offeringType !== 'all') qs.append('offering_type', offeringType); const qStr = qs.toString();
+      const data = await req(`/rooms${qStr ? `?${qStr}` : ''}`);
       if (Array.isArray(data)) return data.map(normalizeRoom);
     } catch {}
     try {
@@ -498,7 +519,9 @@ export const api = {
     const packed = packRoomPayload(
       {
         name: body.name,
-        category: body.category || 'Cottage',
+        offering_type: body.offering_type,
+        specs: body.specs,
+        category: body.category || (body.offering_type === 'offer' ? 'Island Tour' : body.offering_type === 'cottage' ? 'Cottage' : 'Room'),
         description: body.description || '',
         capacity: Number(body.capacity) || 2,
         units: Number(body.units) || 1,
@@ -601,7 +624,7 @@ export const api = {
           available_units: availableUnits,
           is_available: availableUnits > 0,
           nights,
-          total_php: (Number(r.rate_php) || 3500) * nights,
+          total_php: calculateOfferingTotal({ rate_php: Number(r.rate_php) || 3500, nights, guests: Number(guests) || 1, offering_type: normalizeRoom(r).offering_type, specs: normalizeRoom(r).specs }),
         };
       });
     } catch {}
@@ -619,7 +642,7 @@ export const api = {
     const sb = await ensureSupabaseSession();
     const [{ data: rooms }, { data: bookings }] = await Promise.all([
       sb.from('rooms').select('*').eq('is_active', true),
-      sb.from('reservations').select('*, rooms(name), profiles(full_name, phone, email)'),
+      sb.from('reservations').select('*, rooms(name, slug, category, amenities, rate_php), profiles(full_name, phone, email)'),
     ]);
     return {
       rooms: (rooms || []).map(normalizeRoom),
@@ -643,6 +666,9 @@ export const api = {
     if (!checkOut || checkOut <= checkIn) {
       checkOut = addDaysYMD(checkIn, 1);
     }
+    const manilaToday = getManilaTodayISO();
+    if (checkIn < manilaToday) throw new Error('Check-in date cannot be in the past.');
+    if (checkIn <= manilaToday && !body.is_walk_in) throw new Error('Same-day bookings are walk-in only and cannot be booked online. Please choose tomorrow or a later date.');
     const normalizedBody = { ...body, guest_name: guestName, phone, check_in: checkIn, check_out: checkOut };
 
     try {
@@ -722,7 +748,7 @@ export const api = {
     const { data, error } = await sb
       .from('reservations')
       .insert(insertPayload)
-      .select('*, rooms(name), profiles(full_name, phone, email)')
+      .select('*, rooms(name, slug, category, amenities, rate_php), profiles(full_name, phone, email)')
       .single();
     if (error) throw new Error(error.message || 'Could not create reservation in database');
     if (data) {
@@ -763,7 +789,7 @@ export const api = {
       .from('reservations')
       .update(updatePayload)
       .eq('id', id)
-      .select('*, rooms(name), profiles(full_name, phone, email)')
+      .select('*, rooms(name, slug, category, amenities, rate_php), profiles(full_name, phone, email)')
       .single();
     if (error) throw new Error(error.message || 'Could not update reservation in database');
     if (data) {
@@ -799,7 +825,7 @@ export const api = {
       return await req(`/reservations/${id}/cancel`, { method: 'PATCH' });
     } catch {}
     const sb = await ensureSupabaseSession();
-    const { data, error } = await sb.from('reservations').update({ status: 'cancelled' }).eq('id', id).select('*, rooms(name)').single();
+    const { data, error } = await sb.from('reservations').update({ status: 'cancelled' }).eq('id', id).select('*, rooms(name, slug, category, amenities, rate_php)').single();
     if (error) throw new Error(error.message);
     return data;
   },
@@ -827,7 +853,7 @@ export const api = {
       const sb = await ensureSupabaseSession();
       const { data, error } = await sb
         .from('reservations')
-        .select('*, profiles(full_name, phone, email), rooms(name)')
+        .select('*, profiles(full_name, phone, email), rooms(name, slug, category, amenities, rate_php)')
         .order('check_in', { ascending: false })
         .limit(200);
       if (!error && Array.isArray(data)) {
@@ -849,7 +875,7 @@ export const api = {
       .from('reservations')
       .update({ status })
       .eq('id', id)
-      .select('*, profiles(id, phone, full_name, email), rooms(name)')
+      .select('*, profiles(id, phone, full_name, email), rooms(name, slug, category, amenities, rate_php)')
       .single();
     if (error) throw new Error(error.message);
     return data;
@@ -864,7 +890,7 @@ export const api = {
     try {
       const { data } = await supabase
         .from('reviews')
-        .select('*, rooms(name), profiles(full_name)')
+        .select('*, rooms(name, slug, category, amenities, rate_php), profiles(full_name)')
         .eq('is_approved', true)
         .order('created_at', { ascending: false })
         .limit(12);
@@ -935,6 +961,26 @@ export const api = {
     return { success: true };
   },
 
+  // Front Desk Non-Financial Overview
+  frontDeskOverview: async () => {
+    try {
+      const res = await req('/analytics/front-desk');
+      if (res && res.overview) return res;
+    } catch {}
+    const bookings = await api.allReservations().catch(() => []);
+    const activeBookings = (Array.isArray(bookings) ? bookings : []).filter((b: any) => b.status !== 'cancelled');
+    const today = new Date().toISOString().slice(0, 10);
+    return {
+      overview: {
+        arrivals_today: activeBookings.filter((b: any) => b.check_in === today).length,
+        departures_today: activeBookings.filter((b: any) => b.check_out === today).length,
+        occupancy_pct: 0,
+        sms_delivered: 0,
+      },
+      bookings: Array.isArray(bookings) ? bookings : [],
+    };
+  },
+
   // Financial & Executive Analytics
   analyticsOverview: async () => {
     try {
@@ -945,7 +991,7 @@ export const api = {
       const sb = await ensureSupabaseSession();
       const [roomsRes, bookingsRes] = await Promise.all([
         sb.from('rooms').select('*').eq('is_active', true),
-        sb.from('reservations').select('*, profiles(full_name, phone, email), rooms(name)').order('created_at', { ascending: false }).limit(100),
+        sb.from('reservations').select('*, profiles(full_name, phone, email), rooms(name, slug, category, amenities, rate_php)').order('created_at', { ascending: false }).limit(100),
       ]);
       const rooms = Array.isArray(roomsRes.data) ? roomsRes.data.map(normalizeRoom) : [];
       const bookings = Array.isArray(bookingsRes.data) ? bookingsRes.data : [];
@@ -1132,24 +1178,26 @@ export const api = {
       is_active: true,
       status: 'active',
     };
-    const { data, error } = await sb.from('employee_accounts').insert(payload).select().single();
+    const { data, error } = await sb.from('employee_accounts').insert({ employee_id: empId, email: targetEmail, full_name: fullName, role: payload.role, department: payload.department, position: payload.position, status: 'Active', is_active: true, password: payload.password }).select().single();
     if (error) throw new Error(error.message || 'Could not create staff account');
     return data;
   },
   adminCreateUser: async (body: any) => {
     return api.createStaffAccount(body);
   },
-  updateUserRole: async (id: string, role: string) => {
+  updateUserRole: async (id: string, role: string, department?: string) => {
     try {
-      return await req(`/admin/users/${id}/role`, { method: 'PATCH', body: { role } });
+      return await req(`/admin/users/${id}/role`, { method: 'PATCH', body: department ? { role, department } : { role } });
     } catch {}
     const sb = await ensureSupabaseSession();
+    const empPatch: Record<string, any> = { role, updated_at: new Date().toISOString() };
+    if (department) empPatch.department = department;
     await Promise.all([
       sb.from('profiles').update({ role, updated_at: new Date().toISOString() }).eq('id', id),
       sb.from('users').update({ role, updated_at: new Date().toISOString() }).eq('id', id),
-      sb.from('employee_accounts').update({ role, updated_at: new Date().toISOString() }).or(`id.eq.${id},auth_user_id.eq.${id}`),
+      sb.from('employee_accounts').update(empPatch).or(`id.eq.${id},auth_user_id.eq.${id}`),
     ]);
-    return { id, role, success: true };
+    return { id, role, department, success: true };
   },
   adminUpdateUser: async (id: string, body: any) => {
     try {
@@ -1166,11 +1214,14 @@ export const api = {
       role: body.role,
       updated_at: new Date().toISOString(),
     };
+    const empUpdate: Record<string, any> = { ...updateData };
+    if (body.department) empUpdate.department = body.department;
+    if (body.position) empUpdate.position = body.position;
     await Promise.all([
       sb.from('profiles').update(updateData).eq('id', id),
-      sb.from('employee_accounts').update(updateData).or(`id.eq.${id},auth_user_id.eq.${id}`),
+      sb.from('employee_accounts').update(empUpdate).or(`id.eq.${id},auth_user_id.eq.${id}`),
     ]);
-    return { id, ...updateData };
+    return { id, ...updateData, department: body.department };
   },
   resetUserPassword: async (id: string, new_password: string) => {
     try {
@@ -1216,7 +1267,7 @@ export const api = {
     } catch {}
     try {
       const sb = await ensureSupabaseSession();
-      const { data } = await sb.from('department_tasks').select('*, rooms(name)').order('created_at', { ascending: false });
+      const { data } = await sb.from('department_tasks').select('*, rooms(name, slug, category, amenities, rate_php)').order('created_at', { ascending: false });
       return data || [];
     } catch {}
     return [];
@@ -1551,7 +1602,7 @@ export const api = {
     } catch {}
     const sb = await ensureSupabaseSession();
     const [{ data: bookings }, { data: existingEntries }] = await Promise.all([
-      sb.from('reservations').select('*, rooms(name)').neq('status', 'cancelled'),
+      sb.from('reservations').select('*, rooms(name, slug, category, amenities, rate_php)').neq('status', 'cancelled'),
       sb.from('ledger_entries').select('reference_id'),
     ]);
     const existingRefs = new Set((existingEntries || []).map((e: any) => e.reference_id).filter(Boolean));
@@ -1681,11 +1732,35 @@ export const api = {
     return { success: true };
   },
 
+  // Price-Change Approval Requests
+  priceRequests: async () => {
+    return await req('/price-requests');
+  },
+  createPriceRequest: async (body: { room_id: string; requested_rate_php: number; reason: string }) => {
+    return await req('/price-requests', { method: 'POST', body });
+  },
+  approvePriceRequestDirect: async (id: string, review_note?: string) => {
+    return await req(`/price-requests/${id}/approve-direct`, { method: 'POST', body: review_note ? { review_note } : {} });
+  },
+  issuePriceRequestCode: async (id: string, review_note?: string) => {
+    return await req(`/price-requests/${id}/issue-code`, { method: 'POST', body: review_note ? { review_note } : {} });
+  },
+  applyPriceRequestWithCode: async (id: string, authorization_code: string) => {
+    return await req(`/price-requests/${id}/apply-with-code`, { method: 'POST', body: { authorization_code } });
+  },
+  rejectPriceRequest: async (id: string, review_note?: string) => {
+    return await req(`/price-requests/${id}/reject`, { method: 'POST', body: review_note ? { review_note } : {} });
+  },
+
   // CSV Operations
   csvSample: async (): Promise<string> => {
     try {
       const endpoint = API_BASE ? `${API_BASE}/api/csv/sample` : '/api/csv/sample';
-      const res = await fetch(endpoint);
+      const adminJwt = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_jwt') : null;
+      const res = await fetch(endpoint, {
+        headers: adminJwt ? { Authorization: `Bearer ${adminJwt}` } : undefined,
+        credentials: 'include',
+      });
       const ct = res.headers.get('content-type') || '';
       if (res.ok && !ct.includes('text/html')) {
         return await res.text();

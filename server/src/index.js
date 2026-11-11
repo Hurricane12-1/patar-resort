@@ -124,7 +124,7 @@ app.post('/api/limiter/reset', (_req, res) => {
 });
 
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', service: 'Rock View Beach Resort API', version: '1.5.1', timestamp: new Date().toISOString() });
+  res.json({ status: 'ok', service: 'Rock View Beach Resort API', version: '1.6.1', timestamp: new Date().toISOString() });
 });
 
 // Bootstrap Isolated Modular Framework (IMF) with dynamic auto-discovery & bulkhead error boundaries

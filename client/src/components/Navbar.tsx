@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext.tsx';
 import { api } from '../lib/api.ts';
 import { fmtTime } from '../lib/format.ts';
 import { LiveClock, FloatingWelcome } from './LiveClock.tsx';
+import { isAdministrator, isInternalEmployee, getDefaultStaffPath, formatDepartmentBadge } from '../lib/rbac.ts';
 
 export default function Navbar() {
   const { session, profile, adminSession, adminProfile, signOut, signOutCustomer, signOutAdmin, setAuthOpen } = useAuth();
@@ -20,12 +21,14 @@ export default function Navbar() {
     return () => { live = false; clearInterval(t); };
   }, [session]);
 
-  const isStaffOrAdmin = Boolean(adminSession && adminProfile && ['administrator', 'admin', 'receptionist', 'accounting', 'staff'].includes(adminProfile?.role));
+  const isExecAdmin = Boolean(adminSession && adminProfile && isAdministrator(adminProfile));
+  const isStaff = Boolean(adminSession && adminProfile && isInternalEmployee(adminProfile));
+  const staffHome = getDefaultStaffPath(adminProfile);
   const links = [
     ['/', 'Home'],
     ['/rooms', 'Rooms'],
     ['/client/bookings', 'My Bookings'],
-    ...(isStaffOrAdmin ? [['/admin', 'Admin Console'], ['/staff', 'Operations']] : []),
+    ...(isExecAdmin ? [['/admin', 'Admin Console'], ['/staff/operations', 'Operations']] : isStaff ? [[staffHome, formatDepartmentBadge(adminProfile)]] : []),
   ];
 
   return (
@@ -60,7 +63,7 @@ export default function Navbar() {
           </nav>
 
           <div className="nav-right" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {session && !['administrator', 'receptionist', 'accounting', 'staff'].includes(profile?.role) && (
+            {session && !isInternalEmployee(profile) && (
               <div style={{ position: 'relative' }}>
                 <button className="bell" aria-label="Notifications" onClick={() => setMenu((m) => !m)}>
                   <i className="fas fa-bell" style={{ fontSize: '1.05rem', color: '#E2E8F0' }} />
@@ -118,7 +121,7 @@ export default function Navbar() {
               <>
                 {adminSession && (
                   <Link
-                    to="/admin"
+                    to={isExecAdmin ? '/admin' : staffHome}
                     className="btn btn-sm"
                     style={{
                       color: '#FDE047',
@@ -129,10 +132,10 @@ export default function Navbar() {
                       gap: 6,
                       textDecoration: 'none',
                     }}
-                    title="Active Executive Administrator Session"
+                    title={isExecAdmin ? 'Active Executive Administrator Session' : `Active ${formatDepartmentBadge(adminProfile)} Session`}
                   >
                     <i className="fas fa-shield-halved" />
-                    <span>Admin Console</span>
+                    <span>{isExecAdmin ? 'Admin Console' : formatDepartmentBadge(adminProfile)}</span>
                   </Link>
                 )}
                 <button

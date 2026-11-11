@@ -7,6 +7,18 @@ import { CANONICAL_ROOMS } from '../lib/canonicalRooms.ts';
 import { toast } from './Toasts.tsx';
 import { getRoomImageUrl, handleImageError } from '../lib/images.ts';
 import AvailabilityCalendar from './AvailabilityCalendar.tsx';
+import {
+  getManilaTodayISO,
+  getMinGuestCheckInISO,
+  addDaysISO,
+  inferOfferingType,
+  getOfferingLabel,
+  getRateUnitSuffix,
+  calculateOfferingTotal,
+  formatSpecHighlights,
+  resolveReservationOfferingType,
+  OfferingType,
+} from '../lib/offeringSpecs';
 import { VoucherModal, LuxuryResortVoucher, ReceiptActions, normalizeVoucherData, VoucherData } from './receipt';
 
 // ==========================================================================
@@ -151,9 +163,12 @@ export default function MobileResortApp() {
     d.setDate(d.getDate() + days);
     return toISO(d);
   };
-  const today = toISO(new Date());
-  const [checkIn, setCheckIn] = useState(today);
-  const [checkOut, setCheckOut] = useState(addDays(today, 1));
+  const today = getManilaTodayISO();
+  const minCheckInDate = getMinGuestCheckInISO();
+  const [checkIn, setCheckIn] = useState(minCheckInDate);
+  const [checkOut, setCheckOut] = useState(addDaysISO(minCheckInDate, 1));
+  const [offeringFilter, setOfferingFilter] = useState<'all' | OfferingType>('all');
+  const [stayBookingFilter, setStayBookingFilter] = useState<'all' | OfferingType>('all');
   const [guests, setGuests] = useState('2 Guests');
   const [selectedRoom, setSelectedRoom] = useState(site.rooms.items[0]?.name ?? '');
   const [quote, setQuote] = useState<{ ok: boolean; text: string } | null>(null);
@@ -805,6 +820,10 @@ export default function MobileResortApp() {
       setQuote({ ok: false, text: 'Check-in cannot be in the past.' });
       return;
     }
+    if (checkIn <= today) {
+      setQuote({ ok: false, text: 'Same-day bookings are walk-in only and unavailable online. Please select tomorrow or a later date.' });
+      return;
+    }
 
     const guestCount = parseInt(guests) || 2;
     setCheckingAvailability(true);
@@ -828,7 +847,18 @@ export default function MobileResortApp() {
       } else {
         setQuote({
           ok: true,
-          text: `${chosen.name} · ${units} villa${units > 1 ? 's' : ''} available · ${nights} night${nights > 1 ? 's' : ''} — Total ${peso(rate * nights)} (30% downpayment: ${peso(Math.round(rate * nights * 0.3))})`,
+          text: (() => {
+            const oType = inferOfferingType(chosen);
+            const totalEst = calculateOfferingTotal({
+              rate_php: rate,
+              nights,
+              guests: guestCount,
+              offering_type: oType,
+              specs: chosen?.specs || {},
+            });
+            const unitText = oType === 'offer' ? `Tour Date (${checkIn})` : `${nights} night${nights > 1 ? 's' : ''}`;
+            return `${chosen.name} (${getOfferingLabel(oType)}) · ${units} slot${units > 1 ? 's' : ''}/unit${units > 1 ? 's' : ''} open · ${unitText}: Total ${peso(totalEst)} (30% downpayment: ${peso(Math.round(totalEst * 0.3))})`;
+          })(),
         });
       }
     } catch (err: any) {
@@ -901,6 +931,10 @@ export default function MobileResortApp() {
       toast('Please select valid stay dates (check-out must be after check-in).', true);
       return;
     }
+    if (checkIn <= today) {
+      toast('Same-day bookings are walk-in only and unavailable online. Please select tomorrow or a later date.', true);
+      return;
+    }
 
     if (isRoomOccupiedForDates(resRoom, checkIn, checkOut)) {
       toast('⚠️ That villa is already reserved for the selected dates. Please select open dates on the calendar.', true);
@@ -932,8 +966,16 @@ export default function MobileResortApp() {
     }
 
     const nights = Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000));
+    const offeringType = inferOfferingType(resRoom);
     const rate = resRoom?.rate_php || resRoom?.price || 4200;
-    const totalPhp = nights * rate;
+    const guestQty = parseInt(guests) || 2;
+    const totalPhp = calculateOfferingTotal({
+      rate_php: rate,
+      nights,
+      guests: guestQty,
+      offering_type: offeringType,
+      specs: resRoom?.specs || {},
+    });
     const downpaymentPhp = Math.round(totalPhp * 0.3);
 
     setResSubmitting(true);
@@ -941,6 +983,7 @@ export default function MobileResortApp() {
       const payload = {
         roomId: targetRoomId,
         room_id: targetRoomId,
+        offering_type: offeringType,
         check_in: checkIn,
         check_out: checkOut,
         guests: parseInt(guests) || 2,
@@ -1129,11 +1172,11 @@ export default function MobileResortApp() {
                     <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/30 to-transparent" />
                     <div className="absolute inset-x-0 bottom-0 p-5">
                       <span className="text-[10px] uppercase font-mono tracking-widest text-cyan font-bold block mb-1">
-                        ✦ {room.category || 'Villa'}
+                        {getOfferingLabel(inferOfferingType(room))} · {room.category || 'Standard'}
                       </span>
                       <h3 className="font-serif text-2xl font-medium leading-tight text-white">{formatRoomTitle(room.name)}</h3>
                       <p className="mt-1 font-serif text-lg text-cyan">
-                        {peso(room.rate_php || room.price || 0)} <span className="font-sans text-[11px] text-white/60">/ night</span>
+                        {peso(room.rate_php || room.price || 0)} <span className="font-sans text-[11px] text-white/60">{getRateUnitSuffix(inferOfferingType(room), room.specs)}</span>
                       </p>
                     </div>
                   </article>
@@ -2091,14 +2134,23 @@ export default function MobileResortApp() {
                   {displayRooms.length === 0 ? (
                     <option value="">No rooms available</option>
                   ) : (
-                    displayRooms.map((r) => {
-                      const occupiedForStay = checkIn && checkOut && isRoomOccupiedForDates(r, checkIn, checkOut);
-                      const occupiedToday = isRoomOccupiedToday(r);
-                      const statusTag = occupiedForStay ? ' · [Occupied for selected dates]' : occupiedToday ? ' · [Occupied today]' : ' · [Available]';
+                    (['room', 'cottage', 'offer'] as OfferingType[]).map((groupType) => {
+                      const groupItems = displayRooms.filter((r) => inferOfferingType(r) === groupType);
+                      if (groupItems.length === 0) return null;
+                      const groupLabel = groupType === 'room' ? 'Rooms & Accommodations' : groupType === 'cottage' ? 'Beachfront Cottages' : 'Island Tours & Offers';
                       return (
-                        <option key={r.id || r.name} value={r.name} className={occupiedForStay ? 'text-rose-400 font-semibold' : ''}>
-                          {r.name}{statusTag}
-                        </option>
+                        <optgroup key={groupType} label={groupLabel} className="bg-navy text-white">
+                          {groupItems.map((r) => {
+                            const occupiedForStay = checkIn && checkOut && isRoomOccupiedForDates(r, checkIn, checkOut);
+                            const occupiedToday = isRoomOccupiedToday(r);
+                            const statusTag = occupiedForStay ? ' · [Booked]' : occupiedToday ? ' · [Occupied today]' : ' · [Available]';
+                            return (
+                              <option key={r.id || r.name} value={r.name} className={occupiedForStay ? 'text-rose-400 font-semibold' : ''}>
+                                {r.name} ({r.category}){statusTag}
+                              </option>
+                            );
+                          })}
+                        </optgroup>
                       );
                     })
                   )}
@@ -2226,16 +2278,43 @@ export default function MobileResortApp() {
               <p className="mt-1 text-sm font-light">Rooms are currently being updated. Please check back shortly.</p>
             </div>
           ) : (
+            <>
+            <div className="mt-6 flex flex-wrap items-center gap-2">
+              {([
+                { key: 'all', label: `All (${displayRooms.length})` },
+                { key: 'room', label: `Rooms (${displayRooms.filter((r) => inferOfferingType(r) === 'room').length})` },
+                { key: 'cottage', label: `Cottages (${displayRooms.filter((r) => inferOfferingType(r) === 'cottage').length})` },
+                { key: 'offer', label: `Island Tours & Offers (${displayRooms.filter((r) => inferOfferingType(r) === 'offer').length})` },
+              ] as const).map((tab) => {
+                const isActive = offeringFilter === tab.key;
+                return (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setOfferingFilter(tab.key)}
+                    className={`min-h-[40px] rounded-full px-4 py-1.5 text-xs font-semibold tracking-wide transition cursor-pointer ${
+                      isActive
+                        ? 'bg-[#006699] text-white border border-cyan/50 shadow-md'
+                        : 'bg-white/5 text-white/80 border border-white/15 hover:border-cyan/40 hover:text-white'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
             <div
               ref={roomsRailRef}
-              className="mt-8 flex gap-5 overflow-x-auto snap-x snap-mandatory pb-4 pt-1 -mx-5 px-5 sm:-mx-8 sm:px-8 scrollbar-none no-scrollbar"
+              className="mt-6 flex gap-5 overflow-x-auto snap-x snap-mandatory pb-4 pt-1 -mx-5 px-5 sm:-mx-8 sm:px-8 scrollbar-none no-scrollbar"
               style={{
                 scrollbarWidth: 'none',
                 msOverflowStyle: 'none',
                 WebkitOverflowScrolling: 'touch',
               }}
             >
-              {displayRooms.map((room) => {
+              {displayRooms
+                .filter((room) => offeringFilter === 'all' || inferOfferingType(room) === offeringFilter)
+                .map((room) => {
                 const roomTitle = formatRoomTitle(room.name);
                 const categoryLabel = room.category || 'Luxury Villa';
                 const capacityGuests = room.capacity || 4;
@@ -2266,8 +2345,8 @@ export default function MobileResortApp() {
 
                       {/* Top Badges */}
                       <div className="absolute top-3 inset-x-3 flex items-center justify-between gap-2 pointer-events-none">
-                        <span className="rounded-full border border-white/15 bg-black/60 px-3 py-1 font-mono text-[10px] font-semibold tracking-wider uppercase text-cyan backdrop-blur-md shadow-sm">
-                          ✦ {categoryLabel}
+                        <span className="rounded-full border border-white/15 bg-black/75 px-3 py-1 font-mono text-[10px] font-semibold tracking-wider uppercase text-cyan backdrop-blur-md shadow-sm">
+                          {getOfferingLabel(inferOfferingType(room))} · {categoryLabel}
                         </span>
                         {isOccupiedForSelectedStay ? (
                           <span className="rounded-full border border-rose-500/40 bg-rose-950/85 px-2.5 py-1 text-[10px] font-semibold text-rose-300 backdrop-blur-md flex items-center gap-1.5 shadow-sm">
@@ -2292,7 +2371,7 @@ export default function MobileResortApp() {
                         <span className="font-serif text-lg font-bold text-cyan">
                           {peso(priceNight)}
                         </span>
-                        <span className="font-sans text-[10px] text-white/60">/ night</span>
+                        <span className="font-sans text-[10px] text-white/70">{getRateUnitSuffix(inferOfferingType(room), room.specs)}</span>
                         <span className="hidden sm:inline text-[9px] text-white/40 pl-1 border-l border-white/10">
                           DP: {peso(downpayment)}
                         </span>
@@ -2315,17 +2394,13 @@ export default function MobileResortApp() {
                         {/* Specs & Amenities Line */}
                         <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-white/60">
                           <span className="inline-flex items-center gap-1 rounded-lg bg-white/5 px-2.5 py-1 border border-white/5">
-                            <><i className="fas fa-users" style={{ marginRight: 4 }} />Sleeps {capacityGuests}</>
+                            <><i className="fas fa-users" style={{ marginRight: 4 }} />{inferOfferingType(room) === 'offer' ? `Up to ${capacityGuests} pax` : `Sleeps ${capacityGuests}`}</>
                           </span>
-                          <span className="inline-flex items-center gap-1 rounded-lg bg-white/5 px-2.5 py-1 border border-white/5">
-                            <><i className="fas fa-bed" style={{ marginRight: 4 }} />Queen Suite</>
-                          </span>
-                          <span className="inline-flex items-center gap-1 rounded-lg bg-white/5 px-2.5 py-1 border border-white/5">
-                            <><i className="fas fa-snowflake" style={{ marginRight: 4 }} />Aircon</>
-                          </span>
-                          <span className="inline-flex items-center gap-1 rounded-lg bg-white/5 px-2.5 py-1 border border-white/5">
-                            <><i className="fas fa-wifi" style={{ marginRight: 4 }} />Fast Wi-Fi</>
-                          </span>
+                          {formatSpecHighlights(room).slice(0, 3).map((sp) => (
+                            <span key={sp.label} className="inline-flex items-center gap-1 rounded-lg bg-white/5 px-2.5 py-1 border border-white/5">
+                              {sp.label}: {sp.value}
+                            </span>
+                          ))}
                         </div>
 
                         {/* Description */}
@@ -2370,7 +2445,7 @@ export default function MobileResortApp() {
                             title={`Reserve ${roomTitle}`}
                             className="flex-1 py-2.5 px-3.5 rounded-xl bg-cyan hover:bg-cyan-light text-navy font-bold text-xs tracking-wide transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-cyan/20 whitespace-nowrap"
                           >
-                            Book Villa →
+                            {inferOfferingType(room) === 'offer' ? 'Reserve Tour →' : inferOfferingType(room) === 'cottage' ? 'Reserve Cottage →' : 'Book Room →'}
                           </button>
                         )}
                       </div>
@@ -2379,6 +2454,7 @@ export default function MobileResortApp() {
                 );
               })}
             </div>
+            </>
           )}
         </section>
 
@@ -2402,6 +2478,52 @@ export default function MobileResortApp() {
                   <p className="mt-2 text-sm font-light leading-relaxed text-navy/70">{exp.body}</p>
                 </div>
               ))}
+              {displayRooms.filter((r) => inferOfferingType(r) === 'offer').length > 0 && (
+                <div className="sm:col-span-2 mt-4 rounded-2xl border border-[#006699]/25 bg-white p-5 shadow-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <div>
+                      <span className="text-[11px] font-bold uppercase tracking-widest text-[#006699]">Reservable Island Tours &amp; Offers</span>
+                      <h4 className="font-serif text-lg font-semibold text-navy">Book Your Island Tour Schedule Ahead</h4>
+                    </div>
+                    <span className="text-xs text-slate-600">Online booking starts tomorrow (same-day walk-in at front desk)</span>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {displayRooms.filter((r) => inferOfferingType(r) === 'offer').map((offerItem) => (
+                      <div key={offerItem.id || offerItem.name} className="rounded-xl border border-slate-200 bg-slate-50 p-4 flex flex-col justify-between gap-3">
+                        <div>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="rounded-full bg-[#fef3c7] px-2.5 py-0.5 text-[11px] font-bold text-[#78350f]">
+                              {offerItem.category || 'Island Tour'}
+                            </span>
+                            <span className="text-sm font-bold text-[#006699]">
+                              {peso(offerItem.rate_php)} {getRateUnitSuffix('offer', offerItem.specs)}
+                            </span>
+                          </div>
+                          <h5 className="mt-2 font-serif text-base font-semibold text-navy">{offerItem.name}</h5>
+                          <p className="mt-1 text-xs text-slate-600 line-clamp-2">{offerItem.description}</p>
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {formatSpecHighlights(offerItem).slice(0, 3).map((sp) => (
+                              <span key={sp.label} className="rounded bg-white px-2 py-0.5 text-[10px] font-medium text-slate-700 border border-slate-200">
+                                {sp.label}: {sp.value}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedRoom(offerItem.name);
+                            openReservation(offerItem.name, true);
+                          }}
+                          className="min-h-[40px] w-full rounded-xl bg-[#006699] px-4 py-2 text-xs font-bold text-white hover:bg-[#00517a] transition cursor-pointer"
+                        >
+                          Reserve Island Tour / Offer
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </section>
@@ -3247,10 +3369,36 @@ export default function MobileResortApp() {
                     </div>
                   ) : (
                     <div className="flex flex-col gap-3">
-                      {myBookings.map((b) => (
+                      <div className="flex flex-wrap gap-1.5">
+                        {([
+                          { key: 'all', label: `All (${myBookings.length})` },
+                          { key: 'room', label: `Rooms (${myBookings.filter((b) => resolveReservationOfferingType(b) === 'room').length})` },
+                          { key: 'cottage', label: `Cottages (${myBookings.filter((b) => resolveReservationOfferingType(b) === 'cottage').length})` },
+                          { key: 'offer', label: `Tours & Offers (${myBookings.filter((b) => resolveReservationOfferingType(b) === 'offer').length})` },
+                        ] as const).map((tab) => (
+                          <button
+                            key={tab.key}
+                            type="button"
+                            onClick={() => setStayBookingFilter(tab.key)}
+                            className={`rounded-full px-3 py-1 text-[10px] font-semibold border transition cursor-pointer ${
+                              stayBookingFilter === tab.key
+                                ? 'bg-[#006699] text-white border-cyan/50'
+                                : 'bg-white/5 text-white/70 border-white/10 hover:text-white'
+                            }`}
+                          >
+                            {tab.label}
+                          </button>
+                        ))}
+                      </div>
+                      {myBookings
+                        .filter((b) => stayBookingFilter === 'all' || resolveReservationOfferingType(b) === stayBookingFilter)
+                        .map((b) => (
                         <div key={b.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-xs">
                           <div className="flex items-start justify-between gap-2">
                             <div>
+                              <span className="inline-block rounded-full bg-white/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-cyan mb-1">
+                                {getOfferingLabel(resolveReservationOfferingType(b))}
+                              </span>
                               <span className="font-serif text-base font-medium text-white block">
                                 {b.rooms?.name || 'Beachfront Room'}
                               </span>
@@ -3468,20 +3616,40 @@ export default function MobileResortApp() {
                   <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 sm:p-4 flex flex-col gap-3">
                     <div className="flex items-start sm:items-center justify-between gap-2">
                       <div className="min-w-0 flex-1">
+                        <span className="inline-block rounded-full bg-cyan/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cyan mb-1">
+                          {getOfferingLabel(inferOfferingType(resRoom))}
+                        </span>
                         <span className="font-serif text-lg sm:text-xl font-medium text-white block truncate">
                           {resRoom?.name || selectedRoom}
                         </span>
                         <span className="text-[11px] sm:text-xs text-white/60 block mt-0.5">
-                          {checkIn} → {checkOut} ({Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000))} Nights) · {guests}
+                          {inferOfferingType(resRoom) === 'offer'
+                            ? `Tour Date: ${checkIn} · ${guests}`
+                            : `${checkIn} → ${checkOut} (${Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000))} Nights) · ${guests}`}
                         </span>
                       </div>
                       <div className="text-right shrink-0">
-                        <span className="font-serif text-base sm:text-lg text-cyan block font-semibold leading-tight">
-                          {peso((resRoom?.rate_php || resRoom?.price || 4200) * Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000)))}
-                        </span>
-                        <span className="text-[10px] text-white/40 block mt-0.5">
-                          30% DP: {peso(Math.round((resRoom?.rate_php || resRoom?.price || 4200) * Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000)) * 0.3))}
-                        </span>
+                        <div className="font-serif text-base sm:text-lg text-cyan block font-semibold leading-tight">
+                          {(() => {
+                            const modalType = inferOfferingType(resRoom);
+                            const modalNights = Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000));
+                            const modalTotal = calculateOfferingTotal({
+                              rate_php: resRoom?.rate_php || resRoom?.price || 4200,
+                              nights: modalNights,
+                              guests: parseInt(guests) || 2,
+                              offering_type: modalType,
+                              specs: resRoom?.specs || {},
+                            });
+                            return (
+                              <>
+                                <span>{peso(modalTotal)}</span>
+                                <span className="text-[10px] text-white/40 block mt-0.5">
+                                  30% DP: {peso(Math.round(modalTotal * 0.3))}
+                                </span>
+                              </>
+                            );
+                          })()}
+                        </div>
                       </div>
                     </div>
 
@@ -3553,18 +3721,23 @@ export default function MobileResortApp() {
                       {/* Direct HTML5 Date Pickers */}
                       <div className="grid grid-cols-2 gap-2 pt-0.5">
                         <label className="flex flex-col gap-1 min-w-0">
-                          <span className="text-[10px] uppercase tracking-wider text-white/60 font-medium">Check-In Date *</span>
+                          <span className="text-[10px] uppercase tracking-wider text-white/60 font-medium">
+                            {inferOfferingType(resRoom) === 'offer' ? 'Tour Date *' : 'Check-In Date *'}
+                          </span>
                           <input
                             type="date"
-                            min={new Date().toISOString().slice(0, 10)}
+                            min={minCheckInDate}
                             value={checkIn}
                             onChange={(e) => {
                               const val = e.target.value;
                               if (!val) return;
+                              if (val <= today) {
+                                toast('Same-day bookings are walk-in only. Please pick tomorrow or a later date.', true);
+                                return;
+                              }
                               setCheckIn(val);
-                              if (val >= checkOut) {
-                                const next = new Date(new Date(val).getTime() + 86400000).toISOString().slice(0, 10);
-                                setCheckOut(next);
+                              if (inferOfferingType(resRoom) === 'offer' || val >= checkOut) {
+                                setCheckOut(addDaysISO(val, 1));
                               }
                             }}
                             className="w-full rounded-xl border border-white/15 bg-white/5 px-2.5 py-1.5 text-xs text-white outline-none focus:border-cyan [color-scheme:dark]"

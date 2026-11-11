@@ -1,22 +1,28 @@
 import { Router } from 'express';
 import { asyncH, ApiError } from '../middleware/errors.js';
-import { authenticate, requireStaffOrAdmin } from '../middleware/auth.js';
+import { authenticate, requireStaffOrAdmin, normalizeEmployeeRole } from '../middleware/auth.js';
 import { getSystemAdminClient, admin } from '../lib/supabase.js';
 
 const r = Router();
 
 const fetchNotificationsHandler = asyncH(async (req, res) => {
   try {
-    const isStaffOrAdmin = ['administrator', 'admin', 'staff', 'receptionist', 'accounting', 'housekeeping', 'kitchen'].includes(req.user?.role);
-    const client = isStaffOrAdmin ? await getSystemAdminClient() : (req.sb || admin);
+    const role = normalizeEmployeeRole(req.user?.role);
+    const isAdmin = role === 'administrator';
+    const isStaff = ['staff', 'receptionist', 'accounting', 'housekeeping', 'kitchen', 'tours'].includes(role);
+    const client = (isAdmin || isStaff) ? await getSystemAdminClient() : (req.sb || admin);
 
     let query = client.from('notifications')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(50);
 
-    if (!isStaffOrAdmin) {
-      query = query.eq('profile_id', req.user.id);
+    if (!isAdmin) {
+      if (isStaff) {
+        query = query.or(`profile_id.eq.${req.user.id},profile_id.is.null`).neq('recipient', 'Administrator');
+      } else {
+        query = query.eq('profile_id', req.user.id);
+      }
     }
 
     const { data, error } = await query;

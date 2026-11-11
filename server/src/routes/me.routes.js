@@ -1,7 +1,16 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { asyncH, ApiError } from '../middleware/errors.js';
-import { authenticate, requireAdmin } from '../middleware/auth.js';
+import { authenticate, requireAdmin, normalizeEmployeeRole, normalizeEmployeeDepartment } from '../middleware/auth.js';
+
+function mapProfileRole(rawRole) {
+  const r = normalizeEmployeeRole(rawRole);
+  if (['housekeeping', 'kitchen', 'tours'].includes(r)) return 'staff';
+  return r;
+}
+
+const VALID_ASSIGNABLE_ROLES = z.enum(['customer', 'staff', 'receptionist', 'accounting', 'housekeeping', 'kitchen', 'tours', 'administrator']);
+const VALID_ASSIGNABLE_DEPTS = z.enum(['front_desk', 'housekeeping', 'kitchen', 'tours', 'accounting', 'management']);
 import { validate } from '../middleware/validate.js';
 import { admin, getSystemAdminClient } from '../lib/supabase.js';
 import { pingSMS } from '../lib/sms.js';
@@ -162,6 +171,62 @@ r.patch('/me/password', authenticate,
   }));
 
 // Accounts Directory: List, Search, Provision & Role Modification
+async function mergeWithEmployeeAccounts(client, rows = [], { query = '', roleFilter = '' } = {}) {
+  const existingKeys = new Set();
+  for (const r of rows) {
+    if (r?.id) existingKeys.add(String(r.id));
+    if (r?.email) existingKeys.add(String(r.email).toLowerCase());
+  }
+  try {
+    const { data: emps } = await client
+      .from('employee_accounts')
+      .select('id, auth_user_id, employee_id, email, full_name, role, department, position, status, is_active, created_at')
+      .order('created_at', { ascending: false });
+    for (const emp of emps || []) {
+      const empId = emp.auth_user_id || emp.id;
+      const empEmail = (emp.email || '').toLowerCase();
+      if ((empId && existingKeys.has(String(empId))) || (empEmail && existingKeys.has(empEmail))) {
+        // Attach employee_id/department metadata to matching profile if absent
+        const match = rows.find((r) => String(r.id) === String(empId) || (empEmail && String(r.email || '').toLowerCase() === empEmail));
+        if (match) {
+          match.employee_id = match.employee_id || emp.employee_id;
+          match.department = emp.department || match.department;
+          match.position = emp.position || match.position;
+          if (emp.role && match.role !== 'administrator') {
+            match.role = emp.role;
+          }
+          match.is_active = emp.is_active;
+        }
+        continue;
+      }
+      if (roleFilter && String(emp.role || '').toLowerCase() !== roleFilter.toLowerCase()) continue;
+      if (query) {
+        const ql = query.toLowerCase();
+        const hit = (emp.full_name || '').toLowerCase().includes(ql) || empEmail.includes(ql) || (emp.employee_id || '').toLowerCase().includes(ql);
+        if (!hit) continue;
+      }
+      rows.push({
+        id: empId,
+        employee_id: emp.employee_id,
+        email: emp.email,
+        full_name: emp.full_name,
+        role: emp.role || 'staff',
+        department: emp.department,
+        position: emp.position,
+        status: emp.status,
+        is_active: emp.is_active,
+        has_password: true,
+        password_status: 'Configured',
+        total_bookings: 0,
+        total_orders: 0,
+        total_spent_php: 0,
+        created_at: emp.created_at,
+      });
+    }
+  } catch {}
+  return rows;
+}
+
 r.get('/admin/customers', authenticate, requireAdmin, asyncH(async (req, res) => {
   const query = String(req.query.q || '').trim();
   const roleFilter = String(req.query.role || '').trim();
@@ -190,7 +255,7 @@ r.get('/admin/customers', authenticate, requireAdmin, asyncH(async (req, res) =>
 
     const { data, error } = await q.limit(100);
     if (!error && Array.isArray(data) && data.length > 0) {
-      return res.json(data.map((p) => {
+      const mapped = data.map((p) => {
         const clean = { ...p };
         delete clean.password;
         delete clean.password_hash;
@@ -201,7 +266,9 @@ r.get('/admin/customers', authenticate, requireAdmin, asyncH(async (req, res) =>
           orders_count: clean.resort_orders?.length || 0,
           total_spent_php: (clean.reservations || []).reduce((acc, r) => acc + (r.total_php || 0), 0),
         };
-      }));
+      });
+      await mergeWithEmployeeAccounts(client, mapped, { query, roleFilter });
+      return res.json(mapped);
     }
   } catch (err) {
     console.warn('[Admin Customers] Tier 1 query notice:', err.message);
@@ -218,7 +285,7 @@ r.get('/admin/customers', authenticate, requireAdmin, asyncH(async (req, res) =>
     }
     const { data, error } = await q.limit(100);
     if (!error && Array.isArray(data) && data.length > 0) {
-      return res.json(data.map((p) => {
+      const mapped = data.map((p) => {
         const clean = { ...p };
         delete clean.password;
         delete clean.password_hash;
@@ -229,7 +296,9 @@ r.get('/admin/customers', authenticate, requireAdmin, asyncH(async (req, res) =>
           orders_count: 0,
           total_spent_php: 0,
         };
-      }));
+      });
+      await mergeWithEmployeeAccounts(client, mapped, { query, roleFilter });
+      return res.json(mapped);
     }
   } catch (err) {
     console.warn('[Admin Customers] Tier 2 query notice:', err.message);
@@ -293,10 +362,17 @@ r.post('/admin/users', authenticate, requireAdmin,
     email: z.string().email(),
     password: z.string().min(6),
     phone: z.string().optional(),
-    role: z.enum(['customer', 'staff', 'receptionist', 'accounting', 'administrator']),
+    role: VALID_ASSIGNABLE_ROLES,
+    department: VALID_ASSIGNABLE_DEPTS.optional(),
+    position: z.string().optional(),
   })),
   asyncH(async (req, res) => {
-    let { first_name = '', middle_name = '', last_name = '', full_name, username, email, password, phone, role } = req.body;
+    let { first_name = '', middle_name = '', last_name = '', full_name, username, email, password, phone, role, department, position } = req.body;
+    const canonicalRole = normalizeEmployeeRole(role);
+    const profileRole = mapProfileRole(canonicalRole);
+    const resolvedDept = canonicalRole === 'customer' ? undefined : normalizeEmployeeDepartment(canonicalRole, department);
+    const resolvedPos = position || (canonicalRole === 'administrator' ? 'Administrator' : resolvedDept ? resolvedDept.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : canonicalRole);
+
     if (!full_name) {
       full_name = [first_name, middle_name, last_name].filter(Boolean).join(' ') || 'Resort User';
     }
@@ -305,14 +381,14 @@ r.post('/admin/users', authenticate, requireAdmin,
     let authUser = null;
     try {
       const { data, error } = await admin.auth.admin.createUser({
-        email, password, user_metadata: { first_name, middle_name, last_name, full_name, username: cleanUsername, phone, role }, email_confirm: true,
+        email, password, user_metadata: { first_name, middle_name, last_name, full_name, username: cleanUsername, phone, role: profileRole, department: resolvedDept, position: resolvedPos }, email_confirm: true,
       });
       if (!error && data?.user) authUser = data;
     } catch {}
 
     if (!authUser) {
       const { data, error } = await (req.sb || admin).auth.signUp({
-        email, password, options: { data: { first_name, middle_name, last_name, full_name, username: cleanUsername, phone, role } }
+        email, password, options: { data: { first_name, middle_name, last_name, full_name, username: cleanUsername, phone, role: profileRole, department: resolvedDept, position: resolvedPos } }
       });
       if (error) throw new ApiError(400, error.message);
       authUser = data;
@@ -320,7 +396,7 @@ r.post('/admin/users', authenticate, requireAdmin,
 
     const client = req.sb || admin;
     const { data: prof, error: profErr } = await client.from('profiles')
-      .upsert({ id: authUser.user.id, email, username: cleanUsername, first_name, middle_name, last_name, full_name, phone, role })
+      .upsert({ id: authUser.user.id, email, username: cleanUsername, first_name, middle_name, last_name, full_name, phone, role: profileRole, position: resolvedPos })
       .select().single();
     if (profErr) {
       console.warn('[Admin Create User] Profile upsert notice:', profErr.message);
@@ -335,8 +411,34 @@ r.post('/admin/users', authenticate, requireAdmin,
       last_name,
       full_name,
       phone,
-      role
+      role: canonicalRole,
+      department: resolvedDept,
+      position: resolvedPos,
     };
+    createdRecord.role = canonicalRole;
+    if (resolvedDept) createdRecord.department = resolvedDept;
+
+    if (canonicalRole !== 'customer') {
+      try {
+        const empPrefix = canonicalRole === 'administrator' ? 'ADM' : canonicalRole === 'staff' ? 'STF' : canonicalRole.slice(0, 3).toUpperCase();
+        const empIdCode = `RV-${empPrefix}-${String(Math.floor(100 + Math.random() * 900))}`;
+        await client.from('employee_accounts').upsert({
+          auth_user_id: authUser.user.id,
+          employee_id: empIdCode,
+          email: email.toLowerCase(),
+          full_name,
+          role: canonicalRole,
+          department: resolvedDept || 'front_desk',
+          position: resolvedPos,
+          shift: 'Day Shift',
+          status: 'active',
+          is_active: true,
+          password: hashPassword(password),
+        }, { onConflict: 'email' });
+      } catch (empErr) {
+        console.warn('[Admin Create User] Employee account sync notice:', empErr.message);
+      }
+    }
 
     if (createdRecord) {
       delete createdRecord.password;
@@ -345,35 +447,48 @@ r.post('/admin/users', authenticate, requireAdmin,
 
     await logAuditEvent({
       actor: req.user,
-      action: role === 'administrator' ? 'ADMIN_PROVISIONED' : 'STAFF_PROVISIONED',
+      action: canonicalRole === 'administrator' ? 'ADMIN_PROVISIONED' : 'STAFF_PROVISIONED',
       resourceType: 'user',
       resourceId: authUser.user.id,
-      details: { email, full_name, role },
+      details: { email, full_name, role: canonicalRole, department: resolvedDept },
       req,
     });
 
     return res.status(201).json(createdRecord);
   }));
 
-// Modify Account Role
+// Modify Account Role & Department
 r.patch('/admin/users/:id/role', authenticate, requireAdmin,
   validate(z.object({
-    role: z.enum(['customer', 'staff', 'receptionist', 'accounting', 'administrator']),
+    role: VALID_ASSIGNABLE_ROLES,
+    department: VALID_ASSIGNABLE_DEPTS.optional(),
   })),
   asyncH(async (req, res) => {
-    const { role } = req.body;
+    const canonicalRole = normalizeEmployeeRole(req.body.role);
+    const profileRole = mapProfileRole(canonicalRole);
+    const resolvedDept = canonicalRole === 'customer' ? undefined : normalizeEmployeeDepartment(canonicalRole, req.body.department);
     const client = req.sb || admin;
 
     // Disallow promoting customer accounts - new employees/hirees must be provisioned directly
     const { data: existingProf } = await client.from('profiles').select('role, full_name').eq('id', req.params.id).maybeSingle();
-    if (existingProf && (existingProf.role === 'customer' || !existingProf.role) && role !== 'customer') {
+    if (existingProf && (existingProf.role === 'customer' || !existingProf.role) && canonicalRole !== 'customer') {
       throw new ApiError(400, 'Customer accounts cannot be promoted. To onboard new employees or hirees, please provision a new staff account directly.');
     }
 
     const { data, error } = await client.from('profiles')
-      .update({ role }).eq('id', req.params.id).select().single();
-    if (error) throw new ApiError(500, error.message);
+      .update({ role: profileRole }).eq('id', req.params.id).select().single();
+    if (error && !['PGRST116'].includes(error.code || '')) throw new ApiError(500, error.message);
+
+    try {
+      const empPatch = { role: canonicalRole };
+      if (resolvedDept) empPatch.department = resolvedDept;
+      await client.from('employee_accounts')
+        .update(empPatch)
+        .or(`auth_user_id.eq.${req.params.id},id.eq.${req.params.id}`);
+    } catch {}
     if (data) {
+      data.role = canonicalRole;
+      if (resolvedDept) data.department = resolvedDept;
       delete data.password;
       delete data.password_hash;
     }
@@ -383,11 +498,11 @@ r.patch('/admin/users/:id/role', authenticate, requireAdmin,
       action: 'ROLE_UPDATE',
       resourceType: 'user',
       resourceId: req.params.id,
-      details: { new_role: role, full_name: data.full_name },
+      details: { new_role: canonicalRole, department: resolvedDept, full_name: data?.full_name },
       req,
     });
 
-    return res.json(data);
+    return res.json(data || { id: req.params.id, role: canonicalRole, department: resolvedDept });
   }));
 
 // Administrative Account Recovery & Password Reset
@@ -407,7 +522,12 @@ r.post('/admin/users/:id/reset-password', authenticate, requireAdmin,
     } catch {}
 
     const client = req.sb || admin;
-    const { data: prof } = await client.from('profiles').select('full_name, phone').eq('id', userId).single();
+    const { data: prof } = await client.from('profiles').select('full_name, phone').eq('id', userId).maybeSingle();
+    try {
+      await client.from('employee_accounts')
+        .update({ password: hashPassword(new_password) })
+        .or(`auth_user_id.eq.${userId},id.eq.${userId}`);
+    } catch {}
     if (prof?.phone) {
       pingSMS({
         profileId: userId,
@@ -428,11 +548,13 @@ r.patch('/admin/users/:id', authenticate, requireAdmin,
     last_name: z.string().optional(),
     username: z.string().optional(),
     phone: z.string().optional(),
-    role: z.enum(['customer', 'staff', 'receptionist', 'accounting', 'administrator']).optional(),
+    role: VALID_ASSIGNABLE_ROLES.optional(),
+    department: VALID_ASSIGNABLE_DEPTS.optional(),
+    position: z.string().optional(),
   })),
   asyncH(async (req, res) => {
     const userId = req.params.id;
-    const { full_name, first_name, middle_name, last_name, username, phone, role } = req.body;
+    const { full_name, first_name, middle_name, last_name, username, phone, role, department, position } = req.body;
 
     const updates = {};
     if (full_name !== undefined) updates.full_name = full_name;
@@ -441,10 +563,15 @@ r.patch('/admin/users/:id', authenticate, requireAdmin,
     if (last_name !== undefined) updates.last_name = last_name;
     if (username !== undefined) updates.username = username;
     if (phone !== undefined) updates.phone = phone;
-    if (role !== undefined) updates.role = role;
+    if (position !== undefined) updates.position = position;
+    const canonicalRole = role !== undefined ? normalizeEmployeeRole(role) : undefined;
+    if (canonicalRole !== undefined) updates.role = mapProfileRole(canonicalRole);
+    const resolvedDept = (canonicalRole && canonicalRole !== 'customer') || department
+      ? normalizeEmployeeDepartment(canonicalRole || 'staff', department)
+      : undefined;
 
     const client = req.sb || admin;
-    if (role && role !== 'customer') {
+    if (canonicalRole && canonicalRole !== 'customer') {
       const { data: targetProf } = await client.from('profiles').select('role').eq('id', userId).maybeSingle();
       if (targetProf && (targetProf.role === 'customer' || !targetProf.role)) {
         throw new ApiError(400, 'Customer accounts cannot be promoted. To onboard new employees or hirees, please provision a new staff account directly.');
@@ -452,8 +579,24 @@ r.patch('/admin/users/:id', authenticate, requireAdmin,
     }
 
     const { data, error } = await client.from('profiles').update(updates).eq('id', userId).select().single();
-    if (error) throw new ApiError(500, error.message);
+    if (error && !['PGRST116'].includes(error.code || '')) throw new ApiError(500, error.message);
+
+    try {
+      const empUpdates = {};
+      if (updates.full_name) empUpdates.full_name = updates.full_name;
+      if (updates.email) empUpdates.email = updates.email;
+      if (canonicalRole !== undefined) empUpdates.role = canonicalRole;
+      if (resolvedDept !== undefined) empUpdates.department = resolvedDept;
+      if (position !== undefined) empUpdates.position = position;
+      if (Object.keys(empUpdates).length > 0) {
+        await client.from('employee_accounts')
+          .update(empUpdates)
+          .or(`auth_user_id.eq.${userId},id.eq.${userId}`);
+      }
+    } catch {}
     if (data) {
+      if (canonicalRole !== undefined) data.role = canonicalRole;
+      if (resolvedDept !== undefined) data.department = resolvedDept;
       delete data.password;
       delete data.password_hash;
     }

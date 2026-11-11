@@ -5,6 +5,8 @@ import { formatTime12Hour, to11Digits } from '../lib/format';
 import { supabase } from '../lib/supabaseClient';
 import { uploadImageToCloudinary } from '../lib/cloudinary';
 import { toast } from '../components/Toasts';
+import { getDefaultSpecs, OfferingType } from '../lib/offeringSpecs';
+import { EMPLOYEE_ROLE_PRESETS, normalizeDepartment, normalizeRole } from '../lib/rbac';
 
 export const emptyAnalytics = {
   overview: {
@@ -60,14 +62,14 @@ export function useAdminState() {
   const isAdministrator = Boolean(
     adminSession &&
       adminProfile &&
-      (['administrator', 'admin'].includes(adminProfile?.role))
+      (['administrator', 'admin'].includes(String(adminProfile?.role || '').toLowerCase()))
   );
 
   // Navigation & Theme
   const getInitialActiveTab = (): string => {
     if (typeof window !== 'undefined') {
       const hash = window.location.hash.replace('#', '').trim();
-      const validTabs = ['overview', 'ledger', 'inventory', 'conversations', 'settings', 'audit', 'accounts', 'notifications', 'csv'];
+      const validTabs = ['overview', 'ledger', 'inventory', 'approvals', 'conversations', 'settings', 'audit', 'accounts', 'notifications', 'csv'];
       if (validTabs.includes(hash)) {
         return hash;
       }
@@ -78,6 +80,11 @@ export function useAdminState() {
     }
     return 'overview';
   };
+
+  const portalRole = String(adminProfile?.role || '').toLowerCase();
+  const isStaffUser = false;
+  const isFullAdmin = isAdministrator;
+  const isPortalAuthenticated = isAdministrator;
 
   const [activeTab, setActiveTab] = useState<string>(getInitialActiveTab);
 
@@ -98,7 +105,7 @@ export function useAdminState() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '').trim();
-      const validTabs = ['overview', 'ledger', 'inventory', 'conversations', 'settings', 'audit', 'accounts', 'notifications', 'csv'];
+      const validTabs = ['overview', 'ledger', 'inventory', 'approvals', 'conversations', 'settings', 'audit', 'accounts', 'notifications', 'csv'];
       if (validTabs.includes(hash) && hash !== activeTab) {
         setActiveTab(hash);
       }
@@ -341,7 +348,9 @@ export function useAdminState() {
   const [loadingRoomsAndInv, setLoadingRoomsAndInv] = useState(false);
   const defaultRoomDraft = {
     name: '',
-    category: 'Cottage',
+    offering_type: 'room' as OfferingType,
+    category: 'Room',
+    specs: getDefaultSpecs('room') as Record<string, any>,
     description: '',
     capacity: 2,
     units: 1,
@@ -367,7 +376,9 @@ export function useAdminState() {
 
   const [newRoom, setNewRoom] = useState<{
     name: string;
+    offering_type: OfferingType;
     category: string;
+    specs: Record<string, any>;
     description: string;
     capacity: number;
     units: number;
@@ -453,6 +464,47 @@ export function useAdminState() {
       .finally(() => setLoadingRoomsAndInv(false));
   }, []);
 
+  const openCreateOfferingModal = useCallback((offeringType: OfferingType) => {
+    const presets: Record<OfferingType, { category: string; capacity: number; units: number; rate_php: number; amenities: string }> = {
+      room: {
+        category: 'Room',
+        capacity: 2,
+        units: 1,
+        rate_php: 3500,
+        amenities: 'Split Air-Conditioned, Free Wi-Fi, Private En-Suite Bath, Hot Shower',
+      },
+      cottage: {
+        category: 'Cottage',
+        capacity: 8,
+        units: 1,
+        rate_php: 2500,
+        amenities: 'Beachfront Access, Grilling Area, Hardwood Table & Benches, Power Outlet',
+      },
+      offer: {
+        category: 'Island Tour',
+        capacity: 10,
+        units: 5,
+        rate_php: 2800,
+        amenities: 'Motorized Bangka Boat, Local Boatman Guide, Life Vests, Snorkel Mask',
+      },
+    };
+    const preset = presets[offeringType] || presets.room;
+    setNewRoom({
+      name: '',
+      offering_type: offeringType,
+      category: preset.category,
+      description: '',
+      capacity: preset.capacity,
+      units: preset.units,
+      rate_php: preset.rate_php,
+      amenities: preset.amenities,
+      specs: getDefaultSpecs(offeringType),
+      image_url: '',
+      images: [],
+    });
+    setShowCreateRoomModal(true);
+  }, []);
+
   const handleCreateRoom = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -466,6 +518,8 @@ export function useAdminState() {
 
       const created = await api.createRoom({
         name: newRoom.name,
+        offering_type: newRoom.offering_type || 'room',
+        specs: newRoom.specs || getDefaultSpecs(newRoom.offering_type || 'room'),
         category: newRoom.category,
         description: newRoom.description,
         capacity: Number(newRoom.capacity),
@@ -501,6 +555,8 @@ export function useAdminState() {
 
     const updated = await api.updateRoom(updatedRoomData.id, {
       name: updatedRoomData.name,
+      offering_type: updatedRoomData.offering_type || 'room',
+      specs: updatedRoomData.specs || getDefaultSpecs(updatedRoomData.offering_type || 'room'),
       category: updatedRoomData.category,
       description: updatedRoomData.description,
       capacity: Number(updatedRoomData.capacity),
@@ -768,15 +824,16 @@ export function useAdminState() {
   }, [newReservation.notes, newReservation.room_id, newReservation.check_in, newReservation.check_out, activeRoomsList, allBookings]);
 
   const autoReloadLive = useCallback(async () => {
-    if (!isAdministrator) return;
+    if (!isPortalAuthenticated) return;
     try {
-      const [freshAnalytics, freshReservations, freshNotifs, freshRooms, freshInv, freshConvs] = await Promise.all([
-        api.analyticsOverview().catch(() => null),
-        api.allReservations().catch(() => null),
-        api.myNotifications().catch(() => null),
+      const [freshAnalytics, freshReservations, freshNotifs, freshRooms, freshInv, freshConvs, freshPriceReqs] = await Promise.all([
+        isFullAdmin ? api.analyticsOverview().catch(() => null) : Promise.resolve(null),
+        isFullAdmin ? api.allReservations().catch(() => null) : Promise.resolve(null),
+        isFullAdmin ? api.myNotifications().catch(() => null) : Promise.resolve(null),
         api.rooms(true).catch(() => null),
         api.departmentInventory().catch(() => null),
         api.conversations().catch(() => null),
+        isFullAdmin ? api.priceRequests().catch(() => null) : Promise.resolve(null),
       ]);
 
       if (freshAnalytics) setData(freshAnalytics);
@@ -794,10 +851,11 @@ export function useAdminState() {
       if (Array.isArray(freshRooms)) setRoomsList(freshRooms);
       if (Array.isArray(freshInv)) setInventoryList(freshInv);
       if (Array.isArray(freshConvs)) setGuestConversations(freshConvs);
+      if (Array.isArray(freshPriceReqs)) setPriceRequests(freshPriceReqs);
     } catch {
       // Background silent catch
     }
-  }, [isAdministrator]);
+  }, [isPortalAuthenticated, isFullAdmin]);
 
   const handleCreateReservation = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -849,6 +907,7 @@ export function useAdminState() {
       const created = await api.createReservation({
         ...newReservation,
         room_id: targetRoomId,
+        is_walk_in: true,
         check_in: checkIn,
         check_out: checkOut,
         check_in_time: checkInTime,
@@ -1198,6 +1257,7 @@ export function useAdminState() {
     password: '',
     phone: '',
     role: 'receptionist',
+    department: 'front_desk',
   };
 
   const [showCreateModal, setShowCreateModal] = useState<boolean>(() => {
@@ -1258,11 +1318,14 @@ export function useAdminState() {
     }
   }, [activeTab, searchQuery, roleFilter]);
 
-  const handleRoleChange = async (userId: string, newRole: string) => {
+  const handleRoleChange = async (userId: string, newRole: string, explicitDept?: string) => {
     try {
-      await api.updateUserRole(userId, newRole);
-      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)));
-      toast(`User role updated to ${newRole} ✦`);
+      const preset = EMPLOYEE_ROLE_PRESETS.find((p) => p.value === newRole || p.role === newRole);
+      const resolvedRole = preset?.role || normalizeRole(newRole);
+      const resolvedDept = explicitDept || preset?.department || normalizeDepartment({ role: resolvedRole });
+      await api.updateUserRole(userId, resolvedRole, resolvedDept);
+      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: resolvedRole, department: resolvedDept } : u)));
+      toast(`Employee updated to ${preset?.shortLabel || resolvedRole} (${resolvedDept.replace('_', ' ')}) ✦`);
     } catch (err: any) {
       toast(err.message, true);
     }
@@ -1276,10 +1339,20 @@ export function useAdminState() {
         [newStaff.first_name, newStaff.middle_name, newStaff.last_name].filter(Boolean).join(' ') ||
         newStaff.full_name ||
         'Staff User';
+      const preset = EMPLOYEE_ROLE_PRESETS.find((p) => p.value === newStaff.role || p.department === newStaff.department);
+      const resolvedRole = preset?.role || normalizeRole(newStaff.role);
+      const resolvedDept = newStaff.department || preset?.department || normalizeDepartment({ role: resolvedRole });
       const targetEmail =
-        newStaff.email || generateAccountEmail(newStaff.first_name, newStaff.middle_name, newStaff.last_name, users.length + 1, true, newStaff.role);
-      const created = await api.createStaffAccount({ ...newStaff, full_name, email: targetEmail });
-      toast(`Staff Account Created for ${created.full_name || full_name} (${created.role}) ✦`);
+        newStaff.email || generateAccountEmail(newStaff.first_name, newStaff.middle_name, newStaff.last_name, users.length + 1, true, resolvedRole);
+      const created = await api.createStaffAccount({
+        ...newStaff,
+        role: resolvedRole,
+        department: resolvedDept,
+        position: preset?.shortLabel || resolvedRole,
+        full_name,
+        email: targetEmail,
+      });
+      toast(`Staff Account Created for ${created.full_name || full_name} (${preset?.shortLabel || created.role}) ✦`);
       setUsers((prev) => [created, ...prev]);
       setShowCreateModal(false);
       try {
@@ -1319,6 +1392,7 @@ export function useAdminState() {
         [editingUser.first_name, editingUser.middle_name, editingUser.last_name].filter(Boolean).join(' ') ||
         editingUser.full_name;
       const isCustomer = !editingUser.role || editingUser.role === 'customer';
+      const resolvedDept = isCustomer ? undefined : (editingUser.department || normalizeDepartment(editingUser));
       const payload = {
         full_name,
         first_name: editingUser.first_name,
@@ -1327,9 +1401,10 @@ export function useAdminState() {
         phone: editingUser.phone,
         username: editingUser.username,
         role: isCustomer ? 'customer' : editingUser.role,
+        ...(resolvedDept ? { department: resolvedDept } : {}),
       };
       const updated = await api.adminUpdateUser(editingUser.id, payload);
-      setUsers((prev) => prev.map((u) => (u.id === editingUser.id ? { ...u, ...updated, full_name } : u)));
+      setUsers((prev) => prev.map((u) => (u.id === editingUser.id ? { ...u, ...updated, full_name, ...(resolvedDept ? { department: resolvedDept } : {}) } : u)));
       toast(`Profile updated for ${full_name || 'Account'} ✦`);
       setEditingUser(null);
     } catch (err: any) {
@@ -1695,6 +1770,67 @@ export function useAdminState() {
     }
   };
 
+  // Price-Change Approval Requests State
+  const [priceRequests, setPriceRequests] = useState<any[]>([]);
+  const [loadingPriceRequests, setLoadingPriceRequests] = useState(false);
+
+  const refreshPriceRequests = useCallback(async () => {
+    setLoadingPriceRequests(true);
+    try {
+      const list = await api.priceRequests();
+      if (Array.isArray(list)) setPriceRequests(list);
+    } catch {
+      // Silent background catch
+    } finally {
+      setLoadingPriceRequests(false);
+    }
+  }, []);
+
+  const handleApprovePriceDirect = async (reqItem: any, note?: string) => {
+    try {
+      const res = await api.approvePriceRequestDirect(reqItem.id, note);
+      if (res?.request) {
+        setPriceRequests((prev) => prev.map((r) => (r.id === reqItem.id ? res.request : r)));
+      }
+      refreshRoomsAndInventory();
+      toast(`Approved and updated "${reqItem.room_name}" rate to ₱${Number(reqItem.requested_rate_php).toLocaleString()}.`);
+    } catch (err: any) {
+      toast(err.message || 'Could not approve price change', true);
+    }
+  };
+
+  const handleIssuePriceCode = async (reqItem: any, note?: string): Promise<string | null> => {
+    try {
+      const res = await api.issuePriceRequestCode(reqItem.id, note);
+      if (res?.request) {
+        setPriceRequests((prev) => prev.map((r) => (r.id === reqItem.id ? res.request : r)));
+      }
+      const code = res?.authorization_code || res?.request?.authorization_code || null;
+      toast(code ? `Authorization code ${code} generated and sent.` : 'Authorization code issued.');
+      return code;
+    } catch (err: any) {
+      toast(err.message || 'Could not generate authorization code', true);
+      return null;
+    }
+  };
+
+  const handleRejectPriceRequest = async (reqItem: any, note?: string) => {
+    try {
+      const res = await api.rejectPriceRequest(reqItem.id, note);
+      if (res?.request) {
+        setPriceRequests((prev) => prev.map((r) => (r.id === reqItem.id ? res.request : r)));
+      }
+      toast(`Declined price-change request for "${reqItem.room_name}".`);
+    } catch (err: any) {
+      toast(err.message || 'Could not decline request', true);
+    }
+  };
+
+  const pendingPriceRequestsCount = useMemo(
+    () => priceRequests.filter((r) => r.status === 'pending').length,
+    [priceRequests]
+  );
+
   // Conversations & Modals
   const [guestConversations, setGuestConversations] = useState<any[]>([]);
   const [activeChatGuest, setActiveChatGuest] = useState<any>(null);
@@ -1728,9 +1864,15 @@ export function useAdminState() {
 
   // Realtime Telemetry SSE Stream & Subscriptions
   useEffect(() => {
-    if (isAdministrator) {
+    if (isPortalAuthenticated) {
       let live = true;
       let es: EventSource | null = null;
+      if (isStaffUser) {
+        Promise.all([refreshRoomsAndInventory(), api.conversations().catch(() => [])])
+          .then(([, convs]) => { if (live && Array.isArray(convs)) setGuestConversations(convs); })
+          .finally(() => live && setLoading(false));
+        return () => { live = false; };
+      }
 
       api
         .analyticsOverview()
@@ -1741,6 +1883,7 @@ export function useAdminState() {
       refreshReservations();
       refreshRoomsAndInventory();
       refreshLedgerEntries();
+      refreshPriceRequests();
 
       api
         .myNotifications()
@@ -1797,20 +1940,22 @@ export function useAdminState() {
     } else {
       setLoading(false);
     }
-  }, [isAdministrator, profile, refreshReservations, refreshRoomsAndInventory, refreshLedgerEntries]);
+  }, [isPortalAuthenticated, isStaffUser, profile, refreshReservations, refreshRoomsAndInventory, refreshLedgerEntries]);
 
   // Auto-reload every 20s
   useEffect(() => {
-    if (!isAdministrator) return;
+    if (!isPortalAuthenticated) return;
     const interval = setInterval(() => {
       autoReloadLive();
     }, 20000);
     return () => clearInterval(interval);
-  }, [isAdministrator, autoReloadLive]);
+  }, [isPortalAuthenticated, autoReloadLive]);
 
   // Tab dynamic load effects
   useEffect(() => {
+    if (isStaffUser) { if (activeTab === 'inventory') refreshRoomsAndInventory(); return; }
     if (activeTab === 'inventory') {
+
       refreshRoomsAndInventory();
     }
     if (activeTab === 'ledger') {
@@ -1830,11 +1975,15 @@ export function useAdminState() {
       fetchAuditLogs();
       fetchSecurityPosture();
     }
+    if (activeTab === 'approvals') {
+      refreshPriceRequests();
+    }
   }, [
     activeTab,
     refreshRoomsAndInventory,
     refreshReservations,
     refreshLedgerEntries,
+    refreshPriceRequests,
     fetchUsers,
     fetchAuditLogs,
     fetchSecurityPosture,
@@ -1887,7 +2036,12 @@ export function useAdminState() {
     signOutAdmin,
     deleteAccount,
     updatePassword,
-    isAdministrator,
+    isAdministrator: isFullAdmin,
+    isFullAdmin,
+    isStaffUser,
+    isPortalAuthenticated,
+    portalRole,
+    openCreateOfferingModal,
     loading,
     data,
     setData,
@@ -2118,6 +2272,15 @@ export function useAdminState() {
     setShowKeywordsModal,
     showGlossaryModal,
     setShowGlossaryModal,
+
+    // Price-Change Approval Dashboard
+    priceRequests,
+    loadingPriceRequests,
+    refreshPriceRequests,
+    handleApprovePriceDirect,
+    handleIssuePriceCode,
+    handleRejectPriceRequest,
+    pendingPriceRequestsCount,
   };
 }
 

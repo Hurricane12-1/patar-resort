@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth, to11Digits } from '../context/AuthContext.tsx';
 import { api } from '../lib/api.ts';
 import { money, fmtDate, addDaysISO } from '../lib/format.ts';
+import { getManilaTodayISO, inferOfferingType, getOfferingLabel, getRateUnitSuffix, calculateOfferingTotal, formatSpecHighlights, OfferingType } from '../lib/offeringSpecs';
 import { roomImg, getRoomImageUrl, handleImageError } from '../lib/images.ts';
 import { toast } from './Toasts.tsx';
 import { CANONICAL_ROOMS } from '../lib/canonicalRooms.ts';
@@ -17,10 +18,12 @@ export const POOL_ADDON_OPTIONS = [
 
 export default function BookingFlow({ initialSlug }) {
   const { session, profile, setAuthOpen } = useAuth();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getManilaTodayISO();
+  const [offeringFilter, setOfferingFilter] = useState<'all' | OfferingType>('all');
   const [checkIn, setCheckIn] = useState(() => {
     try {
-      return localStorage.getItem('jd_booking_checkin') || addDaysISO(today, 1);
+      const savedCin = localStorage.getItem('jd_booking_checkin');
+      return savedCin && savedCin > today ? savedCin : addDaysISO(today, 1);
     } catch {
       return addDaysISO(today, 1);
     }
@@ -115,7 +118,7 @@ export default function BookingFlow({ initialSlug }) {
 
   const selectedPoolOption = POOL_ADDON_OPTIONS.find((o) => o.id === poolAddonId) || POOL_ADDON_OPTIONS[0];
   const poolAdjustment = selectedPoolOption.pricePerGuest * guests;
-  const baseRoomTotal = (room?.rate_php || 0) * nights;
+  const baseRoomTotal = calculateOfferingTotal({ rate_php: room?.rate_php || 0, nights, guests, offering_type: inferOfferingType(room), specs: room?.specs || {} });
   const totalWithAdjustments = baseRoomTotal + poolAdjustment;
 
   async function search(slug?: string, overrideCin?: string, overrideCout?: string) {
@@ -129,6 +132,7 @@ export default function BookingFlow({ initialSlug }) {
     }
     if (slug) preferred.current = slug;
     const targetCin = overrideCin || checkIn;
+    if (targetCin <= today) { toast('Same-day bookings are walk-in only and unavailable online. Please select tomorrow or a later date.', true); return; }
     const targetCout = overrideCout || checkOut;
     setSearching(true); setStage('results'); setRoom(null);
     try {
@@ -200,7 +204,7 @@ export default function BookingFlow({ initialSlug }) {
 
       const stay = await api.createReservation({
         roomId: room.room_id,
-        check_in: checkIn,
+        room_id: room.room_id, offering_type: inferOfferingType(room), check_in: checkIn,
         check_out: checkOut,
         guests,
         notes: fullNotes,
@@ -363,6 +367,7 @@ export default function BookingFlow({ initialSlug }) {
             initialCheckOut={checkOut}
             isLightMode={false}
             onSelectDates={(cin, cout, _targetRoomId, unitInfo) => {
+              if (cin <= today) { toast('Same-day bookings are walk-in only and unavailable online.', true); return; }
               setCheckIn(cin);
               setCheckOut(cout);
               if (unitInfo?.unitNumber) {
@@ -422,7 +427,22 @@ export default function BookingFlow({ initialSlug }) {
                 </div>
               )
             )}
-            {!searching && results.map((r: any) => {
+            {!searching && results.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
+                {(['all', 'room', 'cottage', 'offer'] as const).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setOfferingFilter(t)}
+                    className={`chip ${offeringFilter === t ? 'sel' : ''}`}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    {t === 'all' ? 'All Offerings' : t === 'room' ? 'Rooms' : t === 'cottage' ? 'Cottages' : 'Island Tours & Offers'}
+                  </button>
+                ))}
+              </div>
+            )}
+            {!searching && results.filter((r: any) => offeringFilter === 'all' || inferOfferingType(meta(r) || r) === offeringFilter).map((r: any) => {
               const m = meta(r);
               const isLocked = Boolean(r.is_locked || r.units_left <= 0);
 
@@ -448,12 +468,19 @@ export default function BookingFlow({ initialSlug }) {
                     )}
                   </div>
                   <div>
-                    <span className="label">{r.category}</span>
+                    <span className="label">{getOfferingLabel(inferOfferingType(m || r))} · {r.category}</span>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '6px 0' }}>
+                      {formatSpecHighlights(m || r).slice(0, 3).map((sp) => (
+                        <span key={sp.label} style={{ fontSize: '.72rem', padding: '2px 8px', borderRadius: 8, background: 'rgba(255,255,255,0.08)', color: '#E2E8F0' }}>
+                          {sp.label}: {sp.value}
+                        </span>
+                      ))}
+                    </div>
                     <h3 className="serif">{r.name}</h3>
                     <p className="muted small"><i className="fas fa-users" style={{ marginRight: 4 }} />Sleeps {r.capacity} · <i className="fas fa-star" style={{ color: '#F59E0B', margin: '0 4px' }} />{Number(r.rating_avg).toFixed(1)}</p>
                   </div>
                   <div className="ro-right">
-                    <span className="rate serif">{money(r.rate_php)}<small> /night</small></span>
+                    <span className="rate serif">{money(r.rate_php)}<small> {getRateUnitSuffix(inferOfferingType(m || r), (m || r)?.specs)}</small></span>
                     {isLocked ? (
                       <span
                         className="units-left"

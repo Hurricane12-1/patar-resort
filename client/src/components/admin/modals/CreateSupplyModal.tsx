@@ -89,8 +89,7 @@ export const CreateSupplyModal: React.FC<CreateSupplyModalProps> = ({
                 <option value="housekeeping">Housekeeping</option>
                 <option value="front_desk">Front Desk</option>
                 <option value="kitchen">Kitchen & Dining</option>
-                <option value="tours">Tours & Outrigger</option>
-                <option value="maintenance">Maintenance</option>
+                <option value="tours">Tours & Island Hopping (Gatekept)</option>
               </select>
             </div>
             <div>

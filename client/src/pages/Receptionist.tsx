@@ -5,10 +5,13 @@ import { api } from '../lib/api.ts';
 import { fmtDate } from '../lib/format.ts';
 import { toast } from '../components/Toasts.tsx';
 import { VoucherModal, normalizeVoucherData } from '../components/receipt';
+import PriceChangeRequestPanel from '../components/PriceChangeRequestPanel.tsx';
+import { canAccessPortal } from '../lib/rbac.ts';
 
 export default function Receptionist() {
   const { profile, adminProfile, signIn, adminSignIn } = useAuth();
   const currentProf = adminProfile || profile;
+  const isAuthorized = canAccessPortal(currentProf, 'reception');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState('');
@@ -17,15 +20,15 @@ export default function Receptionist() {
   const [inspectedVoucher, setInspectedVoucher] = useState<any>(null);
 
   useEffect(() => {
-    if (currentProf && ['receptionist', 'administrator', 'staff', 'admin'].includes(currentProf.role)) {
-      api.analyticsOverview()
+    if (isAuthorized) {
+      api.frontDeskOverview()
         .then(setData)
         .catch((e) => toast(e.message, true))
         .finally(() => setLoading(false));
     } else {
       setLoading(false);
     }
-  }, [currentProf]);
+  }, [isAuthorized]);
 
   async function handleReceptionistLogin(e) {
     e.preventDefault();
@@ -53,7 +56,7 @@ export default function Receptionist() {
   }
 
   // DEDICATED SEPARATE RECEPTIONIST LOGIN PORTAL
-  if (!currentProf || !['receptionist', 'administrator', 'staff', 'admin'].includes(currentProf.role)) {
+  if (!isAuthorized) {
     return (
       <div className="container section">
         <div className="gate" style={{ maxWidth: 460, borderTop: '5px solid var(--sky)' }}>
@@ -199,6 +202,9 @@ export default function Receptionist() {
           </div>
         )}
       </div>
+
+      {/* RATE CHANGE PERMISSION REQUESTS & ADMIN CODE REDEMPTION */}
+      <PriceChangeRequestPanel />
 
       {/* GUEST FOLIO VOUCHER INSPECTION MODAL */}
       <VoucherModal

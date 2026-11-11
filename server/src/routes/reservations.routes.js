@@ -2,7 +2,20 @@ import { Router } from 'express';
 import crypto from 'crypto';
 import { z } from 'zod';
 import { asyncH, ApiError } from '../middleware/errors.js';
-import { authenticate, requireAdmin, requireStaffOrAdmin } from '../middleware/auth.js';
+import {
+  authenticate,
+  requireAdmin,
+  requireFinanceOrAdmin,
+  requireReservationDesk,
+  normalizeEmployeeRole,
+  resolveEmployeeDepartment,
+} from '../middleware/auth.js';
+import {
+  getManilaTodayISO,
+  parseOfferingTags,
+  calculateOfferingTotal,
+  enrichReservationOffering,
+} from '../lib/offeringSpecs.js';
 import { validate } from '../middleware/validate.js';
 import { bookingLimiter } from '../middleware/security.js';
 import { admin, getSystemAdminClient } from '../lib/supabase.js';
@@ -16,14 +29,25 @@ import { getLocalReservations, addLocalReservation, updateLocalReservation, dele
 const r = Router();
 const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
+function computeVerifiedPoolAddonFee(notesText = '', guests = 1) {
+  const n = String(notesText || '');
+  const g = Math.max(1, Number(guests) || 1);
+  if (/Unlimited Pool Pass/i.test(n)) return 300 * g;
+  if (/Night Pool Pass/i.test(n)) return 200 * g;
+  if (/Day Pool Pass/i.test(n)) return 150 * g;
+  return 0;
+}
+
 const createSchema = z.object({
   roomId: z.string().optional(),
   room_id: z.string().optional(),
+  offering_type: z.enum(['room', 'cottage', 'offer']).optional(),
+  is_walk_in: z.boolean().optional(),
   check_in: dateStr,
   check_out: dateStr,
   check_in_time: z.string().max(30).optional(),
   check_out_time: z.string().max(30).optional(),
-  guests: z.coerce.number().int().min(1, 'Number of guests must be at least 1').max(12, 'Maximum 12 guests allowed per room').default(1),
+  guests: z.coerce.number().int().min(1, 'Number of guests must be at least 1').max(60, 'Maximum 60 guests allowed per booking').default(1),
   notes: z.string().max(500).default(''),
   phone: z.string().min(1, 'Mobile phone is required'),
   guest_name: z.string().optional(),
@@ -76,8 +100,16 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
   } = req.body;
   const targetRoomId = roomId || room_id;
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getManilaTodayISO();
+  const actorRole = normalizeEmployeeRole(req.user?.role);
+  const actorDept = resolveEmployeeDepartment(req.user);
+  const isFrontDeskOrAdmin = actorRole === 'administrator' || actorRole === 'receptionist' || (actorRole === 'staff' && actorDept === 'front_desk');
+  const isDeskStaff = isFrontDeskOrAdmin || actorRole === 'accounting';
+  const isFrontDeskWalkIn = isFrontDeskOrAdmin && Boolean(req.body?.is_walk_in);
   if (check_in < today) throw new ApiError(422, 'Check-in cannot be in the past');
+  if (check_in <= today && !isFrontDeskWalkIn) {
+    throw new ApiError(422, 'Same-day bookings are walk-in only and cannot be booked online. Please choose tomorrow or a later date.');
+  }
 
   const sysClient = await getSystemAdminClient();
 
@@ -179,12 +211,30 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
     }
   }
 
+  const parsedRoom = parseOfferingTags(room.amenities, room);
+  const resolvedOfferingType = req.body?.offering_type || parsedRoom.offering_type;
+  if (!/\[BookingType:/i.test(finalNotes)) {
+    finalNotes = `${finalNotes} [BookingType:${resolvedOfferingType}]`.trim();
+  }
+
   const roomName = room.name;
   const roomRate = room.rate_php;
   const nights = Math.max(1, Math.round((new Date(check_out) - new Date(check_in)) / 86400000));
-  const calculatedTotal = nights * roomRate;
-  const total_php = customTotal && customTotal > 0 ? Number(customTotal) : calculatedTotal;
-  const downpayment_php = customDownpayment !== undefined ? Number(customDownpayment) : Math.round(total_php * 0.3);
+  const calculatedTotal = calculateOfferingTotal({
+    rate_php: roomRate,
+    nights,
+    guests,
+    offering_type: resolvedOfferingType,
+    specs: parsedRoom.specs,
+  });
+  const poolAddonFee = computeVerifiedPoolAddonFee(finalNotes, guests);
+  const serverCalculatedTotal = calculatedTotal + poolAddonFee;
+  const total_php = (actorRole === 'administrator' && customTotal && customTotal > 0)
+    ? Number(customTotal)
+    : serverCalculatedTotal;
+  const downpayment_php = (actorRole === 'administrator' && customDownpayment !== undefined)
+    ? Number(customDownpayment)
+    : Math.round(total_php * 0.3);
 
   const finalGuestName = (guest_name || guestName || req.user?.full_name || req.user?.name || '').trim();
   if (!finalGuestName || finalGuestName.length < 2) {
@@ -223,8 +273,8 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
   }
 
   let targetGuestId = req.user?.id || null;
-  // If staff or administrator creates a booking for a guest, check if guest email matches a customer profile
-  if (['administrator', 'admin', 'staff', 'receptionist'].includes(req.user?.role)) {
+  // If front desk/accounting/administrator creates a booking for a guest, check if guest email matches a customer profile
+  if (isDeskStaff) {
     if (finalGuestEmail) {
       try {
         const { data: matchedProf } = await sysClient.from('profiles').select('id').ilike('email', finalGuestEmail).maybeSingle();
@@ -247,8 +297,8 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
     total_php,
     downpayment_php,
     payment_method: finalPaymentMethod,
-    payment_status: payment_status || 'unpaid',
-    status: customStatus || 'confirmed',
+    payment_status: (isDeskStaff && payment_status) ? payment_status : 'unpaid',
+    status: (isDeskStaff && customStatus) ? customStatus : 'confirmed',
     guest_name: finalGuestName,
     email: finalGuestEmail,
     phone: finalPhone,
@@ -260,7 +310,7 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
   let stay = null;
   const { data: dbStay, error } = await client.from('reservations')
     .insert(insertPayload)
-    .select('*, rooms(name), profiles(full_name, phone, email)').single();
+    .select('*, rooms(name, slug, category, amenities, rate_php), profiles(full_name, phone, email)').single();
   
   if (error) {
     const raced = ['23P01', '23505'].includes(error.code);
@@ -289,7 +339,7 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
         phone: finalPhone,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        rooms: { name: roomName, slug: room.slug, rate_php: roomRate },
+        rooms: { name: roomName, slug: room.slug, category: room.category, amenities: room.amenities, rate_php: roomRate },
         profiles: { full_name: finalGuestName, phone: finalPhone, email: finalGuestEmail },
       };
       addLocalReservation(stay);
@@ -323,13 +373,13 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
   }).catch(() => {});
 
   stay.guest_email = stay.email || finalGuestEmail;
-  return res.status(201).json(stay);
+  return res.status(201).json(enrichReservationOffering(stay));
 }));
 
 r.get('/reservations/mine', authenticate, asyncH(async (req, res) => {
   const sysClient = await getSystemAdminClient();
   let query = sysClient.from('reservations')
-    .select('*, rooms(name, slug, capacity), reviews(id, rating)')
+    .select('*, rooms(name, slug, capacity, category, amenities, rate_php), reviews(id, rating)')
     .order('check_in', { ascending: false });
 
   if (!['administrator', 'admin'].includes(req.user.role)) {
@@ -361,7 +411,11 @@ r.get('/reservations/mine', authenticate, asyncH(async (req, res) => {
     });
   }
 
-  return res.json(Array.from(mergedMap.values()).sort((a, b) => String(b.check_in || '').localeCompare(String(a.check_in || ''))));
+  return res.json(
+    Array.from(mergedMap.values())
+      .map(enrichReservationOffering)
+      .sort((a, b) => String(b.check_in || '').localeCompare(String(a.check_in || '')))
+  );
 }));
 
 r.patch('/reservations/:id/cancel', authenticate, asyncH(async (req, res) => {
@@ -377,7 +431,9 @@ r.patch('/reservations/:id/cancel', authenticate, asyncH(async (req, res) => {
   if (!b) throw new ApiError(404, 'Reservation not found');
   const isOwner = b.guest_id === req.user.id ||
     Boolean(req.user.email && (b.email || b.guest_email) && (b.email || b.guest_email).toLowerCase() === req.user.email.toLowerCase());
-  const isStaff = ['administrator', 'staff', 'accounting', 'receptionist', 'admin'].includes(req.user.role);
+  const actorRole = normalizeEmployeeRole(req.user.role);
+  const actorDept = resolveEmployeeDepartment(req.user);
+  const isStaff = ['administrator', 'receptionist', 'accounting'].includes(actorRole) || (actorRole === 'staff' && actorDept === 'front_desk');
   if (!isOwner && !isStaff) throw new ApiError(403, 'Unauthorized to cancel this booking');
   if (!['pending', 'confirmed'].includes(b.status))
     throw new ApiError(409, 'Only upcoming stays can be cancelled.');
@@ -414,13 +470,13 @@ r.patch('/reservations/:id/cancel', authenticate, asyncH(async (req, res) => {
 }));
 
 // ---- staff & admin ----
-r.get('/reservations', authenticate, requireStaffOrAdmin, asyncH(async (req, res) => {
+r.get('/reservations', authenticate, requireReservationDesk, asyncH(async (req, res) => {
   const sysClient = await getSystemAdminClient();
   const client = req.sb || sysClient;
   let data = null;
   try {
     const res = await client.from('reservations')
-      .select('*, profiles(full_name, phone, email), rooms(name)')
+      .select('*, profiles(full_name, phone, email), rooms(name, slug, category, amenities, rate_php)')
       .order('check_in', { ascending: false }).limit(200);
     data = res.data;
   } catch {}
@@ -436,10 +492,14 @@ r.get('/reservations', authenticate, requireStaffOrAdmin, asyncH(async (req, res
     });
   }
 
-  return res.json(Array.from(mergedMap.values()).sort((a, b) => String(b.check_in || '').localeCompare(String(a.check_in || ''))));
+  return res.json(
+    Array.from(mergedMap.values())
+      .map(enrichReservationOffering)
+      .sort((a, b) => String(b.check_in || '').localeCompare(String(a.check_in || '')))
+  );
 }));
 
-r.patch('/reservations/:id/status', authenticate, requireStaffOrAdmin,
+r.patch('/reservations/:id/status', authenticate, requireReservationDesk,
   validate(z.object({ status: z.enum(['pending','confirmed','checked_in','checked_out','cancelled','no_show']) })),
   asyncH(async (req, res) => {
     const { status } = req.body;
@@ -502,7 +562,9 @@ r.post('/reservations/:id/refund-request', authenticate,
     const isOwner = b.guest_id === req.user.id ||
       Boolean(req.user.email && (b.email || b.guest_email) && (b.email || b.guest_email).toLowerCase() === req.user.email.toLowerCase()) ||
       Boolean(b.profiles?.email && req.user.email && b.profiles.email.toLowerCase() === req.user.email.toLowerCase());
-    const isStaff = ['administrator', 'staff', 'accounting', 'receptionist', 'admin'].includes(req.user.role);
+    const actorRole = normalizeEmployeeRole(req.user.role);
+  const actorDept = resolveEmployeeDepartment(req.user);
+  const isStaff = ['administrator', 'receptionist', 'accounting'].includes(actorRole) || (actorRole === 'staff' && actorDept === 'front_desk');
     if (!isOwner && !isStaff) {
       throw new ApiError(403, 'Unauthorized to request a refund for this booking');
     }
@@ -579,7 +641,7 @@ r.post('/reservations/:id/refund-request', authenticate,
 );
 
 // POST /reservations/:id/refund-confirm
-r.post('/reservations/:id/refund-confirm', authenticate, requireStaffOrAdmin,
+r.post('/reservations/:id/refund-confirm', authenticate, requireFinanceOrAdmin,
   validate(z.object({
     amount: z.coerce.number().optional(),
     refund_method: z.string().optional(),
@@ -671,7 +733,7 @@ r.post('/reservations/:id/refund-confirm', authenticate, requireStaffOrAdmin,
   })
 );
 
-r.delete('/reservations/:id', authenticate, requireStaffOrAdmin, asyncH(async (req, res) => {
+r.delete('/reservations/:id', authenticate, requireAdmin, asyncH(async (req, res) => {
   const sysClient = (await getSystemAdminClient().catch(() => null)) || admin;
   const resId = req.params.id;
 

@@ -1,5 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { money } from '../../../lib/format';
+import { OfferingSpecsFields, getCategoryOptionsForType } from './OfferingSpecsFields';
+import {
+  OfferingType,
+  inferOfferingType,
+  sanitizeSpecsForType,
+  getDefaultSpecs,
+} from '../../../lib/offeringSpecs';
 
 export interface RoomEditorModalProps {
   room: any | null;
@@ -54,8 +61,11 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
         ? [...room.images]
         : (room.image_url ? [room.image_url] : []);
 
+      const detectedType: OfferingType = room.offering_type || inferOfferingType(room);
       setFormData({
         ...room,
+        offering_type: detectedType,
+        specs: sanitizeSpecsForType(detectedType, room.specs || {}),
         amenities: amenitiesStr,
         images: imagesArr,
         image_url: room.image_url || imagesArr[0] || '',
@@ -422,9 +432,34 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
 
         <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1 }}>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* SECTION A: ROOM DETAILS */}
+        {/* SECTION A: LISTING DETAILS & TYPE-SPECIFIC SPECIFICATIONS */}
+          <OfferingSpecsFields
+            offeringType={(formData.offering_type || 'room') as OfferingType}
+            onOfferingTypeChange={(nextType, nextCategory, nextSpecs) => {
+              setFormData({
+                ...formData,
+                offering_type: nextType,
+                category: nextCategory,
+                specs: nextSpecs,
+              });
+            }}
+            specs={formData.specs || getDefaultSpecs((formData.offering_type || 'room') as OfferingType)}
+            onSpecsChange={(nextSpecs) => setFormData({ ...formData, specs: nextSpecs })}
+            isLightMode={isLightMode}
+            themeBorder={themeBorder}
+            themeText={themeText}
+            themeMuted={themeMuted}
+            idPrefix="edit-room"
+          />
+
           <div>
-            <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Room Name *</label>
+            <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>
+              {formData.offering_type === 'cottage'
+                ? 'Cottage Name *'
+                : formData.offering_type === 'offer'
+                  ? 'Island Tour / Offer Title *'
+                  : 'Room Name *'}
+            </label>
             <input
               required
               style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
@@ -435,11 +470,17 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
-              <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Nightly Rate (₱) *</label>
+              <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>
+                {formData.offering_type === 'offer'
+                  ? (formData.specs?.pricing_mode === 'per_pax' ? 'Per-Guest Rate (₱) *' : 'Package / Trip Rate (₱) *')
+                  : formData.offering_type === 'cottage'
+                    ? 'Cottage Rate (₱) *'
+                    : 'Nightly Rate (₱) *'}
+              </label>
               <input
                 required
                 type="number"
-                min={100}
+                min={50}
                 style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
                 value={formData.rate_php ?? ''}
                 onChange={(e) => setFormData({ ...formData, rate_php: e.target.value })}
@@ -467,11 +508,14 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
                 value={formData.category || 'Cottage'}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
               >
-                <option value="Cottage">Cottage</option>
-                <option value="Villa">Villa</option>
-                <option value="Suite">Suite</option>
-                <option value="Garden">Garden</option>
-                <option value="Dorm">Dorm</option>
+                {(() => {
+                  const activeOpts = getCategoryOptionsForType((formData.offering_type || 'room') as OfferingType);
+                  const currentCat = formData.category || activeOpts[0];
+                  const mergedOpts = activeOpts.includes(currentCat) ? activeOpts : [currentCat, ...activeOpts];
+                  return mergedOpts.map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ));
+                })()}
               </select>
             </div>
             <div>

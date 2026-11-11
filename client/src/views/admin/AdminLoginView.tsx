@@ -77,7 +77,7 @@ export const AdminLoginView: React.FC<AdminLoginViewProps> = ({
               textTransform: 'uppercase',
             }}
           >
-            <IconShield size={14} color="#22c3ee" /> Administrator Portal
+            <IconShield size={14} color="#22c3ee" /> Management &amp; Staff Portal
           </span>
           <span style={{ fontSize: '.72rem', color: '#f6b74a', fontWeight: 700, letterSpacing: '.06em' }}>
             ✦ ROCK VIEW RESORT
@@ -94,7 +94,7 @@ export const AdminLoginView: React.FC<AdminLoginViewProps> = ({
             lineHeight: 1.1,
           }}
         >
-          Administrator Sign In
+          Management &amp; Staff Sign In
         </h2>
         <p style={{ margin: '0 0 20px', fontSize: '.86rem', color: 'rgba(232, 238, 247, 0.7)', lineHeight: 1.5 }}>
           Enter your credentials. Once authenticated, your identity and administrative role are verified automatically from the database.
@@ -144,7 +144,7 @@ export const AdminLoginView: React.FC<AdminLoginViewProps> = ({
               required
               value={adminEmail}
               onChange={(e) => setAdminEmail(e.target.value)}
-              placeholder="admin_username or admin@example.com"
+              placeholder="admin@rockviewresort.ph or staff@rockviewresort.ph"
               style={{
                 width: '100%',
                 background: 'rgba(255, 255, 255, 0.05)',
@@ -235,7 +235,7 @@ export const AdminLoginView: React.FC<AdminLoginViewProps> = ({
               transition: 'all 0.2s ease',
             }}
           >
-            {authenticating ? 'Verifying Database Clearance…' : 'Sign In as Administrator ✦'}
+            {authenticating ? 'Verifying Clearance…' : 'Sign In to Portal'}
           </button>
         </form>
 

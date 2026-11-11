@@ -5,6 +5,7 @@ import StatusPill from '../../components/StatusPill';
 import AvailabilityCalendar from '../../components/AvailabilityCalendar';
 import { exportReservationsCSV } from '../../lib/ledgerUtils';
 import { api } from '../../lib/api';
+import { resolveReservationOfferingType, getOfferingLabel } from '../../lib/offeringSpecs';
 
 export interface LedgerViewProps {
   ledgerSubView: 'stay_folios' | 'availability' | 'debit_credit';
@@ -129,8 +130,11 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
   const [ledgerCategoryFilter, setLedgerCategoryFilter] = useState<string>('');
   const [ledgerTypeFilter, setLedgerTypeFilter] = useState<'all' | 'debit' | 'credit'>('all');
   const [ledgerSearch, setLedgerSearch] = useState<string>('');
+  const [bookingTypeFilter, setBookingTypeFilter] = useState<'all' | 'room' | 'cottage' | 'offer'>('all');
 
   const filteredBookings = allBookings.filter((b: any) => {
+    if (bookingTypeFilter !== 'all' && resolveReservationOfferingType(b) !== bookingTypeFilter) return false;
+    if (reservationFilter !== 'all' && b.status !== reservationFilter) return false;
     if (reservationFilter !== 'all' && b.status !== reservationFilter) return false;
     if (reservationSearch.trim()) {
       const q = reservationSearch.toLowerCase();
@@ -968,6 +972,26 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                 <option value="pending">Pending Approval ({allBookings.filter(b => b.status === 'pending').length})</option>
                 <option value="cancelled">Cancelled ({allBookings.filter(b => b.status === 'cancelled').length})</option>
               </select>
+              <select
+                aria-label="Filter Offering Type"
+                value={bookingTypeFilter}
+                onChange={(e) => setBookingTypeFilter(e.target.value as 'all' | 'room' | 'cottage' | 'offer')}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: 9999,
+                  border: `1px solid ${themeBorder}`,
+                  background: isLightMode ? '#FFFFFF' : '#0F172A',
+                  color: themeText,
+                  fontSize: '.82rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                <option value="all">All Types ({allBookings.length})</option>
+                <option value="room">Rooms ({allBookings.filter((b: any) => resolveReservationOfferingType(b) === 'room').length})</option>
+                <option value="cottage">Cottages ({allBookings.filter((b: any) => resolveReservationOfferingType(b) === 'cottage').length})</option>
+                <option value="offer">Island Tours &amp; Offers ({allBookings.filter((b: any) => resolveReservationOfferingType(b) === 'offer').length})</option>
+              </select>
             </div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
               <span style={{ fontSize: '.76rem', color: themeMuted, fontWeight: 700 }}>
@@ -1036,6 +1060,9 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                         </div>
                       </td>
                       <td>
+                        <span style={{ display: 'inline-block', padding: '1px 7px', borderRadius: 9999, fontSize: '.68rem', fontWeight: 700, marginBottom: 3, marginRight: 6, background: resolveReservationOfferingType(b) === 'offer' ? '#FEF3C7' : resolveReservationOfferingType(b) === 'cottage' ? '#D1FAE5' : '#E0F2FE', color: resolveReservationOfferingType(b) === 'offer' ? '#78350F' : resolveReservationOfferingType(b) === 'cottage' ? '#065F46' : '#00517A' }}>
+                          {getOfferingLabel(resolveReservationOfferingType(b))}
+                        </span>
                         <b>{b.rooms?.name || 'Assigned Room'}</b>
                         {b.notes && (b.notes.toLowerCase().includes('pool') || b.notes.toLowerCase().includes('swimming')) ? (
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 4, fontSize: '.7rem', background: 'rgba(56,189,248,0.15)', color: '#0EA5E9', border: '1px solid rgba(56,189,248,0.35)', padding: '1px 6px', borderRadius: 8, fontWeight: 700 }}>
@@ -1173,7 +1200,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
             bookings={allBookings}
             isLightMode={isLightMode}
             showMetrics={true}
-            showNewBookingInTopBar={true}
+            showNewBookingInTopBar={true} allowSameDay={true}
             onClose={() => setLedgerSubView('stay_folios')}
             onViewList={() => setLedgerSubView('stay_folios')}
             onNewBooking={() => {

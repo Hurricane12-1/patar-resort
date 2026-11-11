@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { asyncH, ApiError } from '../middleware/errors.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, requireCustomerService } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { getSystemAdminClient, admin } from '../lib/supabase.js';
 import { redis } from '../lib/redis.js';
@@ -15,7 +15,7 @@ const r = Router();
  * GET /api/chat/conversations
  * Lists distinct conversations with last message, profile info, and message threads.
  */
-r.get('/chat/conversations', authenticate, asyncH(async (req, res) => {
+r.get('/chat/conversations', authenticate, requireCustomerService, asyncH(async (req, res) => {
   try {
     const client = await getSystemAdminClient();
     const { data: messages, error } = await client
@@ -235,7 +235,7 @@ r.get('/chat/conversations', authenticate, asyncH(async (req, res) => {
  * GET /api/chat/conversations/:profileId/messages
  * Retrieves full message thread for a given profile/guest.
  */
-r.get('/chat/conversations/:profileId/messages', authenticate, asyncH(async (req, res) => {
+r.get('/chat/conversations/:profileId/messages', authenticate, requireCustomerService, asyncH(async (req, res) => {
   const { profileId } = req.params;
 
   try {
@@ -266,7 +266,7 @@ r.get('/chat/conversations/:profileId/messages', authenticate, asyncH(async (req
  * POST /api/chat/conversations/:profileId/messages
  * Sends a staff or concierge response to a guest conversation thread.
  */
-r.post('/chat/conversations/:profileId/messages', authenticate,
+r.post('/chat/conversations/:profileId/messages', authenticate, requireCustomerService,
   validate(z.object({
     content: z.string().min(1).max(2000),
   })),

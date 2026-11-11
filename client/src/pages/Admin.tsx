@@ -5,6 +5,7 @@ import { AdminLoginView } from '../views/admin/AdminLoginView';
 import { OverviewView } from '../views/admin/OverviewView';
 import { LedgerView } from '../views/admin/LedgerView';
 import { RoomInventoryView } from '../views/admin/RoomInventoryView';
+import { ApprovalRequestsView } from '../views/admin/ApprovalRequestsView';
 import { AccountDirectoryView } from '../views/admin/AccountDirectoryView';
 import { AuditTrailView } from '../views/admin/AuditTrailView';
 import { NotificationsView } from '../views/admin/NotificationsView';
@@ -19,7 +20,7 @@ import { toast } from '../components/Toasts';
 export default function Admin() {
   const state = useAdminState();
 
-  if (!state.isAdministrator) {
+  if (!state.isPortalAuthenticated) {
     return (
       <AdminLoginView
         session={state.session} profile={state.profile} user={state.user}
@@ -76,7 +77,9 @@ export default function Admin() {
         themeText={state.themeText} themeMuted={state.themeMuted}
         allBookingsCount={state.allBookings.length} unreadNotifsCount={state.unreadNotifsCount}
         usersCount={state.users.length} conversationsCount={state.guestConversations.length}
+        pendingApprovalsCount={state.pendingPriceRequestsCount}
         setShowGlossaryModal={state.setShowGlossaryModal} signOut={state.signOut}
+        isStaffRestricted={false}
       />
 
       <div className="admin-right-pane">
@@ -92,6 +95,7 @@ export default function Admin() {
           handleMarkAllNotifsRead={state.handleMarkAllNotifsRead}
           handleMarkNotifRead={state.handleMarkNotifRead}
           handleDeleteNotif={state.handleDeleteNotif}
+          isStaffRestricted={state.isStaffUser}
           adminProfileState={state.adminProfileState} profile={state.profile}
         />
 
@@ -99,7 +103,7 @@ export default function Admin() {
           className="admin-main-content admin-content"
           style={{ background: state.themeBg, color: state.themeText, minHeight: 'calc(100vh - 70px)' }}
         >
-          {state.activeTab === 'overview' && (
+          {state.isFullAdmin && state.activeTab === 'overview' && (
             <OverviewView
               {...themeProps} toast={toast}
               roomsList={state.roomsList} activeRoomsList={state.activeRoomsList}
@@ -113,7 +117,7 @@ export default function Admin() {
             />
           )}
 
-          {state.activeTab === 'ledger' && (
+          {state.isFullAdmin && state.activeTab === 'ledger' && (
             <LedgerView
               {...themeProps} toast={toast}
               ledgerSubView={state.ledgerSubView} setLedgerSubView={state.setLedgerSubView}
@@ -143,11 +147,25 @@ export default function Admin() {
               inventoryList={state.inventoryList} loadingRoomsAndInv={state.loadingRoomsAndInv}
               refreshRoomsAndInventory={state.refreshRoomsAndInventory}
               setShowCreateRoomModal={state.setShowCreateRoomModal}
+              openCreateOfferingModal={state.openCreateOfferingModal}
               setShowCreateSupplyModal={state.setShowCreateSupplyModal}
               setEditingRoom={state.setEditingRoom} setRoomToRemove={state.setRoomToRemove}
               setSupplyToRemove={state.setSupplyToRemove}
               handleToggleRoomActive={state.handleToggleRoomActive}
               handleAdjustSupplyStock={state.handleAdjustSupplyStock}
+            />
+          )}
+
+          {state.isFullAdmin && state.activeTab === 'approvals' && (
+            <ApprovalRequestsView
+              {...themeProps}
+              toast={toast}
+              priceRequests={state.priceRequests}
+              loadingPriceRequests={state.loadingPriceRequests}
+              refreshPriceRequests={state.refreshPriceRequests}
+              onApproveDirect={state.handleApprovePriceDirect}
+              onIssueCode={state.handleIssuePriceCode}
+              onReject={state.handleRejectPriceRequest}
             />
           )}
 
@@ -159,7 +177,7 @@ export default function Admin() {
             />
           )}
 
-          {state.activeTab === 'settings' && (
+          {state.isFullAdmin && state.activeTab === 'settings' && (
             <SettingsView
               {...themeProps} toast={toast}
               adminProfileState={state.adminProfileState}
@@ -173,7 +191,7 @@ export default function Admin() {
             />
           )}
 
-          {state.activeTab === 'audit' && (
+          {state.isFullAdmin && state.activeTab === 'audit' && (
             <AuditTrailView
               {...themeProps} toast={toast}
               auditLogs={state.auditLogs} setAuditLogs={state.setAuditLogs}
@@ -183,7 +201,7 @@ export default function Admin() {
             />
           )}
 
-          {state.activeTab === 'accounts' && (
+          {state.isFullAdmin && state.activeTab === 'accounts' && (
             <AccountDirectoryView
               {...themeProps}
               users={state.users} searchingUsers={state.searchingUsers}
@@ -195,7 +213,7 @@ export default function Admin() {
             />
           )}
 
-          {state.activeTab === 'notifications' && (
+          {state.isFullAdmin && state.activeTab === 'notifications' && (
             <NotificationsView
               {...themeProps} toast={toast}
               notifications={state.notifications} setNotifications={state.setNotifications}
@@ -208,7 +226,7 @@ export default function Admin() {
             />
           )}
 
-          {state.activeTab === 'csv' && (
+          {state.isFullAdmin && state.activeTab === 'csv' && (
             <div
               className="panel"
               style={{

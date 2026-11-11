@@ -1,5 +1,6 @@
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext.tsx';
+import { AuthProvider, useAuth } from './context/AuthContext.tsx';
+import { getDefaultStaffPath } from './lib/rbac.ts';
 import Navbar from './components/Navbar.tsx';
 import Footer from './components/Footer.tsx';
 import Chatbot from './components/Chatbot.tsx';
@@ -38,6 +39,22 @@ import RecoveryPortal from './pages/recovery/RecoveryPortal.tsx';
 // Namespace 4: /client Pages (End-User Self-Service & Portal)
 import ResortCustomer from './pages/ResortCustomer.tsx';
 import MyBookings from './pages/MyBookings.tsx';
+
+function StaffPortalLanding() {
+  const { adminProfile, profile } = useAuth();
+  const active = adminProfile || profile;
+  const target = getDefaultStaffPath(active);
+  if (target === '/admin') {
+    return (
+      <StaffGuard portal="operations">
+        <StaffLayout>
+          <ResortDepartment />
+        </StaffLayout>
+      </StaffGuard>
+    );
+  }
+  return <Navigate to={target} replace />;
+}
 
 function MainAppShell() {
   const location = useLocation();
@@ -96,27 +113,25 @@ function MainAppShell() {
           {/* ============================================================ */}
           <Route path="/staff" element={
             <StaffGuard>
-              <StaffLayout>
-                <ResortDepartment />
-              </StaffLayout>
+              <StaffPortalLanding />
             </StaffGuard>
           } />
           <Route path="/staff/operations" element={
-            <StaffGuard>
+            <StaffGuard portal="operations">
               <StaffLayout>
                 <ResortDepartment />
               </StaffLayout>
             </StaffGuard>
           } />
           <Route path="/staff/reception" element={
-            <StaffGuard>
+            <StaffGuard portal="reception">
               <StaffLayout>
                 <Receptionist />
               </StaffLayout>
             </StaffGuard>
           } />
           <Route path="/staff/accounting" element={
-            <StaffGuard>
+            <StaffGuard portal="accounting">
               <StaffLayout>
                 <Accounting />
               </StaffLayout>

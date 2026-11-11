@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { money } from '../../lib/format';
 import RoomImageCarousel from '../../components/RoomImageCarousel';
+import {
+  inferOfferingType,
+  getOfferingLabel,
+  getRateUnitSuffix,
+  formatSpecHighlights,
+  OfferingType,
+} from '../../lib/offeringSpecs';
 
 export interface RoomInventoryViewProps {
   roomsList: any[];
@@ -9,6 +16,7 @@ export interface RoomInventoryViewProps {
   loadingRoomsAndInv: boolean;
   refreshRoomsAndInventory: () => void;
   setShowCreateRoomModal: (show: boolean) => void;
+  openCreateOfferingModal?: (type: OfferingType) => void;
   setShowCreateSupplyModal: (show: boolean) => void;
   setEditingRoom: (room: any) => void;
   setRoomToRemove: (room: any) => void;
@@ -31,6 +39,7 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
   loadingRoomsAndInv,
   refreshRoomsAndInventory,
   setShowCreateRoomModal,
+  openCreateOfferingModal,
   setShowCreateSupplyModal,
   setEditingRoom,
   setRoomToRemove,
@@ -71,6 +80,7 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
     } catch {}
   }, [inventorySubTab]);
 
+  const [offeringFilter, setOfferingFilter] = useState<'all' | OfferingType>('all');
   const [inventoryRoomFilter, setInventoryRoomFilter] = useState(() => {
     try {
       return localStorage.getItem('jd_admin_inv_room_filter') || 'all';
@@ -117,9 +127,19 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
           <button className="btn btn-sm" onClick={refreshRoomsAndInventory} disabled={loadingRoomsAndInv} style={{ border: `1px solid ${themeBorder}`, color: themeText }}>
             {loadingRoomsAndInv ? 'Syncing…' : '↻ Sync Now'}
           </button>
+          {inventorySubTab === 'accommodations' && (
+            <>
+              <button type="button" className="btn btn-sm" style={{ background: '#006699', color: '#FFFFFF', border: 'none', borderRadius: 10, padding: '8px 14px', fontWeight: 700, cursor: 'pointer' }} onClick={() => (openCreateOfferingModal ? openCreateOfferingModal('room') : setShowCreateRoomModal(true))}>
+                + Add Room
+              </button>
+              <button type="button" className="btn btn-sm" style={{ background: '#047857', color: '#FFFFFF', border: 'none', borderRadius: 10, padding: '8px 14px', fontWeight: 700, cursor: 'pointer' }} onClick={() => (openCreateOfferingModal ? openCreateOfferingModal('cottage') : setShowCreateRoomModal(true))}>
+                + Add Cottage
+              </button>
+            </>
+          )}
           {inventorySubTab === 'accommodations' ? (
-            <button className="btn btn-sky btn-sm" onClick={() => setShowCreateRoomModal(true)}>
-              + Add Room
+            <button type="button" className="btn btn-sm" style={{ background: '#B45309', color: '#FFFFFF', border: 'none', borderRadius: 10, padding: '8px 14px', fontWeight: 700, cursor: 'pointer' }} onClick={() => (openCreateOfferingModal ? openCreateOfferingModal('offer') : setShowCreateRoomModal(true))}>
+              + Add Island Tour / Offer
             </button>
           ) : (
             <button className="btn btn-sky btn-sm" onClick={() => setShowCreateSupplyModal(true)}>
@@ -266,6 +286,36 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
               <span style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <i className="fas fa-filter" style={{ color: '#0EA5E9' }} /> Filter Category:
               </span>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginRight: 8 }}>
+                {([
+                  { key: 'all', label: `All (${roomsList.filter((r) => r.is_active !== false).length})` },
+                  { key: 'room', label: `Rooms (${roomsList.filter((r) => r.is_active !== false && inferOfferingType(r) === 'room').length})` },
+                  { key: 'cottage', label: `Cottages (${roomsList.filter((r) => r.is_active !== false && inferOfferingType(r) === 'cottage').length})` },
+                  { key: 'offer', label: `Island Tours & Offers (${roomsList.filter((r) => r.is_active !== false && inferOfferingType(r) === 'offer').length})` },
+                ] as const).map((pill) => {
+                  const isSel = offeringFilter === pill.key;
+                  return (
+                    <button
+                      key={pill.key}
+                      type="button"
+                      onClick={() => setOfferingFilter(pill.key)}
+                      style={{
+                        minHeight: 38,
+                        padding: '6px 14px',
+                        borderRadius: 9999,
+                        border: isSel ? '1px solid #006699' : `1px solid ${themeBorder}`,
+                        background: isSel ? '#006699' : (isLightMode ? '#FFFFFF' : '#0F172A'),
+                        color: isSel ? '#FFFFFF' : themeText,
+                        fontSize: '.8rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {pill.label}
+                    </button>
+                  );
+                })}
+              </div>
               <select
                 value={inventoryRoomFilter}
                 onChange={(e) => setInventoryRoomFilter(e.target.value)}
@@ -287,6 +337,8 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
                 <option value="Suite">Suites ({roomsList.filter((r) => r.is_active !== false && r.category?.toLowerCase() === 'suite').length})</option>
                 <option value="Garden">Garden Rooms ({roomsList.filter((r) => r.is_active !== false && r.category?.toLowerCase() === 'garden').length})</option>
                 <option value="Dorm">Dormitories ({roomsList.filter((r) => r.is_active !== false && r.category?.toLowerCase() === 'dorm').length})</option>
+                <option value="Room">Standard Rooms ({roomsList.filter((r) => r.is_active !== false && r.category?.toLowerCase() === 'room').length})</option>
+                <option value="Island Tour">Island Tours ({roomsList.filter((r) => r.is_active !== false && inferOfferingType(r) === 'offer').length})</option>
               </select>
             </div>
 
@@ -316,6 +368,7 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
           ) : (() => {
             const filteredRooms = roomsList
               .filter((r) => r.is_active !== false)
+              .filter((r) => offeringFilter === 'all' || inferOfferingType(r) === offeringFilter)
               .filter((r) => inventoryRoomFilter === 'all' || r.category?.toLowerCase() === inventoryRoomFilter.toLowerCase())
               .filter((r) => !inventorySearch || r.name?.toLowerCase().includes(inventorySearch.toLowerCase()) || r.description?.toLowerCase().includes(inventorySearch.toLowerCase()));
 
@@ -326,8 +379,8 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
                 <p style={{ margin: '0 auto 18px', maxWidth: 460, color: themeMuted, fontSize: '.86rem', lineHeight: 1.5 }}>
                   All mock room data has been cleared. Click below to provision and publish your first custom room with photos and rates.
                 </p>
-                <button className="btn btn-sky btn-sm" onClick={() => setShowCreateRoomModal(true)} style={{ padding: '9px 18px', fontWeight: 700 }}>
-                  + Add Your First Room
+                <button className="btn btn-sm" onClick={() => (openCreateOfferingModal ? openCreateOfferingModal(offeringFilter === 'all' ? 'room' : offeringFilter) : setShowCreateRoomModal(true))} style={{ padding: '9px 18px', fontWeight: 700, background: '#006699', color: '#FFFFFF', border: 'none', borderRadius: 10, cursor: 'pointer' }}>
+                  + Add {offeringFilter === 'cottage' ? 'Cottage' : offeringFilter === 'offer' ? 'Island Tour / Offer' : 'Room'}
                 </button>
               </div>
             ) : (
@@ -362,7 +415,7 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
                         interval={3500}
                         badge={
                           <span className="pill" style={{ background: 'rgba(14,165,233,0.85)', color: '#FFFFFF', fontWeight: 800, fontSize: '.72rem', backdropFilter: 'blur(4px)' }}>
-                            {room.category || 'Standard'}
+                            {getOfferingLabel(inferOfferingType(room))} · {room.category || 'Standard'}
                           </span>
                         }
                       />
@@ -393,9 +446,17 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
                             {room.description || 'Patar beachfront room with scenic sea vistas and resort amenities.'}
                           </p>
 
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+                            {formatSpecHighlights(room).map((sp) => (
+                              <span key={sp.label} style={{ fontSize: '.7rem', padding: '3px 8px', borderRadius: 8, background: isLightMode ? '#E0F2FE' : 'rgba(14,165,233,0.14)', color: isLightMode ? '#00517A' : '#E0F2FE', fontWeight: 600 }}>
+                                {sp.label}: {sp.value}
+                              </span>
+                            ))}
+                          </div>
                           <div style={{ display: 'flex', gap: 14, marginBottom: 12, fontSize: '.84rem', color: themeText, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)', padding: '8px 12px', borderRadius: 10 }}>
-                            <div><span style={{ color: themeMuted, fontSize: '.72rem', display: 'block' }}>Capacity</span><b>Sleeps {room.capacity || 2}</b></div>
-                            <div><span style={{ color: themeMuted, fontSize: '.72rem', display: 'block' }}>Physical Units</span><b style={{ color: '#0EA5E9' }}>{room.units || 1} units</b></div>
+                            <div><span style={{ color: themeMuted, fontSize: '.72rem', display: 'block' }}>{inferOfferingType(room) === 'offer' ? 'Group Limit' : 'Capacity'}</span><b>{inferOfferingType(room) === 'offer' ? `Up to ${room.capacity || 10} pax` : `Sleeps ${room.capacity || 2}`}</b></div>
+                            <div><span style={{ color: themeMuted, fontSize: '.72rem', display: 'block' }}>{inferOfferingType(room) === 'offer' ? 'Daily Slots' : 'Physical Units'}</span><b style={{ color: '#0EA5E9' }}>{room.units || 1} {inferOfferingType(room) === 'offer' ? 'slots' : 'units'}</b></div>
+                            <div><span style={{ color: themeMuted, fontSize: '.72rem', display: 'block' }}>Rate</span><b>₱{Number(room.rate_php || 0).toLocaleString()} {getRateUnitSuffix(inferOfferingType(room), room.specs)}</b></div>
                             <div><span style={{ color: themeMuted, fontSize: '.72rem', display: 'block' }}>Rating</span><b><i className="fas fa-star" style={{ color: '#F59E0B', marginRight: 4 }} />{room.rating_avg || 5.0}</b></div>
                           </div>
 
@@ -477,8 +538,7 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
               { id: 'front_desk', label: 'FRONT DESK' },
               { id: 'housekeeping', label: 'HOUSEKEEPING' },
               { id: 'kitchen', label: 'KITCHEN & DINING' },
-              { id: 'tours', label: 'TOURS & LEISURE' },
-              { id: 'maintenance', label: 'MAINTENANCE' },
+              { id: 'tours', label: 'TOURS & ISLAND HOPPING (GATEKEPT)' },
             ].map((dept) => (
               <button
                 key={dept.id}
@@ -593,7 +653,8 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
                 </table>
               </div>
             );
-          })()}
+    
+      })()}
         </>
       )}
     </div>

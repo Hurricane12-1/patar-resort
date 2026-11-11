@@ -3,7 +3,14 @@ import { z } from 'zod';
 import { asyncH, ApiError } from '../middleware/errors.js';
 import { validate } from '../middleware/validate.js';
 import { admin, getSystemAdminClient } from '../lib/supabase.js';
-import { authenticate, requireStaffOrAdmin, requireAdmin } from '../middleware/auth.js';
+import { authenticate, requireAdmin } from '../middleware/auth.js';
+import {
+  parseOfferingTags,
+  packOfferingAmenities,
+  getRateUnitLabel,
+  calculateOfferingTotal,
+  DEFAULT_ISLAND_TOUR_SEED,
+} from '../lib/offeringSpecs.js';
 import { redis } from '../lib/redis.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
 import { getLocalReservations } from '../lib/reservationStore.js';
@@ -12,76 +19,92 @@ const r = Router();
 
 export function normalizeRoom(room) {
   if (!room) return room;
-  const rawAmenities = Array.isArray(room.amenities) ? room.amenities : [];
-  const cleanAmenities = [];
-  const images = [];
-
-  for (const item of rawAmenities) {
-    if (typeof item === 'string' && (item.startsWith('__img__:') || item.startsWith('img:'))) {
-      const url = item.replace(/^(__img__|img):/, '').trim();
-      if (url && !images.includes(url)) images.push(url);
-    } else {
-      cleanAmenities.push(item);
-    }
-  }
-
+  const parsed = parseOfferingTags(room.amenities, room);
+  const existingImages = Array.isArray(room.images) ? room.images.filter(Boolean) : [];
   const rawImg = (room.image_url && String(room.image_url).trim()) || '';
-  const primaryImage = rawImg || images[0] || '';
-  const allImages = Array.isArray(room.images) && room.images.length > 0
-    ? room.images.filter(Boolean)
-    : images;
+  const mergedImages = [
+    ...(rawImg ? [rawImg] : []),
+    ...existingImages,
+    ...parsed.imgList,
+  ].filter((u, idx, arr) => typeof u === 'string' && u.trim() && arr.indexOf(u) === idx);
+  const primaryImage = mergedImages[0] || '';
 
   return {
     ...room,
+    category: parsed.displayCategory || room.category,
+    offering_type: parsed.offering_type,
+    specs: parsed.specs,
+    rate_unit: getRateUnitLabel(parsed.offering_type, parsed.specs),
     image_url: primaryImage,
-    images: allImages,
-    amenities: cleanAmenities,
+    images: mergedImages,
+    amenities: parsed.cleanAmenities,
   };
+}
+
+let defaultOfferSeedAttempted = false;
+async function ensureDefaultOfferExists(sysClient) {
+  if (defaultOfferSeedAttempted) return;
+  defaultOfferSeedAttempted = true;
+  try {
+    const { data: rows } = await sysClient.from('rooms').select('id, name, slug, category, amenities');
+    const hasOffer = (rows || []).some((row) => normalizeRoom(row).offering_type === 'offer');
+    if (!hasOffer) {
+      const packed = packRoomPayload(DEFAULT_ISLAND_TOUR_SEED, null);
+      await sysClient.from('rooms').upsert(packed, { onConflict: 'slug' });
+    }
+  } catch (err) {
+    console.warn('[Rooms API] Default Island Tour offer seed notice:', err?.message || err);
+  }
 }
 
 export function packRoomPayload(body, existingRoom) {
   const payload = { ...body };
-  const hasImagesField = 'images' in body;
-  const hasImageUrlField = 'image_url' in body;
+  const hasOfferingUpdates =
+    'images' in body ||
+    'image_url' in body ||
+    'amenities' in body ||
+    'offering_type' in body ||
+    'category' in body ||
+    'specs' in body;
 
-  if (hasImagesField || hasImageUrlField) {
-    const imagesToStore = [];
-    if (body.image_url && typeof body.image_url === 'string') {
-      imagesToStore.push(body.image_url.trim());
+  if (hasOfferingUpdates || !existingRoom) {
+    const existingParsed = existingRoom ? parseOfferingTags(existingRoom.amenities, existingRoom) : null;
+    const targetType = body.offering_type || existingParsed?.offering_type;
+    const desiredCat = body.category || existingParsed?.displayCategory || existingRoom?.category;
+    const mergedSpecs = body.specs !== undefined
+      ? { ...(existingParsed?.specs || {}), ...(body.specs || {}) }
+      : existingParsed?.specs;
+
+    const packed = packOfferingAmenities({
+      offering_type: targetType,
+      category: desiredCat,
+      specs: mergedSpecs,
+      amenities: 'amenities' in body ? body.amenities : existingParsed?.cleanAmenities,
+      existingAmenities: existingRoom?.amenities || [],
+      images: 'images' in body ? body.images : undefined,
+      image_url: 'image_url' in body ? body.image_url : undefined,
+    });
+    payload.amenities = packed.amenities;
+    if ('category' in body || !existingRoom || 'offering_type' in body) {
+      payload.category = packed.dbCategory;
     }
-    if (Array.isArray(body.images)) {
-      for (const img of body.images) {
-        if (typeof img === 'string' && img.trim() && !imagesToStore.includes(img.trim())) {
-          imagesToStore.push(img.trim());
-        }
-      }
-    }
-
-    const imageTags = imagesToStore.map(url => `__img__:${url}`);
-
-    let baseAmenities = [];
-    if (Array.isArray(body.amenities)) {
-      baseAmenities = body.amenities.filter(a => typeof a === 'string' && !a.startsWith('__img__:') && !a.startsWith('img:'));
-    } else if (existingRoom && Array.isArray(existingRoom.amenities)) {
-      baseAmenities = existingRoom.amenities.filter(a => typeof a === 'string' && !a.startsWith('__img__:') && !a.startsWith('img:'));
-    }
-
-    payload.amenities = [...baseAmenities, ...imageTags];
-  } else if (Array.isArray(body.amenities) && existingRoom) {
-    const existingImages = (existingRoom.amenities || []).filter(a => typeof a === 'string' && (a.startsWith('__img__:') || a.startsWith('img:')));
-    const cleanAmenities = body.amenities.filter(a => typeof a === 'string' && !a.startsWith('__img__:') && !a.startsWith('img:'));
-    payload.amenities = [...cleanAmenities, ...existingImages];
   }
 
   delete payload.image_url;
   delete payload.images;
+  delete payload.offering_type;
+  delete payload.specs;
+  delete payload.rate_unit;
 
   return payload;
 }
 
 r.get('/rooms', asyncH(async (req, res) => {
+  await ensureDefaultOfferExists(admin);
+
   const includeAll = req.query.include_inactive === 'true';
-  const cacheKey = `rooms:catalog:${req.query.category || 'all'}:${req.query.q || 'all'}:${includeAll ? 'all' : 'active'}`;
+  const offeringFilter = String(req.query.offering_type || 'all').toLowerCase();
+  const cacheKey = `rooms:catalog:${req.query.category || 'all'}:${offeringFilter}:${req.query.q || 'all'}:${includeAll ? 'all' : 'active'}`;
   const cached = await redis.get(cacheKey);
   if (cached) {
     res.setHeader('X-Cache', 'HIT');
@@ -94,9 +117,7 @@ r.get('/rooms', asyncH(async (req, res) => {
     q = q.eq('is_active', true);
   }
   q = q.order('rating_avg', { ascending: false });
-  if (req.query.category && req.query.category !== 'All') {
-    q = q.ilike('category', req.query.category);
-  }
+  const catFilter = req.query.category && req.query.category !== 'All' ? String(req.query.category).toLowerCase() : '';
   if (req.query.q) {
     q = q.or(`name.ilike.%${req.query.q}%,description.ilike.%${req.query.q}%`);
   }
@@ -106,7 +127,10 @@ r.get('/rooms', asyncH(async (req, res) => {
     if (error) {
       console.warn('[Rooms API] Supabase query notice:', error.message);
     } else {
-      const normalized = (data || []).map(normalizeRoom);
+      const normalized = (data || [])
+        .map(normalizeRoom)
+        .filter((r) => offeringFilter === 'all' || r.offering_type === offeringFilter)
+        .filter((r) => !catFilter || String(r.category || '').toLowerCase() === catFilter);
 
       // Query active reservations occupying rooms today until checkout
       const today = new Date().toISOString().slice(0, 10);
@@ -191,6 +215,7 @@ r.get('/availability', validate(rangeSchema, 'query'), asyncH(async (req, res) =
   }
 
   const sysClient = await getSystemAdminClient();
+  await ensureDefaultOfferExists(sysClient);
 
   // 1. Fetch active rooms strictly from live Supabase database
   let allRooms = [];
@@ -267,20 +292,38 @@ r.get('/availability', validate(rangeSchema, 'query'), asyncH(async (req, res) =
       }
 
       const unitsLeft = Math.max(0, Math.min(availableUnits.length, totalUnits - peakBusy));
+      const norm = normalizeRoom(r);
+      const offeringFilterAvail = String(req.query.offering_type || 'all').toLowerCase();
       return {
         room_id: r.id,
         name: r.name,
         category: r.category,
+        offering_type: norm.offering_type,
+        specs: norm.specs,
+        rate_unit: norm.rate_unit,
+        amenities: norm.amenities,
+        image_url: norm.image_url,
+        images: norm.images,
         capacity: r.capacity,
         rate_php: r.rate_php,
+        total_php: calculateOfferingTotal({
+          rate_php: r.rate_php,
+          nights: nights.length,
+          guests,
+          offering_type: norm.offering_type,
+          specs: norm.specs,
+        }),
         units_left: unitsLeft,
         total_units: totalUnits,
         available_unit_numbers: availableUnits,
         occupied_units: peakBusy,
         is_locked: unitsLeft <= 0,
         rating_avg: Number(r.rating_avg) || 0,
+        _keep: offeringFilterAvail === 'all' || norm.offering_type === offeringFilterAvail,
       };
     })
+    .filter((item) => item._keep)
+    .map(({ _keep, ...rest }) => rest)
     .sort((a, b) => a.rate_php - b.rate_php);
 
   await redis.set(cacheKey, list, 30);
@@ -304,11 +347,12 @@ r.get('/availability/calendar', asyncH(async (req, res) => {
   }
 
   const sysClient = await getSystemAdminClient();
+  await ensureDefaultOfferExists(sysClient);
 
   // 1. Fetch active rooms
   let rooms = [];
   try {
-    let q = sysClient.from('rooms').select('id, name, slug, category, capacity, units, rate_php, is_active').eq('is_active', true);
+    let q = sysClient.from('rooms').select('id, name, slug, category, capacity, units, rate_php, is_active, amenities').eq('is_active', true);
     if (room_id) q = q.eq('id', room_id);
     const { data } = await q;
     if (data) rooms = data;
@@ -369,9 +413,13 @@ r.get('/availability/calendar', asyncH(async (req, res) => {
       const isLocked = occupied >= roomUnits;
       const unitsLeft = Math.max(0, roomUnits - occupied);
 
+      const normCal = normalizeRoom(r);
       roomMap[r.id] = {
         name: r.name,
         category: r.category,
+        offering_type: normCal.offering_type,
+        specs: normCal.specs,
+        rate_unit: normCal.rate_unit,
         total_units: roomUnits,
         occupied_units: occupied,
         units_left: unitsLeft,
@@ -391,7 +439,7 @@ r.get('/availability/calendar', asyncH(async (req, res) => {
   const payload = {
     start_date: startDate,
     end_date: endDate,
-    rooms,
+    rooms: rooms.map(normalizeRoom),
     booked_ranges: reservations.map((b) => ({
       id: b.id,
       room_id: b.room_id,
@@ -413,13 +461,15 @@ r.post('/rooms', authenticate, requireAdmin,
   validate(z.object({
     name: z.string().min(2).max(100),
     slug: z.string().min(2).max(100).optional(),
-    category: z.string().default('Cottage'),
+    offering_type: z.enum(['room', 'cottage', 'offer']).optional(),
+    category: z.string().default('Room'),
     description: z.string().default(''),
     capacity: z.coerce.number().int().min(1).default(2),
     units: z.coerce.number().int().min(1).default(1),
-    rate_php: z.coerce.number().int().min(100),
+    rate_php: z.coerce.number().int().min(50),
     amenities: z.array(z.string()).default([]),
-    image_url: z.string().optional(),
+    specs: z.record(z.any()).optional(),
+    image_url: z.string().nullable().optional(),
     images: z.array(z.string()).optional(),
     is_active: z.boolean().default(true),
   })),
@@ -453,13 +503,15 @@ r.patch('/rooms/:id', authenticate, requireAdmin,
   validate(z.object({
     name: z.string().min(2).max(100).optional(),
     slug: z.string().min(2).max(100).optional(),
+    offering_type: z.enum(['room', 'cottage', 'offer']).optional(),
     category: z.string().optional(),
     description: z.string().optional(),
     capacity: z.coerce.number().int().min(1).optional(),
     units: z.coerce.number().int().min(1).optional(),
-    rate_php: z.coerce.number().int().min(100).optional(),
+    rate_php: z.coerce.number().int().min(50).optional(),
     amenities: z.array(z.string()).optional(),
-    image_url: z.string().optional(),
+    specs: z.record(z.any()).optional(),
+    image_url: z.string().nullable().optional(),
     images: z.array(z.string()).optional(),
     is_active: z.boolean().optional(),
   })),

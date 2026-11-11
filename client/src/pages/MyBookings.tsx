@@ -10,6 +10,7 @@ import { toast } from '../components/Toasts.tsx';
 import StatusPill from '../components/StatusPill.tsx';
 import StatusTimelineModal from '../components/StatusTimelineModal.tsx';
 import { VoucherModal, normalizeVoucherData } from '../components/receipt';
+import { resolveReservationOfferingType, getOfferingLabel } from '../lib/offeringSpecs';
 
 function to11Digits(val: string): string {
   if (!val) return '';
@@ -30,6 +31,7 @@ export default function MyBookings() {
   const [timelineBooking, setTimelineBooking] = useState<any>(null);
   const [selectedVoucher, setSelectedVoucher] = useState<any>(null);
   const [revModal, setRevModal] = useState(null);
+  const [typeFilter, setTypeFilter] = useState<'all' | 'room' | 'cottage' | 'offer'>('all');
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
 
@@ -400,7 +402,35 @@ export default function MyBookings() {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {list.map((b) => {
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}>
+            {([
+              { key: 'all', label: `All (${list.length})` },
+              { key: 'room', label: `Rooms (${list.filter((b: any) => resolveReservationOfferingType(b) === 'room').length})` },
+              { key: 'cottage', label: `Cottages (${list.filter((b: any) => resolveReservationOfferingType(b) === 'cottage').length})` },
+              { key: 'offer', label: `Island Tours & Offers (${list.filter((b: any) => resolveReservationOfferingType(b) === 'offer').length})` },
+            ] as const).map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setTypeFilter(tab.key)}
+                style={{
+                  minHeight: 36,
+                  padding: '6px 14px',
+                  borderRadius: 9999,
+                  border: typeFilter === tab.key ? '1px solid #006699' : '1px solid rgba(148,163,184,0.35)',
+                  background: typeFilter === tab.key ? '#006699' : 'rgba(15,23,42,0.7)',
+                  color: '#FFFFFF',
+                  fontSize: '.78rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          {list.filter((b: any) => typeFilter === 'all' || resolveReservationOfferingType(b) === typeFilter).map((b) => {
+
             const d = new Date(b.check_in + 'T00:00:00');
             return (
               <div className="bk-row" key={b.id} style={{
@@ -427,6 +457,9 @@ export default function MyBookings() {
                     <small style={{ fontSize: '.7rem', color: '#38BDF8', fontWeight: 700 }}>{d.toLocaleDateString([], { month: 'short' }).toUpperCase()}</small>
                   </div>
                   <div className="bk-main">
+                    <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 9999, background: resolveReservationOfferingType(b) === 'offer' ? '#FEF3C7' : resolveReservationOfferingType(b) === 'cottage' ? '#D1FAE5' : '#E0F2FE', color: resolveReservationOfferingType(b) === 'offer' ? '#78350F' : resolveReservationOfferingType(b) === 'cottage' ? '#065F46' : '#00517A', fontSize: '.7rem', fontWeight: 700, marginBottom: 4 }}>
+                      {getOfferingLabel(resolveReservationOfferingType(b))}
+                    </span>
                     <h4 style={{ margin: 0, fontSize: '1.05rem', color: '#FFFFFF' }}>{b.rooms?.name || 'Room'}</h4>
                     <p style={{ margin: '4px 0 0', fontSize: '.84rem', color: '#94A3B8' }}>
                       {fmtDate(b.check_in)} → {fmtDate(b.check_out)} · {b.nights} night(s) · {b.guests} guest(s) · <b style={{ color: '#38BDF8' }}>{money(b.total_php)}</b>

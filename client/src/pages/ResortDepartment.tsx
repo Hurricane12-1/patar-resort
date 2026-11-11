@@ -5,42 +5,63 @@ import { api } from '../lib/api.ts';
 import { fmtTime } from '../lib/format.ts';
 import { toast } from '../components/Toasts.tsx';
 import { useReveal } from '../hooks/useReveal.ts';
-
-const DEPTS = [
-  { id: 'all', label: 'All Operations' },
-  { id: 'front_desk', label: 'Front Desk' },
-  { id: 'housekeeping', label: 'Housekeeping' },
-  { id: 'kitchen', label: 'Kitchen & Dining' },
-  { id: 'tours', label: 'Tours & Island Hopping' },
-  { id: 'maintenance', label: 'Maintenance' },
-];
+import {
+  canUseRoomReadiness,
+  formatDepartmentBadge,
+  getAllowedOperationalDepartments,
+  isAdministrator,
+  OperationalDepartmentId,
+} from '../lib/rbac.ts';
 
 export default function ResortDepartment() {
-  const { session, adminSession, setAuthOpen } = useAuth();
+  const { session, adminSession, profile, adminProfile, setAuthOpen } = useAuth();
   const currentSession = adminSession || session;
-  const [activeDept, setActiveDept] = useState('all');
+  const activeProfile = adminProfile || profile;
+  const isExecAdmin = isAdministrator(activeProfile);
+  const allowedDepts = getAllowedOperationalDepartments(activeProfile);
+  const allowRoomReadiness = canUseRoomReadiness(activeProfile);
+  const visibleDepts = isExecAdmin
+    ? [{ id: 'all', label: 'All Operations' }, ...allowedDepts]
+    : allowedDepts;
+  const defaultDeptId = allowedDepts[0]?.id || 'housekeeping';
+
+  const [activeDept, setActiveDept] = useState(isExecAdmin ? 'all' : defaultDeptId);
   const [tasks, setTasks] = useState([]);
   const [roomsStatus, setRoomsStatus] = useState([]);
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showTaskModal, setShowTaskModal] = useState(false);
-  const [newTask, setNewTask] = useState({ department: 'housekeeping', title: '', room_name: '', priority: 'normal', assigned_to: '' });
+  const [newTask, setNewTask] = useState({ department: defaultDeptId, title: '', room_name: '', priority: 'normal', assigned_to: '' });
   const [subTab, setSubTab] = useState('tasks'); // tasks | inventory | rooms
+
+  useEffect(() => {
+    if (!isExecAdmin && activeDept !== defaultDeptId && !allowedDepts.some((d) => d.id === activeDept)) {
+      setActiveDept(defaultDeptId);
+    }
+    setNewTask((prev) => ({
+      ...prev,
+      department: allowedDepts.some((d) => d.id === prev.department) ? prev.department : defaultDeptId,
+    }));
+  }, [isExecAdmin, defaultDeptId]);
 
   useEffect(() => {
     if (!currentSession) { setLoading(false); return; }
     let live = true;
-    Promise.all([api.departmentTasks(), api.departmentRoomStatus(), api.departmentInventory()])
+    Promise.all([
+      api.departmentTasks(),
+      allowRoomReadiness ? api.departmentRoomStatus().catch(() => []) : Promise.resolve([]),
+      api.departmentInventory(),
+    ])
       .then(([t, r, inv]) => {
         if (!live) return;
-        setTasks(t);
-        setRoomsStatus(r);
-        setInventory(inv);
+        setTasks(Array.isArray(t) ? t : []);
+        setRoomsStatus(Array.isArray(r) ? r : []);
+        setInventory(Array.isArray(inv) ? inv : []);
       })
       .catch((e) => toast(e.message, true))
       .finally(() => live && setLoading(false));
     return () => { live = false; };
-  }, [currentSession]);
+  }, [currentSession, allowRoomReadiness]);
 
   useReveal(!loading);
 
@@ -65,7 +86,7 @@ export default function ResortDepartment() {
       setTasks((x) => [created, ...x]);
       toast('Department task dispatched ✦');
       setShowTaskModal(false);
-      setNewTask({ department: 'housekeeping', title: '', room_name: '', priority: 'normal', assigned_to: '' });
+      setNewTask({ department: defaultDeptId, title: '', room_name: '', priority: 'normal', assigned_to: '' });
     } catch (err) { toast(err.message, true); }
   }
 
@@ -83,17 +104,19 @@ export default function ResortDepartment() {
         {/* HEAD */}
         <div className="sec-head reveal">
           <div>
-            <span className="label">Staff & Operations Hub</span>
+            <span className="label">{formatDepartmentBadge(activeProfile)} Workspace</span>
             <h2 className="serif" style={{ fontSize: 'clamp(2.2rem,4.4vw,3.6rem)' }}>
               Resort <em style={{ fontStyle: 'italic' }}>Department</em>
             </h2>
           </div>
-          <button className="btn btn-sky" onClick={() => setShowTaskModal(true)}>+ Dispatch Task</button>
+          {allowedDepts.length > 0 && (
+            <button className="btn btn-sky" onClick={() => setShowTaskModal(true)}>+ Dispatch Task</button>
+          )}
         </div>
 
         {/* DEPARTMENT TABS */}
         <div className="chip-row reveal" style={{ marginBottom: 20 }}>
-          {DEPTS.map((d) => (
+          {visibleDepts.map((d) => (
             <button key={d.id} className={`chip ${activeDept === d.id ? 'sel' : ''}`}
               onClick={() => setActiveDept(d.id)}>{d.label}</button>
           ))}
@@ -103,26 +126,30 @@ export default function ResortDepartment() {
         <div className="modal-tabs reveal" style={{ maxWidth: 460, marginBottom: 28 }}>
           <button className={subTab === 'tasks' ? 'sel' : ''} onClick={() => setSubTab('tasks')}>Task Queue ({filteredTasks.length})</button>
           <button className={subTab === 'inventory' ? 'sel' : ''} onClick={() => setSubTab('inventory')}>Inventory Stock</button>
-          <button className={subTab === 'rooms' ? 'sel' : ''} onClick={() => setSubTab('rooms')}>Room Readiness</button>
+          {allowRoomReadiness && (
+            <button className={subTab === 'rooms' ? 'sel' : ''} onClick={() => setSubTab('rooms')}>Room Readiness</button>
+          )}
         </div>
 
         {/* OVERVIEW STATS */}
         <div className="stat-cards reveal" style={{ marginBottom: 32 }}>
           <div className="stat-card">
             <small>Active Tasks</small>
-            <b>{tasks.filter((t) => t.status !== 'completed').length}</b>
+            <b>{filteredTasks.filter((t) => t.status !== 'completed').length}</b>
           </div>
-          <div className="stat-card">
-            <small>Housekeeping Ready</small>
-            <b>{roomsStatus.filter((r) => r.housekeeping_status === 'clean_ready').length} rooms</b>
-          </div>
+          {allowRoomReadiness && (
+            <div className="stat-card">
+              <small>Housekeeping Ready</small>
+              <b>{roomsStatus.filter((r) => r.housekeeping_status === 'clean_ready').length} rooms</b>
+            </div>
+          )}
           <div className="stat-card">
             <small>High Priority</small>
-            <b>{tasks.filter((t) => t.priority === 'high' || t.priority === 'urgent').length}</b>
+            <b>{filteredTasks.filter((t) => t.priority === 'high' || t.priority === 'urgent').length}</b>
           </div>
           <div className="stat-card">
             <small>Stock Items Tracked</small>
-            <b>{inventory.length} items</b>
+            <b>{filteredInv.length} items</b>
           </div>
         </div>
 
@@ -197,7 +224,7 @@ export default function ResortDepartment() {
         )}
 
         {/* ROOM READINESS VIEW */}
-        {subTab === 'rooms' && (
+        {allowRoomReadiness && subTab === 'rooms' && (
           <div className="panel reveal">
             <h3 className="serif" style={{ fontSize: '1.4rem' }}>Housekeeping & Room Readiness Ledger</h3>
             {roomsStatus.map((r) => (
@@ -225,12 +252,10 @@ export default function ResortDepartment() {
               <form className="modal-body" onSubmit={createTask}>
                 <div className="field">
                   <label>DEPARTMENT</label>
-                  <select value={newTask.department} onChange={(e) => setNewTask({ ...newTask, department: e.target.value })} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '2px solid var(--line)' }}>
-                    <option value="front_desk">Front Desk</option>
-                    <option value="housekeeping">Housekeeping</option>
-                    <option value="kitchen">Kitchen & Dining</option>
-                    <option value="tours">Tours & Island Hopping</option>
-                    <option value="maintenance">Maintenance</option>
+                  <select value={newTask.department} onChange={(e) => setNewTask({ ...newTask, department: e.target.value as OperationalDepartmentId })} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '2px solid var(--line)' }}>
+                    {allowedDepts.map((d) => (
+                      <option key={d.id} value={d.id}>{d.label}</option>
+                    ))}
                   </select>
                 </div>
                 <div className="field">
@@ -243,7 +268,7 @@ export default function ResortDepartment() {
                 </div>
                 <div className="field">
                   <label>ASSIGN TO (optional)</label>
-                  <input value={newTask.assigned_to} placeholder="e.g. Reception Staff or Maintenance Lead" onChange={(e) => setNewTask({ ...newTask, assigned_to: e.target.value })} />
+                  <input value={newTask.assigned_to} placeholder="e.g. Housekeeping or Kitchen Lead" onChange={(e) => setNewTask({ ...newTask, assigned_to: e.target.value })} />
                 </div>
                 <div className="field">
                   <label>PRIORITY</label>

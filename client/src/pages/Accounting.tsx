@@ -5,10 +5,13 @@ import CsvTableViewer from '../components/CsvTableViewer.tsx';
 import { api } from '../lib/api.ts';
 import { money, fmtDate } from '../lib/format.ts';
 import { toast } from '../components/Toasts.tsx';
+import PriceChangeRequestPanel from '../components/PriceChangeRequestPanel.tsx';
+import { canAccessPortal } from '../lib/rbac.ts';
 
 export default function Accounting() {
   const { profile, adminProfile, signIn, adminSignIn } = useAuth();
   const currentProf = adminProfile || profile;
+  const isAuthorized = canAccessPortal(currentProf, 'accounting');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState('');
@@ -16,7 +19,7 @@ export default function Accounting() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (currentProf && ['accounting', 'administrator', 'admin'].includes(currentProf.role)) {
+    if (isAuthorized) {
       api.analyticsOverview()
         .then(setData)
         .catch((e) => toast(e.message, true))
@@ -24,7 +27,7 @@ export default function Accounting() {
     } else {
       setLoading(false);
     }
-  }, [currentProf]);
+  }, [isAuthorized]);
 
   async function handleAccountingLogin(e) {
     e.preventDefault();
@@ -41,7 +44,7 @@ export default function Accounting() {
   }
 
   // DEDICATED SEPARATE ACCOUNTING LOGIN PORTAL
-  if (!currentProf || !['accounting', 'administrator', 'admin'].includes(currentProf.role)) {
+  if (!isAuthorized) {
     return (
       <div className="container section">
         <div className="gate" style={{ maxWidth: 460, borderTop: '5px solid var(--amber)' }}>
@@ -176,6 +179,9 @@ export default function Accounting() {
           defaultFilename="jd_financial_audit.csv"
         />
       </div>
+
+      {/* RATE CHANGE PERMISSION REQUESTS & ADMIN CODE REDEMPTION */}
+      <PriceChangeRequestPanel />
     </div>
   );
 }

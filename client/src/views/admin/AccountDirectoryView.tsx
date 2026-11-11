@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { money } from '../../lib/format';
+import { EMPLOYEE_ROLE_PRESETS, formatDepartmentBadge, isInternalEmployee, normalizeDepartment, normalizeRole } from '../../lib/rbac';
 
 export interface AccountDirectoryViewProps {
   users: any[];
@@ -8,7 +9,7 @@ export interface AccountDirectoryViewProps {
   fetchUsers: () => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
-  handleRoleChange: (userId: string, newRole: string) => void;
+  handleRoleChange: (userId: string, newRole: string, department?: string) => void;
   setNewStaff: (staff: any) => void;
   setShowCreateModal: (show: boolean) => void;
   setEditingUser: (user: any) => void;
@@ -118,7 +119,7 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
                 className="btn btn-sky btn-sm"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                 onClick={() => {
-                  setNewStaff({ first_name: '', middle_name: '', last_name: '', full_name: '', email: '', password: '', phone: '', role: 'administrator' });
+                  setNewStaff({ first_name: '', middle_name: '', last_name: '', full_name: '', email: '', password: '', phone: '', role: 'administrator', department: 'management' });
                   setShowCreateModal(true);
                 }}
               >
@@ -128,7 +129,7 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
                 className="btn btn-sm"
                 style={{ border: `1px solid ${themeBorder}`, color: themeText, background: isLightMode ? '#FFF' : 'rgba(255,255,255,0.05)', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                 onClick={() => {
-                  setNewStaff({ first_name: '', middle_name: '', last_name: '', full_name: '', email: '', password: '', phone: '', role: 'receptionist' });
+                  setNewStaff({ first_name: '', middle_name: '', last_name: '', full_name: '', email: '', password: '', phone: '', role: 'receptionist', department: 'front_desk' });
                   setShowCreateModal(true);
                 }}
               >
@@ -142,8 +143,8 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
       {/* SUB-TAB SWITCHER */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.04)', borderRadius: 12, padding: 4 }}>
         {[
-          { key: 'staff' as const, label: 'Staff & Admins', icon: 'fas fa-shield-halved', count: users.filter((u) => ['administrator', 'receptionist', 'accounting', 'staff'].includes(u.role)).length },
-          { key: 'customers' as const, label: 'Customers & Guests', icon: 'fas fa-hotel', count: users.filter((u) => !u.role || u.role === 'customer').length },
+          { key: 'staff' as const, label: 'Staff & Admins', icon: 'fas fa-shield-halved', count: users.filter((u) => isInternalEmployee(u)).length },
+          { key: 'customers' as const, label: 'Customers & Guests', icon: 'fas fa-hotel', count: users.filter((u) => !isInternalEmployee(u)).length },
         ].map((tab) => (
           <button
             key={tab.key}
@@ -168,13 +169,21 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
         <>
           {/* Staff Role Filter Badges */}
           <div className="chip-row" style={{ marginBottom: 16 }}>
-            {['', 'administrator', 'receptionist', 'accounting', 'staff'].map((role) => (
+            {[
+              { value: '', label: 'ALL STAFF' },
+              { value: 'administrator', label: 'ADMINISTRATOR' },
+              { value: 'front_desk', label: 'FRONT DESK' },
+              { value: 'accounting', label: 'ACCOUNTING' },
+              { value: 'housekeeping', label: 'HOUSEKEEPING' },
+              { value: 'kitchen', label: 'KITCHEN' },
+              { value: 'tours', label: 'ISLAND HOPPING (GATEKEPT)' },
+            ].map((f) => (
               <button
-                key={role}
-                className={`chip ${roleFilter === role ? 'sel' : ''}`}
-                onClick={() => setRoleFilter(role)}
+                key={f.value || 'all'}
+                className={`chip ${roleFilter === f.value ? 'sel' : ''}`}
+                onClick={() => setRoleFilter(f.value)}
               >
-                {role ? role.toUpperCase() : 'ALL STAFF'}
+                {f.label}
               </button>
             ))}
           </div>
@@ -183,8 +192,8 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
             <div className="skel" style={{ height: 200 }} />
           ) : (() => {
             const staffUsers = users
-              .filter((u) => ['administrator', 'receptionist', 'accounting', 'staff'].includes(u.role))
-              .filter((u) => !roleFilter || u.role === roleFilter);
+              .filter((u) => isInternalEmployee(u))
+              .filter((u) => !roleFilter || normalizeRole(u.role) === roleFilter || normalizeDepartment(u) === roleFilter);
             return staffUsers.length === 0 ? (
               <p className="muted" style={{ padding: '30px 0' }}>No staff accounts match your filters.</p>
             ) : (
@@ -195,14 +204,19 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
                       <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Full Name</th>
                       <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Email</th>
                       <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Phone</th>
-                      <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Role</th>
+                      <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Department &amp; Role</th>
                       <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Status</th>
-                      <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Role Assignment</th>
+                      <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Department Assignment</th>
                       <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Account Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {staffUsers.map((u) => (
+                    {staffUsers.map((u) => {
+                      const dept = normalizeDepartment(u);
+                      const selectVal =
+                        EMPLOYEE_ROLE_PRESETS.find((p) => p.department === dept)?.value ||
+                        (normalizeRole(u.role) === 'administrator' ? 'administrator' : 'receptionist');
+                      return (
                       <tr key={u.id} style={{ borderBottom: `1px solid ${themeBorder}` }}>
                         <td><b>{u.full_name || 'Staff User'}</b></td>
                         <td style={{ fontSize: '.8rem', color: themeMuted }}>{u.email || '—'}</td>
@@ -212,19 +226,21 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
                             background: u.role === 'administrator' ? 'rgba(139,92,246,0.15)' : u.role === 'receptionist' ? 'rgba(14,165,233,0.15)' : 'rgba(245,158,11,0.15)',
                             color: u.role === 'administrator' ? '#8B5CF6' : u.role === 'receptionist' ? '#0EA5E9' : '#F59E0B',
                             border: `1px solid ${u.role === 'administrator' ? 'rgba(139,92,246,0.3)' : u.role === 'receptionist' ? 'rgba(14,165,233,0.3)' : 'rgba(245,158,11,0.3)'}`,
-                          }}>{u.role}</span>
+                          }}>{formatDepartmentBadge(u)}</span>
                         </td>
                         <td><span style={{ color: "#10B981", fontWeight: 600, fontSize: ".78rem" }}><i className="fas fa-circle" style={{ fontSize: ".6rem", color: "#10B981", marginRight: 4 }} />Active</span></td>
                         <td>
                           <select
-                            value={u.role || 'staff'}
+                            value={selectVal}
                             style={{ fontSize: '.75rem', padding: '4px 8px', borderRadius: 6, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#0F172A', color: themeText }}
-                            onChange={(e) => handleRoleChange(u.id, e.target.value)}
+                            onChange={(e) => {
+                              const preset = EMPLOYEE_ROLE_PRESETS.find((p) => p.value === e.target.value);
+                              handleRoleChange(u.id, preset?.role || e.target.value, preset?.department);
+                            }}
                           >
-                            <option value="receptionist">Receptionist</option>
-                            <option value="accounting">Accounting</option>
-                            <option value="staff">Staff</option>
-                            <option value="administrator">Administrator</option>
+                            {EMPLOYEE_ROLE_PRESETS.map((p) => (
+                              <option key={p.value} value={p.value}>{p.shortLabel}</option>
+                            ))}
                           </select>
                         </td>
                         <td>
@@ -265,7 +281,8 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
                           </button>
                         </td>
                       </tr>
-                    ))}
+                    );
+                    })}
                   </tbody>
                 </table>
               </div>

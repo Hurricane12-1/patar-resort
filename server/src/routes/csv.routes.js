@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { asyncH } from '../middleware/errors.js';
-import { authenticate, requireStaffOrAdmin } from '../middleware/auth.js';
+import { authenticate, requireFinanceOrAdmin } from '../middleware/auth.js';
 import { admin } from '../lib/supabase.js';
 
 const r = Router();
 
 // GET /api/csv/sample - Returns live resort accounts & operations CSV directly from Supabase
-r.get('/csv/sample', authenticate, requireStaffOrAdmin, asyncH(async (_req, res) => {
+r.get('/csv/sample', authenticate, requireFinanceOrAdmin, asyncH(async (_req, res) => {
   const { data: profiles, error } = await admin
     .from('profiles')
     .select('id, first_name, middle_name, last_name, full_name, role, reservations(total_php, status)')
@@ -45,7 +45,7 @@ r.get('/csv/sample', authenticate, requireStaffOrAdmin, asyncH(async (_req, res)
 }));
 
 // POST /api/csv/parse - Accepts raw CSV text payload and returns structured JSON rows
-r.post('/csv/parse', authenticate, requireStaffOrAdmin, asyncH(async (req, res) => {
+r.post('/csv/parse', authenticate, requireFinanceOrAdmin, asyncH(async (req, res) => {
   const { csv_text } = req.body || {};
   if (!csv_text || typeof csv_text !== 'string') {
     return res.status(400).json({ error: 'csv_text payload required' });

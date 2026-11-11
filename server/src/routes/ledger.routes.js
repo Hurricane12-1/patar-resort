@@ -1,5 +1,5 @@
 import express from 'express';
-import { authenticate, requireStaffOrAdmin } from '../middleware/auth.js';
+import { authenticate, requireAdmin, requireFinanceOrAdmin } from '../middleware/auth.js';
 import {
   SYSTEM_PROMPT,
   TOOL_DECLARATIONS,
@@ -52,7 +52,7 @@ export {
  * GET /api/ledger/spec
  * Returns System Prompt, JSON Schema Tool Declarations & Catalog
  */
-router.get('/ledger/spec', authenticate, requireStaffOrAdmin, (_req, res) => {
+router.get('/ledger/spec', authenticate, requireFinanceOrAdmin, (_req, res) => {
   res.json({
     status: 'success',
     system_prompt: SYSTEM_PROMPT,
@@ -65,7 +65,7 @@ router.get('/ledger/spec', authenticate, requireStaffOrAdmin, (_req, res) => {
  * GET /api/ledger/catalog
  * Returns Canonical Rooms Catalog with physical units
  */
-router.get('/ledger/catalog', authenticate, requireStaffOrAdmin, (_req, res) => {
+router.get('/ledger/catalog', authenticate, requireFinanceOrAdmin, (_req, res) => {
   res.json({
     status: 'success',
     catalog: ROOMS_CATALOG,
@@ -81,7 +81,7 @@ router.get('/ledger/catalog', authenticate, requireStaffOrAdmin, (_req, res) => 
  * POST /api/ledger/ingest
  * Ingests physical logbook raw text/lines and executes autonomous ReAct loop
  */
-router.post('/ledger/ingest', authenticate, requireStaffOrAdmin, async (req, res) => {
+router.post('/ledger/ingest', authenticate, requireFinanceOrAdmin, async (req, res) => {
   try {
     const rawInput = req.body.raw_text || req.body.lines || req.body.text;
     if (!rawInput) {
@@ -108,7 +108,7 @@ router.post('/ledger/ingest', authenticate, requireStaffOrAdmin, async (req, res
  * POST /api/ledger/tools/lookup-guest
  * Executes lookup_or_create_guest tool
  */
-router.post('/ledger/tools/lookup-guest', authenticate, requireStaffOrAdmin, async (req, res) => {
+router.post('/ledger/tools/lookup-guest', authenticate, requireFinanceOrAdmin, async (req, res) => {
   try {
     const { full_name, phone } = req.body;
     const profile = await lookupOrCreateGuest({ full_name, phone });
@@ -122,7 +122,7 @@ router.post('/ledger/tools/lookup-guest', authenticate, requireStaffOrAdmin, asy
  * POST /api/ledger/tools/insert-reservation
  * Executes insert_ledger_reservation tool
  */
-router.post('/ledger/tools/insert-reservation', authenticate, requireStaffOrAdmin, async (req, res) => {
+router.post('/ledger/tools/insert-reservation', authenticate, requireFinanceOrAdmin, async (req, res) => {
   try {
     const result = await insertLedgerReservation(req.body);
     res.json({ status: 'success', data: result });
@@ -135,7 +135,7 @@ router.post('/ledger/tools/insert-reservation', authenticate, requireStaffOrAdmi
  * POST /api/ledger/availability
  * Checks room availability with GiST range exclusion constraint
  */
-router.post('/ledger/availability', authenticate, requireStaffOrAdmin, (req, res) => {
+router.post('/ledger/availability', authenticate, requireFinanceOrAdmin, (req, res) => {
   try {
     const { room_slug, check_in, check_out } = req.body;
     const result = checkRoomAvailability(room_slug, check_in, check_out);
@@ -155,7 +155,7 @@ router.post('/ledger/availability', authenticate, requireStaffOrAdmin, (req, res
  * GET /api/ledger/entries
  * Returns debit/credit ledger records with running balances and trial balance summary
  */
-router.get('/ledger/entries', authenticate, requireStaffOrAdmin, async (req, res) => {
+router.get('/ledger/entries', authenticate, requireFinanceOrAdmin, async (req, res) => {
   try {
     const { account_code, category, entry_type, search, limit, offset, sort } = req.query;
     const entries = await getLedgerEntries({
@@ -185,7 +185,7 @@ router.get('/ledger/entries', authenticate, requireStaffOrAdmin, async (req, res
  * POST /api/ledger/entries
  * Posts a single entry or a balanced double-entry journal pair
  */
-router.post('/ledger/entries', authenticate, requireStaffOrAdmin, async (req, res) => {
+router.post('/ledger/entries', authenticate, requireFinanceOrAdmin, async (req, res) => {
   try {
     const body = req.body || {};
     let result;
@@ -212,7 +212,7 @@ router.post('/ledger/entries', authenticate, requireStaffOrAdmin, async (req, re
  * POST /api/ledger/reconcile
  * Scans system reservations & orders and creates matching double entries
  */
-router.post('/ledger/reconcile', authenticate, requireStaffOrAdmin, async (req, res) => {
+router.post('/ledger/reconcile', authenticate, requireFinanceOrAdmin, async (req, res) => {
   try {
     const result = await reconcileSystemTransactions(req.user);
     res.json({
@@ -228,7 +228,7 @@ router.post('/ledger/reconcile', authenticate, requireStaffOrAdmin, async (req, 
  * GET /api/ledger/trial-balance
  * Returns real-time Trial Balance statement
  */
-router.get('/ledger/trial-balance', authenticate, requireStaffOrAdmin, (_req, res) => {
+router.get('/ledger/trial-balance', authenticate, requireFinanceOrAdmin, (_req, res) => {
   try {
     const trialBalance = calculateTrialBalance();
     res.json({
@@ -251,7 +251,7 @@ router.get('/ledger/trial-balance', authenticate, requireStaffOrAdmin, (_req, re
  * GET /api/ledger/backup/export
  * Exports complete ledger in PostgreSQL SQL dump, JSON, or CSV
  */
-router.get('/ledger/backup/export', authenticate, requireStaffOrAdmin, async (req, res) => {
+router.get('/ledger/backup/export', authenticate, requireAdmin, async (req, res) => {
   try {
     const format = String(req.query.format || 'sql').toLowerCase();
     const shouldDownload = req.query.download === 'true' || req.query.dl === '1';
@@ -290,7 +290,7 @@ router.get('/ledger/backup/export', authenticate, requireStaffOrAdmin, async (re
  * POST /api/ledger/backup/import
  * Adaptive format import: Accepts PostgreSQL SQL dump, JSON, CSV, or raw Logbook text
  */
-router.post('/ledger/backup/import', authenticate, requireStaffOrAdmin, async (req, res) => {
+router.post('/ledger/backup/import', authenticate, requireAdmin, async (req, res) => {
   try {
     const { content, mode } = req.body || {};
     if (!content) {
@@ -317,7 +317,7 @@ router.post('/ledger/backup/import', authenticate, requireStaffOrAdmin, async (r
  * POST /api/ledger/clear
  * Maintenance endpoint to reset ledger
  */
-router.post('/ledger/clear', authenticate, requireStaffOrAdmin, async (req, res) => {
+router.post('/ledger/clear', authenticate, requireAdmin, async (req, res) => {
   try {
     await clearLedgerEntries(req.user);
     res.json({ status: 'success', message: 'All ledger entries cleared.' });

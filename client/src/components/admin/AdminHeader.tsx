@@ -25,6 +25,7 @@ export interface AdminHeaderProps {
   handleDeleteNotif: (id: string) => void;
   adminProfileState: any;
   profile: any;
+  isStaffRestricted?: boolean;
 }
 
 export const AdminHeader: React.FC<AdminHeaderProps> = ({
@@ -49,6 +50,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
   handleDeleteNotif,
   adminProfileState,
   profile,
+  isStaffRestricted = false,
 }) => {
   const [showNotifications, setShowNotifications] = useState(false);
 
@@ -62,6 +64,8 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
         return 'Notifications';
       case 'inventory':
         return 'Room Management';
+      case 'approvals':
+        return 'Approval Requests';
       case 'conversations':
         return 'Customer Services';
       case 'accounts':
@@ -220,7 +224,8 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
           )}
         </button>
 
-        {/* NOTIFICATION BAR ICON & DROPDOWN */}
+        {/* NOTIFICATION BAR ICON & DROPDOWN (Admin only) */}
+        {!isStaffRestricted && (
         <div className="admin-header-notif-wrap" style={{ position: 'relative', zIndex: 102 }}>
           <button
             onClick={() => setShowNotifications(!showNotifications)}
@@ -478,13 +483,14 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
             </>
           )}
         </div>
+        )}
 
         {/* ADMIN PROFILE AVATAR & PILL */}
         <div
           className="admin-header-profile"
-          onClick={() => setActiveTab('settings')}
+          onClick={() => { if (!isStaffRestricted) setActiveTab('settings'); }}
           style={{
-            cursor: 'pointer',
+            cursor: isStaffRestricted ? 'default' : 'pointer',
             display: 'flex',
             alignItems: 'center',
             gap: 10,
@@ -494,7 +500,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
             border: `1px solid ${themeBorder}`,
             transition: 'all 0.2s ease',
           }}
-          title={`Administrator: ${adminProfileState.fullName} (${adminProfileState.domainAccount}) - Click to edit profile`}
+          title={`${isStaffRestricted ? 'Staff' : 'Administrator'}: ${adminProfileState.fullName} (${adminProfileState.domainAccount})${isStaffRestricted ? '' : ' - Click to edit profile'}`}
         >
           {adminProfileState.customAvatarUrl ? (
             <img
@@ -535,7 +541,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
             <b style={{ fontSize: '.84rem', color: themeText, fontWeight: 700 }}>
               {adminProfileState.fullName || 'Julian Nygel De Leon'}
             </b>
-            <span style={{ fontSize: '.68rem', color: themeMuted, fontWeight: 600 }}>Administrator</span>
+            <span style={{ fontSize: '.68rem', color: themeMuted, fontWeight: 600 }}>{isStaffRestricted ? 'Staff (Rooms & Guest Service)' : 'Administrator'}</span>
           </div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { asyncH } from '../middleware/errors.js';
-import { authenticate, requireStaffOrAdmin, requireAdmin, requireAdminSecurityBlock, bearerFromQuery } from '../middleware/auth.js';
+import { authenticate, requireStaffOrAdmin, requireAdmin, requireAdminSecurityBlock, requireFrontDeskOrAdmin, bearerFromQuery } from '../middleware/auth.js';
 import { admin, getSystemAdminClient } from '../lib/supabase.js';
 import { redis } from '../lib/redis.js';
 
@@ -556,5 +556,42 @@ r.get('/analytics/stream', bearerFromQuery, authenticate, requireAdminSecurityBl
   res.on('finish', cleanup);
   req.on('error', cleanup);
 });
+
+// Non-financial Front Desk operational KPIs & check-in manifest for Receptionists
+r.get('/analytics/front-desk', authenticate, requireFrontDeskOrAdmin, asyncH(async (_req, res) => {
+  try {
+    const client = await getSystemAdminClient();
+    const [roomsRes, resRes, notifRes] = await Promise.all([
+      client.from('rooms').select('id, units').eq('is_active', true),
+      client.from('reservations')
+        .select('id, room_id, status, check_in, check_out, guests, notes, created_at, guest_name, phone, rooms(name), profiles(full_name, phone)')
+        .order('check_in', { ascending: false })
+        .limit(200),
+      client.from('notifications').select('id', { count: 'exact', head: true }).eq('status', 'sent'),
+    ]);
+
+    const activeRooms = roomsRes.data || [];
+    const bookings = resRes.data || [];
+    const activeBookings = bookings.filter((b) => b.status !== 'cancelled');
+    const today = new Date().toISOString().slice(0, 10);
+    const arrivalsToday = activeBookings.filter((b) => b.check_in === today).length;
+    const departuresToday = activeBookings.filter((b) => b.check_out === today).length;
+    const activeStays = activeBookings.filter((b) => ['confirmed', 'checked_in'].includes(b.status)).length;
+    const totalUnitsCapacity = activeRooms.reduce((sum, room) => sum + (room.units || 1), 0) || 12;
+    const occupancyPct = totalUnitsCapacity > 0 ? Math.min(100, Math.round((activeStays / totalUnitsCapacity) * 100)) : 0;
+
+    return res.json({
+      overview: {
+        arrivals_today: arrivalsToday,
+        departures_today: departuresToday,
+        occupancy_pct: occupancyPct,
+        sms_delivered: notifRes.count || 0,
+      },
+      bookings,
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message || 'Could not load front desk overview' });
+  }
+}));
 
 export default r;

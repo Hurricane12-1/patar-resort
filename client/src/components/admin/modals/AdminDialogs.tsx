@@ -2,6 +2,7 @@ import React from 'react';
 import { fmtDate, to11Digits } from '../../../lib/format';
 import { dispatchWordPrompt } from '../../../lib/wordPrompt';
 import { generateAccountEmail, generateEmployeeId } from '../../../context/AuthContext';
+import { EMPLOYEE_ROLE_PRESETS, normalizeDepartment, normalizeRole } from '../../../lib/rbac';
 
 export interface AdminDialogsProps {
   isLightMode: boolean;
@@ -520,7 +521,7 @@ export const AdminDialogs: React.FC<AdminDialogsProps> = ({
                 </div>
                 <div>
                   <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>
-                    Assigned Role
+                    Department &amp; Role
                   </label>
                   <select
                     style={{
@@ -531,13 +532,23 @@ export const AdminDialogs: React.FC<AdminDialogsProps> = ({
                       background: isLightMode ? '#F8FAFC' : '#1E293B',
                       color: themeText,
                     }}
-                    value={newStaff.role}
-                    onChange={(e) => setNewStaff({ ...newStaff, role: e.target.value })}
+                    value={
+                      EMPLOYEE_ROLE_PRESETS.find((p) => p.role === newStaff.role && (!newStaff.department || p.department === newStaff.department))?.value ||
+                      newStaff.role ||
+                      'receptionist'
+                    }
+                    onChange={(e) => {
+                      const preset = EMPLOYEE_ROLE_PRESETS.find((p) => p.value === e.target.value);
+                      setNewStaff({
+                        ...newStaff,
+                        role: preset ? preset.role : e.target.value,
+                        department: preset ? preset.department : normalizeDepartment({ role: e.target.value }),
+                      });
+                    }}
                   >
-                    <option value="receptionist">Receptionist (Front Desk)</option>
-                    <option value="accounting">Accounting (Ledger Access)</option>
-                    <option value="staff">Staff (Operational View)</option>
-                    <option value="administrator">Administrator (Full Control)</option>
+                    {EMPLOYEE_ROLE_PRESETS.map((p) => (
+                      <option key={p.value} value={p.value}>{p.label}</option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -894,13 +905,22 @@ export const AdminDialogs: React.FC<AdminDialogsProps> = ({
                         background: isLightMode ? '#F8FAFC' : '#1E293B',
                         color: themeText,
                       }}
-                      value={editingUser.role || 'staff'}
-                      onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
+                      value={
+                        EMPLOYEE_ROLE_PRESETS.find((p) => p.department === editingUser.department)?.value ||
+                        (normalizeRole(editingUser.role) === 'administrator' ? 'administrator' : normalizeDepartment(editingUser))
+                      }
+                      onChange={(e) => {
+                        const preset = EMPLOYEE_ROLE_PRESETS.find((p) => p.value === e.target.value);
+                        setEditingUser({
+                          ...editingUser,
+                          role: preset ? preset.role : e.target.value,
+                          department: preset ? preset.department : normalizeDepartment({ role: e.target.value }),
+                        });
+                      }}
                     >
-                      <option value="receptionist">Receptionist</option>
-                      <option value="accounting">Accounting</option>
-                      <option value="staff">Staff</option>
-                      <option value="administrator">Administrator</option>
+                      {EMPLOYEE_ROLE_PRESETS.map((p) => (
+                        <option key={p.value} value={p.value}>{p.label}</option>
+                      ))}
                     </select>
                   )}
                 </div>

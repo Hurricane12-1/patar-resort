@@ -15,6 +15,7 @@ import { admin, userClient } from '../../lib/supabase.js';
 import { logAuditEvent } from '../../lib/auditLogger.js';
 import { checkBruteForceLockout, recordFailedAttempt, recordSuccessfulAttempt } from '../../middleware/bruteForceGuard.js';
 import { hashPassword, verifyPassword } from '../../lib/passwords.js';
+import { normalizeEmployeeRole, normalizeEmployeeDepartment } from '../../middleware/auth.js';
 
 export const adminAuthRouter = Router();
 
@@ -28,6 +29,34 @@ export const adminAuthRouter = Router();
  *  4. Position ('admin' | 'administrator', enforced strictly by RBAC)
  * ============================================================================
  */
+export async function ensureDefaultStaffAccount() {
+  try {
+    const { data: existingStaff, error: qErr } = await admin
+      .from('employee_accounts')
+      .select('id, email, role, is_active')
+      .eq('role', 'staff')
+      .limit(1);
+
+    if (!qErr && Array.isArray(existingStaff) && existingStaff.length === 0) {
+      const defaultPass = process.env.DEFAULT_STAFF_PASSWORD || 'staff1234';
+      await admin.from('employee_accounts').insert({
+        employee_id: 'RV-STF-001',
+        email: 'staff@rockviewresort.ph',
+        full_name: 'Resort Operations Staff',
+        role: 'staff',
+        department: 'Rooms & Customer Service',
+        position: 'Room & Guest Service Staff',
+        shift: 'Day',
+        status: 'Active',
+        is_active: true,
+        password: hashPassword(defaultPass),
+      });
+    }
+  } catch (err) {
+    console.warn('[Default Staff Seed Notice]:', err?.message || err);
+  }
+}
+
 export const handleAdminLogin = asyncH(async (req, res) => {
   const { email, identity, name, username, identifier, password, position, tokenIdKey, token_id_key } = req.body || {};
   const userIdent = (username || identifier || email || identity || name || '').trim();
@@ -66,6 +95,7 @@ export const handleAdminLogin = asyncH(async (req, res) => {
   const localPart = targetEmail.includes('@') ? targetEmail.split('@')[0] : targetEmail;
 
   // 4. Query employee_accounts directly for verified staff / administrator record
+  await ensureDefaultStaffAccount();
   let employeeRecord = null;
   let authData = null;
   let verifiedUser = null;
@@ -142,7 +172,7 @@ export const handleAdminLogin = asyncH(async (req, res) => {
             .eq('is_active', true)
             .maybeSingle();
 
-          if (linkedEmp && (linkedEmp.role === 'administrator' || linkedEmp.role === 'admin')) {
+          if (linkedEmp && normalizeEmployeeRole(linkedEmp.role) !== 'customer') {
             authData = data;
             employeeRecord = linkedEmp;
             break;
@@ -169,28 +199,31 @@ export const handleAdminLogin = asyncH(async (req, res) => {
     throw new ApiError(401, 'Invalid administrative credentials. Access restricted to verified resort administrators.');
   }
 
-  const role = (employeeRecord.role || '').toLowerCase();
-  if (role !== 'administrator' && role !== 'admin') {
+  const rawRole = (employeeRecord.role || '').toLowerCase();
+  const resolvedRole = normalizeEmployeeRole(rawRole);
+  if (resolvedRole === 'customer') {
     await recordFailedAttempt(req.ip, userIdent, req);
-    throw new ApiError(403, `Access denied: Role "${role}" is not authorized for executive administrative operations.`);
+    throw new ApiError(403, `Access denied: Role "${rawRole}" is not authorized for resort management operations.`);
   }
+  const isExecutiveAdmin = resolvedRole === 'administrator';
+  const resolvedDepartment = normalizeEmployeeDepartment(resolvedRole, employeeRecord.department);
 
   verifiedUser = {
     id: employeeRecord.auth_user_id || employeeRecord.id,
     email: employeeRecord.email,
     full_name: employeeRecord.full_name || userIdent,
-    role: 'administrator',
-    position: employeeRecord.position || rawPos || 'Administrator',
+    role: resolvedRole,
+    position: employeeRecord.position || rawPos || (isExecutiveAdmin ? 'Administrator' : resolvedRole),
     phone: employeeRecord.phone || '',
-    department: employeeRecord.department || 'FrontDesk',
+    department: resolvedDepartment,
     employee_id: employeeRecord.employee_id,
-    shift: employeeRecord.shift || 'Day',
-    employee_status: employeeRecord.status || 'Active',
+    shift: employeeRecord.shift || 'Day Shift',
+    employee_status: employeeRecord.status || 'active',
     employee_record: employeeRecord,
     has_password: true,
     password_status: 'Configured',
-    admin_token_verified: true,
-    admin_token_key: expectedKey,
+    admin_token_verified: isExecutiveAdmin,
+    admin_token_key: isExecutiveAdmin ? expectedKey : undefined,
   };
 
   // 7. Generate Signed Admin JWT containing verified executive security claims
@@ -200,17 +233,19 @@ export const handleAdminLogin = asyncH(async (req, res) => {
     email: verifiedUser.email,
     name: verifiedUser.full_name,
     full_name: verifiedUser.full_name,
-    role: 'administrator',
-    position: 'admin',
-    admin_token_verified: true,
-    admin_token_key: expectedKey,
+    role: resolvedRole,
+    department: resolvedDepartment,
+    position: isExecutiveAdmin ? 'admin' : resolvedRole,
+    admin_token_verified: isExecutiveAdmin,
+    admin_token_key: isExecutiveAdmin ? expectedKey : undefined,
     user_metadata: {
-      role: 'administrator',
-      position: 'admin',
+      role: resolvedRole,
+      department: resolvedDepartment,
+      position: isExecutiveAdmin ? 'admin' : resolvedRole,
       full_name: verifiedUser.full_name,
       employee_id: verifiedUser.employee_id,
-      admin_token_verified: true,
-      admin_token_key: expectedKey,
+      admin_token_verified: isExecutiveAdmin,
+      admin_token_key: isExecutiveAdmin ? expectedKey : undefined,
     },
     iss: 'supabase',
     aud: 'authenticated',
@@ -230,7 +265,7 @@ export const handleAdminLogin = asyncH(async (req, res) => {
       identity: userIdent,
       badge: verifiedUser.employee_id,
       position: rawPos,
-      token_id_key: expectedKey,
+      token_id_key: isExecutiveAdmin ? expectedKey : null,
       method: '4-BLOCK_ADMIN_VALIDATION',
     },
     req,
@@ -241,7 +276,7 @@ export const handleAdminLogin = asyncH(async (req, res) => {
       id: verifiedUser.id,
       email: verifiedUser.email,
       full_name: verifiedUser.full_name,
-      role: 'administrator',
+      role: resolvedRole,
     },
     action: 'ADMIN_LOGIN',
     resourceType: 'system_auth',
@@ -251,7 +286,7 @@ export const handleAdminLogin = asyncH(async (req, res) => {
       message: `Administrator ${verifiedUser.full_name} logged into the administration portal`,
       login_method: 'credentials',
       badge: verifiedUser.employee_id,
-      token_id_key: expectedKey,
+      token_id_key: isExecutiveAdmin ? expectedKey : null,
     },
     req,
   }).catch(() => {});
@@ -268,8 +303,8 @@ export const handleAdminLogin = asyncH(async (req, res) => {
       user: verifiedUser,
     },
     profile: verifiedUser,
-    tokenIdKey: expectedKey,
-    message: `Administrator ${verifiedUser.full_name} successfully verified with RBAC security block.`,
+    ...(isExecutiveAdmin ? { tokenIdKey: expectedKey } : {}),
+    message: `${isExecutiveAdmin ? 'Administrator' : 'Staff'} ${verifiedUser.full_name} authenticated (${resolvedRole}).`,
   });
 });
 

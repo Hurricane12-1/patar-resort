@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.tsx';
 import { toast } from './Toasts.tsx';
+import { canAccessPortal, isInternalEmployee, PortalKey } from '../lib/rbac.ts';
 
 /* ── tiny animated particle field ── */
 function Particles({ count = 30, color = 'rgba(56,189,248,0.15)' }) {
@@ -41,9 +42,18 @@ function Particles({ count = 30, color = 'rgba(56,189,248,0.15)' }) {
   return <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0 }} />;
 }
 
-export default function ProtectedRoute({ children, allowedRoles = [], portalTitle = 'Restricted Portal' }) {
+export default function ProtectedRoute({
+  children,
+  allowedRoles = [],
+  portalTitle = 'Restricted Portal',
+  requiredPortal,
+}: {
+  children: any;
+  allowedRoles?: string[];
+  portalTitle?: string;
+  requiredPortal?: PortalKey;
+}) {
   const {
-    session, profile,
     customerSession, customerProfile,
     adminSession, adminProfile,
     customerSignIn, adminSignIn,
@@ -56,8 +66,11 @@ export default function ProtectedRoute({ children, allowedRoles = [], portalTitl
 
   useEffect(() => { setMounted(true); }, []);
 
-  const isCustomerOnly = allowedRoles.length > 0 && allowedRoles.every((r: string) => r === 'customer');
-  const isStaffRoute = allowedRoles.some((r: string) => ['administrator', 'admin', 'receptionist', 'accounting', 'staff'].includes(r));
+  const isCustomerOnly = requiredPortal === 'client' || (allowedRoles.length > 0 && allowedRoles.every((r: string) => r === 'customer'));
+  const isStaffRoute = Boolean(
+    (requiredPortal && requiredPortal !== 'client') ||
+    allowedRoles.some((r: string) => ['administrator', 'admin', 'receptionist', 'accounting', 'staff', 'housekeeping', 'kitchen', 'tours'].includes(r))
+  );
 
   const activeSession = isCustomerOnly ? customerSession : (adminSession || customerSession);
   const activeProfile = isCustomerOnly ? customerProfile : (adminProfile || customerProfile);
@@ -66,6 +79,13 @@ export default function ProtectedRoute({ children, allowedRoles = [], portalTitl
   let isAuthorized = false;
   if (isCustomerOnly) {
     isAuthorized = Boolean(customerSession && customerProfile);
+  } else if (requiredPortal) {
+    isAuthorized = Boolean(
+      adminSession &&
+      adminProfile &&
+      isInternalEmployee(adminProfile) &&
+      canAccessPortal(adminProfile, requiredPortal)
+    );
   } else if (isStaffRoute) {
     isAuthorized = Boolean(
       adminSession && adminProfile && (
