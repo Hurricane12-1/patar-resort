@@ -83,8 +83,6 @@ export function packRoomPayload(body, existingRoom) {
 }
 
 r.get('/rooms', asyncH(async (req, res) => {
-  await ensureDefaultOfferExists(admin);
-
   const includeAll = req.query.include_inactive === 'true';
   const offeringFilter = String(req.query.offering_type || 'all').toLowerCase();
   const cacheKey = `rooms:catalog:${req.query.category || 'all'}:${offeringFilter}:${req.query.q || 'all'}:${includeAll ? 'all' : 'active'}`;
