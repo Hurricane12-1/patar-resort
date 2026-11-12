@@ -106,28 +106,6 @@ export default function RecoveryLayout({ children }: RecoveryLayoutProps) {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {/* Handoff Link to Executive Governance */}
-          <Link
-            to="/admin"
-            style={{
-              fontSize: '.74rem',
-              fontWeight: 700,
-              color: '#C4B5FD',
-              background: 'rgba(139, 92, 246, 0.15)',
-              border: '1px solid rgba(139, 92, 246, 0.4)',
-              padding: '6px 12px',
-              borderRadius: 8,
-              textDecoration: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-            }}
-            title="Escalate critical dispute to Executive Governance (/admin)"
-          >
-            <i className="fas fa-crown" style={{ color: '#A78BFA' }} />
-            Governance (/admin)
-          </Link>
-
           <div style={{
             fontSize: '.74rem',
             color: '#CBD5E1',

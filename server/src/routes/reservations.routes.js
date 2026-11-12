@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { asyncH, ApiError } from '../middleware/errors.js';
 import {
   authenticate,
+  optionalAuth,
   requireAdmin,
   requireFinanceOrAdmin,
   requireReservationDesk,
@@ -76,7 +77,7 @@ const createSchema = z.object({
   }, { message: 'A valid email address is required for official booking voucher delivery' })
   .refine((d) => Boolean(d.payment_method && d.payment_method.trim().length > 0), { message: 'Preferred downpayment method is required' });
 
-r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), asyncH(async (req, res) => {
+r.post('/reservations', optionalAuth, bookingLimiter, validate(createSchema), asyncH(async (req, res) => {
   const {
     roomId,
     room_id,
@@ -105,11 +106,7 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
   const actorDept = resolveEmployeeDepartment(req.user);
   const isFrontDeskOrAdmin = actorRole === 'administrator' || actorRole === 'receptionist' || (actorRole === 'staff' && actorDept === 'front_desk');
   const isDeskStaff = isFrontDeskOrAdmin || actorRole === 'accounting';
-  const isFrontDeskWalkIn = isFrontDeskOrAdmin && Boolean(req.body?.is_walk_in);
-  if (check_in < today) throw new ApiError(422, 'Check-in cannot be in the past');
-  if (check_in <= today && !isFrontDeskWalkIn) {
-    throw new ApiError(422, 'Same-day bookings are walk-in only and cannot be booked online. Please choose tomorrow or a later date.');
-  }
+  if (check_in < today) throw new ApiError(422, 'Check-in date cannot be in the past');
 
   const sysClient = await getSystemAdminClient();
 
@@ -354,7 +351,7 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
   await redis.clear();
 
   await logAuditEvent({
-    actor: req.user,
+    actor: req.user || { id: targetGuestId || 'guest', full_name: finalGuestName, email: finalGuestEmail, role: 'customer' },
     action: 'BOOKING_CREATE',
     resourceType: 'reservation',
     resourceId: stay.id,
@@ -368,7 +365,7 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
   } catch {}
 
   pingSMS({
-    profileId: req.user.id, reservationId: stay.id, toPhone: finalPhone,
+    profileId: req.user?.id || targetGuestId || null, reservationId: stay.id, toPhone: finalPhone,
     body: `Mabuhay! Rock View Beach Resort ✦ Confirmed: ${stay.rooms?.name || roomName}, ${check_in} → ${check_out} (${nights} night${nights > 1 ? 's' : ''}), ₱${total_php.toLocaleString()}. Check-in 2:00 PM.`,
   }).catch(() => {});
 
@@ -376,17 +373,28 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
   return res.status(201).json(enrichReservationOffering(stay));
 }));
 
-r.get('/reservations/mine', authenticate, asyncH(async (req, res) => {
+r.get('/reservations/mine', optionalAuth, asyncH(async (req, res) => {
   const sysClient = await getSystemAdminClient();
   let query = sysClient.from('reservations')
     .select('*, rooms(name, slug, capacity, category, amenities, rate_php), reviews(id, rating)')
     .order('check_in', { ascending: false });
 
-  if (!['administrator', 'admin'].includes(req.user.role)) {
-    if (req.user.email) {
-      query = query.or(`guest_id.eq.${req.user.id},email.eq.${req.user.email}`);
+  const guestEmail = (req.user?.email || req.query.email || '').trim().toLowerCase();
+  const guestPhone = (req.user?.phone || req.query.phone || '').trim();
+  const guestId = req.user?.id || req.query.guest_id;
+  const isAdmin = ['administrator', 'admin'].includes(req.user?.role);
+
+  if (!isAdmin) {
+    if (guestId && guestEmail) {
+      query = query.or(`guest_id.eq.${guestId},email.ilike.${guestEmail}`);
+    } else if (guestEmail) {
+      query = query.ilike('email', guestEmail);
+    } else if (guestPhone) {
+      query = query.eq('phone', guestPhone);
+    } else if (guestId) {
+      query = query.eq('guest_id', guestId);
     } else {
-      query = query.eq('guest_id', req.user.id);
+      return res.json([]);
     }
   }
 
@@ -397,9 +405,11 @@ r.get('/reservations/mine', authenticate, asyncH(async (req, res) => {
   } catch {}
   const dbList = Array.isArray(data) ? data : [];
   const localList = getLocalReservations().filter((b) => {
-    if (['administrator', 'admin'].includes(req.user.role)) return true;
-    if (b.guest_id === req.user.id) return true;
-    if (req.user.email && (b.email || b.guest_email) && (b.email || b.guest_email).toLowerCase() === req.user.email.toLowerCase()) return true;
+    if (isAdmin) return true;
+    if (guestId && b.guest_id === guestId) return true;
+    const matchEmail = (b.email || b.guest_email || '').toLowerCase();
+    if (guestEmail && matchEmail === guestEmail) return true;
+    if (guestPhone && b.phone === guestPhone) return true;
     return false;
   });
 

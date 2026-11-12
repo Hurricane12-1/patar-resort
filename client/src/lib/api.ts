@@ -668,7 +668,6 @@ export const api = {
     }
     const manilaToday = getManilaTodayISO();
     if (checkIn < manilaToday) throw new Error('Check-in date cannot be in the past.');
-    if (checkIn <= manilaToday && !body.is_walk_in) throw new Error('Same-day bookings are walk-in only and cannot be booked online. Please choose tomorrow or a later date.');
     const normalizedBody = { ...body, guest_name: guestName, phone, check_in: checkIn, check_out: checkOut };
 
     try {

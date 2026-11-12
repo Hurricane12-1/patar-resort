@@ -35,6 +35,7 @@ export const ApprovalRequestsView: React.FC<ApprovalRequestsViewProps> = ({
   toast,
 }) => {
   const [statusFilter, setStatusFilter] = useState<FilterKey>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
   const [noteTarget, setNoteTarget] = useState<{ item: any; mode: 'reject' | 'direct' | 'code' } | null>(null);
   const [reviewNote, setReviewNote] = useState('');
@@ -45,7 +46,22 @@ export const ApprovalRequestsView: React.FC<ApprovalRequestsViewProps> = ({
   const appliedCount = priceRequests.filter((r) => r.status === 'approved_applied').length;
   const rejectedCount = priceRequests.filter((r) => r.status === 'rejected').length;
 
-  const filtered = priceRequests.filter((r) => statusFilter === 'all' || r.status === statusFilter);
+  const filtered = priceRequests.filter((r) => {
+    const matchStatus = statusFilter === 'all' || r.status === statusFilter;
+    if (!matchStatus) return false;
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      (r.requested_by_name || '').toLowerCase().includes(q) ||
+      (r.requested_by_email || '').toLowerCase().includes(q) ||
+      (r.requested_by_department || '').toLowerCase().includes(q) ||
+      (r.requested_by_role || '').toLowerCase().includes(q) ||
+      (r.requested_by_id || '').toLowerCase().includes(q) ||
+      (r.room_name || '').toLowerCase().includes(q) ||
+      (r.category || '').toLowerCase().includes(q) ||
+      (r.reason || '').toLowerCase().includes(q)
+    );
+  });
 
   const handleCopyCode = async (code: string) => {
     try {
@@ -86,7 +102,7 @@ export const ApprovalRequestsView: React.FC<ApprovalRequestsViewProps> = ({
       case 'pending':
         return { label: 'PENDING APPROVAL', bg: isLightMode ? '#FEF3C7' : 'rgba(217, 119, 6, 0.2)', color: isLightMode ? '#92400E' : '#FCD34D' };
       case 'code_issued':
-        return { label: 'CODE SENT', bg: isLightMode ? '#E0F2FE' : 'rgba(0, 102, 153, 0.28)', color: isLightMode ? '#075985' : '#7DD3FC' };
+        return { label: 'CODE ISSUED', bg: isLightMode ? '#E0F2FE' : 'rgba(0, 102, 153, 0.28)', color: isLightMode ? '#075985' : '#7DD3FC' };
       case 'approved_applied':
         return { label: 'APPROVED & APPLIED', bg: isLightMode ? '#D1FAE5' : 'rgba(5, 150, 105, 0.22)', color: isLightMode ? '#065F46' : '#6EE7B7' };
       case 'rejected':
@@ -96,16 +112,27 @@ export const ApprovalRequestsView: React.FC<ApprovalRequestsViewProps> = ({
     }
   };
 
+  const getInitials = (name?: string) => {
+    if (!name) return 'ST';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
+
   return (
     <div className="panel" style={{ background: themeCardBg, border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 24, boxShadow: themeShadow }}>
+      {/* Header with Title & Refresh */}
       <div className="admin-tab-header" style={{ marginBottom: 18 }}>
         <div>
-          <span className="label light" style={{ color: '#006699' }}>Administrator Authorization Gate</span>
-          <h3 className="serif" style={{ fontSize: '1.55rem', margin: '4px 0 0', color: themeText }}>
-            Price-Change Approval Dashboard
+          <span className="label light" style={{ color: '#006699', fontWeight: 800, letterSpacing: '.12em' }}>
+            <i className="fas fa-shield-halved" style={{ marginRight: 6 }} />
+            ADMINISTRATOR GOVERNANCE & APPROVAL PORTAL
+          </span>
+          <h3 className="serif" style={{ fontSize: '1.6rem', margin: '4px 0 0', color: themeText }}>
+            Subject of Changes & Requester Accounts Manifest
           </h3>
-          <p className="muted small" style={{ margin: '4px 0 0' }}>
-            Review employee rate-change requests. Approve directly to update the catalog right away, or issue a one-time authorization code for the employee to apply.
+          <p className="muted small" style={{ margin: '4px 0 0', maxWidth: 820 }}>
+            Audit and authorize rate modifications across all resort offerings. Displays the full verified employee account table for all requests regarding who requested changes to accommodations and offerings.
           </p>
         </div>
         <button
@@ -113,18 +140,19 @@ export const ApprovalRequestsView: React.FC<ApprovalRequestsViewProps> = ({
           className="btn btn-sm"
           onClick={refreshPriceRequests}
           disabled={loadingPriceRequests}
-          style={{ border: `1px solid ${themeBorder}`, color: themeText, background: isLightMode ? '#FFFFFF' : 'rgba(255,255,255,0.05)' }}
+          style={{ border: `1px solid ${themeBorder}`, color: themeText, background: isLightMode ? '#FFFFFF' : 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 6 }}
         >
-          <i className={`fas fa-rotate ${loadingPriceRequests ? 'fa-spin' : ''}`} style={{ marginRight: 6 }} />
-          {loadingPriceRequests ? 'Refreshing…' : 'Refresh Queue'}
+          <i className={`fas fa-rotate ${loadingPriceRequests ? 'fa-spin' : ''}`} />
+          {loadingPriceRequests ? 'Refreshing…' : 'Refresh Requests'}
         </button>
       </div>
 
+      {/* Authorization Code Banner */}
       {latestIssuedCode && (
         <div
           style={{
-            marginBottom: 18,
-            padding: '14px 18px',
+            marginBottom: 20,
+            padding: '16px 20px',
             borderRadius: 12,
             background: isLightMode ? '#EFF6FF' : 'rgba(0, 102, 153, 0.2)',
             border: '1px solid #006699',
@@ -137,11 +165,12 @@ export const ApprovalRequestsView: React.FC<ApprovalRequestsViewProps> = ({
         >
           <div>
             <div style={{ fontSize: '.74rem', fontWeight: 800, color: isLightMode ? '#00517A' : '#7DD3FC', textTransform: 'uppercase', letterSpacing: '.08em' }}>
+              <i className="fas fa-key" style={{ marginRight: 6 }} />
               Authorization Code Ready to Send
             </div>
             <div style={{ color: themeText, fontSize: '.92rem', marginTop: 4 }}>
-              Send code <strong style={{ fontFamily: 'monospace', fontSize: '1.08rem', letterSpacing: '.08em' }}>{latestIssuedCode.code}</strong> to{' '}
-              <b>{latestIssuedCode.recipient}</b> for <b>{latestIssuedCode.roomName}</b> (also dispatched via notification/email).
+              Send authorization code <strong style={{ fontFamily: 'monospace', fontSize: '1.1rem', letterSpacing: '.08em', color: '#006699' }}>{latestIssuedCode.code}</strong> to{' '}
+              <b>{latestIssuedCode.recipient}</b> for <b>{latestIssuedCode.roomName}</b> (dispatched automatically to employee inbox/logs).
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -166,12 +195,12 @@ export const ApprovalRequestsView: React.FC<ApprovalRequestsViewProps> = ({
       )}
 
       {/* KPI Summary Band */}
-      <div className="admin-grid-4-col" style={{ gap: 12, marginBottom: 18 }}>
+      <div className="admin-grid-4-col" style={{ gap: 12, marginBottom: 20 }}>
         {[
-          { key: 'pending' as FilterKey, label: 'Pending Review', val: pendingCount, accent: '#D97706' },
-          { key: 'code_issued' as FilterKey, label: 'Admin Code Sent', val: codeIssuedCount, accent: '#006699' },
-          { key: 'approved_applied' as FilterKey, label: 'Applied Changes', val: appliedCount, accent: '#059669' },
-          { key: 'rejected' as FilterKey, label: 'Declined', val: rejectedCount, accent: '#DC2626' },
+          { key: 'pending' as FilterKey, label: 'Pending Review', val: pendingCount, accent: '#D97706', icon: 'fa-clock' },
+          { key: 'code_issued' as FilterKey, label: 'Admin Code Sent', val: codeIssuedCount, accent: '#006699', icon: 'fa-paper-plane' },
+          { key: 'approved_applied' as FilterKey, label: 'Applied Changes', val: appliedCount, accent: '#059669', icon: 'fa-circle-check' },
+          { key: 'rejected' as FilterKey, label: 'Declined', val: rejectedCount, accent: '#DC2626', icon: 'fa-circle-xmark' },
         ].map((card) => (
           <div
             key={card.key}
@@ -180,86 +209,271 @@ export const ApprovalRequestsView: React.FC<ApprovalRequestsViewProps> = ({
               background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)',
               border: `1px solid ${statusFilter === card.key ? card.accent : themeBorder}`,
               borderRadius: 12,
-              padding: 14,
+              padding: '14px 16px',
               cursor: 'pointer',
+              transition: 'all 0.2s ease',
             }}
           >
-            <span style={{ fontSize: '.72rem', color: themeMuted, fontWeight: 700, textTransform: 'uppercase' }}>{card.label}</span>
-            <div style={{ fontSize: '1.45rem', fontWeight: 800, color: card.accent, marginTop: 4 }}>{card.val}</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '.72rem', color: themeMuted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em' }}>{card.label}</span>
+              <i className={`fas ${card.icon}`} style={{ color: card.accent, fontSize: '.85rem' }} />
+            </div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: card.accent, marginTop: 4 }}>{card.val}</div>
           </div>
         ))}
       </div>
 
-      {/* Filter Chips */}
-      <div className="chip-row" style={{ marginBottom: 16 }}>
-        {([
-          ['all', 'All Requests'],
-          ['pending', 'Pending'],
-          ['code_issued', 'Code Sent'],
-          ['approved_applied', 'Applied'],
-          ['rejected', 'Rejected'],
-        ] as Array<[FilterKey, string]>).map(([k, label]) => (
-          <button key={k} className={`chip ${statusFilter === k ? 'sel' : ''}`} onClick={() => setStatusFilter(k)}>
-            {label}
-          </button>
-        ))}
+      {/* Controls Bar: Filter Chips & Requester Search */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
+        <div className="chip-row" style={{ margin: 0 }}>
+          {([
+            ['all', `All Requests (${priceRequests.length})`],
+            ['pending', `Pending (${pendingCount})`],
+            ['code_issued', `Code Sent (${codeIssuedCount})`],
+            ['approved_applied', `Applied (${appliedCount})`],
+            ['rejected', `Rejected (${rejectedCount})`],
+          ] as Array<[FilterKey, string]>).map(([k, label]) => (
+            <button key={k} className={`chip ${statusFilter === k ? 'sel' : ''}`} onClick={() => setStatusFilter(k)}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ position: 'relative', width: '100%', maxWidth: 320 }}>
+          <i
+            className="fas fa-search"
+            style={{
+              position: 'absolute',
+              left: 12,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: themeMuted,
+              fontSize: '.82rem',
+            }}
+          />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search requester account or offering…"
+            style={{
+              width: '100%',
+              padding: '8px 12px 8px 32px',
+              borderRadius: 8,
+              border: `1px solid ${themeBorder}`,
+              background: isLightMode ? '#FFFFFF' : 'rgba(255,255,255,0.05)',
+              color: themeText,
+              fontSize: '.84rem',
+            }}
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              style={{
+                position: 'absolute',
+                right: 8,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'none',
+                border: 'none',
+                color: themeMuted,
+                cursor: 'pointer',
+                fontSize: '.75rem',
+              }}
+            >
+              ✕
+            </button>
+          )}
+        </div>
       </div>
 
+      {/* Loading Skeleton */}
       {loadingPriceRequests ? (
-        <div className="skel" style={{ height: 220 }} />
+        <div className="skel" style={{ height: 260, borderRadius: 12 }} />
       ) : filtered.length === 0 ? (
-        <p className="muted" style={{ padding: '28px 0', textAlign: 'center' }}>
-          No price-change approval requests match this filter.
-        </p>
+        <div
+          style={{
+            padding: '48px 24px',
+            textAlign: 'center',
+            borderRadius: 12,
+            background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.02)',
+            border: `1px dashed ${themeBorder}`,
+          }}
+        >
+          <i className="fas fa-inbox" style={{ fontSize: '2.4rem', color: themeMuted, marginBottom: 12, display: 'block' }} />
+          <h4 style={{ margin: '0 0 6px', color: themeText }}>No Subject-of-Changes Requests Found</h4>
+          <p className="muted small" style={{ margin: 0 }}>
+            {searchQuery
+              ? `No requests match search query "${searchQuery}". Clear search or adjust filter.`
+              : 'There are currently no price change requests submitted by staff members.'}
+          </p>
+        </div>
       ) : (
-        <div className="table-wrap" style={{ background: isLightMode ? '#FFFFFF' : 'rgba(11,17,32,0.9)', border: `1px solid ${themeBorder}` }}>
-          <table className="table" style={{ color: themeText }}>
+        /* The Account Table for All Subject-of-Changes Requests */
+        <div className="table-wrap" style={{ background: isLightMode ? '#FFFFFF' : 'rgba(11,17,32,0.9)', border: `1px solid ${themeBorder}`, borderRadius: 12 }}>
+          <table className="table" style={{ color: themeText, width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ background: isLightMode ? '#F1F5F9' : 'rgba(30,41,59,0.8)' }}>
-                <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Requester</th>
-                <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Accommodation / Offering</th>
-                <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Rate Adjustment</th>
-                <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Justification</th>
-                <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Status &amp; Code</th>
-                <th style={{ color: isLightMode ? '#475569' : themeMuted, textAlign: 'right' }}>Admin Decision</th>
+              <tr style={{ background: isLightMode ? '#F1F5F9' : 'rgba(30,41,59,0.8)', borderBottom: `1px solid ${themeBorder}` }}>
+                <th style={{ color: isLightMode ? '#475569' : themeMuted, padding: '12px 14px' }}>Requester Account</th>
+                <th style={{ color: isLightMode ? '#475569' : themeMuted, padding: '12px 14px' }}>Subject of Changes (Offering)</th>
+                <th style={{ color: isLightMode ? '#475569' : themeMuted, padding: '12px 14px' }}>Proposed Rate Adjustment</th>
+                <th style={{ color: isLightMode ? '#475569' : themeMuted, padding: '12px 14px' }}>Reason &amp; Justification</th>
+                <th style={{ color: isLightMode ? '#475569' : themeMuted, padding: '12px 14px' }}>Status &amp; Authorization</th>
+                <th style={{ color: isLightMode ? '#475569' : themeMuted, padding: '12px 14px', textAlign: 'right' }}>Executive Action</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((item) => {
                 const badge = statusMeta(item.status);
-                const diff = Number(item.requested_rate_php || 0) - Number(item.current_rate_php || 0);
+                const currentRate = Number(item.current_rate_php || 0);
+                const requestedRate = Number(item.requested_rate_php || 0);
+                const diff = requestedRate - currentRate;
+                const pct = currentRate > 0 ? Math.round((diff / currentRate) * 100) : 0;
                 const canDecide = item.status === 'pending' || item.status === 'code_issued';
                 const isBusy = busyId === item.id;
+                const initials = getInitials(item.requested_by_name);
 
                 return (
-                  <tr key={item.id} style={{ borderBottom: `1px solid ${themeBorder}` }}>
-                    <td>
-                      <b style={{ color: themeText }}>{item.requested_by_name || 'Staff Member'}</b>
-                      <div style={{ fontSize: '.74rem', color: themeMuted }}>
-                        {(item.requested_by_department || item.requested_by_role || 'staff').replace('_', ' ').toUpperCase()} · {fmtTime(item.created_at)}
+                  <tr key={item.id} style={{ borderBottom: `1px solid ${themeBorder}`, verticalAlign: 'top' }}>
+                    {/* Requester Account Details */}
+                    <td style={{ padding: '12px 14px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span
+                          style={{
+                            width: 34,
+                            height: 34,
+                            borderRadius: '50%',
+                            background: 'linear-gradient(135deg, #0284C7, #0369A1)',
+                            color: '#FFFFFF',
+                            fontWeight: 800,
+                            fontSize: '.78rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                          }}
+                        >
+                          {initials}
+                        </span>
+                        <div>
+                          <div style={{ fontWeight: 700, color: themeText, fontSize: '.9rem' }}>
+                            {item.requested_by_name || 'Staff Member'}
+                          </div>
+                          {item.requested_by_email && (
+                            <div style={{ fontSize: '.74rem', color: themeMuted }}>
+                              <i className="fas fa-envelope" style={{ marginRight: 4, fontSize: '.68rem' }} />
+                              {item.requested_by_email}
+                            </div>
+                          )}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                            <span
+                              style={{
+                                fontSize: '.66rem',
+                                fontWeight: 800,
+                                padding: '2px 6px',
+                                borderRadius: 4,
+                                background: 'rgba(56, 189, 248, 0.15)',
+                                color: '#38BDF8',
+                                border: '1px solid rgba(56, 189, 248, 0.3)',
+                                textTransform: 'uppercase',
+                              }}
+                            >
+                              {(item.requested_by_department || item.requested_by_role || 'staff').replace('_', ' ')}
+                            </span>
+                            <span style={{ fontSize: '.7rem', color: themeMuted }}>
+                              <i className="fas fa-clock" style={{ marginRight: 3, fontSize: '.65rem' }} />
+                              {fmtTime(item.created_at)}
+                            </span>
+                          </div>
+                          {item.requested_by_id && (
+                            <div style={{ fontSize: '.66rem', color: themeMuted, marginTop: 2, fontFamily: 'monospace' }}>
+                              ID: {String(item.requested_by_id).slice(0, 14)}…
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </td>
-                    <td>
-                      <b>{item.room_name}</b>
-                      <div style={{ fontSize: '.74rem', color: themeMuted }}>{item.category || 'Room'}</div>
+
+                    {/* Subject of Changes */}
+                    <td style={{ padding: '12px 14px' }}>
+                      <div style={{ fontWeight: 700, color: themeText, fontSize: '.92rem' }}>
+                        {item.room_name}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
+                        <span
+                          style={{
+                            fontSize: '.68rem',
+                            fontWeight: 700,
+                            padding: '1px 6px',
+                            borderRadius: 4,
+                            background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.06)',
+                            color: themeMuted,
+                            border: `1px solid ${themeBorder}`,
+                          }}
+                        >
+                          {item.category || 'Offering'}
+                        </span>
+                      </div>
+                      {item.room_id && (
+                        <div style={{ fontSize: '.68rem', color: themeMuted, marginTop: 4, fontFamily: 'monospace' }}>
+                          Ref: {String(item.room_id).slice(0, 12)}…
+                        </div>
+                      )}
                     </td>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                        <span style={{ color: themeMuted, textDecoration: 'line-through' }}>{money(item.current_rate_php)}</span>
-                        <span>→</span>
-                        <b style={{ color: '#059669' }}>{money(item.requested_rate_php)}</b>
-                        <span style={{ fontSize: '.72rem', fontWeight: 700, color: diff >= 0 ? '#059669' : '#D97706' }}>
-                          ({diff >= 0 ? `+${money(diff)}` : `-${money(Math.abs(diff))}`})
+
+                    {/* Proposed Rate Adjustment */}
+                    <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <span style={{ color: themeMuted, textDecoration: 'line-through', fontSize: '.88rem' }}>
+                          {money(currentRate)}
+                        </span>
+                        <span style={{ color: themeMuted }}>→</span>
+                        <strong style={{ color: '#059669', fontSize: '1.02rem' }}>
+                          {money(requestedRate)}
+                        </strong>
+                      </div>
+                      <div style={{ marginTop: 4 }}>
+                        <span
+                          style={{
+                            fontSize: '.72rem',
+                            fontWeight: 800,
+                            padding: '2px 6px',
+                            borderRadius: 4,
+                            background: diff >= 0 ? 'rgba(5, 150, 105, 0.15)' : 'rgba(217, 119, 6, 0.15)',
+                            color: diff >= 0 ? '#10B981' : '#F59E0B',
+                            border: `1px solid ${diff >= 0 ? 'rgba(5, 150, 105, 0.3)' : 'rgba(217, 119, 6, 0.3)'}`,
+                          }}
+                        >
+                          {diff >= 0 ? `+${money(diff)} (+${pct}%)` : `-${money(Math.abs(diff))} (${pct}%)`}
                         </span>
                       </div>
                     </td>
-                    <td style={{ maxWidth: 260, fontSize: '.84rem' }}>
-                      <div>{item.reason}</div>
+
+                    {/* Reason & Justification */}
+                    <td style={{ padding: '12px 14px', maxWidth: 280 }}>
+                      <div style={{ fontSize: '.84rem', color: themeText, lineHeight: 1.4 }}>
+                        {item.reason}
+                      </div>
                       {item.review_note && (
-                        <div style={{ fontSize: '.74rem', color: themeMuted, marginTop: 4 }}>Admin note: {item.review_note}</div>
+                        <div
+                          style={{
+                            fontSize: '.74rem',
+                            color: isLightMode ? '#00517A' : '#7DD3FC',
+                            marginTop: 6,
+                            padding: '4px 8px',
+                            borderRadius: 6,
+                            background: isLightMode ? '#EFF6FF' : 'rgba(0, 102, 153, 0.15)',
+                            border: '1px solid rgba(0, 102, 153, 0.25)',
+                          }}
+                        >
+                          <strong>Admin Note:</strong> {item.review_note}
+                        </div>
                       )}
                     </td>
-                    <td>
+
+                    {/* Status & Code */}
+                    <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
                       <span
                         className="pill"
                         style={{
@@ -267,20 +481,25 @@ export const ApprovalRequestsView: React.FC<ApprovalRequestsViewProps> = ({
                           color: badge.color,
                           fontSize: '.7rem',
                           fontWeight: 800,
+                          padding: '3px 8px',
+                          borderRadius: 6,
+                          display: 'inline-block',
                         }}
                       >
                         {badge.label}
                       </span>
+
                       {item.status === 'code_issued' && item.authorization_code && (
                         <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
                           <code
                             style={{
-                              padding: '2px 8px',
+                              padding: '3px 8px',
                               borderRadius: 6,
                               background: isLightMode ? '#E2E8F0' : 'rgba(255,255,255,0.08)',
                               color: themeText,
                               fontWeight: 700,
-                              fontSize: '.78rem',
+                              fontSize: '.82rem',
+                              letterSpacing: '.06em',
                             }}
                           >
                             {item.authorization_code}
@@ -288,7 +507,14 @@ export const ApprovalRequestsView: React.FC<ApprovalRequestsViewProps> = ({
                           <button
                             type="button"
                             onClick={() => handleCopyCode(item.authorization_code)}
-                            style={{ border: 'none', background: 'none', color: '#006699', cursor: 'pointer', fontSize: '.78rem' }}
+                            style={{
+                              border: 'none',
+                              background: 'none',
+                              color: '#006699',
+                              cursor: 'pointer',
+                              fontSize: '.85rem',
+                              padding: 2,
+                            }}
                             title="Copy code"
                           >
                             <i className="fas fa-copy" />
@@ -296,7 +522,9 @@ export const ApprovalRequestsView: React.FC<ApprovalRequestsViewProps> = ({
                         </div>
                       )}
                     </td>
-                    <td style={{ textAlign: 'right' }}>
+
+                    {/* Executive Governance Action Controls */}
+                    <td style={{ padding: '12px 14px', textAlign: 'right' }}>
                       {canDecide ? (
                         <div style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                           <button
@@ -312,11 +540,14 @@ export const ApprovalRequestsView: React.FC<ApprovalRequestsViewProps> = ({
                               fontSize: '.74rem',
                               fontWeight: 700,
                               cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
                             }}
-                            title="Approve and apply new price immediately"
+                            title="Approve and apply new price immediately to live catalog"
                           >
-                            <i className="fas fa-check" style={{ marginRight: 4 }} />
-                            Approve Directly
+                            <i className="fas fa-check" />
+                            Approve Live
                           </button>
                           <button
                             type="button"
@@ -331,10 +562,13 @@ export const ApprovalRequestsView: React.FC<ApprovalRequestsViewProps> = ({
                               fontSize: '.74rem',
                               fontWeight: 700,
                               cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
                             }}
-                            title="Generate and send single-use approval code to employee"
+                            title="Generate single-use authorization code for employee to apply"
                           >
-                            <i className="fas fa-key" style={{ marginRight: 4 }} />
+                            <i className="fas fa-key" />
                             {item.status === 'code_issued' ? 'Reissue Code' : 'Send Code'}
                           </button>
                           <button
@@ -359,9 +593,9 @@ export const ApprovalRequestsView: React.FC<ApprovalRequestsViewProps> = ({
                           </button>
                         </div>
                       ) : (
-                        <span style={{ fontSize: '.74rem', color: themeMuted }}>
-                          {item.reviewed_by_name ? `By ${item.reviewed_by_name}` : 'Closed'}
-                        </span>
+                        <div style={{ fontSize: '.76rem', color: themeMuted }}>
+                          {item.reviewed_by_name ? `Reviewed by ${item.reviewed_by_name}` : 'Request Concluded'}
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -372,7 +606,7 @@ export const ApprovalRequestsView: React.FC<ApprovalRequestsViewProps> = ({
         </div>
       )}
 
-      {/* Optional Rejection Note Modal */}
+      {/* Decline Reason Modal */}
       {noteTarget && (
         <div
           style={{

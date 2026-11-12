@@ -277,6 +277,26 @@ export async function authenticate(req, _res, next) {
 }
 
 /**
+ * Optional authentication middleware for guest-accessible actions (e.g., booking reservations).
+ * If a valid token is present, resolves req.user; otherwise permits guest operations.
+ */
+export async function optionalAuth(req, res, next) {
+  const token = req.headers.authorization?.replace(/^Bearer\s+/i, '') || req.query.token || req.cookies?.session_token || req.cookies?.access_token;
+  if (!token) {
+    req.user = null;
+    req.token = null;
+    return next();
+  }
+  return authenticate(req, res, (err) => {
+    if (err) {
+      req.user = null;
+      req.token = null;
+    }
+    return next();
+  });
+}
+
+/**
  * Fine-grained Role-Based Access Control (RBAC) middleware factory
  * @param  {...string} allowedRoles - Array of authorized roles
  */

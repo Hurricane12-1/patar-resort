@@ -69,60 +69,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               </h1>
             </div>
           </Link>
-
-          {/* Cross-Namespace Navigation for Governance Officers */}
-          <nav style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 20 }}>
-            <Link
-              to="/admin"
-              style={{
-                fontSize: '.78rem',
-                fontWeight: 600,
-                padding: '6px 12px',
-                borderRadius: 8,
-                textDecoration: 'none',
-                color: location.pathname === '/admin' ? '#FFFFFF' : '#94A3B8',
-                background: location.pathname === '/admin' ? 'rgba(139, 92, 246, 0.25)' : 'transparent',
-                border: location.pathname === '/admin' ? '1px solid rgba(139, 92, 246, 0.4)' : '1px solid transparent',
-              }}
-            >
-              <i className="fas fa-chart-line" style={{ marginRight: 6, color: '#A78BFA' }} />
-              Governance & Control
-            </Link>
-            <Link
-              to="/staff"
-              style={{
-                fontSize: '.78rem',
-                fontWeight: 600,
-                padding: '6px 12px',
-                borderRadius: 8,
-                textDecoration: 'none',
-                color: '#94A3B8',
-                background: 'transparent',
-                border: '1px solid transparent',
-              }}
-              title="Inspect Daily Operations Hub"
-            >
-              <i className="fas fa-clipboard-check" style={{ marginRight: 6, color: '#38BDF8' }} />
-              Staff Desk →
-            </Link>
-            <Link
-              to="/recovery"
-              style={{
-                fontSize: '.78rem',
-                fontWeight: 600,
-                padding: '6px 12px',
-                borderRadius: 8,
-                textDecoration: 'none',
-                color: '#94A3B8',
-                background: 'transparent',
-                border: '1px solid transparent',
-              }}
-              title="Inspect Recovery & Escalation Console"
-            >
-              <i className="fas fa-life-ring" style={{ marginRight: 6, color: '#F59E0B' }} />
-              Recovery Console →
-            </Link>
-          </nav>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
