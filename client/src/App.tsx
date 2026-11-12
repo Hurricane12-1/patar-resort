@@ -58,8 +58,8 @@ function MainAppShell() {
   const location = useLocation();
   const path = location.pathname.toLowerCase();
 
-  // Determine whether current route is within an isolated namespace portal
-  const isDedicatedNamespace = ['/admin', '/staff', '/recovery', '/client'].some((p) =>
+  // Determine whether current route is within an internal employee/governance namespace
+  const isInternalStaffPortal = ['/admin', '/staff', '/recovery'].some((p) =>
     path.startsWith(p)
   );
 
@@ -69,19 +69,18 @@ function MainAppShell() {
     '/receptionist',
     '/accounting',
     '/resort-department',
-    '/my-bookings',
-    '/resort-customer',
   ].some((p) => path.startsWith(p));
 
   const isGuestHome = path === '/';
-  const hidePublicChrome = isDedicatedNamespace || isLegacyInternal || isGuestHome;
+  const hideNavbarAndFooter = isInternalStaffPortal || isLegacyInternal || isGuestHome;
+  const hideChatbot = isInternalStaffPortal || isLegacyInternal;
 
   return (
     <div className="app-shell">
       <TelemetryTracker />
 
-      {/* Render Public Guest Navbar ONLY when not on Mobile App Home or Dedicated Portals */}
-      {!hidePublicChrome && <Navbar />}
+      {/* Render Public Guest Navbar ONLY when not on Mobile App Home or Dedicated Internal Portals */}
+      {!hideNavbarAndFooter && <Navbar />}
 
       <main>
         <Routes>
@@ -202,9 +201,9 @@ function MainAppShell() {
         </Routes>
       </main>
 
-      {/* Render Public Guest Footer & Chatbot ONLY when on public pages */}
-      {!hidePublicChrome && <Footer />}
-      {!hidePublicChrome && <Chatbot />}
+      {/* Render Public Guest Footer & AI Concierge Chatbot */}
+      {!hideNavbarAndFooter && <Footer />}
+      {!hideChatbot && <Chatbot />}
       <AuthModal />
       <Toasts />
     </div>
