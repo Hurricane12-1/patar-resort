@@ -9,13 +9,11 @@ import Toasts from './components/Toasts.tsx';
 import TelemetryTracker from './components/TelemetryTracker.tsx';
 
 // Namespace Guards (Role-Based Access Isolation)
-import AdminGuard from './guards/AdminGuard.tsx';
 import StaffGuard from './guards/StaffGuard.tsx';
 import RecoveryGuard from './guards/RecoveryGuard.tsx';
 import ClientGuard from './guards/ClientGuard.tsx';
 
 // Namespace Layout Wrappers (Isolated Layouts)
-import AdminLayout from './layouts/AdminLayout.tsx';
 import StaffLayout from './layouts/StaffLayout.tsx';
 import RecoveryLayout from './layouts/RecoveryLayout.tsx';
 import ClientLayout from './layouts/ClientLayout.tsx';
@@ -100,13 +98,7 @@ function MainAppShell() {
           {/* DEPRECATED ROUTE REDIRECT: /administrator is STRICTLY FORBIDDEN */}
           <Route path="/administrator" element={<Navigate to="/admin" replace />} />
           
-          <Route path="/admin/*" element={
-            <AdminGuard>
-              <AdminLayout>
-                <Admin />
-              </AdminLayout>
-            </AdminGuard>
-          } />
+          <Route path="/admin/*" element={<Admin />} />
 
           {/* ============================================================ */}
           {/* NAMESPACE 2: /staff (Daily Operations & Execution)           */}
