@@ -5,6 +5,8 @@ import App from './App';
 import './index.css';
 import './styles/global.css';
 import './styles/cinematic.css';
+import './styles/staff-portal.css';
+import './styles/resort-app.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

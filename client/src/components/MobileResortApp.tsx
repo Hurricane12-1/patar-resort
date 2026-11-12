@@ -28,6 +28,15 @@ import {
   OfferingType,
 } from '../lib/offeringSpecs';
 import { VoucherModal, LuxuryResortVoucher, ReceiptActions, normalizeVoucherData, VoucherData } from './receipt';
+import ResortSectionBoundary from './resort/ResortSectionBoundary.tsx';
+import ResortHeroBooking from './resort/ResortHeroBooking.tsx';
+import ResortRoomsRail from './resort/ResortRoomsRail.tsx';
+import ResortExperiences from './resort/ResortExperiences.tsx';
+import ResortAmenities from './resort/ResortAmenities.tsx';
+import ResortDining from './resort/ResortDining.tsx';
+import ResortReviews from './resort/ResortReviews.tsx';
+import ResortLocationFaq from './resort/ResortLocationFaq.tsx';
+import ResortFooter from './resort/ResortFooter.tsx';
 
 // ==========================================================================
 // LAYOUT TOKENS
@@ -1192,44 +1201,31 @@ export default function MobileResortApp() {
             </div>
           </section>
 
-          {/* ROOMS TEASER */}
-          <section className={`${WRAP} ${SECTION}`}>
-            <Eyebrow>{site.rooms.eyebrow}</Eyebrow>
-            <SectionTitle title={site.rooms.title} />
-            {displayRooms.length === 0 ? (
-              <div className="mt-8 rounded-3xl border border-white/10 bg-white/[0.02] p-8 text-center text-white/60">
-                <p className="font-serif text-lg text-white">No Rooms Published</p>
-                <p className="mt-1 text-sm font-light">Rooms are currently being updated. Please check back shortly.</p>
-              </div>
-            ) : (
-              <div className={`${RAIL} mt-8 lg:grid-cols-4`}>
-                {displayRooms.map((room) => (
-                  <article
-                    key={room.id || room.name}
-                    className="group relative h-72 w-[78%] shrink-0 snap-start overflow-hidden rounded-3xl border border-white/10 sm:w-[46%] lg:w-auto"
-                  >
-                    <img
-                      src={getRoomImageUrl(room)}
-                      alt={room.name}
-                      loading="lazy"
-                      onError={handleImageError}
-                      className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/30 to-transparent" />
-                    <div className="absolute inset-x-0 bottom-0 p-5">
-                      <span className="text-[10px] uppercase font-mono tracking-widest text-cyan font-bold block mb-1">
-                        {formatOfferingBadge(inferOfferingType(room), room.category)}
-                      </span>
-                      <h3 className="font-serif text-2xl font-medium leading-tight text-white">{formatRoomTitle(room.name)}</h3>
-                      <p className="mt-1 font-serif text-lg text-cyan">
-                        {peso(room.rate_php || room.price || 0)} <span className="font-sans text-[11px] text-white/60">{getRateUnitSuffix(inferOfferingType(room), room.specs)}</span>
-                      </p>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            )}
-          </section>
+          {/* MODULAR ACCOMMODATIONS PREVIEW & BOOKING RAIL */}
+          <ResortSectionBoundary sectionName="Accommodations Preview">
+            <ResortRoomsRail
+              rooms={displayRooms}
+              checkIn={checkIn}
+              checkOut={checkOut}
+              checkInTime={checkInTime}
+              checkOutTime={checkOutTime}
+              isRoomOccupiedForDates={isRoomOccupiedForDates}
+              isRoomOccupiedToday={isRoomOccupiedToday}
+              onOpenReservation={(roomName, startWithCalendar) => {
+                if (roomName) setSelectedRoom(roomName);
+                setStage('app');
+                setTimeout(() => {
+                  openReservation(roomName, startWithCalendar);
+                }, 50);
+              }}
+              onSelectRoom={(roomName) => {
+                setSelectedRoom(roomName);
+                setStage('app');
+              }}
+              eyebrow={site.rooms.eyebrow}
+              title={site.rooms.title}
+            />
+          </ResortSectionBoundary>
 
           {/* AMENITIES */}
           <section className={`${WRAP} ${SECTION}`}>
@@ -2109,771 +2105,169 @@ export default function MobileResortApp() {
           </div>
         </section>
 
-        {/* 4. BOOKING CARD (overlaps hero) */}
-        <section id="booking-section" className={`${WRAP} relative z-20 -mt-20 scroll-mt-24 md:-mt-24`}>
-          <div className="rounded-3xl border border-white/15 bg-ink/90 p-5 shadow-2xl shadow-black/60 backdrop-blur-2xl sm:p-6 lg:p-7">
-            <div className="mb-5 flex items-center justify-between gap-3">
-              <h2 className="font-serif text-2xl md:text-3xl font-medium text-white">{site.booking.title}</h2>
-              <span className="flex shrink-0 items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-cyan">
-                <span className="h-1.5 w-1.5 rounded-full bg-cyan animate-pulse" />
-                Live rates
-              </span>
-            </div>
+        {/* 4. MODULAR BOOKING BAR & AVAILABILITY ENGINE */}
+        <ResortSectionBoundary sectionName="Hero Booking & Availability">
+          <ResortHeroBooking
+            checkIn={checkIn}
+            checkOut={checkOut}
+            setCheckIn={setCheckIn}
+            setCheckOut={setCheckOut}
+            checkInTime={checkInTime}
+            checkOutTime={checkOutTime}
+            setCheckInTime={setCheckInTime}
+            setCheckOutTime={setCheckOutTime}
+            guests={guests}
+            setGuests={setGuests}
+            selectedRoom={selectedRoom}
+            setSelectedRoom={setSelectedRoom}
+            displayRooms={displayRooms}
+            bookedRanges={bookedRanges}
+            isRoomOccupiedForDates={isRoomOccupiedForDates}
+            isRoomOccupiedToday={isRoomOccupiedToday}
+            checkAvailability={checkAvailability}
+            checkingAvailability={checkingAvailability}
+            quote={quote}
+            setQuote={setQuote}
+            onOpenReservation={openReservation}
+            onResetCalendarSelection={handleResetCalendarSelection}
+            showHeroCalendar={showHeroCalendar}
+            setShowHeroCalendar={setShowHeroCalendar}
+            siteBooking={site.booking}
+          />
+        </ResortSectionBoundary>
 
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-[1fr_1fr_1fr_1.5fr_auto]">
-              <button
-                type="button"
-                onClick={() => setShowHeroCalendar((s) => !s)}
-                className={`flex flex-col text-left gap-1 rounded-2xl border px-4 py-3 transition cursor-pointer ${
-                  showHeroCalendar ? 'border-cyan bg-cyan/10' : 'border-white/10 bg-white/[0.04] hover:border-cyan/50'
-                }`}
-                title="Tap to select check-in date on marked calendar"
-              >
-                <span className={LABEL}>{site.booking.checkIn}</span>
-                <span className="text-sm font-semibold text-white flex items-center justify-between">
-                  {checkIn} <i className="fas fa-calendar-alt text-xs text-cyan" />
-                </span>
-                <span className="text-[10px] text-cyan/70 font-medium">Tap for marked calendar</span>
-              </button>
+        {/* 5. MODULAR ACCOMMODATIONS & 2-HOUR BUFFER RAIL */}
+        <ResortSectionBoundary sectionName="Accommodations & Offers Rail">
+          <ResortRoomsRail
+            rooms={displayRooms}
+            checkIn={checkIn}
+            checkOut={checkOut}
+            checkInTime={checkInTime}
+            checkOutTime={checkOutTime}
+            isRoomOccupiedForDates={isRoomOccupiedForDates}
+            isRoomOccupiedToday={isRoomOccupiedToday}
+            onOpenReservation={openReservation}
+            onSelectRoom={setSelectedRoom}
+            eyebrow={site.rooms.eyebrow}
+            title={site.rooms.title}
+          />
+        </ResortSectionBoundary>
 
-              <button
-                type="button"
-                onClick={() => setShowHeroCalendar((s) => !s)}
-                className={`flex flex-col text-left gap-1 rounded-2xl border px-4 py-3 transition cursor-pointer ${
-                  showHeroCalendar ? 'border-cyan bg-cyan/10' : 'border-white/10 bg-white/[0.04] hover:border-cyan/50'
-                }`}
-                title="Tap to select check-out date on marked calendar"
-              >
-                <span className={LABEL}>{site.booking.checkOut}</span>
-                <span className="text-sm font-semibold text-white flex items-center justify-between">
-                  {checkOut} <i className="fas fa-calendar-alt text-xs text-cyan" />
-                </span>
-                <span className="text-[10px] text-cyan/70 font-medium">Tap for marked calendar</span>
-              </button>
+        {/* 7. MODULAR EXPERIENCES */}
+        <ResortSectionBoundary sectionName="Curated Experiences">
+          <ResortExperiences
+            eyebrow={site.experiences.eyebrow}
+            title={site.experiences.title}
+            tagline={site.brand.tagline}
+            items={site.experiences.items}
+            offerRooms={displayRooms}
+            onSelectRoom={setSelectedRoom}
+            onOpenReservation={openReservation}
+          />
+        </ResortSectionBoundary>
 
-              <label className="flex flex-col gap-1 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
-                <span className={LABEL}>{site.booking.guests}</span>
-                <select
-                  value={guests}
-                  onChange={(e) => {
-                    setGuests(e.target.value);
-                    setQuote(null);
-                  }}
-                  className="w-full text-sm font-medium text-white outline-none"
-                >
-                  {['1 Guest', '2 Guests', '3 Guests', '4 Guests', '5+ Guests'].map((g) => (
-                    <option key={g}>{g}</option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="flex flex-col gap-1 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
-                <span className={LABEL}>{site.booking.room}</span>
-                <select
-                  value={selectedRoom}
-                  onChange={(e) => {
-                    setSelectedRoom(e.target.value);
-                    setQuote(null);
-                  }}
-                  className="w-full truncate text-sm font-medium text-white outline-none"
-                >
-                  {displayRooms.length === 0 ? (
-                    <option value="">No rooms available</option>
-                  ) : (
-                    (['room', 'cottage', 'offer'] as OfferingType[]).map((groupType) => {
-                      const groupItems = displayRooms.filter((r) => inferOfferingType(r) === groupType);
-                      if (groupItems.length === 0) return null;
-                      const groupLabel = groupType === 'room' ? 'Rooms & Accommodations' : groupType === 'cottage' ? 'Beachfront Cottages' : 'Island Tours & Offers';
-                      return (
-                        <optgroup key={groupType} label={groupLabel} className="bg-navy text-white">
-                          {groupItems.map((r) => {
-                            const occupiedForStay = checkIn && checkOut && isRoomOccupiedForDates(r, checkIn, checkOut, checkInTime, checkOutTime);
-                            const occupiedToday = isRoomOccupiedToday(r);
-                            const statusTag = occupiedForStay ? ' · [Booked]' : occupiedToday ? ' · [Occupied today]' : ' · [Available]';
-                            return (
-                              <option key={r.id || r.name} value={r.name} className={occupiedForStay ? 'text-rose-400 font-semibold' : ''}>
-                                {r.name} ({r.category}){statusTag}
-                              </option>
-                            );
-                          })}
-                        </optgroup>
-                      );
-                    })
-                  )}
-                </select>
-              </label>
-
-              <button
-                type="button"
-                onClick={checkAvailability}
-                disabled={checkingAvailability}
-                className={`${BTN_PRIMARY} col-span-2 py-4 lg:col-span-1 lg:h-full lg:px-8 cursor-pointer flex items-center justify-center gap-2`}
-              >
-                {checkingAvailability ? (
-                  <>
-                    <span className="h-4 w-4 border-2 border-navy border-t-transparent rounded-full animate-spin" />
-                    <span>Checking…</span>
-                  </>
-                ) : (
-                  site.booking.cta
-                )}
-              </button>
-            </div>
-
-            {/* Calendar Exploration Bar */}
-            <div className="mt-3.5 flex items-center justify-between flex-wrap gap-2 pt-3 border-t border-white/10">
-              <span className="text-xs text-white/60">
-                Want to check reserved dates across rooms?
-              </span>
-              <button
-                type="button"
-                onClick={() => setShowHeroCalendar((prev) => !prev)}
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider text-cyan hover:text-white bg-cyan/10 hover:bg-cyan/20 border border-cyan/30 transition cursor-pointer"
-              >
-                <i className="fas fa-calendar-alt text-cyan" />
-                <span>{showHeroCalendar ? 'Hide Availability Calendar' : 'View Calendar (Check Reserved vs Open Dates)'}</span>
-              </button>
-            </div>
-
-            {showHeroCalendar && (
-              <div className="mt-4 animate-fade-in">
-                <AvailabilityCalendar
-                  rooms={displayRooms}
-                  bookings={bookedRanges}
-                  initialCheckIn={checkIn}
-                  initialCheckOut={checkOut}
-                  isLightMode={false}
-                  onReset={handleResetCalendarSelection}
-                  onSelectDates={(newIn, newOut) => {
-                    setCheckIn(newIn);
-                    setCheckOut(newOut);
-                    setQuote(null);
-                    if (newIn && newOut) {
-                      toast(`✦ Dates selected: ${newIn} → ${newOut}`);
-                    }
-                  }}
-                  onClose={() => setShowHeroCalendar(false)}
-                />
-              </div>
-            )}
-
-            {quote && (
-              <div
-                role="status"
-                className={`mt-4 flex flex-col gap-3 rounded-2xl border px-4 py-3 text-sm animate-fade-in sm:flex-row sm:items-center sm:justify-between ${
-                  quote.ok ? 'border-cyan/30 bg-cyan/10 text-white' : 'border-gold/40 bg-gold/10 text-gold'
-                }`}
-              >
-                <span>
-                  {quote.ok && <span className="mr-2 text-cyan">✦</span>}
-                  {quote.text}
-                </span>
-                {quote.ok && (
-                  <button
-                    type="button"
-                    onClick={() => openReservation(selectedRoom)}
-                    className="shrink-0 text-xs font-semibold uppercase tracking-[0.18em] text-cyan underline underline-offset-4 cursor-pointer hover:brightness-120"
-                  >
-                    Continue to reserve →
-                  </button>
-                )}
-              </div>
-            )}
-
-            <p className="mt-4 text-center text-[11px] font-light text-white/50">{site.booking.note}</p>
-          </div>
-        </section>
-
-        {/* 5. ROOMS */}
-        <section id="rooms-section" className={`${WRAP} ${SECTION} scroll-mt-16`}>
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <Eyebrow>{site.rooms.eyebrow}</Eyebrow>
-              <SectionTitle title={site.rooms.title} />
-            </div>
-            {displayRooms.length > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.2em] text-white/50 font-medium">
-                  ✦ Swipe to explore
-                </span>
-                <button
-                  type="button"
-                  onClick={() => scrollRoomsRail('left')}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/5 text-white/80 transition hover:border-cyan hover:bg-cyan/15 hover:text-cyan cursor-pointer active:scale-95 shadow-sm"
-                  aria-label="Scroll left"
-                  title="Scroll left"
-                >
-                  ◀
-                </button>
-                <button
-                  type="button"
-                  onClick={() => scrollRoomsRail('right')}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/5 text-white/80 transition hover:border-cyan hover:bg-cyan/15 hover:text-cyan cursor-pointer active:scale-95 shadow-sm"
-                  aria-label="Scroll right"
-                  title="Scroll right"
-                >
-                  ▶
-                </button>
-              </div>
-            )}
-          </div>
-
-          {displayRooms.length === 0 ? (
-            <div className="mt-8 rounded-3xl border border-white/10 bg-white/[0.02] p-8 text-center text-white/60">
-              <p className="font-serif text-lg text-white">No Rooms Published</p>
-              <p className="mt-1 text-sm font-light">Rooms are currently being updated. Please check back shortly.</p>
-            </div>
-          ) : (
-            <>
-            <div className="mt-6 flex flex-wrap items-center gap-2">
-              {([
-                { key: 'all', label: `All (${displayRooms.length})` },
-                { key: 'room', label: `Rooms (${displayRooms.filter((r) => inferOfferingType(r) === 'room').length})` },
-                { key: 'cottage', label: `Cottages (${displayRooms.filter((r) => inferOfferingType(r) === 'cottage').length})` },
-                { key: 'offer', label: `Island Tours & Offers (${displayRooms.filter((r) => inferOfferingType(r) === 'offer').length})` },
-              ] as const).map((tab) => {
-                const isActive = offeringFilter === tab.key;
-                return (
-                  <button
-                    key={tab.key}
-                    type="button"
-                    onClick={() => setOfferingFilter(tab.key)}
-                    className={`min-h-[40px] rounded-full px-4 py-1.5 text-xs font-semibold tracking-wide transition cursor-pointer ${
-                      isActive
-                        ? 'bg-[#006699] text-white border border-cyan/50 shadow-md'
-                        : 'bg-white/5 text-white/80 border border-white/15 hover:border-cyan/40 hover:text-white'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </div>
-            <div
-              ref={roomsRailRef}
-              className="mt-6 flex gap-5 overflow-x-auto snap-x snap-mandatory pb-4 pt-1 -mx-5 px-5 sm:-mx-8 sm:px-8 scrollbar-none no-scrollbar"
-              style={{
-                scrollbarWidth: 'none',
-                msOverflowStyle: 'none',
-                WebkitOverflowScrolling: 'touch',
-              }}
-            >
-              {displayRooms
-                .filter((room) => offeringFilter === 'all' || inferOfferingType(room) === offeringFilter)
-                .map((room) => {
-                const roomTitle = formatRoomTitle(room.name);
-                const categoryLabel = room.category || 'Luxury Villa';
-                const capacityGuests = room.capacity || 4;
-                const priceNight = room.rate_php || room.price || 0;
-                const downpayment = Math.round(priceNight * 0.3);
-                const descriptionText =
-                  room.description ||
-                  room.meta ||
-                  'Private coastal sanctuary featuring tranquil seaside ambiance, plush bedding, and direct beach trail access.';
-                const isOccupiedForSelectedStay = Boolean(checkIn && checkOut && isRoomOccupiedForDates(room, checkIn, checkOut, checkInTime, checkOutTime));
-                const isOccupiedRightNow = isRoomOccupiedToday(room);
-
-                return (
-                  <article
-                    key={room.id || room.name}
-                    className="group flex w-[88vw] max-w-[360px] sm:w-[380px] md:w-[410px] shrink-0 snap-start flex-col rounded-3xl border border-white/10 bg-[#0B1528]/95 backdrop-blur-md overflow-hidden transition-all duration-300 hover:border-cyan/50 hover:shadow-2xl hover:shadow-cyan/10"
-                  >
-                    {/* Image Showcase with Luxury Overlays */}
-                    <div className="relative h-60 w-full overflow-hidden bg-navy-dark">
-                      <img
-                        src={getRoomImageUrl(room)}
-                        alt={roomTitle}
-                        loading="lazy"
-                        onError={handleImageError}
-                        className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#0B1528] via-black/20 to-black/40 pointer-events-none" />
-
-                      {/* Top Badges */}
-                      <div className="absolute top-3 inset-x-3 flex items-center justify-between gap-2 pointer-events-none">
-                        <span className="rounded-full border border-white/15 bg-black/75 px-3 py-1 font-mono text-[10px] font-semibold tracking-wider uppercase text-cyan backdrop-blur-md shadow-sm">
-                          {formatOfferingBadge(inferOfferingType(room), categoryLabel)}
-                        </span>
-                        {isOccupiedForSelectedStay ? (
-                          <span className="rounded-full border border-rose-500/40 bg-rose-950/85 px-2.5 py-1 text-[10px] font-semibold text-rose-300 backdrop-blur-md flex items-center gap-1.5 shadow-sm">
-                            <span className="h-1.5 w-1.5 rounded-full bg-rose-400" />
-                            Occupied for Dates
-                          </span>
-                        ) : isOccupiedRightNow ? (
-                          <span className="rounded-full border border-amber-500/40 bg-amber-950/85 px-2.5 py-1 text-[10px] font-semibold text-amber-300 backdrop-blur-md flex items-center gap-1.5 shadow-sm">
-                            <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-                            Occupied Today
-                          </span>
-                        ) : (
-                          <span className="rounded-full border border-emerald-500/30 bg-emerald-950/80 px-2.5 py-1 text-[10px] font-semibold text-emerald-300 backdrop-blur-md flex items-center gap-1.5 shadow-sm">
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                            Available
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Bottom Price Tag */}
-                      <div className="absolute bottom-3 left-3 rounded-2xl border border-white/15 bg-navy/90 px-3.5 py-1.5 backdrop-blur-md shadow-lg flex items-baseline gap-1.5">
-                        <span className="font-serif text-lg font-bold text-cyan">
-                          {peso(priceNight)}
-                        </span>
-                        <span className="font-sans text-[10px] text-white/70">{getRateUnitSuffix(inferOfferingType(room), room.specs)}</span>
-                        <span className="hidden sm:inline text-[9px] text-white/40 pl-1 border-l border-white/10">
-                          DP: {peso(downpayment)}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Card Content & Details */}
-                    <div className="flex flex-1 flex-col justify-between p-5 sm:p-6 gap-4">
-                      <div className="space-y-2.5">
-                        {/* Title & Star Rating */}
-                        <div className="flex items-start justify-between gap-2">
-                          <h3 className="font-serif text-xl sm:text-2xl font-medium tracking-wide text-white group-hover:text-cyan transition leading-tight">
-                            {roomTitle}
-                          </h3>
-                          <span className="flex items-center gap-1 text-[11px] font-medium text-amber-300/90 shrink-0 pt-0.5">
-                            <><i className="fas fa-star text-gold" style={{ marginRight: 4 }} />4.9 <span className="text-white/40">(18)</span></>
-                          </span>
-                        </div>
-
-                        {/* Specs & Amenities Line */}
-                        <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-white/60">
-                          <span className="inline-flex items-center gap-1 rounded-lg bg-white/5 px-2.5 py-1 border border-white/5">
-                            <><i className="fas fa-users" style={{ marginRight: 4 }} />{inferOfferingType(room) === 'offer' ? `Up to ${capacityGuests} pax` : `Sleeps ${capacityGuests}`}</>
-                          </span>
-                          {formatSpecHighlights(room).slice(0, 3).map((sp) => (
-                            <span key={sp.label} className="inline-flex items-center gap-1 rounded-lg bg-white/5 px-2.5 py-1 border border-white/5">
-                              {sp.label}: {sp.value}
-                            </span>
-                          ))}
-                        </div>
-
-                        {/* Description */}
-                        <p className="text-xs font-light leading-relaxed text-white/60 line-clamp-2">
-                          {descriptionText}
-                        </p>
-                      </div>
-
-                      {/* Professional Dual Action Footer */}
-                      <div className="pt-3 border-t border-white/10 flex items-center gap-2.5">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedRoom(room.name);
-                            openReservation(room.name, true);
-                          }}
-                          title={`Check calendar & reserved dates for ${roomTitle}`}
-                          className="flex-1 py-2.5 px-3.5 rounded-xl border border-white/20 bg-white/5 hover:border-cyan hover:bg-cyan/10 text-xs font-semibold text-white/90 tracking-wide transition flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
-                        >
-                          <><i className="fas fa-calendar-check" style={{ marginRight: 4 }} />Check Dates</>
-                        </button>
-                        {isOccupiedForSelectedStay ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedRoom(room.name);
-                              openReservation(room.name, true);
-                            }}
-                            title={`This accommodation is already reserved from ${checkIn} (${checkInTime}) to ${checkOut} (${checkOutTime}) with mandatory 2-hour turnaround buffer. Click to view open slots.`}
-                            className="flex-1 py-2.5 px-3.5 rounded-xl border border-rose-500/40 bg-rose-950/50 hover:bg-rose-950/80 text-rose-200 font-bold text-xs tracking-wide transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm whitespace-nowrap"
-                          >
-                            <i className="fas fa-clock text-[10px] text-rose-400" />
-                            <span>Reserved · 2h Gap</span>
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedRoom(room.name);
-                              openReservation(room.name, false);
-                            }}
-                            title={`Reserve ${roomTitle}`}
-                            className="flex-1 py-2.5 px-3.5 rounded-xl bg-cyan hover:bg-cyan-light text-navy font-bold text-xs tracking-wide transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-cyan/20 whitespace-nowrap"
-                          >
-                            {inferOfferingType(room) === 'offer' ? 'Reserve Tour →' : inferOfferingType(room) === 'cottage' ? 'Reserve Cottage →' : 'Book Room →'}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-            </>
-          )}
-        </section>
-
-        {/* 7. EXPERIENCES (sand) */}
-        <section id="experiences-section" className={`${WRAP} ${SECTION} scroll-mt-16`}>
-          <div className="rounded-3xl bg-sand p-7 text-navy sm:p-10 lg:grid lg:grid-cols-[1fr_1.6fr] lg:gap-16 lg:p-14">
-            <div>
-              <Eyebrow light>{site.experiences.eyebrow}</Eyebrow>
-              <SectionTitle title={site.experiences.title} light />
-              <p className="mt-4 hidden max-w-xs text-sm font-light leading-relaxed text-navy/70 lg:block">
-                {site.brand.tagline}
-              </p>
-            </div>
-            <div className="mt-8 grid gap-x-10 sm:grid-cols-2 lg:mt-0">
-              {site.experiences.items.map((exp, i) => (
-                <div key={exp.title} className="border-t border-navy/10 py-5">
-                  <div className="flex items-baseline gap-3">
-                    <span className="font-serif text-lg italic text-sky-700/60">0{i + 1}</span>
-                    <h3 className="font-serif text-xl font-medium">{exp.title}</h3>
-                  </div>
-                  <p className="mt-2 text-sm font-light leading-relaxed text-navy/70">{exp.body}</p>
-                </div>
-              ))}
-              {displayRooms.filter((r) => inferOfferingType(r) === 'offer').length > 0 && (
-                <div className="sm:col-span-2 mt-4 rounded-2xl border border-[#006699]/25 bg-white p-5 shadow-sm">
-                  <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                    <div>
-                      <span className="text-[11px] font-bold uppercase tracking-widest text-[#006699]">Reservable Island Tours &amp; Offers</span>
-                      <h4 className="font-serif text-lg font-semibold text-navy">Book Your Island Tour Schedule Ahead</h4>
-                    </div>
-                    <span className="text-xs text-slate-600">Online booking starts tomorrow (same-day walk-in at front desk)</span>
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {displayRooms.filter((r) => inferOfferingType(r) === 'offer').map((offerItem) => (
-                      <div key={offerItem.id || offerItem.name} className="rounded-xl border border-slate-200 bg-slate-50 p-4 flex flex-col justify-between gap-3">
-                        <div>
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="rounded-full bg-[#fef3c7] px-2.5 py-0.5 text-[11px] font-bold text-[#78350f]">
-                              {offerItem.category || 'Island Tour'}
-                            </span>
-                            <span className="text-sm font-bold text-[#006699]">
-                              {peso(offerItem.rate_php)} {getRateUnitSuffix('offer', offerItem.specs)}
-                            </span>
-                          </div>
-                          <h5 className="mt-2 font-serif text-base font-semibold text-navy">{offerItem.name}</h5>
-                          <p className="mt-1 text-xs text-slate-600 line-clamp-2">{offerItem.description}</p>
-                          <div className="mt-2 flex flex-wrap gap-1.5">
-                            {formatSpecHighlights(offerItem).slice(0, 3).map((sp) => (
-                              <span key={sp.label} className="rounded bg-white px-2 py-0.5 text-[10px] font-medium text-slate-700 border border-slate-200">
-                                {sp.label}: {sp.value}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedRoom(offerItem.name);
-                            openReservation(offerItem.name, true);
-                          }}
-                          className="min-h-[40px] w-full rounded-xl bg-[#006699] px-4 py-2 text-xs font-bold text-white hover:bg-[#00517a] transition cursor-pointer"
-                        >
-                          Reserve Island Tour / Offer
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
-
-        {/* 8. AMENITIES */}
-        <section id="amenities-section" className={`${WRAP} ${SECTION} scroll-mt-16`}>
-          <Eyebrow>{site.amenities.eyebrow}</Eyebrow>
-          <SectionTitle title={site.amenities.title} />
-          <AmenityGrid />
-        </section>
+        {/* 8. MODULAR AMENITIES */}
+        <ResortSectionBoundary sectionName="Resort Amenities">
+          <ResortAmenities
+            eyebrow={site.amenities.eyebrow}
+            title={site.amenities.title}
+            items={site.amenities.items}
+          />
+        </ResortSectionBoundary>
 
         {/* 9. GALLERY */}
-        <section className={`${WRAP} ${SECTION}`}>
-          <Eyebrow>{site.gallery.eyebrow}</Eyebrow>
-          <SectionTitle title={site.gallery.title} />
-          <div className="mt-8 grid h-[420px] grid-cols-2 grid-rows-3 gap-2.5 md:h-[480px] md:grid-cols-4 md:grid-rows-2 md:gap-4 lg:h-[560px]">
-            {site.gallery.images.slice(0, 5).map((img, i) => (
-              <div key={img} className={`overflow-hidden rounded-2xl ${i === 0 ? 'row-span-2 md:col-span-2' : ''}`}>
-                <img
-                  src={img}
-                  alt={`${site.gallery.title} ${i + 1}`}
-                  loading="lazy"
-                  className="h-full w-full object-cover transition duration-700 hover:scale-105"
-                />
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* 10. REVIEWS */}
-        <section className={`${WRAP} ${SECTION}`}>
-          <Eyebrow>{site.reviews.eyebrow}</Eyebrow>
-          <SectionTitle title={site.reviews.title} />
-          <div className={`${RAIL} mt-8 lg:grid-cols-3 lg:gap-5`}>
-            {site.reviews.items.map((rev) => (
-              <figure
-                key={rev.name}
-                className="flex w-[85%] shrink-0 snap-start flex-col rounded-3xl border border-white/10 bg-ink p-6 sm:w-[60%] md:p-7 lg:w-auto"
-              >
-                <span className="text-sm tracking-[0.2em] text-gold"><i className="fas fa-star" /><i className="fas fa-star" /><i className="fas fa-star" /><i className="fas fa-star" /><i className="fas fa-star" /></span>
-                <blockquote className="mt-4 font-serif text-xl italic leading-relaxed text-white/90">"{rev.quote}"</blockquote>
-                <figcaption className="mt-auto flex items-center gap-3 border-t border-white/10 pt-5">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full border border-cyan/40 bg-cyan/10 font-serif text-base text-cyan">
-                    {rev.name[0]}
-                  </span>
-                  <span>
-                    <span className="block text-xs font-medium text-white">{rev.name}</span>
-                    <span className="block text-[11px] text-white/50">{rev.from}</span>
-                  </span>
-                </figcaption>
-              </figure>
-            ))}
-          </div>
-        </section>
-
-        {/* 11. LOCATION */}
-        <section id="location-section" className={`${WRAP} ${SECTION} scroll-mt-16`}>
-          <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-ink p-6 sm:p-10 lg:grid lg:grid-cols-2 lg:items-center lg:gap-14 lg:p-14">
-            <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-cyan/15 blur-3xl" />
-            <div className="relative">
-              <Eyebrow>{site.location.eyebrow}</Eyebrow>
-              <SectionTitle title={site.location.title} />
-              <p className="mt-4 text-sm md:text-[15px] font-light leading-relaxed text-white/70">{site.location.body}</p>
-            </div>
-            <div className="relative mt-8 lg:mt-0">
-              <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
-                {site.location.facts.map(([val, desc]) => (
-                  <div key={desc} className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-center sm:p-5">
-                    <span className="block font-serif text-2xl md:text-3xl font-medium text-cyan">{val}</span>
-                    <span className="mt-1 block text-[10px] md:text-xs leading-tight text-white/50">{desc}</span>
-                  </div>
-                ))}
-              </div>
-              <a
-                href="https://maps.google.com/?q=Patar+Beach+Bolinao+Pangasinan"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`${BTN_GHOST} mt-6 w-full gap-2`}
-              >
-                <PinIcon />
-                {site.location.button}
-              </a>
-            </div>
-          </div>
-        </section>
-
-        {/* 12. FAQ */}
-        <section id="faq-section" className={`${WRAP} ${SECTION} scroll-mt-16 lg:grid lg:grid-cols-[1fr_1.6fr] lg:gap-16`}>
-          <div>
-            <Eyebrow>{site.faq.eyebrow}</Eyebrow>
-            <SectionTitle title={site.faq.title} />
-          </div>
-          <div className="mt-8 flex flex-col gap-3 lg:mt-0">
-            {site.faq.items.map((item, i) => {
-              const open = openFaq === i;
-              return (
-                <div key={item.q} className="overflow-hidden rounded-2xl border border-white/10 bg-ink">
-                  <button
-                    type="button"
-                    onClick={() => setOpenFaq(open ? null : i)}
-                    aria-expanded={open}
-                    className="flex w-full items-center justify-between gap-4 p-5 text-left"
-                  >
-                    <span className="font-serif text-lg md:text-xl font-medium text-white">{item.q}</span>
-                    <span
-                      className={`shrink-0 text-2xl font-light leading-none text-cyan transition-transform duration-300 ${open ? 'rotate-45' : ''}`}
-                    >
-                      +
-                    </span>
-                  </button>
-                  <div className={`grid transition-all duration-300 ${open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
-                    <div className="overflow-hidden">
-                      <p className="px-5 pb-5 text-sm font-light leading-relaxed text-white/60">{item.a}</p>
-                    </div>
-                  </div>
+        <ResortSectionBoundary sectionName="Sanctuary Gallery">
+          <section className={`${WRAP} ${SECTION}`}>
+            <Eyebrow>{site.gallery.eyebrow}</Eyebrow>
+            <SectionTitle title={site.gallery.title} />
+            <div className="mt-8 grid h-[420px] grid-cols-2 grid-rows-3 gap-2.5 md:h-[480px] md:grid-cols-4 md:grid-rows-2 md:gap-4 lg:h-[560px]">
+              {site.gallery.images.slice(0, 5).map((img, i) => (
+                <div key={img} className={`overflow-hidden rounded-2xl ${i === 0 ? 'row-span-2 md:col-span-2' : ''}`}>
+                  <img
+                    src={img}
+                    alt={`${site.gallery.title} ${i + 1}`}
+                    loading="lazy"
+                    onError={handleImageError}
+                    className="h-full w-full object-cover transition duration-700 hover:scale-105"
+                  />
                 </div>
-              );
-            })}
+              ))}
+            </div>
+          </section>
+        </ResortSectionBoundary>
 
-            {/* AI Concierge Direct Query Card */}
-            <div className="mt-2 flex flex-col gap-4 rounded-2xl border border-cyan/25 bg-cyan/[0.06] p-5 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="flex items-center gap-2 text-sm font-medium text-white">
-                  <span className="h-2 w-2 rounded-full bg-cyan animate-pulse" />
-                  Have more questions about your stay?
-                </p>
-                <p className="mt-1 text-xs text-white/60">
-                  Our 24/7 AI Concierge can instantly answer room rates, amenities, beach guidelines, and group packages.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => window.dispatchEvent(new CustomEvent('app:open-chat'))}
-                className="shrink-0 rounded-full bg-cyan px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-navy shadow-[0_4px_16px_rgba(34,195,238,.4)] transition hover:brightness-110 active:scale-95 cursor-pointer"
-              >
-                Ask AI Concierge ✦
-              </button>
-            </div>
-          </div>
-        </section>
+        {/* 10. MODULAR REVIEWS */}
+        <ResortSectionBoundary sectionName="Guest Reviews">
+          <ResortReviews
+            eyebrow={site.reviews.eyebrow}
+            title={site.reviews.title}
+            items={site.reviews.items}
+          />
+        </ResortSectionBoundary>
 
-        {/* 14. DINING */}
-        <section id="dining-section" className={`${WRAP} ${SECTION} scroll-mt-16`}>
-          <div className={`${CARD} md:grid md:grid-cols-2`}>
-            <div className="relative h-60 sm:h-72 md:h-full md:min-h-[440px]">
-              <img src={site.dining.image} alt={site.dining.title} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/20 to-transparent md:bg-gradient-to-l" />
-            </div>
-            <div className="relative -mt-10 p-6 sm:p-8 md:mt-0 md:flex md:flex-col md:justify-center md:p-12">
-              <Eyebrow>{site.dining.eyebrow}</Eyebrow>
-              <SectionTitle title={site.dining.title} />
-              <p className="mt-4 text-sm md:text-[15px] font-light leading-relaxed text-white/70">{site.dining.body}</p>
-              <dl className="mt-6 divide-y divide-white/10 border-t border-white/10">
-                {site.dining.hours.map(([meal, time]) => (
-                  <div key={meal} className="flex items-center justify-between py-3 text-sm">
-                    <dt className="text-white/80">{meal}</dt>
-                    <dd className="font-serif text-lg text-cyan">{time}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-          </div>
-        </section>
+        {/* 11 & 12. MODULAR LOCATION & FAQ */}
+        <ResortSectionBoundary sectionName="Location & Policies FAQ">
+          <ResortLocationFaq
+            locationEyebrow={site.location.eyebrow}
+            locationTitle={site.location.title}
+            locationBody={site.location.body}
+            locationFacts={site.location.facts}
+            locationButton={site.location.button}
+            faqEyebrow={site.faq.eyebrow}
+            faqTitle={site.faq.title}
+            faqItems={site.faq.items}
+          />
+        </ResortSectionBoundary>
+
+        {/* 14. MODULAR DINING */}
+        <ResortSectionBoundary sectionName="Seaside Dining">
+          <ResortDining
+            eyebrow={site.dining.eyebrow}
+            title={site.dining.title}
+            body={site.dining.body}
+            image={site.dining.image}
+            hours={site.dining.hours}
+          />
+        </ResortSectionBoundary>
 
         {/* 15. CTA */}
-        <section className={`${WRAP} ${SECTION}`}>
-          <div className="relative flex min-h-[400px] flex-col items-center justify-center overflow-hidden rounded-3xl p-8 text-center md:min-h-[480px]">
-            <img src={site.cta.image} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/60 to-navy/40" />
-            <div className="relative max-w-xl">
-              <Eyebrow>{site.cta.eyebrow}</Eyebrow>
-              <h2 className="mt-3 font-serif text-4xl md:text-6xl font-medium leading-tight text-white">
-                {site.cta.title}
-                <br />
-                <em className="italic text-cyan">{site.cta.accent}</em>
-              </h2>
-              <p className="mx-auto mt-4 max-w-md text-sm md:text-base font-light leading-relaxed text-white/80">{site.cta.body}</p>
-              <button type="button" onClick={() => scrollTo('booking-section')} className={`${BTN_PRIMARY} mt-8 px-10 py-4`}>
-                {site.cta.button}
-              </button>
-            </div>
-          </div>
-        </section>
-
-        {/* 16. FOOTER */}
-        <footer className="relative mt-20 overflow-hidden border-t border-white/10 bg-deep md:mt-28">
-          <span className="pointer-events-none absolute -bottom-4 left-1/2 -translate-x-1/2 select-none whitespace-nowrap font-serif text-[80px] italic leading-none text-white/[0.03] md:-bottom-8 md:text-[160px] lg:text-[220px]">
-            Rock View
-          </span>
-
-          <div className={`${WRAP} relative pb-[calc(8rem+env(safe-area-inset-bottom))] pt-16 lg:pb-16`}>
-            <div className="grid gap-10 lg:grid-cols-12">
-              <div className="lg:col-span-4">
-                <Logo size="md" />
-                <p className="mt-5 max-w-sm text-sm font-light leading-relaxed text-white/60">{site.footer.about}</p>
-                <div className="mt-5 flex gap-5 text-xs text-white/50">
-                  {site.footer.socials.map((s) => (
-                    <span key={s} className="cursor-pointer transition hover:text-cyan">
-                      {s}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-6 lg:col-span-4">
-                {site.footer.columns.map((col) => (
-                  <div key={col.title}>
-                    <span className="mb-4 block text-[10px] font-semibold uppercase tracking-[0.25em] text-white/40">
-                      {col.title}
-                    </span>
-                    <ul className="flex flex-col gap-2.5 text-sm text-white/70">
-                      {col.items.map((it) => (
-                        <li
-                          key={it}
-                          onClick={() => {
-                            if (it === 'Concierge Desk') {
-                              window.dispatchEvent(new CustomEvent('app:open-chat'));
-                            } else if (it === 'Direct Booking FAQ') {
-                              scrollTo('faq-section');
-                            } else if (it === 'Accommodations' || it === 'Rooms' || it === 'Rooms & Suites') {
-                              scrollTo('rooms-section');
-                            } else if (it === 'Dining & Grill') {
-                              scrollTo('dining-section');
-                            }
-                          }}
-                          className="cursor-pointer transition hover:text-cyan"
-                        >
-                          {it}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 lg:col-span-4">
-                <span className="block text-[10px] font-semibold uppercase tracking-[0.25em] text-cyan">
-                  {site.footer.newsletter.title}
-                </span>
-                <p className="mt-2 text-sm font-light leading-relaxed text-white/60">{site.footer.newsletter.body}</p>
-                {newsletterDone ? (
-                  <p className="mt-4 text-sm text-cyan">✦ You're on the list. Watch for the next high tide.</p>
-                ) : (
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      if (newsletterEmail) setNewsletterDone(true);
-                    }}
-                    className="mt-4 flex flex-col gap-2 sm:flex-row"
-                  >
-                    <input
-                      required
-                      type="email"
-                      value={newsletterEmail}
-                      onChange={(e) => setNewsletterEmail(e.target.value)}
-                      placeholder={site.footer.newsletter.placeholder}
-                      className="min-w-0 flex-1 rounded-full border border-white/10 bg-navy px-4 py-3 text-sm text-white outline-none focus:border-cyan/60"
-                    />
-                    <button
-                      type="submit"
-                      className="shrink-0 rounded-full bg-cyan px-5 py-3 text-xs font-semibold uppercase tracking-[0.15em] text-navy transition hover:brightness-110"
-                    >
-                      {site.footer.newsletter.button}
-                    </button>
-                  </form>
-                )}
-              </div>
-            </div>
-
-            <div className="mt-12 flex flex-col gap-4 border-t border-white/10 pt-8 md:flex-row md:items-center md:justify-between">
-              <div className="flex flex-wrap gap-2">
-                {site.footer.badges.map((b) => (
-                  <span key={b} className="rounded-full border border-gold/30 bg-gold/10 px-3 py-1 text-[10px] text-gold">
-                    <><i className="fas fa-star" style={{ marginRight: 4 }} />{b}</>
-                  </span>
-                ))}
-              </div>
-              <div className="flex flex-wrap gap-2 text-[10px] text-white/45">
-                {site.footer.payments.map((p) => (
-                  <span key={p} className="rounded-md border border-white/10 bg-white/5 px-2 py-1">
-                    {p}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-8 flex flex-col items-center gap-4 border-t border-white/5 pt-6 text-[11px] text-white/40 md:flex-row md:justify-between">
-              <p className="text-center md:text-left">{site.footer.copyright}</p>
-              <div className="flex flex-wrap items-center justify-center gap-4">
-                {site.footer.legal.map((l) => (
-                  <span key={l} className="cursor-pointer hover:text-white/70">
-                    {l}
-                  </span>
-                ))}
-                <a href="/admin" className="opacity-60 transition hover:opacity-100">
-                  Portal
-                </a>
-                <button type="button" onClick={scrollTop} className="font-semibold uppercase tracking-[0.15em] text-cyan">
-                  ↑ {site.footer.backToTop}
+        <ResortSectionBoundary sectionName="Direct Booking Invitation">
+          <section className={`${WRAP} ${SECTION}`}>
+            <div className="relative flex min-h-[400px] flex-col items-center justify-center overflow-hidden rounded-3xl p-8 text-center md:min-h-[480px]">
+              <img src={site.cta.image} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/60 to-navy/40" />
+              <div className="relative max-w-xl">
+                <Eyebrow>{site.cta.eyebrow}</Eyebrow>
+                <h2 className="mt-3 font-serif text-4xl md:text-6xl font-medium leading-tight text-white">
+                  {site.cta.title}
+                  <br />
+                  <em className="italic text-cyan">{site.cta.accent}</em>
+                </h2>
+                <p className="mx-auto mt-4 max-w-md text-sm md:text-base font-light leading-relaxed text-white/80">{site.cta.body}</p>
+                <button type="button" onClick={() => scrollTo('booking-section')} className={`${BTN_PRIMARY} mt-8 px-10 py-4 cursor-pointer`}>
+                  {site.cta.button}
                 </button>
               </div>
             </div>
-          </div>
-        </footer>
+          </section>
+        </ResortSectionBoundary>
+
+        {/* 16. MODULAR BRAND FOOTER */}
+        <ResortSectionBoundary sectionName="Resort Brand Footer">
+          <ResortFooter
+            about={site.footer.about}
+            socials={site.footer.socials}
+            columns={site.footer.columns}
+            newsletter={site.footer.newsletter}
+            badges={site.footer.badges}
+            payments={site.footer.payments}
+            legal={site.footer.legal}
+            copyright={site.footer.copyright}
+            backToTop={site.footer.backToTop}
+            onScrollTo={scrollTo}
+            onScrollTop={scrollTop}
+          />
+        </ResortSectionBoundary>
       </main>
 
       {/* MENU OVERLAY (phones / tablets) */}

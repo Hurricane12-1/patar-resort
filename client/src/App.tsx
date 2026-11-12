@@ -30,6 +30,7 @@ import Admin from './pages/Admin.tsx';
 import ResortDepartment from './pages/ResortDepartment.tsx';
 import Receptionist from './pages/Receptionist.tsx';
 import Accounting from './pages/Accounting.tsx';
+import StaffLogin from './pages/StaffLogin.tsx';
 
 // Namespace 3: /recovery Pages (Specialized Resolution, Restoration & Escalation)
 import RecoveryPortal from './pages/recovery/RecoveryPortal.tsx';
@@ -102,6 +103,7 @@ function MainAppShell() {
           {/* ============================================================ */}
           {/* NAMESPACE 2: /staff (Daily Operations & Execution)           */}
           {/* ============================================================ */}
+          <Route path="/staff/login" element={<StaffLogin />} />
           <Route path="/staff" element={
             <StaffGuard>
               <StaffPortalLanding />
