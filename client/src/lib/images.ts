@@ -1,4 +1,15 @@
 export const IMG = {
+  hero: '/images/hero.jpg',
+  suite: '/images/suite.jpg',
+  cottage: '/images/cottage.jpg',
+  villa: '/images/villa.jpg',
+  garden: '/images/garden.jpg',
+  bunk: '/images/bunk.jpg',
+  island: '/images/island.jpg',
+  room: '/images/room.jpg',
+};
+
+export const REMOTE_IMG = {
   hero: 'https://res.cloudinary.com/juynm9ab/image/upload/jd_beach_house_accommodations/hero.jpg',
   suite: 'https://res.cloudinary.com/juynm9ab/image/upload/jd_beach_house_accommodations/suite.jpg',
   cottage: 'https://res.cloudinary.com/juynm9ab/image/upload/jd_beach_house_accommodations/cottage.jpg',
@@ -19,10 +30,10 @@ export const roomImg = (slugOrName?: string, category?: string): string => {
   if (s.includes('tour') || s.includes('island') || s.includes('hopping') || c.includes('tour') || c.includes('offer')) {
     return IMG.island;
   }
-  if (s.includes('cottage') || s.includes('sunset') || s.includes('chason') || c.includes('cottage') || c.includes('cabana') || c.includes('pavilion')) {
+  if (s.includes('cottage') || s.includes('sunset') || s.includes('chason') || s.includes('unit 3') || c.includes('cottage') || c.includes('cabana') || c.includes('pavilion')) {
     return IMG.cottage;
   }
-  if (s.includes('suite') || s.includes('villa') || c.includes('suite') || c.includes('villa')) {
+  if (s.includes('suite') || s.includes('villa') || s.includes('unit 5') || c.includes('suite') || c.includes('villa')) {
     return IMG.suite;
   }
   if (s.includes('garden') || c.includes('garden')) {
@@ -91,8 +102,27 @@ export const handleImageError = (
   e: React.SyntheticEvent<HTMLImageElement, Event>
 ) => {
   const target = e.currentTarget;
-  if (target.src === IMG.cottage || target.src === IMG.hero) {
-    return;
+  const step = parseInt(target.dataset.fallbackStep || '0', 10);
+  if (step >= 2) return;
+  target.dataset.fallbackStep = String(step + 1);
+
+  const alt = (target.alt || '').toLowerCase();
+  let localFallback = IMG.cottage;
+  if (alt.includes('tour') || alt.includes('island') || alt.includes('hopping')) {
+    localFallback = IMG.island;
+  } else if (alt.includes('suite') || alt.includes('unit 5')) {
+    localFallback = IMG.suite;
+  } else if (alt.includes('cottage') || alt.includes('sunset') || alt.includes('chason') || alt.includes('unit 3')) {
+    localFallback = IMG.cottage;
+  } else if (alt.includes('garden')) {
+    localFallback = IMG.garden;
+  } else {
+    localFallback = IMG.room;
   }
-  target.src = IMG.cottage;
+
+  if (target.src !== localFallback && !target.src.endsWith(localFallback)) {
+    target.src = localFallback;
+  } else {
+    target.src = REMOTE_IMG.cottage;
+  }
 };

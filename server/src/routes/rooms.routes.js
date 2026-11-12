@@ -9,6 +9,7 @@ import {
   packOfferingAmenities,
   getRateUnitLabel,
   calculateOfferingTotal,
+  extractBookingTimes,
 } from '../lib/offeringSpecs.js';
 import { redis } from '../lib/redis.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
@@ -419,15 +420,20 @@ r.get('/availability/calendar', asyncH(async (req, res) => {
     start_date: startDate,
     end_date: endDate,
     rooms: rooms.map(normalizeRoom),
-    booked_ranges: reservations.map((b) => ({
-      id: b.id,
-      room_id: b.room_id,
-      room_name: b.rooms?.name,
-      check_in: b.check_in,
-      check_out: b.check_out,
-      status: b.status,
-      notes: b.notes || '',
-    })),
+    booked_ranges: reservations.map((b) => {
+      const times = extractBookingTimes(b);
+      return {
+        id: b.id,
+        room_id: b.room_id,
+        room_name: b.rooms?.name,
+        check_in: b.check_in,
+        check_out: b.check_out,
+        check_in_time: times.check_in_time,
+        check_out_time: times.check_out_time,
+        status: b.status,
+        notes: b.notes || '',
+      };
+    }),
     daily_status: dailyStatus,
   };
 

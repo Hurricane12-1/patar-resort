@@ -147,10 +147,10 @@ async function req<T = any>(path: string, { method = 'GET', body }: { method?: s
       if (!errorBody.message && !errorBody.error) {
         backendApiAvailable = false;
       }
-      throw new ApiError(res.status, errorBody.message || errorBody.error || `HTTP ${res.status} error`, errorBody);
+      throw new ApiError(res.status, errorBody.detail || errorBody.message || errorBody.error || `HTTP ${res.status} error`, errorBody);
     }
     const errorBody = await res.json().catch(() => ({}));
-    throw new ApiError(res.status, errorBody.message || errorBody.error || `HTTP ${res.status} error`, errorBody);
+    throw new ApiError(res.status, errorBody.detail || errorBody.message || errorBody.error || `HTTP ${res.status} error`, errorBody);
   }
 
   backendApiAvailable = true;
@@ -235,6 +235,59 @@ export function addDaysYMD(ymd: string, days: number): string {
   }
   const utc = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2] + days));
   return utc.toISOString().slice(0, 10);
+}
+
+export const TWO_HOURS_MS = 2 * 60 * 60 * 1000; // 7,200,000 ms
+
+export function normalizeTo24Hour(timeStr?: string, defaultTime = '14:00'): string {
+  if (!timeStr) return defaultTime;
+  const clean = String(timeStr).trim();
+  const ampmMatch = clean.match(/^(\d{1,2}):(\d{2})\s*([AaPp][Mm])$/i);
+  if (ampmMatch) {
+    let h = parseInt(ampmMatch[1], 10);
+    const m = ampmMatch[2];
+    const ampm = ampmMatch[3].toUpperCase();
+    if (ampm === 'PM' && h < 12) h += 12;
+    if (ampm === 'AM' && h === 12) h = 0;
+    return `${String(h).padStart(2, '0')}:${m}`;
+  }
+  const match24 = clean.match(/^(\d{1,2}):(\d{2})$/);
+  if (match24) {
+    return `${String(parseInt(match24[1], 10)).padStart(2, '0')}:${match24[2]}`;
+  }
+  return defaultTime;
+}
+
+export function extractBookingTimes(booking: any): { check_in_time: string; check_out_time: string } {
+  let cinTime = booking?.check_in_time || null;
+  let coutTime = booking?.check_out_time || null;
+
+  const notes = String(booking?.notes || '');
+  const match = notes.match(/\[Check-In:\s*([0-9]{1,2}:[0-9]{2}(?:\s*[AaPp][Mm])?),\s*Check-Out:\s*([0-9]{1,2}:[0-9]{2}(?:\s*[AaPp][Mm])?)\]/i);
+  if (match) {
+    if (!cinTime) cinTime = match[1].trim();
+    if (!coutTime) coutTime = match[2].trim();
+  }
+  return {
+    check_in_time: normalizeTo24Hour(cinTime, '14:00'),
+    check_out_time: normalizeTo24Hour(coutTime, '12:00'),
+  };
+}
+
+export function parseBookingTimeMs(dateStr: string, timeStr = '12:00'): number {
+  const normTime = normalizeTo24Hour(timeStr, '12:00');
+  const d = new Date(`${dateStr}T${normTime}:00+08:00`);
+  return d.getTime();
+}
+
+export function isBookingCollisionWithGap(
+  startA: number,
+  endA: number,
+  startB: number,
+  endB: number,
+  gapMs = TWO_HOURS_MS
+): boolean {
+  return (startA < endB + gapMs) && (startB < endA + gapMs);
 }
 
 export function normalizeRoom(room: any) {
@@ -690,36 +743,53 @@ export const api = {
       roomUnits = Math.max(1, Number(roomRow?.units) || 1);
     }
 
-    // Check if there is already someone booked on the day of the reservation
+    // Check specific time conflict with mandatory 2-hour turnaround gap
+    const checkInTime = normalizeTo24Hour(normalizedBody.check_in_time, '14:00');
+    const checkOutTime = normalizeTo24Hour(normalizedBody.check_out_time, '12:00');
+    const reqStartMs = parseBookingTimeMs(checkIn, checkInTime);
+    const reqEndMs = parseBookingTimeMs(checkOut, checkOutTime);
+
+    // Expand search window to catch buffer overlap on boundary dates
+    const searchStart = addDaysYMD(checkIn, -1);
+    const searchEnd = addDaysYMD(checkOut, 1);
+
     const { data: existingBookings } = await sb
       .from('reservations')
       .select('id, guest_name, check_in, check_out, status, notes, room_id')
       .in('status', ['pending', 'confirmed', 'checked_in'])
-      .lt('check_in', checkOut)
-      .gt('check_out', checkIn);
+      .lt('check_in', searchEnd)
+      .gt('check_out', searchStart);
 
     if (Array.isArray(existingBookings) && existingBookings.length > 0) {
-      const noteUnitMatch = (normalizedBody.notes || '').match(/\[?(?:Unit\s*|u)(\d+)\]?/i);
-      const selectedUnitNum = noteUnitMatch ? parseInt(noteUnitMatch[1], 10) : null;
-      if (selectedUnitNum) {
-        const unitConflict = existingBookings.find((b: any) => {
-          const bMatch = (b.notes || '').match(/\[?(?:Unit\s*|u)(\d+)\]?/i);
-          if (bMatch && parseInt(bMatch[1], 10) === selectedUnitNum) return true;
-          if (!bMatch && selectedUnitNum === 1 && (!b.room_id || b.room_id === targetRoomId)) return true;
-          return false;
-        });
-        if (unitConflict) {
+      const colliding = existingBookings.filter((b: any) => {
+        if (b.room_id && targetRoomId && b.room_id !== targetRoomId) return false;
+        const bTimes = extractBookingTimes(b);
+        const bStartMs = parseBookingTimeMs(b.check_in, bTimes.check_in_time);
+        const bEndMs = parseBookingTimeMs(b.check_out, bTimes.check_out_time);
+        return isBookingCollisionWithGap(reqStartMs, reqEndMs, bStartMs, bEndMs, TWO_HOURS_MS);
+      });
+
+      if (colliding.length > 0) {
+        const noteUnitMatch = (normalizedBody.notes || '').match(/\[?(?:Unit\s*|u)(\d+)\]?/i);
+        const selectedUnitNum = noteUnitMatch ? parseInt(noteUnitMatch[1], 10) : null;
+        if (selectedUnitNum) {
+          const unitConflict = colliding.find((b: any) => {
+            const bMatch = (b.notes || '').match(/\[?(?:Unit\s*|u)(\d+)\]?/i);
+            if (bMatch && parseInt(bMatch[1], 10) === selectedUnitNum) return true;
+            if (!bMatch && selectedUnitNum === 1 && (!b.room_id || b.room_id === targetRoomId)) return true;
+            return false;
+          });
+          if (unitConflict) {
+            throw new Error(
+              `⚠️ Unit ${selectedUnitNum} is already reserved for that time slot. A mandatory 2-hour preparation gap is required between stays. The earlier booking holds priority.`
+            );
+          }
+        }
+        if (colliding.length >= roomUnits) {
           throw new Error(
-            `⚠️ Unit ${selectedUnitNum} is already booked on ${unitConflict.check_in} → ${unitConflict.check_out} by ${unitConflict.guest_name || 'another guest'}.`
+            '⚠️ That accommodation is already reserved for that time slot. A mandatory 2-hour preparation gap is required between stays. The earlier booking holds priority.'
           );
         }
-      }
-      const sameRoomBookings = existingBookings.filter((b: any) => !b.room_id || b.room_id === targetRoomId);
-      if (sameRoomBookings.length >= roomUnits) {
-        const firstConflict = sameRoomBookings[0];
-        throw new Error(
-          `⚠️ Already Booked: ${firstConflict.guest_name || 'Another guest'} is already booked on ${firstConflict.check_in} → ${firstConflict.check_out} for this accommodation.`
-        );
       }
     }
 

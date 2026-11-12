@@ -1,7 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import site from '../content/site.json';
 import { useAuth, to11Digits, isValidPHMobile } from '../context/AuthContext.tsx';
-import { api } from '../lib/api.ts';
+import {
+  api,
+  extractBookingTimes,
+  normalizeTo24Hour,
+  parseBookingTimeMs,
+  isBookingCollisionWithGap,
+  TWO_HOURS_MS,
+} from '../lib/api.ts';
 import { supabase } from '../lib/supabaseClient.ts';
 import { CANONICAL_ROOMS } from '../lib/canonicalRooms.ts';
 import { toast } from './Toasts.tsx';
@@ -168,6 +175,8 @@ export default function MobileResortApp() {
   const minCheckInDate = getMinGuestCheckInISO();
   const [checkIn, setCheckIn] = useState(minCheckInDate);
   const [checkOut, setCheckOut] = useState(addDaysISO(minCheckInDate, 1));
+  const [checkInTime, setCheckInTime] = useState('14:00');
+  const [checkOutTime, setCheckOutTime] = useState('12:00');
   const [offeringFilter, setOfferingFilter] = useState<'all' | OfferingType>('all');
   const [stayBookingFilter, setStayBookingFilter] = useState<'all' | OfferingType>('all');
   const [guests, setGuests] = useState('2 Guests');
@@ -222,31 +231,73 @@ export default function MobileResortApp() {
     if (room.is_locked_now) return true;
     if (room.units_available_now !== undefined && room.units_available_now <= 0) return true;
     const totalUnits = Number(room.units) || 1;
-    const activeToday = bookedRanges.filter(
-      (b) => b.room_id === room.id && b.check_in <= today && b.check_out > today && b.status !== 'cancelled'
-    ).length;
+    const nowMs = Date.now();
+    const activeToday = bookedRanges.filter((b) => {
+      if (b.room_id !== room.id || b.status === 'cancelled') return false;
+      const bTimes = extractBookingTimes(b);
+      const bStart = parseBookingTimeMs(b.check_in, bTimes.check_in_time);
+      const bEnd = parseBookingTimeMs(b.check_out, bTimes.check_out_time);
+      return nowMs >= bStart && nowMs < bEnd;
+    }).length;
     return activeToday >= totalUnits;
-  }, [bookedRanges, today]);
-
-  // 2. Check if room is occupied / fully reserved across requested stay dates [inDate, outDate)
-  const isRoomOccupiedForDates = useCallback((room: any, inDate: string, outDate: string): boolean => {
-    if (!room || !inDate || !outDate || outDate <= inDate) return false;
-    const totalUnits = Number(room.units) || 1;
-    const overlapping = bookedRanges.filter(
-      (b) => b.room_id === room.id && b.check_in < outDate && b.check_out > inDate && b.status !== 'cancelled'
-    );
-    if (overlapping.length === 0) return false;
-
-    let cur = new Date(inDate);
-    const end = new Date(outDate);
-    while (cur < end) {
-      const nightStr = cur.toISOString().slice(0, 10);
-      const busyTonight = overlapping.filter((b) => b.check_in <= nightStr && b.check_out > nightStr).length;
-      if (busyTonight >= totalUnits) return true;
-      cur.setDate(cur.getDate() + 1);
-    }
-    return false;
   }, [bookedRanges]);
+
+  // 2. Check if room is occupied / fully reserved across requested stay dates and specific times (with mandatory 2-hour gap buffer)
+  const isRoomOccupiedForDates = useCallback((
+    room: any,
+    inDate: string,
+    outDate: string,
+    inTime: string = checkInTime,
+    outTime: string = checkOutTime,
+    preferredUnit?: number | null
+  ): boolean => {
+    if (!room || !inDate || !outDate || outDate <= inDate) return false;
+    const totalUnits = Math.max(1, Number(room.units) || 1);
+    const startMs = parseBookingTimeMs(inDate, inTime || '14:00');
+    const endMs = parseBookingTimeMs(outDate, outTime || '12:00');
+    if (endMs <= startMs) return true;
+
+    // Filter bookedRanges for this room
+    const roomBookings = bookedRanges.filter(
+      (b) => (b.room_id === room.id || !b.room_id) && b.status !== 'cancelled'
+    );
+    if (roomBookings.length === 0) return false;
+
+    // Check collisions with mandatory 2-hour turnaround buffer
+    const colliding = roomBookings.filter((b) => {
+      const times = extractBookingTimes(b);
+      const bStart = parseBookingTimeMs(b.check_in, times.check_in_time);
+      const bEnd = parseBookingTimeMs(b.check_out, times.check_out_time);
+      return isBookingCollisionWithGap(startMs, endMs, bStart, bEnd, TWO_HOURS_MS);
+    });
+
+    if (colliding.length === 0) return false;
+
+    // If a specific unit is checked
+    if (preferredUnit) {
+      return colliding.some((c) => {
+        const uMatch = (c.notes || '').match(/\[?(?:Unit\s*|u)(\d+)\]?/i);
+        if (uMatch && parseInt(uMatch[1], 10) === preferredUnit) return true;
+        if (!uMatch && preferredUnit === 1 && totalUnits === 1) return true;
+        return false;
+      });
+    }
+
+    // Check taken units
+    const takenUnits = new Set<number>();
+    let unassignedCount = 0;
+    for (const c of colliding) {
+      const uMatch = (c.notes || '').match(/\[?(?:Unit\s*|u)(\d+)\]?/i);
+      if (uMatch) {
+        const u = parseInt(uMatch[1], 10);
+        if (u >= 1 && u <= totalUnits) takenUnits.add(u);
+      } else {
+        unassignedCount++;
+      }
+    }
+
+    return (takenUnits.size + unassignedCount >= totalUnits) || (colliding.length >= totalUnits);
+  }, [bookedRanges, checkInTime, checkOutTime]);
 
   const displayRooms = rooms.length > 0 ? rooms : (site.rooms.items || []);
 
@@ -929,8 +980,8 @@ export default function MobileResortApp() {
       return;
     }
 
-    if (isRoomOccupiedForDates(resRoom, checkIn, checkOut)) {
-      toast('⚠️ That villa is already reserved for the selected dates. Please select open dates on the calendar.', true);
+    if (isRoomOccupiedForDates(resRoom, checkIn, checkOut, checkInTime, checkOutTime)) {
+      toast('⚠️ That accommodation is already reserved for that time slot. A mandatory 2-hour preparation gap is required between stays. Please pick another time or date.', true);
       setShowModalCalendar(true);
       return;
     }
@@ -979,6 +1030,8 @@ export default function MobileResortApp() {
         offering_type: offeringType,
         check_in: checkIn,
         check_out: checkOut,
+        check_in_time: checkInTime,
+        check_out_time: checkOutTime,
         guests: parseInt(guests) || 2,
         notes: resNotes ? `${resNotes} [Payment: ${resPaymentMethod}]` : `Payment method: ${resPaymentMethod}`,
         phone: cleanPhone,
@@ -2134,7 +2187,7 @@ export default function MobileResortApp() {
                       return (
                         <optgroup key={groupType} label={groupLabel} className="bg-navy text-white">
                           {groupItems.map((r) => {
-                            const occupiedForStay = checkIn && checkOut && isRoomOccupiedForDates(r, checkIn, checkOut);
+                            const occupiedForStay = checkIn && checkOut && isRoomOccupiedForDates(r, checkIn, checkOut, checkInTime, checkOutTime);
                             const occupiedToday = isRoomOccupiedToday(r);
                             const statusTag = occupiedForStay ? ' · [Booked]' : occupiedToday ? ' · [Occupied today]' : ' · [Available]';
                             return (
@@ -2317,7 +2370,7 @@ export default function MobileResortApp() {
                   room.description ||
                   room.meta ||
                   'Private coastal sanctuary featuring tranquil seaside ambiance, plush bedding, and direct beach trail access.';
-                const isOccupiedForSelectedStay = Boolean(checkIn && checkOut && isRoomOccupiedForDates(room, checkIn, checkOut));
+                const isOccupiedForSelectedStay = Boolean(checkIn && checkOut && isRoomOccupiedForDates(room, checkIn, checkOut, checkInTime, checkOutTime));
                 const isOccupiedRightNow = isRoomOccupiedToday(room);
 
                 return (
@@ -2422,11 +2475,11 @@ export default function MobileResortApp() {
                               setSelectedRoom(room.name);
                               openReservation(room.name, true);
                             }}
-                            title={`This villa is already occupied from ${checkIn} to ${checkOut}. Click to view calendar and pick open dates.`}
+                            title={`This accommodation is already reserved from ${checkIn} (${checkInTime}) to ${checkOut} (${checkOutTime}) with mandatory 2-hour turnaround buffer. Click to view open slots.`}
                             className="flex-1 py-2.5 px-3.5 rounded-xl border border-rose-500/40 bg-rose-950/50 hover:bg-rose-950/80 text-rose-200 font-bold text-xs tracking-wide transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm whitespace-nowrap"
                           >
-                            <i className="fas fa-lock text-[10px] text-rose-400" />
-                            <span>Occupied · View Dates</span>
+                            <i className="fas fa-clock text-[10px] text-rose-400" />
+                            <span>Reserved · 2h Gap</span>
                           </button>
                         ) : (
                           <button
@@ -3753,6 +3806,58 @@ export default function MobileResortApp() {
                         </label>
                       </div>
 
+                      {/* Specific Check-In & Check-Out Time Pickers (with 2-Hour Gap Enforcement) */}
+                      <div className="grid grid-cols-2 gap-2 pt-0.5">
+                        <label className="flex flex-col gap-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] uppercase tracking-wider text-white/60 font-medium">Check-In Time</span>
+                            <span className="text-[9px] text-cyan font-mono">{checkInTime}</span>
+                          </div>
+                          <select
+                            value={checkInTime}
+                            onChange={(e) => setCheckInTime(e.target.value)}
+                            className="w-full rounded-xl border border-white/15 bg-[#0B1528] px-2.5 py-1.5 text-xs text-white outline-none focus:border-cyan"
+                          >
+                            <option value="08:00">08:00 AM (Early Day)</option>
+                            <option value="09:00">09:00 AM</option>
+                            <option value="10:00">10:00 AM</option>
+                            <option value="11:00">11:00 AM</option>
+                            <option value="12:00">12:00 PM (Noon)</option>
+                            <option value="13:00">01:00 PM</option>
+                            <option value="14:00">02:00 PM (Standard Check-in)</option>
+                            <option value="15:00">03:00 PM</option>
+                            <option value="16:00">04:00 PM</option>
+                            <option value="17:00">05:00 PM</option>
+                            <option value="18:00">06:00 PM (Sunset / Evening)</option>
+                            <option value="19:00">07:00 PM</option>
+                            <option value="20:00">08:00 PM</option>
+                          </select>
+                        </label>
+
+                        <label className="flex flex-col gap-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] uppercase tracking-wider text-white/60 font-medium">Check-Out Time</span>
+                            <span className="text-[9px] text-cyan font-mono">{checkOutTime}</span>
+                          </div>
+                          <select
+                            value={checkOutTime}
+                            onChange={(e) => setCheckOutTime(e.target.value)}
+                            className="w-full rounded-xl border border-white/15 bg-[#0B1528] px-2.5 py-1.5 text-xs text-white outline-none focus:border-cyan"
+                          >
+                            <option value="08:00">08:00 AM (Early Departure)</option>
+                            <option value="09:00">09:00 AM</option>
+                            <option value="10:00">10:00 AM</option>
+                            <option value="11:00">11:00 AM</option>
+                            <option value="12:00">12:00 PM (Standard Check-out)</option>
+                            <option value="13:00">01:00 PM</option>
+                            <option value="14:00">02:00 PM (Extended Stay)</option>
+                            <option value="15:00">03:00 PM</option>
+                            <option value="16:00">04:00 PM</option>
+                            <option value="17:00">05:00 PM (Day Tour End)</option>
+                          </select>
+                        </label>
+                      </div>
+
                       {/* Quick Duration Preset Pills & Reset Button */}
                       <div className="flex items-center gap-1.5 pt-0.5 overflow-x-auto scrollbar-none">
                         <span className="text-[10px] text-white/40 shrink-0 font-medium">Nights:</span>
@@ -4140,14 +4245,14 @@ export default function MobileResortApp() {
                   </div>
 
                   <div className="pt-1.5">
-                    {isRoomOccupiedForDates(resRoom, checkIn, checkOut) ? (
+                    {isRoomOccupiedForDates(resRoom, checkIn, checkOut, checkInTime, checkOutTime) ? (
                       <button
                         type="button"
                         onClick={() => setShowModalCalendar(true)}
                         className="w-full py-3.5 sm:py-4 rounded-xl border border-rose-500/50 bg-rose-950/70 text-rose-200 font-semibold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer hover:bg-rose-950/90 transition shadow-lg"
                       >
-                        <i className="fas fa-calendar-xmark text-rose-400" />
-                        <span>Villa Occupied on Dates — Open Calendar to Pick Free Dates</span>
+                        <i className="fas fa-clock text-rose-400" />
+                        <span>Time Slot Reserved (2-Hour Gap Required) — Pick Other Time</span>
                       </button>
                     ) : (
                       <button

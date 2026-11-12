@@ -290,3 +290,50 @@ export function enrichReservationOffering(reservation = {}) {
     rate_unit: getRateUnitLabel(offering_type, parsed.specs),
   };
 }
+
+export const TWO_HOURS_MS = 2 * 60 * 60 * 1000; // 7,200,000 ms mandatory gap
+
+export function normalizeTo24Hour(timeStr, defaultTime = '14:00') {
+  if (!timeStr) return defaultTime;
+  const clean = String(timeStr).trim();
+  const ampmMatch = clean.match(/^(\d{1,2}):(\d{2})\s*([AaPp][Mm])$/i);
+  if (ampmMatch) {
+    let h = parseInt(ampmMatch[1], 10);
+    const m = ampmMatch[2];
+    const ampm = ampmMatch[3].toUpperCase();
+    if (ampm === 'PM' && h < 12) h += 12;
+    if (ampm === 'AM' && h === 12) h = 0;
+    return `${String(h).padStart(2, '0')}:${m}`;
+  }
+  const match24 = clean.match(/^(\d{1,2}):(\d{2})$/);
+  if (match24) {
+    return `${String(parseInt(match24[1], 10)).padStart(2, '0')}:${match24[2]}`;
+  }
+  return defaultTime;
+}
+
+export function extractBookingTimes(booking) {
+  let cinTime = booking?.check_in_time || null;
+  let coutTime = booking?.check_out_time || null;
+
+  const notes = String(booking?.notes || '');
+  const match = notes.match(/\[Check-In:\s*([0-9]{1,2}:[0-9]{2}(?:\s*[AaPp][Mm])?),\s*Check-Out:\s*([0-9]{1,2}:[0-9]{2}(?:\s*[AaPp][Mm])?)\]/i);
+  if (match) {
+    if (!cinTime) cinTime = match[1].trim();
+    if (!coutTime) coutTime = match[2].trim();
+  }
+  return {
+    check_in_time: normalizeTo24Hour(cinTime, '14:00'),
+    check_out_time: normalizeTo24Hour(coutTime, '12:00'),
+  };
+}
+
+export function parseBookingTimeMs(dateStr, timeStr = '12:00') {
+  const normTime = normalizeTo24Hour(timeStr, '12:00');
+  const d = new Date(`${dateStr}T${normTime}:00+08:00`);
+  return d.getTime();
+}
+
+export function isBookingCollisionWithGap(startA, endA, startB, endB, gapMs = TWO_HOURS_MS) {
+  return (startA < endB + gapMs) && (startB < endA + gapMs);
+}

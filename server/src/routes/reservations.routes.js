@@ -16,6 +16,7 @@ import {
   parseOfferingTags,
   calculateOfferingTotal,
   enrichReservationOffering,
+  addDaysISO,
 } from '../lib/offeringSpecs.js';
 import { validate } from '../middleware/validate.js';
 import { bookingLimiter } from '../middleware/security.js';
@@ -37,6 +38,57 @@ function computeVerifiedPoolAddonFee(notesText = '', guests = 1) {
   if (/Night Pool Pass/i.test(n)) return 200 * g;
   if (/Day Pool Pass/i.test(n)) return 150 * g;
   return 0;
+}
+
+export const TWO_HOURS_MS = 2 * 60 * 60 * 1000; // 7,200,000 ms mandatory gap
+
+export function normalizeTo24Hour(timeStr, defaultTime = '14:00') {
+  if (!timeStr) return defaultTime;
+  const clean = String(timeStr).trim();
+  const ampmMatch = clean.match(/^(\d{1,2}):(\d{2})\s*([AaPp][Mm])$/i);
+  if (ampmMatch) {
+    let h = parseInt(ampmMatch[1], 10);
+    const m = ampmMatch[2];
+    const ampm = ampmMatch[3].toUpperCase();
+    if (ampm === 'PM' && h < 12) h += 12;
+    if (ampm === 'AM' && h === 12) h = 0;
+    return `${String(h).padStart(2, '0')}:${m}`;
+  }
+  const match24 = clean.match(/^(\d{1,2}):(\d{2})$/);
+  if (match24) {
+    return `${String(parseInt(match24[1], 10)).padStart(2, '0')}:${match24[2]}`;
+  }
+  return defaultTime;
+}
+
+export function extractBookingTimes(booking) {
+  let cinTime = booking?.check_in_time || null;
+  let coutTime = booking?.check_out_time || null;
+
+  const notes = String(booking?.notes || '');
+  const match = notes.match(/\[Check-In:\s*([0-9]{1,2}:[0-9]{2}(?:\s*[AaPp][Mm])?),\s*Check-Out:\s*([0-9]{1,2}:[0-9]{2}(?:\s*[AaPp][Mm])?)\]/i);
+  if (match) {
+    if (!cinTime) cinTime = match[1].trim();
+    if (!coutTime) coutTime = match[2].trim();
+  }
+  return {
+    check_in_time: normalizeTo24Hour(cinTime, '14:00'),
+    check_out_time: normalizeTo24Hour(coutTime, '12:00'),
+  };
+}
+
+export function parseBookingTimeMs(dateStr, timeStr = '12:00') {
+  const normTime = normalizeTo24Hour(timeStr, '12:00');
+  const d = new Date(`${dateStr}T${normTime}:00+08:00`);
+  return d.getTime();
+}
+
+/**
+ * Evaluates collision with mandatory 2-hour gap buffer.
+ * Two bookings collide iff: (startA < endB + gapMs) && (startB < endA + gapMs)
+ */
+export function isBookingCollisionWithGap(startA, endA, startB, endB, gapMs = TWO_HOURS_MS) {
+  return (startA < endB + gapMs) && (startB < endA + gapMs);
 }
 
 const createSchema = z.object({
@@ -119,79 +171,100 @@ r.post('/reservations', optionalAuth, bookingLimiter, validate(createSchema), as
     throw new ApiError(404, "There's no present room around. This accommodation is absent or inactive.");
   }
 
-  // Hard overbooking check: count active bookings per night in requested date range
-  let activeRes = [];
+  // 1. Resolve exact requested check-in and check-out timestamps with specific times
+  const reqCinTime = normalizeTo24Hour(check_in_time, '14:00');
+  const reqCoutTime = normalizeTo24Hour(check_out_time, '12:00');
+  const reqStartMs = parseBookingTimeMs(check_in, reqCinTime);
+  const reqEndMs = parseBookingTimeMs(check_out, reqCoutTime);
+
+  if (reqEndMs <= reqStartMs) {
+    throw new ApiError(422, 'Check-out time must be strictly after check-in time');
+  }
+
+  // 2. Expand search window by 1 day on each side to detect 2-hour buffer overlap on boundary dates
+  const searchStart = addDaysISO(check_in, -1);
+  const searchEnd = addDaysISO(check_out, 1);
+
+  let candidateRes = [];
   try {
     const { data } = await sysClient.from('reservations')
-      .select('id, check_in, check_out, notes')
+      .select('id, check_in, check_out, notes, status, room_id, guest_name')
       .eq('room_id', targetRoomId)
       .in('status', ['pending', 'confirmed', 'checked_in'])
-      .lt('check_in', check_out)
-      .gt('check_out', check_in);
-    if (data) activeRes = [...data];
+      .lt('check_in', searchEnd)
+      .gt('check_out', searchStart);
+    if (data) candidateRes = [...data];
   } catch {}
 
-  // Resilient local store active bookings merge for zero overbooking
+  // Resilient local store active bookings merge
   const localActive = getLocalReservations().filter((b) =>
     b.room_id === targetRoomId &&
     ['pending', 'confirmed', 'checked_in'].includes(b.status) &&
-    b.check_in < check_out &&
-    b.check_out > check_in
+    b.check_in < searchEnd &&
+    b.check_out > searchStart
   );
   for (const lb of localActive) {
-    if (!activeRes.some((ar) => ar.id === lb.id)) {
-      activeRes.push(lb);
+    if (!candidateRes.some((ar) => ar.id === lb.id)) {
+      candidateRes.push(lb);
     }
   }
 
-  const nightsList = [];
-  let cur = new Date(check_in);
-  const end = new Date(check_out);
-  while (cur < end) {
-    nightsList.push(cur.toISOString().slice(0, 10));
-    cur.setDate(cur.getDate() + 1);
+  // 3. Exact 2-Hour Turnaround Collision Evaluation
+  const collidingReservations = [];
+  for (const resv of candidateRes) {
+    const times = extractBookingTimes(resv);
+    const bStartMs = parseBookingTimeMs(resv.check_in, times.check_in_time);
+    const bEndMs = parseBookingTimeMs(resv.check_out, times.check_out_time);
+    if (isBookingCollisionWithGap(reqStartMs, reqEndMs, bStartMs, bEndMs, TWO_HOURS_MS)) {
+      collidingReservations.push({
+        ...resv,
+        times,
+        bStartMs,
+        bEndMs,
+      });
+    }
   }
 
-  let peakOccupied = 0;
-  for (const night of nightsList) {
-    const count = activeRes.filter((b) => b.check_in <= night && b.check_out > night).length;
-    if (count > peakOccupied) peakOccupied = count;
-  }
-
-  const roomUnits = Number(room.units) || 1;
-  if (peakOccupied >= roomUnits) {
-    throw new ApiError(409, 'That room was just booked for those dates — please pick another.');
-  }
-
-  // Exact available physical unit resolution (ensures non-overlapping, even unit distribution)
+  const roomUnits = Math.max(1, Number(room.units) || 1);
   let finalNotes = (notes || '').trim();
-  if (roomUnits > 1) {
-    const unitMatch = finalNotes.match(/\[Unit\s*(\d+)\]/i);
-    const takenUnits = new Set();
-    activeRes.forEach((b) => {
-      const m = (b.notes || '').match(/\[Unit\s*(\d+)\]/i);
-      if (m) {
-        const u = parseInt(m[1], 10);
-        if (u >= 1 && u <= roomUnits) takenUnits.add(u);
-      }
-    });
 
+  // Evaluate unit collisions
+  const collidingUnits = new Set();
+  let unassignedCollisions = 0;
+  for (const c of collidingReservations) {
+    const unitMatch = (c.notes || '').match(/\[?(?:Unit\s*|u)(\d+)\]?/i);
     if (unitMatch) {
-      const requestedUnit = parseInt(unitMatch[1], 10);
-      if (takenUnits.has(requestedUnit)) {
-        throw new ApiError(409, `Unit ${requestedUnit} is already booked for those dates. Please select an available unit.`);
-      }
+      const u = parseInt(unitMatch[1], 10);
+      if (u >= 1 && u <= roomUnits) collidingUnits.add(u);
     } else {
-      // Auto-assign first free unit
-      let freeUnit = 1;
-      for (let u = 1; u <= roomUnits; u++) {
-        if (!takenUnits.has(u)) {
-          freeUnit = u;
-          break;
-        }
-      }
-      finalNotes = `[Unit ${freeUnit}] ${finalNotes}`.trim();
+      unassignedCollisions++;
     }
+  }
+
+  // Explicit unit request conflict check
+  const requestedUnitMatch = finalNotes.match(/\[?(?:Unit\s*|u)(\d+)\]?/i);
+  if (requestedUnitMatch) {
+    const requestedUnit = parseInt(requestedUnitMatch[1], 10);
+    if (collidingUnits.has(requestedUnit)) {
+      throw new ApiError(409, `Unit ${requestedUnit} is already reserved for that time slot. A mandatory 2-hour preparation gap is required between stays. The earlier booking holds priority.`);
+    }
+  }
+
+  // If all physical units are occupied or colliding with the 2-hour buffer
+  if (collidingUnits.size + unassignedCollisions >= roomUnits || collidingReservations.length >= roomUnits) {
+    throw new ApiError(409, 'That accommodation is already reserved for that time slot. A mandatory 2-hour preparation gap is required between stays. The earlier booking holds priority.');
+  }
+
+  // Auto-assign available unit if multi-unit
+  if (roomUnits > 1 && !requestedUnitMatch) {
+    let freeUnit = 1;
+    for (let u = 1; u <= roomUnits; u++) {
+      if (!collidingUnits.has(u)) {
+        freeUnit = u;
+        break;
+      }
+    }
+    finalNotes = `[Unit ${freeUnit}] ${finalNotes}`.trim();
   }
 
   if (terms_accepted) {
@@ -200,12 +273,8 @@ r.post('/reservations', optionalAuth, bookingLimiter, validate(createSchema), as
     }
   }
 
-  if (check_in_time || check_out_time) {
-    const cinT = check_in_time || '14:00';
-    const coutT = check_out_time || '12:00';
-    if (!finalNotes.includes('[Check-In:')) {
-      finalNotes = `${finalNotes} [Check-In: ${cinT}, Check-Out: ${coutT}]`.trim();
-    }
+  if (!finalNotes.includes('[Check-In:')) {
+    finalNotes = `${finalNotes} [Check-In: ${reqCinTime}, Check-Out: ${reqCoutTime}]`.trim();
   }
 
   const parsedRoom = parseOfferingTags(room.amenities, room);
