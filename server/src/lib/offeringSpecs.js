@@ -63,7 +63,7 @@ export const DEFAULT_ISLAND_TOUR_SEED = {
   rate_php: 2800,
   is_active: true,
   amenities: ['Motorized Boat', 'Local Guide', 'Life Vests', 'Snorkel Gear', 'Cooler Box'],
-  image_url: 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209700/jd_beach_house_accommodations/island.jpg',
+  image_url: 'https://res.cloudinary.com/juynm9ab/image/upload/jd_beach_house_accommodations/island.jpg',
   specs: {
     offer_subtype: 'Island Hopping Tour',
     duration: '4 Hours (Half Day)',

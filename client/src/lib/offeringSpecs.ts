@@ -97,7 +97,7 @@ export function addDaysISO(isoDate: string, days: number): string {
 }
 
 export function getMinGuestCheckInISO(now = new Date()): string {
-  return addDaysISO(getManilaTodayISO(now), 1);
+  return getManilaTodayISO(now);
 }
 
 export function inferOfferingType(item: any = {}): OfferingType {
@@ -256,8 +256,17 @@ export function packOfferingAmenities({
 
 export function getOfferingLabel(type: OfferingType): string {
   if (type === 'cottage') return 'Cottage';
-  if (type === 'offer') return 'Island Tour / Offer';
+  if (type === 'offer') return 'Island Tour';
   return 'Room';
+}
+
+export function formatOfferingBadge(type: OfferingType, category?: string): string {
+  const t = getOfferingLabel(type);
+  const c = String(category || '').trim();
+  if (!c || c.toLowerCase() === t.toLowerCase() || t.toLowerCase().includes(c.toLowerCase()) || c.toLowerCase().includes(t.toLowerCase())) {
+    return t;
+  }
+  return `${t} · ${c}`;
 }
 
 export function getRateUnitSuffix(type: OfferingType, specs: OfferingSpecs = {}): string {

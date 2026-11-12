@@ -92,7 +92,7 @@ export default function AvailabilityCalendar({
   showNewBookingInTopBar = false,
   showMetrics = false,
   selectionTarget = 'auto',
-  allowSameDay = false,
+  allowSameDay = true,
 }: AvailabilityCalendarProps) {
   const daysCount = numDays || DEFAULT_NUM_DAYS;
 

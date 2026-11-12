@@ -29,34 +29,6 @@ export const adminAuthRouter = Router();
  *  4. Position ('admin' | 'administrator', enforced strictly by RBAC)
  * ============================================================================
  */
-export async function ensureDefaultStaffAccount() {
-  try {
-    const { data: existingStaff, error: qErr } = await admin
-      .from('employee_accounts')
-      .select('id, email, role, is_active')
-      .eq('role', 'staff')
-      .limit(1);
-
-    if (!qErr && Array.isArray(existingStaff) && existingStaff.length === 0) {
-      const defaultPass = process.env.DEFAULT_STAFF_PASSWORD || 'staff1234';
-      await admin.from('employee_accounts').insert({
-        employee_id: 'RV-STF-001',
-        email: 'staff@rockviewresort.ph',
-        full_name: 'Resort Operations Staff',
-        role: 'staff',
-        department: 'Rooms & Customer Service',
-        position: 'Room & Guest Service Staff',
-        shift: 'Day',
-        status: 'Active',
-        is_active: true,
-        password: hashPassword(defaultPass),
-      });
-    }
-  } catch (err) {
-    console.warn('[Default Staff Seed Notice]:', err?.message || err);
-  }
-}
-
 export const handleAdminLogin = asyncH(async (req, res) => {
   const { email, identity, name, username, identifier, password, position, tokenIdKey, token_id_key } = req.body || {};
   const userIdent = (username || identifier || email || identity || name || '').trim();
@@ -95,7 +67,6 @@ export const handleAdminLogin = asyncH(async (req, res) => {
   const localPart = targetEmail.includes('@') ? targetEmail.split('@')[0] : targetEmail;
 
   // 4. Query employee_accounts directly for verified staff / administrator record
-  await ensureDefaultStaffAccount();
   let employeeRecord = null;
   let authData = null;
   let verifiedUser = null;

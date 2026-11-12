@@ -13,6 +13,7 @@ import {
   addDaysISO,
   inferOfferingType,
   getOfferingLabel,
+  formatOfferingBadge,
   getRateUnitSuffix,
   calculateOfferingTotal,
   formatSpecHighlights,
@@ -820,10 +821,6 @@ export default function MobileResortApp() {
       setQuote({ ok: false, text: 'Check-in cannot be in the past.' });
       return;
     }
-    if (checkIn <= today) {
-      setQuote({ ok: false, text: 'Same-day bookings are walk-in only and unavailable online. Please select tomorrow or a later date.' });
-      return;
-    }
 
     const guestCount = parseInt(guests) || 2;
     setCheckingAvailability(true);
@@ -929,10 +926,6 @@ export default function MobileResortApp() {
 
     if (!checkIn || !checkOut || checkOut <= checkIn) {
       toast('Please select valid stay dates (check-out must be after check-in).', true);
-      return;
-    }
-    if (checkIn <= today) {
-      toast('Same-day bookings are walk-in only and unavailable online. Please select tomorrow or a later date.', true);
       return;
     }
 
@@ -1172,7 +1165,7 @@ export default function MobileResortApp() {
                     <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/30 to-transparent" />
                     <div className="absolute inset-x-0 bottom-0 p-5">
                       <span className="text-[10px] uppercase font-mono tracking-widest text-cyan font-bold block mb-1">
-                        {getOfferingLabel(inferOfferingType(room))} · {room.category || 'Standard'}
+                        {formatOfferingBadge(inferOfferingType(room), room.category)}
                       </span>
                       <h3 className="font-serif text-2xl font-medium leading-tight text-white">{formatRoomTitle(room.name)}</h3>
                       <p className="mt-1 font-serif text-lg text-cyan">
@@ -2346,7 +2339,7 @@ export default function MobileResortApp() {
                       {/* Top Badges */}
                       <div className="absolute top-3 inset-x-3 flex items-center justify-between gap-2 pointer-events-none">
                         <span className="rounded-full border border-white/15 bg-black/75 px-3 py-1 font-mono text-[10px] font-semibold tracking-wider uppercase text-cyan backdrop-blur-md shadow-sm">
-                          {getOfferingLabel(inferOfferingType(room))} · {categoryLabel}
+                          {formatOfferingBadge(inferOfferingType(room), categoryLabel)}
                         </span>
                         {isOccupiedForSelectedStay ? (
                           <span className="rounded-full border border-rose-500/40 bg-rose-950/85 px-2.5 py-1 text-[10px] font-semibold text-rose-300 backdrop-blur-md flex items-center gap-1.5 shadow-sm">
@@ -3731,10 +3724,6 @@ export default function MobileResortApp() {
                             onChange={(e) => {
                               const val = e.target.value;
                               if (!val) return;
-                              if (val <= today) {
-                                toast('Same-day bookings are walk-in only. Please pick tomorrow or a later date.', true);
-                                return;
-                              }
                               setCheckIn(val);
                               if (inferOfferingType(resRoom) === 'offer' || val >= checkOut) {
                                 setCheckOut(addDaysISO(val, 1));

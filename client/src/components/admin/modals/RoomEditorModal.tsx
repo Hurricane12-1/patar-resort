@@ -666,7 +666,7 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
                         <img
                           src={imgUrl}
                           alt={`Photo ${i + 1}`}
-                          onError={(e) => { e.currentTarget.src = 'https://res.cloudinary.com/juynm9ab/image/upload/v1792209696/jd_beach_house_accommodations/cottage.jpg'; }}
+                          onError={(e) => { e.currentTarget.src = 'https://res.cloudinary.com/juynm9ab/image/upload/jd_beach_house_accommodations/cottage.jpg'; }}
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
                         {imgUrl.includes('cloudinary.com') && (

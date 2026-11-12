@@ -9,7 +9,6 @@ import {
   packOfferingAmenities,
   getRateUnitLabel,
   calculateOfferingTotal,
-  DEFAULT_ISLAND_TOUR_SEED,
 } from '../lib/offeringSpecs.js';
 import { redis } from '../lib/redis.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
@@ -39,22 +38,6 @@ export function normalizeRoom(room) {
     images: mergedImages,
     amenities: parsed.cleanAmenities,
   };
-}
-
-let defaultOfferSeedAttempted = false;
-async function ensureDefaultOfferExists(sysClient) {
-  if (defaultOfferSeedAttempted) return;
-  defaultOfferSeedAttempted = true;
-  try {
-    const { data: rows } = await sysClient.from('rooms').select('id, name, slug, category, amenities');
-    const hasOffer = (rows || []).some((row) => normalizeRoom(row).offering_type === 'offer');
-    if (!hasOffer) {
-      const packed = packRoomPayload(DEFAULT_ISLAND_TOUR_SEED, null);
-      await sysClient.from('rooms').upsert(packed, { onConflict: 'slug' });
-    }
-  } catch (err) {
-    console.warn('[Rooms API] Default Island Tour offer seed notice:', err?.message || err);
-  }
 }
 
 export function packRoomPayload(body, existingRoom) {
@@ -215,7 +198,6 @@ r.get('/availability', validate(rangeSchema, 'query'), asyncH(async (req, res) =
   }
 
   const sysClient = await getSystemAdminClient();
-  await ensureDefaultOfferExists(sysClient);
 
   // 1. Fetch active rooms strictly from live Supabase database
   let allRooms = [];
@@ -347,7 +329,6 @@ r.get('/availability/calendar', asyncH(async (req, res) => {
   }
 
   const sysClient = await getSystemAdminClient();
-  await ensureDefaultOfferExists(sysClient);
 
   // 1. Fetch active rooms
   let rooms = [];
