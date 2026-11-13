@@ -77,7 +77,7 @@ export const AdminLoginView: React.FC<AdminLoginViewProps> = ({
               textTransform: 'uppercase',
             }}
           >
-            <IconShield size={14} color="#22c3ee" /> Management &amp; Staff Portal
+            <IconShield size={14} color="#22c3ee" /> Executive Management Portal
           </span>
           <span style={{ fontSize: '.72rem', color: '#f6b74a', fontWeight: 700, letterSpacing: '.06em' }}>
             ✦ ROCK VIEW RESORT
@@ -94,10 +94,10 @@ export const AdminLoginView: React.FC<AdminLoginViewProps> = ({
             lineHeight: 1.1,
           }}
         >
-          Management &amp; Staff Sign In
+          Administrator Sign In
         </h2>
         <p style={{ margin: '0 0 20px', fontSize: '.86rem', color: 'rgba(232, 238, 247, 0.7)', lineHeight: 1.5 }}>
-          Enter your credentials. Once authenticated, your identity and administrative role are verified automatically from the database.
+          Executive clearance required. Enter your administrator credentials to access resort governance, catalog management, and financial ledgers.
         </p>
 
         {authError && (
@@ -144,7 +144,7 @@ export const AdminLoginView: React.FC<AdminLoginViewProps> = ({
               required
               value={adminEmail}
               onChange={(e) => setAdminEmail(e.target.value)}
-              placeholder="admin@rockviewresort.ph or staff@rockviewresort.ph"
+              placeholder="e.g. jjd001.administrator@rockview.ph"
               style={{
                 width: '100%',
                 background: 'rgba(255, 255, 255, 0.05)',
