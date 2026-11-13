@@ -956,7 +956,7 @@ export function useAdminState() {
         return saved as 'stay_folios' | 'availability' | 'debit_credit';
       }
     } catch {}
-    return 'availability';
+    return 'stay_folios';
   });
 
   useEffect(() => {
@@ -1849,6 +1849,14 @@ export function useAdminState() {
       }
       const res = await adminSignIn(adminEmail.trim(), adminPass);
       if (res?.error) throw res.error;
+      const user = res?.data?.profile || res?.data?.user;
+      if (user?.role && user.role !== 'administrator') {
+        toast('✦ Operational Staff detected. Redirecting to Staff Station…');
+        setTimeout(() => {
+          window.location.href = '/staff/login';
+        }, 600);
+        return;
+      }
       toast('✦ Administrator credentials verified. Loading control center…');
     } catch (err: any) {
       const rawMsg = err?.message || (typeof err === 'string' ? err : '');

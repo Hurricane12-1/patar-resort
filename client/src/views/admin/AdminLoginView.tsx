@@ -239,18 +239,36 @@ export const AdminLoginView: React.FC<AdminLoginViewProps> = ({
           </button>
         </form>
 
-        <div style={{ marginTop: 22, textAlign: 'center' }}>
-          <a
-            href="/"
-            style={{
-              color: 'rgba(232, 238, 247, 0.6)',
-              textDecoration: 'none',
-              fontSize: '.78rem',
-              fontWeight: 600,
-            }}
-          >
-            ← Return to Guest Homepage
-          </a>
+        <div style={{ marginTop: 22, textAlign: 'center', borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div>
+            <span style={{ fontSize: '.72rem', color: 'rgba(232, 238, 247, 0.5)' }}>
+              Operational Staff Member?{' '}
+            </span>
+            <a
+              href="/staff/login"
+              style={{
+                color: '#38BDF8',
+                textDecoration: 'none',
+                fontSize: '.72rem',
+                fontWeight: 600,
+              }}
+            >
+              Go to Staff Station Login (/staff/login) →
+            </a>
+          </div>
+          <div>
+            <a
+              href="/"
+              style={{
+                color: 'rgba(232, 238, 247, 0.6)',
+                textDecoration: 'none',
+                fontSize: '.78rem',
+                fontWeight: 600,
+              }}
+            >
+              ← Return to Guest Homepage
+            </a>
+          </div>
         </div>
       </div>
     </div>

@@ -283,22 +283,40 @@ export default function StaffLogin() {
           </button>
         </form>
 
-        {/* Back link to guest portal */}
-        <div style={{ marginTop: 24, textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 16 }}>
-          <span style={{ fontSize: '.72rem', color: '#64748B' }}>
-            Visiting as a guest or checking your booking?{' '}
-          </span>
-          <Link
-            to="/"
-            style={{
-              fontSize: '.72rem',
-              color: '#38BDF8',
-              textDecoration: 'none',
-              fontWeight: 600,
-            }}
-          >
-            Return to Guest Portal →
-          </Link>
+        {/* Portal Cross-Navigation Links */}
+        <div style={{ marginTop: 24, textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div>
+            <span style={{ fontSize: '.72rem', color: '#64748B' }}>
+              Executive Management Officer?{' '}
+            </span>
+            <Link
+              to="/admin"
+              style={{
+                fontSize: '.72rem',
+                color: '#A78BFA',
+                textDecoration: 'none',
+                fontWeight: 600,
+              }}
+            >
+              Go to Administrator Sign In (/admin) →
+            </Link>
+          </div>
+          <div>
+            <span style={{ fontSize: '.72rem', color: '#64748B' }}>
+              Visiting as a guest or checking your booking?{' '}
+            </span>
+            <Link
+              to="/"
+              style={{
+                fontSize: '.72rem',
+                color: '#38BDF8',
+                textDecoration: 'none',
+                fontWeight: 600,
+              }}
+            >
+              Return to Guest Portal →
+            </Link>
+          </div>
         </div>
       </div>
     </div>

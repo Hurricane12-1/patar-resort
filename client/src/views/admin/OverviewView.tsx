@@ -478,8 +478,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 transition: 'all 0.2s ease',
               }}
             >
-              <i className="far fa-calendar-alt" />
-              <span>Open Visual Reservations &amp; Calendar →</span>
+              <i className="fas fa-list-ul" />
+              <span>View All Reservations &amp; Folios →</span>
             </button>
             <button
               type="button"

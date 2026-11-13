@@ -35,7 +35,7 @@ app.use(antiXssSanitizer);
 
 // Security CSRF & Certificates endpoints
 app.get('/api/security/token', (req, res) => {
-  res.json({ csrf_token: req.cookies?.csrf_token || '' });
+  res.json({ csrf_token: req.cookies?.csrf_token || res.getHeader('X-CSRF-Token') || '' });
 });
 
 app.get('/api/security/certificates', (_req, res) => {

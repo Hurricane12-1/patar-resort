@@ -174,19 +174,19 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
         <div className={`pms-view-switcher ${!isLightMode ? 'dark' : ''}`}>
           <button
             type="button"
+            className={`pms-view-tab ${ledgerSubView === 'stay_folios' ? 'active' : ''} ${!isLightMode ? 'dark' : ''}`}
+            onClick={() => setLedgerSubView('stay_folios')}
+          >
+            <i className="fas fa-list-ul" />
+            <span>List (Reservations)</span>
+          </button>
+          <button
+            type="button"
             className={`pms-view-tab ${ledgerSubView === 'availability' ? 'active' : ''} ${!isLightMode ? 'dark' : ''}`}
             onClick={() => setLedgerSubView('availability')}
           >
             <i className="far fa-calendar-alt" />
             <span>Calendar</span>
-          </button>
-          <button
-            type="button"
-            className={`pms-view-tab ${ledgerSubView === 'stay_folios' ? 'active' : ''} ${!isLightMode ? 'dark' : ''}`}
-            onClick={() => setLedgerSubView('stay_folios')}
-          >
-            <i className="fas fa-list-ul" />
-            <span>List</span>
           </button>
           <button
             type="button"
