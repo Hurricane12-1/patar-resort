@@ -1,5 +1,6 @@
 import React from 'react';
 import { IconShield } from '../../components/AdminIcons';
+import '../../styles/admin-login.css';
 
 export interface AdminLoginViewProps {
   session: any;
@@ -35,86 +36,27 @@ export const AdminLoginView: React.FC<AdminLoginViewProps> = ({
   setShowAdminForgotModal,
 }) => {
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        width: '100%',
-        background: 'radial-gradient(ellipse at 50% 20%, #0d1b38 0%, #060b18 70%)',
-        color: '#e8eef7',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '24px 16px',
-        fontFamily: "'Outfit', sans-serif",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: 480,
-          width: '100%',
-          background: 'rgba(11, 20, 38, 0.95)',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(34, 195, 238, 0.25)',
-          borderRadius: 24,
-          padding: '36px 32px',
-          boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 35px rgba(34, 195, 238, 0.12)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              background: 'rgba(34, 195, 238, 0.12)',
-              border: '1px solid rgba(34, 195, 238, 0.3)',
-              color: '#22c3ee',
-              borderRadius: 20,
-              padding: '4px 12px',
-              fontSize: '.72rem',
-              fontWeight: 800,
-              letterSpacing: '.12em',
-              textTransform: 'uppercase',
-            }}
-          >
-            <IconShield size={14} color="#22c3ee" /> Executive Management Portal
+    <div className="admin-login-viewport">
+      <div className="admin-login-card">
+        {/* Top Header: Badge + Brand Mark (Collision-Proof) */}
+        <div className="admin-login-topbar">
+          <span className="admin-login-badge">
+            <IconShield size={13} color="#22c3ee" /> Executive Portal
           </span>
-          <span style={{ fontSize: '.72rem', color: '#f6b74a', fontWeight: 700, letterSpacing: '.06em' }}>
+          <span className="admin-login-brand">
             ✦ ROCK VIEW RESORT
           </span>
         </div>
 
-        <h2
-          style={{
-            fontFamily: "'Cormorant Garamond', serif",
-            fontSize: '2.4rem',
-            margin: '0 0 8px',
-            color: '#FFFFFF',
-            fontWeight: 600,
-            lineHeight: 1.1,
-          }}
-        >
+        <h2 className="admin-login-title">
           Administrator Sign In
         </h2>
-        <p style={{ margin: '0 0 20px', fontSize: '.86rem', color: 'rgba(232, 238, 247, 0.7)', lineHeight: 1.5 }}>
+        <p className="admin-login-subtitle">
           Executive clearance required. Enter your administrator credentials to access resort governance, catalog management, and financial ledgers.
         </p>
 
         {authError && (
-          <div
-            style={{
-              background: 'rgba(244, 63, 94, 0.15)',
-              border: '1px solid rgba(244, 63, 94, 0.4)',
-              borderRadius: 12,
-              padding: '10px 14px',
-              marginBottom: 18,
-              fontSize: '.8rem',
-              color: '#FECDD3',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-            }}
-          >
+          <div className="admin-login-error">
             <i className="fas fa-triangle-exclamation" />
             <span>
               {(!authError || authError === '{}' || authError === '[object Object]')
@@ -124,19 +66,9 @@ export const AdminLoginView: React.FC<AdminLoginViewProps> = ({
           </div>
         )}
 
-        <form onSubmit={handleAdminLogin} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <form onSubmit={handleAdminLogin} className="admin-login-form">
           <div>
-            <label
-              style={{
-                display: 'block',
-                fontSize: '.72rem',
-                color: '#22c3ee',
-                fontWeight: 800,
-                letterSpacing: '.14em',
-                textTransform: 'uppercase',
-                marginBottom: 6,
-              }}
-            >
+            <label className="admin-login-label">
               Administrator Username or Email
             </label>
             <input
@@ -145,32 +77,12 @@ export const AdminLoginView: React.FC<AdminLoginViewProps> = ({
               value={adminEmail}
               onChange={(e) => setAdminEmail(e.target.value)}
               placeholder="e.g. jjd001.administrator@rockview.ph"
-              style={{
-                width: '100%',
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                borderRadius: 14,
-                padding: '12px 14px',
-                color: '#FFFFFF',
-                fontSize: '.9rem',
-                outline: 'none',
-                boxSizing: 'border-box',
-              }}
+              className="admin-login-input"
             />
           </div>
 
           <div>
-            <label
-              style={{
-                display: 'block',
-                fontSize: '.72rem',
-                color: '#22c3ee',
-                fontWeight: 800,
-                letterSpacing: '.14em',
-                textTransform: 'uppercase',
-                marginBottom: 6,
-              }}
-            >
+            <label className="admin-login-label">
               Password
             </label>
             <input
@@ -179,21 +91,11 @@ export const AdminLoginView: React.FC<AdminLoginViewProps> = ({
               value={adminPass}
               onChange={(e) => setAdminPass(e.target.value)}
               placeholder="••••••••"
-              style={{
-                width: '100%',
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                borderRadius: 14,
-                padding: '12px 14px',
-                color: '#FFFFFF',
-                fontSize: '.9rem',
-                outline: 'none',
-                boxSizing: 'border-box',
-              }}
+              className="admin-login-input"
             />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: -6 }}>
+          <div className="admin-login-forgot">
             <button
               type="button"
               onClick={() => {
@@ -201,15 +103,7 @@ export const AdminLoginView: React.FC<AdminLoginViewProps> = ({
                 setAdminRecoveryStep(1);
                 setShowAdminForgotModal(true);
               }}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#38BDF8',
-                fontSize: '.78rem',
-                cursor: 'pointer',
-                padding: 0,
-                textDecoration: 'underline',
-              }}
+              className="admin-login-forgot-btn"
             >
               Forgot password? Reset via OTP
             </button>
@@ -218,54 +112,23 @@ export const AdminLoginView: React.FC<AdminLoginViewProps> = ({
           <button
             type="submit"
             disabled={authenticating}
-            style={{
-              width: '100%',
-              marginTop: 8,
-              background: '#22c3ee',
-              color: '#060b18',
-              border: 'none',
-              borderRadius: 20,
-              padding: '14px 20px',
-              fontSize: '.82rem',
-              fontWeight: 800,
-              letterSpacing: '.16em',
-              textTransform: 'uppercase',
-              cursor: authenticating ? 'wait' : 'pointer',
-              boxShadow: '0 10px 30px -8px rgba(34, 195, 238, 0.7)',
-              transition: 'all 0.2s ease',
-            }}
+            className="admin-login-submit"
           >
             {authenticating ? 'Verifying Clearance…' : 'Sign In to Portal'}
           </button>
         </form>
 
-        <div style={{ marginTop: 22, textAlign: 'center', borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="admin-login-footer">
           <div>
             <span style={{ fontSize: '.72rem', color: 'rgba(232, 238, 247, 0.5)' }}>
               Operational Staff Member?{' '}
             </span>
-            <a
-              href="/staff/login"
-              style={{
-                color: '#38BDF8',
-                textDecoration: 'none',
-                fontSize: '.72rem',
-                fontWeight: 600,
-              }}
-            >
+            <a href="/staff/login" className="admin-login-staff-link">
               Go to Staff Station Login (/staff/login) →
             </a>
           </div>
           <div>
-            <a
-              href="/"
-              style={{
-                color: 'rgba(232, 238, 247, 0.6)',
-                textDecoration: 'none',
-                fontSize: '.78rem',
-                fontWeight: 600,
-              }}
-            >
+            <a href="/" className="admin-login-home-link">
               ← Return to Guest Homepage
             </a>
           </div>

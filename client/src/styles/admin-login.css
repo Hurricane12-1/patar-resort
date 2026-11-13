@@ -1,0 +1,253 @@
+/* ==========================================================================
+   ROCK VIEW BEACH RESORT · MODULAR EXECUTIVE ADMIN LOGIN STYLESHEET
+   Dedicated, responsive styling for /admin Executive Sign-In Portal.
+   Prevents badge collisions, enforces crisp typography, and provides
+   tactile feedback with neon glows and smooth transitions.
+   ========================================================================== */
+
+.admin-login-viewport {
+  min-height: 100vh;
+  width: 100%;
+  background: radial-gradient(ellipse at 50% 20%, #0d1b38 0%, #060b18 70%);
+  color: #e8eef7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  box-sizing: border-box;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.admin-login-card {
+  max-width: 480px;
+  width: 100%;
+  background: rgba(11, 20, 38, 0.95);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(34, 195, 238, 0.28);
+  border-radius: 24px;
+  padding: 36px 32px;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.75), 0 0 35px rgba(34, 195, 238, 0.12);
+  box-sizing: border-box;
+  position: relative;
+  z-index: 10;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.admin-login-card:hover {
+  border-color: rgba(34, 195, 238, 0.45);
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 45px rgba(34, 195, 238, 0.2);
+}
+
+/* Header Bar: Badge + Brand Mark (Collision-Proof) */
+.admin-login-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.admin-login-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(34, 195, 238, 0.12);
+  border: 1px solid rgba(34, 195, 238, 0.35);
+  color: #22c3ee;
+  border-radius: 9999px;
+  padding: 4px 12px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-shadow: 0 0 12px rgba(34, 195, 238, 0.15);
+}
+
+.admin-login-brand {
+  font-size: 0.7rem;
+  color: #f6b74a;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-shadow: 0 0 10px rgba(246, 183, 74, 0.2);
+}
+
+/* On ultra-narrow screens, stack neatly instead of colliding */
+@media (max-width: 440px) {
+  .admin-login-card {
+    padding: 28px 20px;
+    border-radius: 20px;
+  }
+  .admin-login-topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
+
+.admin-login-title {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 2.35rem;
+  margin: 0 0 8px;
+  color: #FFFFFF;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.admin-login-subtitle {
+  margin: 0 0 22px;
+  font-size: 0.85rem;
+  color: rgba(232, 238, 247, 0.72);
+  line-height: 1.5;
+}
+
+/* Error Callout */
+.admin-login-error {
+  background: rgba(244, 63, 94, 0.15);
+  border: 1px solid rgba(244, 63, 94, 0.4);
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 18px;
+  font-size: 0.8rem;
+  color: #FECDD3;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 0 14px rgba(244, 63, 94, 0.15);
+}
+
+/* Form Controls */
+.admin-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.admin-login-label {
+  display: block;
+  font-size: 0.7rem;
+  color: #22c3ee;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.admin-login-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 14px;
+  padding: 12px 14px;
+  color: #FFFFFF;
+  font-size: 0.9rem;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-login-input:focus {
+  border-color: #22c3ee;
+  box-shadow: 0 0 0 3px rgba(34, 195, 238, 0.25);
+}
+
+.admin-login-forgot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -6px;
+}
+
+.admin-login-forgot-btn {
+  background: none;
+  border: none;
+  color: #38BDF8;
+  font-size: 0.78rem;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.admin-login-forgot-btn:hover {
+  color: #7DD3FC;
+}
+
+/* Submit Button */
+.admin-login-submit {
+  width: 100%;
+  margin-top: 8px;
+  background: #22c3ee;
+  color: #060b18;
+  border: none;
+  border-radius: 9999px;
+  padding: 14px 20px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 10px 30px -8px rgba(34, 195, 238, 0.7);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.admin-login-submit:hover:not(:disabled) {
+  filter: brightness(1.1);
+  box-shadow: 0 12px 35px -6px rgba(34, 195, 238, 0.85), 0 0 15px rgba(34, 195, 238, 0.4);
+  transform: translateY(-1px);
+}
+
+.admin-login-submit:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.admin-login-submit:disabled {
+  opacity: 0.75;
+  cursor: wait;
+}
+
+/* Footer Cross-Navigation */
+.admin-login-footer {
+  margin-top: 22px;
+  text-align: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-login-staff-link {
+  color: #38BDF8;
+  text-decoration: none;
+  font-size: 0.72rem;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+.admin-login-staff-link:hover {
+  color: #7DD3FC;
+  text-decoration: underline;
+}
+
+.admin-login-home-link {
+  color: rgba(232, 238, 247, 0.6);
+  text-decoration: none;
+  font-size: 0.78rem;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+.admin-login-home-link:hover {
+  color: #FFFFFF;
+}
