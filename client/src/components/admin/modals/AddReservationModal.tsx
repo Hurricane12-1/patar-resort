@@ -2,7 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { money, fmtDate, formatTime12Hour, to11Digits } from '../../../lib/format.ts';
 import AvailabilityCalendar from '../../AvailabilityCalendar.tsx';
 import { POOL_ADDON_OPTIONS } from '../../../lib/ledgerUtils.ts';
-import { addDaysYMD } from '../../../lib/api.ts';
+import {
+  addDaysYMD,
+  extractBookingTimes,
+  normalizeTo24Hour,
+  parseBookingTimeMs,
+  isBookingCollisionWithGap,
+  TWO_HOURS_MS,
+} from '../../../lib/api.ts';
 import { toast } from '../../Toasts.tsx';
 import { inferOfferingType, getOfferingLabel, getRateUnitSuffix } from '../../../lib/offeringSpecs';
 
@@ -382,20 +389,33 @@ export default function AddReservationModal({
   const effectiveCout = rawCout > effectiveCin ? rawCout : addDaysYMD(effectiveCin, 1);
   const targetRoomId = newReservation.room_id || activeWalkInRoom?.id || '';
 
+  const effectiveCinTime = normalizeTo24Hour(newReservation.check_in_time, '14:00');
+  const effectiveCoutTime = normalizeTo24Hour(newReservation.check_out_time, '12:00');
+  const reqStartMs = parseBookingTimeMs(effectiveCin, effectiveCinTime);
+  const reqEndMs = parseBookingTimeMs(effectiveCout, effectiveCoutTime);
+
   const computedNights = Math.max(
     1,
     Math.round((new Date(effectiveCout).getTime() - new Date(effectiveCin).getTime()) / 86400000)
   );
 
-  // Check all active bookings overlapping the selected dates
-  const allOverlappingOnDates = (reservationsList || []).filter((b: any) => {
+  // Check all active bookings colliding with the requested stay times (with mandatory 2-hour cleaning buffer)
+  const collidingBookingsWithGap = (reservationsList || []).filter((b: any) => {
     const status = String(b.status || '').toLowerCase();
     if (['cancelled', 'rejected', 'checked_out'].includes(status)) return false;
     const bCin = String(b.check_in || '').slice(0, 10);
     const bCoutRaw = String(b.check_out || '').slice(0, 10);
     const bCout = bCoutRaw > bCin ? bCoutRaw : addDaysYMD(bCin, 1);
-    return Boolean(bCin && bCout && bCin < effectiveCout && bCout > effectiveCin);
+    if (!bCin || !bCout) return false;
+
+    const bTimes = extractBookingTimes(b);
+    const bStartMs = parseBookingTimeMs(bCin, bTimes.check_in_time);
+    const bEndMs = parseBookingTimeMs(bCout, bTimes.check_out_time);
+
+    return isBookingCollisionWithGap(reqStartMs, reqEndMs, bStartMs, bEndMs, TWO_HOURS_MS);
   });
+
+  const allOverlappingOnDates = collidingBookingsWithGap;
 
   const overlappingRoomBookings = allOverlappingOnDates.filter(
     (b: any) =>
@@ -434,6 +454,16 @@ export default function AddReservationModal({
     ).values()
   );
 
+  const hasDirectOverlap = conflictingBookings.some((b: any) => {
+    const bCin = String(b.check_in || '').slice(0, 10);
+    const bCout = String(b.check_out || '').slice(0, 10) > bCin ? String(b.check_out).slice(0, 10) : addDaysYMD(bCin, 1);
+    const bTimes = extractBookingTimes(b);
+    const bStartMs = parseBookingTimeMs(bCin, bTimes.check_in_time);
+    const bEndMs = parseBookingTimeMs(bCout, bTimes.check_out_time);
+    return reqStartMs < bEndMs && reqEndMs > bStartMs;
+  });
+  const isCleaningBufferClash = (isModalRoomLocked || isSelectedUnitTaken) && !hasDirectOverlap;
+
   // Required field validation checks
   const isNameBlank = !String(newReservation.guest_name || '').trim();
   const isPhoneBlank = !String(newReservation.phone || '').trim();
@@ -460,13 +490,20 @@ export default function AddReservationModal({
     }
 
     if (isModalRoomLocked || isSelectedUnitTaken) {
-      const guestNames = conflictingBookings
-        .map((b: any) => b.guest_name || b.profiles?.full_name || 'Another Guest')
-        .join(', ');
-      toast(
-        `⚠️ Already Booked: ${guestNames || 'Someone'} is already booked on ${fmtDate(effectiveCin)} → ${fmtDate(effectiveCout)} for this accommodation/unit!`,
-        true
-      );
+      if (isCleaningBufferClash) {
+        toast(
+          '⚠️ Housekeeping 2-Hour Buffer Active: Another stay departs or arrives within 2 hours. A minimum 2-hour window is required between stays so housekeeping can clean and sanitize the room.',
+          true
+        );
+      } else {
+        const guestNames = conflictingBookings
+          .map((b: any) => b.guest_name || b.profiles?.full_name || 'Another Guest')
+          .join(', ');
+        toast(
+          `⚠️ Already Booked: ${guestNames || 'Someone'} is already booked on ${fmtDate(effectiveCin)} → ${fmtDate(effectiveCout)} for this accommodation/unit!`,
+          true
+        );
+      }
       topWarningRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
@@ -1748,13 +1785,13 @@ export default function AddReservationModal({
               </button>
               <button
                 type="submit"
-                disabled={creatingReservation || activeRoomsList.length === 0}
+                disabled={creatingReservation || activeRoomsList.length === 0 || isModalRoomLocked || isSelectedUnitTaken}
                 className="btn btn-sky btn-sm"
                 style={{
                   fontWeight: 700,
                   background:
                     isModalRoomLocked || isSelectedUnitTaken || activeRoomsList.length === 0 ? '#94A3B8' : undefined,
-                  cursor: activeRoomsList.length === 0 ? 'not-allowed' : 'pointer',
+                  cursor: activeRoomsList.length === 0 || isModalRoomLocked || isSelectedUnitTaken ? 'not-allowed' : 'pointer',
                   borderColor:
                     isModalRoomLocked || isSelectedUnitTaken || activeRoomsList.length === 0 ? '#94A3B8' : undefined,
                 }}
@@ -1766,6 +1803,11 @@ export default function AddReservationModal({
                     <i className="fas fa-triangle-exclamation" style={{ marginRight: 6 }} />
                     No Rooms Around
                   </>
+                ) : isCleaningBufferClash ? (
+                  <>
+                    <i className="fas fa-broom" style={{ marginRight: 6 }} />
+                    2-Hour Cleaning Buffer Active
+                  </>
                 ) : isModalRoomLocked ? (
                   <>
                     <i className="fas fa-lock" style={{ marginRight: 6 }} />
@@ -1774,7 +1816,7 @@ export default function AddReservationModal({
                 ) : isSelectedUnitTaken ? (
                   <>
                     <i className="fas fa-ban" style={{ marginRight: 6 }} />
-                    Unit Occupied
+                    Unit Occupied (2h Buffer)
                   </>
                 ) : (
                   'Save & Log to Ledger ✦'

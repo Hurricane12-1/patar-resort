@@ -19,6 +19,10 @@
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities) important source(none);
 @source "./components/MobileResortApp.tsx";
+@source "./components/resort/**/*.tsx";
+@source "./components/**/*.tsx";
+@source "./pages/**/*.tsx";
+@source "./views/**/*.tsx";
 
 @theme {
   --color-navy: #060b18;

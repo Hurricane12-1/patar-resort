@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { AreaLineChart, Sparkline } from '../../components/Charts';
-import AvailabilityCalendar from '../../components/AvailabilityCalendar';
 
 export interface OverviewViewProps {
   roomsList: any[];
@@ -346,59 +345,177 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
         </div>
       </div>
 
-      {/* ROW 2: AVAILABILITY CALENDAR (LEFT) + OPEN CONVERSATIONS (RIGHT) */}
+      {/* ROW 2: OPERATIONS DISPATCH & TURNAROUND (LEFT) + OPEN CONVERSATIONS (RIGHT) */}
       <div className="admin-grid-split-2">
-        {/* LEFT: RESORT AVAILABILITY & PMS CALENDAR */}
-        <div style={{ minWidth: 0 }}>
-          <AvailabilityCalendar
-            rooms={activeRoomsList}
-            bookings={allBookings}
-            isLightMode={isLightMode}
-            showMetrics={true}
-            showNewBookingInTopBar={true}
-            allowSameDay={true}
-            onNewBooking={() => {
-              if (activeRoomsList.length === 0) {
-                toast("There's no present room around. Please add a room in Room Management first.", true);
-                return;
-              }
-              const activeRoom = activeRoomsList[0];
-              setNewReservation((prev: any) => ({
-                ...prev,
-                room_id: prev.room_id || activeRoom?.id || '',
-                check_in: prev.check_in || '2026-10-20',
-                check_out: prev.check_out || '2026-10-21',
-                total_php: activeRoom?.rate_php || 3500,
-              }));
-              setShowAddReservationModal(true);
-            }}
-            onSelectBooking={(stay) => {
-              const foundBooking = allBookings.find((b: any) => b.id === stay.id);
-              if (foundBooking) {
-                toast(`Selected reservation for ${stay.guestName} (${stay.unitName})`);
-              }
-            }}
-            onSelectDates={(cin, cout, targetRoomId, unitInfo) => {
-              if (activeRoomsList.length === 0) {
-                toast("There's no present room around. Please add a room in Room Management first.", true);
-                return;
-              }
-              const activeRoom = (targetRoomId ? activeRoomsList.find((r) => r.id === targetRoomId) : null) || activeRoomsList.find((r) => r.id === newReservation.room_id) || activeRoomsList[0];
-              const nights = Math.max(1, Math.round((new Date(cout).getTime() - new Date(cin).getTime()) / 86400000));
-              const unitTag = unitInfo && unitInfo.unitNumber ? `[Unit ${unitInfo.unitNumber}]` : '';
-              const cleanNotes = (newReservation.notes || '').replace(/\[Unit\s*\d+\]\s*/g, '').trim();
+        {/* LEFT: TODAY'S MOVEMENTS & RESERVATIONS GATEWAY */}
+        <div
+          className="panel panel-card"
+          style={{
+            background: themeCardBg,
+            border: `1px solid ${themeBorder}`,
+            borderRadius: 18,
+            padding: '20px 22px',
+            boxShadow: themeShadow,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            minWidth: 0,
+          }}
+        >
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+              <div>
+                <span style={{ fontSize: '.72rem', color: '#0EA5E9', fontWeight: 800, letterSpacing: '.12em', textTransform: 'uppercase', display: 'block', marginBottom: 2 }}>
+                  RESORT MOVEMENTS &amp; DISPATCH
+                </span>
+                <h3 style={{ fontSize: '1.25rem', margin: 0, color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800 }}>
+                  Today's Turnaround &amp; Occupancy
+                </h3>
+              </div>
+              <span style={{
+                fontSize: '.72rem',
+                color: '#0EA5E9',
+                background: 'rgba(14, 165, 233, 0.12)',
+                border: '1px solid rgba(14, 165, 233, 0.3)',
+                padding: '3px 10px',
+                borderRadius: 20,
+                fontWeight: 800,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+              }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#0EA5E9', display: 'inline-block' }} />
+                2h Cleaner Gap Active
+              </span>
+            </div>
 
-              setNewReservation((prev: any) => ({
-                ...prev,
-                room_id: activeRoom?.id || prev.room_id || '',
-                check_in: cin,
-                check_out: cout,
-                total_php: (activeRoom?.rate_php || 3500) * nights,
-                notes: unitTag ? `${unitTag} ${cleanNotes}`.trim() : cleanNotes,
-              }));
-              setShowAddReservationModal(true);
-            }}
-          />
+            <p style={{ margin: '0 0 16px', fontSize: '.78rem', color: themeMuted, lineHeight: 1.4 }}>
+              Active overview of today's guest check-ins, departures, and turnover preparation buffer.
+            </p>
+
+            {/* Quick Metrics Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 16 }}>
+              <div style={{
+                padding: '12px 14px',
+                borderRadius: 12,
+                background: isLightMode ? '#F0FDF4' : 'rgba(16, 185, 129, 0.1)',
+                border: `1px solid ${isLightMode ? '#BBF7D0' : 'rgba(16, 185, 129, 0.25)'}`,
+                textAlign: 'center',
+              }}>
+                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#10B981', lineHeight: 1 }}>
+                  {(allBookings || []).filter((b: any) => String(b.check_in || '').slice(0, 10) === new Date().toISOString().slice(0, 10) && b.status !== 'cancelled').length}
+                </div>
+                <div style={{ fontSize: '.72rem', fontWeight: 700, color: themeText, marginTop: 4 }}>Arriving Today</div>
+                <div style={{ fontSize: '.65rem', color: themeMuted }}>Check-in from 2:00 PM</div>
+              </div>
+
+              <div style={{
+                padding: '12px 14px',
+                borderRadius: 12,
+                background: isLightMode ? '#FEF2F2' : 'rgba(239, 68, 68, 0.1)',
+                border: `1px solid ${isLightMode ? '#FECACA' : 'rgba(239, 68, 68, 0.25)'}`,
+                textAlign: 'center',
+              }}>
+                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#EF4444', lineHeight: 1 }}>
+                  {(allBookings || []).filter((b: any) => String(b.check_out || '').slice(0, 10) === new Date().toISOString().slice(0, 10) && b.status !== 'cancelled').length}
+                </div>
+                <div style={{ fontSize: '.72rem', fontWeight: 700, color: themeText, marginTop: 4 }}>Departing Today</div>
+                <div style={{ fontSize: '.65rem', color: themeMuted }}>Check-out by 12:00 PM</div>
+              </div>
+
+              <div style={{
+                padding: '12px 14px',
+                borderRadius: 12,
+                background: isLightMode ? '#EFF6FF' : 'rgba(59, 130, 246, 0.1)',
+                border: `1px solid ${isLightMode ? '#BFDBFE' : 'rgba(59, 130, 246, 0.25)'}`,
+                textAlign: 'center',
+              }}>
+                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#3B82F6', lineHeight: 1 }}>
+                  {occupiedTonight}
+                </div>
+                <div style={{ fontSize: '.72rem', fontWeight: 700, color: themeText, marginTop: 4 }}>Units Occupied</div>
+                <div style={{ fontSize: '.65rem', color: themeMuted }}>of {totalUnitsCount} active units</div>
+              </div>
+            </div>
+
+            {/* Housekeeping Buffer Standard Callout */}
+            <div style={{
+              padding: '12px 14px',
+              borderRadius: 12,
+              background: isLightMode ? '#FFFBEB' : 'rgba(245, 158, 11, 0.08)',
+              border: `1px solid ${isLightMode ? '#FDE68A' : 'rgba(245, 158, 11, 0.25)'}`,
+              marginBottom: 16,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+            }}>
+              <span style={{ fontSize: '1.2rem', color: '#F59E0B' }}>🧹</span>
+              <div style={{ fontSize: '.76rem', lineHeight: 1.4, color: themeText }}>
+                <strong>Mandatory 2-Hour Cleaning Buffer:</strong> Stays in the same accommodation require a minimum 2-hour window between check-out (12:00 PM) and check-in (2:00 PM) to allow room sanitation.
+              </div>
+            </div>
+          </div>
+
+          {/* Action to Full Reservations Page */}
+          <div style={{ display: 'flex', gap: 10, borderTop: `1px solid ${themeBorder}`, paddingTop: 14 }}>
+            <button
+              type="button"
+              onClick={() => setActiveTab('ledger')}
+              style={{
+                flex: 1,
+                padding: '10px 16px',
+                borderRadius: 12,
+                background: '#0EA5E9',
+                border: 'none',
+                color: '#031726',
+                fontWeight: 800,
+                fontSize: '.82rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <i className="far fa-calendar-alt" />
+              <span>Open Visual Reservations &amp; Calendar →</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (activeRoomsList.length === 0) {
+                  toast("There's no present room around. Please add a room in Room Management first.", true);
+                  return;
+                }
+                const activeRoom = activeRoomsList[0];
+                setNewReservation((prev: any) => ({
+                  ...prev,
+                  room_id: prev.room_id || activeRoom?.id || '',
+                  check_in: prev.check_in || '2026-10-20',
+                  check_out: prev.check_out || '2026-10-21',
+                  total_php: activeRoom?.rate_php || 3500,
+                }));
+                setShowAddReservationModal(true);
+              }}
+              style={{
+                padding: '10px 16px',
+                borderRadius: 12,
+                background: isLightMode ? '#F1F5F9' : 'rgba(255, 255, 255, 0.08)',
+                border: `1px solid ${themeBorder}`,
+                color: themeText,
+                fontWeight: 700,
+                fontSize: '.82rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              <i className="fas fa-plus" />
+              <span>New Booking</span>
+            </button>
+          </div>
         </div>
 
         {/* RIGHT: OPEN CONVERSATIONS PANEL */}

@@ -1482,7 +1482,7 @@ body.light-mode .hbar,
   position: fixed;
   bottom: 24px;
   right: 24px;
-  z-index: 80;
+  z-index: 99999;
   width: 54px;
   height: 54px;
   border-radius: 50%;

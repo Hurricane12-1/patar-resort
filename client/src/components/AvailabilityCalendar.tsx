@@ -2,7 +2,15 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { toast } from './Toasts.tsx';
 import { money, fmtDate } from '../lib/format.ts';
 import { supabase } from '../lib/supabaseClient.ts';
-import { api, addDaysYMD } from '../lib/api.ts';
+import {
+  api,
+  addDaysYMD,
+  extractBookingTimes,
+  normalizeTo24Hour,
+  parseBookingTimeMs,
+  isBookingCollisionWithGap,
+  TWO_HOURS_MS,
+} from '../lib/api.ts';
 import '../styles/availability-calendar.css';
 
 export interface CalendarStay {
@@ -326,7 +334,7 @@ export default function AvailabilityCalendar({
     const unassigned: CalendarStay[] = [];
 
     // Track active timelines for physical units
-    const unitTimelines: Map<number, { checkIn: string; checkOut: string; id: string }[]> = new Map();
+    const unitTimelines: Map<number, { checkIn: string; checkOut: string; startMs: number; endMs: number; id: string }[]> = new Map();
     units.forEach((u) => unitTimelines.set(u.unitNumber, []));
 
     effectiveBookings.forEach((b: any, bIdx: number) => {
@@ -335,6 +343,9 @@ export default function AvailabilityCalendar({
       if (!cin || !cout) return;
 
       const { checkInTime, checkOutTime } = parseTimes(b);
+      const bTimes = extractBookingTimes(b);
+      const bStartMs = parseBookingTimeMs(cin, bTimes.check_in_time);
+      const bEndMs = parseBookingTimeMs(cout, bTimes.check_out_time);
 
       // Scope unit assignment strictly to physical units belonging to this booking's room
       const roomUnits = units.filter((u) => u.roomId === b.room_id);
@@ -349,9 +360,9 @@ export default function AvailabilityCalendar({
         const matched = candidateUnits.find((u) => u.unitNumber === targetUnitNum) || candidateUnits[targetUnitNum - 1];
         if (matched) {
           const timeline = unitTimelines.get(matched.unitNumber) || [];
-          const hasCollision = timeline.some((t) => cin < t.checkOut && cout > t.checkIn);
+          const hasCollision = timeline.some((t) => isBookingCollisionWithGap(bStartMs, bEndMs, t.startMs, t.endMs, TWO_HOURS_MS));
           if (!hasCollision) {
-            timeline.push({ checkIn: cin, checkOut: cout, id: b.id });
+            timeline.push({ checkIn: cin, checkOut: cout, startMs: bStartMs, endMs: bEndMs, id: b.id });
             targetUnitNum = matched.unitNumber;
             hasAssignedUnit = true;
           }
@@ -362,9 +373,9 @@ export default function AvailabilityCalendar({
       if (!hasAssignedUnit) {
         for (const u of candidateUnits) {
           const timeline = unitTimelines.get(u.unitNumber) || [];
-          const hasCollision = timeline.some((t) => cin < t.checkOut && cout > t.checkIn);
+          const hasCollision = timeline.some((t) => isBookingCollisionWithGap(bStartMs, bEndMs, t.startMs, t.endMs, TWO_HOURS_MS));
           if (!hasCollision) {
-            timeline.push({ checkIn: cin, checkOut: cout, id: b.id });
+            timeline.push({ checkIn: cin, checkOut: cout, startMs: bStartMs, endMs: bEndMs, id: b.id });
             targetUnitNum = u.unitNumber;
             hasAssignedUnit = true;
             break;
@@ -606,9 +617,17 @@ export default function AvailabilityCalendar({
       newOutStr = addDaysYMD(dateStr, 1);
     }
 
-    const activeStaysOnDate = allStays.filter(
-      (s) => !['cancelled', 'checked_out'].includes(String(s.status || '').toLowerCase()) && s.checkIn < newOutStr && s.checkOut > newInStr
-    );
+    const reqStartMs = parseBookingTimeMs(newInStr, '14:00');
+    const reqEndMs = parseBookingTimeMs(newOutStr, '12:00');
+
+    const activeStaysOnDate = allStays.filter((s) => {
+      if (['cancelled', 'checked_out'].includes(String(s.status || '').toLowerCase())) return false;
+      const sTimes = extractBookingTimes(s);
+      const sStartMs = parseBookingTimeMs(s.checkIn, sTimes.check_in_time);
+      const sEndMs = parseBookingTimeMs(s.checkOut, sTimes.check_out_time);
+      return isBookingCollisionWithGap(reqStartMs, reqEndMs, sStartMs, sEndMs, TWO_HOURS_MS);
+    });
+
     const unitConflict = activeStaysOnDate.find((s) => s.unitId === unitId);
     const roomObj = effectiveRooms.find((r) => r.id === matchedUnit?.roomId);
     const roomCapacityUnits = Math.max(1, Number(roomObj?.units) || 1);
@@ -617,10 +636,22 @@ export default function AvailabilityCalendar({
     );
 
     if (unitConflict) {
-      toast(
-        `⚠️ Already Booked: ${matchedUnit?.name || 'Unit'} is reserved between ${fmtDate(newInStr)} and ${fmtDate(newOutStr)} by ${unitConflict.guestName}!`,
-        true
-      );
+      const sTimes = extractBookingTimes(unitConflict);
+      const sStartMs = parseBookingTimeMs(unitConflict.checkIn, sTimes.check_in_time);
+      const sEndMs = parseBookingTimeMs(unitConflict.checkOut, sTimes.check_out_time);
+      const isDirectOverlap = reqStartMs < sEndMs && reqEndMs > sStartMs;
+
+      if (!isDirectOverlap) {
+        toast(
+          `⚠️ Mandatory 2-Hour Cleaning Buffer: ${matchedUnit?.name || 'Unit'} has a stay departing or checking in within 2 hours of ${fmtDate(newInStr)}. Housekeeping requires a 2-hour sanitation gap before next guest check-in.`,
+          true
+        );
+      } else {
+        toast(
+          `⚠️ Already Booked: ${matchedUnit?.name || 'Unit'} is reserved between ${fmtDate(newInStr)} and ${fmtDate(newOutStr)} by ${unitConflict.guestName}!`,
+          true
+        );
+      }
     } else if (roomStaysOnDate.length >= roomCapacityUnits) {
       const names = roomStaysOnDate.map((s) => s.guestName).join(', ');
       toast(
