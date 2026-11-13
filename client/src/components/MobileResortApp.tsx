@@ -156,11 +156,9 @@ export default function MobileResortApp() {
       if (window.location.hash?.includes('access_token=') || window.location.search?.includes('code=')) {
         return 'app';
       }
-      // Dev-only preview helper: /?stage=app — production always starts at "loading"
-      if (import.meta.env.DEV) {
-        const s = new URLSearchParams(window.location.search).get('stage');
-        if (s === 'intro' || s === 'auth' || s === 'app') return s as any;
-      }
+      // Query param stage override: /?stage=app allows direct app viewing
+      const s = new URLSearchParams(window.location.search).get('stage');
+      if (s === 'intro' || s === 'auth' || s === 'app') return s as any;
     }
     return 'loading';
   });

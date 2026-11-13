@@ -369,7 +369,10 @@ export default function GuestBookingBar({
           <div className="gbb-guests-popover">
             <div className="gbb-popover-head">
               <p className="gbb-popover-subtitle">Max. 6 guests per unit</p>
-              <h4 className="gbb-popover-room-title">Room Allocation</h4>
+              <div className="gbb-popover-room-strip">
+                <h4 className="gbb-popover-room-title">Room 1 · Allocation</h4>
+                <span className="gbb-popover-room-badge">{roomsCount} {roomsCount > 1 ? 'Units' : 'Unit'}</span>
+              </div>
             </div>
 
             {/* Adult Stepper */}
@@ -453,14 +456,14 @@ export default function GuestBookingBar({
               </div>
             </div>
 
-            <div style={{ marginTop: 16 }}>
+            <div style={{ marginTop: 18 }}>
               <button
                 type="button"
-                className="gbb-cal-done-btn"
-                style={{ width: '100%', padding: '10px' }}
+                className="gbb-occupancy-done-btn"
                 onClick={() => setShowGuestsPopover(false)}
               >
-                Confirm Occupancy
+                <span>Confirm Occupancy</span>
+                <i className="fas fa-check" style={{ fontSize: '.75rem' }} />
               </button>
             </div>
           </div>
