@@ -120,6 +120,7 @@ export function createModuleSandbox(moduleName, innerRouter, options = {}) {
       title: isServerError ? 'Isolated Module Processing Exception' : (err.name || 'Request Error'),
       status: statusCode,
       detail: err.message || 'An error occurred during module request execution.',
+      ...(err.code ? { code: err.code } : {}),
       module: moduleName,
       correlation_id: res.getHeader('X-Correlation-Id'),
       timestamp: new Date().toISOString(),

@@ -1,24 +1,26 @@
 /**
- * Shared offering classification, type-specific specifications, and PH date helpers.
- * Specifications are packed inside the rooms.amenities text[] column using prefixed tags
- * (__type__:<type> and __spec__:<encoded-json>) so Supabase schemas require no DDL changes.
+ * Shared accommodation classification, type-specific specifications, and PH date helpers.
+ * Strictly adheres to the two-tier resort accommodation taxonomy:
+ *   1. Rooms: overnight stays
+ *   2. Cottages: day-use open-air rentals
+ * Island Tours and non-lodging activities are decoupled into the separate AddOnService entity.
  */
 
-export const OFFERING_TYPES = ['room', 'cottage', 'offer'];
+export const ALLOWED_LODGING_CATEGORIES = ['Rooms', 'Cottages'];
 
-export const DB_SAFE_CATEGORIES = ['Villa', 'Suite', 'Cottage', 'Standard', 'Dorm'];
+export const OFFERING_TYPES = ['room', 'cottage'];
 
-export const ROOM_CATEGORIES = ['Room', 'Standard', 'Suite', 'Villa', 'Garden', 'Dorm'];
-export const COTTAGE_CATEGORIES = ['Cottage', 'Cabana', 'Pavilion'];
-export const OFFER_CATEGORIES = ['Island Tour', 'Tour', 'Water Activity', 'Package', 'Offer'];
+export const DB_SAFE_CATEGORIES = ['Standard', 'Cottage'];
+
+export const ROOM_CATEGORIES = ['Room', 'Rooms'];
+export const COTTAGE_CATEGORIES = ['Cottage', 'Cottages'];
 
 export function toDbSafeCategory(displayCategory, offeringType = 'room') {
-  const clean = String(displayCategory || '').trim();
-  const matched = DB_SAFE_CATEGORIES.find((c) => c.toLowerCase() === clean.toLowerCase());
-  if (matched) return matched;
-  if (offeringType === 'cottage') return 'Cottage';
-  if (offeringType === 'offer') return 'Standard';
-  return 'Suite';
+  const clean = String(displayCategory || '').trim().toLowerCase();
+  if (clean === 'cottage' || clean === 'cottages' || offeringType === 'cottage') {
+    return 'Cottage';
+  }
+  return 'Standard';
 }
 
 export const DEFAULT_SPECS_BY_TYPE = {
@@ -40,41 +42,37 @@ export const DEFAULT_SPECS_BY_TYPE = {
     power_outlet: true,
     pricing_mode: 'per_night',
   },
-  offer: {
-    offer_subtype: 'Island Hopping Tour',
-    duration: '4 Hours (Half Day)',
-    destinations: 'Patar Coral Garden, Sandbar, Limestone Caves',
-    departure_schedule: '08:00 AM Daily',
-    inclusions: 'Motorized Bangka Boat, Boatman/Guide, Life Vests, Snorkel Mask',
-    boat_or_equipment: 'Outrigger Bangka Boat',
-    pricing_mode: 'per_group',
-    min_participants: 2,
-  },
 };
 
-export const DEFAULT_ISLAND_TOUR_SEED = {
-  name: 'Patar & Hundred Islands Hopping Tour',
-  slug: 'patar-island-hopping-tour',
-  category: 'Island Tour',
-  offering_type: 'offer',
-  description: 'Guided motorized bangka island hopping across Bolinao coral reefs, coastal coves, and calm turquoise sandbars.',
-  capacity: 10,
-  units: 6,
-  rate_php: 2800,
-  is_active: true,
-  amenities: ['Motorized Boat', 'Local Guide', 'Life Vests', 'Snorkel Gear', 'Cooler Box'],
-  image_url: 'https://res.cloudinary.com/juynm9ab/image/upload/jd_beach_house_accommodations/island.jpg',
-  specs: {
-    offer_subtype: 'Island Hopping Tour',
-    duration: '4 Hours (Half Day)',
-    destinations: 'Patar Reef Sanctuary, Sandbar Cove, Sea Cave Overlook',
-    departure_schedule: '08:00 AM Daily',
-    inclusions: 'Private Motorized Bangka, Boatman/Guide, Life Vests, Snorkel Masks',
-    boat_or_equipment: 'Private Outrigger Bangka Boat',
-    pricing_mode: 'per_group',
-    min_participants: 2,
+/**
+ * Decoupled AddOnService / Activity entity outside the lodging taxonomy.
+ * Island Tours must never be treated as rooms or cottages.
+ */
+export const RESORT_ACTIVITIES_AND_TOURS = [
+  {
+    id: 'addon-island-hopping-001',
+    name: 'Patar & Hundred Islands Hopping Tour',
+    slug: 'patar-island-hopping-tour',
+    category: 'Island Tour',
+    description: 'Guided motorized bangka island hopping across Bolinao coral reefs, coastal coves, and calm turquoise sandbars.',
+    capacity: 10,
+    units: 6,
+    rate_php: 2800,
+    is_active: true,
+    amenities: ['Motorized Boat', 'Local Guide', 'Life Vests', 'Snorkel Gear', 'Cooler Box'],
+    image_url: 'https://res.cloudinary.com/juynm9ab/image/upload/jd_beach_house_accommodations/island.jpg',
+    specs: {
+      offer_subtype: 'Island Hopping Tour',
+      duration: '4 Hours (Half Day)',
+      destinations: 'Patar Reef Sanctuary, Sandbar Cove, Sea Cave Overlook',
+      departure_schedule: '08:00 AM Daily',
+      inclusions: 'Private Motorized Bangka, Boatman/Guide, Life Vests, Snorkel Masks',
+      boat_or_equipment: 'Private Outrigger Bangka Boat',
+      pricing_mode: 'per_group',
+      min_participants: 2,
+    },
   },
-};
+];
 
 export function getManilaTodayISO(now = new Date()) {
   return new Intl.DateTimeFormat('en-CA', {
@@ -97,31 +95,24 @@ export function getMinGuestCheckInISO(now = new Date()) {
 
 export function inferOfferingType(item = {}) {
   const rawType = String(item?.offering_type || '').toLowerCase().trim();
-  if (OFFERING_TYPES.includes(rawType)) return rawType;
+  if (rawType === 'cottage') return 'cottage';
+  if (rawType === 'room') return 'room';
 
   const rawAmenities = Array.isArray(item?.amenities) ? item.amenities : [];
   for (const tag of rawAmenities) {
     if (typeof tag === 'string' && tag.startsWith('__type__:')) {
       const parsed = tag.slice('__type__:'.length).toLowerCase().trim();
-      if (OFFERING_TYPES.includes(parsed)) return parsed;
+      if (parsed === 'cottage') return 'cottage';
+      if (parsed === 'room') return 'room';
     }
   }
 
   const cat = String(item?.category || '').toLowerCase();
   const name = String(item?.name || '').toLowerCase();
-  const slug = String(item?.slug || '').toLowerCase();
-  const combined = `${cat} ${name} ${slug}`;
 
-  if (/\b(tour|island|hopping|offer|package|snorkel|kayak|banana\s*boat|jet\s*ski|cruise|excursion|activity)\b/i.test(combined)) {
-    return 'offer';
-  }
   if (/\b(cottage|kubo|cabana|pavilion|nipa)\b/i.test(cat) || /\b(cottage|kubo|cabana|pavilion|nipa)\b/i.test(name)) {
     return 'cottage';
   }
-  if (/\b(room|villa|suite|garden|dorm|bunk|quad|studio)\b/i.test(name) || ['room', 'villa', 'suite', 'garden', 'dorm'].includes(cat)) {
-    return 'room';
-  }
-  if (cat === 'cottage') return 'cottage';
   return 'room';
 }
 
@@ -279,7 +270,6 @@ export function enrichReservationOffering(reservation = {}) {
   const labels = {
     room: 'Room Accommodation',
     cottage: 'Cottage Rental',
-    offer: 'Island Tour / Offer',
   };
 
   return {

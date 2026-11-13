@@ -69,42 +69,4 @@ export function LiveClock({ isLightMode = false, style, showSeconds = true }: Li
   );
 }
 
-interface FloatingWelcomeProps {
-  username?: string;
-  isLightMode?: boolean;
-  style?: React.CSSProperties;
-}
 
-export function FloatingWelcome({ username = 'Guest', isLightMode = false, style }: FloatingWelcomeProps) {
-  const cleanName = (username || 'Guest').trim();
-
-  return (
-    <div
-      className="floating-welcome-badge"
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 6,
-        padding: '5px 14px',
-        borderRadius: 20,
-        background: isLightMode
-          ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(14, 165, 233, 0.15))'
-          : 'linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(99, 102, 241, 0.22))',
-        border: `1px solid ${isLightMode ? 'rgba(99, 102, 241, 0.3)' : 'rgba(56, 189, 248, 0.35)'}`,
-        color: isLightMode ? '#4338CA' : '#38BDF8',
-        fontSize: '0.78rem',
-        fontWeight: 700,
-        animation: 'floatingFadeWelcome 3.5s ease-in-out infinite',
-        whiteSpace: 'nowrap',
-        userSelect: 'none',
-        ...style,
-      }}
-      title={`Logged in user: ${cleanName}`}
-    >
-      <i className="fas fa-hand" style={{ fontSize: '0.85rem', color: '#F59E0B' }} />
-      <span>
-        Welcome, <strong style={{ color: isLightMode ? '#0F172A' : '#FFFFFF', fontWeight: 800 }}>{cleanName}</strong>
-      </span>
-    </div>
-  );
-}

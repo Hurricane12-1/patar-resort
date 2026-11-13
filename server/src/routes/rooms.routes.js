@@ -111,8 +111,14 @@ r.get('/rooms', asyncH(async (req, res) => {
     } else {
       const normalized = (data || [])
         .map(normalizeRoom)
+        .filter((r) => r.offering_type === 'room' || r.offering_type === 'cottage')
         .filter((r) => offeringFilter === 'all' || r.offering_type === offeringFilter)
-        .filter((r) => !catFilter || String(r.category || '').toLowerCase() === catFilter);
+        .filter((r) => {
+          if (!catFilter) return true;
+          const c = String(r.category || '').toLowerCase();
+          const t = String(r.offering_type || '').toLowerCase();
+          return c === catFilter || t === catFilter || `${c}s` === catFilter || `${t}s` === catFilter;
+        });
 
       // Query active reservations occupying rooms today until checkout
       const today = new Date().toISOString().slice(0, 10);
@@ -198,26 +204,39 @@ r.get('/availability', validate(rangeSchema, 'query'), asyncH(async (req, res) =
 
   const sysClient = await getSystemAdminClient();
 
-  // 1. Fetch active rooms strictly from live Supabase database
+  // 1. Fetch active accommodations strictly from live Supabase database
+  // Scoped exclusively to active Rooms and Cottages, eliminating deprecated category predicates (ERR_AVAIL_QUERY_504)
   let allRooms = [];
   try {
-    const { data, error } = await sysClient.from('rooms').select('*').eq('is_active', true);
-    if (!error && data && data.length > 0) allRooms = data;
+    const { data, error } = await sysClient.from('rooms')
+      .select('*')
+      .eq('is_active', true)
+      .in('category', ['Cottage', 'Standard', 'Suite', 'Room']);
+    if (!error && data && data.length > 0) {
+      allRooms = data.filter((r) => {
+        const norm = normalizeRoom(r);
+        return norm.offering_type === 'room' || norm.offering_type === 'cottage';
+      });
+    }
   } catch (err) {
     console.warn('[Availability] Rooms query notice:', err.message);
   }
 
-  // 2. Query overlapping reservations in database: [check_in, check_out)
+  // 2. Query overlapping reservations in database: [check_in, check_out) scoped strictly to active accommodation IDs
+  const activeRoomIds = allRooms.map((r) => r.id);
   let overlappingRes = [];
-  try {
-    const { data } = await sysClient.from('reservations')
-      .select('room_id, check_in, check_out, status, notes')
-      .in('status', ['pending', 'confirmed', 'checked_in'])
-      .lt('check_in', check_out)
-      .gt('check_out', check_in);
-    if (data) overlappingRes = [...data];
-  } catch (err) {
-    console.warn('[Availability] Overlapping reservations notice:', err.message);
+  if (activeRoomIds.length > 0) {
+    try {
+      const { data } = await sysClient.from('reservations')
+        .select('room_id, check_in, check_out, status, notes')
+        .in('room_id', activeRoomIds)
+        .in('status', ['pending', 'confirmed', 'checked_in'])
+        .lt('check_in', check_out)
+        .gt('check_out', check_in);
+      if (data) overlappingRes = [...data];
+    } catch (err) {
+      console.warn('[Availability] Overlapping reservations notice:', err.message);
+    }
   }
 
   // Resilient local store overlapping reservations merge
@@ -329,30 +348,41 @@ r.get('/availability/calendar', asyncH(async (req, res) => {
 
   const sysClient = await getSystemAdminClient();
 
-  // 1. Fetch active rooms
+  // 1. Fetch active accommodations scoped strictly to Rooms and Cottages (ERR_AVAIL_QUERY_504)
   let rooms = [];
   try {
-    let q = sysClient.from('rooms').select('id, name, slug, category, capacity, units, rate_php, is_active, amenities').eq('is_active', true);
+    let q = sysClient.from('rooms')
+      .select('id, name, slug, category, capacity, units, rate_php, is_active, amenities')
+      .eq('is_active', true)
+      .in('category', ['Cottage', 'Standard', 'Suite', 'Room']);
     if (room_id) q = q.eq('id', room_id);
     const { data } = await q;
-    if (data) rooms = data;
+    if (data) {
+      rooms = data.filter((r) => {
+        const norm = normalizeRoom(r);
+        return norm.offering_type === 'room' || norm.offering_type === 'cottage';
+      });
+    }
   } catch (err) {
     console.warn('[Calendar API] Rooms notice:', err.message);
   }
 
-  // 2. Query overlapping active reservations
+  // 2. Query overlapping active reservations scoped strictly to active accommodation IDs
+  const activeCalRoomIds = rooms.map((r) => r.id);
   let reservations = [];
-  try {
-    let q = sysClient.from('reservations')
-      .select('id, room_id, check_in, check_out, status, guests, notes, rooms(id, name, units)')
-      .in('status', ['pending', 'confirmed', 'checked_in'])
-      .lt('check_in', endDate)
-      .gt('check_out', startDate);
-    if (room_id) q = q.eq('room_id', room_id);
-    const { data } = await q;
-    if (data) reservations = [...data];
-  } catch (err) {
-    console.warn('[Calendar API] Reservations notice:', err.message);
+  if (activeCalRoomIds.length > 0) {
+    try {
+      let q = sysClient.from('reservations')
+        .select('id, room_id, check_in, check_out, status, guests, notes, rooms(id, name, units)')
+        .in('room_id', room_id ? [room_id] : activeCalRoomIds)
+        .in('status', ['pending', 'confirmed', 'checked_in'])
+        .lt('check_in', endDate)
+        .gt('check_out', startDate);
+      const { data } = await q;
+      if (data) reservations = [...data];
+    } catch (err) {
+      console.warn('[Calendar API] Reservations notice:', err.message);
+    }
   }
 
   // Resilient local store calendar reservations merge
@@ -446,7 +476,7 @@ r.post('/rooms', authenticate, requireAdmin,
   validate(z.object({
     name: z.string().min(2).max(100),
     slug: z.string().min(2).max(100).optional(),
-    offering_type: z.enum(['room', 'cottage', 'offer']).optional(),
+    offering_type: z.enum(['room', 'cottage']).optional(),
     category: z.string().default('Room'),
     description: z.string().default(''),
     capacity: z.coerce.number().int().min(1).default(2),
@@ -459,6 +489,10 @@ r.post('/rooms', authenticate, requireAdmin,
     is_active: z.boolean().default(true),
   })),
   asyncH(async (req, res) => {
+    const cat = String(req.body.category || '').trim().toLowerCase();
+    if (req.body.category && !['room', 'rooms', 'cottage', 'cottages'].includes(cat)) {
+      throw new ApiError(422, 'Category Integrity Violation: Only "Rooms" and "Cottages" are valid accommodation categories. Deprecated classes (Villas, Suites, Garden Rooms, Dormitories) and Island Tours are prohibited.', { code: 'ERR_ADMIN_INV_SCHEMA' });
+    }
     let slug = req.body.slug;
     if (!slug) {
       slug = req.body.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `room-${Date.now()}`;
@@ -488,7 +522,7 @@ r.patch('/rooms/:id', authenticate, requireAdmin,
   validate(z.object({
     name: z.string().min(2).max(100).optional(),
     slug: z.string().min(2).max(100).optional(),
-    offering_type: z.enum(['room', 'cottage', 'offer']).optional(),
+    offering_type: z.enum(['room', 'cottage']).optional(),
     category: z.string().optional(),
     description: z.string().optional(),
     capacity: z.coerce.number().int().min(1).optional(),
@@ -501,6 +535,12 @@ r.patch('/rooms/:id', authenticate, requireAdmin,
     is_active: z.boolean().optional(),
   })),
   asyncH(async (req, res) => {
+    if (req.body.category) {
+      const cat = String(req.body.category || '').trim().toLowerCase();
+      if (!['room', 'rooms', 'cottage', 'cottages'].includes(cat)) {
+        throw new ApiError(422, 'Category Integrity Violation: Only "Rooms" and "Cottages" are valid accommodation categories. Deprecated classes (Villas, Suites, Garden Rooms, Dormitories) and Island Tours are prohibited.', { code: 'ERR_ADMIN_INV_SCHEMA' });
+      }
+    }
     const client = (await getSystemAdminClient().catch(() => null)) || admin;
 
     let existingRoom = null;

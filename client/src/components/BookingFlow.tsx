@@ -429,17 +429,31 @@ export default function BookingFlow({ initialSlug }) {
             )}
             {!searching && results.length > 0 && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
-                {(['all', 'room', 'cottage', 'offer'] as const).map((t) => (
+                {([
+                  { key: 'all' as const, label: 'All Accommodations' },
+                  { key: 'room' as const, label: 'Rooms' },
+                  { key: 'cottage' as const, label: 'Cottages' },
+                ]).map((t) => (
                   <button
-                    key={t}
+                    key={t.key}
                     type="button"
-                    onClick={() => setOfferingFilter(t)}
-                    className={`chip ${offeringFilter === t ? 'sel' : ''}`}
+                    onClick={() => setOfferingFilter(t.key)}
+                    className={`chip ${offeringFilter === t.key ? 'sel' : ''}`}
                     style={{ cursor: 'pointer' }}
                   >
-                    {t === 'all' ? 'All Offerings' : t === 'room' ? 'Rooms' : t === 'cottage' ? 'Cottages' : 'Island Tours & Offers'}
+                    {t.label}
                   </button>
                 ))}
+              </div>
+            )}
+            {!searching && results.length > 0 && results.filter((r: any) => offeringFilter === 'all' || inferOfferingType(meta(r) || r) === offeringFilter).length === 0 && (
+              <div style={{ textAlign: 'center', padding: '36px 20px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: 14, border: '1px dashed rgba(255, 255, 255, 0.15)', margin: '14px 0' }}>
+                <i className="fas fa-bed" style={{ fontSize: '1.8rem', color: '#94A3B8', marginBottom: 10, display: 'block' }} />
+                <h4 style={{ margin: '0 0 6px', color: '#F8FAFC' }}>No Accommodations in Selected Category</h4>
+                <p className="muted small" style={{ marginBottom: 12 }}>There are currently no accommodations matching this category filter for your selected dates.</p>
+                <button type="button" className="btn btn-sky btn-sm" onClick={() => setOfferingFilter('all')}>
+                  Show All Accommodations
+                </button>
               </div>
             )}
             {!searching && results.filter((r: any) => offeringFilter === 'all' || inferOfferingType(meta(r) || r) === offeringFilter).map((r: any) => {

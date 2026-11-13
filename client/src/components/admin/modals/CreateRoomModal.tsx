@@ -373,9 +373,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                   ? newRoom.name
                   : newRoom.offering_type === 'cottage'
                     ? 'Add New Cottage'
-                    : newRoom.offering_type === 'offer'
-                      ? 'Add Island Tour / Offer'
-                      : 'Add New Room'}
+                    : 'Add New Room'}
               </h3>
               <div
                 style={{
@@ -456,9 +454,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
               <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>
                 {newRoom.offering_type === 'cottage'
                   ? 'Cottage Name *'
-                  : newRoom.offering_type === 'offer'
-                    ? 'Island Tour / Offer Name *'
-                    : 'Room Name *'}
+                  : 'Room Name *'}
               </label>
               <input
                 required
@@ -476,9 +472,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                 placeholder={
                   newRoom.offering_type === 'cottage'
                     ? 'e.g. Patar Beachfront Nipa Cottage'
-                    : newRoom.offering_type === 'offer'
-                      ? 'e.g. Hundred Islands & Reef Hopping Tour'
-                      : 'e.g. Rock View Seaview Room'
+                    : 'e.g. Rock View Seaview Room'
                 }
               />
             </div>
@@ -513,11 +507,9 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
               </div>
               <div>
                 <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>
-                  {newRoom.offering_type === 'offer'
-                    ? (newRoom.specs?.pricing_mode === 'per_pax' ? 'Per-Guest Rate (₱) *' : 'Package / Trip Rate (₱) *')
-                    : newRoom.offering_type === 'cottage'
-                      ? 'Cottage Rate (₱) *'
-                      : 'Nightly Rate (₱) *'}
+                  {newRoom.offering_type === 'cottage'
+                    ? 'Cottage Rate (₱) *'
+                    : 'Nightly Rate (₱) *'}
                 </label>
                 <input
                   required

@@ -2811,11 +2811,10 @@ export default function MobileResortApp() {
                     <div className="flex flex-col gap-3">
                       <div className="flex flex-wrap gap-1.5">
                         {([
-                          { key: 'all', label: `All (${myBookings.length})` },
-                          { key: 'room', label: `Rooms (${myBookings.filter((b) => resolveReservationOfferingType(b) === 'room').length})` },
-                          { key: 'cottage', label: `Cottages (${myBookings.filter((b) => resolveReservationOfferingType(b) === 'cottage').length})` },
-                          { key: 'offer', label: `Tours & Offers (${myBookings.filter((b) => resolveReservationOfferingType(b) === 'offer').length})` },
-                        ] as const).map((tab) => (
+                          { key: 'all' as const, label: `All (${myBookings.length})` },
+                          { key: 'room' as const, label: `Rooms (${myBookings.filter((b) => resolveReservationOfferingType(b) === 'room').length})` },
+                          { key: 'cottage' as const, label: `Cottages (${myBookings.filter((b) => resolveReservationOfferingType(b) === 'cottage').length})` },
+                        ]).map((tab) => (
                           <button
                             key={tab.key}
                             type="button"

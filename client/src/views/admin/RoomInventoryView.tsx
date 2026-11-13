@@ -288,11 +288,10 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
               </span>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginRight: 8 }}>
                 {([
-                  { key: 'all', label: `All (${roomsList.filter((r) => r.is_active !== false).length})` },
-                  { key: 'room', label: `Rooms (${roomsList.filter((r) => r.is_active !== false && inferOfferingType(r) === 'room').length})` },
-                  { key: 'cottage', label: `Cottages (${roomsList.filter((r) => r.is_active !== false && inferOfferingType(r) === 'cottage').length})` },
-                  { key: 'offer', label: `Island Tours & Offers (${roomsList.filter((r) => r.is_active !== false && inferOfferingType(r) === 'offer').length})` },
-                ] as const).map((pill) => {
+                  { key: 'all' as const, label: `All (${roomsList.filter((r) => r.is_active !== false).length})` },
+                  { key: 'room' as const, label: `Rooms (${roomsList.filter((r) => r.is_active !== false && inferOfferingType(r) === 'room').length})` },
+                  { key: 'cottage' as const, label: `Cottages (${roomsList.filter((r) => r.is_active !== false && inferOfferingType(r) === 'cottage').length})` },
+                ]).map((pill) => {
                   const isSel = offeringFilter === pill.key;
                   return (
                     <button
@@ -331,14 +330,9 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
                   minWidth: 200,
                 }}
               >
-                <option value="all">All Categories ({roomsList.filter((r) => r.is_active !== false).length})</option>
-                <option value="Cottage">Cottages ({roomsList.filter((r) => r.is_active !== false && r.category?.toLowerCase() === 'cottage').length})</option>
-                <option value="Villa">Villas ({roomsList.filter((r) => r.is_active !== false && r.category?.toLowerCase() === 'villa').length})</option>
-                <option value="Suite">Suites ({roomsList.filter((r) => r.is_active !== false && r.category?.toLowerCase() === 'suite').length})</option>
-                <option value="Garden">Garden Rooms ({roomsList.filter((r) => r.is_active !== false && r.category?.toLowerCase() === 'garden').length})</option>
-                <option value="Dorm">Dormitories ({roomsList.filter((r) => r.is_active !== false && r.category?.toLowerCase() === 'dorm').length})</option>
-                <option value="Room">Standard Rooms ({roomsList.filter((r) => r.is_active !== false && r.category?.toLowerCase() === 'room').length})</option>
-                <option value="Island Tour">Island Tours ({roomsList.filter((r) => r.is_active !== false && inferOfferingType(r) === 'offer').length})</option>
+                <option value="all">All Accommodations ({roomsList.filter((r) => r.is_active !== false).length})</option>
+                <option value="Room">Rooms · Overnight ({roomsList.filter((r) => r.is_active !== false && (inferOfferingType(r) === 'room' || r.category?.toLowerCase() === 'room')).length})</option>
+                <option value="Cottage">Cottages · Day-Use ({roomsList.filter((r) => r.is_active !== false && (inferOfferingType(r) === 'cottage' || r.category?.toLowerCase() === 'cottage')).length})</option>
               </select>
             </div>
 
@@ -369,18 +363,24 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
             const filteredRooms = roomsList
               .filter((r) => r.is_active !== false)
               .filter((r) => offeringFilter === 'all' || inferOfferingType(r) === offeringFilter)
-              .filter((r) => inventoryRoomFilter === 'all' || r.category?.toLowerCase() === inventoryRoomFilter.toLowerCase())
+              .filter((r) => {
+                if (inventoryRoomFilter === 'all') return true;
+                const matchType = inferOfferingType(r);
+                const matchCat = (r.category || '').toLowerCase();
+                const filterTarget = inventoryRoomFilter.toLowerCase();
+                return matchType === filterTarget || matchCat === filterTarget || `${matchType}s` === filterTarget;
+              })
               .filter((r) => !inventorySearch || r.name?.toLowerCase().includes(inventorySearch.toLowerCase()) || r.description?.toLowerCase().includes(inventorySearch.toLowerCase()));
 
             return filteredRooms.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '48px 20px', background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.02)', borderRadius: 16, border: `1px dashed ${themeBorder}`, margin: '12px 0' }}>
                 <div style={{ fontSize: '2.8rem', marginBottom: 12, color: '#38BDF8' }}><i className="fas fa-umbrella-beach" /></div>
-                <h4 style={{ margin: '0 0 6px', color: themeText, fontSize: '1.15rem', fontWeight: 800 }}>No Rooms Added Yet</h4>
+                <h4 style={{ margin: '0 0 6px', color: themeText, fontSize: '1.15rem', fontWeight: 800 }}>No Accommodations Added Yet</h4>
                 <p style={{ margin: '0 auto 18px', maxWidth: 460, color: themeMuted, fontSize: '.86rem', lineHeight: 1.5 }}>
-                  All mock room data has been cleared. Click below to provision and publish your first custom room with photos and rates.
+                  Click below to provision and publish your first custom Room or Cottage with photos and rates.
                 </p>
                 <button className="btn btn-sm" onClick={() => (openCreateOfferingModal ? openCreateOfferingModal(offeringFilter === 'all' ? 'room' : offeringFilter) : setShowCreateRoomModal(true))} style={{ padding: '9px 18px', fontWeight: 700, background: '#006699', color: '#FFFFFF', border: 'none', borderRadius: 10, cursor: 'pointer' }}>
-                  + Add {offeringFilter === 'cottage' ? 'Cottage' : offeringFilter === 'offer' ? 'Island Tour / Offer' : 'Room'}
+                  + Add {offeringFilter === 'cottage' ? 'Cottage' : 'Room'}
                 </button>
               </div>
             ) : (

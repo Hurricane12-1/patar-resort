@@ -456,9 +456,7 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
             <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>
               {formData.offering_type === 'cottage'
                 ? 'Cottage Name *'
-                : formData.offering_type === 'offer'
-                  ? 'Island Tour / Offer Title *'
-                  : 'Room Name *'}
+                : 'Room Name *'}
             </label>
             <input
               required
@@ -471,11 +469,9 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
               <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>
-                {formData.offering_type === 'offer'
-                  ? (formData.specs?.pricing_mode === 'per_pax' ? 'Per-Guest Rate (₱) *' : 'Package / Trip Rate (₱) *')
-                  : formData.offering_type === 'cottage'
-                    ? 'Cottage Rate (₱) *'
-                    : 'Nightly Rate (₱) *'}
+                {formData.offering_type === 'cottage'
+                  ? 'Cottage Rate (₱) *'
+                  : 'Nightly Rate (₱) *'}
               </label>
               <input
                 required

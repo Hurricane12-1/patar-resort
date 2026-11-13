@@ -32,7 +32,7 @@ export default function ResortRoomsRail({
   isRoomOccupiedToday,
   onOpenReservation,
   onSelectRoom,
-  eyebrow = 'Rooms & Suites',
+  eyebrow = 'Rooms & Cottages',
   title = 'Private Coastal Living',
 }: ResortRoomsRailProps) {
   const [offeringFilter, setOfferingFilter] = useState<'all' | OfferingType>('all');
@@ -46,13 +46,21 @@ export default function ResortRoomsRail({
 
   const peso = (n: number) => `₱${Number(n || 0).toLocaleString()}`;
   const formatRoomTitle = (name: string) => {
-    if (!name) return 'Coastal Villa';
+    if (!name) return 'Coastal Room';
     return name.charAt(0).toUpperCase() + name.slice(1);
   };
 
   const filteredRooms = rooms.filter(
     (room) => offeringFilter === 'all' || inferOfferingType(room) === offeringFilter
   );
+
+  const roomCount = rooms.filter((r) => inferOfferingType(r) === 'room').length;
+  const cottageCount = rooms.filter((r) => inferOfferingType(r) === 'cottage').length;
+  const lodgingTabs = [
+    { key: 'all' as const, label: `All (${rooms.length})`, count: rooms.length },
+    ...(roomCount > 0 ? [{ key: 'room' as const, label: `Rooms (${roomCount})`, count: roomCount }] : []),
+    ...(cottageCount > 0 ? [{ key: 'cottage' as const, label: `Cottages (${cottageCount})`, count: cottageCount }] : []),
+  ];
 
   return (
     <section id="rooms-section" className="mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-10 pt-16 md:pt-24 scroll-mt-16">
@@ -100,12 +108,7 @@ export default function ResortRoomsRail({
       ) : (
         <>
           <div className="mt-6 flex flex-wrap items-center gap-2">
-            {([
-              { key: 'all', label: `All (${rooms.length})` },
-              { key: 'room', label: `Rooms (${rooms.filter((r) => inferOfferingType(r) === 'room').length})` },
-              { key: 'cottage', label: `Cottages (${rooms.filter((r) => inferOfferingType(r) === 'cottage').length})` },
-              { key: 'offer', label: `Island Tours & Offers (${rooms.filter((r) => inferOfferingType(r) === 'offer').length})` },
-            ] as const).map((tab) => {
+            {lodgingTabs.map((tab) => {
               const isActive = offeringFilter === tab.key;
               return (
                 <button
@@ -124,6 +127,19 @@ export default function ResortRoomsRail({
             })}
           </div>
 
+          {filteredRooms.length === 0 ? (
+            <div className="mt-8 rounded-3xl border border-white/10 bg-white/[0.02] p-8 text-center text-white/60">
+              <p className="font-serif text-lg text-white">No Accommodations Found</p>
+              <p className="mt-1 text-sm font-light">There are currently no accommodations matching this category. Please select "All" to view available options.</p>
+              <button
+                type="button"
+                onClick={() => setOfferingFilter('all')}
+                className="mt-4 inline-flex items-center gap-2 rounded-full border border-cyan/40 bg-cyan/10 px-4 py-2 text-xs font-semibold text-cyan hover:bg-cyan/20"
+              >
+                Show All Accommodations
+              </button>
+            </div>
+          ) : (
           <div
             ref={roomsRailRef}
             className="mt-6 flex gap-5 overflow-x-auto snap-x snap-mandatory pb-4 pt-1 -mx-5 px-5 sm:-mx-8 sm:px-8 scrollbar-none no-scrollbar"
@@ -279,6 +295,7 @@ export default function ResortRoomsRail({
               );
             })}
           </div>
+          )}
         </>
       )}
     </section>

@@ -94,7 +94,7 @@ export function isBookingCollisionWithGap(startA, endA, startB, endB, gapMs = TW
 const createSchema = z.object({
   roomId: z.string().optional(),
   room_id: z.string().optional(),
-  offering_type: z.enum(['room', 'cottage', 'offer']).optional(),
+  offering_type: z.enum(['room', 'cottage']).optional(),
   is_walk_in: z.boolean().optional(),
   check_in: dateStr,
   check_out: dateStr,
@@ -169,6 +169,29 @@ r.post('/reservations', optionalAuth, bookingLimiter, validate(createSchema), as
   } catch {}
   if (!room || room.is_active === false) {
     throw new ApiError(404, "There's no present room around. This accommodation is absent or inactive.");
+  }
+
+  // Strict Accommodation Taxonomy & Duration Validation (ERR_STAFF_ALLOC_422)
+  const parsedRoom = parseOfferingTags(room.amenities, room);
+  const resolvedOfferingType = req.body?.offering_type || parsedRoom.offering_type;
+
+  if (resolvedOfferingType !== 'room' && resolvedOfferingType !== 'cottage') {
+    throw new ApiError(422, 'Desk Unit Allocation Failure: Allowed categories are strictly "Rooms" and "Cottages". Non-lodging activities cannot be allocated as accommodation units.', { code: 'ERR_STAFF_ALLOC_422' });
+  }
+
+  if (req.body?.offering_type && req.body.offering_type !== parsedRoom.offering_type) {
+    throw new ApiError(422, `Desk Unit Allocation Failure: Category discrepancy. Unit "${room.name}" is designated as ${parsedRoom.offering_type}, not ${req.body.offering_type}.`, { code: 'ERR_STAFF_ALLOC_422' });
+  }
+
+  const stayNights = Math.max(0, Math.round((new Date(check_out) - new Date(check_in)) / 86400000));
+
+  // Stay-duration enforcement: Rooms (overnight) vs Cottages (day-use)
+  if (resolvedOfferingType === 'room' && stayNights < 1) {
+    throw new ApiError(422, 'Desk Unit Allocation Failure: Rooms are designated strictly for overnight stays (minimum 1 night). Day-use allocations must be assigned to Cottages.', { code: 'ERR_STAFF_ALLOC_422' });
+  }
+
+  if (resolvedOfferingType === 'cottage' && stayNights > 1) {
+    throw new ApiError(422, 'Desk Unit Allocation Failure: Cottages are designated strictly for day-use rentals. Multi-night overnight stays require a Room accommodation.', { code: 'ERR_STAFF_ALLOC_422' });
   }
 
   // 1. Resolve exact requested check-in and check-out timestamps with specific times
@@ -277,8 +300,6 @@ r.post('/reservations', optionalAuth, bookingLimiter, validate(createSchema), as
     finalNotes = `${finalNotes} [Check-In: ${reqCinTime}, Check-Out: ${reqCoutTime}]`.trim();
   }
 
-  const parsedRoom = parseOfferingTags(room.amenities, room);
-  const resolvedOfferingType = req.body?.offering_type || parsedRoom.offering_type;
   if (!/\[BookingType:/i.test(finalNotes)) {
     finalNotes = `${finalNotes} [BookingType:${resolvedOfferingType}]`.trim();
   }

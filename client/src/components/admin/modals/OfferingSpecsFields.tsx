@@ -4,7 +4,6 @@ import {
   OfferingSpecs,
   ROOM_CATEGORIES,
   COTTAGE_CATEGORIES,
-  OFFER_CATEGORIES,
   getDefaultSpecs,
 } from '../../../lib/offeringSpecs';
 
@@ -21,14 +20,12 @@ interface OfferingSpecsFieldsProps {
 }
 
 const TYPE_OPTIONS: { key: OfferingType; label: string; icon: string; badgeBg: string; badgeFg: string; border: string }[] = [
-  { key: 'room', label: 'Room', icon: 'fas fa-bed', badgeBg: '#E0F2FE', badgeFg: '#00517A', border: '#006699' },
-  { key: 'cottage', label: 'Cottage', icon: 'fas fa-umbrella-beach', badgeBg: '#D1FAE5', badgeFg: '#065F46', border: '#047857' },
-  { key: 'offer', label: 'Island Tour / Offer', icon: 'fas fa-ship', badgeBg: '#FEF3C7', badgeFg: '#78350F', border: '#B45309' },
+  { key: 'room', label: 'Room (Overnight)', icon: 'fas fa-bed', badgeBg: '#E0F2FE', badgeFg: '#00517A', border: '#006699' },
+  { key: 'cottage', label: 'Cottage (Day-Use)', icon: 'fas fa-umbrella-beach', badgeBg: '#D1FAE5', badgeFg: '#065F46', border: '#047857' },
 ];
 
-export const getCategoryOptionsForType = (type: OfferingType): string[] => {
+export const getCategoryOptionsForType = (type: OfferingType): readonly string[] => {
   if (type === 'cottage') return COTTAGE_CATEGORIES;
-  if (type === 'offer') return OFFER_CATEGORIES;
   return ROOM_CATEGORIES;
 };
 
@@ -80,8 +77,8 @@ export const OfferingSpecsFields: React.FC<OfferingSpecsFieldsProps> = ({
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Offering Classification Tabs */}
       <div>
-        <span style={labelStyle}>Listing Type *</span>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
+        <span style={labelStyle}>Accommodation Type (Strictly Rooms &amp; Cottages) *</span>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
           {TYPE_OPTIONS.map((opt) => {
             const active = offeringType === opt.key;
             return (
@@ -261,78 +258,6 @@ export const OfferingSpecsFields: React.FC<OfferingSpecsFieldsProps> = ({
               </label>
             </div>
           </>
-        )}
-
-        {offeringType === 'offer' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <div>
-              <label htmlFor={`${idPrefix}-offer-subtype`} style={labelStyle}>Offer Type</label>
-              <select
-                id={`${idPrefix}-offer-subtype`}
-                style={selectStyle}
-                value={String(specs?.offer_subtype || 'Island Hopping Tour')}
-                onChange={(e) => updateSpec('offer_subtype', e.target.value)}
-              >
-                <option value="Island Hopping Tour">Island Hopping Tour</option>
-                <option value="Snorkeling & Reef Tour">Snorkeling &amp; Reef Tour</option>
-                <option value="Sunset Boat Cruise">Sunset Boat Cruise</option>
-                <option value="Watersports Offer">Watersports Offer</option>
-                <option value="Resort Activity Package">Resort Activity Package</option>
-              </select>
-            </div>
-            <div>
-              <label htmlFor={`${idPrefix}-pricing-mode`} style={labelStyle}>Pricing Basis</label>
-              <select
-                id={`${idPrefix}-pricing-mode`}
-                style={selectStyle}
-                value={String(specs?.pricing_mode || 'per_group')}
-                onChange={(e) => updateSpec('pricing_mode', e.target.value === 'per_pax' ? 'per_pax' : 'per_group')}
-              >
-                <option value="per_group">Flat Rate per Boat / Group Trip</option>
-                <option value="per_pax">Per Guest Rate (multiplied by guests)</option>
-              </select>
-            </div>
-            <div>
-              <label htmlFor={`${idPrefix}-duration`} style={labelStyle}>Duration</label>
-              <input
-                id={`${idPrefix}-duration`}
-                style={fieldStyle}
-                value={String(specs?.duration || '')}
-                onChange={(e) => updateSpec('duration', e.target.value)}
-                placeholder="e.g. 4 Hours (Half Day)"
-              />
-            </div>
-            <div>
-              <label htmlFor={`${idPrefix}-departure`} style={labelStyle}>Departure Schedule</label>
-              <input
-                id={`${idPrefix}-departure`}
-                style={fieldStyle}
-                value={String(specs?.departure_schedule || '')}
-                onChange={(e) => updateSpec('departure_schedule', e.target.value)}
-                placeholder="e.g. 08:00 AM Daily"
-              />
-            </div>
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label htmlFor={`${idPrefix}-destinations`} style={labelStyle}>Destinations / Stops</label>
-              <input
-                id={`${idPrefix}-destinations`}
-                style={fieldStyle}
-                value={String(specs?.destinations || '')}
-                onChange={(e) => updateSpec('destinations', e.target.value)}
-                placeholder="e.g. Patar Coral Garden, Sandbar, Limestone Caves"
-              />
-            </div>
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label htmlFor={`${idPrefix}-inclusions`} style={labelStyle}>Boat &amp; Tour Inclusions</label>
-              <input
-                id={`${idPrefix}-inclusions`}
-                style={fieldStyle}
-                value={String(specs?.inclusions || '')}
-                onChange={(e) => updateSpec('inclusions', e.target.value)}
-                placeholder="e.g. Motorized Bangka Boat, Boatman/Guide, Life Vests, Snorkel Mask"
-              />
-            </div>
-          </div>
         )}
       </div>
     </div>

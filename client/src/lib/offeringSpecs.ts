@@ -1,9 +1,15 @@
 /**
  * Client-side offering types, structured specifications, and Asia/Manila date helpers.
- * Mirrors server/src/lib/offeringSpecs.js so room, cottage, and island tour/offer handling matches cleanly.
+ * Strictly adheres to the two-tier resort accommodation taxonomy:
+ *   1. Rooms: overnight stays
+ *   2. Cottages: day-use open-air rentals
+ * Island Tours and non-lodging activities are decoupled into the separate AddOnService entity.
  */
 
-export type OfferingType = 'room' | 'cottage' | 'offer';
+export const ALLOWED_LODGING_CATEGORIES = ['Rooms', 'Cottages'] as const;
+export type LodgingCategory = (typeof ALLOWED_LODGING_CATEGORIES)[number];
+
+export type OfferingType = 'room' | 'cottage';
 
 export interface OfferingSpecs {
   // Room specifications
@@ -20,34 +26,60 @@ export interface OfferingSpecs {
   seating_tables?: string;
   grilling_area?: boolean;
   power_outlet?: boolean;
-  // Island Tour / Offer specifications
-  offer_subtype?: string;
-  duration?: string;
-  destinations?: string;
-  departure_schedule?: string;
-  inclusions?: string;
-  boat_or_equipment?: string;
-  min_participants?: number;
   // Shared rate semantics
   pricing_mode?: 'per_night' | 'per_stay' | 'per_group' | 'per_pax';
   [key: string]: unknown;
 }
 
-export const OFFERING_TYPES: OfferingType[] = ['room', 'cottage', 'offer'];
+export interface AddOnService {
+  id: string;
+  name: string;
+  slug: string;
+  category: string;
+  description: string;
+  capacity?: number;
+  units?: number;
+  rate_php: number;
+  pricing_mode?: 'per_group' | 'per_pax';
+  duration?: string;
+  destinations?: string;
+  inclusions?: string;
+  image_url?: string;
+  is_active: boolean;
+}
 
-export const DB_SAFE_CATEGORIES = ['Villa', 'Suite', 'Cottage', 'Standard', 'Dorm'];
+export const RESORT_ACTIVITIES_AND_TOURS: AddOnService[] = [
+  {
+    id: 'addon-island-hopping-001',
+    name: 'Patar & Hundred Islands Hopping Tour',
+    slug: 'patar-island-hopping-tour',
+    category: 'Island Tour',
+    description: 'Guided motorized bangka island hopping across Bolinao coral reefs, coastal coves, and calm turquoise sandbars.',
+    capacity: 10,
+    units: 6,
+    rate_php: 2800,
+    pricing_mode: 'per_group',
+    duration: '4 Hours (Half Day)',
+    destinations: 'Patar Reef Sanctuary, Sandbar Cove, Sea Cave Overlook',
+    inclusions: 'Private Motorized Bangka, Boatman/Guide, Life Vests, Snorkel Masks',
+    image_url: 'https://res.cloudinary.com/juynm9ab/image/upload/jd_beach_house_accommodations/island.jpg',
+    is_active: true,
+  },
+];
 
-export const ROOM_CATEGORIES = ['Room', 'Standard', 'Suite', 'Villa', 'Garden', 'Dorm'];
-export const COTTAGE_CATEGORIES = ['Cottage', 'Cabana', 'Pavilion'];
-export const OFFER_CATEGORIES = ['Island Tour', 'Tour', 'Water Activity', 'Package', 'Offer'];
+export const OFFERING_TYPES: OfferingType[] = ['room', 'cottage'];
+
+export const DB_SAFE_CATEGORIES = ['Standard', 'Cottage'] as const;
+
+export const ROOM_CATEGORIES = ['Room', 'Rooms'] as const;
+export const COTTAGE_CATEGORIES = ['Cottage', 'Cottages'] as const;
 
 export function toDbSafeCategory(displayCategory: string, offeringType: OfferingType = 'room'): string {
-  const clean = String(displayCategory || '').trim();
-  const matched = DB_SAFE_CATEGORIES.find((c) => c.toLowerCase() === clean.toLowerCase());
-  if (matched) return matched;
-  if (offeringType === 'cottage') return 'Cottage';
-  if (offeringType === 'offer') return 'Standard';
-  return 'Suite';
+  const clean = String(displayCategory || '').trim().toLowerCase();
+  if (clean === 'cottage' || clean === 'cottages' || offeringType === 'cottage') {
+    return 'Cottage';
+  }
+  return 'Standard';
 }
 
 export const DEFAULT_SPECS_BY_TYPE: Record<OfferingType, OfferingSpecs> = {
@@ -68,16 +100,6 @@ export const DEFAULT_SPECS_BY_TYPE: Record<OfferingType, OfferingSpecs> = {
     grilling_area: true,
     power_outlet: true,
     pricing_mode: 'per_night',
-  },
-  offer: {
-    offer_subtype: 'Island Hopping Tour',
-    duration: '4 Hours (Half Day)',
-    destinations: 'Patar Coral Garden, Sandbar, Limestone Caves',
-    departure_schedule: '08:00 AM Daily',
-    inclusions: 'Motorized Bangka Boat, Boatman/Guide, Life Vests, Snorkel Mask',
-    boat_or_equipment: 'Outrigger Bangka Boat',
-    pricing_mode: 'per_group',
-    min_participants: 2,
   },
 };
 
@@ -101,37 +123,30 @@ export function getMinGuestCheckInISO(now = new Date()): string {
 }
 
 export function inferOfferingType(item: any = {}): OfferingType {
-  const rawType = String(item?.offering_type || '').toLowerCase().trim() as OfferingType;
-  if (OFFERING_TYPES.includes(rawType)) return rawType;
+  const rawType = String(item?.offering_type || '').toLowerCase().trim();
+  if (rawType === 'cottage') return 'cottage';
+  if (rawType === 'room') return 'room';
 
   const rawAmenities = Array.isArray(item?.amenities) ? item.amenities : [];
   for (const tag of rawAmenities) {
     if (typeof tag === 'string' && tag.startsWith('__type__:')) {
-      const parsed = tag.slice('__type__:'.length).toLowerCase().trim() as OfferingType;
-      if (OFFERING_TYPES.includes(parsed)) return parsed;
+      const parsed = tag.slice('__type__:'.length).toLowerCase().trim();
+      if (parsed === 'cottage') return 'cottage';
+      if (parsed === 'room') return 'room';
     }
   }
 
   const cat = String(item?.category || '').toLowerCase();
   const name = String(item?.name || '').toLowerCase();
-  const slug = String(item?.slug || '').toLowerCase();
-  const combined = `${cat} ${name} ${slug}`;
 
-  if (/\b(tour|island|hopping|offer|package|snorkel|kayak|banana\s*boat|jet\s*ski|cruise|excursion|activity)\b/i.test(combined)) {
-    return 'offer';
-  }
   if (/\b(cottage|kubo|cabana|pavilion|nipa)\b/i.test(cat) || /\b(cottage|kubo|cabana|pavilion|nipa)\b/i.test(name)) {
     return 'cottage';
   }
-  if (/\b(room|villa|suite|garden|dorm|bunk|quad|studio)\b/i.test(name) || ['room', 'villa', 'suite', 'garden', 'dorm'].includes(cat)) {
-    return 'room';
-  }
-  if (cat === 'cottage') return 'cottage';
   return 'room';
 }
 
 export function getDefaultSpecs(type: OfferingType): OfferingSpecs {
-  return { ...DEFAULT_SPECS_BY_TYPE[OFFERING_TYPES.includes(type) ? type : 'room'] };
+  return { ...DEFAULT_SPECS_BY_TYPE[type === 'cottage' ? 'cottage' : 'room'] };
 }
 
 export function sanitizeSpecsForType(type: OfferingType, rawSpecs: Record<string, any> = {}): OfferingSpecs {
@@ -152,10 +167,6 @@ export function sanitizeSpecsForType(type: OfferingType, rawSpecs: Record<string
     }
   }
 
-  if (type === 'offer') {
-    cleaned.pricing_mode = cleaned.pricing_mode === 'per_pax' ? 'per_pax' : 'per_group';
-    cleaned.min_participants = Math.max(1, Number(cleaned.min_participants) || 1);
-  }
   return cleaned;
 }
 
@@ -254,13 +265,12 @@ export function packOfferingAmenities({
   };
 }
 
-export function getOfferingLabel(type: OfferingType): string {
+export function getOfferingLabel(type: string): string {
   if (type === 'cottage') return 'Cottage';
-  if (type === 'offer') return 'Island Tour';
   return 'Room';
 }
 
-export function formatOfferingBadge(type: OfferingType, category?: string): string {
+export function formatOfferingBadge(type: string, category?: string): string {
   const t = getOfferingLabel(type);
   const c = String(category || '').trim();
   if (!c || c.toLowerCase() === t.toLowerCase() || t.toLowerCase().includes(c.toLowerCase()) || c.toLowerCase().includes(t.toLowerCase())) {
@@ -269,10 +279,7 @@ export function formatOfferingBadge(type: OfferingType, category?: string): stri
   return `${t} · ${c}`;
 }
 
-export function getRateUnitSuffix(type: OfferingType, specs: OfferingSpecs = {}): string {
-  if (type === 'offer') {
-    return specs?.pricing_mode === 'per_pax' ? '/ guest' : '/ trip';
-  }
+export function getRateUnitSuffix(type: string, specs: OfferingSpecs = {}): string {
   if (type === 'cottage') {
     return String(specs?.usage_mode || '').toLowerCase().includes('day use only') ? '/ day' : '/ night';
   }
@@ -282,37 +289,20 @@ export function getRateUnitSuffix(type: OfferingType, specs: OfferingSpecs = {})
 export function calculateOfferingTotal({
   rate_php,
   nights = 1,
-  guests = 1,
-  offering_type = 'room',
-  specs = {},
 }: {
   rate_php: number;
   nights?: number;
   guests?: number;
-  offering_type?: OfferingType;
+  offering_type?: string;
   specs?: OfferingSpecs;
 }): number {
   const rate = Math.max(0, Number(rate_php) || 0);
-  if (offering_type === 'offer') {
-    if (specs?.pricing_mode === 'per_pax') {
-      return Math.round(rate * Math.max(1, Number(guests) || 1));
-    }
-    return Math.round(rate);
-  }
   return Math.round(rate * Math.max(1, Number(nights) || 1));
 }
 
 export function formatSpecHighlights(item: any): { label: string; value: string }[] {
-  const type: OfferingType = inferOfferingType(item);
+  const type = inferOfferingType(item);
   const specs: OfferingSpecs = sanitizeSpecsForType(type, item?.specs || {});
-  if (type === 'offer') {
-    return [
-      { label: 'Offer', value: String(specs.offer_subtype || 'Island Hopping Tour') },
-      { label: 'Duration', value: String(specs.duration || '4 Hours') },
-      { label: 'Route', value: String(specs.destinations || 'Patar Reef & Sandbar') },
-      { label: 'Pricing', value: specs.pricing_mode === 'per_pax' ? 'Per Guest' : 'Flat Group / Boat' },
-    ];
-  }
   if (type === 'cottage') {
     return [
       { label: 'Style', value: String(specs.cottage_style || 'Open-Air Nipa Cottage') },
@@ -331,7 +321,7 @@ export function formatSpecHighlights(item: any): { label: string; value: string 
 
 export function resolveReservationOfferingType(reservation: any): OfferingType {
   const notes = String(reservation?.notes || '');
-  const tagMatch = notes.match(/\[BookingType:\s*(room|cottage|offer)\]/i);
+  const tagMatch = notes.match(/\[BookingType:\s*(room|cottage)\]/i);
   if (tagMatch) return tagMatch[1].toLowerCase() as OfferingType;
 
   const direct = String(reservation?.offering_type || '').toLowerCase();

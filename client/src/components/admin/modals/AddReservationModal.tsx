@@ -348,6 +348,7 @@ export default function AddReservationModal({
 }: AddReservationModalProps) {
   const [showWalkInCalendar, setShowWalkInCalendar] = useState(false);
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
+  const [walkInTypeFilter, setWalkInTypeFilter] = useState<'all' | 'room' | 'cottage'>('all');
   const guestNameInputRef = useRef<HTMLInputElement | null>(null);
   const phoneInputRef = useRef<HTMLInputElement | null>(null);
   const topWarningRef = useRef<HTMLDivElement | null>(null);
@@ -1057,6 +1058,34 @@ export default function AddReservationModal({
                   Changing selection updates photo at top
                 </span>
               </div>
+
+              {/* Quick Two-Tier Accommodation Filter */}
+              <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+                {([
+                  { key: 'all' as const, label: 'All Units' },
+                  { key: 'room' as const, label: 'Rooms (Overnight)' },
+                  { key: 'cottage' as const, label: 'Cottages (Day-Use)' },
+                ]).map((f) => (
+                  <button
+                    key={f.key}
+                    type="button"
+                    onClick={() => setWalkInTypeFilter(f.key)}
+                    style={{
+                      padding: '4px 10px',
+                      borderRadius: 16,
+                      fontSize: '.74rem',
+                      fontWeight: 700,
+                      border: walkInTypeFilter === f.key ? '1px solid #0EA5E9' : `1px solid ${themeBorder}`,
+                      background: walkInTypeFilter === f.key ? 'rgba(14, 165, 233, 0.15)' : 'transparent',
+                      color: walkInTypeFilter === f.key ? '#38BDF8' : themeMuted,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+
               <select
                 disabled={activeRoomsList.length === 0}
                 value={newReservation.room_id || activeWalkInRoom?.id || ''}
@@ -1087,17 +1116,50 @@ export default function AddReservationModal({
                   fontWeight: 600,
                 }}
               >
-                <option value="">
-                  {activeRoomsList.length === 0
-                    ? "-- There's no present room around (add in Room Management) --"
-                    : '-- Select Room / Cottage / Villa --'}
-                </option>
-                {activeRoomsList.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name} [{getOfferingLabel(inferOfferingType(r))} · {r.category || 'Standard'}] - {money(r.rate_php)} {getRateUnitSuffix(inferOfferingType(r), r.specs)}
-                  </option>
-                ))}
+                {(() => {
+                  const displayedRooms = activeRoomsList.filter((r) => {
+                    if (walkInTypeFilter === 'all') return true;
+                    return inferOfferingType(r) === walkInTypeFilter;
+                  });
+                  return (
+                    <>
+                      <option value="">
+                        {displayedRooms.length === 0
+                          ? "-- There's no present unit in this category --"
+                          : '-- Select Accommodation (Rooms & Cottages) --'}
+                      </option>
+                      {displayedRooms.map((r) => (
+                        <option key={r.id} value={r.id}>
+                          {r.name} [{getOfferingLabel(inferOfferingType(r))} · {r.category || (inferOfferingType(r) === 'cottage' ? 'Cottage' : 'Room')}] - {money(r.rate_php)} {getRateUnitSuffix(inferOfferingType(r), r.specs)}
+                        </option>
+                      ))}
+                    </>
+                  );
+                })()}
               </select>
+
+              {/* Stay-Duration Rules Warning (ERR_STAFF_ALLOC_422 Guidance) */}
+              {(() => {
+                const oType = inferOfferingType(activeWalkInRoom);
+                const nights = Math.max(0, Math.round((new Date(newReservation.check_out).getTime() - new Date(newReservation.check_in).getTime()) / 86400000));
+                if (oType === 'room' && nights < 1) {
+                  return (
+                    <div style={{ marginTop: 6, padding: '8px 12px', borderRadius: 8, background: 'rgba(239, 68, 68, 0.12)', border: '1px solid #EF4444', color: '#FCA5A5', fontSize: '.76rem', fontWeight: 600 }}>
+                      <i className="fas fa-triangle-exclamation" style={{ marginRight: 6 }} />
+                      Rooms are designated strictly for overnight stays (minimum 1 night). For day-use rentals, please select a Cottage.
+                    </div>
+                  );
+                }
+                if (oType === 'cottage' && nights > 1) {
+                  return (
+                    <div style={{ marginTop: 6, padding: '8px 12px', borderRadius: 8, background: 'rgba(239, 68, 68, 0.12)', border: '1px solid #EF4444', color: '#FCA5A5', fontSize: '.76rem', fontWeight: 600 }}>
+                      <i className="fas fa-triangle-exclamation" style={{ marginRight: 6 }} />
+                      Cottages are designated strictly for day-use rentals. Multi-night overnight stays must be allocated to Rooms.
+                    </div>
+                  );
+                }
+                return null;
+              })()}
             </div>
 
             {/* SPECIFIC PHYSICAL UNIT SELECTOR FOR MULTI-UNIT ACCOMMODATIONS */}

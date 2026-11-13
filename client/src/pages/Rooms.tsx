@@ -15,11 +15,10 @@ import {
   OfferingType,
 } from '../lib/offeringSpecs';
 
-const CATS: { key: 'All' | OfferingType; label: string }[] = [
-  { key: 'All', label: 'All Offerings' },
+const CATS: { key: 'All' | 'room' | 'cottage'; label: string }[] = [
+  { key: 'All', label: 'All Accommodations' },
   { key: 'room', label: 'Rooms' },
   { key: 'cottage', label: 'Cottages' },
-  { key: 'offer', label: 'Island Tours & Offers' },
 ];
 
 function RoomCardItem({ s, index, onOpenCalendar }) {
@@ -70,8 +69,8 @@ function RoomCardItem({ s, index, onOpenCalendar }) {
           </span>
         </div>
         <div style={{ marginBottom: 6 }}>
-          <span className="pill" style={{ background: inferOfferingType(s) === 'offer' ? '#FEF3C7' : inferOfferingType(s) === 'cottage' ? '#D1FAE5' : '#E0F2FE', color: inferOfferingType(s) === 'offer' ? '#78350F' : inferOfferingType(s) === 'cottage' ? '#065F46' : '#00517A', fontSize: '.72rem', fontWeight: 700, padding: '2px 8px', borderRadius: 9999 }}>
-            {getOfferingLabel(inferOfferingType(s))} · {s.category}
+          <span className="pill" style={{ background: inferOfferingType(s) === 'cottage' ? '#D1FAE5' : '#E0F2FE', color: inferOfferingType(s) === 'cottage' ? '#065F46' : '#00517A', fontSize: '.72rem', fontWeight: 700, padding: '2px 8px', borderRadius: 9999 }}>
+            {getOfferingLabel(inferOfferingType(s))} · {s.category || (inferOfferingType(s) === 'cottage' ? 'Cottage' : 'Room')}
           </span>
         </div>
         <h3>{s.name}</h3>
@@ -129,8 +128,18 @@ export default function Rooms() {
 
   useReveal(all);
 
+  const availableCats = useMemo(() => {
+    const roomCount = all.filter((s) => inferOfferingType(s) === 'room').length;
+    const cottageCount = all.filter((s) => inferOfferingType(s) === 'cottage').length;
+    return CATS.filter((c) => {
+      if (c.key === 'room') return roomCount > 0;
+      if (c.key === 'cottage') return cottageCount > 0;
+      return true;
+    });
+  }, [all]);
+
   const list = useMemo(() => all.filter((s) =>
-    (cat === 'All' || inferOfferingType(s) === cat || s.category === cat) &&
+    (cat === 'All' || inferOfferingType(s) === cat || s.category?.toLowerCase() === cat.toLowerCase()) &&
     (q === '' || s.name.toLowerCase().includes(q.toLowerCase()))), [all, cat, q]);
 
   return (
@@ -182,7 +191,7 @@ export default function Rooms() {
         )}
 
         <div className="chip-row">
-          {CATS.map((c) => (
+          {availableCats.map((c) => (
             <button key={c.key} className={`chip ${cat === c.key ? 'sel' : ''}`} onClick={() => setCat(c.key)}>{c.label}</button>
           ))}
         </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LiveClock, FloatingWelcome } from '../LiveClock';
+import { LiveClock } from '../LiveClock';
 import { fmtDate, fmtTime } from '../../lib/format';
 import { optimizeCloudinaryUrl } from '../../lib/cloudinary';
 
@@ -192,12 +192,6 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
       <div className="admin-header-right" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         {/* REAL-TIME EXECUTIVE CLOCK */}
         <LiveClock isLightMode={isLightMode} showSeconds={false} style={{ height: 38, padding: '0 12px' }} />
-
-        {/* FLOATING & FADING ANIMATED WELCOME USERNAME */}
-        <FloatingWelcome
-          username={adminProfileState.fullName?.split(' ')[0] || profile?.full_name?.split(' ')[0] || 'Overseer'}
-          isLightMode={isLightMode}
-        />
 
         {/* LIGHT MODE / DARK MODE TOGGLE */}
         <button
