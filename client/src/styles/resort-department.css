@@ -1,25 +1,288 @@
 /* ==========================================================================
-   ISOLATED OPERATIONS & DEPARTMENT HUB STYLESHEET (resort-department.css)
-   Scoped strictly under .resort-department-page for clean isolation.
+   ROCK VIEW BEACH RESORT · RESORT DEPARTMENT OPERATIONS PORTAL
+   Premium dark-glass design — Housekeeping, Kitchen, Operations, Management
    ========================================================================== */
 
-.resort-department-page .dept-card {
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 16px;
-  padding: 20px;
-  transition: transform 0.2s ease;
+/* ── Department tab chips ── */
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.resort-department-page .dept-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(56, 189, 248, 0.3);
-}
-
-.resort-department-page .task-pill {
-  font-size: 0.72rem;
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: 10px;
+  font-size: .75rem;
   font-weight: 700;
-  border-radius: 99px;
-  padding: 4px 10px;
+  letter-spacing: .06em;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(15, 23, 42, 0.5);
+  color: #64748B;
+  transition: all .2s cubic-bezier(.4,0,.2,1);
+}
+
+.chip:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+  color: #CBD5E1;
+  background: rgba(30, 41, 59, 0.6);
+}
+
+.chip.sel {
+  background: rgba(14, 165, 233, 0.18);
+  border-color: rgba(56, 189, 248, 0.5);
+  color: #38BDF8;
+  box-shadow: 0 0 12px rgba(14, 165, 233, 0.2);
+}
+
+/* ── Sub-tabs (task queue / inventory / rooms) ── */
+.modal-tabs {
+  display: flex;
+  background: rgba(10, 20, 40, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 4px;
+  gap: 4px;
+}
+
+.modal-tabs button {
+  flex: 1;
+  padding: 8px 14px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #64748B;
+  font-size: .75rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  cursor: pointer;
+  transition: all .18s ease;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.modal-tabs button:hover {
+  color: #CBD5E1;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.modal-tabs button.sel {
+  background: rgba(14, 165, 233, 0.2);
+  border-color: rgba(56, 189, 248, 0.4);
+  color: #FFFFFF;
+  box-shadow: 0 0 10px rgba(14, 165, 233, 0.18);
+}
+
+/* ── Task row (bk-row) ── */
+.bk-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  flex-wrap: wrap;
+}
+
+.bk-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.bk-row:first-child {
+  padding-top: 0;
+}
+
+.bk-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.bk-main h4 {
+  margin: 0 0 4px;
+  color: #FFFFFF;
+  font-size: .95rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.bk-main p,
+.bk-main .muted {
+  font-size: .78rem;
+  color: #64748B;
+  margin: 0;
+}
+
+.bk-main p b,
+.bk-main .muted b {
+  color: #94A3B8;
+}
+
+/* ── Department priority badges ── */
+.pill.urgent {
+  background: rgba(239,68,68,.2);
+  border: 1px solid rgba(248,113,113,.4);
+  color: #F87171;
+}
+
+/* ── Dispatch Task Modal ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: rgba(2, 6, 23, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal {
+  width: 100%;
+  max-width: 500px;
+  background: rgba(10, 20, 40, 0.97);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 20px;
+  box-shadow: 0 32px 72px rgba(0, 0, 0, 0.7), 0 0 40px rgba(14, 165, 233, 0.1);
+  overflow: hidden;
+}
+
+.modal-head {
+  padding: 24px 28px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(14, 165, 233, 0.06);
+}
+
+.modal-head h3 {
+  margin: 0 0 4px;
+  color: #FFFFFF;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.modal-head p {
+  margin: 0;
+  color: #64748B;
+  font-size: .82rem;
+}
+
+.modal-body {
+  padding: 22px 28px 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ── Form fields inside modal ── */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.field label {
+  font-size: .64rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #64748B;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(15, 23, 42, 0.8);
+  color: #FFFFFF;
+  font-size: .86rem;
+  outline: none;
+  box-sizing: border-box;
+  font-family: inherit;
+  transition: border-color .2s ease, box-shadow .2s ease;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.field input::placeholder,
+.field textarea::placeholder {
+  color: #334155;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: rgba(56, 189, 248, 0.5);
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12);
+}
+
+/* Select arrow */
+.field select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748B' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+/* ── Room readiness card ── */
+.room-readiness-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.room-readiness-row:last-child { border-bottom: none; }
+
+/* ── Dispatch button ── */
+.btn-sky {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+  color: #FFFFFF;
+  font-weight: 700;
+  font-size: .82rem;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(14, 165, 233, 0.35);
+  transition: all .2s ease;
+  font-family: inherit;
+}
+
+.btn-sky:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 6px 20px rgba(14, 165, 233, 0.5);
+  transform: translateY(-1px);
+}
+
+.btn-sky:active {
+  transform: scale(.97);
+}
+
+/* Tag badges */
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: .68rem;
+  font-weight: 600;
+  background: rgba(30,41,59,.7);
+  border: 1px solid rgba(255,255,255,.1);
+  color: #94A3B8;
 }

@@ -1,19 +1,259 @@
 /* ==========================================================================
-   ISOLATED RECEPTIONIST DESK STYLESHEET (receptionist.css)
-   Scoped strictly under .receptionist-page for clean isolation.
+   ROCK VIEW BEACH RESORT · RECEPTIONIST DESK PORTAL
+   Premium dark-glass design — full professional overhaul
    ========================================================================== */
 
-.receptionist-page .desk-panel {
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 16px;
-  padding: 20px;
+/* ── Page shell ── */
+.container.section {
+  background: linear-gradient(160deg, #060b18 0%, #0a1628 60%, #060b18 100%);
+  min-height: 100vh;
+  padding-bottom: 60px;
 }
 
-.receptionist-page .check-btn {
-  padding: 6px 14px;
-  border-radius: 8px;
+/* ── Section header ── */
+.sec-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 40px 0 28px;
+  border-bottom: 1px solid rgba(56, 189, 248, 0.14);
+  margin-bottom: 32px;
+}
+
+.sec-head .label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .68rem;
   font-weight: 700;
-  font-size: 0.82rem;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: #38BDF8;
+  margin-bottom: 6px;
+}
+
+.sec-head h2.serif {
+  color: #FFFFFF;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.sec-head h2.serif em {
+  color: #38BDF8;
+}
+
+/* ── Stat cards ── */
+.stat-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.stat-card {
+  background: rgba(10, 22, 44, 0.9);
+  border: 1px solid rgba(56, 189, 248, 0.18);
+  border-radius: 16px;
+  padding: 20px 20px 18px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color .25s ease, box-shadow .25s ease;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #38BDF8, #0EA5E9 60%, transparent);
+  border-radius: 16px 16px 0 0;
+}
+
+.stat-card:hover {
+  border-color: rgba(56, 189, 248, 0.38);
+  box-shadow: 0 8px 32px rgba(14, 165, 233, 0.12);
+}
+
+.stat-card small {
+  display: block;
+  font-size: .68rem;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #64748B;
+  margin-bottom: 8px;
+}
+
+.stat-card b {
+  display: block;
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  line-height: 1;
+}
+
+/* ── Panel / card ── */
+.panel {
+  background: rgba(10, 20, 40, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 28px 24px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  margin-bottom: 24px;
+  transition: border-color .25s ease;
+}
+
+.panel:hover {
+  border-color: rgba(56, 189, 248, 0.2);
+}
+
+.panel h3.serif {
+  color: #FFFFFF;
+  margin: 0 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.panel h3.serif::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 1.1em;
+  border-radius: 2px;
+  background: #38BDF8;
+  flex-shrink: 0;
+}
+
+/* ── Table ── */
+.table-wrap {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .86rem;
+}
+
+.table thead tr {
+  background: rgba(14, 165, 233, 0.08);
+  border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+}
+
+.table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: .65rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #64748B;
+  white-space: nowrap;
+}
+
+.table tbody tr {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background .18s ease;
+}
+
+.table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.table tbody tr:hover {
+  background: rgba(56, 189, 248, 0.04);
+}
+
+.table td {
+  padding: 14px 16px;
+  color: #E2E8F0;
+  vertical-align: middle;
+}
+
+.table td b {
+  color: #FFFFFF;
+  font-weight: 600;
+}
+
+.table td small {
+  color: #64748B;
+  font-size: .78rem;
+}
+
+/* ── Status pills ── */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: .64rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pill.confirmed    { background: rgba(14,165,233,.18); border: 1px solid rgba(56,189,248,.4);  color: #38BDF8; }
+.pill.checked_in   { background: rgba(16,185,129,.18); border: 1px solid rgba(52,211,153,.4);  color: #34D399; }
+.pill.checked_out  { background: rgba(99,102,241,.18); border: 1px solid rgba(129,140,248,.4); color: #A5B4FC; }
+.pill.cancelled    { background: rgba(244,63,94,.18);  border: 1px solid rgba(251,113,133,.4); color: #FB7185; }
+.pill.pending      { background: rgba(245,158,11,.18); border: 1px solid rgba(251,191,36,.4);  color: #FBBF24; }
+.pill.delivered    { background: rgba(16,185,129,.18); border: 1px solid rgba(52,211,153,.4);  color: #34D399; }
+.pill.sent         { background: rgba(14,165,233,.18); border: 1px solid rgba(56,189,248,.4);  color: #38BDF8; }
+
+/* ── Action buttons ── */
+.act-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 13px;
+  border-radius: 8px;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .05em;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(30,41,59,.5);
+  color: #CBD5E1;
+  transition: all .18s ease;
+  white-space: nowrap;
+}
+
+.act-btn:hover {
+  background: rgba(14,165,233,.2);
+  border-color: rgba(56,189,248,.5);
+  color: #38BDF8;
+  box-shadow: 0 0 10px rgba(14,165,233,.2);
+}
+
+/* Folio-specific */
+.act-btn[title*="folio"],
+.act-btn[title*="Folio"] {
+  border-color: rgba(56,189,248,.35);
+  color: #38BDF8;
+  background: rgba(56,189,248,.08);
+}
+
+/* SMS badge */
+.sec-head span[style*="fas fa-comment"] {
+  color: #38BDF8;
+}
+
+/* ── Loading skeleton ── */
+.skel {
+  border-radius: 16px;
+  background: linear-gradient(90deg, rgba(30,41,59,.5) 25%, rgba(51,65,85,.5) 50%, rgba(30,41,59,.5) 75%);
+  background-size: 200% 100%;
+  animation: skel-shimmer 1.4s infinite;
+}
+
+@keyframes skel-shimmer {
+  0%   { background-position: 200% center; }
+  100% { background-position: -200% center; }
 }

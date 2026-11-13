@@ -5,12 +5,6 @@ import { toast } from '../components/Toasts.tsx';
 import { getDefaultStaffPath, formatDepartmentBadge, normalizeRole } from '../lib/rbac.ts';
 import '../styles/staff-portal.css';
 
-const DEPT_STATIONS = [
-  { key: 'front_desk', label: 'Front Desk',  icon: 'fa-bell-concierge', mod: 'frontdesk'   },
-  { key: 'accounting', label: 'Accounting',   icon: 'fa-calculator',     mod: 'accounting'  },
-  { key: 'operations', label: 'Operations',   icon: 'fa-broom',          mod: 'operations'  },
-];
-
 export default function StaffLogin() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -21,7 +15,6 @@ export default function StaffLogin() {
   const [password, setPassword]                 = useState('');
   const [showPassword, setShowPassword]         = useState(false);
   const [submitting, setSubmitting]             = useState(false);
-  const [selectedDeptHint, setSelectedDeptHint] = useState<string>('front_desk');
 
   const activeEmployee = adminProfile || profile;
 
@@ -60,7 +53,7 @@ export default function StaffLogin() {
     }
   };
 
-  const activeDept = DEPT_STATIONS.find(d => d.key === selectedDeptHint);
+  const activeDept = null;
 
   return (
     <div className="sl-viewport">
@@ -93,24 +86,6 @@ export default function StaffLogin() {
             Operational clearance required. Authenticate with your&nbsp;employee
             credentials to access your department station.
           </p>
-        </div>
-
-        {/* ── Department selector ── */}
-        <div className="sl-dept">
-          <span className="sl-dept__label">Select Your Station</span>
-          <div className="sl-dept__grid">
-            {DEPT_STATIONS.map(dept => (
-              <button
-                key={dept.key}
-                type="button"
-                onClick={() => setSelectedDeptHint(dept.key)}
-                className={`sl-dept__btn sl-dept__btn--${dept.mod}${selectedDeptHint === dept.key ? ' is-active' : ''}`}
-              >
-                <i className={`fas ${dept.icon} sl-dept__btn-icon`} />
-                <span>{dept.label}</span>
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* ── Login form ── */}
@@ -175,7 +150,7 @@ export default function StaffLogin() {
             ) : (
               <>
                 <i className="fas fa-right-to-bracket" />
-                <span>Enter {activeDept?.label ?? 'Station'}</span>
+                <span>Sign In to Station</span>
               </>
             )}
           </button>
