@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext.tsx';
 import { supabase } from '../lib/supabaseClient.ts';
 import { toast } from '../components/Toasts.tsx';
 import { canAccessPortal, canEscalateToRecovery, formatDepartmentBadge, PortalKey } from '../lib/rbac.ts';
+import '../styles/staff-portal.css';
 
 interface StaffLayoutProps {
   children?: React.ReactNode;
@@ -12,8 +13,7 @@ interface StaffLayoutProps {
 /**
  * StaffLayout - Daily Operations & Execution Namespace Wrapper (/staff)
  * Narrative: Staff members handle day-to-day queues, check-ins, accounting folios, and task fulfillment.
- * Staff cannot alter system-wide configurations or perform unrestricted overrides.
- * Explicit State Handoff: Dispatches unresolved operational disputes directly to Supabase and routes to /recovery.
+ * Fully modular CSS styling, clean design parity with executive portal.
  */
 export default function StaffLayout({ children }: StaffLayoutProps) {
   const { adminProfile, profile, signOutAdmin } = useAuth();
@@ -42,7 +42,6 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
       const resId = escalationForm.reservationId.trim();
 
       // Explicit State Transition in Supabase:
-      // Update reservation status to 'disputed' with escalation narrative
       const { error: updateErr } = await supabase
         .from('reservations')
         .update({
@@ -83,9 +82,9 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
   };
 
   const allStaffNavItems: Array<{ to: string; label: string; icon: string; portal: PortalKey }> = [
-    { to: '/staff/operations', label: 'Department Tasks & Dispatch', icon: 'fas fa-tasks-alt', portal: 'operations' },
-    { to: '/staff/reception', label: 'Reception & Check-In Desk', icon: 'fas fa-bell-concierge', portal: 'reception' },
-    { to: '/staff/accounting', label: 'Folios, Billing & Audit', icon: 'fas fa-calculator', portal: 'accounting' },
+    { to: '/staff/operations', label: 'Department Dispatch', icon: 'fas fa-tasks', portal: 'operations' },
+    { to: '/staff/reception', label: 'Reception & Check-In', icon: 'fas fa-bell-concierge', portal: 'reception' },
+    { to: '/staff/accounting', label: 'Billing & Ledgers', icon: 'fas fa-calculator', portal: 'accounting' },
   ];
   const staffNavItems = allStaffNavItems.filter((item) => canAccessPortal(activeProfile, item.portal));
 
@@ -93,156 +92,75 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
   const deptBadge = formatDepartmentBadge(activeProfile);
 
   return (
-    <div className="staff-namespace-wrapper" style={{ minHeight: '100vh', background: '#090D16', color: '#F8FAFC' }}>
+    <div className="staff-namespace-wrapper">
       {/* Top Operations Header */}
-      <header style={{
-        background: 'rgba(15, 23, 42, 0.96)',
-        borderBottom: '1px solid rgba(14, 165, 233, 0.35)',
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.45)',
-        padding: '12px 24px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-        backdropFilter: 'blur(14px)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <Link to="/staff" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
-            <span style={{
-              width: 40,
-              height: 40,
-              borderRadius: 10,
-              background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.4), rgba(2, 132, 199, 0.6))',
-              border: '1px solid rgba(56, 189, 248, 0.5)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 0 16px rgba(14, 165, 233, 0.35)',
-            }}>
-              <i className="fas fa-clipboard-user" style={{ color: '#7DD3FC', fontSize: '1.2rem' }} />
+      <header className="staff-header">
+        <div className="staff-header-left">
+          <Link to="/staff" className="staff-brand-link">
+            <span className="staff-brand-icon">
+              <i className="fas fa-clipboard-user" />
             </span>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: '.68rem', fontWeight: 800, letterSpacing: '.2em', color: '#38BDF8', textTransform: 'uppercase' }}>
-                  OPERATIONS & EXECUTION
-                </span>
-                <span style={{
-                  fontSize: '.62rem',
-                  padding: '1px 6px',
-                  borderRadius: 4,
-                  background: 'rgba(14, 165, 233, 0.2)',
-                  border: '1px solid rgba(14, 165, 233, 0.4)',
-                  color: '#BAE6FD',
-                  fontWeight: 700,
-                }}>
-                  /staff
-                </span>
+            <div className="staff-brand-text">
+              <div className="staff-brand-badge">
+                <span>OPERATIONS &amp; EXECUTION</span>
+                <span className="staff-brand-badge-tag">/staff</span>
               </div>
-              <h1 className="serif" style={{ fontSize: '1.22rem', margin: 0, color: '#FFFFFF', letterSpacing: '.03em' }}>
+              <h1 className="staff-brand-title">
                 Resort Operations Hub
               </h1>
             </div>
           </Link>
 
           {/* Operational Navigation Tabs */}
-          <nav style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 20 }}>
+          <nav className="staff-nav-pills">
             {staffNavItems.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
-                className={({ isActive }) => `staff-nav-btn ${isActive ? 'active' : ''}`}
-                style={({ isActive }) => ({
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  fontSize: '.78rem',
-                  fontWeight: 700,
-                  padding: '7px 14px',
-                  borderRadius: 8,
-                  textDecoration: 'none',
-                  color: isActive ? '#FFFFFF' : '#94A3B8',
-                  background: isActive ? 'rgba(14, 165, 233, 0.22)' : 'rgba(30, 41, 59, 0.4)',
-                  border: isActive ? '1px solid rgba(56, 189, 248, 0.5)' : '1px solid rgba(255, 255, 255, 0.08)',
-                  transition: 'all 0.2s ease',
-                })}
+                className={({ isActive }) => `staff-nav-link ${isActive ? 'active' : ''}`}
               >
-                <i className={item.icon} style={{ fontSize: '.85rem' }} />
-                {item.label}
+                <i className={item.icon} />
+                <span>{item.label}</span>
               </NavLink>
             ))}
           </nav>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="staff-header-right">
           {/* Explicit State Handoff Trigger: Escalate to Recovery */}
           {allowEscalation && (
             <button
               type="button"
               onClick={() => setShowEscalationModal(true)}
-              style={{
-                fontSize: '.76rem',
-                fontWeight: 700,
-                color: '#FDE047',
-                background: 'rgba(234, 179, 8, 0.15)',
-                border: '1px solid rgba(234, 179, 8, 0.45)',
-                padding: '6px 14px',
-                borderRadius: 8,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                boxShadow: '0 0 12px rgba(234, 179, 8, 0.15)',
-                transition: 'all 0.2s ease',
-              }}
+              className="staff-escalate-btn"
               title="Escalate a disputed stay, hold, or guest issue to the Recovery namespace"
             >
-              <i className="fas fa-triangle-exclamation" style={{ color: '#FBBF24' }} />
-              Escalate to Recovery →
+              <i className="fas fa-triangle-exclamation" />
+              <span>Escalate Case →</span>
             </button>
           )}
 
-          <div style={{
-            fontSize: '.74rem',
-            color: '#CBD5E1',
-            background: 'rgba(30, 41, 59, 0.6)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            padding: '5px 12px',
-            borderRadius: 8,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-          }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#38BDF8', display: 'inline-block' }} />
-            <span>{deptBadge}: <strong style={{ color: '#FFFFFF' }}>{activeProfile?.full_name || 'Active Duty'}</strong></span>
+          {/* Active Duty Status Pill */}
+          <div className="staff-duty-pill">
+            <span className="staff-duty-dot" />
+            <span className="staff-duty-label">{deptBadge}:</span>
+            <span className="staff-duty-name">{activeProfile?.full_name || 'Active Duty'}</span>
           </div>
 
+          {/* Sign Out Button */}
           <button
             onClick={signOutAdmin}
-            style={{
-              fontSize: '.74rem',
-              fontWeight: 700,
-              color: '#F87171',
-              background: 'rgba(239, 68, 68, 0.12)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              padding: '6px 12px',
-              borderRadius: 8,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              transition: 'all 0.2s ease',
-            }}
+            className="staff-signout-btn"
+            title="Sign out of staff operational station"
           >
             <i className="fas fa-arrow-right-from-bracket" />
-            Sign Out
+            <span>Sign Out</span>
           </button>
         </div>
       </header>
 
       {/* Main Staff Portal Content */}
-      <main style={{ minHeight: 'calc(100vh - 66px)', padding: '16px 0' }}>
+      <main style={{ minHeight: 'calc(100vh - 66px)', padding: '24px 0' }}>
         {children}
       </main>
 

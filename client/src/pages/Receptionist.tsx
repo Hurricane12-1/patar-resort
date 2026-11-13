@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.tsx';
 import '../styles/receptionist.css';
 import { api } from '../lib/api.ts';
@@ -9,15 +10,15 @@ import PriceChangeRequestPanel from '../components/PriceChangeRequestPanel.tsx';
 import { canAccessPortal } from '../lib/rbac.ts';
 
 export default function Receptionist() {
-  const { profile, adminProfile, signIn, adminSignIn } = useAuth();
+  const { profile, adminProfile } = useAuth();
   const currentProf = adminProfile || profile;
   const isAuthorized = canAccessPortal(currentProf, 'reception');
-  const [data, setData] = useState(null);
+
+  const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [busy, setBusy] = useState(false);
   const [inspectedVoucher, setInspectedVoucher] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'confirmed' | 'checked_in' | 'checked_out'>('all');
 
   useEffect(() => {
     if (isAuthorized) {
@@ -30,67 +31,61 @@ export default function Receptionist() {
     }
   }, [isAuthorized]);
 
-  async function handleReceptionistLogin(e) {
-    e.preventDefault();
-    setBusy(true);
+  async function updateStatus(id: string, status: string) {
     try {
-      const res = adminSignIn ? await adminSignIn(email, password) : await signIn(email, password);
-      if (res?.error) throw res.error;
-      toast('Receptionist Desk Authenticated ✦');
-    } catch (err) {
-      toast(err.message, true);
-    } finally {
-      setBusy(false);
+      await api.setReservationStatus(id, status);
+      toast(`Reservation marked as ${status.replace('_', ' ').toUpperCase()}`);
+      setData((prev: any) => ({
+        ...prev,
+        bookings: (prev?.bookings || []).map((b: any) => (b.id === id ? { ...b, status } : b)),
+      }));
+    } catch (e: any) {
+      toast(e.message, true);
     }
   }
 
-  async function updateStatus(id, status) {
-    try {
-      await api.setReservationStatus(id, status);
-      toast(`Reservation updated to ${status.replace('_', ' ')}`);
-      setData((x) => ({
-        ...x,
-        bookings: x.bookings.map((b) => (b.id === id ? { ...b, status } : b)),
-      }));
-    } catch (e) { toast(e.message, true); }
-  }
+  const { overview: ov = {}, bookings = [] } = data || {};
 
-  // DEDICATED SEPARATE RECEPTIONIST LOGIN PORTAL
+  // Filtered bookings
+  const filteredBookings = useMemo(() => {
+    return bookings.filter((b: any) => {
+      const matchesStatus = statusFilter === 'all' || b.status === statusFilter;
+      const query = searchQuery.trim().toLowerCase();
+      if (!query) return matchesStatus;
+
+      const guestName = (b.profiles?.full_name || '').toLowerCase();
+      const guestPhone = (b.profiles?.phone || '').toLowerCase();
+      const roomName = (b.rooms?.name || '').toLowerCase();
+      const matchesQuery = guestName.includes(query) || guestPhone.includes(query) || roomName.includes(query);
+
+      return matchesStatus && matchesQuery;
+    });
+  }, [bookings, statusFilter, searchQuery]);
+
+  // Counts for status pills
+  const confirmedCount = bookings.filter((b: any) => b.status === 'confirmed').length;
+  const checkedInCount = bookings.filter((b: any) => b.status === 'checked_in').length;
+  const checkedOutCount = bookings.filter((b: any) => b.status === 'checked_out').length;
+
+  // Clearance Gate fallback
   if (!isAuthorized) {
     return (
-      <div className="container section">
-        <div className="gate" style={{ maxWidth: 460, borderTop: '5px solid var(--sky)' }}>
-          <span className="label">Front Desk Command</span>
-          <h2 className="serif" style={{ fontSize: '2.2rem', margin: '8px 0 12px' }}>Receptionist Sign-In</h2>
-          <p className="muted" style={{ marginBottom: 24, fontSize: '.92rem' }}>
-            Dedicated portal for front desk receptionists, guest check-in officers, and concierge staff.
+      <div className="staff-denied-container">
+        <div className="staff-denied-card">
+          <div className="staff-denied-icon">
+            <i className="fas fa-shield-halved" />
+          </div>
+          <span className="label" style={{ color: '#FB7185' }}>Front Desk Boundary</span>
+          <h2 className="serif" style={{ fontSize: '1.8rem', margin: '8px 0 12px', color: '#FFFFFF' }}>
+            Front Desk Clearance Required
+          </h2>
+          <p className="muted" style={{ marginBottom: 24, fontSize: '.88rem', lineHeight: 1.6 }}>
+            You do not have active Front Desk clearance to access the guest check-in terminal. Please sign in with receptionist credentials.
           </p>
-
-          <form onSubmit={handleReceptionistLogin} style={{ textAlign: 'left' }}>
-            <div className="field">
-              <label>RECEPTIONIST EMAIL</label>
-              <input
-                type="email"
-                required
-                value={email}
-                placeholder="receptionist@jdbeachhouse.ph"
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div className="field">
-              <label>PASSWORD</label>
-              <input
-                type="password"
-                required
-                value={password}
-                placeholder="••••••••"
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-            <button className="btn btn-sky" style={{ width: '100%', justifyContent: 'center', marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 6 }} disabled={busy}>
-              {busy ? 'Authenticating…' : <><i className="fas fa-bell-concierge" /> Sign In to Reception Desk</>}
-            </button>
-          </form>
+          <Link to="/staff/login" className="btn btn-sky" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 20px' }}>
+            <i className="fas fa-right-to-bracket" />
+            <span>Go to Staff Station Sign In</span>
+          </Link>
         </div>
       </div>
     );
@@ -98,26 +93,41 @@ export default function Receptionist() {
 
   if (loading || !data) {
     return (
-      <div className="container section">
-        <div className="skel" style={{ height: 320 }} />
+      <div className="container" style={{ padding: '40px 16px' }}>
+        <div className="skel" style={{ height: 380, borderRadius: 18 }} />
       </div>
     );
   }
 
-  const { overview: ov = {}, bookings = [] } = data;
-
   return (
-    <div className="container section">
+    <div className="container" style={{ maxWidth: 1280, margin: '0 auto', padding: '0 20px 60px' }}>
+      {/* Page Header */}
       <div className="sec-head">
         <div>
-          <span className="label">Front Desk Reception</span>
-          <h2 className="serif" style={{ fontSize: 'clamp(2.2rem,4.4vw,3.6rem)' }}>
-            Guest Check-In <em style={{ fontStyle: 'italic' }}>& Desk Portal</em>
+          <span className="label">
+            <i className="fas fa-bell-concierge" /> Front Desk Operations Desk
+          </span>
+          <h2 className="serif" style={{ fontSize: 'clamp(2rem, 3.8vw, 3.2rem)' }}>
+            Guest Arrivals <em style={{ fontStyle: 'italic', color: '#38BDF8' }}>&amp; Check-In Terminal</em>
           </h2>
         </div>
-        <span style={{ fontSize: '.83rem', color: 'var(--muted)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <i className="fas fa-comment-sms" style={{ color: '#38BDF8' }} /> SMS Pings Active for Check-ins
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{
+            fontSize: '.78rem',
+            color: '#38BDF8',
+            background: 'rgba(14, 165, 233, 0.12)',
+            border: '1px solid rgba(56, 189, 248, 0.35)',
+            padding: '6px 14px',
+            borderRadius: 9999,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            boxShadow: '0 0 12px rgba(14, 165, 233, 0.15)',
+          }}>
+            <i className="fas fa-tower-broadcast" style={{ color: '#38BDF8' }} />
+            <span>SMS Alerts Active for Check-ins</span>
+          </span>
+        </div>
       </div>
 
       {/* RECEPTION KPIS */}
@@ -136,64 +146,186 @@ export default function Receptionist() {
         </div>
         <div className="stat-card">
           <small>SMS Pings Sent</small>
-          <b>{ov.sms_delivered || 0} sent</b>
+          <b>{ov.sms_delivered || 0} alerts</b>
         </div>
       </div>
 
-      {/* CHECK-IN LEDGER */}
+      {/* CHECK-IN LEDGER PANEL */}
       <div className="panel">
-        <h3 className="serif" style={{ fontSize: '1.4rem', marginBottom: 14 }}>Live Check-In & Check-Out Operations</h3>
-        {bookings.length === 0 ? (
-          <p className="muted" style={{ padding: '24px 0' }}>No active stay reservations found.</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16, marginBottom: 20 }}>
+          <div>
+            <h3 className="serif" style={{ fontSize: '1.45rem', margin: 0 }}>
+              Live Guest Manifest &amp; Room Allocations
+            </h3>
+            <p className="muted" style={{ margin: '4px 0 0', fontSize: '.82rem' }}>
+              Process walk-ins, digital check-ins, key allocations, and folio vouchers.
+            </p>
+          </div>
+
+          {/* Quick Search */}
+          <div style={{ position: 'relative', minWidth: 260 }}>
+            <i className="fas fa-magnifying-glass" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#64748B', fontSize: '.82rem' }} />
+            <input
+              type="text"
+              placeholder="Search guest, room, or phone…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="staff-input-control"
+              style={{ padding: '8px 12px 8px 34px', fontSize: '.82rem', borderRadius: 10 }}
+            />
+          </div>
+        </div>
+
+        {/* Operational Filter Tabs */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+          <button
+            type="button"
+            onClick={() => setStatusFilter('all')}
+            className={`chip ${statusFilter === 'all' ? 'sel' : ''}`}
+          >
+            All Manifest ({bookings.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter('confirmed')}
+            className={`chip ${statusFilter === 'confirmed' ? 'sel' : ''}`}
+          >
+            <i className="fas fa-clock" style={{ fontSize: '.7rem' }} />
+            Due In ({confirmedCount})
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter('checked_in')}
+            className={`chip ${statusFilter === 'checked_in' ? 'sel' : ''}`}
+          >
+            <i className="fas fa-key" style={{ fontSize: '.7rem' }} />
+            In-House ({checkedInCount})
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter('checked_out')}
+            className={`chip ${statusFilter === 'checked_out' ? 'sel' : ''}`}
+          >
+            <i className="fas fa-check" style={{ fontSize: '.7rem' }} />
+            Departed ({checkedOutCount})
+          </button>
+        </div>
+
+        {/* Guest Manifest Table */}
+        {filteredBookings.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px 16px', color: '#64748B' }}>
+            <i className="fas fa-clipboard-question" style={{ fontSize: '2.4rem', opacity: 0.4, marginBottom: 12, display: 'block' }} />
+            <p style={{ margin: 0, fontSize: '.9rem' }}>
+              {searchQuery ? `No guests found matching "${searchQuery}".` : 'No active reservations under this status filter.'}
+            </p>
+          </div>
         ) : (
           <div className="table-wrap">
             <table className="table">
               <thead>
                 <tr>
-                  <th>Guest Name</th>
-                  <th>Room</th>
-                  <th>Check In / Out</th>
+                  <th>Guest / Contact</th>
+                  <th>Accommodation Unit</th>
+                  <th>Stay Schedule</th>
                   <th>Status</th>
-                  <th>Front Desk Action</th>
+                  <th style={{ textAlign: 'right' }}>Front Desk Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {bookings.map((b) => (
+                {filteredBookings.map((b: any) => (
                   <tr key={b.id}>
                     <td>
-                      <b>{b.profiles?.full_name || 'Guest'}</b><br />
-                      <small className="muted">{b.profiles?.phone || 'No phone'}</small>
-                    </td>
-                    <td>{b.rooms?.name || 'Room'}</td>
-                    <td>{fmtDate(b.check_in)} → {fmtDate(b.check_out)}</td>
-                    <td><span className={`pill ${b.status}`}>{b.status.replace('_', ' ')}</span></td>
-                    <td>
-                      {b.status === 'confirmed' && (
-                        <button className="act-btn" onClick={() => updateStatus(b.id, 'checked_in')}>
-                          <i className="fas fa-bell-concierge" style={{ marginRight: 5 }} /> Check-in
-                        </button>
-                      )}
-                      {b.status === 'checked_in' && (
-                        <button className="act-btn" onClick={() => updateStatus(b.id, 'checked_out')}>
-                          <i className="fas fa-key" style={{ marginRight: 5 }} /> Check-out
-                        </button>
-                      )}
-                      <button
-                        className="act-btn"
-                        onClick={() => setInspectedVoucher(b)}
-                        style={{
-                          marginLeft: 6,
-                          borderColor: '#38BDF8',
-                          color: '#38BDF8',
-                          background: 'rgba(56, 189, 248, 0.08)',
-                          display: 'inline-flex',
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: '50%',
+                          background: 'rgba(56, 189, 248, 0.15)',
+                          border: '1px solid rgba(56, 189, 248, 0.3)',
+                          display: 'flex',
                           alignItems: 'center',
-                          gap: 4,
-                        }}
-                        title="Inspect or print guest folio voucher"
-                      >
-                        <i className="fas fa-receipt" /> Folio
-                      </button>
+                          justifyContent: 'center',
+                          color: '#38BDF8',
+                          fontSize: '.78rem',
+                          fontWeight: 700,
+                          flexShrink: 0,
+                        }}>
+                          {(b.profiles?.full_name || 'G').charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <b style={{ color: '#FFFFFF', fontSize: '.88rem' }}>{b.profiles?.full_name || 'Guest'}</b>
+                          <div style={{ fontSize: '.74rem', color: '#64748B' }}>
+                            <i className="fas fa-phone" style={{ fontSize: '.68rem', marginRight: 4 }} />
+                            {b.profiles?.phone || 'No phone recorded'}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span className="tag" style={{ margin: 0, background: 'rgba(14, 165, 233, 0.15)', borderColor: 'rgba(56, 189, 248, 0.3)', color: '#38BDF8' }}>
+                          {b.rooms?.name || 'Unit Allocation'}
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ fontSize: '.82rem', color: '#E2E8F0' }}>
+                        <span>{fmtDate(b.check_in)}</span>
+                        <span style={{ color: '#64748B', margin: '0 6px' }}>→</span>
+                        <span>{fmtDate(b.check_out)}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <span className={`pill ${b.status}`}>
+                        {b.status.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        {b.status === 'confirmed' && (
+                          <button
+                            type="button"
+                            className="act-btn"
+                            onClick={() => updateStatus(b.id, 'checked_in')}
+                            style={{
+                              background: 'rgba(16, 185, 129, 0.2)',
+                              borderColor: 'rgba(52, 211, 153, 0.45)',
+                              color: '#34D399',
+                            }}
+                            title="Confirm guest arrival and issue room key"
+                          >
+                            <i className="fas fa-bell-concierge" /> Check-in
+                          </button>
+                        )}
+                        {b.status === 'checked_in' && (
+                          <button
+                            type="button"
+                            className="act-btn"
+                            onClick={() => updateStatus(b.id, 'checked_out')}
+                            style={{
+                              background: 'rgba(99, 102, 241, 0.2)',
+                              borderColor: 'rgba(129, 140, 248, 0.45)',
+                              color: '#A5B4FC',
+                            }}
+                            title="Release room and dispatch housekeeping turnaround"
+                          >
+                            <i className="fas fa-key" /> Check-out
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className="act-btn"
+                          onClick={() => setInspectedVoucher(b)}
+                          style={{
+                            borderColor: 'rgba(56, 189, 248, 0.4)',
+                            color: '#38BDF8',
+                            background: 'rgba(56, 189, 248, 0.1)',
+                          }}
+                          title="Inspect or print guest folio voucher"
+                        >
+                          <i className="fas fa-receipt" /> Folio
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.tsx';
 import '../styles/accounting.css';
 import CsvTableViewer from '../components/CsvTableViewer.tsx';
@@ -9,14 +10,11 @@ import PriceChangeRequestPanel from '../components/PriceChangeRequestPanel.tsx';
 import { canAccessPortal } from '../lib/rbac.ts';
 
 export default function Accounting() {
-  const { profile, adminProfile, signIn, adminSignIn } = useAuth();
+  const { profile, adminProfile } = useAuth();
   const currentProf = adminProfile || profile;
   const isAuthorized = canAccessPortal(currentProf, 'accounting');
-  const [data, setData] = useState(null);
+  const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (isAuthorized) {
@@ -29,56 +27,24 @@ export default function Accounting() {
     }
   }, [isAuthorized]);
 
-  async function handleAccountingLogin(e) {
-    e.preventDefault();
-    setBusy(true);
-    try {
-      const res = adminSignIn ? await adminSignIn(email, password) : await signIn(email, password);
-      if (res?.error) throw res.error;
-      toast('Accounting Portal Authenticated ✦');
-    } catch (err) {
-      toast(err.message, true);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  // DEDICATED SEPARATE ACCOUNTING LOGIN PORTAL
   if (!isAuthorized) {
     return (
-      <div className="container section">
-        <div className="gate" style={{ maxWidth: 460, borderTop: '5px solid var(--amber)' }}>
-          <span className="label" style={{ color: 'var(--amber)' }}>Finance & Audit Portal</span>
-          <h2 className="serif" style={{ fontSize: '2.2rem', margin: '8px 0 12px' }}>Accounting Sign-In</h2>
-          <p className="muted" style={{ marginBottom: 24, fontSize: '.92rem' }}>
-            Dedicated portal for accounting officers, financial auditors, and revenue managers.
+      <div className="staff-denied-container">
+        <div className="staff-denied-card">
+          <div className="staff-denied-icon" style={{ borderColor: 'rgba(245, 158, 11, 0.4)', background: 'rgba(245, 158, 11, 0.15)', color: '#FBBF24' }}>
+            <i className="fas fa-calculator" />
+          </div>
+          <span className="label" style={{ color: '#FBBF24' }}>Finance &amp; Audit Boundary</span>
+          <h2 className="serif" style={{ fontSize: '1.8rem', margin: '8px 0 12px', color: '#FFFFFF' }}>
+            Accounting Clearance Required
+          </h2>
+          <p className="muted" style={{ marginBottom: 24, fontSize: '.88rem', lineHeight: 1.6 }}>
+            You do not have active Finance &amp; Accounting clearance to inspect financial ledgers, audit logs, or revenue transactions.
           </p>
-
-          <form onSubmit={handleAccountingLogin} style={{ textAlign: 'left' }}>
-            <div className="field">
-              <label>ACCOUNTING EMAIL</label>
-              <input
-                type="email"
-                required
-                value={email}
-                placeholder="accounting@jdbeachhouse.ph"
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div className="field">
-              <label>PASSWORD</label>
-              <input
-                type="password"
-                required
-                value={password}
-                placeholder="••••••••"
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-            <button className="btn btn-sky" style={{ width: '100%', justifyContent: 'center', marginTop: 12, background: 'var(--amber)', display: 'inline-flex', alignItems: 'center', gap: 6 }} disabled={busy}>
-              {busy ? 'Authenticating…' : <><i className="fas fa-chart-line" /> Sign In to Accounting Portal</>}
-            </button>
-          </form>
+          <Link to="/staff/login" className="btn btn-sky" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: 'linear-gradient(135deg, #F59E0B, #D97706)' }}>
+            <i className="fas fa-right-to-bracket" />
+            <span>Go to Staff Station Sign In</span>
+          </Link>
         </div>
       </div>
     );
@@ -86,8 +52,8 @@ export default function Accounting() {
 
   if (loading || !data) {
     return (
-      <div className="container section">
-        <div className="skel" style={{ height: 320 }} />
+      <div className="container" style={{ padding: '40px 16px' }}>
+        <div className="skel" style={{ height: 380, borderRadius: 18 }} />
       </div>
     );
   }
@@ -95,16 +61,24 @@ export default function Accounting() {
   const { overview: ov = {} } = data;
 
   return (
-    <div className="container section">
+    <div className="container" style={{ maxWidth: 1280, margin: '0 auto', padding: '0 20px 60px' }}>
+      {/* Header */}
       <div className="sec-head">
         <div>
-          <span className="label" style={{ color: 'var(--amber)' }}>Finance & Revenue Control</span>
-          <h2 className="serif" style={{ fontSize: 'clamp(2.2rem,4.4vw,3.6rem)' }}>
-            Accounting <em style={{ fontStyle: 'italic' }}>Audit & Ledger Portal</em>
+          <span className="label" style={{ color: '#FBBF24' }}>
+            <i className="fas fa-coins" /> Finance &amp; Revenue Control
+          </span>
+          <h2 className="serif" style={{ fontSize: 'clamp(2rem, 3.8vw, 3.2rem)' }}>
+            Financial Audit <em style={{ fontStyle: 'italic', color: '#FBBF24' }}>&amp; Ledgers Portal</em>
           </h2>
         </div>
-        <button className="btn btn-sky btn-sm" onClick={api.exportAnalyticsCSV} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <i className="fas fa-file-arrow-down" /> Export Financial Audit CSV
+        <button
+          type="button"
+          className="btn btn-sky btn-sm"
+          onClick={api.exportAnalyticsCSV}
+        >
+          <i className="fas fa-file-arrow-down" />
+          <span>Export Financial Audit CSV</span>
         </button>
       </div>
 
@@ -116,7 +90,7 @@ export default function Accounting() {
         </div>
         <div className="stat-card">
           <small>ADR (Avg Daily Rate)</small>
-          <b>{money(ov.adr_php || 0)} / night</b>
+          <b>{money(ov.adr_php || 0)} <span style={{ fontSize: '.75rem', fontWeight: 500, color: '#64748B' }}>/ night</span></b>
         </div>
         <div className="stat-card">
           <small>RevPAR (Rev per Room)</small>
@@ -128,46 +102,65 @@ export default function Accounting() {
         </div>
       </div>
 
-      {/* REVENUE BREAKDOWN */}
+      {/* REVENUE BREAKDOWN & AUDIT SUMMARY */}
       <div className="admin-grid">
         <div className="panel">
-          <h3 className="serif" style={{ fontSize: '1.4rem', marginBottom: 16 }}>Revenue Category Breakdown</h3>
+          <h3 className="serif" style={{ fontSize: '1.45rem', margin: '0 0 16px' }}>
+            Revenue Stream Breakdown
+          </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div className="bk-row">
               <div className="bk-main">
-                <h4>Room Stays & Lodging</h4>
-                <p className="muted small">Suite, Villa & Cottage Night Stays</p>
+                <h4>Room Stays &amp; Lodging</h4>
+                <p className="muted small">Overnight rooms and verified day-use cottage reservations</p>
               </div>
-              <b className="serif" style={{ fontSize: '1.2rem', color: 'var(--blue)' }}>{money(ov.room_revenue_php || 0)}</b>
+              <b className="serif" style={{ fontSize: '1.25rem', color: '#38BDF8' }}>
+                {money(ov.room_revenue_php || 0)}
+              </b>
             </div>
 
             <div className="bk-row">
               <div className="bk-main">
-                <h4>Swimming Pool & Resort Amenities</h4>
-                <p className="muted small">Day & Night Pool Access Add-ons</p>
+                <h4>Resort Amenities &amp; Pool Access</h4>
+                <p className="muted small">Day &amp; night pool access add-ons and guest amenities</p>
               </div>
-              <b className="serif" style={{ fontSize: '1.2rem', color: 'var(--blue)' }}>{money(ov.dining_revenue_php || 0)}</b>
+              <b className="serif" style={{ fontSize: '1.25rem', color: '#38BDF8' }}>
+                {money(ov.dining_revenue_php || 0)}
+              </b>
             </div>
 
             <div className="bk-row">
               <div className="bk-main">
                 <h4>Island Outrigger Tours</h4>
-                <p className="muted small">Patar Excursions & Shuttles</p>
+                <p className="muted small">Patar excursions, boat charters, and island tours</p>
               </div>
-              <b className="serif" style={{ fontSize: '1.2rem', color: 'var(--blue)' }}>{money(ov.tour_revenue_php || 0)}</b>
+              <b className="serif" style={{ fontSize: '1.25rem', color: '#38BDF8' }}>
+                {money(ov.tour_revenue_php || 0)}
+              </b>
             </div>
           </div>
         </div>
 
-        <div className="panel" style={{ background: 'var(--sky-mist)', border: '1px dashed #BAE6FD' }}>
-          <h3 className="serif" style={{ fontSize: '1.4rem', marginBottom: 12 }}>Accounting Audit Summary</h3>
-          <p className="muted small" style={{ marginBottom: 16 }}>
-            All payments are reconciled against Supabase database constraints and verified check-ins.
+        <div className="panel">
+          <h3 className="serif" style={{ fontSize: '1.45rem', margin: '0 0 12px' }}>
+            Accounting Audit Summary
+          </h3>
+          <p className="muted small" style={{ marginBottom: 20, lineHeight: 1.6 }}>
+            All payments are reconciled against Supabase database constraints, verified front-desk check-ins, and guest folio vouchers.
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: '.88rem' }}>
-            <div><b>Audit Status:</b> <span className="pill confirmed">Reconciled</span></div>
-            <div><b>Currency:</b> Philippine Pesos (₱)</div>
-            <div><b>Tax Compliance:</b> Standard Resort Rate</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span className="muted small">Reconciliation Status</span>
+              <span className="pill confirmed">Fully Reconciled</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span className="muted small">Operational Currency</span>
+              <strong style={{ color: '#FFFFFF' }}>Philippine Pesos (PHP ₱)</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span className="muted small">Tax &amp; Compliance Rule</span>
+              <span className="tag" style={{ margin: 0 }}>Standard Resort Lodging Rate</span>
+            </div>
           </div>
         </div>
       </div>

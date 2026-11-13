@@ -106,7 +106,7 @@ export default function PriceChangeRequestPanel() {
       <div className="panel">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
           <div>
-            <span className="label" style={{ color: '#006699' }}>Administrator Permission Required</span>
+            <span className="label" style={{ color: '#38BDF8' }}>Administrator Permission Required</span>
             <h3 className="serif" style={{ fontSize: '1.35rem', margin: '4px 0 0' }}>
               Room &amp; Rate Change Requests
             </h3>
@@ -186,7 +186,7 @@ export default function PriceChangeRequestPanel() {
                         <small className="muted">{fmtTime(r.created_at)}</small>
                       </td>
                       <td>
-                        <span className="muted">{money(r.current_rate_php)}</span> → <b style={{ color: '#059669' }}>{money(r.requested_rate_php)}</b>
+                        <span className="muted">{money(r.current_rate_php)}</span> → <b style={{ color: '#34D399' }}>{money(r.requested_rate_php)}</b>
                       </td>
                       <td style={{ maxWidth: 240 }}>
                         <div>{r.reason}</div>
