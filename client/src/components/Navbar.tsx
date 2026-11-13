@@ -3,7 +3,7 @@ import { NavLink, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.tsx';
 import { api } from '../lib/api.ts';
 import { fmtTime } from '../lib/format.ts';
-import { LiveClock, FloatingWelcome } from './LiveClock.tsx';
+import { LiveClock } from './LiveClock.tsx';
 import { isAdministrator, isInternalEmployee, getDefaultStaffPath, formatDepartmentBadge } from '../lib/rbac.ts';
 
 export default function Navbar() {
@@ -85,10 +85,6 @@ export default function Navbar() {
 
             {session ? (
               <>
-                <FloatingWelcome
-                  username={profile?.full_name?.split(' ')[0] || session?.user?.email?.split('@')[0] || 'Guest'}
-                  isLightMode={false}
-                />
                 <Link
                   to="/client/bookings"
                   className="nav-user"
