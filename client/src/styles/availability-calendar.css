@@ -1489,3 +1489,18 @@
   .mc__ev b, .mc__ev small { display: none; }
 }
 
+/* Tactile Active & Focus Rings */
+.mc__day:active,
+.pms-grid-cell:active,
+.pms-nav-btn:active,
+.pms-view-tab:active {
+  transform: scale(0.98);
+}
+
+.mc__day:focus-visible,
+.pms-grid-cell:focus-visible,
+.pms-nav-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-2);
+}
+

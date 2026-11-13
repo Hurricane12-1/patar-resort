@@ -1192,3 +1192,58 @@
   box-shadow: 0 16px 36px -8px rgba(99, 102, 241, 0.35) !important;
 }
 
+/* 14. PREMIUM EXECUTIVE MENU & MODAL NEON GLOW STATES */
+.admin-portal button:active,
+.admin-portal .btn:active,
+.admin-portal .pms-view-tab:active,
+.admin-portal .pms-export-btn:active {
+  transform: scale(0.98) !important;
+}
+
+.admin-portal button:focus-visible,
+.admin-portal .btn:focus-visible,
+.admin-portal input:focus-visible,
+.admin-portal select:focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.35) !important;
+}
+
+.admin-portal .btn-sky {
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.admin-portal .btn-sky:hover {
+  filter: brightness(1.1) !important;
+  box-shadow: 0 6px 20px rgba(14, 165, 233, 0.45), 0 0 12px rgba(56, 189, 248, 0.3) !important;
+}
+
+.admin-portal .pms-view-tab {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.admin-portal .pms-view-tab:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #FFFFFF !important;
+}
+
+.admin-portal .pms-view-tab.active {
+  background: rgba(14, 165, 233, 0.22) !important;
+  border-color: rgba(56, 189, 248, 0.45) !important;
+  box-shadow: 0 0 14px rgba(14, 165, 233, 0.3) !important;
+  color: #FFFFFF !important;
+}
+
+/* Modal Overlay Presentation */
+.admin-portal .admin-modal-backdrop {
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  background: rgba(2, 6, 23, 0.8) !important;
+}
+
+.admin-portal .admin-modal-content {
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 35px rgba(14, 165, 233, 0.15) !important;
+  border: 1px solid rgba(56, 189, 248, 0.25) !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+

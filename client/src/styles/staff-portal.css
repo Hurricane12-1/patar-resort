@@ -27,11 +27,18 @@
   border: 1px solid rgba(56, 189, 248, 0.25);
   border-radius: 20px;
   padding: 36px 28px;
-  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 30px rgba(14, 165, 233, 0.12);
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 30px rgba(14, 165, 233, 0.15);
   position: relative;
   z-index: 10;
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
+.staff-login-card:hover {
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 35px rgba(14, 165, 233, 0.22);
+}
+
+/* Department Badge Pills */
 .staff-badge-pill {
   display: inline-flex;
   align-items: center;
@@ -42,24 +49,49 @@
   font-weight: 700;
   letter-spacing: 0.15em;
   text-transform: uppercase;
+  transition: all 0.2s ease;
 }
 
 .staff-badge-frontdesk {
   background: rgba(14, 165, 233, 0.18);
   border: 1px solid rgba(56, 189, 248, 0.45);
   color: #38BDF8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.15);
 }
 
 .staff-badge-accounting {
   background: rgba(168, 85, 247, 0.18);
   border: 1px solid rgba(192, 132, 252, 0.45);
   color: #C084FC;
+  box-shadow: 0 0 10px rgba(192, 132, 252, 0.15);
 }
 
 .staff-badge-operations {
   background: rgba(16, 185, 129, 0.18);
   border: 1px solid rgba(52, 211, 153, 0.45);
   color: #34D399;
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.15);
+}
+
+.staff-badge-housekeeping {
+  background: rgba(245, 158, 11, 0.18);
+  border: 1px solid rgba(251, 191, 36, 0.45);
+  color: #FBBF24;
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.15);
+}
+
+.staff-badge-kitchen {
+  background: rgba(239, 68, 68, 0.18);
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  color: #F87171;
+  box-shadow: 0 0 10px rgba(248, 113, 113, 0.15);
+}
+
+.staff-badge-management {
+  background: rgba(139, 92, 246, 0.18);
+  border: 1px solid rgba(167, 139, 250, 0.45);
+  color: #A78BFA;
+  box-shadow: 0 0 10px rgba(167, 139, 250, 0.15);
 }
 
 /* 2. Department Access Denied (RBAC Boundary) */
@@ -80,6 +112,7 @@
   padding: 36px 28px;
   text-align: center;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(244, 63, 94, 0.15);
+  backdrop-filter: blur(16px);
 }
 
 .staff-denied-icon {
@@ -94,6 +127,7 @@
   margin-bottom: 20px;
   color: #FB7185;
   font-size: 1.8rem;
+  box-shadow: 0 0 20px rgba(244, 63, 94, 0.25);
 }
 
 /* 3. Section Error Boundary Component Styles */
@@ -104,4 +138,91 @@
   padding: 24px;
   text-align: center;
   margin: 16px 0;
+  backdrop-filter: blur(8px);
+}
+
+/* 4. Staff Station Controls & Live Sync States */
+.staff-station-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 4px;
+  backdrop-filter: blur(12px);
+}
+
+.staff-station-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #94A3B8;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.staff-station-tab:hover {
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.staff-station-tab.active {
+  color: #FFFFFF;
+  background: rgba(14, 165, 233, 0.2);
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 0 14px rgba(14, 165, 233, 0.25);
+}
+
+.staff-input-control {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: #FFFFFF;
+  font-size: 0.88rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.staff-input-control:focus {
+  border-color: #38BDF8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+}
+
+.staff-btn-submit {
+  width: 100%;
+  padding: 13px 20px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%);
+  color: #FFFFFF;
+  font-weight: 700;
+  font-size: 0.84rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(2, 132, 199, 0.35);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.staff-btn-submit:hover:not(:disabled) {
+  filter: brightness(1.1);
+  box-shadow: 0 6px 20px rgba(2, 132, 199, 0.5), 0 0 12px rgba(56, 189, 248, 0.3);
+  transform: translateY(-1px);
+}
+
+.staff-btn-submit:active:not(:disabled) {
+  transform: scale(0.98);
 }
