@@ -7,6 +7,7 @@ import { roomImg, getRoomImageUrl, handleImageError } from '../lib/images.ts';
 import { toast } from './Toasts.tsx';
 import { CANONICAL_ROOMS } from '../lib/canonicalRooms.ts';
 import AvailabilityCalendar from './AvailabilityCalendar.tsx';
+import GuestBookingBar from './GuestBookingBar.tsx';
 import { VoucherModal, normalizeVoucherData } from './receipt';
 
 export const POOL_ADDON_OPTIONS = [
@@ -46,6 +47,25 @@ export default function BookingFlow({ initialSlug }) {
       localStorage.setItem('jd_booking_checkout', checkOut);
     } catch {}
   }, [checkOut]);
+
+  const [adults, setAdults] = useState<number>(() => {
+    try {
+      const a = Number(localStorage.getItem('jd_booking_adults'));
+      return a > 0 ? a : 2;
+    } catch {
+      return 2;
+    }
+  });
+  const [childrenCount, setChildrenCount] = useState<number>(() => {
+    try {
+      const c = Number(localStorage.getItem('jd_booking_children'));
+      return c >= 0 ? c : 0;
+    } catch {
+      return 0;
+    }
+  });
+  const [roomsCount, setRoomsCount] = useState<number>(1);
+  const [promoCode, setPromoCode] = useState<string>('');
 
   const [guests, setGuests] = useState<number>(() => {
     try {
@@ -293,45 +313,43 @@ export default function BookingFlow({ initialSlug }) {
           </div>
         )}
 
-        {/* ——— the reservation bar ——— */}
-        <div className="reserve-bar">
-          <div className="rb-cell" onClick={() => setShowCalendar(true)} style={{ cursor: 'pointer' }} title="Tap to select check-in date on marked calendar">
-            <span className="rb-label">Check-in</span>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#fff', fontSize: '0.9rem', fontWeight: 600, marginTop: 4 }}>
-              <span>{checkIn}</span>
-              <span style={{ fontSize: '0.8rem', color: '#38BDF8' }}><i className="fas fa-calendar-alt" /></span>
-            </div>
-          </div>
-          <div className="rb-cell" onClick={() => setShowCalendar(true)} style={{ cursor: 'pointer' }} title="Tap to select check-out date on marked calendar">
-            <span className="rb-label">Check-out</span>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#fff', fontSize: '0.9rem', fontWeight: 600, marginTop: 4 }}>
-              <span>{checkOut}</span>
-              <span style={{ fontSize: '0.8rem', color: '#38BDF8' }}><i className="fas fa-calendar-alt" /></span>
-            </div>
-          </div>
-          <div className="rb-cell rb-guests">
-            <span className="rb-label">Guests</span>
-            <div className="qty">
-              <button onClick={() => setGuests((g) => Math.max(1, g - 1))}>−</button>
-              <b>{guests}</b>
-              <button onClick={() => setGuests((g) => Math.min(12, g + 1))}>+</button>
-            </div>
-          </div>
-          <button
-            className="btn btn-sky rb-btn"
-            disabled={searching || checkOut <= checkIn || (catalogLoaded && catalog.length === 0)}
-            onClick={() => {
-              if (catalogLoaded && catalog.length === 0) {
-                toast("There's no present room around at the moment. Please check back later.", true);
-                return;
-              }
-              search();
-            }}
-            style={catalogLoaded && catalog.length === 0 ? { opacity: 0.65, cursor: 'not-allowed', background: '#475569' } : undefined}
-          >
-            {catalogLoaded && catalog.length === 0 ? "No Rooms Around" : searching ? 'Searching…' : 'Check availability'}
-          </button>
-        </div>
+        {/* ——— MODERN DUAL-MONTH GUEST BOOKING BAR ——— */}
+        <GuestBookingBar
+          checkIn={checkIn}
+          checkOut={checkOut}
+          onSelectDates={(cin, cout) => {
+            setCheckIn(cin);
+            setCheckOut(cout);
+            try {
+              localStorage.setItem('jd_booking_checkin', cin);
+              localStorage.setItem('jd_booking_checkout', cout);
+            } catch {}
+            if (stage === 'results') {
+              search(undefined, cin, cout);
+            }
+          }}
+          adults={adults}
+          onAdultsChange={(a) => {
+            setAdults(a);
+            setGuests(a + childrenCount);
+            try { localStorage.setItem('jd_booking_adults', String(a)); } catch {}
+          }}
+          childrenCount={childrenCount}
+          onChildrenChange={(c) => {
+            setChildrenCount(c);
+            setGuests(adults + c);
+            try { localStorage.setItem('jd_booking_children', String(c)); } catch {}
+          }}
+          roomsCount={roomsCount}
+          onRoomsChange={setRoomsCount}
+          promoCode={promoCode}
+          onPromoCodeChange={setPromoCode}
+          onSearch={() => search()}
+          searching={searching}
+          catalog={catalog}
+          today={today}
+          disabledSearch={catalogLoaded && catalog.length === 0}
+        />
 
         {/* Visual Calendar Toggle Bar */}
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10, marginBottom: 14 }}>
