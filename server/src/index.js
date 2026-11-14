@@ -151,22 +151,6 @@ const staticOptions = {
 app.use('/uploads', express.static(uploadsDir, staticOptions));
 
 const dist = path.resolve(__dirname, '../../client/dist');
-const publicDir = path.resolve(__dirname, '../../client/public');
-
-// Dedicated Luxury Customer & Guest Booking Portal Route
-// Directs guest landing page (/, /customer, /client-booking) to live Supabase customer engine
-app.get(['/', '/customer', '/customer.html', '/client-booking'], (req, res, next) => {
-  if (req.query && (req.query.view === 'spa' || req.query.view === 'classic')) {
-    return next();
-  }
-  const customerPath = path.join(dist, 'customer.html');
-  const fallbackPath = path.join(publicDir, 'customer.html');
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
-  if (fs.existsSync(customerPath)) return res.sendFile(customerPath);
-  if (fs.existsSync(fallbackPath)) return res.sendFile(fallbackPath);
-  next();
-});
 
 if (fs.existsSync(dist)) {
   app.use(express.static(dist, staticOptions));

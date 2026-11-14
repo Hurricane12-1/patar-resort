@@ -222,3 +222,214 @@
   }
   .jd-stage { scroll-behavior: auto; }
 }
+
+/* =====================================================================
+   ROCK VIEW LUXURY RESORT DESIGN SYSTEM (TSX CLIENT FORMAT)
+   ===================================================================== */
+:root {
+  --bg-canvas: #FFFFFF;
+  --text-primary: #222222;
+  --text-secondary: #6A6A6A;
+  --border-hairline: #DDDDDD;
+  --border-input: #B0B0B0;
+  --brand-gold: #9E7E46;
+  --brand-gold-light: #B89658;
+  --brand-slate: #18222B;
+  --brand-coral: #FF385C;
+}
+
+.font-serif-luxury {
+  font-family: 'Playfair Display', Georgia, Cambria, serif !important;
+}
+
+.btn-airbnb-reserve {
+  background: linear-gradient(to right, #E61E4D 0%, #E31C5F 50%, #D70466 100%) !important;
+  color: #FFFFFF !important;
+  transition: transform 0.14s ease, filter 0.2s ease, box-shadow 0.2s ease !important;
+}
+.btn-airbnb-reserve:hover {
+  filter: brightness(1.04) !important;
+  box-shadow: 0 6px 16px rgba(227, 28, 95, 0.28) !important;
+}
+.btn-airbnb-reserve:active {
+  transform: scale(0.985) !important;
+}
+
+.btn-gold-luxury {
+  background: linear-gradient(135deg, #9E7E46 0%, #B89658 50%, #8E6F3B 100%) !important;
+  color: #FFFFFF !important;
+  transition: filter 0.2s ease, transform 0.14s ease !important;
+}
+.btn-gold-luxury:hover {
+  filter: brightness(1.07) !important;
+}
+.btn-gold-luxury:active {
+  transform: scale(0.985) !important;
+}
+
+@keyframes gentleWave {
+  0%, 100% { transform: translateX(0px); }
+  50% { transform: translateX(-14px); }
+}
+@keyframes sunPulse {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50% { opacity: 0.78; transform: scale(1.04); }
+}
+.animate-wave-slow {
+  animation: gentleWave 9s ease-in-out infinite !important;
+}
+.animate-sun-glow {
+  transform-origin: center !important;
+  animation: sunPulse 7s ease-in-out infinite !important;
+}
+
+.coastal-slot {
+  position: relative !important;
+  overflow: hidden !important;
+  transition: filter 0.25s ease !important;
+}
+.coastal-slot:hover {
+  filter: brightness(0.95) !important;
+}
+.slot-sky-sunset {
+  background: linear-gradient(160deg, #1E3A5F 0%, #3E6B89 42%, #D98A6C 78%, #F4C089 100%) !important;
+}
+.slot-lagoon-teal {
+  background: linear-gradient(155deg, #14495C 0%, #1F7A8C 52%, #68B0AB 100%) !important;
+}
+.slot-limestone-warm {
+  background: linear-gradient(155deg, #4A4238 0%, #7C6F5B 52%, #C9B99F 100%) !important;
+}
+.slot-horizon-dusk {
+  background: linear-gradient(160deg, #2B2D42 0%, #6D597A 48%, #E56B6F 100%) !important;
+}
+.slot-cove-emerald {
+  background: linear-gradient(155deg, #163A3D 0%, #266867 52%, #74B49B 100%) !important;
+}
+
+/* Calendar Box System */
+.cal-month-box {
+  border: 1px solid #E5E7EB !important;
+  border-radius: 12px !important;
+  background-color: #FFFFFF !important;
+  height: auto !important;
+  overflow: visible !important;
+}
+.cal-grid-7 {
+  display: grid !important;
+  grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+  gap: 5px !important;
+}
+.cal-grid-7-compact {
+  display: grid !important;
+  grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+  gap: 4px !important;
+}
+.cal-cell-inline {
+  min-height: 56px !important;
+  padding: 5px 4px !important;
+}
+.cal-cell-compact {
+  min-height: 46px !important;
+  padding: 4px 2px !important;
+}
+.cal-box-empty {
+  background-color: #FAFAFA !important;
+  border: 1px dashed #EFEFEF !important;
+  border-radius: 6px !important;
+}
+.cal-box-past {
+  background-color: #F8FAFC !important;
+  border: 1px solid #F1F5F9 !important;
+  border-radius: 6px !important;
+  color: #CBD5E1 !important;
+  cursor: not-allowed !important;
+}
+.cal-box-open {
+  background-color: #FFFFFF !important;
+  border: 1px solid #E2E8F0 !important;
+  border-radius: 6px !important;
+  color: #222222 !important;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+.cal-box-open:hover {
+  border-color: #222222 !important;
+  background-color: #F8FAFC !important;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06) !important;
+}
+.cal-box-selected {
+  background-color: #222222 !important;
+  border: 1px solid #222222 !important;
+  border-radius: 6px !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 2px 8px rgba(34, 34, 34, 0.18) !important;
+}
+.cal-box-range {
+  background-color: #F1F5F9 !important;
+  border: 1px solid #CBD5E1 !important;
+  border-radius: 6px !important;
+  color: #0F172A !important;
+  transition: border-color 0.15s ease, background-color 0.15s ease !important;
+}
+.cal-box-range:hover {
+  border-color: #222222 !important;
+  background-color: #E2E8F0 !important;
+}
+.cal-box-hover {
+  background-color: #F8FAFC !important;
+  border: 1px dashed #222222 !important;
+  border-radius: 6px !important;
+  color: #0F172A !important;
+}
+.cal-box-booked {
+  background-color: #FFF1F2 !important;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    #FFF1F2,
+    #FFF1F2 5px,
+    #FFE4E6 5px,
+    #FFE4E6 10px
+  ) !important;
+  border: 1px solid #FECDD3 !important;
+  border-radius: 6px !important;
+  color: #BE123C !important;
+}
+.cal-box-booked:hover {
+  border-color: #FB7185 !important;
+}
+.cal-box-conflict {
+  background-color: #FFE4E6 !important;
+  border: 2px solid #E11D48 !important;
+  border-radius: 6px !important;
+  color: #881337 !important;
+  animation: conflictBoxPulse 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite !important;
+}
+@keyframes conflictBoxPulse {
+  0%, 100% { border-color: #E11D48; background-color: #FFE4E6; }
+  50% { border-color: #BE123C; background-color: #FECDD3; }
+}
+.cal-box-turnaround {
+  background-color: #FFFBEB !important;
+  border: 1.5px dashed #D97706 !important;
+  border-radius: 6px !important;
+  color: #92400E !important;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease !important;
+}
+.cal-box-turnaround:hover {
+  background-color: #D97706 !important;
+  border-style: solid !important;
+  color: #FFFFFF !important;
+}
+.cal-input-active {
+  box-shadow: inset 0 0 0 2px #222222 !important;
+  background-color: #FFFFFF !important;
+}
+.live-pulse {
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7) !important;
+  animation: pulseGreen 2s infinite !important;
+}
+@keyframes pulseGreen {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
