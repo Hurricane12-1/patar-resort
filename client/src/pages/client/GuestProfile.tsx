@@ -407,12 +407,17 @@ function PersonalSection() {
             <TextField
               label="Mobile number"
               type="tel"
-              inputMode="tel"
+              inputMode="numeric"
+              maxLength={11}
               value={form.phone}
-              onChange={(v) => setForm({ ...form, phone: v })}
+              onChange={(v) => {
+                let digits = v.replace(/\D/g, '');
+                if (digits.startsWith('63') && digits.length >= 3) digits = '0' + digits.slice(2);
+                setForm({ ...form, phone: digits.slice(0, 11) });
+              }}
               autoComplete="tel"
-              placeholder="09XX XXX XXXX"
-              hint="Philippine mobile. Your keypad PIN is sent here."
+              placeholder="09171234567"
+              hint={form.phone ? `${form.phone.length}/11 digits · Philippine mobile for keypad PIN` : "11 digits starting with 09 (e.g. 09171234567)"}
               error={errors.phone}
             />
           </div>
@@ -552,7 +557,21 @@ function EmergencySection() {
           <div className="grid gap-4 sm:grid-cols-2">
             <TextField className="sm:col-span-2" label="Full name" value={form.emergencyName} onChange={(v) => setForm({ ...form, emergencyName: v })} autoComplete="off" error={errors.emergencyName} />
             <SelectField label="Relationship" value={form.emergencyRelation} onChange={(v) => setForm({ ...form, emergencyRelation: v })} options={RELATIONS} />
-            <TextField label="Mobile number" type="tel" inputMode="tel" value={form.emergencyPhone} onChange={(v) => setForm({ ...form, emergencyPhone: v })} placeholder="09XX XXX XXXX" error={errors.emergencyPhone} />
+            <TextField
+              label="Mobile number"
+              type="tel"
+              inputMode="numeric"
+              maxLength={11}
+              value={form.emergencyPhone}
+              onChange={(v) => {
+                let digits = v.replace(/\D/g, '');
+                if (digits.startsWith('63') && digits.length >= 3) digits = '0' + digits.slice(2);
+                setForm({ ...form, emergencyPhone: digits.slice(0, 11) });
+              }}
+              placeholder="09171234567"
+              hint={form.emergencyPhone ? `${form.emergencyPhone.length}/11 digits` : "11 digits starting with 09"}
+              error={errors.emergencyPhone}
+            />
           </div>
           <FormActions onCancel={() => setEditing(false)} saving={saving} />
         </form>

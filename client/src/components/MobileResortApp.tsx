@@ -2200,20 +2200,53 @@ export default function MobileResortApp() {
                     />
                   </div>
                   <div>
-                    <label htmlFor="reserve-phone" className="block text-xs font-semibold text-[#222222] mb-1">Philippine Mobile (SMS PIN alert)</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label htmlFor="reserve-phone" className="block text-xs font-semibold text-[#222222]">
+                        Philippine Mobile (SMS PIN alert)
+                      </label>
+                      <span className={`text-[11px] font-semibold transition-colors ${
+                        guestPhone.length === 11 && guestPhone.startsWith('09')
+                          ? 'text-emerald-600'
+                          : guestPhone.length > 0 && !guestPhone.startsWith('09')
+                          ? 'text-rose-600'
+                          : guestPhone.length > 0
+                          ? 'text-amber-600'
+                          : 'text-[#717171]'
+                      }`}>
+                        {guestPhone.length === 11 && guestPhone.startsWith('09')
+                          ? '✓ 11/11 digits'
+                          : guestPhone.length > 0 && !guestPhone.startsWith('09')
+                          ? 'Must start with 09'
+                          : guestPhone.length > 0
+                          ? `${guestPhone.length}/11 digits`
+                          : '11 digits only (09...)'}
+                      </span>
+                    </div>
                     <input
                       id="reserve-phone"
                       type="tel"
                       required
-                      inputMode="tel"
+                      inputMode="numeric"
                       autoComplete="tel"
+                      maxLength={11}
+                      pattern="09[0-9]{9}"
                       value={guestPhone}
                       onChange={(e) => {
-                        setGuestPhone(e.target.value);
+                        let digits = e.target.value.replace(/\D/g, '');
+                        if (digits.startsWith('63') && digits.length >= 3) {
+                          digits = '0' + digits.slice(2);
+                        }
+                        setGuestPhone(digits.slice(0, 11));
                         if (reserveError) setReserveError(null);
                       }}
                       placeholder="09171234567"
-                      className="w-full px-3.5 py-2.5 rounded-lg border border-[#B0B0B0] text-sm focus:outline-none focus:border-[#222222]"
+                      className={`w-full px-3.5 py-2.5 rounded-lg border text-sm transition-colors focus:outline-none ${
+                        guestPhone.length === 11 && guestPhone.startsWith('09')
+                          ? 'border-emerald-500 focus:border-emerald-600'
+                          : guestPhone.length > 0 && (!guestPhone.startsWith('09') || guestPhone.length < 11)
+                          ? 'border-amber-400 focus:border-amber-500'
+                          : 'border-[#B0B0B0] focus:border-[#222222]'
+                      }`}
                     />
                   </div>
                   <div>
