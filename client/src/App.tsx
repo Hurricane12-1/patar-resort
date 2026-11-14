@@ -38,6 +38,7 @@ import RecoveryPortal from './pages/recovery/RecoveryPortal.tsx';
 // Namespace 4: /client Pages (End-User Self-Service & Portal)
 import ResortCustomer from './pages/ResortCustomer.tsx';
 import MyBookings from './pages/MyBookings.tsx';
+import ResidentLogin from './components/ResidentLogin.tsx';
 
 function StaffPortalLanding() {
   const { adminProfile, profile } = useAuth();
@@ -59,8 +60,8 @@ function MainAppShell() {
   const location = useLocation();
   const path = location.pathname.toLowerCase();
 
-  // Determine whether current route is within an internal employee/governance namespace
-  const isInternalStaffPortal = ['/admin', '/staff', '/recovery'].some((p) =>
+  // Determine whether current route is within a dedicated portal or authentication namespace
+  const isDedicatedPortal = ['/admin', '/staff', '/recovery', '/client', '/user'].some((p) =>
     path.startsWith(p)
   );
 
@@ -70,11 +71,13 @@ function MainAppShell() {
     '/receptionist',
     '/accounting',
     '/resort-department',
+    '/my-bookings',
+    '/resort-customer',
   ].some((p) => path.startsWith(p));
 
   const isGuestHome = path === '/' || path === '/guest';
-  const hideNavbarAndFooter = isInternalStaffPortal || isLegacyInternal || isGuestHome;
-  const hideChatbot = isInternalStaffPortal || isLegacyInternal;
+  const hideNavbarAndFooter = isDedicatedPortal || isLegacyInternal || isGuestHome;
+  const hideChatbot = isDedicatedPortal || isLegacyInternal;
 
   return (
     <div className="app-shell">
@@ -164,8 +167,10 @@ function MainAppShell() {
           } />
 
           {/* ============================================================ */}
-          {/* NAMESPACE 4: /client (End-User Self-Service & Portal)         */}
+          {/* NAMESPACE 4: /client & /user (Resident Self-Service & Portal) */}
           {/* ============================================================ */}
+          <Route path="/client/login" element={<ResidentLogin returnTo="/client" />} />
+          <Route path="/user/login" element={<ResidentLogin returnTo="/client" />} />
           <Route path="/client" element={
             <ClientGuard>
               <ClientLayout>
@@ -195,9 +200,8 @@ function MainAppShell() {
             </ClientGuard>
           } />
 
-          {/* Legacy Client & /user Route Aliases -> Redirect to /client/* */}
+          {/* User Route Aliases */}
           <Route path="/user" element={<Navigate to="/client" replace />} />
-          <Route path="/user/login" element={<Navigate to="/client" replace />} />
           <Route path="/user/bookings" element={<Navigate to="/client/bookings" replace />} />
           <Route path="/user/*" element={<Navigate to="/client" replace />} />
           <Route path="/my-bookings" element={<Navigate to="/client/bookings" replace />} />

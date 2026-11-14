@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.tsx';
 import { toast } from './Toasts.tsx';
 import { canAccessPortal, isInternalEmployee, PortalKey } from '../lib/rbac.ts';
+import ResidentLogin from './ResidentLogin.tsx';
 
 /* ── tiny animated particle field ── */
 function Particles({ count = 30, color = 'rgba(56,189,248,0.15)' }) {
@@ -103,6 +104,10 @@ export default function ProtectedRoute({
   }
 
   if (isAuthorized) return children;
+
+  if (isCustomerOnly) {
+    return <ResidentLogin returnTo={window.location.pathname} />;
+  }
 
   const isCustomer = isCustomerOnly;
   const isAdmin = allowedRoles.includes('administrator');

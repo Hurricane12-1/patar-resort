@@ -1,0 +1,635 @@
+/* ==========================================================================
+   ROCK VIEW BEACH RESORT · RESIDENT GUEST PORTAL LOGIN STYLESHEET
+   Deep Blue Marine Palette · 50/50 Half-and-Half Responsive Split Layout
+   Clean, modern authentication with Google, Facebook, manual login & recovery.
+   Strictly zero (/client) markers in UI.
+   ========================================================================== */
+
+:root {
+  --rl-marine-950: #020713;
+  --rl-marine-900: #040e22;
+  --rl-marine-850: #061533;
+  --rl-marine-800: #081d45;
+  --rl-marine-700: #0c275e;
+  --rl-azure-500:  #0ea5e9;
+  --rl-cyan-400:   #38bdf8;
+  --rl-blue-600:   #2563eb;
+  --rl-glow:       rgba(56, 189, 248, 0.25);
+  --rl-border:     rgba(56, 189, 248, 0.22);
+}
+
+/* ── Fullscreen Split Viewport ── */
+.rl-viewport {
+  min-height: 100vh;
+  width: 100vw;
+  display: flex;
+  background: var(--rl-marine-950);
+  color: #f1f5f9;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  position: relative;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
+   LEFT PANE: 50% Atmospheric Resort Showcase (Desktop)
+   ========================================================================== */
+.rl-showcase {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: clamp(24px, 3.5vw, 48px);
+  background: linear-gradient(135deg, rgba(3, 11, 26, 0.94) 0%, rgba(6, 21, 51, 0.88) 50%, rgba(8, 29, 69, 0.96) 100%),
+              url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80') center/cover no-repeat;
+  border-right: 1px solid rgba(56, 189, 248, 0.18);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Ambient glow orb on showcase */
+.rl-showcase__glow {
+  position: absolute;
+  top: -100px;
+  left: -100px;
+  width: 450px;
+  height: 450px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(14, 165, 233, 0.25) 0%, transparent 70%);
+  pointer-events: none;
+  filter: blur(50px);
+}
+
+.rl-showcase__glow-bottom {
+  position: absolute;
+  bottom: -120px;
+  right: -80px;
+  width: 480px;
+  height: 480px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.22) 0%, transparent 70%);
+  pointer-events: none;
+  filter: blur(60px);
+}
+
+/* Showcase Header Badge */
+.rl-showcase__header {
+  position: relative;
+  z-index: 2;
+}
+
+.rl-brand-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(6, 22, 51, 0.75);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 9999px;
+  color: #38bdf8;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3);
+}
+
+/* Showcase Main Editorial Content */
+.rl-showcase__content {
+  position: relative;
+  z-index: 2;
+  max-width: 540px;
+  margin: 18px 0;
+}
+
+.rl-showcase__title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(1.8rem, 2.8vw, 2.6rem);
+  font-weight: 600;
+  line-height: 1.15;
+  color: #ffffff;
+  margin: 0 0 12px;
+  letter-spacing: -0.01em;
+}
+
+.rl-showcase__title span {
+  background: linear-gradient(135deg, #38bdf8 0%, #60a5fa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.rl-showcase__lead {
+  font-size: clamp(0.9rem, 1.05vw, 1rem);
+  line-height: 1.55;
+  color: #94a3b8;
+  margin: 0 0 20px;
+}
+
+/* Feature Perks List */
+.rl-perks {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rl-perk {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 12px 16px;
+  background: rgba(4, 15, 36, 0.6);
+  border: 1px solid rgba(56, 189, 248, 0.15);
+  border-radius: 14px;
+  backdrop-filter: blur(8px);
+  transition: all 0.25s ease;
+}
+
+.rl-perk:hover {
+  background: rgba(8, 27, 65, 0.75);
+  border-color: rgba(56, 189, 248, 0.35);
+  transform: translateX(4px);
+}
+
+.rl-perk__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(14, 165, 233, 0.18);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #38bdf8;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
+.rl-perk__title {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #f8fafc;
+  margin: 0 0 2px;
+}
+
+.rl-perk__desc {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Showcase Footer */
+.rl-showcase__footer {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.rl-rating-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: #e2e8f0;
+}
+
+.rl-stars {
+  color: #fbbf24;
+  font-size: 0.85rem;
+}
+
+.rl-location-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+/* ==========================================================================
+   RIGHT PANE: 50% Deep Blue Marine Authentication Card
+   ========================================================================== */
+.rl-auth-pane {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(24px, 4vw, 48px);
+  background: radial-gradient(ellipse at 70% 30%, #071936 0%, #030c1a 75%);
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.rl-card {
+  width: 100%;
+  max-width: 470px;
+  background: rgba(6, 20, 46, 0.88);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  border-radius: 24px;
+  padding: clamp(28px, 4vw, 40px);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7),
+              0 0 45px rgba(14, 165, 233, 0.12),
+              inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  box-sizing: border-box;
+  position: relative;
+  z-index: 10;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.rl-card:hover {
+  border-color: rgba(56, 189, 248, 0.38);
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.8),
+              0 0 55px rgba(14, 165, 233, 0.18);
+}
+
+/* Top Accent Glow Strip */
+.rl-card__strip {
+  position: absolute;
+  top: 0;
+  left: 20%;
+  right: 20%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #38bdf8, #2563eb, transparent);
+  border-radius: 2px;
+}
+
+/* Card Header */
+.rl-card__head {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.rl-card__icon-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.25), rgba(37, 99, 235, 0.4));
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  box-shadow: 0 0 35px rgba(14, 165, 233, 0.3);
+  margin-bottom: 14px;
+}
+
+.rl-card__resort-name {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 1.45rem;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.rl-card__portal-tag {
+  display: inline-block;
+  font-size: 0.68rem;
+  letter-spacing: 0.22em;
+  color: #38bdf8;
+  font-weight: 800;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.rl-card__title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 1.55rem;
+  color: #ffffff;
+  margin: 12px 0 6px;
+  font-weight: 600;
+}
+
+.rl-card__subtitle {
+  color: #94a3b8;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* Social Buttons Grid */
+.rl-social-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.rl-btn-social {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  transition: all 0.25s ease;
+  outline: none;
+  font-family: inherit;
+}
+
+.rl-btn-social--google {
+  background: #ffffff;
+  color: #0f172a;
+  border-color: #e2e8f0;
+}
+
+.rl-btn-social--google:hover {
+  background: #f8fafc;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(255, 255, 255, 0.2);
+}
+
+.rl-btn-social--facebook {
+  background: #1877f2;
+  color: #ffffff;
+  border-color: #1877f2;
+}
+
+.rl-btn-social--facebook:hover {
+  background: #166fe5;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(24, 119, 242, 0.4);
+}
+
+/* Divider */
+.rl-divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 18px 0 22px;
+  color: #64748b;
+  font-size: 0.74rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.rl-divider::before,
+.rl-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Form Fields */
+.rl-form-group {
+  margin-bottom: 16px;
+}
+
+.rl-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #94a3b8;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.rl-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.rl-input-icon {
+  position: absolute;
+  left: 14px;
+  color: #64748b;
+  font-size: 0.95rem;
+  pointer-events: none;
+}
+
+.rl-input {
+  width: 100%;
+  padding: 13px 44px 13px 40px;
+  background: rgba(8, 25, 54, 0.75);
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  border-radius: 12px;
+  color: #f1f5f9;
+  font-size: 0.92rem;
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.25s ease;
+}
+
+.rl-input:focus {
+  border-color: #38bdf8;
+  background: rgba(12, 34, 74, 0.85);
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+}
+
+.rl-eye-btn {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 6px;
+  transition: color 0.2s ease;
+}
+
+.rl-eye-btn:hover {
+  color: #38bdf8;
+}
+
+/* Forgot Row */
+.rl-forgot-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+}
+
+.rl-forgot-link {
+  background: none;
+  border: none;
+  color: #38bdf8;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.rl-forgot-link:hover {
+  color: #60a5fa;
+  text-decoration: underline;
+}
+
+/* Submit CTA Button */
+.rl-submit-btn {
+  width: 100%;
+  padding: 14px 20px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  background: linear-gradient(135deg, #0284c7 0%, #2563eb 50%, #1d4ed8 100%);
+  color: #ffffff;
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 8px 25px rgba(37, 99, 235, 0.35);
+  transition: all 0.25s ease;
+  font-family: inherit;
+}
+
+.rl-submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(14, 165, 233, 0.45);
+  background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 50%, #2563eb 100%);
+}
+
+.rl-submit-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Spinner */
+.rl-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: rl-spin 0.75s linear infinite;
+}
+
+@keyframes rl-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Footer Return Link */
+.rl-card__footer {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: center;
+}
+
+.rl-return-link {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  text-decoration: none;
+  transition: color 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rl-return-link:hover {
+  color: #38bdf8;
+}
+
+/* Trust Badges */
+.rl-trust-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 20px;
+  font-size: 0.72rem;
+  color: #64748b;
+  letter-spacing: 0.04em;
+}
+
+.rl-trust-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ==========================================================================
+   ACCOUNT RECOVERY / FORGOT ACCOUNT IN-CARD VIEW
+   ========================================================================== */
+.rl-recovery-box {
+  animation: rl-fadeIn 0.3s ease;
+}
+
+@keyframes rl-fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.rl-recovery-back {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 16px;
+  padding: 0;
+  transition: color 0.2s ease;
+}
+
+.rl-recovery-back:hover {
+  color: #38bdf8;
+}
+
+/* ==========================================================================
+   RESPONSIVE QUERIES
+   ========================================================================== */
+@media (max-width: 991px) {
+  .rl-viewport {
+    flex-direction: column;
+  }
+
+  .rl-showcase {
+    flex: none;
+    padding: 32px 24px;
+    border-right: none;
+    border-bottom: 1px solid rgba(56, 189, 248, 0.18);
+  }
+
+  .rl-showcase__content {
+    margin: 16px 0;
+  }
+
+  .rl-showcase__title {
+    font-size: 1.8rem;
+  }
+
+  .rl-perks {
+    display: none; /* Keep mobile view compact */
+  }
+
+  .rl-auth-pane {
+    padding: 28px 16px;
+  }
+
+  .rl-card {
+    padding: 24px 20px;
+  }
+
+  .rl-social-grid {
+    grid-template-columns: 1fr;
+  }
+}

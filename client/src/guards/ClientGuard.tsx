@@ -1,23 +1,23 @@
 import React from 'react';
-import ProtectedRoute from '../components/ProtectedRoute.tsx';
+import ResidentLogin from '../components/ResidentLogin.tsx';
+import { useAuth } from '../context/AuthContext.tsx';
 
 interface ClientGuardProps {
   children: React.ReactNode;
 }
 
 /**
- * ClientGuard - Strictly isolates the /client namespace.
+ * ClientGuard - Strictly isolates the resident customer namespace (/client).
  * End-User Self-Service & Portal: Authenticated resident customers only.
- * Clients never see internal operational controls.
+ * When unauthenticated, renders the half-and-half deep blue marine Resident Guest Portal login.
  */
 export default function ClientGuard({ children }: ClientGuardProps) {
-  return (
-    <ProtectedRoute
-      allowedRoles={['customer']}
-      portalTitle="Residents'"
-      buttonText="Sign in to residents'"
-    >
-      {children}
-    </ProtectedRoute>
-  );
+  const { customerSession, customerProfile } = useAuth();
+  const isAuthorized = Boolean(customerSession && customerProfile);
+
+  if (isAuthorized) {
+    return <>{children}</>;
+  }
+
+  return <ResidentLogin returnTo={window.location.pathname} />;
 }
