@@ -511,7 +511,7 @@ export default function MobileResortApp() {
   };
 
   // ---------------------------------------------------------------------------
-  // 4. MONTH GRID BUILDER
+  // 4. MONTH GRID BUILDER (Single Big Calendar View)
   // ---------------------------------------------------------------------------
   const renderMonthGrid = (ym: YearMonth) => {
     const firstDow = new Date(ym.y, ym.m - 1, 1).getDay(); // 0..6
@@ -520,7 +520,7 @@ export default function MobileResortApp() {
 
     // Leading blanks
     for (let i = 0; i < firstDow; i++) {
-      cells.push(<div key={`blank-${i}`} className="cal-cell-inline cal-box-empty" />);
+      cells.push(<div key={`blank-${i}`} className="cal-cell-big cal-box-empty rounded-[8px]" />);
     }
 
     // Days 1..daysInMonth
@@ -553,25 +553,25 @@ export default function MobileResortApp() {
           disabled={isPast}
           onClick={() => handleDateClick(isoStr)}
           onMouseEnter={() => !checkOut && setHoverDate(isoStr)}
-          className={`cal-cell-inline rounded-[6px] flex flex-col justify-between text-left transition ${cellClass}`}
+          className={`cal-cell-big rounded-[8px] flex flex-col justify-between text-left transition ${cellClass}`}
         >
           <div className="flex items-center justify-between w-full">
-            <span className="text-[12px] font-bold leading-none">{day}</span>
+            <span className="text-sm sm:text-base font-bold leading-none">{day}</span>
             {isSelectedIn && (
-              <span className="text-[9px] font-extrabold uppercase bg-white text-black px-1 rounded-xs">
+              <span className="text-[10px] font-black uppercase bg-white text-black px-1.5 py-0.5 rounded-[4px] tracking-wider">
                 IN
               </span>
             )}
             {isSelectedOut && (
-              <span className="text-[9px] font-extrabold uppercase bg-white text-black px-1 rounded-xs">
+              <span className="text-[10px] font-black uppercase bg-white text-black px-1.5 py-0.5 rounded-[4px] tracking-wider">
                 OUT
               </span>
             )}
             {isBooked && !isSelectedIn && !isSelectedOut && (
-              <span className="text-[8px] font-bold text-rose-700 uppercase">Booked</span>
+              <span className="text-[9px] font-bold text-rose-700 uppercase">Booked</span>
             )}
           </div>
-          <span className="text-[10px] font-medium opacity-80 leading-none mt-1">
+          <span className="text-[11px] sm:text-xs font-semibold opacity-85 leading-none mt-1">
             {formatCompactRate(rate)}
           </span>
         </button>
@@ -1349,81 +1349,67 @@ export default function MobileResortApp() {
                 </button>
               </div>
 
-              {/* Dual-Month Side-by-Side Box Cards */}
+              {/* Single Large Calendar View */}
               <div>
-                {/* Month Navigator Header */}
-                <div className="flex items-center justify-between gap-3 mb-4">
-                  <button
-                    onClick={() => setInlineYM(shiftYM(inlineYM, -1))}
-                    type="button"
-                    className="px-3 h-9 rounded-lg border border-[#CBD5E1] hover:border-[#222222] bg-white flex items-center justify-center gap-1 text-xs font-bold text-[#222222] transition cursor-pointer"
-                  >
-                    ‹ Prev
-                  </button>
-                  <span className="text-xs font-semibold uppercase tracking-wider text-[#64748B]">
-                    Select Check-In &amp; Check-Out Boxes
-                  </span>
-                  <button
-                    onClick={() => setInlineYM(shiftYM(inlineYM, 1))}
-                    type="button"
-                    className="px-3 h-9 rounded-lg border border-[#CBD5E1] hover:border-[#222222] bg-white flex items-center justify-center gap-1 text-xs font-bold text-[#222222] transition cursor-pointer"
-                  >
-                    Next ›
-                  </button>
-                </div>
+                {/* Single Month Box Card */}
+                <div className="cal-month-box p-4 sm:p-6 shadow-sm border border-[#DDDDDD] rounded-2xl bg-white" onMouseLeave={() => setHoverDate(null)}>
+                  
+                  {/* Big Month Navigation Header */}
+                  <div className="flex items-center justify-between pb-4 mb-4 border-b border-[#E5E7EB]">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setInlineYM(shiftYM(inlineYM, -1))}
+                        type="button"
+                        aria-label="Previous month"
+                        className="px-3 sm:px-4 h-9 sm:h-10 rounded-xl border border-[#CBD5E1] hover:border-[#222222] hover:bg-[#F8FAFC] bg-white flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold text-[#222222] transition cursor-pointer"
+                      >
+                        ‹ Prev
+                      </button>
+                      <button
+                        onClick={() => setInlineYM(shiftYM(inlineYM, 1))}
+                        type="button"
+                        aria-label="Next month"
+                        className="px-3 sm:px-4 h-9 sm:h-10 rounded-xl border border-[#CBD5E1] hover:border-[#222222] hover:bg-[#F8FAFC] bg-white flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold text-[#222222] transition cursor-pointer"
+                      >
+                        Next ›
+                      </button>
+                    </div>
 
-                {/* 2 Month Cards Grid (Side-by-Side on md+) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5" onMouseLeave={() => setHoverDate(null)}>
-                  {/* Left Month */}
-                  <div className="cal-month-box p-3.5 sm:p-4 shadow-2xs">
-                    <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-[#E5E7EB]">
-                      <h5 className="text-[15px] font-bold text-[#222222]">
+                    <div className="text-center">
+                      <h5 className="text-lg sm:text-2xl font-bold text-[#222222] tracking-tight">
                         {MONTH_NAMES[inlineYM.m]} {inlineYM.y}
                       </h5>
-                      <span className="text-[11px] font-medium text-[#64748B]">₱ / night</span>
                     </div>
-                    {/* Weekday Labels */}
-                    <div className="cal-grid-7 mb-[5px] text-center">
-                      {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((w, i) => (
-                        <div key={i} className={`py-1.5 rounded-[6px] bg-[#F8FAFC] border border-[#E5E7EB] text-[11px] font-bold ${i >= 5 ? 'text-[#0F172A]' : 'text-[#475569]'}`}>
-                          {w}
-                        </div>
-                      ))}
-                    </div>
-                    <div className="cal-grid-7">
-                      {renderMonthGrid(inlineYM)}
-                    </div>
+
+                    <span className="text-xs font-semibold text-[#64748B] bg-[#F1F5F9] px-3 py-1.5 rounded-lg border border-[#E2E8F0] hidden sm:inline-block">
+                      ₱ / night
+                    </span>
                   </div>
 
-                  {/* Right Month */}
-                  {(() => {
-                    const rightYM = shiftYM(inlineYM, 1);
-                    return (
-                      <div className="cal-month-box p-3.5 sm:p-4 shadow-2xs">
-                        <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-[#E5E7EB]">
-                          <h5 className="text-[15px] font-bold text-[#222222]">
-                            {MONTH_NAMES[rightYM.m]} {rightYM.y}
-                          </h5>
-                          <span className="text-[11px] font-medium text-[#64748B]">₱ / night</span>
-                        </div>
-                        <div className="cal-grid-7 mb-[5px] text-center">
-                          {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((w, i) => (
-                            <div key={i} className={`py-1.5 rounded-[6px] bg-[#F8FAFC] border border-[#E5E7EB] text-[11px] font-bold ${i >= 5 ? 'text-[#0F172A]' : 'text-[#475569]'}`}>
-                              {w}
-                            </div>
-                          ))}
-                        </div>
-                        <div className="cal-grid-7">
-                          {renderMonthGrid(rightYM)}
-                        </div>
+                  {/* Weekday Labels (Sun - Sat) */}
+                  <div className="grid grid-cols-7 gap-1.5 sm:gap-2.5 mb-2 text-center">
+                    {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((w, i) => (
+                      <div
+                        key={i}
+                        className={`py-2 rounded-lg bg-[#F8FAFC] border border-[#E5E7EB] text-xs sm:text-sm font-bold ${
+                          i === 0 || i === 6 ? 'text-[#0F172A]' : 'text-[#475569]'
+                        }`}
+                      >
+                        <span className="hidden md:inline">{w}</span>
+                        <span className="md:hidden">{w.slice(0, 3)}</span>
                       </div>
-                    );
-                  })()}
+                    ))}
+                  </div>
+
+                  {/* Big Days Grid */}
+                  <div className="grid grid-cols-7 gap-1.5 sm:gap-2.5">
+                    {renderMonthGrid(inlineYM)}
+                  </div>
                 </div>
 
                 {/* Calendar Legend */}
                 <div className="mt-5 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-xs text-[#475569]">
-                  <div className="flex flex-wrap items-center gap-3.5 sm:gap-4">
+                  <div className="flex flex-wrap items-center gap-3.5 sm:gap-5">
                     <span className="inline-flex items-center gap-1.5 font-medium text-[#222222]">
                       <span className="w-4 h-4 rounded-[4px] bg-white border border-[#E2E8F0] inline-block"></span> Available Box
                     </span>
