@@ -14,7 +14,8 @@ export default function ClientGuard({ children }: ClientGuardProps) {
   return (
     <ProtectedRoute
       allowedRoles={['customer']}
-      portalTitle="Resident Guest Portal (/client)"
+      portalTitle="Residents'"
+      buttonText="Sign in to residents'"
     >
       {children}
     </ProtectedRoute>

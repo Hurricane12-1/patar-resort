@@ -13,7 +13,8 @@ export default function AdminGuard({ children }: AdminGuardProps) {
   return (
     <ProtectedRoute
       allowedRoles={['administrator', 'admin']}
-      portalTitle="Governance & System Control (/admin)"
+      portalTitle="Governance & System Control"
+      buttonText="Sign In to Administration"
     >
       {children}
     </ProtectedRoute>

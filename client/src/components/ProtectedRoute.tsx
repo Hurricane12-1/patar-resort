@@ -46,11 +46,13 @@ export default function ProtectedRoute({
   children,
   allowedRoles = [],
   portalTitle = 'Restricted Portal',
+  buttonText,
   requiredPortal,
 }: {
   children: any;
   allowedRoles?: string[];
   portalTitle?: string;
+  buttonText?: string;
   requiredPortal?: PortalKey;
 }) {
   const {
@@ -310,7 +312,7 @@ export default function ProtectedRoute({
                   animation: 'gate-spin 0.8s linear infinite', display: 'inline-block',
                 }} />
               )}
-              {loading ? 'Authenticating…' : `Sign In to ${portalTitle}`}
+              {loading ? 'Authenticating…' : (buttonText || `Sign In to ${portalTitle}`)}
             </button>
           </form>
 
