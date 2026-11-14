@@ -1599,7 +1599,7 @@ export default function MobileResortApp() {
                 </div>
               )}
 
-              {/* Primary Coral-Rose Reserve CTA */}
+              {/* Primary Blue Reserve CTA */}
               <button
                 type="button"
                 onClick={() => {
@@ -1613,7 +1613,7 @@ export default function MobileResortApp() {
                 }}
                 className="btn-airbnb-reserve w-full h-12 rounded-[8px] text-[15px] font-semibold tracking-wide cursor-pointer flex items-center justify-center"
               >
-                {checkIn && checkOut ? 'Reserve Villa' : 'Check availability'}
+                {checkIn && checkOut ? 'Reserve' : 'Check availability'}
               </button>
 
               <p className="text-center text-xs text-[#6A6A6A] mt-3">
@@ -1882,7 +1882,7 @@ export default function MobileResortApp() {
                   </div>
                   <div className="pt-2.5 border-t border-[#DDDDDD] flex justify-between font-bold text-base text-[#222222]">
                     <span>Total</span>
-                    <span className="text-[#FF385C]">{formatPHP(priceBreakdown.grandTotal)}</span>
+                    <span className="text-[#1D4ED8]">{formatPHP(priceBreakdown.grandTotal)}</span>
                   </div>
                 </div>
 

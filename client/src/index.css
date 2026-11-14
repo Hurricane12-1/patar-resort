@@ -243,13 +243,13 @@
 }
 
 .btn-airbnb-reserve {
-  background: linear-gradient(to right, #E61E4D 0%, #E31C5F 50%, #D70466 100%) !important;
+  background: linear-gradient(to right, #0284C7 0%, #2563EB 50%, #1D4ED8 100%) !important;
   color: #FFFFFF !important;
   transition: transform 0.14s ease, filter 0.2s ease, box-shadow 0.2s ease !important;
 }
 .btn-airbnb-reserve:hover {
-  filter: brightness(1.04) !important;
-  box-shadow: 0 6px 16px rgba(227, 28, 95, 0.28) !important;
+  filter: brightness(1.06) !important;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35) !important;
 }
 .btn-airbnb-reserve:active {
   transform: scale(0.985) !important;
