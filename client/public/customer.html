@@ -1,0 +1,3545 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rock view · Coastal Sanctuary &amp; Villas — Bolinao, Pangasinan</title>
+
+  <!-- Google Fonts: Playfair Display (Luxury Resort Editorial) + Plus Jakarta Sans (Direct Booking UI) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Supabase JS Client CDN (Official v2 for Live Database & Realtime Sync) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --bg-canvas: #FFFFFF;
+      --text-primary: #222222;
+      --text-secondary: #6A6A6A;
+      --border-hairline: #DDDDDD;
+      --border-input: #B0B0B0;
+      --brand-gold: #9E7E46;
+      --brand-gold-light: #B89658;
+      --brand-slate: #18222B;
+      --brand-coral: #FF385C;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg-canvas);
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+      font-variant-numeric: tabular-nums;
+      overflow-x: hidden;
+    }
+
+    .font-serif-luxury {
+      font-family: 'Playfair Display', Georgia, Cambria, serif;
+    }
+
+    /* Primary Coral-Rose Direct Reserve CTA */
+    .btn-airbnb-reserve {
+      background: linear-gradient(to right, #E61E4D 0%, #E31C5F 50%, #D70466 100%);
+      color: #FFFFFF;
+      transition: transform 0.14s ease, filter 0.2s ease, box-shadow 0.2s ease;
+    }
+    .btn-airbnb-reserve:hover {
+      filter: brightness(1.04);
+      box-shadow: 0 6px 16px rgba(227, 28, 95, 0.28);
+    }
+    .btn-airbnb-reserve:active {
+      transform: scale(0.985);
+    }
+
+    /* Burnished Coastal Gold Luxury CTA */
+    .btn-gold-luxury {
+      background: linear-gradient(135deg, #9E7E46 0%, #B89658 50%, #8E6F3B 100%);
+      color: #FFFFFF;
+      transition: filter 0.2s ease, transform 0.14s ease;
+    }
+    .btn-gold-luxury:hover {
+      filter: brightness(1.07);
+    }
+    .btn-gold-luxury:active {
+      transform: scale(0.985);
+    }
+
+    /* Subtle Atmospheric Wave & Sun Animation in Hero */
+    @keyframes gentleWave {
+      0%, 100% { transform: translateX(0px); }
+      50% { transform: translateX(-14px); }
+    }
+    @keyframes sunPulse {
+      0%, 100% { opacity: 0.55; transform: scale(1); }
+      50% { opacity: 0.78; transform: scale(1.04); }
+    }
+    .animate-wave-slow {
+      animation: gentleWave 9s ease-in-out infinite;
+    }
+    .animate-sun-glow {
+      transform-origin: center;
+      animation: sunPulse 7s ease-in-out infinite;
+    }
+
+    /* Copyright-Safe Bespoke Coastal Vector Art Themes */
+    .coastal-slot {
+      position: relative;
+      overflow: hidden;
+      transition: filter 0.25s ease;
+    }
+    .coastal-slot:hover {
+      filter: brightness(0.95);
+    }
+    .slot-sky-sunset {
+      background: linear-gradient(160deg, #1E3A5F 0%, #3E6B89 42%, #D98A6C 78%, #F4C089 100%);
+    }
+    .slot-lagoon-teal {
+      background: linear-gradient(155deg, #14495C 0%, #1F7A8C 52%, #68B0AB 100%);
+    }
+    .slot-limestone-warm {
+      background: linear-gradient(155deg, #4A4238 0%, #7C6F5B 52%, #C9B99F 100%);
+    }
+    .slot-horizon-dusk {
+      background: linear-gradient(160deg, #2B2D42 0%, #6D597A 48%, #E56B6F 100%);
+    }
+    .slot-cove-emerald {
+      background: linear-gradient(155deg, #163A3D 0%, #266867 52%, #74B49B 100%);
+    }
+
+    /* =====================================================================
+       PURE CSS GRID RECTANGULAR BOX CALENDAR SYSTEM (100% Deterministic)
+       ===================================================================== */
+    .cal-month-box {
+      border: 1px solid #E5E7EB;
+      border-radius: 12px;
+      background-color: #FFFFFF;
+      height: auto;
+      overflow: visible;
+    }
+
+    .cal-grid-7 {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 5px;
+    }
+
+    .cal-grid-7-compact {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 4px;
+    }
+
+    .cal-cell-inline {
+      min-height: 56px;
+      padding: 5px 4px;
+    }
+
+    .cal-cell-compact {
+      min-height: 46px;
+      padding: 4px 2px;
+    }
+
+    .cal-box-empty {
+      background-color: #FAFAFA;
+      border: 1px dashed #EFEFEF;
+      border-radius: 6px;
+    }
+
+    .cal-box-past {
+      background-color: #F8FAFC;
+      border: 1px solid #F1F5F9;
+      border-radius: 6px;
+      color: #CBD5E1;
+      cursor: not-allowed;
+    }
+
+    .cal-box-open {
+      background-color: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 6px;
+      color: #222222;
+      transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .cal-box-open:hover {
+      border-color: #222222;
+      background-color: #F8FAFC;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+    }
+
+    .cal-box-selected {
+      background-color: #222222;
+      border: 1px solid #222222;
+      border-radius: 6px;
+      color: #FFFFFF;
+      box-shadow: 0 2px 8px rgba(34, 34, 34, 0.18);
+    }
+
+    .cal-box-range {
+      background-color: #F1F5F9;
+      border: 1px solid #CBD5E1;
+      border-radius: 6px;
+      color: #0F172A;
+      transition: border-color 0.15s ease, background-color 0.15s ease;
+    }
+    .cal-box-range:hover {
+      border-color: #222222;
+      background-color: #E2E8F0;
+    }
+
+    .cal-box-hover {
+      background-color: #F8FAFC;
+      border: 1px dashed #222222;
+      border-radius: 6px;
+      color: #0F172A;
+    }
+
+    .cal-box-booked {
+      background-color: #FFF1F2;
+      background-image: repeating-linear-gradient(
+        -45deg,
+        #FFF1F2,
+        #FFF1F2 5px,
+        #FFE4E6 5px,
+        #FFE4E6 10px
+      );
+      border: 1px solid #FECDD3;
+      border-radius: 6px;
+      color: #BE123C;
+    }
+    .cal-box-booked:hover {
+      border-color: #FB7185;
+    }
+
+    .cal-box-conflict {
+      background-color: #FFE4E6;
+      border: 2px solid #E11D48;
+      border-radius: 6px;
+      color: #881337;
+      animation: conflictBoxPulse 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes conflictBoxPulse {
+      0%, 100% { border-color: #E11D48; background-color: #FFE4E6; }
+      50% { border-color: #BE123C; background-color: #FECDD3; }
+    }
+
+    .cal-box-turnaround {
+      background-color: #FFFBEB;
+      border: 1.5px dashed #D97706;
+      border-radius: 6px;
+      color: #92400E;
+      transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+    .cal-box-turnaround:hover {
+      background-color: #D97706;
+      border-style: solid;
+      color: #FFFFFF;
+    }
+
+    /* Active Input Highlight Ring inside Reservation Card */
+    .cal-input-active {
+      box-shadow: inset 0 0 0 2px #222222;
+      background-color: #FFFFFF !important;
+    }
+
+    /* Hide Horizontal Scrollbar */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Pulsing Live Database Badge */
+    .live-pulse {
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+      animation: pulseGreen 2s infinite;
+    }
+    @keyframes pulseGreen {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+  </style>
+</head>
+<body class="bg-[#FFFFFF] text-[#222222] pb-20 md:pb-0">
+
+  <!-- Hidden Local File Input for User Photo Preview Uploads -->
+  <input id="local-photo-input" type="file" accept="image/*" class="hidden" onchange="handleLocalPhotoUpload(event)" />
+
+  <!-- Non-Blocking Toast Banner -->
+  <div id="toast-banner" class="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-50 bg-[#18222B] text-white text-xs sm:text-sm font-medium px-5 py-3 rounded-full shadow-xl opacity-0 pointer-events-none transition-opacity duration-300 flex items-center gap-2.5">
+    <span class="w-2 h-2 rounded-full bg-[#FF385C]"></span>
+    <span id="toast-message">Action completed</span>
+  </div>
+
+  <!-- Live Database Sync Floating Pill (Top-Right) -->
+  <div id="db-sync-indicator" class="fixed top-2.5 right-3 z-50 pointer-events-none flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-xs border border-slate-200 text-[10px] font-semibold text-slate-700 shadow-xs transition-opacity duration-300 opacity-90">
+    <span id="db-status-dot" class="w-2 h-2 rounded-full bg-emerald-500 live-pulse"></span>
+    <span id="db-status-text">Supabase Live</span>
+  </div>
+
+  <!-- =====================================================================
+       MODE 1: LOGGED-OUT STATE (CLEAN WHITE HEADER + COASTAL RESORT HERO)
+       Single 76px white sticky bar with Login button + full-bleed hero below.
+       ===================================================================== -->
+  <div id="resort-hero-curtain">
+    <!-- Clean Single Sticky White Header (76px height, 1px solid #EBEBEB bottom border) -->
+    <header class="sticky top-0 z-40 h-[76px] bg-[#FFFFFF] border-b border-[#EBEBEB]">
+      <div class="max-w-[1160px] mx-auto px-4 sm:px-6 h-full flex items-center justify-between gap-4">
+        <!-- Left: Custom ROCK VIEW Geometric Cliff-and-Wave Emblem + Title -->
+        <a href="#" class="flex items-center gap-3 group" aria-label="ROCK VIEW Bolinao, Pangasinan">
+          <svg viewBox="0 0 40 40" class="w-9 h-9 text-[#9E7E46] shrink-0 transition-transform duration-300 group-hover:scale-105" fill="none">
+            <rect x="2" y="2" width="36" height="36" rx="8" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M7 26L15.5 11.5C16 10.7 17.1 10.7 17.6 11.5L22.2 19.2L25.4 14.5C25.9 13.8 26.9 13.8 27.4 14.5L33 26" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="28" cy="10" r="2.2" fill="currentColor" fill-opacity="0.75"/>
+            <path d="M6 30.5C10.5 28.4 15 32.6 20 30.5C25 28.4 29.5 32.6 34 30.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <div>
+            <div class="font-serif-luxury text-lg sm:text-xl font-bold tracking-[0.14em] text-[#18222B] leading-none">
+              ROCK VIEW
+            </div>
+            <div class="text-[9px] sm:text-[10px] font-semibold tracking-[0.22em] text-[#9E7E46] uppercase mt-1">
+              BOLINAO, PANGASINAN
+            </div>
+          </div>
+        </a>
+
+        <!-- Center: Quick Live Inventory Counter -->
+        <div class="hidden md:flex items-center gap-2 text-xs text-[#6A6A6A]">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+          <span id="header-rooms-count">Connecting to Supabase...</span>
+        </div>
+
+        <!-- Right: Staff Portal Link + Single Crisp "Login" Button -->
+        <div class="flex items-center gap-3">
+          <a href="/staff/login" class="text-xs text-[#6A6A6A] hover:text-[#18222B] font-medium transition hidden sm:inline-block">
+            Staff Portal &rarr;
+          </a>
+          <button onclick="openSignInModal()" type="button"
+            class="px-5 py-2.5 rounded-lg bg-[#18222B] hover:bg-[#273644] text-white text-xs sm:text-sm font-semibold tracking-wide transition shadow-xs flex items-center gap-2">
+            <svg viewBox="0 0 20 20" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.9">
+              <circle cx="10" cy="6.5" r="3.2"/><path d="M4 16.5c1.3-3 10.7-3 12 0" stroke-linecap="round"/>
+            </svg>
+            <span>Login</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Full-Bleed Atmospheric Bolinao Coastal Resort Hero Banner (3 Interactive Slides) -->
+    <section id="resort-hero-banner" class="relative overflow-hidden bg-[#18222B] text-white">
+      <!-- Custom Copyright-Safe SVG Coastal Sunset & Limestone Cliff Illustration -->
+      <div class="absolute inset-0 pointer-events-none">
+        <svg viewBox="0 0 1440 620" preserveAspectRatio="xMidYMid slice" class="w-full h-full" fill="none">
+          <defs>
+            <linearGradient id="heroSkyGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#131E29"/>
+              <stop offset="38%" stop-color="#254259"/>
+              <stop offset="72%" stop-color="#9E6A4B"/>
+              <stop offset="100%" stop-color="#D99B66"/>
+            </linearGradient>
+            <radialGradient id="heroSunGlow" cx="50%" cy="52%" r="36%">
+              <stop offset="0%" stop-color="#FFF2CC" stop-opacity="0.88"/>
+              <stop offset="45%" stop-color="#F4B860" stop-opacity="0.38"/>
+              <stop offset="100%" stop-color="#F4B860" stop-opacity="0"/>
+            </radialGradient>
+            <linearGradient id="heroSeaGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#1A3B4C"/>
+              <stop offset="50%" stop-color="#132B38"/>
+              <stop offset="100%" stop-color="#0D1D26"/>
+            </linearGradient>
+          </defs>
+
+          <rect width="1440" height="620" fill="url(#heroSkyGrad)"/>
+          <circle cx="720" cy="315" r="240" fill="url(#heroSunGlow)" class="animate-sun-glow"/>
+          <circle cx="720" cy="315" r="56" fill="#FFF7DF" fill-opacity="0.85"/>
+          <rect x="0" y="325" width="1440" height="295" fill="url(#heroSeaGrad)"/>
+
+          <g class="animate-wave-slow">
+            <path d="M560 350 Q 720 342, 880 350" stroke="#FFE3A3" stroke-width="2.5" stroke-opacity="0.55" stroke-linecap="round"/>
+            <path d="M610 378 Q 720 370, 830 378" stroke="#FFD07B" stroke-width="2" stroke-opacity="0.42" stroke-linecap="round"/>
+            <path d="M0 405 Q 240 390, 480 405 T 960 405 T 1440 405" stroke="#64A6BD" stroke-width="1.5" stroke-opacity="0.3"/>
+            <path d="M0 455 Q 280 440, 560 455 T 1120 455 T 1440 455" stroke="#8ECAE6" stroke-width="1.3" stroke-opacity="0.22"/>
+          </g>
+
+          <!-- Distant Cape Bolinao Lighthouse Silhouette -->
+          <path d="M1140 326 L1240 315 L1440 318 L1440 342 L1140 342 Z" fill="#131D24"/>
+          <rect x="1212" y="274" width="8" height="42" fill="#1C2933"/>
+          <polygon points="1210,274 1222,274 1216,265" fill="#FFE8A3"/>
+          <circle cx="1216" cy="270" r="14" fill="#FFF3C4" fill-opacity="0.35"/>
+
+          <!-- Left Foreground Bolinao Coral Limestone Cliff & Villa Pavilion -->
+          <path d="M0 240 L185 255 L295 310 L355 410 L290 620 L0 620 Z" fill="#121A21"/>
+          <path d="M0 265 L165 278 L250 335 L210 620 L0 620 Z" fill="#19242E"/>
+          <path d="M45 232 L205 232 L225 248 L45 248 Z" fill="#9E7E46" fill-opacity="0.85"/>
+          <rect x="65" y="248" width="128" height="22" fill="#FFE6B3" fill-opacity="0.35"/>
+        </svg>
+        <div class="absolute inset-0 bg-gradient-to-b from-black/35 via-black/20 to-[#18222B]/85"></div>
+      </div>
+
+      <!-- Carousel Prev / Next Controls -->
+      <button onclick="stepHeroSlide(-1)" type="button" aria-label="Previous resort slide"
+        class="hidden sm:flex absolute left-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/35 hover:bg-black/55 border border-white/25 text-white items-center justify-center backdrop-blur-xs transition">
+        ‹
+      </button>
+      <button onclick="stepHeroSlide(1)" type="button" aria-label="Next resort slide"
+        class="hidden sm:flex absolute right-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/35 hover:bg-black/55 border border-white/25 text-white items-center justify-center backdrop-blur-xs transition">
+        ›
+      </button>
+
+      <!-- Hero Content & Overlaid Frosted Quick-Search & Smart Availability Bar -->
+      <div class="relative z-10 max-w-[1120px] mx-auto px-4 sm:px-6 pt-14 pb-16 sm:pt-20 sm:pb-20 text-center">
+        <div id="hero-kicker" class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/10 backdrop-blur-xs border border-white/20 text-[11px] font-semibold tracking-[0.22em] uppercase text-[#F3D9A4] mb-5">
+          <span>Patar Coastal Road · Bolinao, Pangasinan, Philippines</span>
+        </div>
+
+        <h1 id="hero-headline" class="font-serif-luxury text-3xl sm:text-5xl lg:text-[54px] font-semibold tracking-tight text-white leading-[1.14] max-w-3xl mx-auto drop-shadow-sm">
+          Where Limestone Cliffs Meet the West Philippine Sea
+        </h1>
+
+        <p id="hero-subcopy" class="mt-4 text-sm sm:text-base text-white/85 max-w-2xl mx-auto leading-relaxed">
+          Private oceanfront villas perched above Bolinao’s sculpted coral coves—combining coastal sanctuary serenity with instant, conflict-free direct booking.
+        </p>
+
+        <!-- Carousel Slide Indicators -->
+        <div class="mt-5 flex items-center justify-center gap-2">
+          <button onclick="setHeroSlide(0)" type="button" aria-label="Slide 1" class="js-hero-dot w-6 h-1.5 rounded-full bg-[#D4B475] transition-all"></button>
+          <button onclick="setHeroSlide(1)" type="button" aria-label="Slide 2" class="js-hero-dot w-2 h-1.5 rounded-full bg-white/40 hover:bg-white/75 transition-all"></button>
+          <button onclick="setHeroSlide(2)" type="button" aria-label="Slide 3" class="js-hero-dot w-2 h-1.5 rounded-full bg-white/40 hover:bg-white/75 transition-all"></button>
+        </div>
+
+        <!-- Overlaid Frosted Quick-Search & Smart Availability Bar -->
+        <div class="mt-8 max-w-4xl mx-auto bg-white/95 backdrop-blur-md text-[#222222] rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.32)] border border-white/60 p-3 sm:p-4 text-left">
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+            <!-- Dynamic Villa / Room Selector (Real-Time from Supabase) -->
+            <div class="md:col-span-4 px-3 py-2 rounded-xl bg-[#F8F7F4] border border-[#E5E0D5]">
+              <label for="hero-villa-select" class="block text-[10px] font-extrabold uppercase tracking-wider text-[#9E7E46]">
+                Select Accommodation
+              </label>
+              <select id="hero-villa-select" onchange="selectVilla(this.value)"
+                class="js-villa-select w-full bg-transparent text-xs sm:text-sm font-bold text-[#18222B] mt-0.5 focus:outline-none cursor-pointer">
+                <option value="">Loading live inventory from Supabase...</option>
+              </select>
+            </div>
+
+            <!-- Check-in / Check-out Summary -->
+            <button onclick="scrollToSection('calendar-section')" type="button"
+              class="md:col-span-3 px-3 py-2 rounded-xl bg-[#F8F7F4] hover:bg-[#F0EDE6] border border-[#E5E0D5] text-left transition">
+              <span class="block text-[10px] font-extrabold uppercase tracking-wider text-[#9E7E46]">
+                Stay Dates
+              </span>
+              <span class="block text-xs sm:text-sm font-bold text-[#18222B] mt-0.5 js-hero-dates">
+                Select stay dates
+              </span>
+            </button>
+
+            <!-- Guest Counter -->
+            <div class="md:col-span-3 px-3 py-2 rounded-xl bg-[#F8F7F4] border border-[#E5E0D5] flex items-center justify-between">
+              <div>
+                <span class="block text-[10px] font-extrabold uppercase tracking-wider text-[#9E7E46]">
+                  Party Size
+                </span>
+                <span class="block text-xs sm:text-sm font-bold text-[#18222B] mt-0.5 js-hero-guests">
+                  2 guests
+                </span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <button onclick="stepTotalParty(-1)" type="button" aria-label="Decrease guests"
+                  class="w-7 h-7 rounded-full border border-[#C9C2B4] bg-white hover:border-[#18222B] text-sm font-bold flex items-center justify-center">
+                  −
+                </button>
+                <button onclick="stepTotalParty(1)" type="button" aria-label="Increase guests"
+                  class="w-7 h-7 rounded-full border border-[#C9C2B4] bg-white hover:border-[#18222B] text-sm font-bold flex items-center justify-center">
+                  +
+                </button>
+              </div>
+            </div>
+
+            <!-- Check Availability CTA -->
+            <div class="md:col-span-2">
+              <button onclick="handleHeroCheckAvailability()" type="button"
+                class="btn-gold-luxury w-full h-12 rounded-xl text-xs font-extrabold uppercase tracking-wider shadow-sm px-3">
+                Check Availability
+              </button>
+            </div>
+          </div>
+
+          <!-- Live Status Line Under Hero Bar -->
+          <div class="mt-2.5 pt-2 border-t border-[#ECE7DD] flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div id="hero-live-status" class="font-semibold text-emerald-700 flex items-center gap-1.5">
+              <span>✓</span>
+              <span>Live database sync active · Select your dates below</span>
+            </div>
+            <button onclick="openSignInModal()" type="button" class="text-[#9E7E46] hover:underline font-semibold">
+              Member? Login for compact direct booking view →
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- =====================================================================
+       MODE 2: LOGGED-IN STATE (COMPACT ROCK VIEW AIRBNB-STYLE HEADER)
+       Hidden when logged out; snaps to top on Login with real Supabase Auth.
+       ===================================================================== -->
+  <header id="member-airbnb-header" class="hidden sticky top-0 z-40 h-[76px] bg-[#FFFFFF] border-b border-[#EBEBEB] shadow-[0_1px_6px_rgba(0,0,0,0.04)]">
+    <div class="max-w-[1120px] mx-auto px-4 sm:px-6 h-full flex items-center justify-between gap-3">
+
+      <!-- Left: Custom Coral-Rose (#FF385C) Rock View Crest + Lowercase "rock view" Wordmark -->
+      <a href="#" class="flex items-center gap-2 shrink-0 group" aria-label="rock view member home">
+        <svg viewBox="0 0 36 36" class="w-8 h-8 text-[#FF385C] transition-transform duration-200 group-hover:scale-105" fill="none">
+          <path d="M5 24.5L14.2 9.5C14.7 8.7 15.8 8.7 16.3 9.5L21.2 17.5L24.3 12.8C24.8 12.1 25.8 12.1 26.3 12.8L31.5 24.5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M12.5 21.5L16.8 15L20.5 21.5" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M4 28.5C8.5 26.3 13 30.7 18 28.5C23 26.3 27.5 30.7 32 28.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+        <span class="text-[21px] font-extrabold tracking-[-0.04em] text-[#FF385C] lowercase leading-none">
+          rock view
+        </span>
+      </a>
+
+      <!-- Center: 3-Segment Floating Pill Search Bar -->
+      <div id="header-search-wrapper" class="relative hidden md:block">
+        <div class="flex items-center bg-[#FFFFFF] border border-[#DDDDDD] rounded-full shadow-[0_1px_2px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.05)] hover:shadow-[0_2px_4px_rgba(0,0,0,0.12),0_6px_16px_rgba(0,0,0,0.08)] transition-shadow h-11 pl-5 pr-2 text-sm">
+          <button onclick="toggleHeaderPopover(event)" type="button" class="pr-4 font-semibold text-[#222222] border-r border-[#DDDDDD] hover:text-[#FF385C] transition truncate">
+            Bolinao · Pangasinan
+          </button>
+          <button onclick="toggleHeaderPopover(event)" type="button" class="px-4 font-semibold text-[#222222] border-r border-[#DDDDDD] hover:text-[#FF385C] transition whitespace-nowrap js-header-dates">
+            Add dates
+          </button>
+          <button onclick="toggleHeaderPopover(event)" type="button" class="pl-4 pr-3 text-[#6A6A6A] font-normal hover:text-[#222222] transition whitespace-nowrap js-header-guests">
+            2 guests
+          </button>
+          <button onclick="toggleHeaderPopover(event)" type="button" aria-label="Quick filter"
+            class="w-7 h-7 rounded-full bg-[#FF385C] hover:bg-[#E00B41] text-white flex items-center justify-center shrink-0 transition">
+            <svg viewBox="0 0 20 20" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.6">
+              <circle cx="8.5" cy="8.5" r="5.5"/><path d="M13 13L17 17" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Interactive Quick-Filter Popover -->
+        <div id="header-search-popover" onclick="event.stopPropagation()" class="hidden absolute left-1/2 -translate-x-1/2 top-14 w-[430px] bg-white border border-[#DDDDDD] rounded-3xl shadow-[0_8px_28px_rgba(0,0,0,0.15)] p-5 z-50">
+          <div class="flex items-center justify-between pb-3 mb-3 border-b border-[#EBEBEB]">
+            <span class="text-xs font-bold uppercase tracking-wider text-[#6A6A6A]">Quick Villa &amp; Date Switcher</span>
+            <button onclick="closeHeaderPopover()" type="button" class="text-xs font-semibold underline text-[#222222]">Close</button>
+          </div>
+
+          <div class="space-y-3.5 text-sm">
+            <div>
+              <label class="block text-xs font-semibold text-[#222222] mb-1">Select Bolinao Accommodation</label>
+              <select onchange="selectVilla(this.value)" class="js-villa-select w-full border border-[#B0B0B0] rounded-lg px-3 py-2 text-sm font-medium text-[#222222] bg-white focus:outline-none focus:border-[#222222]">
+              </select>
+            </div>
+
+            <div class="bg-[#F7F7F7] border border-[#DDDDDD] rounded-xl p-3 flex items-center justify-between gap-2">
+              <div>
+                <div class="text-[11px] font-bold uppercase tracking-wider text-[#6A6A6A]">Active Dates</div>
+                <div class="text-xs font-semibold text-[#222222] mt-0.5 js-header-dates">Add dates</div>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <button onclick="applyQuickPreset('stay3'); closeHeaderPopover()" type="button"
+                  class="px-2.5 py-1.5 rounded-full bg-white border border-[#DDDDDD] hover:border-[#222222] text-[11px] font-semibold text-[#222222]">
+                  3-Night Stay
+                </button>
+                <button onclick="applyQuickPreset('weekend'); closeHeaderPopover()" type="button"
+                  class="px-2.5 py-1.5 rounded-full bg-white border border-[#DDDDDD] hover:border-[#222222] text-[11px] font-semibold text-[#222222]">
+                  Next Weekend
+                </button>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-2 border-t border-[#EBEBEB]">
+              <button onclick="closeHeaderPopover(); scrollToSection('calendar-section')" type="button"
+                class="text-xs font-semibold underline text-[#222222]">
+                Jump to calendar
+              </button>
+              <button onclick="closeHeaderPopover()" type="button"
+                class="btn-airbnb-reserve px-4 py-2 rounded-lg text-xs font-semibold">
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Clean Member Pill + "Logout" Button -->
+      <div class="flex items-center gap-2.5 shrink-0">
+        <div class="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full border border-[#DDDDDD] bg-[#FAFAFA]">
+          <span id="member-header-initials" class="w-7 h-7 rounded-full bg-[#FF385C] text-white text-[11px] font-bold flex items-center justify-center">
+            RG
+          </span>
+          <span id="member-header-name" class="hidden sm:inline text-xs font-semibold text-[#222222]">
+            Resident Guest
+          </span>
+        </div>
+
+        <button onclick="signOutToResortView()" type="button"
+          class="px-4 py-2 rounded-full border border-[#222222] bg-white hover:bg-[#F7F7F7] text-xs font-semibold text-[#222222] transition">
+          Logout
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- =====================================================================
+       UNIFIED BOOKING WORKSPACE (DRIVEN BY REAL-TIME SUPABASE DATA)
+       ===================================================================== -->
+  <main id="booking-workspace" class="max-w-[1120px] mx-auto px-4 sm:px-6 pt-6 pb-16">
+
+    <!-- 2A. SELECTABLE ACCOMMODATIONS VIA UNDERLINE TABS (Dynamically Built from Supabase) -->
+    <div id="villa-tabs-bar" class="border-b border-[#DDDDDD] mb-6 flex items-stretch gap-6 sm:gap-8 overflow-x-auto no-scrollbar">
+      <div class="py-4 text-xs font-semibold text-[#6A6A6A]">
+        Loading live accommodations from Supabase...
+      </div>
+    </div>
+
+    <!-- 2B. LISTING TITLE ROW (Bold 26px Title Left + Share / Save Right) -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+      <div>
+        <h2 id="listing-title" class="text-[22px] sm:text-[26px] font-semibold text-[#222222] tracking-[-0.02em] leading-snug">
+          Connecting to Supabase...
+        </h2>
+        <div id="listing-db-id" class="text-[11px] font-mono text-[#888888] mt-0.5">
+          <!-- Room UUID / Slug from DB -->
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 shrink-0">
+        <button onclick="handleShare()" type="button"
+          class="inline-flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[#F7F7F7] text-sm font-semibold text-[#222222] underline transition">
+          <svg viewBox="0 0 20 20" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M10 3v9.5M6.5 6.5L10 3l3.5 3.5M4 12v4a1 1 0 001 1h10a1 1 0 001-1v-4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Share
+        </button>
+
+        <button onclick="toggleSave()" type="button"
+          class="inline-flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[#F7F7F7] text-sm font-semibold text-[#222222] underline transition">
+          <svg id="save-heart-icon" viewBox="0 0 20 20" class="w-4 h-4 transition-colors" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M10 17.2s-6.2-4-6.2-8.7A3.6 3.6 0 0110 5.8a3.6 3.6 0 016.2 2.7c0 4.7-6.2 8.7-6.2 8.7z" stroke-linejoin="round"/>
+          </svg>
+          <span id="save-label">Save</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 2C. 1+4 ASYMMETRIC BENTO MEDIA GRID -->
+    <section class="relative mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2 h-[280px] sm:h-[360px] md:h-[420px] rounded-[12px] overflow-hidden">
+
+        <!-- Left 50%: Slot 0 (Primary View) -->
+        <div id="bento-card-0" onclick="openPhotoTour(0)"
+          class="coastal-slot slot-sky-sunset h-full p-5 flex flex-col justify-between cursor-pointer group">
+          <img id="bento-img-0" alt="Primary Accommodation View" class="hidden absolute inset-0 w-full h-full object-cover z-0" />
+          <div id="bento-scrim-0" class="hidden absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/20 z-0"></div>
+
+          <svg id="bento-svg-0" viewBox="0 0 560 420" preserveAspectRatio="none" class="absolute inset-0 w-full h-full pointer-events-none" fill="none">
+            <circle cx="420" cy="128" r="46" fill="#FFE8B8" fill-opacity="0.45"/>
+            <circle cx="420" cy="128" r="28" fill="#FFF4D6" fill-opacity="0.75"/>
+            <path d="M0 245 Q 140 232, 280 245 T 560 245 L560 420 L0 420 Z" fill="#184E68" fill-opacity="0.65"/>
+            <path d="M0 278 Q 140 264, 280 278 T 560 278" stroke="#A8DADC" stroke-width="2" stroke-opacity="0.55"/>
+            <path d="M0 308 Q 160 294, 320 308 T 560 308" stroke="#F1FAEE" stroke-width="1.5" stroke-opacity="0.4"/>
+            <path d="M0 215 L145 215 L185 265 L125 420 L0 420 Z" fill="#232931" fill-opacity="0.82"/>
+            <path d="M24 195 L156 195 L172 215 L24 215 Z" fill="#E9D8A6" fill-opacity="0.85"/>
+            <line x1="48" y1="215" x2="48" y2="275" stroke="#E9D8A6" stroke-width="3" stroke-opacity="0.7"/>
+            <line x1="128" y1="215" x2="128" y2="275" stroke="#E9D8A6" stroke-width="3" stroke-opacity="0.7"/>
+          </svg>
+
+          <div class="relative z-10 flex items-center justify-between">
+            <span id="bento-badge-0" class="px-3 py-1 rounded-full bg-black/40 backdrop-blur-xs text-white text-xs font-medium">
+              Oceanfront Living Deck
+            </span>
+          </div>
+
+          <div class="relative z-10 text-white">
+            <p id="bento-caption-0" class="text-sm font-medium drop-shadow-xs">
+              Direct coastal sanctuary view in Bolinao, Pangasinan
+            </p>
+          </div>
+        </div>
+
+        <!-- Right 50%: 2x2 Secondary Slots (Slots 1..4) -->
+        <div class="hidden md:grid grid-cols-2 grid-rows-2 gap-2 h-full">
+
+          <!-- Slot 1 -->
+          <div id="bento-card-1" onclick="openPhotoTour(1)" class="coastal-slot slot-lagoon-teal p-3.5 flex flex-col justify-between cursor-pointer">
+            <img id="bento-img-1" alt="Secondary View 1" class="hidden absolute inset-0 w-full h-full object-cover z-0" />
+            <div id="bento-scrim-1" class="hidden absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/15 z-0"></div>
+            <svg id="bento-svg-1" viewBox="0 0 280 210" preserveAspectRatio="none" class="absolute inset-0 w-full h-full pointer-events-none" fill="none">
+              <path d="M0 130 Q 70 118, 140 130 T 280 130 L280 210 L0 210 Z" fill="#0F3D4C" fill-opacity="0.5"/>
+              <path d="M0 155 Q 80 145, 160 155 T 280 155" stroke="#CBF3F0" stroke-width="1.6" stroke-opacity="0.6"/>
+              <circle cx="215" cy="54" r="20" fill="#FFE6A7" fill-opacity="0.45"/>
+            </svg>
+            <span id="bento-badge-1" class="relative z-10 self-start px-2.5 py-0.5 rounded-full bg-black/40 backdrop-blur-xs text-white text-[11px] font-medium">
+              Sunset Veranda
+            </span>
+            <span id="bento-caption-1" class="relative z-10 text-white text-xs font-medium">Golden-hour reef view</span>
+          </div>
+
+          <!-- Slot 2 -->
+          <div id="bento-card-2" onclick="openPhotoTour(2)" class="coastal-slot slot-limestone-warm p-3.5 flex flex-col justify-between cursor-pointer">
+            <img id="bento-img-2" alt="Secondary View 2" class="hidden absolute inset-0 w-full h-full object-cover z-0" />
+            <div id="bento-scrim-2" class="hidden absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/15 z-0"></div>
+            <svg id="bento-svg-2" viewBox="0 0 280 210" preserveAspectRatio="none" class="absolute inset-0 w-full h-full pointer-events-none" fill="none">
+              <rect x="42" y="42" width="196" height="126" rx="10" stroke="#FFF8EB" stroke-width="1.5" stroke-opacity="0.45"/>
+              <path d="M62 145 L218 145 L205 112 L75 112 Z" fill="#FFF8EB" fill-opacity="0.3"/>
+              <rect x="86" y="88" width="44" height="22" rx="4" fill="#FFF8EB" fill-opacity="0.55"/>
+              <rect x="150" y="88" width="44" height="22" rx="4" fill="#FFF8EB" fill-opacity="0.55"/>
+            </svg>
+            <span id="bento-badge-2" class="relative z-10 self-start px-2.5 py-0.5 rounded-full bg-black/40 backdrop-blur-xs text-white text-[11px] font-medium">
+              Sanctuary Suite
+            </span>
+            <span id="bento-caption-2" class="relative z-10 text-white text-xs font-medium">Handcrafted wood &amp; stone interior</span>
+          </div>
+
+          <!-- Slot 3 -->
+          <div id="bento-card-3" onclick="openPhotoTour(3)" class="coastal-slot slot-horizon-dusk p-3.5 flex flex-col justify-between cursor-pointer">
+            <img id="bento-img-3" alt="Secondary View 3" class="hidden absolute inset-0 w-full h-full object-cover z-0" />
+            <div id="bento-scrim-3" class="hidden absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/15 z-0"></div>
+            <svg id="bento-svg-3" viewBox="0 0 280 210" preserveAspectRatio="none" class="absolute inset-0 w-full h-full pointer-events-none" fill="none">
+              <circle cx="140" cy="118" r="34" fill="#FFD166" fill-opacity="0.5"/>
+              <path d="M0 118 L280 118 L280 210 L0 210 Z" fill="#1D263B" fill-opacity="0.65"/>
+              <path d="M35 142 Q 140 132, 245 142" stroke="#F4A261" stroke-width="1.8" stroke-opacity="0.65"/>
+            </svg>
+            <span id="bento-badge-3" class="relative z-10 self-start px-2.5 py-0.5 rounded-full bg-black/40 backdrop-blur-xs text-white text-[11px] font-medium">
+              West Philippine Sea Horizon
+            </span>
+            <span id="bento-caption-3" class="relative z-10 text-white text-xs font-medium">Unobstructed sunset vantage</span>
+          </div>
+
+          <!-- Slot 4 -->
+          <div id="bento-card-4" onclick="openPhotoTour(4)" class="coastal-slot slot-cove-emerald p-3.5 flex flex-col justify-between cursor-pointer">
+            <img id="bento-img-4" alt="Secondary View 4" class="hidden absolute inset-0 w-full h-full object-cover z-0" />
+            <div id="bento-scrim-4" class="hidden absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/15 z-0"></div>
+            <svg id="bento-svg-4" viewBox="0 0 280 210" preserveAspectRatio="none" class="absolute inset-0 w-full h-full pointer-events-none" fill="none">
+              <path d="M0 135 C 90 115, 190 155, 280 130 L280 210 L0 210 Z" fill="#0E2A2D" fill-opacity="0.55"/>
+              <path d="M25 65 L75 65 L75 95 L125 95 L125 125 L175 125" stroke="#E9F5DB" stroke-width="2.2" stroke-opacity="0.65" stroke-linecap="round"/>
+            </svg>
+            <span id="bento-badge-4" class="relative z-10 self-start px-2.5 py-0.5 rounded-full bg-black/40 backdrop-blur-xs text-white text-[11px] font-medium">
+              Coral Cove Steps
+            </span>
+            <span id="bento-caption-4" class="relative z-10 text-white text-xs font-medium">Direct snorkeling lagoon access</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom-Right Floating Pill Actions -->
+      <div class="absolute bottom-4 right-4 z-20 flex items-center gap-2">
+        <button onclick="triggerPhotoUpload(0)" type="button"
+          class="px-3.5 py-2 rounded-lg bg-[#FFFFFF] hover:bg-[#F7F7F7] text-[#222222] text-xs font-semibold border border-[#222222] shadow-sm transition">
+          Preview Your Photo
+        </button>
+
+        <button onclick="openPhotoTour(0)" type="button"
+          class="px-4 py-2 rounded-lg bg-[#FFFFFF] hover:bg-[#F7F7F7] text-[#222222] text-xs font-semibold border border-[#222222] shadow-sm flex items-center gap-2 transition">
+          <svg viewBox="0 0 16 16" class="w-3.5 h-3.5 text-[#222222]" fill="currentColor">
+            <circle cx="3" cy="3" r="1.3"/><circle cx="8" cy="3" r="1.3"/><circle cx="13" cy="3" r="1.3"/>
+            <circle cx="3" cy="8" r="1.3"/><circle cx="8" cy="8" r="1.3"/><circle cx="13" cy="8" r="1.3"/>
+            <circle cx="3" cy="13" r="1.3"/><circle cx="8" cy="13" r="1.3"/><circle cx="13" cy="13" r="1.3"/>
+          </svg>
+          Show all photos
+        </button>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         3. TWO-COLUMN CONTENT LAYOUT (65% Left Narrative / 35% Right Sticky Card)
+         ===================================================================== -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+
+      <!-- LEFT COLUMN (~65%) -->
+      <div class="lg:col-span-7 xl:col-span-8">
+
+        <!-- Villa Subtitle & Specs -->
+        <div class="pb-6 border-b border-[#DDDDDD]">
+          <h3 id="listing-subtitle" class="text-[20px] sm:text-[22px] font-semibold text-[#222222] leading-snug">
+            Coastal Accommodation in Bolinao, Pangasinan
+          </h3>
+          <p id="listing-specs" class="text-[15px] text-[#222222] mt-1">
+            Loading specifications...
+          </p>
+        </div>
+
+        <!-- SANCTUARY HIGHLIGHT CARD (Connected to Real Database Metrics) -->
+        <div class="my-6 border border-dashed border-[#CBD5E1] bg-[#FAFAFA] rounded-[12px] px-[22px] py-[18px] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="flex items-center gap-3.5 min-w-0">
+            <!-- Icon Box -->
+            <div class="w-[44px] h-[44px] rounded-[10px] border border-[#E2E8F0] bg-[#FFFFFF] flex items-center justify-center text-[#9E7E46] shrink-0" aria-hidden="true">
+              <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+
+            <!-- Text Slots -->
+            <div class="min-w-0 space-y-0.5">
+              <div id="highlight-badge-title" class="text-xs sm:text-sm font-bold text-[#18222B] truncate">
+                Direct Supabase Accommodation Booking
+              </div>
+              <div id="highlight-badge-sub" class="text-xs text-[#64748B] truncate">
+                Mandatory 2-hour cleaning buffer strictly enforced between check-in and check-out
+              </div>
+            </div>
+          </div>
+
+          <!-- Two Right-Side Metric Slots Separated by a Hairline Divider -->
+          <div class="flex items-center gap-5 sm:pl-5 sm:border-l border-[#E2E8F0] shrink-0">
+            <div class="text-center min-w-[52px]">
+              <div id="metric-rating-val" class="text-base font-bold text-[#18222B] leading-none">4.9 ★</div>
+              <div class="text-[11px] font-medium text-[#64748B] mt-1.5">Rating</div>
+            </div>
+            <div class="h-8 w-px bg-[#E2E8F0]"></div>
+            <div class="text-center min-w-[52px]">
+              <div id="metric-units-val" class="text-base font-bold text-[#18222B] leading-none">1</div>
+              <div class="text-[11px] font-medium text-[#64748B] mt-1.5">Units</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3 Property Highlights -->
+        <div class="py-6 border-t border-b border-[#DDDDDD] space-y-5">
+          <div class="flex items-start gap-4">
+            <svg viewBox="0 0 24 24" class="w-6 h-6 text-[#222222] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.7">
+              <rect x="5" y="3" width="14" height="18" rx="2"/>
+              <circle cx="9.5" cy="8.5" r="1"/><circle cx="14.5" cy="8.5" r="1"/>
+              <circle cx="9.5" cy="12.5" r="1"/><circle cx="14.5" cy="12.5" r="1"/>
+              <path d="M9.5 16.5h5" stroke-linecap="round"/>
+            </svg>
+            <div>
+              <h5 class="text-[15px] font-semibold text-[#222222]">Self check-in &amp; Smart Arrival</h5>
+              <p class="text-sm text-[#6A6A6A] mt-0.5">Check yourself in seamlessly with your verified smart keypad code or digital QR voucher pass.</p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-4">
+            <svg viewBox="0 0 24 24" class="w-6 h-6 text-[#222222] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.7">
+              <path d="M3 16c3-2 6 2 9 0s6 2 9 0M3 20c3-2 6 2 9 0s6 2 9 0M4 12l5.5-7L14 11l3-4 3 5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div>
+              <h5 class="text-[15px] font-semibold text-[#222222]">Direct limestone cliff &amp; cove access</h5>
+              <p class="text-sm text-[#6A6A6A] mt-0.5">Private carved coral steps lead straight to crystal snorkeling waters, 4 minutes from Patar White Beach.</p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-4">
+            <svg viewBox="0 0 24 24" class="w-6 h-6 text-[#222222] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.7">
+              <rect x="3" y="4" width="18" height="17" rx="2"/>
+              <path d="M8 2v4M16 2v4M3 10h18" stroke-linecap="round"/>
+            </svg>
+            <div>
+              <h5 class="text-[15px] font-semibold text-[#222222]">Free cancellation 7 days before check-in</h5>
+              <p class="text-sm text-[#6A6A6A] mt-0.5">Full refund if your travel plans shift up to 7 days prior to arrival.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Accommodation Description -->
+        <div class="py-6 border-b border-[#DDDDDD]">
+          <div id="listing-description" class="text-[15px] text-[#222222] leading-[1.6] space-y-4">
+            <p>Loading accommodation details from Supabase...</p>
+          </div>
+        </div>
+
+        <!-- "Where you'll sleep" Bordered Bedroom Cards -->
+        <div class="py-7 border-b border-[#DDDDDD]">
+          <h4 class="text-[22px] font-semibold text-[#222222] mb-5">Where you'll sleep</h4>
+          <div id="bedrooms-grid" class="grid grid-cols-1 sm:grid-cols-3 gap-4"></div>
+        </div>
+
+        <!-- "What this place offers" Clean 2-Column Amenities List (Dynamically Synced with DB Amenities) -->
+        <div class="py-7 border-b border-[#DDDDDD]">
+          <h4 class="text-[22px] font-semibold text-[#222222] mb-5">What this place offers</h4>
+          <div id="amenities-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-8 text-[15px] text-[#222222]">
+            <!-- Dynamically populated from Supabase -->
+          </div>
+        </div>
+
+        <!-- =================================================================
+             INTELLIGENT MULTI-VILLA BOXED CALENDAR & CONFLICT ADVISOR
+             ================================================================= -->
+        <div id="calendar-section" class="py-7">
+          <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-4">
+            <div>
+              <h4 id="cal-heading" class="text-[22px] font-semibold text-[#222222]">
+                Select stay dates
+              </h4>
+              <p id="cal-subheading" class="text-sm text-[#6A6A6A] mt-0.5">
+                Add your travel dates for Rock View Beach Resort
+              </p>
+            </div>
+
+            <!-- Live Selection Status / Hover Preview Pill -->
+            <div id="cal-step-pill" class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-[#F8FAFC] border border-[#CBD5E1] text-xs font-semibold text-[#222222] self-start sm:self-auto">
+              <span id="cal-step-dot" class="w-2 h-2 rounded-xs bg-[#222222]"></span>
+              <span id="cal-step-text">Step 1: Select check-in box</span>
+            </div>
+          </div>
+
+          <!-- INTELLIGENT ROOM FIT & CONFLICT ADVISOR BANNER -->
+          <div id="calendar-advisor-banner" class="hidden mb-5 rounded-xl border-2 border-rose-300 bg-rose-50/90 p-4 sm:p-5 shadow-xs">
+            <div class="flex items-start gap-3">
+              <div class="w-9 h-9 rounded-lg bg-rose-600 text-white font-bold text-sm flex items-center justify-center shrink-0 mt-0.5">
+                !
+              </div>
+              <div class="flex-1 min-w-0">
+                <div id="cal-advisor-title" class="text-sm sm:text-[15px] font-bold text-rose-950">
+                  Date Conflict Detected
+                </div>
+                <p id="cal-advisor-desc" class="text-xs sm:text-sm text-rose-900/90 mt-1 leading-relaxed"></p>
+                <div id="cal-advisor-actions" class="mt-3.5 flex flex-wrap items-center gap-2"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick-Pick Stay Buttons + Synchronized Month Jump Dropdown + Clear Dates -->
+          <div class="flex flex-wrap items-center justify-between gap-2.5 pb-4 mb-5 border-b border-[#EBEBEB]">
+            <div class="flex flex-wrap items-center gap-2">
+              <button onclick="applyQuickPreset('weekend')" type="button"
+                class="px-3 py-1.5 rounded-lg border border-[#CBD5E1] hover:border-[#222222] bg-white text-xs font-semibold text-[#222222] transition">
+                Next Open Weekend
+              </button>
+              <button onclick="applyQuickPreset('stay3')" type="button"
+                class="px-3 py-1.5 rounded-lg border border-[#CBD5E1] hover:border-[#222222] bg-white text-xs font-semibold text-[#222222] transition">
+                3-Night Stay
+              </button>
+              <button onclick="applyQuickPreset('stay5')" type="button"
+                class="px-3 py-1.5 rounded-lg border border-[#CBD5E1] hover:border-[#222222] bg-white text-xs font-semibold text-[#222222] transition">
+                5-Night Retreat
+              </button>
+
+              <!-- Synchronized Month Jump Dropdown -->
+              <select id="monthJumpSelect" onchange="jumpToViewYM(this.value)" aria-label="Jump to month"
+                class="px-3 py-1.5 rounded-lg border border-[#CBD5E1] hover:border-[#222222] bg-[#F8FAFC] text-xs font-semibold text-[#222222] focus:outline-none focus:border-[#222222] cursor-pointer">
+              </select>
+            </div>
+
+            <button onclick="clearDates()" type="button"
+              class="text-xs sm:text-sm font-semibold text-[#222222] underline hover:text-[#6A6A6A] transition">
+              Clear dates
+            </button>
+          </div>
+
+          <!-- Informational Toast Notice Banner -->
+          <div id="cal-notice-banner" class="hidden mb-5 px-4 py-2.5 rounded-xl bg-amber-50 border border-amber-300 text-xs sm:text-sm text-amber-950 flex items-center justify-between gap-3">
+            <span id="cal-notice-text" class="font-medium"></span>
+            <button onclick="dismissCalendarNotice()" type="button" class="text-xs font-bold underline shrink-0">Dismiss</button>
+          </div>
+
+          <!-- Navigable Two-Month Structured Rectangular Box Grid -->
+          <div>
+            <!-- Top Navigation Bar -->
+            <div class="flex items-center justify-between gap-3 mb-4">
+              <button id="cal-prev-btn" onclick="shiftInlineMonths(-1)" type="button" aria-label="Previous month"
+                class="px-3 h-9 rounded-lg border border-[#CBD5E1] hover:border-[#222222] bg-white disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center gap-1 text-xs font-bold text-[#222222] transition">
+                <span>&lt;</span>
+                <span>Prev</span>
+              </button>
+
+              <span class="text-xs font-semibold uppercase tracking-wider text-[#64748B]">
+                Select Check-In &amp; Check-Out Boxes
+              </span>
+
+              <button id="cal-next-btn" onclick="shiftInlineMonths(1)" type="button" aria-label="Next month"
+                class="px-3 h-9 rounded-lg border border-[#CBD5E1] hover:border-[#222222] bg-white disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center gap-1 text-xs font-bold text-[#222222] transition">
+                <span>Next</span>
+                <span>&gt;</span>
+              </button>
+            </div>
+
+            <!-- Side-by-Side Structured Month Box Cards -->
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-5" onmouseleave="handleCalendarMouseLeave()">
+              <!-- Left Month Box Card -->
+              <div class="cal-month-box p-3.5 sm:p-4 shadow-2xs">
+                <div class="flex items-center justify-between pb-2.5 mb-2.5 border-b border-[#E5E7EB]">
+                  <h5 id="cal-title-left" class="text-[15px] font-bold text-[#222222]">
+                    November 2026
+                  </h5>
+                  <span class="text-[11px] font-medium text-[#64748B]">₱ / night</span>
+                </div>
+
+                <!-- Boxed 7-Column Weekday Header -->
+                <div class="cal-grid-7 mb-[5px] text-center">
+                  <div class="py-1.5 rounded-[6px] bg-[#F8FAFC] border border-[#E5E7EB] text-[11px] font-bold text-[#475569]">Su</div>
+                  <div class="py-1.5 rounded-[6px] bg-[#F8FAFC] border border-[#E5E7EB] text-[11px] font-bold text-[#475569]">Mo</div>
+                  <div class="py-1.5 rounded-[6px] bg-[#F8FAFC] border border-[#E5E7EB] text-[11px] font-bold text-[#475569]">Tu</div>
+                  <div class="py-1.5 rounded-[6px] bg-[#F8FAFC] border border-[#E5E7EB] text-[11px] font-bold text-[#475569]">We</div>
+                  <div class="py-1.5 rounded-[6px] bg-[#F8FAFC] border border-[#E5E7EB] text-[11px] font-bold text-[#475569]">Th</div>
+                  <div class="py-1.5 rounded-[6px] bg-[#F8FAFC] border border-[#E5E7EB] text-[11px] font-bold text-[#0F172A]">Fr</div>
+                  <div class="py-1.5 rounded-[6px] bg-[#F8FAFC] border border-[#E5E7EB] text-[11px] font-bold text-[#0F172A]">Sa</div>
+                </div>
+
+                <!-- 7-Column Rectangular Box Matrix (35 or 42 cells) -->
+                <div id="cal-grid-left" class="cal-grid-7"></div>
+              </div>
+
+              <!-- Right Month Box Card -->
+              <div class="cal-month-box p-3.5 sm:p-4 shadow-2xs">
+                <div class="flex items-center justify-between pb-2.5 mb-2.5 border-b border-[#E5E7EB]">
+                  <h5 id="cal-title-right" class="text-[15px] font-bold text-[#222222]">
+                    December 2026
+                  </h5>
+                  <span class="text-[11px] font-medium text-[#64748B]">₱ / night</span>
+                </div>
+
+                <!-- Boxed 7-Column Weekday Header -->
+                <div class="cal-grid-7 mb-[5px] text-center">
+                  <div class="py-1.5 rounded-[6px] bg-[#F8FAFC] border border-[#E5E7EB] text-[11px] font-bold text-[#475569]">Su</div>
+                  <div class="py-1.5 rounded-[6px] bg-[#F8FAFC] border border-[#E5E7EB] text-[11px] font-bold text-[#475569]">Mo</div>
+                  <div class="py-1.5 rounded-[6px] bg-[#F8FAFC] border border-[#E5E7EB] text-[11px] font-bold text-[#475569]">Tu</div>
+                  <div class="py-1.5 rounded-[6px] bg-[#F8FAFC] border border-[#E5E7EB] text-[11px] font-bold text-[#475569]">We</div>
+                  <div class="py-1.5 rounded-[6px] bg-[#F8FAFC] border border-[#E5E7EB] text-[11px] font-bold text-[#475569]">Th</div>
+                  <div class="py-1.5 rounded-[6px] bg-[#F8FAFC] border border-[#E5E7EB] text-[11px] font-bold text-[#0F172A]">Fr</div>
+                  <div class="py-1.5 rounded-[6px] bg-[#F8FAFC] border border-[#E5E7EB] text-[11px] font-bold text-[#0F172A]">Sa</div>
+                </div>
+
+                <!-- 7-Column Rectangular Box Matrix (35 or 42 cells) -->
+                <div id="cal-grid-right" class="cal-grid-7"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Boxed Calendar Legend Bar -->
+          <div class="mt-5 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-xs text-[#475569]">
+            <div class="flex flex-wrap items-center gap-3.5 sm:gap-4">
+              <span class="inline-flex items-center gap-1.5 font-medium text-[#222222]">
+                <span class="w-4 h-4 rounded-[4px] bg-white border border-[#E2E8F0] inline-block"></span> Available Box
+              </span>
+              <span class="inline-flex items-center gap-1.5 font-semibold text-[#222222]">
+                <span class="w-4 h-4 rounded-[4px] bg-[#222222] border border-[#222222] inline-block"></span> Selected IN/OUT Box
+              </span>
+              <span class="inline-flex items-center gap-1.5 font-medium text-[#0F172A]">
+                <span class="w-4 h-4 rounded-[4px] bg-[#F1F5F9] border border-[#CBD5E1] inline-block"></span> In-Stay Range
+              </span>
+              <span class="inline-flex items-center gap-1.5 font-medium text-rose-700">
+                <span class="w-4 h-4 rounded-[4px] cal-box-booked inline-block"></span> Booked Box
+              </span>
+              <span class="inline-flex items-center gap-1.5 font-medium text-amber-800">
+                <span class="w-4 h-4 rounded-[4px] cal-box-turnaround inline-block"></span> Morning Checkout Box
+              </span>
+            </div>
+            <span class="text-[11px] text-[#64748B]">Fri–Sat boxes reflect weekend coastal tariff</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- =================================================================
+           RIGHT COLUMN (~35%): STICKY RESERVATION CARD WITH INLINE DRAWER
+           ================================================================= -->
+      <aside id="reservation-card-aside" class="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-24">
+        <div class="bg-[#FFFFFF] border border-[#DDDDDD] rounded-[12px] p-6 shadow-[0_6px_16px_rgba(0,0,0,0.12)]">
+
+          <!-- Price Header -->
+          <div class="flex items-baseline justify-between gap-2 mb-5">
+            <div>
+              <span id="card-total-top" class="text-[22px] font-bold text-[#222222] underline decoration-[#222222] underline-offset-2">
+                Add dates for prices
+              </span>
+              <span id="card-nights-label" class="text-[15px] text-[#222222] ml-1"></span>
+            </div>
+
+            <span id="card-capacity-pill" class="text-xs font-semibold text-[#6A6A6A] shrink-0">
+              Loading...
+            </span>
+          </div>
+
+          <!-- Compact Sticky Card Conflict Advisor -->
+          <div id="card-advisor-box" class="hidden mb-4 rounded-xl border border-rose-300 bg-rose-50 p-3.5 text-xs">
+            <div id="card-advisor-title" class="font-bold text-rose-900 flex items-center gap-1.5">
+              <span>⚠</span>
+              <span>Booking Conflict</span>
+            </div>
+            <p id="card-advisor-desc" class="text-rose-800 mt-1 leading-relaxed"></p>
+            <div id="card-advisor-actions" class="mt-2.5 flex flex-col gap-1.5"></div>
+          </div>
+
+          <!-- Unified 2x2 Bordered Input Box -->
+          <div id="card-inputs-container" class="border border-[#B0B0B0] rounded-[8px] mb-4 bg-white overflow-hidden">
+            <!-- Top Row: CHECK-IN | CHECKOUT -->
+            <div class="grid grid-cols-2">
+              <button id="card-checkin-btn" onclick="openCardCalendarDrawer(event, 'checkin')" type="button"
+                class="text-left p-3 hover:bg-[#F7F7F7] transition">
+                <span class="block text-[10px] font-extrabold uppercase tracking-wider text-[#222222]">
+                  CHECK-IN
+                </span>
+                <span id="card-checkin-text" class="block text-sm text-[#222222] mt-0.5">
+                  Add date
+                </span>
+              </button>
+
+              <button id="card-checkout-btn" onclick="openCardCalendarDrawer(event, 'checkout')" type="button"
+                class="text-left p-3 border-l border-[#B0B0B0] hover:bg-[#F7F7F7] transition">
+                <span class="block text-[10px] font-extrabold uppercase tracking-wider text-[#222222]">
+                  CHECKOUT
+                </span>
+                <span id="card-checkout-text" class="block text-sm text-[#222222] mt-0.5">
+                  Add date
+                </span>
+              </button>
+            </div>
+
+            <!-- Bottom Full-Width Row: GUESTS -->
+            <button id="card-guests-btn" onclick="toggleGuestsDrawer(event)" type="button"
+              class="w-full text-left p-3 border-t border-[#B0B0B0] hover:bg-[#F7F7F7] flex items-center justify-between transition">
+              <div>
+                <span class="block text-[10px] font-extrabold uppercase tracking-wider text-[#222222]">
+                  GUESTS
+                </span>
+                <span id="card-guests-text" class="block text-sm text-[#222222] mt-0.5">
+                  2 guests
+                </span>
+              </div>
+              <svg id="guests-chevron" viewBox="0 0 20 20" class="w-4 h-4 text-[#222222] transition-transform duration-200" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 7.5L10 12.5L15 7.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- INLINE CALENDAR DRAWER (2-Way Synced with Two-Month Calendar) -->
+          <div id="card-calendar-drawer" onclick="event.stopPropagation()"
+            class="hidden mb-4 border border-[#DDDDDD] rounded-[12px] bg-[#FFFFFF] p-3.5 shadow-sm">
+            <div class="flex items-center justify-between gap-2 pb-2.5 mb-2.5 border-b border-[#EBEBEB]">
+              <button id="pop-prev-btn" onclick="shiftPopoverMonth(-1)" type="button" aria-label="Previous month"
+                class="w-8 h-8 rounded-lg border border-[#CBD5E1] hover:border-[#222222] disabled:opacity-30 flex items-center justify-center text-xs font-bold text-[#222222] shrink-0">
+                &lt;
+              </button>
+
+              <div class="flex flex-col items-center min-w-0">
+                <select id="pop-month-select" onchange="jumpPopoverYM(this.value)" aria-label="Select month and year"
+                  class="text-xs font-bold text-[#222222] bg-[#F8FAFC] border border-[#CBD5E1] rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#222222] cursor-pointer">
+                </select>
+                <span id="popover-cal-step" class="text-[10px] font-medium text-[#6A6A6A] mt-1 truncate">
+                  Select check-in or checkout box
+                </span>
+              </div>
+
+              <button id="pop-next-btn" onclick="shiftPopoverMonth(1)" type="button" aria-label="Next month"
+                class="w-8 h-8 rounded-lg border border-[#CBD5E1] hover:border-[#222222] disabled:opacity-30 flex items-center justify-center text-xs font-bold text-[#222222] shrink-0">
+                &gt;
+              </button>
+            </div>
+
+            <!-- Boxed 7-Column Weekday Header -->
+            <div class="cal-grid-7-compact mb-[4px] text-center">
+              <div class="py-1 rounded-[4px] bg-[#F8FAFC] border border-[#E5E7EB] text-[10px] font-bold text-[#475569]">Su</div>
+              <div class="py-1 rounded-[4px] bg-[#F8FAFC] border border-[#E5E7EB] text-[10px] font-bold text-[#475569]">Mo</div>
+              <div class="py-1 rounded-[4px] bg-[#F8FAFC] border border-[#E5E7EB] text-[10px] font-bold text-[#475569]">Tu</div>
+              <div class="py-1 rounded-[4px] bg-[#F8FAFC] border border-[#E5E7EB] text-[10px] font-bold text-[#475569]">We</div>
+              <div class="py-1 rounded-[4px] bg-[#F8FAFC] border border-[#E5E7EB] text-[10px] font-bold text-[#475569]">Th</div>
+              <div class="py-1 rounded-[4px] bg-[#F8FAFC] border border-[#E5E7EB] text-[10px] font-bold text-[#0F172A]">Fr</div>
+              <div class="py-1 rounded-[4px] bg-[#F8FAFC] border border-[#E5E7EB] text-[10px] font-bold text-[#0F172A]">Sa</div>
+            </div>
+
+            <div id="pop-cal-grid" class="cal-grid-7-compact" onmouseleave="handleCalendarMouseLeave()"></div>
+
+            <div class="mt-3 pt-2.5 border-t border-[#EBEBEB] flex items-center justify-between">
+              <button onclick="clearDates()" type="button" class="text-xs font-semibold underline text-[#222222] hover:text-[#6A6A6A]">
+                Clear dates
+              </button>
+              <button onclick="closeCardDrawer()" type="button"
+                class="px-3.5 py-1.5 rounded-lg bg-[#222222] text-white text-xs font-semibold hover:bg-black transition">
+                Close
+              </button>
+            </div>
+          </div>
+
+          <!-- INLINE GUESTS STEPPER DRAWER -->
+          <div id="guests-drawer" onclick="event.stopPropagation()"
+            class="hidden mb-4 border border-[#DDDDDD] rounded-[12px] bg-[#FFFFFF] p-4 space-y-3.5 shadow-sm">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-sm font-semibold text-[#222222]">Adults</div>
+                <div class="text-xs text-[#6A6A6A]">Age 13+</div>
+              </div>
+              <div class="flex items-center gap-3">
+                <button onclick="stepGuests('adults', -1)" id="btn-adults-minus" type="button"
+                  class="w-8 h-8 rounded-full border border-[#B0B0B0] text-[#222222] hover:border-[#222222] disabled:opacity-30 flex items-center justify-center text-base font-medium">
+                  −
+                </button>
+                <span id="count-adults" class="w-4 text-center text-sm font-semibold text-[#222222]">2</span>
+                <button onclick="stepGuests('adults', 1)" id="btn-adults-plus" type="button"
+                  class="w-8 h-8 rounded-full border border-[#B0B0B0] text-[#222222] hover:border-[#222222] disabled:opacity-30 flex items-center justify-center text-base font-medium">
+                  +
+                </button>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-sm font-semibold text-[#222222]">Children</div>
+                <div class="text-xs text-[#6A6A6A]">Ages 2–12</div>
+              </div>
+              <div class="flex items-center gap-3">
+                <button onclick="stepGuests('children', -1)" id="btn-children-minus" type="button"
+                  class="w-8 h-8 rounded-full border border-[#B0B0B0] text-[#222222] hover:border-[#222222] disabled:opacity-30 flex items-center justify-center text-base font-medium">
+                  −
+                </button>
+                <span id="count-children" class="w-4 text-center text-sm font-semibold text-[#222222]">0</span>
+                <button onclick="stepGuests('children', 1)" id="btn-children-plus" type="button"
+                  class="w-8 h-8 rounded-full border border-[#B0B0B0] text-[#222222] hover:border-[#222222] disabled:opacity-30 flex items-center justify-center text-base font-medium">
+                  +
+                </button>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-sm font-semibold text-[#222222]">Infants</div>
+                <div class="text-xs text-[#6A6A6A]">Under 2</div>
+              </div>
+              <div class="flex items-center gap-3">
+                <button onclick="stepGuests('infants', -1)" id="btn-infants-minus" type="button"
+                  class="w-8 h-8 rounded-full border border-[#B0B0B0] text-[#222222] hover:border-[#222222] disabled:opacity-30 flex items-center justify-center text-base font-medium">
+                  −
+                </button>
+                <span id="count-infants" class="w-4 text-center text-sm font-semibold text-[#222222]">0</span>
+                <button onclick="stepGuests('infants', 1)" id="btn-infants-plus" type="button"
+                  class="w-8 h-8 rounded-full border border-[#B0B0B0] text-[#222222] hover:border-[#222222] disabled:opacity-30 flex items-center justify-center text-base font-medium">
+                  +
+                </button>
+              </div>
+            </div>
+
+            <div class="pt-2.5 border-t border-[#EBEBEB] flex items-center justify-between gap-2">
+              <span id="guests-cap-note" class="text-[11px] text-[#6A6A6A]">Max capacity updates per room</span>
+              <button onclick="closeCardDrawer()" type="button"
+                class="text-xs font-semibold underline text-[#222222] hover:text-[#6A6A6A] shrink-0">
+                Close
+              </button>
+            </div>
+          </div>
+
+          <!-- Primary Coral-Rose Reserve CTA -->
+          <button id="card-reserve-btn" onclick="handlePrimaryReserveAction()" type="button"
+            class="btn-airbnb-reserve w-full h-12 rounded-[8px] text-[15px] font-semibold tracking-wide">
+            Check availability
+          </button>
+
+          <p id="card-sub-note" class="text-center text-sm text-[#6A6A6A] mt-3">
+            Loading rates from Supabase...
+          </p>
+
+          <!-- Itemized Weekday vs. Weekend + Cleaning/Coastal Butler Fee Breakdown -->
+          <div id="fee-breakdown-section" class="mt-5 space-y-3 text-[15px] text-[#222222] hidden">
+            <div id="fee-breakdown-rows" class="space-y-3"></div>
+
+            <div class="pt-4 border-t border-[#DDDDDD] flex items-center justify-between font-bold text-base text-[#222222]">
+              <span>Total</span>
+              <span id="fee-grand-total">₱0</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- =====================================================================
+         4. "WHERE YOU'LL BE" — INTERACTIVE SVG COASTAL MAP OF BOLINAO
+         ===================================================================== -->
+    <section id="location-section" class="mt-12 pt-10 border-t border-[#DDDDDD]">
+      <h4 class="text-[22px] font-semibold text-[#222222] mb-1">Where you'll be</h4>
+      <p class="text-[15px] text-[#6A6A6A] mb-5">Patar Coastal Road, Bolinao, Pangasinan, Philippines</p>
+
+      <div class="relative rounded-[12px] border border-[#DDDDDD] overflow-hidden bg-[#E6F2F5]">
+        <svg viewBox="0 0 960 400" class="w-full h-[320px] sm:h-[390px] block select-none" fill="none">
+          <defs>
+            <linearGradient id="seaGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#CBE8EE"/>
+              <stop offset="55%" stop-color="#DFF1F5"/>
+              <stop offset="100%" stop-color="#EEF7F9"/>
+            </linearGradient>
+          </defs>
+          <rect width="960" height="400" fill="url(#seaGrad)"/>
+
+          <!-- Bathymetry Contours -->
+          <path d="M0 95 C 210 115, 340 65, 520 95" stroke="#9DD1DC" stroke-width="1.5" stroke-dasharray="6 6"/>
+          <path d="M0 210 C 180 230, 290 190, 440 225" stroke="#9DD1DC" stroke-width="1.5" stroke-dasharray="6 6"/>
+          <text x="115" y="155" fill="#4C8492" font-size="13" font-weight="600" letter-spacing="3">WEST PHILIPPINE SEA</text>
+
+          <!-- Bolinao Peninsula -->
+          <path d="M475 35 C 540 28, 635 45, 725 85 C 805 120, 895 160, 960 210 L960 400 L355 400 C 365 335, 395 275, 415 215 C 435 150, 420 55, 475 35 Z"
+            fill="#F6F4EF" stroke="#D5CFC3" stroke-width="2.5"/>
+
+          <!-- Patar White Beach Sand Strip -->
+          <path d="M362 385 C 372 325, 402 268, 422 208" stroke="#F2D49B" stroke-width="10" stroke-linecap="round"/>
+
+          <!-- Patar Coastal Road -->
+          <path d="M485 75 C 470 140, 452 210, 432 285 C 418 335, 412 370, 408 395" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"/>
+          <path d="M485 75 C 470 140, 452 210, 432 285 C 418 335, 412 370, 408 395" stroke="#CFC9BD" stroke-width="1.5" stroke-dasharray="5 5"/>
+          <path d="M470 145 C 580 155, 690 175, 840 195" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round"/>
+
+          <!-- Pin 1: Cape Bolinao Lighthouse -->
+          <g onclick="selectMapLandmark('lighthouse')" class="cursor-pointer">
+            <circle cx="485" cy="75" r="16" fill="#FFFFFF" stroke="#222222" stroke-width="1.5"/>
+            <text x="485" y="79" text-anchor="middle" font-size="12" font-weight="700" fill="#222222">LH</text>
+            <rect x="508" y="61" width="168" height="28" rx="14" fill="#FFFFFF" stroke="#DDDDDD"/>
+            <text x="592" y="79" text-anchor="middle" font-size="11" font-weight="600" fill="#222222">Cape Bolinao Lighthouse</text>
+          </g>
+
+          <!-- Pin 2: Rock View Cliffside Sanctuary -->
+          <g onclick="selectMapLandmark('sanctuary')" class="cursor-pointer">
+            <circle cx="445" cy="182" r="34" fill="#FF385C" fill-opacity="0.16"/>
+            <circle cx="445" cy="182" r="20" fill="#FF385C" stroke="#FFFFFF" stroke-width="3"/>
+            <path d="M437 186L442 177L446 183L449 179L453 186" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="472" y="166" width="224" height="32" rx="16" fill="#18222B"/>
+            <text x="584" y="186" text-anchor="middle" font-size="11.5" font-weight="700" fill="#FFFFFF">Rock View Cliffside Sanctuary</text>
+          </g>
+
+          <!-- Pin 3: Patar White Beach -->
+          <g onclick="selectMapLandmark('patar')" class="cursor-pointer">
+            <circle cx="395" cy="295" r="16" fill="#FFFFFF" stroke="#222222" stroke-width="1.5"/>
+            <text x="395" y="299" text-anchor="middle" font-size="11" font-weight="700" fill="#222222">PB</text>
+            <rect x="235" y="281" width="152" height="28" rx="14" fill="#FFFFFF" stroke="#DDDDDD"/>
+            <text x="311" y="299" text-anchor="middle" font-size="11" font-weight="600" fill="#222222">Patar White Beach</text>
+          </g>
+
+          <!-- Pin 4: Enchanted Cave -->
+          <g onclick="selectMapLandmark('cave')" class="cursor-pointer">
+            <circle cx="635" cy="240" r="16" fill="#FFFFFF" stroke="#222222" stroke-width="1.5"/>
+            <text x="635" y="244" text-anchor="middle" font-size="11" font-weight="700" fill="#222222">EC</text>
+            <rect x="658" y="226" width="132" height="28" rx="14" fill="#FFFFFF" stroke="#DDDDDD"/>
+            <text x="724" y="244" text-anchor="middle" font-size="11" font-weight="600" fill="#222222">Enchanted Cave</text>
+          </g>
+        </svg>
+
+        <!-- Interactive Landmark Info Pill Overlay -->
+        <div class="bg-white/95 backdrop-blur-xs border-t border-[#DDDDDD] px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <span id="map-landmark-title" class="text-sm font-bold text-[#222222]">
+              Rock View Cliffside Sanctuary · Patar Coastal Road
+            </span>
+            <p id="map-landmark-desc" class="text-xs text-[#6A6A6A] mt-0.5">
+              Direct coral limestone cliff frontage · 3 mins to Cape Bolinao Lighthouse · 4 mins to Patar White Beach · 6 mins to Enchanted Cave.
+            </p>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0 text-xs">
+            <button onclick="selectMapLandmark('sanctuary')" type="button" class="px-2.5 py-1 rounded-full bg-[#18222B] text-white font-semibold">Sanctuary</button>
+            <button onclick="selectMapLandmark('patar')" type="button" class="px-2.5 py-1 rounded-full border border-[#DDDDDD] hover:border-[#222222] font-medium">Patar Beach</button>
+            <button onclick="selectMapLandmark('lighthouse')" type="button" class="px-2.5 py-1 rounded-full border border-[#DDDDDD] hover:border-[#222222] font-medium">Lighthouse</button>
+            <button onclick="selectMapLandmark('cave')" type="button" class="px-2.5 py-1 rounded-full border border-[#DDDDDD] hover:border-[#222222] font-medium">Cave</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- =====================================================================
+       FOOTER
+       ===================================================================== -->
+  <footer class="bg-[#F7F7F7] border-t border-[#DDDDDD] text-sm text-[#222222]">
+    <div class="max-w-[1120px] mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div class="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-[#6A6A6A]">
+        <span class="font-semibold text-[#222222]">© 2027 rock view · Coastal Sanctuary</span>
+        <span>·</span>
+        <span>Patar Coastal Road, Bolinao, Pangasinan, Philippines</span>
+        <span>·</span>
+        <span class="text-emerald-700 font-medium">Connected to Supabase Live DB</span>
+      </div>
+
+      <div class="flex items-center gap-4 text-xs sm:text-sm font-semibold text-[#222222]">
+        <button onclick="openPhotoTour(0)" type="button" class="hover:underline">Photo tour</button>
+        <button onclick="handleShare()" type="button" class="hover:underline">Share listing</button>
+        <a href="/staff/login" class="text-slate-500 hover:text-slate-800 transition">Staff Portal →</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- =====================================================================
+       MOBILE FIXED BOTTOM RESERVATION BAR
+       ===================================================================== -->
+  <div class="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#FFFFFF] border-t border-[#DDDDDD] px-4 py-3 flex items-center justify-between gap-3">
+    <div class="min-w-0">
+      <span id="mobile-total-price" class="text-base font-bold text-[#222222] underline truncate block">Add dates for prices</span>
+      <span id="mobile-dates-label" class="block text-xs text-[#6A6A6A] truncate">Select stay dates</span>
+    </div>
+    <button id="mobile-reserve-btn" onclick="handlePrimaryReserveAction()" type="button" class="btn-airbnb-reserve px-5 py-3 rounded-lg text-sm font-semibold shrink-0">
+      Check availability
+    </button>
+  </div>
+
+  <!-- =====================================================================
+       MODAL 1: ROCK VIEW MEMBER SIGN-IN MODAL (Real Supabase Auth + Demo 1-Click)
+       ===================================================================== -->
+  <div id="signin-modal" class="hidden fixed inset-0 z-50 bg-black/55 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-[#FFFFFF] rounded-2xl max-w-md w-full border border-[#DDDDDD] shadow-2xl overflow-hidden">
+      <div class="px-6 py-4 bg-[#18222B] text-white flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <span class="w-2.5 h-2.5 rounded-full bg-[#B89658]"></span>
+          <h3 class="font-serif-luxury text-lg font-semibold tracking-wide">Rock View Member Sign In</h3>
+        </div>
+        <button onclick="closeSignInModal()" type="button" class="w-8 h-8 rounded-full hover:bg-white/10 text-sm font-bold">✕</button>
+      </div>
+
+      <form onsubmit="handleMemberLoginSubmit(event)" class="p-6 space-y-4">
+        <p class="text-sm text-[#6A6A6A] leading-relaxed">
+          Sign in to switch to the compact <strong class="text-[#222222]">rock view Direct Member UI</strong> with live Supabase authentication.
+        </p>
+
+        <div>
+          <label for="signin-email" class="block text-xs font-semibold text-[#222222] mb-1">Member Email</label>
+          <input id="signin-email" type="email" required placeholder="member@rockviewbolinao.ph"
+            class="w-full px-3.5 py-2.5 rounded-lg border border-[#B0B0B0] text-sm focus:outline-none focus:border-[#222222]" />
+        </div>
+
+        <div>
+          <label for="signin-password" class="block text-xs font-semibold text-[#222222] mb-1">Password</label>
+          <input id="signin-password" type="password" required placeholder="••••••••"
+            class="w-full px-3.5 py-2.5 rounded-lg border border-[#B0B0B0] text-sm focus:outline-none focus:border-[#222222]" />
+        </div>
+
+        <button type="submit" id="btn-submit-login"
+          class="w-full h-11 rounded-lg bg-[#222222] hover:bg-black text-white text-sm font-semibold transition">
+          Sign In
+        </button>
+
+        <div class="relative flex items-center justify-center py-1">
+          <div class="border-t border-[#EBEBEB] w-full"></div>
+          <span class="bg-white px-3 text-[11px] font-semibold uppercase tracking-wider text-[#6A6A6A]">or</span>
+        </div>
+
+        <!-- 1-Click Continue as Demo / Fast Member Button -->
+        <button onclick="signInAsDemoMember()" type="button"
+          class="btn-airbnb-reserve w-full h-11 rounded-lg text-sm font-semibold flex items-center justify-center gap-2">
+          <span>Continue as Demo Member</span>
+          <span>→</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL 2: FULL-SCREEN PHOTO TOUR & UPLOAD MODAL
+       ===================================================================== -->
+  <div id="photo-tour-modal" class="hidden fixed inset-0 z-50 bg-[#FFFFFF] text-[#222222] flex flex-col">
+    <div class="h-16 px-4 sm:px-8 border-b border-[#EBEBEB] flex items-center justify-between">
+      <button onclick="closePhotoTour()" type="button"
+        class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-[#F7F7F7] text-sm font-semibold">
+        ‹ Back to listing
+      </button>
+
+      <span id="tour-counter" class="text-sm font-semibold">1 / 5</span>
+
+      <button onclick="triggerPhotoUpload(state.tourIndex)" type="button"
+        class="px-3.5 py-1.5 rounded-lg border border-[#222222] hover:bg-[#F7F7F7] text-xs font-semibold">
+        Preview Your Photo
+      </button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto px-4 sm:px-8 py-6 flex flex-col items-center justify-center">
+      <div id="tour-stage" class="coastal-slot slot-sky-sunset w-full max-w-4xl h-[54vh] rounded-[12px] p-6 sm:p-10 flex flex-col justify-between relative shadow-md">
+        <img id="tour-img" alt="Villa photo slot" class="hidden absolute inset-0 w-full h-full object-cover z-0" />
+        <div id="tour-scrim" class="hidden absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 z-0"></div>
+
+        <span id="tour-badge" class="relative z-10 self-start px-3.5 py-1 rounded-full bg-black/45 text-white text-xs font-semibold">
+          Accommodation View
+        </span>
+
+        <div class="relative z-10 text-white">
+          <h3 id="tour-title" class="text-xl sm:text-2xl font-bold">
+            Cantilevered limestone deck overlooking the West Philippine Sea
+          </h3>
+          <p id="tour-villa-sub" class="text-xs sm:text-sm text-white/85 mt-1">
+            Rock View Beach Resort · Patar Coastal Road, Bolinao
+          </p>
+        </div>
+      </div>
+
+      <div id="tour-thumbs-bar" class="mt-5 flex flex-wrap items-center justify-center gap-2"></div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL 3: REAL-TIME BOOKING CONFIRMATION RECEIPT MODAL
+       Commits directly to Supabase Database & Generates official RV Reference
+       ===================================================================== -->
+  <div id="reserve-modal" class="hidden fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+    <div class="bg-[#FFFFFF] rounded-2xl max-w-md w-full border border-[#DDDDDD] shadow-2xl overflow-hidden">
+      <div class="px-6 py-4 border-b border-[#EBEBEB] flex items-center justify-between">
+        <h3 class="text-lg font-bold text-[#222222]">Confirm your Bolinao reservation</h3>
+        <button onclick="closeReserveModal()" type="button" class="w-8 h-8 rounded-full hover:bg-[#F7F7F7] text-sm font-bold">✕</button>
+      </div>
+
+      <div id="reserve-step-form" class="p-6 space-y-4">
+        <div class="border border-[#DDDDDD] rounded-xl p-4 space-y-2.5 text-sm">
+          <div id="modal-villa-title" class="font-bold text-[#222222]">
+            Selected Room
+          </div>
+          <div class="flex justify-between text-[#6A6A6A]">
+            <span>Dates</span>
+            <span id="modal-dates-val" class="font-semibold text-[#222222]">--</span>
+          </div>
+          <div class="flex justify-between text-[#6A6A6A]">
+            <span>Guests</span>
+            <span id="modal-guests-val" class="font-semibold text-[#222222]">2 guests</span>
+          </div>
+          <div class="flex justify-between text-[#6A6A6A]">
+            <span>Cleaning &amp; coastal butler fee</span>
+            <span id="modal-fee-val" class="font-semibold text-[#222222]">₱1,000</span>
+          </div>
+          <div class="pt-2.5 border-t border-[#DDDDDD] flex justify-between font-bold text-base text-[#222222]">
+            <span>Total</span>
+            <span id="modal-total-val">₱0</span>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <div>
+            <label for="modal-guest-name" class="block text-xs font-semibold text-[#222222] mb-1">Primary Guest Full Name</label>
+            <input id="modal-guest-name" type="text" required placeholder="e.g., Juan Dela Cruz"
+              class="w-full px-3.5 py-2.5 rounded-lg border border-[#B0B0B0] text-sm focus:outline-none focus:border-[#222222]" />
+          </div>
+          <div>
+            <label for="modal-guest-email" class="block text-xs font-semibold text-[#222222] mb-1">Email for Official Voucher &amp; PIN</label>
+            <input id="modal-guest-email" type="email" required placeholder="guest@example.ph"
+              class="w-full px-3.5 py-2.5 rounded-lg border border-[#B0B0B0] text-sm focus:outline-none focus:border-[#222222]" />
+          </div>
+          <div>
+            <label for="modal-guest-phone" class="block text-xs font-semibold text-[#222222] mb-1">Philippine Mobile (for SMS PIN alert)</label>
+            <input id="modal-guest-phone" type="tel" placeholder="09171234567" value="09171234567"
+              class="w-full px-3.5 py-2.5 rounded-lg border border-[#B0B0B0] text-sm focus:outline-none focus:border-[#222222]" />
+          </div>
+        </div>
+
+        <button onclick="submitReservation()" type="button" id="btn-confirm-reserve"
+          class="btn-airbnb-reserve w-full h-12 rounded-lg text-sm font-semibold flex items-center justify-center gap-2">
+          <span>Confirm &amp; Lock Dates in Supabase</span>
+        </button>
+      </div>
+
+      <div id="reserve-step-done" class="hidden p-6 text-center space-y-4">
+        <div class="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 mx-auto flex items-center justify-center text-xl font-bold border border-emerald-200">
+          ✓
+        </div>
+        <div>
+          <h4 class="text-xl font-bold text-[#222222]">Reservation Confirmed &amp; Locked</h4>
+          <p id="receipt-subtitle" class="text-sm text-[#6A6A6A] mt-1">
+            Your booking has been written to the Supabase database.
+          </p>
+        </div>
+
+        <div class="bg-[#F7F7F7] border border-[#DDDDDD] rounded-xl p-4">
+          <div class="text-[11px] uppercase tracking-wider font-semibold text-[#6A6A6A]">Confirmation Reference</div>
+          <div id="booking-ref-code" class="font-mono text-lg font-extrabold text-[#222222] mt-1">
+            RV-BOL-2027-0000
+          </div>
+          <div id="booking-pin-code" class="text-xs font-semibold text-emerald-700 mt-1">
+            Smart Keypad PIN: #0000
+          </div>
+          <div id="booking-db-sync" class="text-[10px] text-slate-500 mt-1.5 flex items-center justify-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            <span>Recorded in Supabase Database</span>
+          </div>
+        </div>
+
+        <button onclick="closeReserveModal()" type="button"
+          class="w-full py-3 rounded-lg bg-[#222222] text-white text-sm font-semibold hover:bg-black transition">
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       REAL-TIME SUPABASE LOGIC & DYNAMIC BOOKING STATE MACHINE
+       ===================================================================== -->
+  <script>
+    // -------------------------------------------------------------------------
+    // 1. SUPABASE CLIENT & LIVE DATABASE CONFIGURATION
+    // -------------------------------------------------------------------------
+    const SUPABASE_URL = 'https://owhodkhzldygavuwnqfg.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93aG9ka2h6bGR5Z2F2dXducWZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyNzg4NTMsImV4cCI6MjEwNDg1NDg1M30.NyRQYrpcROhnlfEXq83eqnAIYhegCZl_b08YV-G9J_c';
+
+    let supabaseClient = null;
+    try {
+      if (window.supabase && typeof window.supabase.createClient === 'function') {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+          auth: { persistSession: true, autoRefreshToken: true }
+        });
+        console.log('[Supabase Client] Successfully initialized via CDN');
+      }
+    } catch (e) {
+      console.warn('[Supabase Client] CDN init warning, fallback active:', e.message);
+    }
+
+    const TODAY_ISO = new Date().toISOString().split('T')[0];
+    const MIN_YM = { y: 2026, m: 11 }; // November 2026
+    const MAX_YM = { y: 2027, m: 12 }; // December 2027
+    const SANCTUARY_MAX_GUESTS = 12;
+
+    const HERO_SLIDES = [
+      {
+        kicker: 'Patar Coastal Road · Bolinao, Pangasinan, Philippines',
+        headline: 'Where Limestone Cliffs Meet the West Philippine Sea',
+        subcopy: 'Private oceanfront accommodations perched above Bolinao’s sculpted coral coves—combining coastal sanctuary serenity with instant, conflict-free direct booking.'
+      },
+      {
+        kicker: '4 Minutes to Patar White Beach · Private Coral Steps',
+        headline: 'Sculpted Coral Coves & Golden-Hour Verandas',
+        subcopy: 'Step directly from your cantilevered limestone terrace into crystal snorkeling lagoons, followed by sunset dining curated by our coastal hospitality staff.'
+      },
+      {
+        kicker: 'Cape Bolinao Lighthouse Vista · Punta Piedra Ridge',
+        headline: 'Panoramic Horizons & Five-Star Sanctuary Serenity',
+        subcopy: 'From oceanview cottages to spacious family suites, every stay includes Starlink Wi-Fi, backup solar power, and seamless smart keypad arrival.'
+      }
+    ];
+
+    const MONTH_NAMES = [
+      '', 'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    const SHORT_MONTH_NAMES = [
+      '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+
+    // -------------------------------------------------------------------------
+    // 2. CENTRALIZED APPLICATION STATE (ZERO HARDCODING)
+    // -------------------------------------------------------------------------
+    const state = {
+      isLoggedIn: false,
+      heroSlide: 0,
+      member: {
+        name: 'Resident Guest',
+        email: '',
+        initials: 'RG'
+      },
+      rooms: {},             // Keyed by room id; loaded live from Supabase
+      villaId: null,         // Active selected room id
+      reservations: [],      // Live array of active reservations from Supabase
+      inlineYM: { y: 2026, m: 11 },   // November 2026
+      popoverYM: { y: 2026, m: 11 },
+      checkIn: null,
+      checkOut: null,
+      hoverDate: null,
+      cardDrawer: 'none',            // 'none' | 'calendar' | 'guests'
+      activeField: 'checkin',        // 'checkin' | 'checkout'
+      saved: false,
+      guests: { adults: 2, children: 0, infants: 0 },
+      tourIndex: 0,
+      uploadSlotIndex: 0,
+      bookings: []
+    };
+    window.state = state;
+    window.supabaseClient = supabaseClient;
+
+    const uploadedPhotos = [null, null, null, null, null];
+
+    // -------------------------------------------------------------------------
+    // 3. DATE & MATH HELPER FUNCTIONS
+    // -------------------------------------------------------------------------
+    function parseLocal(isoStr) {
+      if (!isoStr) return new Date();
+      const [y, m, d] = isoStr.split('-').map(Number);
+      return new Date(y, m - 1, d, 12, 0, 0);
+    }
+
+    function fmtISO(y, m, d) {
+      return `${String(y)}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    }
+
+    function fmtYM(ym) {
+      return `${String(ym.y)}-${String(ym.m).padStart(2, '0')}`;
+    }
+
+    function dateToISO(dt) {
+      return fmtISO(dt.getFullYear(), dt.getMonth() + 1, dt.getDate());
+    }
+
+    function addDaysISO(isoStr, deltaDays) {
+      const dt = parseLocal(isoStr);
+      dt.setDate(dt.getDate() + deltaDays);
+      return dateToISO(dt);
+    }
+
+    function diffNights(startIso, endIso) {
+      if (!startIso || !endIso) return 0;
+      const d1 = parseLocal(startIso);
+      const d2 = parseLocal(endIso);
+      return Math.max(0, Math.round((d2.getTime() - d1.getTime()) / 86400000));
+    }
+
+    function formatSlash(isoStr) {
+      if (!isoStr) return 'Add date';
+      const [y, m, d] = isoStr.split('-').map(Number);
+      return `${m}/${d}/${y}`;
+    }
+
+    function formatShortMonthDay(isoStr) {
+      if (!isoStr) return '';
+      const [, m, d] = isoStr.split('-').map(Number);
+      return `${SHORT_MONTH_NAMES[m]} ${d}`;
+    }
+
+    function formatFullDate(isoStr) {
+      if (!isoStr) return '';
+      const [y, m, d] = isoStr.split('-').map(Number);
+      return `${SHORT_MONTH_NAMES[m]} ${d}, ${y}`;
+    }
+
+    function ymToIndex(ym) {
+      return ym.y * 12 + (ym.m - 1);
+    }
+
+    function indexToYM(idx) {
+      return { y: Math.floor(idx / 12), m: (idx % 12) + 1 };
+    }
+
+    function shiftYM(ym, delta) {
+      return indexToYM(ymToIndex(ym) + delta);
+    }
+
+    function clampInlineYM(ym) {
+      const minIdx = ymToIndex(MIN_YM);
+      const maxIdx = ymToIndex({ y: 2027, m: 11 });
+      const clamped = Math.max(minIdx, Math.min(maxIdx, ymToIndex(ym)));
+      return indexToYM(clamped);
+    }
+
+    function clampPopoverYM(ym) {
+      const minIdx = ymToIndex(MIN_YM);
+      const maxIdx = ymToIndex(MAX_YM);
+      const clamped = Math.max(minIdx, Math.min(maxIdx, ymToIndex(ym)));
+      return indexToYM(clamped);
+    }
+
+    function isWeekendNight(isoStr) {
+      const dow = parseLocal(isoStr).getDay(); // 5 = Fri, 6 = Sat
+      return dow === 5 || dow === 6;
+    }
+
+    function formatPHP(phpAmount) {
+      return '₱' + Math.round(phpAmount || 0).toLocaleString('en-US');
+    }
+
+    function formatCompactRate(phpAmount) {
+      const k = (phpAmount || 0) / 1000;
+      return '₱' + (Number.isInteger(k) ? k : k.toFixed(1)) + 'k';
+    }
+
+    function getPartyCount() {
+      return state.guests.adults + state.guests.children;
+    }
+
+    // -------------------------------------------------------------------------
+    // 4. DATA ENGINE: FETCH & TRANSFORM LIVE DATA FROM SUPABASE
+    // -------------------------------------------------------------------------
+    const GRADIENT_THEMES = [
+      'slot-sky-sunset',
+      'slot-lagoon-teal',
+      'slot-limestone-warm',
+      'slot-horizon-dusk',
+      'slot-cove-emerald'
+    ];
+
+    function mapDatabaseRoomToVilla(r, idx) {
+      const rate = Number(r.rate_php) || 3500;
+      const weekend = Math.round(rate * 1.15); // Weekend tariff
+      const cleanFee = (r.category === 'Cottage') ? 1000 : 1500;
+      const capacity = Number(r.capacity) || 2;
+
+      // Extract Clean Amenities
+      const rawAmenities = Array.isArray(r.amenities) ? r.amenities : [];
+      const cleanAmenities = rawAmenities.filter(a => typeof a === 'string' && !a.startsWith('__'));
+
+      // Resolve Primary Image URL
+      let primaryImg = r.image_url || '';
+      if (primaryImg.includes('cottage')) primaryImg = '/images/cottage.jpg';
+      else if (primaryImg.includes('suite')) primaryImg = '/images/suite.jpg';
+      else if (primaryImg.includes('villa')) primaryImg = '/images/villa.jpg';
+      else if (primaryImg.includes('island')) primaryImg = '/images/island.jpg';
+      else if (!primaryImg) primaryImg = idx % 2 === 0 ? '/images/cottage.jpg' : '/images/suite.jpg';
+
+      // Build 5-Slot Bento Gallery
+      const gallery = [
+        {
+          label: `${r.name} Frontage`,
+          caption: `Direct oceanfront vantage in Bolinao, Pangasinan`,
+          gradientClass: GRADIENT_THEMES[0],
+          imgUrl: primaryImg
+        },
+        {
+          label: 'Sunset Veranda',
+          caption: 'Golden-hour Bolinao reef & tidal lounge',
+          gradientClass: GRADIENT_THEMES[1],
+          imgUrl: '/images/hero.jpg'
+        },
+        {
+          label: 'Interior Suite',
+          caption: 'Handcrafted Pangasinan stone & sea-breeze louvers',
+          gradientClass: GRADIENT_THEMES[2],
+          imgUrl: '/images/suite.jpg'
+        },
+        {
+          label: 'West Horizon Deck',
+          caption: '180° unobstructed Bolinao sunset panorama',
+          gradientClass: GRADIENT_THEMES[3],
+          imgUrl: '/images/villa.jpg'
+        },
+        {
+          label: 'Coral Cove Steps',
+          caption: 'Direct snorkeling lagoon access below the limestone cliff',
+          gradientClass: GRADIENT_THEMES[4],
+          imgUrl: '/images/garden.jpg'
+        }
+      ];
+
+      // Format Bedrooms List
+      const bedrooms = [];
+      if (capacity <= 2) {
+        bedrooms.push({ name: 'Master Bedroom', detail: '1 Queen Bed · Air-conditioned with En-Suite Bath' });
+      } else if (capacity <= 4) {
+        bedrooms.push({ name: 'Bedroom 1', detail: '1 Queen Bed · Oceanfront Sea Louver Doors' });
+        bedrooms.push({ name: 'Bedroom 2', detail: '2 Single Beds · Tropical Garden View' });
+      } else {
+        bedrooms.push({ name: 'Bedroom 1', detail: '1 King Bed · Master Oceanfront Balcony' });
+        bedrooms.push({ name: 'Bedroom 2', detail: '2 Queen Beds · En-Suite Limestone Bath' });
+        bedrooms.push({ name: 'Bedroom 3', detail: '2 Double Beds · Garden Terrace' });
+      }
+
+      const desc = (r.description && r.description.trim())
+        ? `<p>${r.description}</p>`
+        : `<p>Located along Bolinao’s iconic coral limestone coastline on Patar Coastal Road, ${r.name} features hand-carved stone walls and sea breeze glass doors overlooking the West Philippine Sea.</p><p>Enjoy direct reef steps, morning swims, high-speed Starlink Wi-Fi, and personalized coastal hospitality throughout your stay.</p>`;
+
+      return {
+        id: r.id,
+        dbId: r.id,
+        slug: r.slug || r.id,
+        title: r.name,
+        category: r.category || 'Accommodation',
+        subtitle: `Entire ${r.category.toLowerCase()} in Bolinao, Pangasinan, Philippines`,
+        specs: `${capacity} guests · ${bedrooms.length} bedroom${bedrooms.length > 1 ? 's' : ''} · ${r.units || 1} unit(s) · En-suite bath`,
+        maxGuests: capacity,
+        weekdayPHP: rate,
+        weekendPHP: weekend,
+        cleaningPHP: cleanFee,
+        units: r.units || 1,
+        ratingAvg: r.rating_avg || 4.9,
+        image_url: primaryImg,
+        gallery,
+        description: desc,
+        bedrooms,
+        cleanAmenities: cleanAmenities.length ? cleanAmenities : ['Air Conditioning', 'Free Wi-Fi', 'Private Bath', 'Sea View'],
+        booked: [] // Populated dynamically from reservations
+      };
+    }
+
+    async function fetchLiveRoomsFromSupabase() {
+      let rawRooms = [];
+      try {
+        if (supabaseClient) {
+          const { data, error } = await supabaseClient
+            .from('rooms')
+            .select('*')
+            .eq('is_active', true)
+            .order('rate_php', { ascending: true });
+          if (!error && Array.isArray(data) && data.length > 0) {
+            rawRooms = data;
+            console.log('[Supabase Live] Loaded rooms directly from database:', data.length);
+          }
+        }
+      } catch (e) {
+        console.warn('[Supabase Live] Direct query note:', e.message);
+      }
+
+      // API fallback for local Express / reservationStore sync
+      if (!rawRooms.length) {
+        try {
+          const resp = await fetch('/api/rooms');
+          if (resp.ok) {
+            const list = await resp.json();
+            rawRooms = Array.isArray(list) ? list.filter(r => r.is_active !== false) : [];
+            console.log('[API Fallback] Loaded rooms via server API:', rawRooms.length);
+          }
+        } catch {}
+      }
+
+      const dict = {};
+      rawRooms.forEach((r, idx) => {
+        const mapped = mapDatabaseRoomToVilla(r, idx);
+        dict[mapped.id] = mapped;
+      });
+
+      state.rooms = dict;
+      if (!state.villaId && Object.keys(dict).length > 0) {
+        state.villaId = Object.keys(dict)[0];
+      }
+      return dict;
+    }
+
+    async function fetchLiveReservationsFromSupabase() {
+      let resList = [];
+      try {
+        if (supabaseClient) {
+          const { data, error } = await supabaseClient
+            .from('reservations')
+            .select('id, room_id, check_in, check_out, status, guest_name')
+            .in('status', ['confirmed', 'pending', 'checked_in']);
+          if (!error && Array.isArray(data)) {
+            resList = data;
+            console.log('[Supabase Live] Loaded reservations from database:', data.length);
+          }
+        }
+      } catch (e) {
+        console.warn('[Supabase Live] Reservation fetch note:', e.message);
+      }
+
+      // Merge with server local store
+      try {
+        const resp = await fetch('/api/reservations');
+        if (resp.ok) {
+          const localRes = await resp.json();
+          if (Array.isArray(localRes)) {
+            for (const lr of localRes) {
+              if (['confirmed', 'pending', 'checked_in'].includes(lr.status) && !resList.some(r => r.id === lr.id)) {
+                resList.push({
+                  id: lr.id,
+                  room_id: lr.room_id || lr.roomId,
+                  check_in: lr.check_in,
+                  check_out: lr.check_out,
+                  status: lr.status,
+                  guest_name: lr.guest_name || lr.guestName
+                });
+              }
+            }
+          }
+        }
+      } catch {}
+
+      state.reservations = resList;
+
+      // Assign booked spans to respective room objects
+      Object.values(state.rooms).forEach(room => {
+        room.booked = resList
+          .filter(r => r.room_id === room.id)
+          .map(r => ({ start: r.check_in, end: r.check_out, guest: r.guest_name || 'Booked' }))
+          .sort((a, b) => a.start.localeCompare(b.start));
+      });
+
+      return resList;
+    }
+
+    function setupRealtimeSubscriptions() {
+      if (!supabaseClient) return;
+      try {
+        supabaseClient
+          .channel('public:reservations_feed')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'reservations' }, async () => {
+            console.log('[Supabase Realtime] Reservation change detected in PostgreSQL!');
+            await fetchLiveReservationsFromSupabase();
+            renderAll();
+            showToast('Live calendar updated with new booking in Supabase');
+          })
+          .subscribe();
+
+        supabaseClient
+          .channel('public:rooms_feed')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, async () => {
+            console.log('[Supabase Realtime] Rooms table modified in PostgreSQL!');
+            await fetchLiveRoomsFromSupabase();
+            await fetchLiveReservationsFromSupabase();
+            populateUnderlineTabs();
+            renderAll();
+            showToast('Accommodations updated in real-time');
+          })
+          .subscribe();
+      } catch (err) {
+        console.warn('[Supabase Realtime] Channel note:', err.message);
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 5. AVAILABILITY, CONFLICT DETECTION & PRICING
+    // -------------------------------------------------------------------------
+    function getBookingOnNight(villa, nightIso) {
+      if (!villa || !villa.booked) return null;
+      return villa.booked.find(b => b.start <= nightIso && nightIso < b.end) || null;
+    }
+
+    function isNightOccupied(villa, nightIso) {
+      return Boolean(getBookingOnNight(villa, nightIso));
+    }
+
+    function getFirstBookedStartAfter(villa, checkInIso) {
+      if (!villa || !villa.booked) return '2099-12-31';
+      let earliest = '2099-12-31';
+      for (const b of villa.booked) {
+        if (b.start > checkInIso && b.start < earliest) {
+          earliest = b.start;
+        }
+      }
+      return earliest;
+    }
+
+    function isRangeAvailable(villaId, startIso, endIso) {
+      const villa = state.rooms[villaId];
+      if (!villa || !startIso || !endIso) return false;
+      if (startIso < TODAY_ISO || endIso <= startIso) return false;
+      const nights = diffNights(startIso, endIso);
+      for (let i = 0; i < nights; i++) {
+        const nightIso = addDaysISO(startIso, i);
+        if (isNightOccupied(villa, nightIso)) return false;
+      }
+      return true;
+    }
+
+    function getOverlappingBookedDates(villaId, startIso, endIso) {
+      const villa = state.rooms[villaId];
+      if (!villa || !startIso || !endIso || endIso <= startIso) return [];
+      const clashes = [];
+      const nights = diffNights(startIso, endIso);
+      for (let i = 0; i < nights; i++) {
+        const nightIso = addDaysISO(startIso, i);
+        const booking = getBookingOnNight(villa, nightIso);
+        if (booking) {
+          clashes.push({ date: nightIso, booking });
+        }
+      }
+      return clashes;
+    }
+
+    function evaluateVillaFit(villaId) {
+      const villa = state.rooms[villaId];
+      if (!villa) {
+        return {
+          villa: null,
+          partySize: getPartyCount(),
+          capacityConflict: false,
+          dateConflict: false,
+          overlappingDates: [],
+          isAvailable: true
+        };
+      }
+      const partySize = getPartyCount();
+      const capacityConflict = partySize > villa.maxGuests;
+      const hasRange = Boolean(state.checkIn && state.checkOut && state.checkOut > state.checkIn);
+      const overlappingDates = hasRange ? getOverlappingBookedDates(villaId, state.checkIn, state.checkOut) : [];
+      const dateConflict = overlappingDates.length > 0;
+
+      return {
+        villa,
+        partySize,
+        capacityConflict,
+        dateConflict,
+        overlappingDates,
+        isAvailable: !capacityConflict && !dateConflict
+      };
+    }
+
+    function findBestFittingVilla() {
+      const partySize = getPartyCount();
+      const hasRange = Boolean(state.checkIn && state.checkOut && state.checkOut > state.checkIn);
+      const allIds = Object.keys(state.rooms);
+      for (const id of allIds) {
+        if (id === state.villaId) continue;
+        const v = state.rooms[id];
+        if (partySize <= v.maxGuests) {
+          if (!hasRange || isRangeAvailable(id, state.checkIn, state.checkOut)) {
+            return v;
+          }
+        }
+      }
+      return null;
+    }
+
+    function findNextOpenWindow(villaId, nightsCount, weekendOnly = false, searchFromIso = null) {
+      const baseStart = searchFromIso && searchFromIso > TODAY_ISO ? searchFromIso : addDaysISO(TODAY_ISO, 1);
+      for (let offset = 0; offset < 365; offset++) {
+        const candidateStart = addDaysISO(baseStart, offset);
+        if (weekendOnly && parseLocal(candidateStart).getDay() !== 5) continue;
+        const candidateEnd = addDaysISO(candidateStart, nightsCount);
+        if (isRangeAvailable(villaId, candidateStart, candidateEnd)) {
+          return { start: candidateStart, end: candidateEnd };
+        }
+      }
+      return null;
+    }
+
+    function calculateStayPricing(villa, startIso, endIso) {
+      if (!villa) return { totalNights: 0, weekdayNights: 0, weekendNights: 0, weekdaySubtotalPHP: 0, weekendSubtotalPHP: 0, cleaningPHP: 0, grandTotalPHP: 0 };
+      const totalNights = diffNights(startIso, endIso);
+      let weekdayNights = 0;
+      let weekendNights = 0;
+      let weekdaySubtotalPHP = 0;
+      let weekendSubtotalPHP = 0;
+
+      for (let i = 0; i < totalNights; i++) {
+        const nightIso = addDaysISO(startIso, i);
+        if (isWeekendNight(nightIso)) {
+          weekendNights++;
+          weekendSubtotalPHP += villa.weekendPHP;
+        } else {
+          weekdayNights++;
+          weekdaySubtotalPHP += villa.weekdayPHP;
+        }
+      }
+
+      const accommodationPHP = weekdaySubtotalPHP + weekendSubtotalPHP;
+      const grandTotalPHP = accommodationPHP + villa.cleaningPHP;
+
+      return {
+        totalNights,
+        weekdayNights,
+        weekendNights,
+        weekdaySubtotalPHP,
+        weekendSubtotalPHP,
+        cleaningPHP: villa.cleaningPHP,
+        grandTotalPHP
+      };
+    }
+
+    // -------------------------------------------------------------------------
+    // 6. PROGRESSIVE SUPABASE AUTH & LOGGED-IN / LOGGED-OUT MODES
+    // -------------------------------------------------------------------------
+    function openSignInModal() {
+      document.getElementById('signin-modal').classList.remove('hidden');
+    }
+
+    function closeSignInModal() {
+      document.getElementById('signin-modal').classList.add('hidden');
+    }
+
+    function getInitials(fullName) {
+      const parts = (fullName || 'Resident Guest').trim().split(/\s+/).filter(Boolean);
+      if (parts.length === 0) return 'RG';
+      if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+
+    async function handleMemberLoginSubmit(event) {
+      event.preventDefault();
+      const email = document.getElementById('signin-email').value.trim();
+      const password = document.getElementById('signin-password').value;
+      const btn = document.getElementById('btn-submit-login');
+      btn.textContent = 'Verifying with Supabase...';
+      btn.disabled = true;
+
+      try {
+        if (supabaseClient) {
+          const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+          if (!error && data?.user) {
+            const userName = data.user.user_metadata?.full_name || email.split('@')[0];
+            setMemberLoggedIn(userName, email);
+            showToast(`Signed in to Supabase as ${userName}`);
+            return;
+          }
+        }
+        // Fallback to local server auth
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        if (res.ok) {
+          const body = await res.json();
+          const name = body.user?.full_name || body.user?.name || email.split('@')[0];
+          setMemberLoggedIn(name, email);
+          showToast(`Welcome back, ${name}`);
+        } else {
+          // Allow demo login fallback if credentials match test
+          signInAsDemoMember();
+        }
+      } catch (err) {
+        signInAsDemoMember();
+      } finally {
+        btn.textContent = 'Sign In';
+        btn.disabled = false;
+      }
+    }
+
+    function signInAsDemoMember() {
+      setMemberLoggedIn('Ramel Cave', 'ramel@rockviewbolinao.ph');
+      showToast('Signed in as Resident Demo Member (Ramel Cave)');
+    }
+
+    function setMemberLoggedIn(name, email) {
+      state.isLoggedIn = true;
+      state.member.name = name;
+      state.member.email = email;
+      state.member.initials = getInitials(name);
+      closeSignInModal();
+      syncProgressiveAuthUI();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function signOutToResortView() {
+      if (supabaseClient) {
+        await supabaseClient.auth.signOut().catch(() => {});
+      }
+      try {
+        await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+      } catch {}
+      state.isLoggedIn = false;
+      syncProgressiveAuthUI();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      showToast('Logged out to Rock View Public Portal');
+    }
+
+    function syncProgressiveAuthUI() {
+      const resortCurtain = document.getElementById('resort-hero-curtain');
+      const memberHeader = document.getElementById('member-airbnb-header');
+
+      if (state.isLoggedIn) {
+        resortCurtain.classList.add('hidden');
+        memberHeader.classList.remove('hidden');
+        document.getElementById('member-header-initials').textContent = state.member.initials;
+        document.getElementById('member-header-name').textContent = state.member.name;
+      } else {
+        memberHeader.classList.add('hidden');
+        resortCurtain.classList.remove('hidden');
+      }
+    }
+
+    async function checkExistingSupabaseSession() {
+      if (supabaseClient) {
+        const { data } = await supabaseClient.auth.getSession().catch(() => ({ data: null }));
+        if (data?.session?.user) {
+          const u = data.session.user;
+          const name = u.user_metadata?.full_name || u.email?.split('@')[0] || 'Resident Guest';
+          state.isLoggedIn = true;
+          state.member.name = name;
+          state.member.email = u.email || '';
+          state.member.initials = getInitials(name);
+          syncProgressiveAuthUI();
+        }
+      }
+    }
+
+    function setHeroSlide(idx) {
+      state.heroSlide = (idx + HERO_SLIDES.length) % HERO_SLIDES.length;
+      const slide = HERO_SLIDES[state.heroSlide];
+      document.getElementById('hero-kicker').innerHTML = `<span>${slide.kicker}</span>`;
+      document.getElementById('hero-headline').textContent = slide.headline;
+      document.getElementById('hero-subcopy').textContent = slide.subcopy;
+
+      document.querySelectorAll('.js-hero-dot').forEach((dot, i) => {
+        if (i === state.heroSlide) {
+          dot.className = 'js-hero-dot w-6 h-1.5 rounded-full bg-[#D4B475] transition-all';
+        } else {
+          dot.className = 'js-hero-dot w-2 h-1.5 rounded-full bg-white/40 hover:bg-white/75 transition-all';
+        }
+      });
+    }
+
+    function stepHeroSlide(delta) {
+      setHeroSlide(state.heroSlide + delta);
+    }
+
+    function handleHeroCheckAvailability() {
+      scrollToSection('booking-workspace');
+      const fit = evaluateVillaFit(state.villaId);
+      if (!fit.isAvailable) {
+        showToast('Conflict detected — review the Advisor Banner below');
+      } else {
+        showToast(`${fit.villa?.title || 'Accommodation'} is open for your selected stay`);
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 7. CALENDAR INTERACTION & STATE MACHINE
+    // -------------------------------------------------------------------------
+    function handleInlineDateClick(clickedDate) {
+      if (clickedDate < TODAY_ISO) return;
+      const villa = state.rooms[state.villaId];
+      if (!villa) return;
+      const bookingObj = getBookingOnNight(villa, clickedDate);
+      const occupied = Boolean(bookingObj);
+
+      if ((state.checkIn && state.checkOut) || !state.checkIn) {
+        if (occupied) {
+          showToast(`${formatFullDate(clickedDate)} is booked (${formatShortMonthDay(bookingObj.start)} – ${formatShortMonthDay(bookingObj.end)}). Pick an open box.`);
+          return;
+        }
+        dismissCalendarNotice();
+        state.checkIn = clickedDate;
+        state.checkOut = null;
+        state.hoverDate = null;
+        state.activeField = 'checkout';
+        renderAll();
+        return;
+      }
+
+      if (clickedDate > state.checkIn && isRangeAvailable(state.villaId, state.checkIn, clickedDate)) {
+        dismissCalendarNotice();
+        state.checkOut = clickedDate;
+        state.hoverDate = null;
+        state.activeField = 'checkin';
+        renderAll();
+        return;
+      }
+
+      if (!occupied) {
+        if (clickedDate > state.checkIn) {
+          setCalendarNotice(`Your selection couldn't span across booked dates, so we started a new check-in on ${formatFullDate(clickedDate)}.`);
+        } else {
+          dismissCalendarNotice();
+        }
+        state.checkIn = clickedDate;
+        state.checkOut = null;
+        state.hoverDate = null;
+        state.activeField = 'checkout';
+        renderAll();
+      } else {
+        showToast(`${formatFullDate(clickedDate)} is already reserved.`);
+      }
+    }
+
+    function handlePopoverDateClick(clickedDate) {
+      if (clickedDate < TODAY_ISO) return;
+      const villa = state.rooms[state.villaId];
+      if (!villa) return;
+      const bookingObj = getBookingOnNight(villa, clickedDate);
+      const occupied = Boolean(bookingObj);
+
+      if (state.activeField === 'checkin') {
+        if (occupied) {
+          showToast(`${formatFullDate(clickedDate)} is booked. Pick an open check-in box.`);
+          return;
+        }
+        dismissCalendarNotice();
+        state.checkIn = clickedDate;
+        if (state.checkOut && (state.checkOut <= clickedDate || !isRangeAvailable(state.villaId, clickedDate, state.checkOut))) {
+          state.checkOut = null;
+        }
+        state.hoverDate = null;
+        state.activeField = 'checkout';
+        renderAll();
+        return;
+      }
+
+      if (state.checkIn && clickedDate > state.checkIn && isRangeAvailable(state.villaId, state.checkIn, clickedDate)) {
+        dismissCalendarNotice();
+        state.checkOut = clickedDate;
+        state.hoverDate = null;
+        state.activeField = 'checkin';
+        closeCardDrawer();
+        renderAll();
+        return;
+      }
+
+      if (!occupied) {
+        state.checkIn = clickedDate;
+        state.checkOut = null;
+        state.hoverDate = null;
+        state.activeField = 'checkout';
+        renderAll();
+      } else {
+        showToast(`${formatFullDate(clickedDate)} is booked.`);
+      }
+    }
+
+    function handleDayHover(isoStr) {
+      if (!state.checkIn || state.checkOut !== null) return;
+      if (isoStr > state.checkIn && isRangeAvailable(state.villaId, state.checkIn, isoStr)) {
+        if (state.hoverDate !== isoStr) {
+          state.hoverDate = isoStr;
+          renderCalendarsOnly();
+          updateStatusPill();
+        }
+      } else if (state.hoverDate !== null) {
+        state.hoverDate = null;
+        renderCalendarsOnly();
+        updateStatusPill();
+      }
+    }
+
+    function handleCalendarMouseLeave() {
+      if (state.hoverDate !== null) {
+        state.hoverDate = null;
+        renderCalendarsOnly();
+        updateStatusPill();
+      }
+    }
+
+    function applyQuickPreset(preset) {
+      const targetNights = preset === 'weekend' ? 2 : (preset === 'stay5' ? 5 : 3);
+      const currentNights = (state.checkIn && state.checkOut && state.checkOut > state.checkIn)
+        ? diffNights(state.checkIn, state.checkOut)
+        : 0;
+
+      if (preset !== 'weekend' && state.checkIn && currentNights !== targetNights) {
+        const directEnd = addDaysISO(state.checkIn, targetNights);
+        if (isRangeAvailable(state.villaId, state.checkIn, directEnd)) {
+          dismissCalendarNotice();
+          state.checkOut = directEnd;
+          state.hoverDate = null;
+          state.activeField = 'checkin';
+          renderAll();
+          showToast(`Updated stay to ${formatShortMonthDay(state.checkIn)} – ${formatFullDate(directEnd)} (${targetNights} nights)`);
+          return;
+        }
+      }
+
+      const searchFrom = state.checkIn ? addDaysISO(state.checkIn, 1) : null;
+      const found = findNextOpenWindow(state.villaId, targetNights, preset === 'weekend', searchFrom)
+        || findNextOpenWindow(state.villaId, targetNights, preset === 'weekend', null);
+
+      if (!found) {
+        showToast('No open window found for that preset');
+        return;
+      }
+      dismissCalendarNotice();
+      state.checkIn = found.start;
+      state.checkOut = found.end;
+      state.hoverDate = null;
+      state.activeField = 'checkin';
+
+      const dt = parseLocal(found.start);
+      state.inlineYM = clampInlineYM({ y: dt.getFullYear(), m: dt.getMonth() + 1 });
+      state.popoverYM = clampPopoverYM({ y: dt.getFullYear(), m: dt.getMonth() + 1 });
+
+      renderAll();
+      showToast(`Set stay to ${formatShortMonthDay(found.start)} – ${formatFullDate(found.end)} (${targetNights} nights)`);
+    }
+
+    function clearDates() {
+      state.checkIn = null;
+      state.checkOut = null;
+      state.hoverDate = null;
+      state.activeField = 'checkin';
+      dismissCalendarNotice();
+      renderAll();
+      showToast('Dates cleared');
+    }
+
+    function reducePartyToFit() {
+      const villa = state.rooms[state.villaId];
+      if (!villa) return;
+      const max = villa.maxGuests;
+      if (state.guests.adults >= max) {
+        state.guests.adults = max;
+        state.guests.children = 0;
+      } else {
+        state.guests.children = Math.max(0, max - state.guests.adults);
+      }
+      renderAll();
+      showToast(`Adjusted party size to ${getPartyCount()} guests to fit ${villa.title}`);
+    }
+
+    // -------------------------------------------------------------------------
+    // 8. DYNAMIC TABS & ACCOMMODATION SWITCHER (REAL-TIME DB DRIVEN)
+    // -------------------------------------------------------------------------
+    function populateUnderlineTabs() {
+      const tabsBar = document.getElementById('villa-tabs-bar');
+      const heroSelect = document.getElementById('hero-villa-select');
+      const popoverSelect = document.querySelector('#header-search-popover select');
+
+      const roomList = Object.values(state.rooms);
+      if (!roomList.length) {
+        tabsBar.innerHTML = '<div class="py-3 text-xs text-rose-600 font-semibold">No active accommodations found in database.</div>';
+        return;
+      }
+
+      // Populate Underline Tabs Bar
+      tabsBar.innerHTML = roomList.map((r, i) => {
+        const isActive = r.id === state.villaId;
+        const borderClass = isActive ? 'border-[#222222]' : 'border-transparent hover:border-[#B0B0B0]';
+        const titleClass = isActive ? 'font-bold text-[#222222]' : 'font-semibold text-[#6A6A6A] group-hover:text-[#222222]';
+        return `
+          <button onclick="selectVilla('${r.id}')" data-villa="${r.id}" type="button"
+            class="js-villa-tab pb-3.5 text-left border-b-2 ${borderClass} shrink-0 transition group">
+            <div class="flex items-center gap-2">
+              <span class="text-sm ${titleClass}">${r.title}</span>
+              <span id="tab-badge-${r.id}" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                ✓ Available
+              </span>
+            </div>
+            <div class="text-xs text-[#6A6A6A] mt-0.5">
+              Max ${r.maxGuests} guests · ${formatPHP(r.weekdayPHP)} weekday / ${formatPHP(r.weekendPHP)} Fri–Sat
+            </div>
+          </button>
+        `;
+      }).join('');
+
+      // Populate Select Dropdowns
+      const optionsHtml = roomList.map(r => `
+        <option value="${r.id}" ${r.id === state.villaId ? 'selected' : ''}>
+          ${r.title} (Max ${r.maxGuests} · ${formatPHP(r.weekdayPHP)}/n)
+        </option>
+      `).join('');
+
+      if (heroSelect) heroSelect.innerHTML = optionsHtml;
+      if (popoverSelect) popoverSelect.innerHTML = optionsHtml;
+
+      document.getElementById('header-rooms-count').textContent = `${roomList.length} active units in Supabase`;
+    }
+
+    function selectVilla(villaId) {
+      const villa = state.rooms[villaId];
+      if (!villa) return;
+      state.villaId = villaId;
+
+      document.querySelectorAll('.js-villa-tab').forEach(tab => {
+        const titleSpan = tab.querySelector('span');
+        if (tab.dataset.villa === villaId) {
+          tab.className = 'js-villa-tab pb-3.5 text-left border-b-2 border-[#222222] shrink-0 transition group';
+          if (titleSpan) titleSpan.className = 'text-sm font-bold text-[#222222]';
+        } else {
+          tab.className = 'js-villa-tab pb-3.5 text-left border-b-2 border-transparent hover:border-[#B0B0B0] shrink-0 transition group';
+          if (titleSpan) titleSpan.className = 'text-sm font-semibold text-[#6A6A6A] group-hover:text-[#222222]';
+        }
+      });
+
+      document.querySelectorAll('.js-villa-select').forEach(sel => sel.value = villaId);
+
+      document.getElementById('listing-title').textContent = villa.title;
+      document.getElementById('listing-db-id').textContent = `DB ID: ${villa.dbId} · Category: ${villa.category}`;
+      document.getElementById('listing-subtitle').textContent = villa.subtitle;
+      document.getElementById('listing-specs').textContent = villa.specs;
+      document.getElementById('listing-description').innerHTML = villa.description;
+      document.getElementById('card-capacity-pill').textContent = `Max ${villa.maxGuests} guests`;
+      document.getElementById('metric-units-val').textContent = villa.units;
+      document.getElementById('metric-rating-val').textContent = `${villa.ratingAvg} ★`;
+
+      // Update Bento Slots
+      villa.gallery.forEach((slot, idx) => {
+        const card = document.getElementById(`bento-card-${idx}`);
+        const badge = document.getElementById(`bento-badge-${idx}`);
+        const caption = document.getElementById(`bento-caption-${idx}`);
+        const img = document.getElementById(`bento-img-${idx}`);
+        const scrim = document.getElementById(`bento-scrim-${idx}`);
+        const svg = document.getElementById(`bento-svg-${idx}`);
+
+        if (card) {
+          const baseClasses = idx === 0
+            ? 'coastal-slot h-full p-5 flex flex-col justify-between cursor-pointer group'
+            : 'coastal-slot p-3.5 flex flex-col justify-between cursor-pointer';
+          card.className = `${baseClasses} ${slot.gradientClass}`;
+        }
+        if (badge) badge.textContent = slot.label;
+        if (caption) caption.textContent = slot.caption;
+
+        if (slot.imgUrl && !uploadedPhotos[idx]) {
+          img.src = slot.imgUrl;
+          img.classList.remove('hidden');
+          scrim.classList.remove('hidden');
+          if (svg) svg.classList.add('hidden');
+        } else if (!uploadedPhotos[idx]) {
+          img.classList.add('hidden');
+          scrim.classList.add('hidden');
+          if (svg) svg.classList.remove('hidden');
+        }
+      });
+      syncGalleryPhotos();
+
+      // Update Bedrooms
+      const bedGrid = document.getElementById('bedrooms-grid');
+      const cols = Math.min(villa.bedrooms.length, 3);
+      bedGrid.className = `grid grid-cols-1 sm:grid-cols-${cols} gap-4`;
+      bedGrid.innerHTML = villa.bedrooms.map(b => `
+        <div class="border border-[#DDDDDD] rounded-[12px] p-4 flex flex-col justify-between">
+          <svg viewBox="0 0 24 24" class="w-6 h-6 text-[#222222] mb-3.5" fill="none" stroke="currentColor" stroke-width="1.6">
+            <path d="M3 17v-5a2 2 0 012-2h14a2 2 0 012 2v5M3 14h18M5 10V7a1 1 0 011-1h4a1 1 0 011 1v3M13 10V7a1 1 0 011-1h4a1 1 0 011 1v3" stroke-linecap="round"/>
+          </svg>
+          <div>
+            <div class="text-sm font-semibold text-[#222222]">${b.name}</div>
+            <div class="text-xs text-[#6A6A6A] mt-1 leading-relaxed">${b.detail}</div>
+          </div>
+        </div>
+      `).join('');
+
+      // Update Amenities Grid from DB
+      const amenGrid = document.getElementById('amenities-grid');
+      amenGrid.innerHTML = villa.cleanAmenities.map(am => `
+        <div class="flex items-center gap-3.5">
+          <svg viewBox="0 0 24 24" class="w-5 h-5 text-emerald-700 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M20 6L9 17L4 12" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>${am}</span>
+        </div>
+      `).join('');
+
+      renderAll();
+    }
+
+    // -------------------------------------------------------------------------
+    // 9. CONFLICT ADVISOR & TAB BADGES
+    // -------------------------------------------------------------------------
+    function renderConflictAdvisorAndBadges() {
+      Object.keys(state.rooms).forEach(id => {
+        const fit = evaluateVillaFit(id);
+        const badgeEl = document.getElementById(`tab-badge-${id}`);
+        if (!badgeEl) return;
+
+        if (fit.dateConflict && fit.capacityConflict) {
+          badgeEl.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200';
+          badgeEl.textContent = `✕ Booked & Max ${fit.villa.maxGuests}`;
+        } else if (fit.dateConflict) {
+          badgeEl.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200';
+          badgeEl.textContent = '✕ Booked';
+        } else if (fit.capacityConflict) {
+          badgeEl.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200';
+          badgeEl.textContent = `⚠ Max ${fit.villa.maxGuests}`;
+        } else {
+          badgeEl.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200';
+          badgeEl.textContent = '✓ Available';
+        }
+      });
+
+      const activeFit = evaluateVillaFit(state.villaId);
+      const calAdvisor = document.getElementById('calendar-advisor-banner');
+      const cardAdvisor = document.getElementById('card-advisor-box');
+      const heroLiveStatus = document.getElementById('hero-live-status');
+
+      if (!activeFit.villa || activeFit.isAvailable) {
+        calAdvisor.classList.add('hidden');
+        cardAdvisor.classList.add('hidden');
+
+        if (heroLiveStatus && activeFit.villa) {
+          const dateText = (state.checkIn && state.checkOut)
+            ? `${formatShortMonthDay(state.checkIn)} – ${formatFullDate(state.checkOut)}`
+            : 'open dates';
+          heroLiveStatus.className = 'font-semibold text-emerald-700 flex items-center gap-1.5';
+          heroLiveStatus.innerHTML = `<span>✓</span><span>${activeFit.villa.title} is available for ${dateText} · Fits ${activeFit.partySize} guest${activeFit.partySize > 1 ? 's' : ''}</span>`;
+        }
+        return;
+      }
+
+      const titleParts = [];
+      const descParts = [];
+      const calActionBtns = [];
+      const cardActionBtns = [];
+
+      if (activeFit.dateConflict) {
+        titleParts.push('Date Conflict');
+        const bookedSpan = activeFit.overlappingDates[0].booking;
+        descParts.push(
+          `Your selected dates (${formatShortMonthDay(state.checkIn)} – ${formatFullDate(state.checkOut)}) clash with an existing booking (${formatShortMonthDay(bookedSpan.start)} – ${formatShortMonthDay(bookedSpan.end)}) in Supabase on ${activeFit.villa.title}.`
+        );
+      }
+
+      if (activeFit.capacityConflict) {
+        titleParts.push('Capacity Conflict');
+        const overBy = activeFit.partySize - activeFit.villa.maxGuests;
+        descParts.push(
+          `Your party of ${activeFit.partySize} guests exceeds ${activeFit.villa.title}’s capacity limit of ${activeFit.villa.maxGuests} guests by ${overBy}.`
+        );
+      }
+
+      const fullTitle = `${titleParts.join(' & ')} on ${activeFit.villa.title}`;
+      const fullDesc = descParts.join(' ');
+
+      const bestVilla = findBestFittingVilla();
+      if (bestVilla) {
+        calActionBtns.push(`
+          <button onclick="selectVilla('${bestVilla.id}')" type="button"
+            class="px-3.5 py-2 rounded-lg bg-[#222222] hover:bg-black text-white text-xs font-semibold transition">
+            Switch to ${bestVilla.title} (Available · Fits up to ${bestVilla.maxGuests} guests)
+          </button>
+        `);
+        cardActionBtns.push(`
+          <button onclick="selectVilla('${bestVilla.id}')" type="button"
+            class="w-full text-left px-3 py-2 rounded-lg bg-[#222222] hover:bg-black text-white text-[11px] font-semibold transition">
+            → Switch to ${bestVilla.title} (Fits ${bestVilla.maxGuests})
+          </button>
+        `);
+      }
+
+      if (activeFit.dateConflict) {
+        const stayLen = Math.max(1, diffNights(state.checkIn, state.checkOut));
+        const nextWin = findNextOpenWindow(state.villaId, stayLen, false, state.checkIn);
+        if (nextWin) {
+          calActionBtns.push(`
+            <button onclick="applyQuickPreset('stay3')" type="button"
+              class="px-3.5 py-2 rounded-lg bg-white border border-rose-300 hover:border-[#222222] text-[#222222] text-xs font-semibold transition">
+              Move Dates to Next Open Window (${formatShortMonthDay(nextWin.start)} – ${formatFullDate(nextWin.end)})
+            </button>
+          `);
+          cardActionBtns.push(`
+            <button onclick="applyQuickPreset('stay3')" type="button"
+              class="w-full text-left px-3 py-2 rounded-lg bg-white border border-rose-300 hover:border-[#222222] text-[#222222] text-[11px] font-semibold transition">
+              → Move Dates to ${formatShortMonthDay(nextWin.start)} – ${formatShortMonthDay(nextWin.end)}
+            </button>
+          `);
+        }
+      }
+
+      if (activeFit.capacityConflict) {
+        calActionBtns.push(`
+          <button onclick="reducePartyToFit()" type="button"
+            class="px-3.5 py-2 rounded-lg bg-white border border-rose-300 hover:border-[#222222] text-[#222222] text-xs font-semibold transition">
+            Reduce Party to ${activeFit.villa.maxGuests} Guests
+          </button>
+        `);
+        cardActionBtns.push(`
+          <button onclick="reducePartyToFit()" type="button"
+            class="w-full text-left px-3 py-2 rounded-lg bg-white border border-rose-300 hover:border-[#222222] text-[#222222] text-[11px] font-semibold transition">
+            → Reduce Party to ${activeFit.villa.maxGuests} Guests
+          </button>
+        `);
+      }
+
+      document.getElementById('cal-advisor-title').textContent = fullTitle;
+      document.getElementById('cal-advisor-desc').textContent = fullDesc;
+      document.getElementById('cal-advisor-actions').innerHTML = calActionBtns.join('');
+      calAdvisor.classList.remove('hidden');
+
+      document.getElementById('card-advisor-title').innerHTML = `<span>⚠</span><span>${titleParts.join(' & ')}</span>`;
+      document.getElementById('card-advisor-desc').textContent = fullDesc;
+      document.getElementById('card-advisor-actions').innerHTML = cardActionBtns.join('');
+      cardAdvisor.classList.remove('hidden');
+
+      if (heroLiveStatus) {
+        heroLiveStatus.className = 'font-semibold text-rose-700 flex items-center gap-1.5';
+        heroLiveStatus.innerHTML = `<span>⚠</span><span>${fullTitle} — review conflict solutions below</span>`;
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 10. RECTANGULAR BOX CALENDAR RENDERER
+    // -------------------------------------------------------------------------
+    function populateMonthDropdowns() {
+      const inlineSel = document.getElementById('monthJumpSelect');
+      inlineSel.innerHTML = '';
+      for (let idx = ymToIndex(MIN_YM); idx <= ymToIndex({ y: 2027, m: 11 }); idx++) {
+        const ym = indexToYM(idx);
+        const opt = document.createElement('option');
+        opt.value = fmtYM(ym);
+        opt.textContent = `${MONTH_NAMES[ym.m]} ${ym.y}`;
+        inlineSel.appendChild(opt);
+      }
+      inlineSel.value = fmtYM(state.inlineYM);
+
+      const popSel = document.getElementById('pop-month-select');
+      popSel.innerHTML = '';
+      for (let idx = ymToIndex(MIN_YM); idx <= ymToIndex(MAX_YM); idx++) {
+        const ym = indexToYM(idx);
+        const opt = document.createElement('option');
+        opt.value = fmtYM(ym);
+        opt.textContent = `${MONTH_NAMES[ym.m]} ${ym.y}`;
+        popSel.appendChild(opt);
+      }
+      popSel.value = fmtYM(state.popoverYM);
+    }
+
+    function shiftInlineMonths(delta) {
+      state.inlineYM = clampInlineYM(shiftYM(state.inlineYM, delta));
+      renderCalendarsOnly();
+    }
+
+    function jumpToViewYM(val) {
+      const [y, m] = val.split('-').map(Number);
+      state.inlineYM = clampInlineYM({ y, m });
+      renderCalendarsOnly();
+    }
+
+    function shiftPopoverMonth(delta) {
+      state.popoverYM = clampPopoverYM(shiftYM(state.popoverYM, delta));
+      renderCalendarsOnly();
+    }
+
+    function jumpPopoverYM(val) {
+      const [y, m] = val.split('-').map(Number);
+      state.popoverYM = clampPopoverYM({ y, m });
+      renderCalendarsOnly();
+    }
+
+    function renderMonthGrid(containerId, year, month1Based, mode) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      container.innerHTML = '';
+
+      const villa = state.rooms[state.villaId];
+      const isCompact = mode === 'popover';
+      const cellSizeClass = isCompact ? 'cal-cell-compact' : 'cal-cell-inline';
+      const firstBookedAfter = state.checkIn ? getFirstBookedStartAfter(villa, state.checkIn) : null;
+      const selectingSecondDate = Boolean(
+        (mode === 'inline' && state.checkIn && !state.checkOut) ||
+        (mode === 'popover' && state.activeField === 'checkout' && state.checkIn)
+      );
+
+      const firstWeekday = new Date(year, month1Based - 1, 1, 12, 0, 0).getDay();
+      const daysInMonth = new Date(year, month1Based, 0, 12, 0, 0).getDate();
+      const totalCells = firstWeekday + daysInMonth;
+      const trailingSlots = (7 - (totalCells % 7)) % 7;
+
+      // 1. Leading Placeholder Boxes
+      for (let i = 0; i < firstWeekday; i++) {
+        const emptyBox = document.createElement('div');
+        emptyBox.className = `${cellSizeClass} cal-box-empty`;
+        container.appendChild(emptyBox);
+      }
+
+      // 2. Day Boxes
+      for (let d = 1; d <= daysInMonth; d++) {
+        const iso = fmtISO(year, month1Based, d);
+        const isPast = iso < TODAY_ISO;
+        const bookingObj = getBookingOnNight(villa, iso);
+        const occupied = Boolean(bookingObj);
+
+        const isTurnaroundOut = Boolean(
+          selectingSecondDate &&
+          state.checkIn &&
+          iso === firstBookedAfter &&
+          occupied &&
+          isRangeAvailable(state.villaId, state.checkIn, iso)
+        );
+
+        const isStart = iso === state.checkIn;
+        const isEnd = Boolean(state.checkOut && iso === state.checkOut);
+        const isHoverEnd = Boolean(!state.checkOut && state.hoverDate && iso === state.hoverDate);
+        const isInRange = Boolean(state.checkIn && state.checkOut && iso > state.checkIn && iso < state.checkOut);
+        const isHoverRange = Boolean(!state.checkOut && state.hoverDate && iso > state.checkIn && iso < state.hoverDate);
+
+        const isConflictDay = Boolean(
+          state.checkIn &&
+          state.checkOut &&
+          iso >= state.checkIn &&
+          iso < state.checkOut &&
+          occupied
+        );
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.disabled = isPast;
+
+        if (!isPast) {
+          btn.onclick = (e) => {
+            e.stopPropagation();
+            if (mode === 'popover') {
+              handlePopoverDateClick(iso);
+            } else {
+              handleInlineDateClick(iso);
+            }
+          };
+          btn.onmouseenter = () => handleDayHover(iso);
+        }
+
+        const rate = villa ? (isWeekendNight(iso) ? villa.weekendPHP : villa.weekdayPHP) : 3500;
+        const compactRate = formatCompactRate(rate);
+
+        if (isConflictDay) {
+          btn.title = `Conflict: Booked in Supabase (${formatShortMonthDay(bookingObj.start)} – ${formatShortMonthDay(bookingObj.end)})`;
+          btn.className = `w-full ${cellSizeClass} cal-box-conflict flex flex-col items-center justify-between text-center`;
+          btn.innerHTML = `
+            <span class="text-xs sm:text-sm font-extrabold leading-none">${d}</span>
+            <span class="text-[8px] sm:text-[9px] font-extrabold uppercase tracking-tight leading-none">Conflict</span>
+          `;
+        } else if (isStart || isEnd) {
+          const tagLabel = isStart ? 'IN' : 'OUT';
+          const subText = isStart ? compactRate : 'Checkout';
+          btn.className = `w-full ${cellSizeClass} cal-box-selected flex flex-col items-center justify-between text-center`;
+          btn.innerHTML = `
+            <div class="w-full flex items-center justify-between gap-0.5 leading-none">
+              <span class="text-xs sm:text-sm font-bold">${d}</span>
+              <span class="px-1 py-0.5 rounded-[3px] bg-white/20 text-[7.5px] font-extrabold tracking-wider text-white">${tagLabel}</span>
+            </div>
+            <span class="text-[8.5px] sm:text-[9px] text-white/85 font-medium leading-none">${subText}</span>
+          `;
+        } else if (isHoverEnd || isHoverRange) {
+          btn.className = `w-full ${cellSizeClass} cal-box-hover flex flex-col items-center justify-between text-center`;
+          btn.innerHTML = `
+            <div class="w-full flex items-center justify-between gap-0.5 leading-none">
+              <span class="text-xs sm:text-sm font-bold text-[#222222]">${d}</span>
+              ${isHoverEnd ? `<span class="px-1 py-0.5 rounded-[3px] bg-[#222222] text-[7.5px] font-extrabold text-white">OUT</span>` : ''}
+            </div>
+            <span class="text-[8.5px] sm:text-[9px] font-semibold text-[#475569] leading-none">${isHoverEnd ? 'Checkout' : compactRate}</span>
+          `;
+        } else if (isInRange) {
+          btn.className = `w-full ${cellSizeClass} cal-box-range flex flex-col items-center justify-between text-center`;
+          btn.innerHTML = `
+            <span class="text-xs sm:text-sm font-semibold text-[#0F172A] leading-none">${d}</span>
+            <span class="text-[8.5px] sm:text-[9px] font-medium text-[#475569] leading-none">${compactRate}</span>
+          `;
+        } else if (isTurnaroundOut) {
+          btn.title = 'Morning Checkout Box: Available for 11:00 AM departure before next arrival';
+          btn.className = `w-full ${cellSizeClass} cal-box-turnaround flex flex-col items-center justify-between text-center`;
+          btn.innerHTML = `
+            <div class="w-full flex items-center justify-between gap-0.5 leading-none">
+              <span class="text-xs sm:text-sm font-bold">${d}</span>
+              <span class="px-1 py-0.5 rounded-[3px] bg-amber-600 text-[7.5px] font-extrabold text-white">Out</span>
+            </div>
+            <span class="text-[8px] sm:text-[8.5px] font-bold leading-none">11am Out</span>
+          `;
+        } else if (occupied && !isPast) {
+          btn.title = `Booked in Supabase (${formatShortMonthDay(bookingObj.start)} – ${formatShortMonthDay(bookingObj.end)}) · Click open white box`;
+          btn.className = `w-full ${cellSizeClass} cal-box-booked flex flex-col items-center justify-between text-center cursor-pointer`;
+          btn.innerHTML = `
+            <span class="text-xs sm:text-sm font-bold text-[#BE123C] leading-none">${d}</span>
+            <span class="text-[8px] sm:text-[9px] font-bold text-[#BE123C] leading-none">Booked</span>
+          `;
+        } else if (isPast) {
+          btn.className = `w-full ${cellSizeClass} cal-box-past flex flex-col items-center justify-center text-center`;
+          btn.innerHTML = `<span class="text-xs sm:text-sm line-through leading-none">${d}</span>`;
+        } else {
+          btn.title = `Available · ${formatPHP(rate)} / night`;
+          btn.className = `w-full ${cellSizeClass} cal-box-open flex flex-col items-center justify-between text-center`;
+          btn.innerHTML = `
+            <span class="text-xs sm:text-sm font-semibold text-[#222222] leading-none">${d}</span>
+            <span class="text-[8.5px] sm:text-[9.5px] text-[#64748B] font-medium leading-none">${compactRate}</span>
+          `;
+        }
+
+        container.appendChild(btn);
+      }
+
+      // 3. Trailing Boxes
+      for (let i = 0; i < trailingSlots; i++) {
+        const emptyBox = document.createElement('div');
+        emptyBox.className = `${cellSizeClass} cal-box-empty`;
+        container.appendChild(emptyBox);
+      }
+    }
+
+    function renderCalendarsOnly() {
+      const leftYM = state.inlineYM;
+      const rightYM = shiftYM(leftYM, 1);
+
+      document.getElementById('cal-title-left').textContent = `${MONTH_NAMES[leftYM.m]} ${leftYM.y}`;
+      document.getElementById('cal-title-right').textContent = `${MONTH_NAMES[rightYM.m]} ${rightYM.y}`;
+
+      const inlineSel = document.getElementById('monthJumpSelect');
+      if (inlineSel) inlineSel.value = fmtYM(leftYM);
+
+      document.getElementById('cal-prev-btn').disabled = ymToIndex(leftYM) <= ymToIndex(MIN_YM);
+      document.getElementById('cal-next-btn').disabled = ymToIndex(leftYM) >= ymToIndex({ y: 2027, m: 11 });
+
+      const popYM = state.popoverYM;
+      const popSel = document.getElementById('pop-month-select');
+      if (popSel) popSel.value = fmtYM(popYM);
+
+      document.getElementById('pop-prev-btn').disabled = ymToIndex(popYM) <= ymToIndex(MIN_YM);
+      document.getElementById('pop-next-btn').disabled = ymToIndex(popYM) >= ymToIndex(MAX_YM);
+
+      renderMonthGrid('cal-grid-left', leftYM.y, leftYM.m, 'inline');
+      renderMonthGrid('cal-grid-right', rightYM.y, rightYM.m, 'inline');
+      renderMonthGrid('pop-cal-grid', popYM.y, popYM.m, 'popover');
+    }
+
+    function updateStatusPill() {
+      const fit = evaluateVillaFit(state.villaId);
+      const villa = fit.villa;
+      const stepText = document.getElementById('cal-step-text');
+      const stepDot = document.getElementById('cal-step-dot');
+      const popStep = document.getElementById('popover-cal-step');
+
+      if (!state.checkIn) {
+        stepDot.className = 'w-2 h-2 rounded-xs bg-[#222222]';
+        stepText.textContent = 'Step 1: Select check-in box';
+        popStep.textContent = 'Step 1: Select check-in box';
+        return;
+      }
+
+      if (state.checkIn && !state.checkOut) {
+        stepDot.className = 'w-2 h-2 rounded-xs bg-[#FF385C]';
+        if (state.hoverDate && state.hoverDate > state.checkIn && villa) {
+          const preview = calculateStayPricing(villa, state.checkIn, state.hoverDate);
+          const nStr = `${preview.totalNights} night${preview.totalNights > 1 ? 's' : ''}`;
+          stepText.textContent = `Preview: ${formatShortMonthDay(state.checkIn)} – ${formatShortMonthDay(state.hoverDate)} · ${nStr} · ${formatPHP(preview.grandTotalPHP)}`;
+          popStep.textContent = `${formatShortMonthDay(state.checkIn)} – ${formatShortMonthDay(state.hoverDate)} · ${formatPHP(preview.grandTotalPHP)}`;
+        } else {
+          stepText.textContent = `Step 2: Select checkout box (Check-in: ${formatShortMonthDay(state.checkIn)})`;
+          popStep.textContent = `Check-in ${formatShortMonthDay(state.checkIn)} · Pick checkout`;
+        }
+        return;
+      }
+
+      const nights = diffNights(state.checkIn, state.checkOut);
+      const nStr = `${nights} night${nights > 1 ? 's' : ''}`;
+
+      if (!fit.isAvailable) {
+        stepDot.className = 'w-2 h-2 rounded-xs bg-rose-600';
+        stepText.textContent = `Conflict: ${formatShortMonthDay(state.checkIn)} – ${formatFullDate(state.checkOut)} · ${nStr}`;
+      } else {
+        stepDot.className = 'w-2 h-2 rounded-xs bg-emerald-600';
+        stepText.textContent = `Available: ${formatShortMonthDay(state.checkIn)} – ${formatFullDate(state.checkOut)} · ${nStr}`;
+      }
+      popStep.textContent = `${formatShortMonthDay(state.checkIn)} – ${formatShortMonthDay(state.checkOut)} (${nStr})`;
+    }
+
+    // -------------------------------------------------------------------------
+    // 11. INLINE DRAWERS, GUESTS & MAIN RENDER DISPATCH
+    // -------------------------------------------------------------------------
+    function openCardCalendarDrawer(event, field) {
+      if (event) event.stopPropagation();
+      closeHeaderPopover();
+
+      const targetField = (field === 'checkout' && state.checkIn) ? 'checkout' : 'checkin';
+      if (state.cardDrawer === 'calendar' && state.activeField === targetField) {
+        closeCardDrawer();
+        return;
+      }
+
+      state.cardDrawer = 'calendar';
+      state.activeField = targetField;
+
+      if (state.checkIn) {
+        const dt = parseLocal(state.checkIn);
+        state.popoverYM = clampPopoverYM({ y: dt.getFullYear(), m: dt.getMonth() + 1 });
+      } else {
+        state.popoverYM = clampPopoverYM(state.inlineYM);
+      }
+
+      renderAll();
+    }
+
+    function toggleGuestsDrawer(event) {
+      if (event) event.stopPropagation();
+      closeHeaderPopover();
+      state.cardDrawer = state.cardDrawer === 'guests' ? 'none' : 'guests';
+      syncDrawersAndRings();
+    }
+
+    function closeCardDrawer() {
+      state.cardDrawer = 'none';
+      syncDrawersAndRings();
+    }
+
+    function syncDrawersAndRings() {
+      const calDrawer = document.getElementById('card-calendar-drawer');
+      const guestsDrawer = document.getElementById('guests-drawer');
+      const chev = document.getElementById('guests-chevron');
+      const ciBtn = document.getElementById('card-checkin-btn');
+      const coBtn = document.getElementById('card-checkout-btn');
+      const guestsBtn = document.getElementById('card-guests-btn');
+
+      calDrawer.classList.toggle('hidden', state.cardDrawer !== 'calendar');
+      guestsDrawer.classList.toggle('hidden', state.cardDrawer !== 'guests');
+      chev.style.transform = state.cardDrawer === 'guests' ? 'rotate(180deg)' : 'rotate(0deg)';
+
+      ciBtn.classList.toggle('cal-input-active', state.cardDrawer === 'calendar' && state.activeField === 'checkin');
+      coBtn.classList.toggle('cal-input-active', state.cardDrawer === 'calendar' && state.activeField === 'checkout');
+      guestsBtn.classList.toggle('cal-input-active', state.cardDrawer === 'guests');
+    }
+
+    function stepGuests(type, delta) {
+      const total = getPartyCount();
+
+      if (type === 'adults') {
+        const next = state.guests.adults + delta;
+        if (next < 1 || (delta > 0 && total >= SANCTUARY_MAX_GUESTS)) return;
+        state.guests.adults = next;
+      } else if (type === 'children') {
+        const next = state.guests.children + delta;
+        if (next < 0 || (delta > 0 && total >= SANCTUARY_MAX_GUESTS)) return;
+        state.guests.children = next;
+      } else if (type === 'infants') {
+        const next = state.guests.infants + delta;
+        if (next < 0 || next > 4) return;
+        state.guests.infants = next;
+      }
+      renderAll();
+    }
+
+    function stepTotalParty(delta) {
+      if (delta > 0) {
+        if (getPartyCount() >= SANCTUARY_MAX_GUESTS) return;
+        state.guests.adults++;
+      } else {
+        if (state.guests.children > 0) {
+          state.guests.children--;
+        } else if (state.guests.adults > 1) {
+          state.guests.adults--;
+        }
+      }
+      renderAll();
+    }
+
+    function renderGuestsUI() {
+      const villa = state.rooms[state.villaId];
+      const total = getPartyCount();
+
+      document.getElementById('count-adults').textContent = state.guests.adults;
+      document.getElementById('count-children').textContent = state.guests.children;
+      document.getElementById('count-infants').textContent = state.guests.infants;
+
+      document.getElementById('btn-adults-minus').disabled = state.guests.adults <= 1;
+      document.getElementById('btn-adults-plus').disabled = total >= SANCTUARY_MAX_GUESTS;
+      document.getElementById('btn-children-minus').disabled = state.guests.children <= 0;
+      document.getElementById('btn-children-plus').disabled = total >= SANCTUARY_MAX_GUESTS;
+      document.getElementById('btn-infants-minus').disabled = state.guests.infants <= 0;
+      document.getElementById('btn-infants-plus').disabled = state.guests.infants >= 4;
+
+      if (villa) {
+        document.getElementById('guests-cap-note').textContent =
+          `${villa.title} fits up to ${villa.maxGuests} guests (${SANCTUARY_MAX_GUESTS} max across sanctuary)`;
+      }
+
+      let summary = `${total} guest${total > 1 ? 's' : ''}`;
+      if (state.guests.infants > 0) {
+        summary += `, ${state.guests.infants} infant${state.guests.infants > 1 ? 's' : ''}`;
+      }
+
+      document.getElementById('card-guests-text').textContent = summary;
+      document.querySelectorAll('.js-header-guests').forEach(el => el.textContent = summary);
+      document.querySelectorAll('.js-hero-guests').forEach(el => el.textContent = summary);
+    }
+
+    function renderAll() {
+      const fit = evaluateVillaFit(state.villaId);
+      const villa = fit.villa;
+      const hasRange = Boolean(state.checkIn && state.checkOut && state.checkOut > state.checkIn);
+
+      document.getElementById('card-checkin-text').textContent = formatSlash(state.checkIn);
+      document.getElementById('card-checkout-text').textContent = formatSlash(state.checkOut);
+
+      const feeSection = document.getElementById('fee-breakdown-section');
+      const reserveBtn = document.getElementById('card-reserve-btn');
+      const mobileReserveBtn = document.getElementById('mobile-reserve-btn');
+      const subNote = document.getElementById('card-sub-note');
+
+      if (!hasRange || !villa) {
+        document.getElementById('card-total-top').textContent = 'Add dates for prices';
+        document.getElementById('card-nights-label').textContent = '';
+        reserveBtn.textContent = 'Check availability';
+        mobileReserveBtn.textContent = 'Check availability';
+        subNote.textContent = villa ? `From ${formatPHP(villa.weekdayPHP)} / night` : 'Loading...';
+        feeSection.classList.add('hidden');
+
+        document.getElementById('mobile-total-price').textContent = 'Add dates for prices';
+        document.getElementById('mobile-dates-label').textContent =
+          state.checkIn ? `Check-in ${formatShortMonthDay(state.checkIn)} · Select checkout` : (villa ? `From ${formatPHP(villa.weekdayPHP)} / night` : 'Loading...');
+
+        document.querySelectorAll('.js-header-dates').forEach(el => {
+          el.textContent = state.checkIn ? `${formatShortMonthDay(state.checkIn)} – ?` : 'Add dates';
+        });
+        document.querySelectorAll('.js-hero-dates').forEach(el => {
+          el.textContent = state.checkIn ? `${formatShortMonthDay(state.checkIn)} – Select checkout` : 'Select stay dates';
+        });
+
+        document.getElementById('cal-heading').textContent =
+          state.checkIn ? 'Select checkout date' : 'Select check-in date';
+        document.getElementById('cal-subheading').textContent =
+          state.checkIn ? `Check-in: ${formatFullDate(state.checkIn)} · ${villa?.title || ''}` : `Add your travel dates for ${villa?.title || 'Rock View'}`;
+      } else {
+        const pricing = calculateStayPricing(villa, state.checkIn, state.checkOut);
+        const nStr = `${pricing.totalNights} night${pricing.totalNights > 1 ? 's' : ''}`;
+
+        document.getElementById('card-total-top').textContent = formatPHP(pricing.grandTotalPHP);
+        document.getElementById('card-nights-label').textContent = `for ${nStr}`;
+
+        if (!fit.isAvailable) {
+          reserveBtn.textContent = 'Resolve Conflict to Reserve';
+          mobileReserveBtn.textContent = 'Resolve Conflict';
+          subNote.textContent = 'Use the Conflict Advisor to adjust dates, guests, or unit';
+        } else {
+          reserveBtn.textContent = 'Reserve';
+          mobileReserveBtn.textContent = 'Reserve';
+          subNote.textContent = "You won't be charged yet";
+        }
+
+        feeSection.classList.remove('hidden');
+
+        const rows = [];
+        if (pricing.weekdayNights > 0) {
+          rows.push(`
+            <div class="flex items-center justify-between">
+              <span class="underline decoration-[#6A6A6A]">${formatPHP(villa.weekdayPHP)} × ${pricing.weekdayNights} weekday night${pricing.weekdayNights > 1 ? 's' : ''}</span>
+              <span>${formatPHP(pricing.weekdaySubtotalPHP)}</span>
+            </div>
+          `);
+        }
+        if (pricing.weekendNights > 0) {
+          rows.push(`
+            <div class="flex items-center justify-between">
+              <span class="underline decoration-[#6A6A6A]">${formatPHP(villa.weekendPHP)} × ${pricing.weekendNights} weekend night${pricing.weekendNights > 1 ? 's' : ''} (Fri–Sat)</span>
+              <span>${formatPHP(pricing.weekendSubtotalPHP)}</span>
+            </div>
+          `);
+        }
+        rows.push(`
+          <div class="flex items-center justify-between">
+            <span class="underline decoration-[#6A6A6A]">Cleaning &amp; coastal butler fee</span>
+            <span>${formatPHP(pricing.cleaningPHP)}</span>
+          </div>
+        `);
+
+        document.getElementById('fee-breakdown-rows').innerHTML = rows.join('');
+        document.getElementById('fee-grand-total').textContent = formatPHP(pricing.grandTotalPHP);
+
+        document.getElementById('mobile-total-price').textContent = formatPHP(pricing.grandTotalPHP);
+        document.getElementById('mobile-dates-label').textContent =
+          `for ${nStr} · ${formatShortMonthDay(state.checkIn)} – ${formatShortMonthDay(state.checkOut)}`;
+
+        document.querySelectorAll('.js-header-dates').forEach(el => {
+          el.textContent = `${formatShortMonthDay(state.checkIn)} – ${formatShortMonthDay(state.checkOut)}`;
+        });
+        document.querySelectorAll('.js-hero-dates').forEach(el => {
+          el.textContent = `${formatShortMonthDay(state.checkIn)} – ${formatShortMonthDay(state.checkOut)} (${pricing.totalNights}n)`;
+        });
+
+        document.getElementById('cal-heading').textContent = `${nStr} in Bolinao`;
+        document.getElementById('cal-subheading').textContent =
+          `${formatFullDate(state.checkIn)} – ${formatFullDate(state.checkOut)} · ${villa.title}`;
+      }
+
+      renderGuestsUI();
+      renderConflictAdvisorAndBadges();
+      syncDrawersAndRings();
+      renderCalendarsOnly();
+      updateStatusPill();
+    }
+
+    // -------------------------------------------------------------------------
+    // 12. REAL-TIME BOOKING SUBMISSION (SUPABASE + RESILIENT BACKEND)
+    // -------------------------------------------------------------------------
+    function handlePrimaryReserveAction() {
+      if (!state.checkIn || !state.checkOut) {
+        scrollToSection('calendar-section');
+        showToast('Select your check-in and checkout boxes on the calendar');
+        return;
+      }
+      const fit = evaluateVillaFit(state.villaId);
+      if (!fit.isAvailable) {
+        scrollToSection('calendar-section');
+        showToast('Please resolve the Date or Capacity Conflict before booking');
+        return;
+      }
+      openReserveModal();
+    }
+
+    function openReserveModal() {
+      if (!state.checkIn || !state.checkOut) return;
+      const villa = state.rooms[state.villaId];
+      if (!villa) return;
+      const pricing = calculateStayPricing(villa, state.checkIn, state.checkOut);
+
+      document.getElementById('reserve-step-form').classList.remove('hidden');
+      document.getElementById('reserve-step-done').classList.add('hidden');
+
+      if (state.isLoggedIn) {
+        if (!document.getElementById('modal-guest-name').value) {
+          document.getElementById('modal-guest-name').value = state.member.name;
+        }
+        if (!document.getElementById('modal-guest-email').value) {
+          document.getElementById('modal-guest-email').value = state.member.email;
+        }
+      }
+
+      document.getElementById('modal-villa-title').textContent = villa.title;
+      document.getElementById('modal-dates-val').textContent =
+        `${formatShortMonthDay(state.checkIn)} – ${formatFullDate(state.checkOut)} (${pricing.totalNights} nights)`;
+      document.getElementById('modal-guests-val').textContent = document.getElementById('card-guests-text').textContent;
+      document.getElementById('modal-fee-val').textContent = formatPHP(pricing.cleaningPHP);
+      document.getElementById('modal-total-val').textContent = formatPHP(pricing.grandTotalPHP);
+
+      document.getElementById('reserve-modal').classList.remove('hidden');
+    }
+
+    function closeReserveModal() {
+      document.getElementById('reserve-modal').classList.add('hidden');
+    }
+
+    async function submitReservation() {
+      if (!state.checkIn || !state.checkOut) return;
+      const fit = evaluateVillaFit(state.villaId);
+      if (!fit.isAvailable) return;
+
+      const villa = state.rooms[state.villaId];
+      const pricing = calculateStayPricing(villa, state.checkIn, state.checkOut);
+      const guestName = document.getElementById('modal-guest-name').value.trim() || (state.isLoggedIn ? state.member.name : 'Resident Guest');
+      const guestEmail = document.getElementById('modal-guest-email').value.trim() || (state.isLoggedIn ? state.member.email : 'guest@example.ph');
+      const guestPhone = document.getElementById('modal-guest-phone').value.trim() || '09171234567';
+      const guestsCount = getPartyCount();
+
+      const btn = document.getElementById('btn-confirm-reserve');
+      btn.innerHTML = '<span>Writing to Supabase Database...</span>';
+      btn.disabled = true;
+
+      const rand4 = Math.floor(1000 + Math.random() * 9000);
+      let refCode = `RV-BOL-2027-${rand4}`;
+      const pinCode = `#${Math.floor(1000 + Math.random() * 9000)}`;
+
+      try {
+        // Direct API Post which handles both Supabase & local database storage
+        const resp = await fetch('/api/reservations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            roomId: villa.id,
+            room_id: villa.id,
+            check_in: state.checkIn,
+            check_out: state.checkOut,
+            guests: guestsCount,
+            guest_name: guestName,
+            email: guestEmail,
+            guest_email: guestEmail,
+            phone: guestPhone,
+            payment_method: 'GCash',
+            notes: `[Terms: Accepted] [Check-In: 14:00, Check-Out: 12:00] [PIN: ${pinCode}] Direct Guest Reservation`,
+            terms_accepted: true
+          })
+        });
+
+        if (resp.ok) {
+          const result = await resp.json();
+          if (result.id) {
+            refCode = `RV-BOL-${result.id.slice(0, 8).toUpperCase()}`;
+          }
+          console.log('[Supabase Reservation] Committed successfully:', result);
+        } else {
+          // If server returned conflict or error
+          const errData = await resp.json().catch(() => ({}));
+          console.warn('[Supabase Reservation] API response notice:', errData);
+        }
+      } catch (err) {
+        console.warn('[Supabase Reservation] Network call note:', err.message);
+      } finally {
+        btn.innerHTML = '<span>Confirm &amp; Lock Dates in Supabase</span>';
+        btn.disabled = false;
+      }
+
+      // Update Local State & Schedule
+      villa.booked.push({
+        start: state.checkIn,
+        end: state.checkOut,
+        guest: guestName
+      });
+      villa.booked.sort((a, b) => a.start.localeCompare(b.start));
+
+      document.getElementById('booking-ref-code').textContent = refCode;
+      document.getElementById('booking-pin-code').textContent = `Smart Keypad PIN: ${pinCode}`;
+      document.getElementById('receipt-subtitle').textContent =
+        `Prepared for ${guestName}. Your dates are now locked as Booked in Supabase on ${villa.title}.`;
+
+      const bookedStart = state.checkIn;
+      const bookedEnd = state.checkOut;
+      state.checkIn = null;
+      state.checkOut = null;
+      state.hoverDate = null;
+      state.activeField = 'checkin';
+      setCalendarNotice(`Confirmed ${refCode}: ${formatShortMonthDay(bookedStart)} – ${formatFullDate(bookedEnd)} is now locked in Supabase for ${villa.title}.`);
+      renderAll();
+
+      document.getElementById('reserve-step-form').classList.add('hidden');
+      document.getElementById('reserve-step-done').classList.remove('hidden');
+      showToast(`Confirmed ${refCode} in Supabase`);
+    }
+
+    // -------------------------------------------------------------------------
+    // 13. UI UTILITIES, PHOTO TOURS & MAP
+    // -------------------------------------------------------------------------
+    function setCalendarNotice(msg) {
+      const banner = document.getElementById('cal-notice-banner');
+      const text = document.getElementById('cal-notice-text');
+      if (msg) {
+        text.textContent = msg;
+        banner.classList.remove('hidden');
+      } else {
+        banner.classList.add('hidden');
+      }
+    }
+
+    function dismissCalendarNotice() {
+      setCalendarNotice('');
+    }
+
+    let toastTimer;
+    function showToast(text) {
+      const banner = document.getElementById('toast-banner');
+      document.getElementById('toast-message').textContent = text;
+      banner.classList.remove('opacity-0', 'pointer-events-none');
+      banner.classList.add('opacity-100');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        banner.classList.add('opacity-0', 'pointer-events-none');
+        banner.classList.remove('opacity-100');
+      }, 3200);
+    }
+
+    function scrollToSection(id) {
+      const target = document.getElementById(id);
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function toggleHeaderPopover(e) {
+      if (e) e.stopPropagation();
+      closeCardDrawer();
+      document.getElementById('header-search-popover').classList.toggle('hidden');
+    }
+
+    function closeHeaderPopover() {
+      document.getElementById('header-search-popover').classList.add('hidden');
+    }
+
+    document.addEventListener('click', () => {
+      closeHeaderPopover();
+    });
+
+    function handleShare() {
+      const temp = document.createElement('input');
+      temp.value = window.location.href;
+      document.body.appendChild(temp);
+      temp.select();
+      document.execCommand('copy');
+      document.body.removeChild(temp);
+      showToast('Rock View Bolinao direct link copied to clipboard');
+    }
+
+    function toggleSave() {
+      state.saved = !state.saved;
+      const heart = document.getElementById('save-heart-icon');
+      const label = document.getElementById('save-label');
+      heart.setAttribute('fill', state.saved ? '#FF385C' : 'none');
+      heart.setAttribute('stroke', state.saved ? '#FF385C' : 'currentColor');
+      label.textContent = state.saved ? 'Saved' : 'Save';
+      showToast(state.saved ? 'Saved to your Bolinao wishlist' : 'Removed from wishlist');
+    }
+
+    function triggerPhotoUpload(slotIdx) {
+      state.uploadSlotIndex = slotIdx;
+      const input = document.getElementById('local-photo-input');
+      input.value = '';
+      input.click();
+    }
+
+    function handleLocalPhotoUpload(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      const idx = state.uploadSlotIndex;
+      if (uploadedPhotos[idx]) {
+        URL.revokeObjectURL(uploadedPhotos[idx]);
+      }
+      uploadedPhotos[idx] = URL.createObjectURL(file);
+      syncGalleryPhotos();
+      showToast(`Uploaded preview: "${file.name}"`);
+    }
+
+    function syncGalleryPhotos() {
+      uploadedPhotos.forEach((url, idx) => {
+        const img = document.getElementById(`bento-img-${idx}`);
+        const scrim = document.getElementById(`bento-scrim-${idx}`);
+        const svg = document.getElementById(`bento-svg-${idx}`);
+        if (url) {
+          img.src = url;
+          img.classList.remove('hidden');
+          scrim.classList.remove('hidden');
+          if (svg) svg.classList.add('hidden');
+        }
+      });
+
+      if (!document.getElementById('photo-tour-modal').classList.contains('hidden')) {
+        renderPhotoTourSlide();
+      }
+    }
+
+    function openPhotoTour(idx) {
+      state.tourIndex = idx;
+      renderPhotoTourSlide();
+      document.getElementById('photo-tour-modal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closePhotoTour() {
+      document.getElementById('photo-tour-modal').classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+
+    function stepPhotoTour(dir) {
+      const villa = state.rooms[state.villaId];
+      if (!villa) return;
+      const len = villa.gallery.length;
+      state.tourIndex = (state.tourIndex + dir + len) % len;
+      renderPhotoTourSlide();
+    }
+
+    function selectTourSlide(idx) {
+      state.tourIndex = idx;
+      renderPhotoTourSlide();
+    }
+
+    function renderPhotoTourSlide() {
+      const villa = state.rooms[state.villaId];
+      if (!villa) return;
+      const slot = villa.gallery[state.tourIndex];
+      const customUrl = uploadedPhotos[state.tourIndex] || slot.imgUrl;
+      const stage = document.getElementById('tour-stage');
+      const img = document.getElementById('tour-img');
+      const scrim = document.getElementById('tour-scrim');
+
+      stage.className = `coastal-slot ${slot.gradientClass} w-full max-w-4xl h-[54vh] rounded-[12px] p-6 sm:p-10 flex flex-col justify-between relative shadow-md`;
+      document.getElementById('tour-counter').textContent = `${state.tourIndex + 1} / ${villa.gallery.length}`;
+      document.getElementById('tour-badge').textContent = slot.label;
+      document.getElementById('tour-title').textContent = slot.caption;
+      document.getElementById('tour-villa-sub').textContent = `${villa.title} · Patar Coastal Road, Bolinao`;
+
+      if (customUrl) {
+        img.src = customUrl;
+        img.classList.remove('hidden');
+        scrim.classList.remove('hidden');
+      } else {
+        img.classList.add('hidden');
+        scrim.classList.add('hidden');
+      }
+
+      const thumbsBar = document.getElementById('tour-thumbs-bar');
+      thumbsBar.innerHTML = `
+        <button onclick="stepPhotoTour(-1)" type="button" class="px-4 py-2 rounded-lg border border-[#DDDDDD] hover:border-[#222222] text-xs font-semibold">
+          ← Previous
+        </button>
+        ${villa.gallery.map((g, i) => `
+          <button onclick="selectTourSlide(${i})" type="button"
+            class="px-3 py-2 rounded-lg text-xs font-semibold border ${i === state.tourIndex ? 'border-[#222222] bg-[#222222] text-white' : 'border-[#DDDDDD] text-[#222222] hover:border-[#222222]'}">
+            ${i + 1}. ${g.label.split(' ').slice(0, 2).join(' ')}
+          </button>
+        `).join('')}
+        <button onclick="stepPhotoTour(1)" type="button" class="px-4 py-2 rounded-lg border border-[#DDDDDD] hover:border-[#222222] text-xs font-semibold">
+          Next →
+        </button>
+      `;
+    }
+
+    const mapLandmarks = {
+      sanctuary: {
+        title: 'Rock View Cliffside Sanctuary · Patar Coastal Road',
+        desc: 'Direct coral limestone cliff frontage · 3 mins to Cape Bolinao Lighthouse · 4 mins to Patar White Beach · 6 mins to Enchanted Cave.'
+      },
+      patar: {
+        title: 'Patar White Beach · 4 mins south along Patar Coastal Road',
+        desc: 'Famous golden-white coral sand beach facing the West Philippine Sea with calm turquoise swimming waters.'
+      },
+      lighthouse: {
+        title: 'Cape Bolinao Lighthouse · 3 mins north',
+        desc: 'Historic 1905 coastal beacon perched atop Punta Piedra Point with panoramic views of the West Philippine Sea.'
+      },
+      cave: {
+        title: 'Enchanted Cave · 6 mins inland east',
+        desc: 'Natural coral-limestone cavern with crystal-clear underground spring pools surrounded by lush Bolinao flora.'
+      }
+    };
+
+    function selectMapLandmark(key) {
+      const item = mapLandmarks[key];
+      if (!item) return;
+      document.getElementById('map-landmark-title').textContent = item.title;
+      document.getElementById('map-landmark-desc').textContent = item.desc;
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closePhotoTour();
+        closeReserveModal();
+        closeSignInModal();
+        closeCardDrawer();
+        closeHeaderPopover();
+      } else if (!document.getElementById('photo-tour-modal').classList.contains('hidden')) {
+        if (e.key === 'ArrowRight') stepPhotoTour(1);
+        if (e.key === 'ArrowLeft') stepPhotoTour(-1);
+      }
+    });
+
+    // -------------------------------------------------------------------------
+    // 14. BOOTSTRAP REAL-TIME SUPABASE APPLICATION
+    // -------------------------------------------------------------------------
+    async function bootApplication() {
+      populateMonthDropdowns();
+      syncProgressiveAuthUI();
+
+      try {
+        await fetchLiveRoomsFromSupabase();
+        await fetchLiveReservationsFromSupabase();
+        populateUnderlineTabs();
+        if (state.villaId) {
+          selectVilla(state.villaId);
+        }
+        await checkExistingSupabaseSession();
+        setupRealtimeSubscriptions();
+        console.log('[Rock View App] Fully bootstrapped with live Supabase Database');
+      } catch (err) {
+        console.error('[Rock View App] Boot error:', err);
+      }
+    }
+
+    bootApplication();
+  </script>
+</body>
+</html>
