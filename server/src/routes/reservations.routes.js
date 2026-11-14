@@ -18,6 +18,12 @@ import {
   enrichReservationOffering,
   addDaysISO,
 } from '../lib/offeringSpecs.js';
+import {
+  GUEST_CANCEL_WINDOW_MS,
+  ownsReservation,
+  isCancelStaff,
+  evaluateCancellation,
+} from '../lib/authz.js';
 import { validate } from '../middleware/validate.js';
 import { bookingLimiter } from '../middleware/security.js';
 import { admin, getSystemAdminClient } from '../lib/supabase.js';
@@ -42,9 +48,9 @@ function computeVerifiedPoolAddonFee(notesText = '', guests = 1) {
 
 export const TWO_HOURS_MS = 2 * 60 * 60 * 1000; // 7,200,000 ms mandatory gap
 
-// A guest may cancel their own booking only within this window after it was created.
-// Once it passes, self-service cancellation is locked; front desk / admin can still cancel.
-export const GUEST_CANCEL_WINDOW_MS = 5 * 60 * 60 * 1000; // 18,000,000 ms (5 hours)
+// The 5-hour self-cancellation window now lives in lib/authz.js (single source of
+// truth, shared with the RLS policies). Re-exported here for backward compatibility.
+export { GUEST_CANCEL_WINDOW_MS };
 
 export function normalizeTo24Hour(timeStr, defaultTime = '14:00') {
   if (!timeStr) return defaultTime;
@@ -542,26 +548,16 @@ r.patch('/reservations/:id/cancel', authenticate, asyncH(async (req, res) => {
     b = getLocalReservations().find((r) => r.id === req.params.id);
   }
   if (!b) throw new ApiError(404, 'Reservation not found');
-  const isOwner = b.guest_id === req.user.id ||
-    Boolean(req.user.email && (b.email || b.guest_email) && (b.email || b.guest_email).toLowerCase() === req.user.email.toLowerCase());
+  // Identity normalization stays here; the policy decision lives in lib/authz.js.
   const actorRole = normalizeEmployeeRole(req.user.role);
   const actorDept = resolveEmployeeDepartment(req.user);
-  const isStaff = ['administrator', 'receptionist', 'accounting'].includes(actorRole) || (actorRole === 'staff' && actorDept === 'front_desk');
-  if (!isOwner && !isStaff) throw new ApiError(403, 'Unauthorized to cancel this booking');
-  if (!['pending', 'confirmed'].includes(b.status))
-    throw new ApiError(409, 'Only upcoming stays can be cancelled.');
-  // Guests may self-cancel only within 5 hours of booking. Staff and admins are not time-limited.
-  // A missing/unparseable created_at fails open (treated as just-created) so a guest is never trapped.
-  if (isOwner && !isStaff) {
-    const createdMs = Date.parse(b.created_at || b.createdAt || '');
-    const elapsed = Number.isFinite(createdMs) ? Date.now() - createdMs : 0;
-    if (elapsed > GUEST_CANCEL_WINDOW_MS) {
-      throw new ApiError(
-        409,
-        'The 5-hour self-cancellation window for this booking has closed. Please contact the front desk at +63 900 555 0123 to cancel.'
-      );
-    }
-  }
+  const isOwner = ownsReservation(req.user, b);
+  const isStaff = isCancelStaff(actorRole, actorDept);
+  const decision = evaluateCancellation(
+    { isOwner, isStaff, status: b.status, createdAt: b.created_at || b.createdAt },
+    Date.now()
+  );
+  if (!decision.ok) throw new ApiError(decision.status, decision.message);
 
   updateLocalReservation(b.id, { status: 'cancelled' });
   let cancelledStay = { ...b, status: 'cancelled' };

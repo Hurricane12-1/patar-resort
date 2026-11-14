@@ -25,6 +25,8 @@ export default function AuthModal() {
   });
 
   const [busy, setBusy] = useState(false);
+  const [modalErrors, setModalErrors] = useState<Record<string, string>>({});
+  const [showCautionBanner, setShowCautionBanner] = useState(false);
 
   // 2FA Confirmation State
   const [signupEmail, setSignupEmail] = useState('');
@@ -181,50 +183,61 @@ export default function AuthModal() {
         toast('Welcome back ✦');
         setAuthOpen(false);
       } else {
-        // Sign-Up Mode: STRICT NAME ENFORCEMENT ("and the name is still need")
+        // Sign-Up Mode: STRICT FIELD VALIDATION & CAUTION POPUP ALERT
         const firstName = f.first_name.trim();
         const lastName = f.last_name.trim();
+        const errs: Record<string, string> = {};
 
-        if (!firstName || !lastName) {
-          toast('Name is strictly required: First name and last name must be provided.', true);
-          setBusy(false);
-          return;
+        if (!firstName) {
+          errs.first_name = 'First name is required.';
+        } else if (!/^[a-zA-Z\s\-]+$/.test(firstName)) {
+          errs.first_name = 'First name must contain letters only.';
         }
 
-        const fullName = [firstName, f.middle_name?.trim(), lastName].filter(Boolean).join(' ');
-        let targetEmail = f.email.trim();
+        if (!lastName) {
+          errs.last_name = 'Last name is required.';
+        } else if (!/^[a-zA-Z\s\-]+$/.test(lastName)) {
+          errs.last_name = 'Last name must contain letters only.';
+        }
 
-        // Enforce Gmail format if Gmail provider is selected
+        let targetEmail = f.email.trim();
         if (signupProvider === 'gmail') {
           if (!targetEmail.toLowerCase().endsWith('@gmail.com') && !targetEmail.includes('@')) {
             targetEmail = `${targetEmail}@gmail.com`;
           } else if (!targetEmail.toLowerCase().endsWith('@gmail.com')) {
-            toast('Please enter a valid Gmail address (@gmail.com).', true);
-            setBusy(false);
-            return;
+            errs.email = 'Please enter a valid Gmail address (@gmail.com).';
           }
+        } else if (!targetEmail) {
+          errs.email = 'Account email is required.';
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(targetEmail)) {
+          errs.email = 'Please enter a valid email address.';
+        }
+
+        if (!f.phone || f.phone.length !== 11 || !f.phone.startsWith('09')) {
+          errs.phone = '11-digit Philippine mobile starting with 09 is required (e.g. 09171234567).';
+        }
+
+        if (!f.password || f.password.length < 8) {
+          errs.password = 'Password must be at least 8 characters long.';
+        } else if (!/[a-zA-Z]/.test(f.password) || !/[0-9]/.test(f.password)) {
+          errs.password = 'Password must contain both letters and numbers.';
         }
 
         if (!termsAccepted) {
-          toast('Please agree to the Website Terms of Stay and Privacy Policy to proceed.', true);
+          errs.terms = 'Please accept the Website Terms of Stay and Privacy Policy.';
+        }
+
+        if (Object.keys(errs).length > 0) {
+          setModalErrors(errs);
+          setShowCautionBanner(true);
+          toast('⚠️ Caution: Please complete the required fields highlighted in red.', true);
           setBusy(false);
           return;
         }
-        if (!f.phone || f.phone.length !== 11 || !f.phone.startsWith('09')) {
-          toast('Mobile phone is required and must strictly be an 11-digit Philippine mobile number starting with 09 (e.g. 09171234567).', true);
-          setBusy(false);
-          return;
-        }
-        if (!f.password || f.password.length < 8) {
-          toast('Password must be at least 8 characters long for account security.', true);
-          setBusy(false);
-          return;
-        }
-        if (!/[a-zA-Z]/.test(f.password) || !/[0-9]/.test(f.password)) {
-          toast('Password must contain both letters and numbers for account security.', true);
-          setBusy(false);
-          return;
-        }
+
+        setModalErrors({});
+        setShowCautionBanner(false);
+        const fullName = [firstName, f.middle_name?.trim(), lastName].filter(Boolean).join(' ');
 
         // Anti-Duplication Pre-check
         try {
@@ -637,8 +650,47 @@ export default function AuthModal() {
                 </div>
               )}
 
+              {/* POPUP CAUTION SIGN BANNER */}
+              {showCautionBanner && Object.keys(modalErrors).length > 0 && (
+                <div style={{
+                  padding: '12px 14px',
+                  borderRadius: 10,
+                  marginBottom: 14,
+                  background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.18) 0%, rgba(245, 158, 11, 0.14) 100%)',
+                  border: '1.5px solid rgba(239, 68, 68, 0.55)',
+                  boxShadow: '0 6px 20px rgba(239, 68, 68, 0.18)',
+                  animation: 'rlCautionShake 0.4s ease-out'
+                }} role="alert">
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, color: '#FCA5A5', fontWeight: 700, fontSize: '0.85rem' }}>
+                      <i className="fas fa-triangle-exclamation" style={{ color: '#EF4444', fontSize: '1.05rem', filter: 'drop-shadow(0 0 6px rgba(239, 68, 68, 0.6))' }} />
+                      <span>CAUTION: Incomplete Required Fields</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowCautionBanner(false)}
+                      style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', fontSize: '0.9rem', padding: 2 }}
+                      aria-label="Dismiss caution"
+                    >
+                      <i className="fas fa-xmark" />
+                    </button>
+                  </div>
+                  <p style={{ margin: '0 0 6px 0', fontSize: '0.76rem', color: '#E2E8F0', lineHeight: 1.4 }}>
+                    Please fill out and correct the highlighted fields marked in red below to continue registration:
+                  </p>
+                  <ul style={{ margin: 0, paddingLeft: 16, fontSize: '0.74rem', color: '#FCA5A5', display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    {modalErrors.first_name && <li>• {modalErrors.first_name}</li>}
+                    {modalErrors.last_name && <li>• {modalErrors.last_name}</li>}
+                    {modalErrors.phone && <li>• {modalErrors.phone}</li>}
+                    {modalErrors.email && <li>• {modalErrors.email}</li>}
+                    {modalErrors.password && <li>• {modalErrors.password}</li>}
+                    {modalErrors.terms && <li>• {modalErrors.terms}</li>}
+                  </ul>
+                </div>
+              )}
+
               {/* FORM FIELDS */}
-              <form onSubmit={submitAuth}>
+              <form onSubmit={submitAuth} noValidate>
                 {mode === 'up' && (
                   <>
                     {/* MANDATORY NAME BANNER */}
@@ -665,16 +717,28 @@ export default function AuthModal() {
                     {/* NAME FIELDS: FIRST, MIDDLE, LAST (MANDATORY CHAR ONLY) */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
                       <div className="field">
-                        <label style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <label style={{ display: 'flex', justifyContent: 'space-between', color: modalErrors.first_name ? '#F87171' : undefined }}>
                           <span>FIRST NAME * (CHAR ONLY)</span>
-                          {f.first_name && <i className="fas fa-check" style={{ color: '#10B981' }} />}
+                          {f.first_name && !modalErrors.first_name && <i className="fas fa-check" style={{ color: '#10B981' }} />}
                         </label>
                         <input
                           required
                           value={f.first_name}
                           placeholder="Juan"
-                          onChange={(e) => setF({ ...f, first_name: e.target.value.replace(/[^a-zA-Z\s\-]/g, '') })}
+                          style={{
+                            borderColor: modalErrors.first_name ? '#EF4444' : undefined,
+                            boxShadow: modalErrors.first_name ? '0 0 0 3px rgba(239, 68, 68, 0.25)' : undefined
+                          }}
+                          onChange={(e) => {
+                            setF({ ...f, first_name: e.target.value.replace(/[^a-zA-Z\s\-]/g, '') });
+                            if (modalErrors.first_name) setModalErrors(prev => ({ ...prev, first_name: '' }));
+                          }}
                         />
+                        {modalErrors.first_name && (
+                          <span style={{ color: '#F87171', fontSize: '0.72rem', marginTop: 3, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <i className="fas fa-circle-exclamation" style={{ color: '#EF4444' }} /> {modalErrors.first_name}
+                          </span>
+                        )}
                       </div>
                       <div className="field">
                         <label>MIDDLE NAME (CHAR ONLY)</label>
@@ -685,26 +749,38 @@ export default function AuthModal() {
                         />
                       </div>
                       <div className="field">
-                        <label style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <label style={{ display: 'flex', justifyContent: 'space-between', color: modalErrors.last_name ? '#F87171' : undefined }}>
                           <span>LAST NAME * (CHAR ONLY)</span>
-                          {f.last_name && <i className="fas fa-check" style={{ color: '#10B981' }} />}
+                          {f.last_name && !modalErrors.last_name && <i className="fas fa-check" style={{ color: '#10B981' }} />}
                         </label>
                         <input
                           required
                           value={f.last_name}
                           placeholder="Cruz"
-                          onChange={(e) => setF({ ...f, last_name: e.target.value.replace(/[^a-zA-Z\s\-]/g, '') })}
+                          style={{
+                            borderColor: modalErrors.last_name ? '#EF4444' : undefined,
+                            boxShadow: modalErrors.last_name ? '0 0 0 3px rgba(239, 68, 68, 0.25)' : undefined
+                          }}
+                          onChange={(e) => {
+                            setF({ ...f, last_name: e.target.value.replace(/[^a-zA-Z\s\-]/g, '') });
+                            if (modalErrors.last_name) setModalErrors(prev => ({ ...prev, last_name: '' }));
+                          }}
                         />
+                        {modalErrors.last_name && (
+                          <span style={{ color: '#F87171', fontSize: '0.72rem', marginTop: 3, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <i className="fas fa-circle-exclamation" style={{ color: '#EF4444' }} /> {modalErrors.last_name}
+                          </span>
+                        )}
                       </div>
                     </div>
 
                     {/* ROW 2: Symmetrical 2-column numbers (Phone & Emergency Contact) */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 10 }}>
                       <div className="field">
-                        <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: modalErrors.phone ? '#F87171' : undefined }}>
                           <span>MOBILE PHONE (11-DIGIT NUMBER ONLY)</span>
                           {f.phone && (
-                            <span style={{ color: f.phone.length === 11 ? '#10B981' : '#F59E0B', fontSize: '0.74rem', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                            <span style={{ color: f.phone.length === 11 && f.phone.startsWith('09') ? '#10B981' : modalErrors.phone ? '#F87171' : '#F59E0B', fontSize: '0.74rem', fontWeight: 600, whiteSpace: 'nowrap' }}>
                               {f.phone.length}/11 digits
                             </span>
                           )}
@@ -715,8 +791,20 @@ export default function AuthModal() {
                           maxLength={11}
                           value={f.phone}
                           placeholder="09XXXXXXXXX"
-                          onChange={(e) => setF({ ...f, phone: e.target.value.replace(/\D/g, '').slice(0, 11) })}
+                          style={{
+                            borderColor: modalErrors.phone ? '#EF4444' : undefined,
+                            boxShadow: modalErrors.phone ? '0 0 0 3px rgba(239, 68, 68, 0.25)' : undefined
+                          }}
+                          onChange={(e) => {
+                            setF({ ...f, phone: e.target.value.replace(/\D/g, '').slice(0, 11) });
+                            if (modalErrors.phone) setModalErrors(prev => ({ ...prev, phone: '' }));
+                          }}
                         />
+                        {modalErrors.phone && (
+                          <span style={{ color: '#F87171', fontSize: '0.72rem', marginTop: 3, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <i className="fas fa-circle-exclamation" style={{ color: '#EF4444' }} /> {modalErrors.phone}
+                          </span>
+                        )}
                       </div>
 
                       <div className="field">
@@ -762,7 +850,7 @@ export default function AuthModal() {
 
 
                 <div className="field">
-                  <label>
+                  <label style={{ color: modalErrors.email ? '#F87171' : undefined }}>
                     {mode === 'in'
                       ? 'USERNAME OR EMAIL'
                       : signupProvider === 'gmail' && mode === 'up'
@@ -775,6 +863,10 @@ export default function AuthModal() {
                     type={mode === 'in' ? 'text' : 'email'}
                     required
                     value={f.email}
+                    style={{
+                      borderColor: modalErrors.email ? '#EF4444' : undefined,
+                      boxShadow: modalErrors.email ? '0 0 0 3px rgba(239, 68, 68, 0.25)' : undefined
+                    }}
                     placeholder={
                       mode === 'in'
                         ? 'Username or user@email.com'
@@ -796,8 +888,14 @@ export default function AuthModal() {
                         }
                       }
                       setF({ ...f, ...nextF });
+                      if (modalErrors.email) setModalErrors(prev => ({ ...prev, email: '' }));
                     }}
                   />
+                  {modalErrors.email && (
+                    <span style={{ color: '#F87171', fontSize: '0.72rem', marginTop: 3, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <i className="fas fa-circle-exclamation" style={{ color: '#EF4444' }} /> {modalErrors.email}
+                    </span>
+                  )}
                   {mode === 'up' && (
                     <span className="small muted" style={{ display: 'block', marginTop: 4, fontSize: '0.74rem' }}>
                       Suggested email: <code>{generateAccountEmail(f.first_name, f.middle_name, f.last_name, 1, false, signupProvider === 'facebook' ? 'facebook' : 'gmail')}</code>
@@ -806,15 +904,27 @@ export default function AuthModal() {
                 </div>
 
                 <div className="field">
-                  <label>PASSWORD</label>
+                  <label style={{ color: modalErrors.password ? '#F87171' : undefined }}>PASSWORD</label>
                   <input
                     type="password"
                     required
                     minLength={6}
                     value={f.password}
+                    style={{
+                      borderColor: modalErrors.password ? '#EF4444' : undefined,
+                      boxShadow: modalErrors.password ? '0 0 0 3px rgba(239, 68, 68, 0.25)' : undefined
+                    }}
                     placeholder="••••••••"
-                    onChange={(e) => setF({ ...f, password: e.target.value })}
+                    onChange={(e) => {
+                      setF({ ...f, password: e.target.value });
+                      if (modalErrors.password) setModalErrors(prev => ({ ...prev, password: '' }));
+                    }}
                   />
+                  {modalErrors.password && (
+                    <span style={{ color: '#F87171', fontSize: '0.72rem', marginTop: 3, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <i className="fas fa-circle-exclamation" style={{ color: '#EF4444' }} /> {modalErrors.password}
+                    </span>
+                  )}
                 </div>
 
                 {mode === 'in' && (
@@ -830,17 +940,40 @@ export default function AuthModal() {
                 )}
 
                 {mode === 'up' && (
-                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: '0.78rem', color: '#94A3B8', marginTop: 12, cursor: 'pointer', userSelect: 'none' }}>
-                    <input
-                      type="checkbox"
-                      checked={termsAccepted}
-                      onChange={(e) => setTermsAccepted(e.target.checked)}
-                      style={{ marginTop: 2 }}
-                    />
-                    <span>
-                      I have read, understood, and accept the Rock View Beach Resort Website Terms of Stay & Privacy Policy (RA 10173).
-                    </span>
-                  </label>
+                  <div>
+                    <label style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: 8,
+                      fontSize: '0.78rem',
+                      color: modalErrors.terms ? '#FCA5A5' : '#94A3B8',
+                      marginTop: 12,
+                      cursor: 'pointer',
+                      userSelect: 'none',
+                      padding: modalErrors.terms ? '8px 10px' : undefined,
+                      background: modalErrors.terms ? 'rgba(239, 68, 68, 0.08)' : undefined,
+                      border: modalErrors.terms ? '1px dashed rgba(239, 68, 68, 0.5)' : undefined,
+                      borderRadius: 8
+                    }}>
+                      <input
+                        type="checkbox"
+                        checked={termsAccepted}
+                        onChange={(e) => {
+                          setTermsAccepted(e.target.checked);
+                          if (modalErrors.terms) setModalErrors(prev => ({ ...prev, terms: '' }));
+                        }}
+                        style={{ marginTop: 2, outline: modalErrors.terms ? '2px solid #EF4444' : undefined }}
+                      />
+                      <span>
+                        I have read, understood, and accept the Rock View Beach Resort Website Terms of Stay & Privacy Policy (RA 10173).
+                      </span>
+                    </label>
+                    {modalErrors.terms && (
+                      <span style={{ color: '#F87171', fontSize: '0.72rem', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <i className="fas fa-circle-exclamation" style={{ color: '#EF4444' }} /> {modalErrors.terms}
+                      </span>
+                    )}
+                  </div>
                 )}
 
                 <button

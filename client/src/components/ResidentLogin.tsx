@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.tsx';
 import { api } from '../lib/api.ts';
@@ -32,6 +32,18 @@ export default function ResidentLogin({ returnTo = '/user' }: ResidentLoginProps
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [signupLoading, setSignupLoading] = useState(false);
 
+  // Manual Account Creation Validation & Caution State
+  const [signupErrors, setSignupErrors] = useState<{
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    signupEmail?: string;
+    signupPassword?: string;
+    termsAgreed?: string;
+  }>({});
+  const [showCautionSign, setShowCautionSign] = useState(false);
+  const cautionSignRef = useRef<HTMLDivElement>(null);
+
   // Recovery Form State
   const [recoveryEmail, setRecoveryEmail] = useState('');
   const [recoveryCode, setRecoveryCode] = useState('');
@@ -59,31 +71,60 @@ export default function ResidentLogin({ returnTo = '/user' }: ResidentLoginProps
     }
   };
 
-  // 2. Handle Create Account (Sign Up)
+  // 2. Handle Create Account (Sign Up) with Strict Field Validation & Caution Alerts
   const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!firstName.trim() || !lastName.trim()) {
-      toast('Please enter both your first name and last name.', true);
-      return;
+    const errors: typeof signupErrors = {};
+
+    if (!firstName.trim()) {
+      errors.firstName = 'First name is required.';
+    } else if (!/^[a-zA-Z\s\-]+$/.test(firstName.trim())) {
+      errors.firstName = 'First name must contain letters and hyphens only.';
     }
+
+    if (!lastName.trim()) {
+      errors.lastName = 'Last name is required.';
+    } else if (!/^[a-zA-Z\s\-]+$/.test(lastName.trim())) {
+      errors.lastName = 'Last name must contain letters and hyphens only.';
+    }
+
     const cleanPhone = phone.replace(/\D/g, '').slice(0, 11);
-    if (!cleanPhone || cleanPhone.length !== 11 || !cleanPhone.startsWith('09')) {
-      toast('Philippine mobile number must be 11 digits starting with 09 (e.g. 09171234567).', true);
-      return;
+    if (!cleanPhone) {
+      errors.phone = 'Philippine mobile phone number is required.';
+    } else if (cleanPhone.length !== 11 || !cleanPhone.startsWith('09')) {
+      errors.phone = 'Mobile must strictly be an 11-digit number starting with 09 (e.g. 09171234567).';
     }
+
     if (!signupEmail.trim()) {
-      toast('Please enter your email address.', true);
-      return;
+      errors.signupEmail = 'Email address is required.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signupEmail.trim())) {
+      errors.signupEmail = 'Please provide a valid email format (e.g. resident@example.ph).';
     }
-    if (!signupPassword || signupPassword.length < 8) {
-      toast('Password must be at least 8 characters long with letters and numbers.', true);
-      return;
+
+    if (!signupPassword) {
+      errors.signupPassword = 'Password is required.';
+    } else if (signupPassword.length < 8) {
+      errors.signupPassword = 'Password must be at least 8 characters long.';
+    } else if (!/[a-zA-Z]/.test(signupPassword) || !/[0-9]/.test(signupPassword)) {
+      errors.signupPassword = 'Password must contain both letters and numbers for account security.';
     }
+
     if (!termsAgreed) {
-      toast('Please agree to the Resort Terms of Stay and Privacy Policy to create your account.', true);
+      errors.termsAgreed = 'You must agree to the Resort Terms of Stay and Privacy Policy to proceed.';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setSignupErrors(errors);
+      setShowCautionSign(true);
+      toast('⚠️ Caution: Please complete the required fields highlighted in red.', true);
+      setTimeout(() => {
+        cautionSignRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 50);
       return;
     }
 
+    setSignupErrors({});
+    setShowCautionSign(false);
     setSignupLoading(true);
     try {
       const fullName = `${firstName.trim()} ${lastName.trim()}`;
@@ -255,8 +296,8 @@ export default function ResidentLogin({ returnTo = '/user' }: ResidentLoginProps
         {/* Showcase Footer Badges */}
         <div className="rl-showcase__footer">
           <div className="rl-rating-badge">
-            <span className="rl-stars">★★★★★</span>
-            <span><strong>4.98</strong> / 5.0 · 48 Verified Reviews</span>
+            <span className="rl-stars" style={{ color: '#38bdf8' }}>✦</span>
+            <span><strong>Official</strong> Resident Guest Portal</span>
           </div>
           <div className="rl-location-badge">
             <i className="fas fa-location-dot" />
@@ -421,40 +462,112 @@ export default function ResidentLogin({ returnTo = '/user' }: ResidentLoginProps
           {/* MODE: CREATE ACCOUNT FORM                                    */}
           {/* ============================================================ */}
           {mode === 'signup' && (
-            <form onSubmit={handleCreateAccount}>
+            <form onSubmit={handleCreateAccount} noValidate>
+              {/* POPUP CAUTION SIGN BANNER */}
+              {showCautionSign && Object.keys(signupErrors).length > 0 && (
+                <div ref={cautionSignRef} className="rl-caution-popup" role="alert">
+                  <div className="rl-caution-popup__header">
+                    <div className="rl-caution-popup__title">
+                      <i className="fas fa-triangle-exclamation rl-caution-popup__icon" />
+                      <span>CAUTION: Required Fields Incomplete</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="rl-caution-popup__close"
+                      onClick={() => setShowCautionSign(false)}
+                      aria-label="Dismiss caution"
+                    >
+                      <i className="fas fa-xmark" />
+                    </button>
+                  </div>
+                  <p className="rl-caution-popup__desc">
+                    Please fill out and correct the highlighted fields marked in red below to finalize your resident account.
+                  </p>
+                  <ul className="rl-caution-popup__list">
+                    {signupErrors.firstName && <li><i className="fas fa-circle-exclamation" /> {signupErrors.firstName}</li>}
+                    {signupErrors.lastName && <li><i className="fas fa-circle-exclamation" /> {signupErrors.lastName}</li>}
+                    {signupErrors.phone && <li><i className="fas fa-circle-exclamation" /> {signupErrors.phone}</li>}
+                    {signupErrors.signupEmail && <li><i className="fas fa-circle-exclamation" /> {signupErrors.signupEmail}</li>}
+                    {signupErrors.signupPassword && <li><i className="fas fa-circle-exclamation" /> {signupErrors.signupPassword}</li>}
+                    {signupErrors.termsAgreed && <li><i className="fas fa-circle-exclamation" /> {signupErrors.termsAgreed}</li>}
+                  </ul>
+                </div>
+              )}
+
               <div className="rl-form-grid-2">
                 <div>
-                  <label className="rl-label" htmlFor="rl-firstname">First Name</label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                    <label className={`rl-label ${signupErrors.firstName ? 'rl-label--error' : ''}`} htmlFor="rl-firstname">First Name</label>
+                    {signupErrors.firstName && <span className="rl-badge-required">Required</span>}
+                  </div>
                   <input
                     id="rl-firstname"
                     type="text"
                     required
                     value={firstName}
-                    onChange={(e) => setFirstName(e.target.value.replace(/[^a-zA-Z\s\-]/g, ''))}
+                    onChange={(e) => {
+                      setFirstName(e.target.value.replace(/[^a-zA-Z\s\-]/g, ''));
+                      if (signupErrors.firstName) setSignupErrors((prev) => ({ ...prev, firstName: undefined }));
+                    }}
                     placeholder="Juan"
-                    className="rl-input"
+                    className={`rl-input ${signupErrors.firstName ? 'rl-input--error' : ''}`}
                     style={{ paddingLeft: '14px' }}
                   />
+                  {signupErrors.firstName && (
+                    <div className="rl-field-error">
+                      <i className="fas fa-circle-exclamation" /> {signupErrors.firstName}
+                    </div>
+                  )}
                 </div>
                 <div>
-                  <label className="rl-label" htmlFor="rl-lastname">Last Name</label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                    <label className={`rl-label ${signupErrors.lastName ? 'rl-label--error' : ''}`} htmlFor="rl-lastname">Last Name</label>
+                    {signupErrors.lastName && <span className="rl-badge-required">Required</span>}
+                  </div>
                   <input
                     id="rl-lastname"
                     type="text"
                     required
                     value={lastName}
-                    onChange={(e) => setLastName(e.target.value.replace(/[^a-zA-Z\s\-]/g, ''))}
+                    onChange={(e) => {
+                      setLastName(e.target.value.replace(/[^a-zA-Z\s\-]/g, ''));
+                      if (signupErrors.lastName) setSignupErrors((prev) => ({ ...prev, lastName: undefined }));
+                    }}
                     placeholder="Cruz"
-                    className="rl-input"
+                    className={`rl-input ${signupErrors.lastName ? 'rl-input--error' : ''}`}
                     style={{ paddingLeft: '14px' }}
                   />
+                  {signupErrors.lastName && (
+                    <div className="rl-field-error">
+                      <i className="fas fa-circle-exclamation" /> {signupErrors.lastName}
+                    </div>
+                  )}
                 </div>
               </div>
 
               <div className="rl-form-group">
-                <label className="rl-label" htmlFor="rl-phone">Mobile Phone (11 Digits, 09XXXXXXXXX)</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                  <label className={`rl-label ${signupErrors.phone ? 'rl-label--error' : ''}`} htmlFor="rl-phone">
+                    Mobile Phone (11 Digits, 09XXXXXXXXX)
+                  </label>
+                  <span className={`text-[11px] font-semibold ${
+                    phone.length === 11 && phone.startsWith('09')
+                      ? 'text-emerald-400'
+                      : signupErrors.phone
+                      ? 'text-rose-400'
+                      : phone.length > 0
+                      ? 'text-amber-400'
+                      : 'text-slate-400'
+                  }`}>
+                    {phone.length === 11 && phone.startsWith('09')
+                      ? '✓ 11/11 digits'
+                      : phone.length > 0
+                      ? `${phone.length}/11 digits`
+                      : '11 digits (09...)'}
+                  </span>
+                </div>
                 <div className="rl-input-wrap">
-                  <i className="fas fa-phone rl-input-icon" />
+                  <i className={`fas fa-phone rl-input-icon ${signupErrors.phone ? 'rl-input-icon--error' : ''}`} />
                   <input
                     id="rl-phone"
                     type="tel"
@@ -462,41 +575,74 @@ export default function ResidentLogin({ returnTo = '/user' }: ResidentLoginProps
                     maxLength={11}
                     required
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                    onChange={(e) => {
+                      let digits = e.target.value.replace(/\D/g, '');
+                      if (digits.startsWith('63') && digits.length >= 3) {
+                        digits = '0' + digits.slice(2);
+                      }
+                      setPhone(digits.slice(0, 11));
+                      if (signupErrors.phone) setSignupErrors((prev) => ({ ...prev, phone: undefined }));
+                    }}
                     placeholder="09171234567"
-                    className="rl-input"
+                    className={`rl-input ${signupErrors.phone ? 'rl-input--error' : ''}`}
                   />
                 </div>
+                {signupErrors.phone && (
+                  <div className="rl-field-error">
+                    <i className="fas fa-circle-exclamation" /> {signupErrors.phone}
+                  </div>
+                )}
               </div>
 
               <div className="rl-form-group">
-                <label className="rl-label" htmlFor="rl-signup-email">Email Address</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                  <label className={`rl-label ${signupErrors.signupEmail ? 'rl-label--error' : ''}`} htmlFor="rl-signup-email">
+                    Email Address
+                  </label>
+                  {signupErrors.signupEmail && <span className="rl-badge-required">Required</span>}
+                </div>
                 <div className="rl-input-wrap">
-                  <i className="fas fa-envelope rl-input-icon" />
+                  <i className={`fas fa-envelope rl-input-icon ${signupErrors.signupEmail ? 'rl-input-icon--error' : ''}`} />
                   <input
                     id="rl-signup-email"
                     type="email"
                     required
                     value={signupEmail}
-                    onChange={(e) => setSignupEmail(e.target.value)}
+                    onChange={(e) => {
+                      setSignupEmail(e.target.value);
+                      if (signupErrors.signupEmail) setSignupErrors((prev) => ({ ...prev, signupEmail: undefined }));
+                    }}
                     placeholder="your@email.com"
-                    className="rl-input"
+                    className={`rl-input ${signupErrors.signupEmail ? 'rl-input--error' : ''}`}
                   />
                 </div>
+                {signupErrors.signupEmail && (
+                  <div className="rl-field-error">
+                    <i className="fas fa-circle-exclamation" /> {signupErrors.signupEmail}
+                  </div>
+                )}
               </div>
 
               <div className="rl-form-group">
-                <label className="rl-label" htmlFor="rl-signup-password">Password (Min 8 Characters)</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                  <label className={`rl-label ${signupErrors.signupPassword ? 'rl-label--error' : ''}`} htmlFor="rl-signup-password">
+                    Password (Min 8 Characters with Letters & Numbers)
+                  </label>
+                  {signupErrors.signupPassword && <span className="rl-badge-required">Required</span>}
+                </div>
                 <div className="rl-input-wrap">
-                  <i className="fas fa-key rl-input-icon" />
+                  <i className={`fas fa-key rl-input-icon ${signupErrors.signupPassword ? 'rl-input-icon--error' : ''}`} />
                   <input
                     id="rl-signup-password"
                     type={showSignupPassword ? 'text' : 'password'}
                     required
                     value={signupPassword}
-                    onChange={(e) => setSignupPassword(e.target.value)}
+                    onChange={(e) => {
+                      setSignupPassword(e.target.value);
+                      if (signupErrors.signupPassword) setSignupErrors((prev) => ({ ...prev, signupPassword: undefined }));
+                    }}
                     placeholder="••••••••"
-                    className="rl-input"
+                    className={`rl-input ${signupErrors.signupPassword ? 'rl-input--error' : ''}`}
                   />
                   <button
                     type="button"
@@ -507,23 +653,41 @@ export default function ResidentLogin({ returnTo = '/user' }: ResidentLoginProps
                     <i className={`fas ${showSignupPassword ? 'fa-eye-slash' : 'fa-eye'}`} />
                   </button>
                 </div>
+                {signupErrors.signupPassword && (
+                  <div className="rl-field-error">
+                    <i className="fas fa-circle-exclamation" /> {signupErrors.signupPassword}
+                  </div>
+                )}
               </div>
 
-              <label className="rl-checkbox-row">
-                <input
-                  type="checkbox"
-                  required
-                  checked={termsAgreed}
-                  onChange={(e) => setTermsAgreed(e.target.checked)}
-                  className="rl-checkbox"
-                />
-                <span>I agree to the Resort Terms of Stay and Privacy Policy.</span>
-              </label>
+              <div className={signupErrors.termsAgreed ? 'rl-checkbox-container--error' : ''}>
+                <label className="rl-checkbox-row" style={{ margin: 0 }}>
+                  <input
+                    type="checkbox"
+                    required
+                    checked={termsAgreed}
+                    onChange={(e) => {
+                      setTermsAgreed(e.target.checked);
+                      if (signupErrors.termsAgreed) setSignupErrors((prev) => ({ ...prev, termsAgreed: undefined }));
+                    }}
+                    className={`rl-checkbox ${signupErrors.termsAgreed ? 'rl-checkbox--error' : ''}`}
+                  />
+                  <span style={{ color: signupErrors.termsAgreed ? '#fca5a5' : undefined }}>
+                    I agree to the Resort Terms of Stay and Privacy Policy.
+                  </span>
+                </label>
+                {signupErrors.termsAgreed && (
+                  <div className="rl-field-error" style={{ marginTop: 6 }}>
+                    <i className="fas fa-circle-exclamation" /> {signupErrors.termsAgreed}
+                  </div>
+                )}
+              </div>
 
               <button
                 type="submit"
                 disabled={signupLoading}
                 className="rl-submit-btn"
+                style={{ marginTop: 14 }}
               >
                 {signupLoading && <span className="rl-spinner" aria-hidden="true" />}
                 {signupLoading ? 'Creating Account…' : 'Create Resident Account'}
