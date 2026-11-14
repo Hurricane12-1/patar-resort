@@ -173,6 +173,8 @@ export default function MobileResortApp() {
   // Application Data States (Live Supabase)
   const [rooms, setRooms] = useState<Room[]>(FALLBACK_ROOMS);
   const [selectedRoomId, setSelectedRoomId] = useState<string>('chason-room');
+  // Visual multi-select: rooms the guest has toggled on. Booking uses selectedRoomIds[0] as the primary room.
+  const [selectedRoomIds, setSelectedRoomIds] = useState<string[]>(['chason-room']);
   const [reservations, setReservations] = useState<ReservationWindow[]>([]);
   const [dbStatus, setDbStatus] = useState<'connecting' | 'connected' | 'offline'>('connecting');
   const [dbStatusMessage, setDbStatusMessage] = useState<string>('Connecting to Supabase...');
@@ -361,6 +363,7 @@ export default function MobileResortApp() {
     const best = roomRanking.best;
     if (roomMode === 'auto' && best && best.id !== selectedRoomId) {
       setSelectedRoomId(best.id);
+      setSelectedRoomIds([best.id]);
     }
   }, [roomMode, roomRanking, selectedRoomId]);
 
@@ -383,8 +386,21 @@ export default function MobileResortApp() {
   const chooseRoom = (roomId: string) => {
     setRoomMode('manual');
     setSelectedRoomId(roomId);
+    setSelectedRoomIds([roomId]);
   };
-  const enableAutoMatch = () => setRoomMode('auto');
+  // Toggle a room in the multi-select list; booking uses the first still-selected room as primary.
+  const toggleRoomSelect = (roomId: string) => {
+    setRoomMode('manual');
+    const next = selectedRoomIds.includes(roomId)
+      ? selectedRoomIds.filter((id) => id !== roomId)
+      : [...selectedRoomIds, roomId];
+    setSelectedRoomIds(next);
+    if (next.length) setSelectedRoomId(next[0]);
+  };
+  const enableAutoMatch = () => {
+    setRoomMode('auto');
+    setSelectedRoomIds(selectedRoomId ? [selectedRoomId] : []);
+  };
 
   const guestSummary = [
     `${guests.adults} adult${guests.adults === 1 ? '' : 's'}`,
@@ -1771,21 +1787,33 @@ export default function MobileResortApp() {
                       : 'You picked this room. Turn on auto-match to let us choose by party size. '}
                     Capacity follows the resort's live room settings; infants don't count.
                   </p>
-                  <div className="mt-3 space-y-2" role="radiogroup" aria-label="Rooms">
+                  <div className="mt-3 flex items-center gap-3 text-[10px] font-medium text-[#64748B]">
+                    <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-[3px] border border-[#93C5FD] bg-[#EFF6FF]" /> Selected</span>
+                    <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-[3px] border border-[#FCA5A5] bg-[#FEF2F2]" /> Already booked</span>
+                    <span className="text-[#94A3B8]">Tap to select or deselect</span>
+                  </div>
+                  <div className="mt-2 space-y-2" role="group" aria-label="Rooms">
                     {roomRanking.options.map((option) => {
-                      const isSelected = option.room.id === selectedRoom.id;
-                      const disabled = option.fit === 'too-small';
+                      const isSelected = selectedRoomIds.includes(option.room.id);
+                      const isBooked = option.fit === 'booked';
+                      const isTooSmall = option.fit === 'too-small';
+                      const disabled = isBooked || isTooSmall;
+                      const toneClass = isBooked
+                        ? 'border-[#FCA5A5] bg-[#FEF2F2] cursor-not-allowed'
+                        : isSelected
+                        ? 'border-[#93C5FD] bg-[#EFF6FF] shadow-[inset_0_0_0_1px_#93C5FD] cursor-pointer'
+                        : isTooSmall
+                        ? 'border-[#E2E8F0] opacity-55 cursor-not-allowed'
+                        : 'border-[#E2E8F0] hover:border-[#94A3B8] cursor-pointer';
                       return (
                         <button
                           key={option.room.id}
                           type="button"
-                          role="radio"
+                          role="checkbox"
                           aria-checked={isSelected}
                           disabled={disabled}
-                          onClick={() => chooseRoom(option.room.id)}
-                          className={`w-full flex items-center gap-3 rounded-xl border p-2.5 text-left transition ${
-                            isSelected ? 'border-[#222222] bg-[#F8FAFC] shadow-[inset_0_0_0_1px_#222222]' : 'border-[#E2E8F0] hover:border-[#94A3B8]'
-                          } ${disabled ? 'opacity-55 cursor-not-allowed hover:border-[#E2E8F0]' : 'cursor-pointer'}`}
+                          onClick={() => toggleRoomSelect(option.room.id)}
+                          className={`w-full flex items-center gap-3 rounded-xl border p-2.5 text-left transition ${toneClass}`}
                         >
                           <img src={option.room.image_url || '/images/cottage.jpg'} alt="" className="h-12 w-14 shrink-0 rounded-lg object-cover bg-slate-100" />
                           <span className="min-w-0 flex-1">
@@ -1800,7 +1828,14 @@ export default function MobileResortApp() {
                               <span className="text-[#6A6A6A]">
                                 {option.capacity > 0 ? `Up to ${option.capacity} ${option.capacity === 1 ? 'guest' : 'guests'}` : 'Capacity not set'}
                               </span>
-                              <span className={`font-semibold ${FIT_TONE[option.fit]}`}>{fitLabel(option.fit, option.capacity, partySize)}</span>
+                              <span className={`inline-flex items-center gap-1 font-semibold ${isBooked ? 'text-[#DC2626]' : FIT_TONE[option.fit]}`}>
+                                {isBooked && (
+                                  <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor" aria-hidden="true">
+                                    <path d="M12 2 1 21h22L12 2zm0 13a1 1 0 110 2 1 1 0 010-2zm-1-7h2v5h-2V8z" />
+                                  </svg>
+                                )}
+                                {fitLabel(option.fit, option.capacity, partySize)}
+                              </span>
                             </span>
                           </span>
                         </button>

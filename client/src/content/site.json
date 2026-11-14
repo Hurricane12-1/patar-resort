@@ -105,23 +105,7 @@
   "reviews": {
     "eyebrow": "Guest Reflections",
     "title": "Memories of Patar",
-    "items": [
-      {
-        "quote": "The sweetest sea breeze and warmest hospitality. Waking up fifty steps from the sand felt like our own private paradise.",
-        "name": "Maria & Christian S.",
-        "from": "Makati City"
-      },
-      {
-        "quote": "No noisy crowds, just pristine golden sand, grilled seafood at dusk, and stargazing from the veranda. We will return every summer.",
-        "name": "David L.",
-        "from": "Singapore"
-      },
-      {
-        "quote": "Our barkada loved the relaxed atmosphere and easy access to the lighthouse. The staff treats you like beloved family.",
-        "name": "Camille R.",
-        "from": "Quezon City"
-      }
-    ]
+    "items": []
   },
   "location": {
     "eyebrow": "Find Your Way",

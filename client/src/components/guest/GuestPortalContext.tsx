@@ -12,7 +12,6 @@ import {
   applyReservationRow,
   clearPreviewData,
   createSampleAccount,
-  createSampleBookings,
   emptyProfile,
   loadDeviceBookings,
   loadGuestAccount,
@@ -180,10 +179,6 @@ export function GuestPortalProvider({ children }: { children: ReactNode }) {
         setBookings([...merged, ...deviceOnly]);
       } else {
         let device = loadDeviceBookings();
-        if (!device.length && roomList.length) {
-          device = createSampleBookings(roomList, today);
-          saveDeviceBookings(device);
-        }
         const syncedIds = device.map((b) => b.dbId).filter(Boolean) as string[];
         if (syncedIds.length) {
           try {
@@ -387,13 +382,12 @@ export function GuestPortalProvider({ children }: { children: ReactNode }) {
 
   const resetPreview = useCallback(() => {
     clearPreviewData();
-    const sample = createSampleAccount();
-    saveGuestAccount(PREVIEW_SCOPE, sample);
-    setAccount(sample);
-    const samples = createSampleBookings(rooms, today);
-    saveDeviceBookings(samples);
-    setBookings(samples);
-  }, [rooms, today]);
+    const empty = createSampleAccount();
+    saveGuestAccount(PREVIEW_SCOPE, empty);
+    setAccount(empty);
+    saveDeviceBookings([]);
+    setBookings([]);
+  }, []);
 
   const value = useMemo<GuestPortalValue>(() => {
     const { firstName, lastName, email } = account.profile;

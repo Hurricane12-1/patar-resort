@@ -90,7 +90,7 @@ function PortalFrame() {
               type="button"
               onClick={() => {
                 portal.resetPreview();
-                toast('Preview reset to sample data');
+                toast('Preview reset');
               }}
               className="hidden shrink-0 rounded-full border border-white/25 px-3 py-1 text-[12px] font-semibold text-white transition hover:bg-white/10 sm:inline-flex"
             >

@@ -987,7 +987,7 @@ function SecuritySection() {
             type="button"
             onClick={() => {
               portal.resetPreview();
-              toast('Preview reset to sample data');
+              toast('Preview reset');
             }}
             className="inline-flex items-center gap-1.5 rounded-full border border-[#E2DCD0] px-3.5 py-1.5 text-[13px] font-semibold text-[#18222B] transition hover:bg-[#F7F5F0]"
           >

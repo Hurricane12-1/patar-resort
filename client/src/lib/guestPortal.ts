@@ -2,12 +2,11 @@ import { addDaysISO, getManilaTodayISO } from './offeringSpecs';
 import { computeStayPrice, nightsBetween, type Room } from './guestRooms';
 
 /**
- * Review switch for the guest dashboard. While true, /client opens without signing in
- * and shows a clearly labelled preview guest (bookings made on this device, or sample
- * stays). Signed-in residents always see their own account. Set to false to require
- * a resident sign-in again.
+ * Guest-dashboard access switch. When false (default), /client requires a resident
+ * sign-in and shows only that account's real, database-backed data — nothing on-device
+ * or sampled. Set to true only to re-enable the sign-in-skipped preview mode for review.
  */
-export const CLIENT_DIRECT_ACCESS = true;
+export const CLIENT_DIRECT_ACCESS = false;
 
 export const RESORT_CONTACT = {
   phoneDisplay: '+63 900 555 0123',
@@ -250,83 +249,13 @@ export function rememberBookingGuest(details: { name: string; email: string; pho
 // ---------------------------------------------------------------------------
 
 export function createSampleAccount(): GuestAccount {
-  return {
-    isSample: true,
-    profile: {
-      ...emptyProfile(),
-      firstName: 'Maria',
-      lastName: 'Santos',
-      email: 'maria.santos@example.com',
-      phone: '09171234567',
-      street: '12 Mabini Street, Brgy. San Antonio',
-      city: 'Quezon City',
-      province: 'Metro Manila',
-      zip: '1105',
-      emergencyName: 'Carlos Santos',
-      emergencyRelation: 'Spouse',
-      emergencyPhone: '09189876543',
-      specialRequests: 'Extra pillows and a quiet room, please.',
-      memberSince: '2024-06-12T08:00:00.000Z',
-    },
-    payments: [
-      { id: 'pm-sample-gcash', type: 'gcash', label: 'GCash', holder: 'Maria Santos', last4: '4567', isDefault: true, addedAt: '2024-06-12T08:00:00.000Z' },
-      { id: 'pm-sample-visa', type: 'card', label: 'Visa', brand: 'Visa', holder: 'Maria Santos', last4: '4242', expiry: '08/28', isDefault: false, addedAt: '2025-01-20T08:00:00.000Z' },
-    ],
-    requests: [],
-  };
+  // Preview starts empty — no mock profile or payment methods.
+  return { isSample: false, profile: emptyProfile(), payments: [], requests: [] };
 }
 
-/** Three sample stays relative to today, built from the live rooms so names and capacities match. */
-export function createSampleBookings(rooms: Room[], today = getManilaTodayISO()): GuestBooking[] {
-  const usable = rooms.filter((r) => (Number(r.capacity) || 0) > 0);
-  if (!usable.length) return [];
-  const byCapacity = [...usable].sort((a, b) => (a.capacity || 0) - (b.capacity || 0));
-  const small = byCapacity[0];
-  const family = byCapacity.find((r) => (r.capacity || 0) >= 4) || byCapacity[byCapacity.length - 1];
-  const large = byCapacity[byCapacity.length - 1];
-
-  const plans = [
-    { key: 'next', room: small, startIn: 3, nights: 2, adults: Math.min(2, small.capacity || 2), children: 0, status: 'confirmed' as BookingStatus, paymentStatus: 'unpaid', method: 'GCash •••• 4567', ref: 'RV-BOL-2026-4821', match: 'auto' as const },
-    { key: 'family', room: family, startIn: 34, nights: 3, adults: 2, children: Math.max(0, Math.min(2, (family.capacity || 4) - 2)), status: 'confirmed' as BookingStatus, paymentStatus: 'unpaid', method: 'Visa •••• 4242', ref: 'RV-BOL-2026-5307', match: 'manual' as const },
-    { key: 'past', room: large, startIn: -62, nights: 3, adults: Math.min(4, large.capacity || 4), children: Math.max(0, Math.min(1, (large.capacity || 4) - 4)), status: 'checked_out' as BookingStatus, paymentStatus: 'paid', method: 'GCash •••• 4567', ref: 'RV-BOL-2026-2194', match: 'auto' as const },
-  ];
-
-  return plans.map((plan) => {
-    const checkIn = addDaysISO(today, plan.startIn);
-    const checkOut = addDaysISO(checkIn, plan.nights);
-    const rate = plan.room.rate_php || 3500;
-    const price = computeStayPrice(rate, checkIn, checkOut);
-    return {
-      id: `sample-${plan.key}`,
-      reference: plan.ref,
-      source: 'sample',
-      roomId: plan.room.id,
-      roomName: plan.room.name,
-      roomCategory: plan.room.category || 'Room',
-      roomImage: plan.room.image_url || '/images/suite.jpg',
-      roomCapacity: plan.room.capacity || plan.adults + plan.children,
-      rate,
-      checkIn,
-      checkOut,
-      nights: plan.nights,
-      adults: plan.adults,
-      children: plan.children,
-      guests: plan.adults + plan.children,
-      nightsTotal: price.nightsTotal,
-      cleaningFee: price.cleaningFee,
-      coastalFee: price.coastalFee,
-      total: price.grandTotal,
-      status: plan.status,
-      paymentMethod: plan.method,
-      paymentStatus: plan.paymentStatus,
-      arrivalPin: plan.key === 'next' ? '#4821' : undefined,
-      matchMode: plan.match,
-      guestName: 'Maria Santos',
-      guestEmail: 'maria.santos@example.com',
-      guestPhone: '09171234567',
-      createdAt: new Date(`${addDaysISO(today, plan.startIn - 21)}T09:30:00+08:00`).toISOString(),
-    } satisfies GuestBooking;
-  });
+/** Preview/sample stays removed — the guest portal shows only real bookings. */
+export function createSampleBookings(_rooms: Room[], _today = getManilaTodayISO()): GuestBooking[] {
+  return [];
 }
 
 export function makeBookingReference(checkIn?: string | null): string {
