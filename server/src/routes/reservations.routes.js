@@ -133,7 +133,9 @@ const createSchema = z.object({
   }, { message: 'A valid email address is required for official booking voucher delivery' })
   .refine((d) => Boolean(d.payment_method && d.payment_method.trim().length > 0), { message: 'Preferred downpayment method is required' });
 
-r.post('/reservations', optionalAuth, bookingLimiter, validate(createSchema), asyncH(async (req, res) => {
+// Booking requires a signed-in account. `authenticate` rejects anonymous requests with 401
+// before the handler runs, so a reservation can never be created without an account.
+r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), asyncH(async (req, res) => {
   const {
     roomId,
     room_id,
@@ -473,10 +475,17 @@ r.get('/reservations/mine', optionalAuth, asyncH(async (req, res) => {
     .select('*, rooms(name, slug, capacity, category, amenities, rate_php), reviews(id, rating)')
     .order('check_in', { ascending: false });
 
-  const guestEmail = (req.user?.email || req.query.email || '').trim().toLowerCase();
-  const guestPhone = (req.user?.phone || req.query.phone || '').trim();
-  const guestId = req.user?.id || req.query.guest_id;
+  // Identity is taken from the authenticated session only. Query-string identity
+  // (email/phone/guest_id) is NOT honoured for anonymous callers — otherwise anyone
+  // could enumerate another guest's bookings by guessing an email or phone number.
   const isAdmin = ['administrator', 'admin'].includes(req.user?.role);
+  const isAuthed = Boolean(req.user && req.user.id);
+  if (!isAuthed && !isAdmin) {
+    return res.json([]);
+  }
+  const guestEmail = (req.user?.email || '').trim().toLowerCase();
+  const guestPhone = (req.user?.phone || '').trim();
+  const guestId = req.user?.id;
 
   if (!isAdmin) {
     if (guestId && guestEmail) {

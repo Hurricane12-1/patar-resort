@@ -167,7 +167,7 @@ function fmtYM(ym: YearMonth): string {
 export default function MobileResortApp() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { customerSession, customerProfile } = useAuth();
+  const { customerSession, customerProfile, setAuthOpen } = useAuth();
   const signedInGuest = Boolean(customerSession && customerProfile);
 
   // Application Data States (Live Supabase)
@@ -647,6 +647,11 @@ export default function MobileResortApp() {
   };
 
   const openReserve = () => {
+    // Booking requires a signed-in account (the server enforces this too). Prompt sign-in / registration.
+    if (!signedInGuest) {
+      setAuthOpen?.(true);
+      return;
+    }
     if (!checkIn || !checkOut) {
       setCardDrawer('calendar');
       setActiveField(checkIn ? 'checkout' : 'checkin');
@@ -685,6 +690,10 @@ export default function MobileResortApp() {
   // Step 2 of the safety rail: only runs after the guest says yes on the review screen.
   const finalizeReservation = async () => {
     if (!checkIn || !checkOut || reserveBlock || reserveSubmitting) return;
+    if (!signedInGuest) {
+      setReserveError('Please sign in to complete your booking.');
+      return;
+    }
     const name = guestName.trim();
     const email = guestEmail.trim();
     const phone = to11Digits(guestPhone);

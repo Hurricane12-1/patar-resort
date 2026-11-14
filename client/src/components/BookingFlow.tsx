@@ -208,6 +208,11 @@ export default function BookingFlow({ initialSlug }) {
       toast('Please agree to the Resort Terms of Stay and Cancellation Policy before confirming your reservation.', true);
       return;
     }
+    if (!session || !profile) {
+      toast('Please sign in or create an account to complete your booking.', true);
+      setAuthOpen(true);
+      return;
+    }
     setBusy(true);
     try {
       const unitTag = selectedUnitNumber !== 'auto'
