@@ -165,6 +165,12 @@ export const cspDirectives = {
   'object-src': ["'none'"],
   'base-uri': ["'self'"],
   'form-action': ["'self'"],
+  'frame-src': [
+    "'self'",
+    'https://www.google.com',
+    'https://maps.google.com',
+    'https://*.google.com',
+  ],
   'frame-ancestors': ["'none'"],
 };
 

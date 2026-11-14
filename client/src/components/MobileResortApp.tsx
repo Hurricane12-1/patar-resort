@@ -1666,53 +1666,54 @@ export default function MobileResortApp() {
         </div>
 
         {/* =====================================================================
-             "WHERE YOU'LL BE" — INTERACTIVE SVG COASTAL MAP OF BOLINAO
+             "WHERE YOU'LL BE" — INTERACTIVE GOOGLE MAPS IFRAME OF BOLINAO
              ===================================================================== */}
         <section id="location-section" className="mt-12 pt-10 border-t border-[#DDDDDD]">
-          <h4 className="text-[22px] font-semibold text-[#222222] mb-1">Where you'll be</h4>
-          <p className="text-[15px] text-[#6A6A6A] mb-5">Patar Coastal Road, Bolinao, Pangasinan, Philippines</p>
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-5">
+            <div>
+              <h4 className="text-[22px] font-semibold text-[#222222]">Where you'll be</h4>
+              <p className="text-[15px] text-[#6A6A6A] mt-0.5">Patar Coastal Road, Bolinao, Pangasinan, Philippines</p>
+            </div>
+            <a
+              href="https://www.google.com/maps/search/?api=1&query=Rock+View+Beach+Resort,+Patar+Road,+Bolinao,+Pangasinan"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#222222] hover:text-[#9E7E46] transition underline shrink-0"
+            >
+              <span>Open in Google Maps</span>
+              <span>↗</span>
+            </a>
+          </div>
 
-          <div className="h-[340px] sm:h-[420px] rounded-2xl overflow-hidden border border-[#DDDDDD] bg-[#F4EDE2] relative shadow-inner">
-            <svg viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid slice" className="w-full h-full">
-              {/* Sea */}
-              <rect width="1000" height="500" fill="#BFE3EB"/>
-              {/* Coastline */}
-              <path d="M 0,220 Q 200,180 380,240 T 700,180 T 1000,210 L 1000,500 L 0,500 Z" fill="#E8DDCB"/>
-              <path d="M 0,250 Q 200,210 380,270 T 700,210 T 1000,240 L 1000,500 L 0,500 Z" fill="#DDD0BC"/>
-              
-              {/* Pins */}
-              <g className="cursor-pointer group">
-                <circle cx="380" cy="240" r="14" fill="#FF385C" className="drop-shadow-md"/>
-                <circle cx="380" cy="240" r="6" fill="#FFFFFF"/>
-                <text x="380" y="275" textAnchor="middle" fill="#18222B" fontSize="13" fontWeight="bold">
-                  Rock View Beach Resort
-                </text>
-              </g>
+          <div className="h-[360px] sm:h-[440px] rounded-2xl overflow-hidden border border-[#DDDDDD] bg-[#F4EDE2] relative shadow-sm">
+            <iframe
+              title="Rock View Beach Resort Location Map"
+              src="https://maps.google.com/maps?q=Rock+View+Beach+Resort,+Patar+Road,+Bolinao,+Pangasinan&t=&z=15&ie=UTF8&iwloc=&output=embed"
+              className="w-full h-full border-0"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              allowFullScreen
+            />
+          </div>
 
-              <g className="cursor-pointer">
-                <circle cx="210" cy="180" r="10" fill="#9E7E46"/>
-                <circle cx="210" cy="180" r="4" fill="#FFFFFF"/>
-                <text x="210" y="210" textAnchor="middle" fill="#18222B" fontSize="11" fontWeight="600">
-                  Cape Bolinao Lighthouse
-                </text>
-              </g>
-
-              <g className="cursor-pointer">
-                <circle cx="560" cy="210" r="10" fill="#9E7E46"/>
-                <circle cx="560" cy="210" r="4" fill="#FFFFFF"/>
-                <text x="560" y="240" textAnchor="middle" fill="#18222B" fontSize="11" fontWeight="600">
-                  Patar White Beach
-                </text>
-              </g>
-
-              <g className="cursor-pointer">
-                <circle cx="780" cy="250" r="10" fill="#9E7E46"/>
-                <circle cx="780" cy="250" r="4" fill="#FFFFFF"/>
-                <text x="780" y="280" textAnchor="middle" fill="#18222B" fontSize="11" fontWeight="600">
-                  Enchanted Cave
-                </text>
-              </g>
-            </svg>
+          {/* Surrounding Landmark Distance Pills */}
+          <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs text-[#475569]">
+            <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
+              <span className="font-bold text-[#222222] block">Patar Rock Formations</span>
+              <span className="text-[11px] text-[#64748B]">Direct access · On site</span>
+            </div>
+            <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
+              <span className="font-bold text-[#222222] block">Patar White Beach</span>
+              <span className="text-[11px] text-[#64748B]">4 mins · 1.8 km</span>
+            </div>
+            <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
+              <span className="font-bold text-[#222222] block">Cape Bolinao Lighthouse</span>
+              <span className="text-[11px] text-[#64748B]">6 mins · 2.8 km</span>
+            </div>
+            <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
+              <span className="font-bold text-[#222222] block">Enchanted Cave</span>
+              <span className="text-[11px] text-[#64748B]">12 mins · 6.2 km</span>
+            </div>
           </div>
         </section>
       </main>
