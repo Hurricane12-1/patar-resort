@@ -9,6 +9,7 @@ import {
   RESORT_CONTACT,
   canGuestCancel,
   cancelWindowLabel,
+  guestRefundPercent,
   countdownLabel,
   formatDateRange,
   formatPeso,
@@ -501,9 +502,9 @@ function BookingDrawer({ item, today, onClose }: { item: StayItem; today: string
     };
   }, []);
 
-  const withinCancelWindow = canGuestCancel(booking);
-  const canCancel = phase === 'upcoming' && booking.status !== 'disputed' && withinCancelWindow;
+  const canCancel = phase === 'upcoming' && booking.status !== 'disputed' && canGuestCancel(booking);
   const cancelCountdown = cancelWindowLabel(booking.createdAt);
+  const refundPct = guestRefundPercent(booking.createdAt);
   const daysAway = nightsBetween(today, booking.checkIn);
   const showArrival = phase === 'upcoming' || phase === 'current';
 
@@ -730,16 +731,13 @@ function BookingDrawer({ item, today, onClose }: { item: StayItem; today: string
 
         <div className="border-t border-[#EFEAE0] bg-white px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6">
           {error && <p className="mb-3 rounded-xl bg-[#FDF3F4] px-3 py-2 text-[13px] text-[#8C1D30]">{error}</p>}
-          {!confirmCancel && phase === 'upcoming' && booking.status !== 'disputed' && booking.dbId && !withinCancelWindow && (
-            <p className="mb-3 rounded-xl bg-[#F7F5F0] px-3 py-2 text-[12.5px] leading-relaxed text-[#6A6A6A]">
-              The 5-hour self-cancellation window has closed. Call the front desk at {RESORT_CONTACT.phoneDisplay} to cancel this booking.
-            </p>
-          )}
           {confirmCancel ? (
             <div>
               <p className="text-[15px] font-semibold text-[#18222B]">Cancel your stay at {room.name}?</p>
               <p className="mt-1 text-[13px] leading-relaxed text-[#6A6A6A]">
-                You can cancel yourself free of charge within 5 hours of booking.{cancelCountdown ? ` ${cancelCountdown}.` : ''} After that, the front desk at {RESORT_CONTACT.phoneDisplay} handles cancellations.
+                {refundPct === 100
+                  ? `Free cancellation within 5 hours of booking — you'll be refunded in full.${cancelCountdown ? ` ${cancelCountdown}.` : ''}`
+                  : 'The 5-hour free window has passed, so this cancellation is refunded 50% per resort policy.'}
               </p>
               <div className="mt-3 grid grid-cols-2 gap-2">
                 <button

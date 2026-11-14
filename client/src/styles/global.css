@@ -2545,3 +2545,7 @@ input[type="date"] {
     size: A4 portrait;
   }
 }
+
+/* Hide scrollbar while keeping scroll (used by the room multi-select list) */
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }

@@ -514,13 +514,19 @@ export function guestCancelDeadline(createdAt?: string): number | null {
  * open so a real booking is never trapped — the server still has the final say.
  */
 export function canGuestCancel(
-  booking: Pick<GuestBooking, 'source' | 'dbId' | 'createdAt'>,
-  now = Date.now()
+  booking: Pick<GuestBooking, 'source' | 'dbId'>
 ): boolean {
   if (booking.source === 'sample') return false;
   if (!booking.dbId) return false;
-  const deadline = guestCancelDeadline(booking.createdAt);
-  return deadline === null ? true : now <= deadline;
+  // Guests may self-cancel any upcoming stay; the refund (full or 50%) depends on timing.
+  return true;
+}
+
+/** Refund a guest receives for cancelling now: 100% within the free window, else 50% (company policy). */
+export function guestRefundPercent(createdAt?: string, now = Date.now()): number {
+  const deadline = guestCancelDeadline(createdAt);
+  if (deadline === null) return 100;
+  return now <= deadline ? 100 : 50;
 }
 
 /** Short remaining-time label for the cancel window, e.g. "4h 12m left to cancel"; empty once closed. */

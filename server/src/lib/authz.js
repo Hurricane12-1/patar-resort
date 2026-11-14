@@ -19,8 +19,11 @@ export const ADMIN_ROLES = ['administrator', 'admin'];
 /** Roles that may act on any guest's booking at the front desk. */
 export const CANCEL_STAFF_ROLES = ['administrator', 'receptionist', 'accounting'];
 
-/** A guest may self-cancel their booking only within this window after it was made. */
+/** Free-cancellation window: a guest who cancels within this of booking is refunded in full. */
 export const GUEST_CANCEL_WINDOW_MS = 5 * 60 * 60 * 1000; // 5 hours
+
+/** Company policy: cancellations made after the free window are refunded this percentage. */
+export const LATE_CANCEL_REFUND_PERCENT = 50;
 
 const lc = (v) => String(v || '').trim().toLowerCase();
 
@@ -70,19 +73,14 @@ export function evaluateCancellation({ isOwner, isStaff, status, createdAt }, no
   if (!['pending', 'confirmed'].includes(String(status))) {
     return { ok: false, status: 409, message: 'Only upcoming stays can be cancelled.' };
   }
-  if (isOwner && !isStaff) {
-    const createdMs = Date.parse(createdAt || '');
-    const elapsed = Number.isFinite(createdMs) ? now - createdMs : 0;
-    if (elapsed > GUEST_CANCEL_WINDOW_MS) {
-      return {
-        ok: false,
-        status: 409,
-        message:
-          'The 5-hour self-cancellation window for this booking has closed. Please contact the front desk at +63 900 555 0123 to cancel.',
-      };
-    }
-  }
-  return { ok: true };
+  // Company policy: full refund within the free window, 50% refund afterwards. A guest may
+  // still self-cancel after the window — they simply receive the reduced refund. Staff
+  // cancellations are always treated as full refund. A missing/unparseable created_at is
+  // treated as just-created (full refund) so a real booking is never penalised unfairly.
+  const createdMs = Date.parse(createdAt || '');
+  const elapsed = Number.isFinite(createdMs) ? now - createdMs : 0;
+  const late = isOwner && !isStaff && elapsed > GUEST_CANCEL_WINDOW_MS;
+  return { ok: true, refundPercent: late ? LATE_CANCEL_REFUND_PERCENT : 100, late };
 }
 
 /** Whether `user` may view the reservation `row` (owner or any staff). */

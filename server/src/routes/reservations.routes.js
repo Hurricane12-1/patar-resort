@@ -559,6 +559,11 @@ r.patch('/reservations/:id/cancel', authenticate, asyncH(async (req, res) => {
   );
   if (!decision.ok) throw new ApiError(decision.status, decision.message);
 
+  // Company refund policy: full refund within the free window, 50% afterwards.
+  const totalPaid = Number(b.total_php ?? b.total ?? 0) || 0;
+  const refundPercent = decision.refundPercent ?? 100;
+  const refundAmount = Math.round((totalPaid * refundPercent) / 100);
+
   updateLocalReservation(b.id, { status: 'cancelled' });
   let cancelledStay = { ...b, status: 'cancelled' };
 
@@ -576,7 +581,7 @@ r.patch('/reservations/:id/cancel', authenticate, asyncH(async (req, res) => {
     action: 'BOOKING_CANCEL',
     resourceType: 'reservation',
     resourceId: b.id,
-    details: { reason: 'Guest cancelled reservation' },
+    details: { reason: 'Guest cancelled reservation', refundPercent, refundAmount, late: decision.late || false },
     req,
   });
 
@@ -587,7 +592,7 @@ r.patch('/reservations/:id/cancel', authenticate, asyncH(async (req, res) => {
 
   pingSMS({ profileId: req.user.id, reservationId: b.id, toPhone: req.user.phone,
     body: 'Rock View Beach Resort: your reservation was cancelled. The beach will miss you — rebook anytime.' }).catch(() => {});
-  return res.json(cancelledStay);
+  return res.json({ ...cancelledStay, refund_percent: refundPercent, refund_amount: refundAmount, late_cancellation: decision.late || false });
 }));
 
 // ---- staff & admin ----

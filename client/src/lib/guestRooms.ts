@@ -220,13 +220,17 @@ export function rankRoomsForParty(
   // When nothing fitting is free, still point at the smallest fitting room so the calendar can show its gaps.
   const best = bestFree || sorted.find((o) => o.fitsParty) || sorted[sorted.length - 1] || null;
 
-  const options: RoomOption[] = sorted.map((o) => {
-    let fit: RoomFit = 'fits';
-    if (!o.fitsParty) fit = 'too-small';
-    else if (!o.available) fit = 'booked';
-    else if (o === bestFree) fit = 'best';
-    return { ...o, fit };
-  });
+  const fitRank: Record<RoomFit, number> = { best: 0, fits: 1, 'too-small': 2, booked: 3 };
+  const options: RoomOption[] = sorted
+    .map((o) => {
+      let fit: RoomFit = 'fits';
+      if (!o.fitsParty) fit = 'too-small';
+      else if (!o.available) fit = 'booked';
+      else if (o === bestFree) fit = 'best';
+      return { ...o, fit };
+    })
+    // Available rooms first; rooms already taken for these dates sink to the bottom.
+    .sort((a, b) => fitRank[a.fit] - fitRank[b.fit]);
 
   return {
     options,

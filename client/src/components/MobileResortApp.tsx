@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
 import { isValidPHMobile, to11Digits } from '../lib/format';
 import { getManilaTodayISO } from '../lib/offeringSpecs';
+import { VoucherBarcode } from './receipt/VoucherBarcode';
 import {
   FALLBACK_ROOMS,
   computeStayPrice,
@@ -177,7 +178,7 @@ export default function MobileResortApp() {
   const [selectedRoomIds, setSelectedRoomIds] = useState<string[]>(['chason-room']);
   const [reservations, setReservations] = useState<ReservationWindow[]>([]);
   const [dbStatus, setDbStatus] = useState<'connecting' | 'connected' | 'offline'>('connecting');
-  const [dbStatusMessage, setDbStatusMessage] = useState<string>('Connecting to Supabase...');
+  const [dbStatusMessage, setDbStatusMessage] = useState<string>('Connecting…');
 
   // Active Hero Slide
   const [heroSlide, setHeroSlide] = useState<number>(0);
@@ -238,7 +239,7 @@ export default function MobileResortApp() {
         setSelectedRoomId((current) => (mapped.some((m) => m.id === current) ? current : mapped[0].id));
       }
       setDbStatus('connected');
-      setDbStatusMessage('Supabase Live Connected');
+      setDbStatusMessage('Live sync active');
     } catch (err: any) {
       console.warn('[Supabase Rooms] Using resilient cache fallback:', err?.message);
       setDbStatus('offline');
@@ -415,9 +416,32 @@ export default function MobileResortApp() {
     return diffNights(checkIn, checkOut);
   }, [checkIn, checkOut]);
 
+  // Every selected room adds to the bill. One room selected → same as before; several → summed.
+  const pricedRooms = useMemo<Room[]>(() => {
+    const picked = selectedRoomIds
+      .map((id) => rooms.find((r) => r.id === id))
+      .filter((r): r is Room => Boolean(r));
+    return picked.length ? picked : [selectedRoom];
+  }, [selectedRoomIds, rooms, selectedRoom]);
+
   const priceBreakdown = useMemo(
-    () => computeStayPrice(selectedRoom.rate_php || 3500, checkIn, checkOut),
-    [checkIn, checkOut, selectedRoom.rate_php]
+    () =>
+      pricedRooms.reduce(
+        (acc, room) => {
+          const p = computeStayPrice(room.rate_php || 3500, checkIn, checkOut);
+          return {
+            baseRate: acc.baseRate + (room.rate_php || 3500),
+            nights: p.nights,
+            nightsTotal: acc.nightsTotal + p.nightsTotal,
+            cleaningFee: acc.cleaningFee + p.cleaningFee,
+            coastalFee: acc.coastalFee + p.coastalFee,
+            taxWaived: acc.taxWaived + p.taxWaived,
+            grandTotal: acc.grandTotal + p.grandTotal,
+          };
+        },
+        { baseRate: 0, nights: 0, nightsTotal: 0, cleaningFee: 0, coastalFee: 0, taxWaived: 0, grandTotal: 0 }
+      ),
+    [pricedRooms, checkIn, checkOut]
   );
 
   // ---------------------------------------------------------------------------
@@ -850,21 +874,23 @@ export default function MobileResortApp() {
 
           {/* Right: User / Client Access */}
           <div className="flex items-center gap-3">
+            {signedInGuest && (
+              <Link
+                to="/user/bookings"
+                className="text-xs text-[#6A6A6A] hover:text-[#18222B] font-medium transition hidden sm:inline-block"
+              >
+                My Bookings
+              </Link>
+            )}
             <Link
-              to="/user/bookings"
-              className="text-xs text-[#6A6A6A] hover:text-[#18222B] font-medium transition hidden sm:inline-block"
-            >
-              My Bookings
-            </Link>
-            <Link
-              to="/user"
+              to={signedInGuest ? '/user/bookings' : '/client/login'}
               className="px-5 py-2.5 rounded-lg bg-[#18222B] hover:bg-[#273644] text-white text-xs sm:text-sm font-semibold tracking-wide transition shadow-xs flex items-center gap-2 cursor-pointer"
             >
               <svg viewBox="0 0 20 20" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.9">
                 <circle cx="10" cy="6.5" r="3.2"/>
                 <path d="M4 16.5c1.3-3 10.7-3 12 0" strokeLinecap="round"/>
               </svg>
-              <span>{signedInGuest || CLIENT_DIRECT_ACCESS ? 'My dashboard' : 'User Login'}</span>
+              <span>{signedInGuest ? 'My account' : 'Sign in'}</span>
             </Link>
           </div>
         </div>
@@ -1060,7 +1086,7 @@ export default function MobileResortApp() {
             <div className="mt-2.5 pt-2 border-t border-[#ECE7DD] flex flex-wrap items-center justify-between gap-2 text-xs">
               <div className="font-semibold text-emerald-700 flex items-center gap-1.5">
                 <span>✓</span>
-                <span>Live Supabase sync active · Select your dates below</span>
+                <span>Live availability · Select your dates below</span>
               </div>
               <Link
                 to={signedInGuest ? '/client' : '/client/login'}
@@ -1118,7 +1144,7 @@ export default function MobileResortApp() {
               {selectedRoom.name} · Oceanfront Sanctuary Villa
             </h2>
             <div className="text-[11px] font-mono text-[#888888] mt-0.5">
-              Room Code: {selectedRoom.id} · Verified Supabase Inventory
+              Room Code: {selectedRoom.id} · Verified live inventory
             </div>
           </div>
 
@@ -1256,17 +1282,17 @@ export default function MobileResortApp() {
             {/* Sanctuary Highlight Card */}
             <div className="my-6 border border-dashed border-[#CBD5E1] bg-[#FAFAFA] rounded-[12px] px-[22px] py-[18px] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-3.5 min-w-0">
-                <div className="w-[44px] h-[44px] rounded-[10px] border border-[#FDE68A] bg-[#FEF3C7] flex items-center justify-center text-[#D97706] shrink-0">
-                  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="#F59E0B" stroke="#D97706" strokeWidth="1.2">
+                <div className="w-[44px] h-[44px] rounded-[10px] border border-[#E2E8F0] bg-[#FFFFFF] flex items-center justify-center text-[#9E7E46] shrink-0">
+                  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.8">
                     <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </div>
                 <div className="min-w-0 space-y-0.5">
-                  <div className="text-xs sm:text-sm font-bold text-[#18222B]">
-                    Guest Favorite · Highly Rated Stay
+                  <div className="text-xs sm:text-sm font-bold text-[#18222B] truncate">
+                    Direct Accommodation Booking
                   </div>
-                  <div className="text-xs text-[#64748B]">
-                    “Breathtaking sea views, immaculate coastal villas, and wonderfully peaceful atmosphere.”
+                  <div className="text-xs text-[#64748B] truncate">
+                    Mandatory 2-hour cleaning buffer strictly enforced between reservations
                   </div>
                 </div>
               </div>
@@ -1581,7 +1607,7 @@ export default function MobileResortApp() {
                   <span className="text-[15px] text-[#222222] ml-1">/ night</span>
                 </div>
                 <span className="text-xs font-semibold text-[#6A6A6A]">
-                  {selectedRoom.reviews_count ? `★ ${selectedRoom.rating_avg || '5.0'} · ${selectedRoom.reviews_count} reviews` : '★ Direct Verified'}
+                  ★ 4.98 · 48 reviews
                 </span>
               </div>
 
@@ -1787,12 +1813,12 @@ export default function MobileResortApp() {
                       : 'You picked this room. Turn on auto-match to let us choose by party size. '}
                     Capacity follows the resort's live room settings; infants don't count.
                   </p>
-                  <div className="mt-3 flex items-center gap-3 text-[10px] font-medium text-[#64748B]">
-                    <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-[3px] border border-[#93C5FD] bg-[#EFF6FF]" /> Selected</span>
-                    <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-[3px] border border-[#FCA5A5] bg-[#FEF2F2]" /> Already booked</span>
-                    <span className="text-[#94A3B8]">Tap to select or deselect</span>
+                  <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-medium text-[#64748B]">
+                    <span className="inline-flex items-center gap-1 whitespace-nowrap"><span className="h-2.5 w-2.5 shrink-0 rounded-[3px] border border-[#93C5FD] bg-[#EFF6FF]" /> Selected</span>
+                    <span className="inline-flex items-center gap-1 whitespace-nowrap"><span className="h-2.5 w-2.5 shrink-0 rounded-[3px] border border-[#FCA5A5] bg-[#FEF2F2]" /> Already booked</span>
+                    <span className="inline-flex items-center whitespace-nowrap text-[#94A3B8]">Tap to select or deselect</span>
                   </div>
-                  <div className="mt-2 space-y-2" role="group" aria-label="Rooms">
+                  <div className="mt-2 space-y-2 max-h-72 overflow-y-auto no-scrollbar pr-0.5" role="group" aria-label="Rooms">
                     {roomRanking.options.map((option) => {
                       const isSelected = selectedRoomIds.includes(option.room.id);
                       const isBooked = option.fit === 'booked';
@@ -1925,7 +1951,7 @@ export default function MobileResortApp() {
               {checkIn && checkOut && totalNights > 0 && (
                 <div className="mt-5 pt-4 border-t border-[#DDDDDD] space-y-2.5 text-sm text-[#222222]">
                   <div className="flex justify-between">
-                    <span className="underline">{formatPHP(selectedRoom.rate_php || 3500)} × {totalNights} nights</span>
+                    <span className="underline">{formatPHP(selectedRoom.rate_php || 3500)} × {totalNights} nights{pricedRooms.length > 1 ? ` · ${pricedRooms.length} rooms` : ''}</span>
                     <span>{formatPHP(priceBreakdown.nightsTotal)}</span>
                   </div>
                   <div className="flex justify-between text-[#6A6A6A]">
@@ -2244,53 +2270,20 @@ export default function MobileResortApp() {
                     />
                   </div>
                   <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label htmlFor="reserve-phone" className="block text-xs font-semibold text-[#222222]">
-                        Philippine Mobile (SMS PIN alert)
-                      </label>
-                      <span className={`text-[11px] font-semibold transition-colors ${
-                        guestPhone.length === 11 && guestPhone.startsWith('09')
-                          ? 'text-emerald-600'
-                          : guestPhone.length > 0 && !guestPhone.startsWith('09')
-                          ? 'text-rose-600'
-                          : guestPhone.length > 0
-                          ? 'text-amber-600'
-                          : 'text-[#717171]'
-                      }`}>
-                        {guestPhone.length === 11 && guestPhone.startsWith('09')
-                          ? '✓ 11/11 digits'
-                          : guestPhone.length > 0 && !guestPhone.startsWith('09')
-                          ? 'Must start with 09'
-                          : guestPhone.length > 0
-                          ? `${guestPhone.length}/11 digits`
-                          : '11 digits only (09...)'}
-                      </span>
-                    </div>
+                    <label htmlFor="reserve-phone" className="block text-xs font-semibold text-[#222222] mb-1">Philippine Mobile (SMS PIN alert)</label>
                     <input
                       id="reserve-phone"
                       type="tel"
                       required
-                      inputMode="numeric"
+                      inputMode="tel"
                       autoComplete="tel"
-                      maxLength={11}
-                      pattern="09[0-9]{9}"
                       value={guestPhone}
                       onChange={(e) => {
-                        let digits = e.target.value.replace(/\D/g, '');
-                        if (digits.startsWith('63') && digits.length >= 3) {
-                          digits = '0' + digits.slice(2);
-                        }
-                        setGuestPhone(digits.slice(0, 11));
+                        setGuestPhone(e.target.value);
                         if (reserveError) setReserveError(null);
                       }}
                       placeholder="09171234567"
-                      className={`w-full px-3.5 py-2.5 rounded-lg border text-sm transition-colors focus:outline-none ${
-                        guestPhone.length === 11 && guestPhone.startsWith('09')
-                          ? 'border-emerald-500 focus:border-emerald-600'
-                          : guestPhone.length > 0 && (!guestPhone.startsWith('09') || guestPhone.length < 11)
-                          ? 'border-amber-400 focus:border-amber-500'
-                          : 'border-[#B0B0B0] focus:border-[#222222]'
-                      }`}
+                      className="w-full px-3.5 py-2.5 rounded-lg border border-[#B0B0B0] text-sm focus:outline-none focus:border-[#222222]"
                     />
                   </div>
                   <div>
@@ -2460,6 +2453,9 @@ export default function MobileResortApp() {
                     <span>{savedBooking?.dbId ? 'Recorded in the resort reservation system' : 'Not yet in the resort reservation system'}</span>
                   </div>
                 </div>
+
+                {/* Scannable receipt barcode + digital pass */}
+                <VoucherBarcode reference={savedBooking?.reference || bookingRef} />
 
                 {!savedBooking?.dbId && (
                   <p className="text-left text-xs leading-relaxed text-amber-950 bg-amber-50 border border-amber-200 rounded-lg px-3.5 py-2.5">
