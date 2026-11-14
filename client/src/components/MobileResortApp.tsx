@@ -693,16 +693,6 @@ export default function MobileResortApp() {
   return (
     <div className="bg-[#FFFFFF] text-[#222222] min-h-screen selection:bg-[#222222] selection:text-[#FFFFFF]">
 
-      {/* Floating Supabase Live Status Pill */}
-      <div className="fixed top-2.5 right-3 z-50 pointer-events-none flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/95 backdrop-blur-xs border border-slate-200 text-[11px] font-semibold text-slate-700 shadow-xs">
-        <span
-          className={`w-2 h-2 rounded-full ${
-            dbStatus === 'connected' ? 'bg-emerald-500 live-pulse' : 'bg-amber-500'
-          }`}
-        />
-        <span>{dbStatusMessage}</span>
-      </div>
-
       {/* =====================================================================
            HEADER: CLEAN SINGLE STICKY WHITE HEADER (76px Height)
            ===================================================================== */}
