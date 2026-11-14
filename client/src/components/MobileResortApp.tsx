@@ -192,6 +192,10 @@ function shiftYM(ym: YearMonth, delta: number): YearMonth {
   return { y: Math.floor(total / 12), m: (total % 12) + 1 };
 }
 
+function fmtYM(ym: YearMonth): string {
+  return `${ym.y}-${String(ym.m).padStart(2, '0')}`;
+}
+
 // =============================================================================
 // MAIN COMPONENT: MobileResortApp (Luxury Coastal Format in React TSX)
 // =============================================================================
@@ -240,11 +244,8 @@ export default function MobileResortApp() {
     return rooms.find((r) => r.id === selectedRoomId) || rooms[0] || FALLBACK_ROOMS[0];
   }, [rooms, selectedRoomId]);
 
-  // Today ISO
-  const todayISO = useMemo(() => {
-    const d = new Date();
-    return fmtISO(d.getFullYear(), d.getMonth() + 1, d.getDate());
-  }, []);
+  // Today / Min Selectable ISO (Nov 1, 2026 onwards for full resort availability)
+  const todayISO = useMemo(() => '2026-11-01', []);
 
   // ---------------------------------------------------------------------------
   // 1. SUPABASE DATA FETCH & REALTIME SUBSCRIPTIONS
@@ -413,7 +414,7 @@ export default function MobileResortApp() {
   }, [checkIn, checkOut, totalNights, selectedRoom]);
 
   // ---------------------------------------------------------------------------
-  // 3. CALENDAR CLICK HANDLER
+  // 3. CALENDAR CLICK HANDLER (Tap-to-select and Tap-again-to-unselect)
   // ---------------------------------------------------------------------------
   const handleDateClick = (isoStr: string) => {
     if (isoStr < todayISO) return;
@@ -422,6 +423,20 @@ export default function MobileResortApp() {
       return;
     }
     setCalendarNotice(null);
+
+    // Tap-again-to-unselect check-in
+    if (checkIn === isoStr && !checkOut) {
+      setCheckIn(null);
+      setActiveField('checkin');
+      return;
+    }
+
+    // Tap-again-to-unselect check-out
+    if (checkOut === isoStr) {
+      setCheckOut(null);
+      setActiveField('checkout');
+      return;
+    }
 
     // If starting fresh or both are selected
     if (!checkIn || (checkIn && checkOut)) {
@@ -439,15 +454,9 @@ export default function MobileResortApp() {
         setCheckOut(null);
         setActiveField('checkout');
       } else if (isoStr === checkIn) {
-        // Same day -> minimum 1-night stay
-        const nextDay = addDaysISO(isoStr, 1);
-        if (isDateBooked(isoStr)) {
-          setCalendarNotice(`Cannot book 1 night: conflict on ${formatFullDate(isoStr)}.`);
-          return;
-        }
-        setCheckOut(nextDay);
+        // Unselect check-in
+        setCheckIn(null);
         setActiveField('checkin');
-        setCardDrawer('none');
       } else {
         // Check if conflict exists in the range
         let conflict = false;
@@ -1321,6 +1330,24 @@ export default function MobileResortApp() {
                   >
                     5-Night Retreat
                   </button>
+                  <select
+                    value={fmtYM(inlineYM)}
+                    onChange={(e) => {
+                      const [y, m] = e.target.value.split('-').map(Number);
+                      setInlineYM({ y, m });
+                    }}
+                    aria-label="Jump to month"
+                    className="px-3 py-1.5 rounded-lg border border-[#CBD5E1] hover:border-[#222222] bg-[#F8FAFC] text-xs font-semibold text-[#222222] focus:outline-none focus:border-[#222222] cursor-pointer"
+                  >
+                    <option value="2026-11">November 2026</option>
+                    <option value="2026-12">December 2026</option>
+                    <option value="2027-01">January 2027</option>
+                    <option value="2027-02">February 2027</option>
+                    <option value="2027-03">March 2027</option>
+                    <option value="2027-04">April 2027</option>
+                    <option value="2027-05">May 2027</option>
+                    <option value="2027-06">June 2027</option>
+                  </select>
                 </div>
 
                 <button
@@ -1355,8 +1382,8 @@ export default function MobileResortApp() {
                   </button>
                 </div>
 
-                {/* 2 Month Cards Grid */}
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-5" onMouseLeave={() => setHoverDate(null)}>
+                {/* 2 Month Cards Grid (Side-by-Side on md+) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5" onMouseLeave={() => setHoverDate(null)}>
                   {/* Left Month */}
                   <div className="cal-month-box p-3.5 sm:p-4 shadow-2xs">
                     <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-[#E5E7EB]">
@@ -1427,7 +1454,10 @@ export default function MobileResortApp() {
           </div>
 
           {/* RIGHT COLUMN (~35%): STICKY RESERVATION CARD */}
-          <aside className="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-24">
+          <aside
+            className="lg:col-span-5 xl:col-span-4 self-start lg:sticky lg:top-24"
+            style={{ position: 'sticky', top: '96px', alignSelf: 'flex-start' }}
+          >
             <div className="bg-[#FFFFFF] border border-[#DDDDDD] rounded-[12px] p-6 shadow-[0_6px_16px_rgba(0,0,0,0.12)]">
               
               {/* Price Header */}
