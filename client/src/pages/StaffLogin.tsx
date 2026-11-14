@@ -156,18 +156,12 @@ export default function StaffLogin() {
           </button>
         </form>
 
-        {/* ── Cross-nav ── */}
+        {/* ── Cross-nav: Hidden from employees any admin access ── */}
         <div className="sl-footnav">
           <div className="sl-footnav__row">
-            <span className="sl-footnav__hint">Executive Management Officer?</span>
-            <Link to="/admin" className="sl-footnav__link sl-footnav__link--violet">
-              Go to Administrator Sign In&nbsp;→
-            </Link>
-          </div>
-          <div className="sl-footnav__row">
             <span className="sl-footnav__hint">Visiting as a guest?</span>
-            <Link to="/" className="sl-footnav__link sl-footnav__link--cyan">
-              ← Return to Guest Portal
+            <Link to="/" className="sl-footnav__link">
+              &larr; Return to Guest Portal
             </Link>
           </div>
         </div>
