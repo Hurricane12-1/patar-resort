@@ -223,16 +223,10 @@ export default function MobileResortApp() {
   // Modals
   const [showPhotoTour, setShowPhotoTour] = useState<boolean>(false);
   const [tourIndex, setTourIndex] = useState<number>(0);
-  const [showSignInModal, setShowSignInModal] = useState<boolean>(false);
   const [showReserveModal, setShowReserveModal] = useState<boolean>(false);
   const [reserveStep, setReserveStep] = useState<'form' | 'success'>('form');
   const [reserveSubmitting, setReserveSubmitting] = useState<boolean>(false);
   const [calendarNotice, setCalendarNotice] = useState<string | null>(null);
-
-  // Staff Login Form (Pure White Employee Modal)
-  const [staffEmail, setStaffEmail] = useState('');
-  const [staffPassword, setStaffPassword] = useState('');
-  const [staffLoginError, setStaffLoginError] = useState<string | null>(null);
 
   // Guest Reservation Form
   const [guestName, setGuestName] = useState('');
@@ -676,31 +670,6 @@ export default function MobileResortApp() {
     }
   };
 
-  // ---------------------------------------------------------------------------
-  // 6. EMPLOYEE SIGN-IN (STRICTLY PURE WHITE & FOR EMPLOYEES ONLY)
-  // ---------------------------------------------------------------------------
-  const handleStaffLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setStaffLoginError(null);
-    try {
-      const res = await login(staffEmail, staffPassword);
-      if (res && res.portal) {
-        setShowSignInModal(false);
-        navigate(`/staff/${res.portal}`);
-      } else {
-        setShowSignInModal(false);
-        navigate('/staff/reception');
-      }
-    } catch (err: any) {
-      setStaffLoginError(err?.message || 'Invalid employee credentials. Please check your station ID.');
-    }
-  };
-
-  const quickStationAccess = (station: 'reception' | 'operations' | 'accounting') => {
-    setShowSignInModal(false);
-    navigate(`/staff/${station}`);
-  };
-
   // Gallery Photos for Bento Grid
   const galleryPhotos = selectedRoom.images && selectedRoom.images.length >= 5
     ? selectedRoom.images
@@ -755,25 +724,24 @@ export default function MobileResortApp() {
             <span>{rooms.length} Coastal Villas &amp; Sanctuaries Available</span>
           </div>
 
-          {/* Right: Employee Login Button (Strictly for Employees) */}
+          {/* Right: User / Client Access */}
           <div className="flex items-center gap-3">
             <Link
-              to="/staff/login"
+              to="/user/bookings"
               className="text-xs text-[#6A6A6A] hover:text-[#18222B] font-medium transition hidden sm:inline-block"
             >
-              Staff Portal &rarr;
+              My Bookings
             </Link>
-            <button
-              onClick={() => setShowSignInModal(true)}
-              type="button"
+            <Link
+              to="/user"
               className="px-5 py-2.5 rounded-lg bg-[#18222B] hover:bg-[#273644] text-white text-xs sm:text-sm font-semibold tracking-wide transition shadow-xs flex items-center gap-2 cursor-pointer"
             >
-              <svg viewBox="0 0 20 20" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.9">
+              <svg viewBox="0 0 20 20" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.9">
                 <circle cx="10" cy="6.5" r="3.2"/>
-                <path d="M4 16.5c1.3-3 10.7-3 12 0" stroke-linecap="round"/>
+                <path d="M4 16.5c1.3-3 10.7-3 12 0" strokeLinecap="round"/>
               </svg>
-              <span>Employee Login</span>
-            </button>
+              <span>User Login</span>
+            </Link>
           </div>
         </div>
       </header>
@@ -969,13 +937,12 @@ export default function MobileResortApp() {
                 <span>✓</span>
                 <span>Live Supabase sync active · Select your dates below</span>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowSignInModal(true)}
-                className="text-[#9E7E46] hover:underline font-semibold cursor-pointer"
+              <Link
+                to="/user"
+                className="text-[#9E7E46] hover:underline font-semibold"
               >
-                Staff station sign-in →
-              </button>
+                Registered Guest? Sign in to User Portal →
+              </Link>
             </div>
           </div>
         </div>
@@ -1764,15 +1731,10 @@ export default function MobileResortApp() {
             </div>
 
             <div className="space-y-2">
-              <div className="font-bold text-[#18222B] uppercase tracking-wider">Staff Station</div>
-              <div>
-                <button
-                  onClick={() => setShowSignInModal(true)}
-                  className="text-[#9E7E46] font-semibold hover:underline cursor-pointer"
-                >
-                  Employee Portal →
-                </button>
-              </div>
+              <div className="font-bold text-[#18222B] uppercase tracking-wider">Portals</div>
+              <div><Link to="/user" className="text-[#6A6A6A] hover:underline">User / Member</Link></div>
+              <div><Link to="/staff/login" className="text-[#6A6A6A] hover:underline">Staff Operations</Link></div>
+              <div><Link to="/admin" className="text-[#6A6A6A] hover:underline">Governance Admin</Link></div>
             </div>
           </div>
         </div>
@@ -1816,118 +1778,7 @@ export default function MobileResortApp() {
         </button>
       </div>
 
-      {/* =====================================================================
-           MODAL 1: PURE WHITE EMPLOYEE SIGN-IN MODAL (STRICTLY NO ADMIN LINK)
-           ===================================================================== */}
-      {showSignInModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#FFFFFF] rounded-2xl max-w-md w-full border border-[#DDDDDD] shadow-2xl overflow-hidden animate-fade-in">
-            <div className="px-6 py-4 border-b border-[#EBEBEB] bg-[#FFFFFF] flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#18222B]"></span>
-                <h3 className="font-serif-luxury text-lg font-bold text-[#18222B]">
-                  Employee Station Sign In
-                </h3>
-              </div>
-              <button
-                onClick={() => setShowSignInModal(false)}
-                type="button"
-                className="w-8 h-8 rounded-full hover:bg-slate-100 text-sm font-bold flex items-center justify-center cursor-pointer text-slate-600"
-              >
-                ✕
-              </button>
-            </div>
 
-            <form onSubmit={handleStaffLogin} className="p-6 space-y-4">
-              <p className="text-xs text-[#6A6A6A] leading-relaxed">
-                Welcome, resort team member. Sign in with your assigned employee station credentials to manage daily resort operations.
-              </p>
-
-              {staffLoginError && (
-                <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-800 font-medium">
-                  {staffLoginError}
-                </div>
-              )}
-
-              <div>
-                <label className="block text-xs font-semibold text-[#222222] mb-1">Employee Email</label>
-                <input
-                  type="email"
-                  required
-                  value={staffEmail}
-                  onChange={(e) => setStaffEmail(e.target.value)}
-                  placeholder="reception@rockviewresort.com"
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-[#B0B0B0] text-sm focus:outline-none focus:border-[#222222]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-[#222222] mb-1">Station Password</label>
-                <input
-                  type="password"
-                  required
-                  value={staffPassword}
-                  onChange={(e) => setStaffPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-[#B0B0B0] text-sm focus:outline-none focus:border-[#222222]"
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="w-full h-11 rounded-lg bg-[#18222B] hover:bg-[#273644] text-white text-sm font-semibold transition cursor-pointer"
-              >
-                Sign In to Station
-              </button>
-
-              <div className="relative flex items-center justify-center py-1">
-                <div className="border-t border-[#EBEBEB] w-full"></div>
-                <span className="bg-white px-3 text-[11px] font-semibold uppercase tracking-wider text-[#6A6A6A]">
-                  Direct Station Routes
-                </span>
-              </div>
-
-              {/* Fast Station Switchers */}
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => quickStationAccess('reception')}
-                  className="p-2.5 rounded-lg border border-slate-200 hover:border-slate-800 text-center transition cursor-pointer"
-                >
-                  <div className="text-xs font-bold text-slate-800">Front Desk</div>
-                  <div className="text-[10px] text-slate-500">Reception</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => quickStationAccess('operations')}
-                  className="p-2.5 rounded-lg border border-slate-200 hover:border-slate-800 text-center transition cursor-pointer"
-                >
-                  <div className="text-xs font-bold text-slate-800">Operations</div>
-                  <div className="text-[10px] text-slate-500">Housekeeping</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => quickStationAccess('accounting')}
-                  className="p-2.5 rounded-lg border border-slate-200 hover:border-slate-800 text-center transition cursor-pointer"
-                >
-                  <div className="text-xs font-bold text-slate-800">Accounting</div>
-                  <div className="text-[10px] text-slate-500">Audit &amp; Folio</div>
-                </button>
-              </div>
-
-              <div className="pt-2 text-center">
-                <Link
-                  to="/staff/login"
-                  onClick={() => setShowSignInModal(false)}
-                  className="text-xs text-slate-500 hover:text-slate-900 underline"
-                >
-                  Go to Dedicated Staff Login Page →
-                </Link>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* =====================================================================
            MODAL 2: FULL-SCREEN PHOTO TOUR MODAL

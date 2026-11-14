@@ -72,7 +72,7 @@ function MainAppShell() {
     '/resort-department',
   ].some((p) => path.startsWith(p));
 
-  const isGuestHome = path === '/';
+  const isGuestHome = path === '/' || path === '/guest';
   const hideNavbarAndFooter = isInternalStaffPortal || isLegacyInternal || isGuestHome;
   const hideChatbot = isInternalStaffPortal || isLegacyInternal;
 
@@ -86,9 +86,10 @@ function MainAppShell() {
       <main>
         <Routes>
           {/* ============================================================ */}
-          {/* PUBLIC GUEST INITIATION & EXPLORATION ROUTES                 */}
+          {/* PUBLIC GUEST INITIATION & EXPLORATION ROUTES (/guest & /)    */}
           {/* ============================================================ */}
           <Route path="/" element={<MobileResortApp />} />
+          <Route path="/guest" element={<MobileResortApp />} />
           <Route path="/classic-home" element={<Home />} />
           <Route path="/rooms" element={<Rooms />} />
 
@@ -194,7 +195,11 @@ function MainAppShell() {
             </ClientGuard>
           } />
 
-          {/* Legacy Client Route Aliases -> Redirect to /client/* */}
+          {/* Legacy Client & /user Route Aliases -> Redirect to /client/* */}
+          <Route path="/user" element={<Navigate to="/client" replace />} />
+          <Route path="/user/login" element={<Navigate to="/client" replace />} />
+          <Route path="/user/bookings" element={<Navigate to="/client/bookings" replace />} />
+          <Route path="/user/*" element={<Navigate to="/client" replace />} />
           <Route path="/my-bookings" element={<Navigate to="/client/bookings" replace />} />
           <Route path="/resort-customer" element={<Navigate to="/client" replace />} />
 
