@@ -15,6 +15,7 @@ import { admin } from '../../lib/supabase.js';
 import { logAuditEvent } from '../../lib/auditLogger.js';
 import { checkBruteForceLockout, recordFailedAttempt, recordSuccessfulAttempt } from '../../middleware/bruteForceGuard.js';
 import { verifyPassword } from '../../lib/passwords.js';
+import { verifyCustomerCredentials, findCustomerByEmail } from '../../lib/customerStore.js';
 
 export const clientAuthRouter = Router();
 
@@ -105,7 +106,52 @@ export const handleClientLogin = asyncH(async (req, res) => {
     authErr = err;
   }
 
-  // 3b. If Supabase direct auth failed, verify against customers table password hash
+  // 3b. If Supabase direct auth failed, verify against resilient customer store or customers table
+  if (!authData) {
+    const localCust = verifyCustomerCredentials(targetEmail, password) || verifyCustomerCredentials(userIdent, password);
+    if (localCust) {
+      const sessionToken = jwt.sign(
+        {
+          id: localCust.id,
+          email: localCust.email,
+          role: 'customer',
+          persona: 'customer',
+          aud: 'authenticated',
+        },
+        env.SUPABASE_JWT_SECRET || 'rockview-customer-secret-key-2026',
+        { expiresIn: '7d' }
+      );
+
+      authData = {
+        user: {
+          id: localCust.id,
+          email: localCust.email,
+          user_metadata: {
+            full_name: localCust.full_name,
+            first_name: localCust.first_name,
+            last_name: localCust.last_name,
+            phone: localCust.phone,
+            role: 'customer',
+          },
+        },
+        session: {
+          access_token: sessionToken,
+          token_type: 'bearer',
+          expires_in: 7 * 24 * 3600,
+          refresh_token: sessionToken,
+          user: {
+            id: localCust.id,
+            email: localCust.email,
+            role: 'customer',
+          },
+        },
+      };
+      authErr = null;
+      if (!targetProfile) targetProfile = localCust;
+    }
+  }
+
+  // 3c. Fallback check against Supabase customers table password hash if not in local store
   if (!authData) {
     try {
       const { data: custRecord } = await admin

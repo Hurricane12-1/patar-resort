@@ -39,6 +39,10 @@ import RecoveryPortal from './pages/recovery/RecoveryPortal.tsx';
 import ResortCustomer from './pages/ResortCustomer.tsx';
 import MyBookings from './pages/MyBookings.tsx';
 import ResidentLogin from './components/ResidentLogin.tsx';
+import GuestPortalLayout from './components/guest/GuestPortalLayout.tsx';
+import GuestStays from './pages/client/GuestStays.tsx';
+import GuestProfile from './pages/client/GuestProfile.tsx';
+import GuestHelp from './pages/client/GuestHelp.tsx';
 
 function StaffPortalLanding() {
   const { adminProfile, profile } = useAuth();
@@ -171,31 +175,30 @@ function MainAppShell() {
           {/* ============================================================ */}
           <Route path="/client/login" element={<ResidentLogin returnTo="/client" />} />
           <Route path="/user/login" element={<ResidentLogin returnTo="/client" />} />
+          {/* Guest dashboard: stays first, then profile and help. Preview access is controlled by CLIENT_DIRECT_ACCESS. */}
           <Route path="/client" element={
+            <ClientGuard allowPreview>
+              <GuestPortalLayout />
+            </ClientGuard>
+          }>
+            <Route index element={<GuestStays />} />
+            <Route path="bookings" element={<GuestStays />} />
+            <Route path="profile" element={<GuestProfile />} />
+            <Route path="help" element={<GuestHelp />} />
+            <Route path="requests" element={<Navigate to="/client/help" replace />} />
+          </Route>
+          {/* Previous resident portal, kept for reviews and refund requests (sign-in required) */}
+          <Route path="/client/legacy" element={
             <ClientGuard>
               <ClientLayout>
                 <ResortCustomer />
               </ClientLayout>
             </ClientGuard>
           } />
-          <Route path="/client/bookings" element={
+          <Route path="/client/legacy/bookings" element={
             <ClientGuard>
               <ClientLayout>
                 <MyBookings />
-              </ClientLayout>
-            </ClientGuard>
-          } />
-          <Route path="/client/profile" element={
-            <ClientGuard>
-              <ClientLayout>
-                <ResortCustomer />
-              </ClientLayout>
-            </ClientGuard>
-          } />
-          <Route path="/client/requests" element={
-            <ClientGuard>
-              <ClientLayout>
-                <ResortCustomer />
               </ClientLayout>
             </ClientGuard>
           } />

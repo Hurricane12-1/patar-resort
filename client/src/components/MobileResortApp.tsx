@@ -1,38 +1,40 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../lib/api';
+import { isValidPHMobile, to11Digits } from '../lib/format';
+import { getManilaTodayISO } from '../lib/offeringSpecs';
+import {
+  FALLBACK_ROOMS,
+  computeStayPrice,
+  fetchBookableRooms,
+  isRoomFree,
+  rankRoomsForParty,
+  type ReservationWindow,
+  type Room,
+  type RoomFit,
+} from '../lib/guestRooms';
+import {
+  CLIENT_DIRECT_ACCESS,
+  PREVIEW_SCOPE,
+  RESORT_CONTACT,
+  accountScopeFor,
+  addDeviceBooking,
+  loadGuestAccount,
+  makeArrivalPin,
+  makeBookingReference,
+  paymentDbLabel,
+  paymentDisplay,
+  rememberBookingGuest,
+  type GuestBooking,
+  type GuestPaymentMethod,
+} from '../lib/guestPortal';
 
 // =============================================================================
 // TYPES & INTERFACES
 // =============================================================================
-export interface Room {
-  id: string;
-  name: string;
-  category?: string;
-  rate_php?: number;
-  capacity?: number;
-  beds_count?: number;
-  baths_count?: number;
-  description?: string;
-  amenities?: string[];
-  image_url?: string;
-  images?: string[];
-}
-
-export interface Reservation {
-  id: string;
-  room_id: string;
-  check_in: string; // YYYY-MM-DD
-  check_out: string; // YYYY-MM-DD
-  check_in_time?: string;
-  check_out_time?: string;
-  status?: string;
-  guest_name?: string;
-  guest_email?: string;
-  guest_phone?: string;
-  total_amount_php?: number;
-}
+export type { Room } from '../lib/guestRooms';
 
 interface YearMonth {
   y: number;
@@ -70,60 +72,23 @@ const HERO_SLIDES = [
   }
 ];
 
-const FALLBACK_ROOMS: Room[] = [
-  {
-    id: 'chason-room',
-    name: 'chason room',
-    category: 'Suite',
-    rate_php: 3500,
-    capacity: 4,
-    beds_count: 2,
-    baths_count: 1,
-    description: 'An executive oceanfront sanctuary villa with panoramic views of the West Philippine Sea, featuring handcrafted wood furnishings, private limestone terrace, and high-speed Starlink internet.',
-    amenities: ['Oceanfront Balcony', 'Starlink High-Speed Wi-Fi', 'Air Conditioning', 'Private Coral Steps', 'Solar Microgrid Backup', 'Keypad Smart Lock', 'Complimentary Breakfast', 'Snorkeling Gear'],
-    image_url: '/images/cottage.jpg',
-    images: ['/images/cottage.jpg', '/images/suite.jpg', '/images/villa.jpg', '/images/island.jpg', '/images/garden.jpg']
-  },
-  {
-    id: 'unit-3',
-    name: 'Unit 3',
-    category: 'Cottage',
-    rate_php: 3200,
-    capacity: 2,
-    beds_count: 1,
-    baths_count: 1,
-    description: 'Charming coastal cottage nestled among tropical flora with direct garden walkway to the tidal rock pools and beach.',
-    amenities: ['Garden View', 'Starlink Wi-Fi', 'Air Conditioning', 'King Bed', 'Private Bath', 'Breakfast Included'],
-    image_url: '/images/suite.jpg',
-    images: ['/images/suite.jpg', '/images/cottage.jpg', '/images/villa.jpg', '/images/room.jpg', '/images/island.jpg']
-  },
-  {
-    id: 'sunset',
-    name: 'Sunset',
-    category: 'Villa',
-    rate_php: 4500,
-    capacity: 6,
-    beds_count: 3,
-    baths_count: 2,
-    description: 'Our premier cliffside villa offering unobstructed 180-degree sunset panoramas, an expansive private viewing deck, and deluxe family amenities.',
-    amenities: ['180° Sunset View', 'Private Living Deck', 'Starlink Wi-Fi', 'Air Conditioning', 'Full Kitchenette', 'Solar Backup', 'Dedicated Host'],
-    image_url: '/images/villa.jpg',
-    images: ['/images/villa.jpg', '/images/island.jpg', '/images/cottage.jpg', '/images/suite.jpg', '/images/garden.jpg']
-  },
-  {
-    id: 'unit-5',
-    name: 'Unit 5',
-    category: 'Suite',
-    rate_php: 3800,
-    capacity: 4,
-    beds_count: 2,
-    baths_count: 1,
-    description: 'Modern coastal sanctuary suite designed for peaceful retreats, with floor-to-ceiling glass doors opening directly to the ocean breeze.',
-    amenities: ['Ocean Breeze Balcony', 'Starlink Wi-Fi', 'Air Conditioning', 'Work Desk', 'Rain Shower', 'Private Patio'],
-    image_url: '/images/island.jpg',
-    images: ['/images/island.jpg', '/images/villa.jpg', '/images/suite.jpg', '/images/cottage.jpg', '/images/bunk.jpg']
-  }
-];
+// Infants (under 2) stay free and never count toward room capacity.
+const MAX_INFANTS = 4;
+
+const FIT_TONE: Record<RoomFit, string> = {
+  best: 'text-emerald-700',
+  fits: 'text-[#6A6A6A]',
+  booked: 'text-rose-700',
+  'too-small': 'text-amber-700',
+};
+
+function fitLabel(fit: RoomFit, capacity: number, partySize: number, compact = false): string {
+  if (fit === 'best') return 'Best match';
+  if (fit === 'fits') return compact ? `Up to ${capacity}` : 'Available';
+  if (fit === 'booked') return compact ? 'Booked' : 'Booked on your dates';
+  if (capacity <= 0) return 'Capacity not set';
+  return compact ? `Up to ${capacity}` : `Too small for ${partySize}`;
+}
 
 // =============================================================================
 // DATE HELPERS
@@ -201,12 +166,14 @@ function fmtYM(ym: YearMonth): string {
 // =============================================================================
 export default function MobileResortApp() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const location = useLocation();
+  const { customerSession, customerProfile } = useAuth();
+  const signedInGuest = Boolean(customerSession && customerProfile);
 
   // Application Data States (Live Supabase)
   const [rooms, setRooms] = useState<Room[]>(FALLBACK_ROOMS);
   const [selectedRoomId, setSelectedRoomId] = useState<string>('chason-room');
-  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [reservations, setReservations] = useState<ReservationWindow[]>([]);
   const [dbStatus, setDbStatus] = useState<'connecting' | 'connected' | 'offline'>('connecting');
   const [dbStatusMessage, setDbStatusMessage] = useState<string>('Connecting to Supabase...');
 
@@ -216,26 +183,33 @@ export default function MobileResortApp() {
   // Booking Dates & Selection
   const [inlineYM, setInlineYM] = useState<YearMonth>({ y: 2026, m: 11 }); // Shangri-La dual view: Nov 2026
   const [popoverYM, setPopoverYM] = useState<YearMonth>({ y: 2026, m: 11 });
-  const [checkIn, setCheckIn] = useState<string | null>(null);
-  const [checkOut, setCheckOut] = useState<string | null>(null);
+  const [checkIn, setCheckIn] = useState<string | null>('2026-11-17');
+  const [checkOut, setCheckOut] = useState<string | null>('2026-11-28');
   const [hoverDate, setHoverDate] = useState<string | null>(null);
   const [activeField, setActiveField] = useState<'checkin' | 'checkout'>('checkin');
-  const [cardDrawer, setCardDrawer] = useState<'none' | 'calendar' | 'guests'>('none');
+  const [cardDrawer, setCardDrawer] = useState<'none' | 'calendar' | 'guests' | 'room'>('none');
   const [guests, setGuests] = useState({ adults: 2, children: 0, infants: 0 });
+  // Auto-match assigns the best-fitting free room; picking a room yourself switches to manual.
+  const [roomMode, setRoomMode] = useState<'auto' | 'manual'>('auto');
   const [isSaved, setIsSaved] = useState<boolean>(false);
 
   // Modals
   const [showPhotoTour, setShowPhotoTour] = useState<boolean>(false);
   const [tourIndex, setTourIndex] = useState<number>(0);
   const [showReserveModal, setShowReserveModal] = useState<boolean>(false);
-  const [reserveStep, setReserveStep] = useState<'form' | 'success'>('form');
+  const [reserveStep, setReserveStep] = useState<'form' | 'review' | 'success'>('form');
   const [reserveSubmitting, setReserveSubmitting] = useState<boolean>(false);
   const [calendarNotice, setCalendarNotice] = useState<string | null>(null);
 
   // Guest Reservation Form
   const [guestName, setGuestName] = useState('');
   const [guestEmail, setGuestEmail] = useState('');
-  const [guestPhone, setGuestPhone] = useState('09171234567');
+  const [guestPhone, setGuestPhone] = useState('');
+  const [guestRequests, setGuestRequests] = useState('');
+  const [paymentChoice, setPaymentChoice] = useState('front-desk');
+  const [savedPayments, setSavedPayments] = useState<GuestPaymentMethod[]>([]);
+  const [reserveError, setReserveError] = useState<string | null>(null);
+  const [savedBooking, setSavedBooking] = useState<GuestBooking | null>(null);
   const [bookingRef, setBookingRef] = useState('RV-BOL-2027-0000');
   const [smartPin, setSmartPin] = useState('#0000');
 
@@ -244,55 +218,22 @@ export default function MobileResortApp() {
     return rooms.find((r) => r.id === selectedRoomId) || rooms[0] || FALLBACK_ROOMS[0];
   }, [rooms, selectedRoomId]);
 
-  // Today / Min Selectable ISO (Nov 1, 2026 onwards for full resort availability)
-  const todayISO = useMemo(() => '2026-11-01', []);
+  // Capacity counts adults and children only.
+  const partySize = guests.adults + guests.children;
+
+  // Earliest selectable check-in: today in Manila (the reservation API rejects past dates).
+  const todayISO = useMemo(() => getManilaTodayISO(), []);
 
   // ---------------------------------------------------------------------------
   // 1. SUPABASE DATA FETCH & REALTIME SUBSCRIPTIONS
   // ---------------------------------------------------------------------------
   const fetchLiveRooms = useCallback(async () => {
     try {
-      const { data, error } = await supabase.from('rooms').select('*').order('name');
-      if (error) throw error;
-      if (data && data.length > 0) {
-        const mapped: Room[] = data.map((r: any, idx: number) => {
-          let primaryImg = r.image_url || '';
-          if (primaryImg.includes('cottage')) primaryImg = '/images/cottage.jpg';
-          else if (primaryImg.includes('suite')) primaryImg = '/images/suite.jpg';
-          else if (primaryImg.includes('villa')) primaryImg = '/images/villa.jpg';
-          else if (primaryImg.includes('island')) primaryImg = '/images/island.jpg';
-          else if (!primaryImg) primaryImg = idx % 2 === 0 ? '/images/cottage.jpg' : '/images/suite.jpg';
-
-          const imagesList = Array.isArray(r.images) && r.images.length > 0
-            ? r.images
-            : [
-                primaryImg,
-                '/images/suite.jpg',
-                '/images/villa.jpg',
-                '/images/island.jpg',
-                '/images/garden.jpg'
-              ];
-
-          return {
-            id: String(r.id),
-            name: r.name || `Villa ${idx + 1}`,
-            category: r.category || 'Oceanfront Sanctuary',
-            rate_php: Number(r.rate_php) || 3500,
-            capacity: Number(r.capacity) || 4,
-            beds_count: Number(r.beds_count) || 2,
-            baths_count: Number(r.baths_count) || 1,
-            description: r.description || 'Private oceanfront villa perched above Bolinao limestone coves.',
-            amenities: Array.isArray(r.amenities) && r.amenities.length > 0
-              ? r.amenities.filter((a: any) => typeof a === 'string' && !a.startsWith('__'))
-              : ['Oceanfront Balcony', 'Starlink Wi-Fi', 'Air Conditioning', 'Solar Microgrid Backup'],
-            image_url: primaryImg,
-            images: imagesList
-          };
-        });
+      // Active overnight rooms only (tours and offers share the rooms table); capacity comes straight from admin data.
+      const mapped = await fetchBookableRooms();
+      if (mapped.length > 0) {
         setRooms(mapped);
-        if (!mapped.some((m) => m.id === selectedRoomId)) {
-          setSelectedRoomId(mapped[0].id);
-        }
+        setSelectedRoomId((current) => (mapped.some((m) => m.id === current) ? current : mapped[0].id));
       }
       setDbStatus('connected');
       setDbStatusMessage('Supabase Live Connected');
@@ -301,13 +242,13 @@ export default function MobileResortApp() {
       setDbStatus('offline');
       setDbStatusMessage('Local Resilient Inventory');
     }
-  }, [selectedRoomId]);
+  }, []);
 
   const fetchLiveReservations = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('reservations')
-        .select('*')
+        .select('id, room_id, check_in, check_out, status')
         .neq('status', 'cancelled');
       if (error) throw error;
       if (data) {
@@ -322,34 +263,65 @@ export default function MobileResortApp() {
     fetchLiveRooms();
     fetchLiveReservations();
 
-    // Supabase Real-Time Channel
+    // Supabase Real-Time Channel: new bookings and admin room edits (capacity, rates) apply immediately
     const channel = supabase
       .channel('public:reservations_customer_feed')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'reservations' }, () => {
         fetchLiveReservations();
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, () => {
+        fetchLiveRooms();
+      })
       .subscribe();
+
+    // Realtime can be disabled per table, so also refresh when the tab regains focus and once a minute.
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') {
+        fetchLiveRooms();
+        fetchLiveReservations();
+      }
+    };
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+    const roomPoll = window.setInterval(fetchLiveRooms, 60000);
 
     return () => {
       supabase.removeChannel(channel);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+      window.clearInterval(roomPoll);
     };
   }, [fetchLiveRooms, fetchLiveReservations]);
 
+  // "Book a stay" links from the guest dashboard land on the reservation card.
+  useEffect(() => {
+    if (location.hash !== '#reserve') return;
+    const timer = window.setTimeout(() => {
+      document.getElementById('reserve-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [location.hash]);
+
   // ---------------------------------------------------------------------------
-  // 2. CALENDAR COMPUTATIONS & CONFLICT DETECTION
+  // 2. CALENDAR COMPUTATIONS, ROOM MATCHING & CONFLICT DETECTION
   // ---------------------------------------------------------------------------
-  // Check if a specific date is booked for the currently selected room
+  // Nights already taken for the currently selected room
+  const isBookedForSelected = useCallback(
+    (isoStr: string) => !isRoomFree(selectedRoom.id, isoStr, addDaysISO(isoStr, 1), reservations),
+    [reservations, selectedRoom.id]
+  );
+
+  // What the calendars show as booked. With auto-match on, the room follows the dates,
+  // so a night is only unavailable when no room that fits the party is free.
   const isDateBooked = useCallback(
     (isoStr: string) => {
-      if (!selectedRoom?.id) return false;
-      return reservations.some((res) => {
-        if (String(res.room_id) !== String(selectedRoom.id)) return false;
-        if (res.status === 'cancelled') return false;
-        // Stay booked condition
-        return isoStr >= res.check_in && isoStr < res.check_out;
-      });
+      if (roomMode === 'auto') {
+        const fitting = rooms.filter((r) => (Number(r.capacity) || 0) >= partySize);
+        if (fitting.length > 0) {
+          return fitting.every((r) => !isRoomFree(r.id, isoStr, addDaysISO(isoStr, 1), reservations));
+        }
+      }
+      return isBookedForSelected(isoStr);
     },
-    [reservations, selectedRoom]
+    [roomMode, rooms, partySize, reservations, isBookedForSelected]
   );
 
   // Check if a date is turnaround (checkout morning of another reservation)
@@ -365,69 +337,84 @@ export default function MobileResortApp() {
     [reservations, selectedRoom]
   );
 
-  // Conflict detection for current range
+  // Conflict detection for the current range and the selected room
   const hasRangeConflict = useMemo(() => {
     if (!checkIn || !checkOut) return false;
-    let curr = checkIn;
-    while (curr < checkOut) {
-      if (isDateBooked(curr)) return true;
-      curr = addDaysISO(curr, 1);
+    return !isRoomFree(selectedRoom.id, checkIn, checkOut, reservations);
+  }, [checkIn, checkOut, reservations, selectedRoom.id]);
+
+  // Rooms ranked for the party using live capacity. With only a check-in picked,
+  // availability is judged on that first night.
+  const rangeEnd = checkOut ?? (checkIn ? addDaysISO(checkIn, 1) : null);
+  const roomRanking = useMemo(
+    () => rankRoomsForParty(rooms, partySize, checkIn, rangeEnd, reservations),
+    [rooms, partySize, checkIn, rangeEnd, reservations]
+  );
+  const maxCapacity = Math.max(1, roomRanking.maxCapacity);
+  const bestFreeRoom = roomRanking.options.find((o) => o.fit === 'best')?.room ?? null;
+  const selectedCapacity = Number(selectedRoom.capacity) || 0;
+  const selectedFits = selectedCapacity > 0 && selectedCapacity >= partySize;
+  const reserveBlock: 'capacity' | 'dates' | null = !selectedFits ? 'capacity' : hasRangeConflict ? 'dates' : null;
+
+  // Auto-match follows party size, dates, and live inventory changes.
+  useEffect(() => {
+    const best = roomRanking.best;
+    if (roomMode === 'auto' && best && best.id !== selectedRoomId) {
+      setSelectedRoomId(best.id);
     }
-    return false;
-  }, [checkIn, checkOut, isDateBooked]);
+  }, [roomMode, roomRanking, selectedRoomId]);
+
+  // If capacities are lowered in the admin console, keep the party within the largest room.
+  useEffect(() => {
+    if (partySize <= maxCapacity) return;
+    setGuests((g) => {
+      const adults = Math.min(g.adults, maxCapacity);
+      return { ...g, adults, children: Math.max(0, Math.min(g.children, maxCapacity - adults)) };
+    });
+  }, [partySize, maxCapacity]);
+
+  const changeAdults = (delta: number) =>
+    setGuests((g) => ({ ...g, adults: Math.max(1, Math.min(g.adults + delta, maxCapacity - g.children)) }));
+  const changeChildren = (delta: number) =>
+    setGuests((g) => ({ ...g, children: Math.max(0, Math.min(g.children + delta, maxCapacity - g.adults)) }));
+  const changeInfants = (delta: number) =>
+    setGuests((g) => ({ ...g, infants: Math.max(0, Math.min(g.infants + delta, MAX_INFANTS)) }));
+
+  const chooseRoom = (roomId: string) => {
+    setRoomMode('manual');
+    setSelectedRoomId(roomId);
+  };
+  const enableAutoMatch = () => setRoomMode('auto');
+
+  const guestSummary = [
+    `${guests.adults} adult${guests.adults === 1 ? '' : 's'}`,
+    guests.children ? `${guests.children} ${guests.children === 1 ? 'child' : 'children'}` : '',
+    guests.infants ? `${guests.infants} infant${guests.infants === 1 ? '' : 's'}` : '',
+  ]
+    .filter(Boolean)
+    .join(', ');
 
   // Total Nights and Price Breakdown
   const totalNights = useMemo(() => {
     return diffNights(checkIn, checkOut);
   }, [checkIn, checkOut]);
 
-  const priceBreakdown = useMemo(() => {
-    if (!checkIn || !checkOut || totalNights <= 0) {
-      return {
-        baseRate: selectedRoom.rate_php || 3500,
-        nightsTotal: 0,
-        cleaningFee: 500,
-        coastalFee: 150,
-        taxWaived: 0,
-        grandTotal: 0
-      };
-    }
-    const baseRate = selectedRoom.rate_php || 3500;
-    let nightsTotal = 0;
-    let curr = checkIn;
-    while (curr < checkOut) {
-      const rate = isWeekendNight(curr) ? Math.round(baseRate * 1.15) : baseRate;
-      nightsTotal += rate;
-      curr = addDaysISO(curr, 1);
-    }
-    const cleaningFee = 500;
-    const coastalFee = 150;
-    const grandTotal = nightsTotal + cleaningFee + coastalFee;
-    return {
-      baseRate,
-      nightsTotal,
-      cleaningFee,
-      coastalFee,
-      taxWaived: Math.round(nightsTotal * 0.12),
-      grandTotal
-    };
-  }, [checkIn, checkOut, totalNights, selectedRoom]);
+  const priceBreakdown = useMemo(
+    () => computeStayPrice(selectedRoom.rate_php || 3500, checkIn, checkOut),
+    [checkIn, checkOut, selectedRoom.rate_php]
+  );
 
   // ---------------------------------------------------------------------------
   // 3. CALENDAR CLICK HANDLER (Tap-to-select and Tap-again-to-unselect)
   // ---------------------------------------------------------------------------
   const handleDateClick = (isoStr: string) => {
     if (isoStr < todayISO) return;
-    if (isDateBooked(isoStr)) {
-      setCalendarNotice(`${formatFullDate(isoStr)} is already booked for ${selectedRoom.name}.`);
-      return;
-    }
-    setCalendarNotice(null);
 
     // Tap-again-to-unselect check-in
     if (checkIn === isoStr && !checkOut) {
       setCheckIn(null);
       setActiveField('checkin');
+      setCalendarNotice(null);
       return;
     }
 
@@ -435,48 +422,43 @@ export default function MobileResortApp() {
     if (checkOut === isoStr) {
       setCheckOut(null);
       setActiveField('checkout');
+      setCalendarNotice(null);
       return;
     }
 
-    // If starting fresh or both are selected
-    if (!checkIn || (checkIn && checkOut)) {
-      setCheckIn(isoStr);
-      setCheckOut(null);
-      setActiveField('checkout');
-      return;
-    }
+    // A later date completes the range; anything else starts a new range at this date.
+    const pickingCheckout = Boolean(checkIn && !checkOut && isoStr > checkIn);
+    const start = pickingCheckout ? (checkIn as string) : isoStr;
+    const end = pickingCheckout ? isoStr : addDaysISO(isoStr, 1);
 
-    // If checkIn is set but checkOut is null
-    if (checkIn && !checkOut) {
-      if (isoStr < checkIn) {
-        // Reset check-in to earlier date
-        setCheckIn(isoStr);
-        setCheckOut(null);
-        setActiveField('checkout');
-      } else if (isoStr === checkIn) {
-        // Unselect check-in
-        setCheckIn(null);
-        setActiveField('checkin');
-      } else {
-        // Check if conflict exists in the range
-        let conflict = false;
-        let curr = checkIn;
-        while (curr < isoStr) {
-          if (isDateBooked(curr)) {
-            conflict = true;
-            break;
-          }
-          curr = addDaysISO(curr, 1);
-        }
-        if (conflict) {
-          setCalendarNotice(`Selected dates overlap an existing reservation. Please pick dates before or after.`);
-          return;
-        }
-        setCheckOut(isoStr);
-        setActiveField('checkin');
-        setCardDrawer('none');
+    if (!isRoomFree(selectedRoom.id, start, end, reservations)) {
+      // Auto-match moves to another room that fits the party and is free, instead of rejecting the date.
+      const alternative =
+        roomMode === 'auto'
+          ? roomRanking.options.find((o) => o.fitsParty && isRoomFree(o.room.id, start, end, reservations))
+          : undefined;
+      if (!alternative) {
+        setCalendarNotice(
+          pickingCheckout
+            ? 'Selected dates overlap an existing reservation. Please pick dates before or after.'
+            : `${formatFullDate(isoStr)} is already booked for ${selectedRoom.name}.`
+        );
+        return;
       }
+      setSelectedRoomId(alternative.room.id);
     }
+    setCalendarNotice(null);
+
+    if (pickingCheckout) {
+      setCheckOut(isoStr);
+      setActiveField('checkin');
+      setCardDrawer('none');
+      return;
+    }
+
+    setCheckIn(isoStr);
+    setCheckOut(null);
+    setActiveField('checkout');
   };
 
   const clearDates = () => {
@@ -623,60 +605,184 @@ export default function MobileResortApp() {
   // ---------------------------------------------------------------------------
   // 5. RESERVATION SUBMISSION
   // ---------------------------------------------------------------------------
-  const handleReserveSubmit = async (e: React.FormEvent) => {
+  // Prefill contact details from the signed-in account, or from the guest details saved on this device.
+  const prefillGuestDetails = () => {
+    const account = loadGuestAccount(signedInGuest ? accountScopeFor(customerProfile) : PREVIEW_SCOPE);
+    const deviceAccount = account && !account.isSample ? account : null;
+    const source = signedInGuest
+      ? {
+          name: customerProfile?.full_name || [customerProfile?.first_name, customerProfile?.last_name].filter(Boolean).join(' '),
+          email: customerProfile?.email || '',
+          phone: to11Digits(customerProfile?.phone || ''),
+        }
+      : deviceAccount
+        ? {
+            name: `${deviceAccount.profile.firstName} ${deviceAccount.profile.lastName}`.trim(),
+            email: deviceAccount.profile.email,
+            phone: deviceAccount.profile.phone,
+          }
+        : null;
+    if (source) {
+      setGuestName((value) => value || source.name || '');
+      setGuestEmail((value) => value || source.email || '');
+      setGuestPhone((value) => value || source.phone || '');
+    }
+    if (deviceAccount?.profile.specialRequests) {
+      setGuestRequests((value) => value || deviceAccount.profile.specialRequests);
+    }
+    const methods = deviceAccount ? deviceAccount.payments : [];
+    setSavedPayments(methods);
+    const preferred = methods.find((m) => m.isDefault) || methods[0];
+    setPaymentChoice(preferred ? `saved:${preferred.id}` : 'front-desk');
+  };
+
+  const resolvePayment = (): { db: string; display: string } => {
+    if (paymentChoice.startsWith('saved:')) {
+      const method = savedPayments.find((m) => `saved:${m.id}` === paymentChoice);
+      if (method) return { db: paymentDbLabel(method), display: paymentDisplay(method) };
+    }
+    if (paymentChoice === 'GCash' || paymentChoice === 'Maya') return { db: paymentChoice, display: paymentChoice };
+    if (paymentChoice === 'Card') return { db: 'Card', display: 'Credit or debit card' };
+    return { db: 'Cash', display: 'Pay at the front desk' };
+  };
+
+  const openReserve = () => {
+    if (!checkIn || !checkOut) {
+      setCardDrawer('calendar');
+      setActiveField(checkIn ? 'checkout' : 'checkin');
+      document.getElementById('reserve-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    if (reserveBlock) {
+      setCardDrawer('room');
+      document.getElementById('reserve-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    prefillGuestDetails();
+    setReserveError(null);
+    setReserveStep('form');
+    setShowReserveModal(true);
+  };
+
+  // Step 1 of the safety rail: validate, then move to an explicit review screen.
+  // Nothing is written to the resort or this device until the guest confirms on the review step.
+  const handleReserveSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!checkIn || !checkOut) return;
+    if (!checkIn || !checkOut || reserveBlock || reserveSubmitting) return;
+    const phone = to11Digits(guestPhone);
+    if (!isValidPHMobile(phone)) {
+      setReserveError('Enter an 11-digit Philippine mobile number starting with 09.');
+      return;
+    }
+    if (!guestName.trim() || !guestEmail.trim()) {
+      setReserveError('Please complete your name and email so we can issue your voucher.');
+      return;
+    }
+    setReserveError(null);
+    setReserveStep('review');
+  };
+
+  // Step 2 of the safety rail: only runs after the guest says yes on the review screen.
+  const finalizeReservation = async () => {
+    if (!checkIn || !checkOut || reserveBlock || reserveSubmitting) return;
+    const name = guestName.trim();
+    const email = guestEmail.trim();
+    const phone = to11Digits(guestPhone);
+    if (!isValidPHMobile(phone)) {
+      setReserveError('Enter an 11-digit Philippine mobile number starting with 09.');
+      setReserveStep('form');
+      return;
+    }
+    setReserveError(null);
     setReserveSubmitting(true);
 
-    const ref = `RV-BOL-2027-${Math.floor(1000 + Math.random() * 9000)}`;
-    const pin = `#${Math.floor(1000 + Math.random() * 9000)}`;
-    setBookingRef(ref);
-    setSmartPin(pin);
+    const reference = makeBookingReference(checkIn);
+    const pin = makeArrivalPin();
+    const payment = resolvePayment();
+    const room = selectedRoom;
+    const partyNote = [
+      `${guests.adults} adult${guests.adults === 1 ? '' : 's'}`,
+      `${guests.children} ${guests.children === 1 ? 'child' : 'children'}`,
+      guests.infants ? `${guests.infants} infant${guests.infants === 1 ? '' : 's'} (not counted toward capacity)` : '',
+    ]
+      .filter(Boolean)
+      .join(', ');
+    const requestsNote = guestRequests.trim() ? ` · Requests: ${guestRequests.trim()}` : '';
+    // The keypad PIN is deliberately not written to shared reservation notes.
+    const notes = `Ref ${reference} · Online booking · ${partyNote} · Room ${roomMode === 'auto' ? 'auto-matched to party size' : 'chosen by guest'}${requestsNote}`;
 
+    let savedRow: any = null;
     try {
-      // 1. Direct Supabase Insert
-      const { error: insErr } = await supabase.from('reservations').insert([
-        {
-          room_id: selectedRoom.id,
-          guest_name: guestName || 'Resident Guest',
-          guest_email: guestEmail || 'guest@rockviewbolinao.ph',
-          guest_phone: guestPhone || '09171234567',
-          check_in: checkIn,
-          check_out: checkOut,
-          status: 'confirmed',
-          total_amount_php: priceBreakdown.grandTotal
-        }
-      ]);
-      if (insErr) {
-        console.warn('[Supabase Insert Fallback]:', insErr.message);
-      }
-
-      // 2. Dual-write to Express server API
-      try {
-        await fetch('/api/reservations', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            room_id: selectedRoom.id,
-            guest_name: guestName || 'Resident Guest',
-            guest_email: guestEmail,
-            guest_phone: guestPhone,
-            check_in: checkIn,
-            check_out: checkOut,
-            total_amount_php: priceBreakdown.grandTotal
-          })
-        });
-      } catch {}
-
-      // Refresh calendar reservations
-      await fetchLiveReservations();
-      setReserveStep('success');
+      savedRow = await api.createReservation({
+        room_id: room.id,
+        guest_name: name,
+        email,
+        phone,
+        check_in: checkIn,
+        check_out: checkOut,
+        guests: partySize,
+        total_php: priceBreakdown.grandTotal,
+        downpayment_php: 0,
+        payment_method: payment.db,
+        payment_status: 'unpaid',
+        status: 'confirmed',
+        notes,
+        ...(signedInGuest && customerProfile?.id ? { guest_id: customerProfile.id } : {}),
+      });
     } catch (err: any) {
-      console.error('[Reservation Error]:', err);
-      setReserveStep('success'); // allow graceful recovery
-    } finally {
-      setReserveSubmitting(false);
+      const message = String(err?.message || '').replace(/^⚠️\s*/, '');
+      // Real conflicts and validation problems go back to the guest instead of being saved locally.
+      if (/already reserved|in the past|required information/i.test(message)) {
+        setReserveError(message);
+        setReserveSubmitting(false);
+        fetchLiveReservations();
+        return;
+      }
+      console.warn('[Reservation] Reservation system unreachable; saving on this device only:', message);
     }
+
+    const synced = Boolean(savedRow?.id);
+    const record: GuestBooking = {
+      id: synced ? String(savedRow.id) : `local-${Date.now().toString(36)}`,
+      dbId: synced ? String(savedRow.id) : undefined,
+      reference,
+      source: 'device',
+      roomId: String(room.id),
+      roomName: room.name,
+      roomCategory: room.category || 'Room',
+      roomImage: room.image_url || '/images/suite.jpg',
+      roomCapacity: selectedCapacity,
+      rate: room.rate_php || 3500,
+      checkIn,
+      checkOut,
+      nights: totalNights,
+      adults: guests.adults,
+      children: guests.children,
+      guests: partySize,
+      nightsTotal: priceBreakdown.nightsTotal,
+      cleaningFee: priceBreakdown.cleaningFee,
+      coastalFee: priceBreakdown.coastalFee,
+      total: priceBreakdown.grandTotal,
+      status: 'confirmed',
+      paymentMethod: payment.display,
+      paymentStatus: 'unpaid',
+      arrivalPin: pin,
+      matchMode: roomMode,
+      guestName: name,
+      guestEmail: email,
+      guestPhone: phone,
+      notes,
+      createdAt: new Date().toISOString(),
+    };
+    addDeviceBooking(record);
+    if (!signedInGuest) rememberBookingGuest({ name, email, phone });
+
+    setBookingRef(reference);
+    setSmartPin(pin);
+    setSavedBooking(record);
+    await fetchLiveReservations();
+    setReserveSubmitting(false);
+    setReserveStep('success');
   };
 
   // Gallery Photos for Bento Grid
@@ -717,12 +823,6 @@ export default function MobileResortApp() {
             </div>
           </Link>
 
-          {/* Center: Live Supabase Inventory Counter */}
-          <div className="hidden md:flex items-center gap-2 text-xs text-[#6A6A6A]">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-            <span>{rooms.length} Coastal Villas &amp; Sanctuaries Available</span>
-          </div>
-
           {/* Right: User / Client Access */}
           <div className="flex items-center gap-3">
             <Link
@@ -739,7 +839,7 @@ export default function MobileResortApp() {
                 <circle cx="10" cy="6.5" r="3.2"/>
                 <path d="M4 16.5c1.3-3 10.7-3 12 0" strokeLinecap="round"/>
               </svg>
-              <span>User Login</span>
+              <span>{signedInGuest || CLIENT_DIRECT_ACCESS ? 'My dashboard' : 'User Login'}</span>
             </Link>
           </div>
         </div>
@@ -844,13 +944,19 @@ export default function MobileResortApp() {
                   Select Accommodation
                 </label>
                 <select
-                  value={selectedRoomId}
-                  onChange={(e) => setSelectedRoomId(e.target.value)}
+                  value={roomMode === 'auto' ? '__auto' : selectedRoomId}
+                  onChange={(e) => (e.target.value === '__auto' ? enableAutoMatch() : chooseRoom(e.target.value))}
+                  aria-label="Select accommodation"
                   className="w-full bg-transparent text-xs sm:text-sm font-bold text-[#18222B] mt-0.5 focus:outline-none cursor-pointer"
                 >
-                  {rooms.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.name} — {formatPHP(r.rate_php || 3500)}/night
+                  <option value="__auto">
+                    {`Best match for ${partySize} ${partySize === 1 ? 'guest' : 'guests'}${roomRanking.best ? ` — ${roomRanking.best.name}` : ''}`}
+                  </option>
+                  {roomRanking.options.map((option) => (
+                    <option key={option.room.id} value={option.room.id} disabled={!option.fitsParty}>
+                      {`${option.room.name} — up to ${option.capacity} · ${formatPHP(option.room.rate_php || 3500)}/night${
+                        option.fit === 'booked' ? ' · booked on your dates' : option.fit === 'too-small' ? ' · too small' : ''
+                      }`}
                     </option>
                   ))}
                 </select>
@@ -884,31 +990,26 @@ export default function MobileResortApp() {
                     Party Size
                   </span>
                   <span className="block text-xs sm:text-sm font-bold text-[#18222B] mt-0.5">
-                    {guests.adults + guests.children} guests
+                    {partySize} {partySize === 1 ? 'guest' : 'guests'}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <button
                     type="button"
-                    onClick={() =>
-                      setGuests((prev) => ({
-                        ...prev,
-                        adults: Math.max(1, prev.adults - 1)
-                      }))
-                    }
-                    className="w-7 h-7 rounded-full border border-[#C9C2B4] bg-white hover:border-[#18222B] text-sm font-bold flex items-center justify-center cursor-pointer"
+                    onClick={() => changeAdults(-1)}
+                    disabled={guests.adults <= 1}
+                    aria-label="Remove a guest"
+                    className="w-7 h-7 rounded-full border border-[#C9C2B4] bg-white hover:border-[#18222B] text-sm font-bold flex items-center justify-center cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     −
                   </button>
                   <button
                     type="button"
-                    onClick={() =>
-                      setGuests((prev) => ({
-                        ...prev,
-                        adults: Math.min(selectedRoom.capacity || 8, prev.adults + 1)
-                      }))
-                    }
-                    className="w-7 h-7 rounded-full border border-[#C9C2B4] bg-white hover:border-[#18222B] text-sm font-bold flex items-center justify-center cursor-pointer"
+                    onClick={() => changeAdults(1)}
+                    disabled={partySize >= maxCapacity}
+                    aria-label="Add a guest"
+                    title={partySize >= maxCapacity ? `Our largest room fits ${maxCapacity} guests` : undefined}
+                    className="w-7 h-7 rounded-full border border-[#C9C2B4] bg-white hover:border-[#18222B] text-sm font-bold flex items-center justify-center cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     +
                   </button>
@@ -937,10 +1038,10 @@ export default function MobileResortApp() {
                 <span>Live Supabase sync active · Select your dates below</span>
               </div>
               <Link
-                to="/user"
+                to={signedInGuest ? '/client' : '/client/login'}
                 className="text-[#9E7E46] hover:underline font-semibold"
               >
-                Registered Guest? Sign in to User Portal →
+                {signedInGuest ? 'Open your guest dashboard →' : 'Registered Guest? Sign in to User Portal →'}
               </Link>
             </div>
           </div>
@@ -956,11 +1057,13 @@ export default function MobileResortApp() {
         <div className="border-b border-[#DDDDDD] mb-6 flex items-stretch gap-6 sm:gap-8 overflow-x-auto no-scrollbar">
           {rooms.map((room) => {
             const isSelected = room.id === selectedRoomId;
+            const option = roomRanking.options.find((o) => o.room.id === room.id);
             return (
               <button
                 key={room.id}
                 type="button"
-                onClick={() => setSelectedRoomId(room.id)}
+                onClick={() => chooseRoom(room.id)}
+                aria-pressed={isSelected}
                 className={`py-4 text-sm font-semibold whitespace-nowrap transition-colors border-b-2 cursor-pointer flex items-center gap-2 ${
                   isSelected
                     ? 'border-[#222222] text-[#222222]'
@@ -973,6 +1076,11 @@ export default function MobileResortApp() {
                 }`}>
                   {formatPHP(room.rate_php || 3500)}
                 </span>
+                {option && (
+                  <span className={`text-[11px] font-semibold ${FIT_TONE[option.fit]}`}>
+                    {fitLabel(option.fit, option.capacity, partySize, true)}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -1116,7 +1224,7 @@ export default function MobileResortApp() {
                 Coastal Accommodation in Bolinao, Pangasinan
               </h3>
               <p className="text-[15px] text-[#222222] mt-1">
-                {selectedRoom.capacity || 4} guests · {selectedRoom.beds_count || 2} bedrooms · {selectedRoom.beds_count || 2} beds · {selectedRoom.baths_count || 1} private bath
+                Up to {selectedCapacity} guests · {selectedRoom.beds_count || 2} bedrooms · {selectedRoom.beds_count || 2} beds · {selectedRoom.baths_count || 1} private bath
               </p>
             </div>
 
@@ -1182,8 +1290,8 @@ export default function MobileResortApp() {
                   <path d="M8 2v4M16 2v4M3 10h18" strokeLinecap="round"/>
                 </svg>
                 <div>
-                  <h5 className="text-[15px] font-semibold text-[#222222]">Free cancellation 7 days before check-in</h5>
-                  <p className="text-sm text-[#6A6A6A] mt-0.5">Full refund if your travel plans shift up to 7 days prior to arrival.</p>
+                  <h5 className="text-[15px] font-semibold text-[#222222]">Free cancellation within 5 hours of booking</h5>
+                  <p className="text-sm text-[#6A6A6A] mt-0.5">Change your mind within 5 hours and cancel yourself from your dashboard. After that, the front desk handles cancellations.</p>
                 </div>
               </div>
             </div>
@@ -1272,7 +1380,9 @@ export default function MobileResortApp() {
                         Date Conflict Detected
                       </div>
                       <p className="text-xs sm:text-sm text-rose-900/90 mt-1 leading-relaxed">
-                        Your chosen date span crosses dates that are already booked for {selectedRoom.name}. Please select an open continuous range.
+                        {roomMode === 'auto'
+                          ? `No single room for ${partySize} ${partySize === 1 ? 'guest' : 'guests'} is free for every night of this range. Please select an open continuous range.`
+                          : `Your chosen date span crosses dates that are already booked for ${selectedRoom.name}. Please select an open continuous range or choose another room.`}
                       </p>
                       <button
                         onClick={clearDates}
@@ -1431,7 +1541,8 @@ export default function MobileResortApp() {
 
           {/* RIGHT COLUMN (~35%): STICKY RESERVATION CARD */}
           <aside
-            className="lg:col-span-5 xl:col-span-4 self-start lg:sticky lg:top-24"
+            id="reserve-card"
+            className="lg:col-span-5 xl:col-span-4 self-start lg:sticky lg:top-24 scroll-mt-24"
             style={{ position: 'sticky', top: '96px', alignSelf: 'flex-start' }}
           >
             <div className="bg-[#FFFFFF] border border-[#DDDDDD] rounded-[12px] p-6 shadow-[0_6px_16px_rgba(0,0,0,0.12)]">
@@ -1493,17 +1604,48 @@ export default function MobileResortApp() {
                 <button
                   type="button"
                   onClick={() => setCardDrawer(cardDrawer === 'guests' ? 'none' : 'guests')}
-                  className="w-full text-left p-3 border-t border-[#B0B0B0] hover:bg-[#F7F7F7] flex items-center justify-between transition cursor-pointer"
+                  aria-expanded={cardDrawer === 'guests'}
+                  className={`w-full text-left p-3 border-t border-[#B0B0B0] hover:bg-[#F7F7F7] flex items-center justify-between transition cursor-pointer ${
+                    cardDrawer === 'guests' ? 'cal-input-active' : ''
+                  }`}
                 >
                   <div>
                     <span className="block text-[10px] font-extrabold uppercase tracking-wider text-[#222222]">
                       GUESTS
                     </span>
                     <span className="block text-sm text-[#222222] mt-0.5 font-semibold">
-                      {guests.adults + guests.children} guests
+                      {partySize} {partySize === 1 ? 'guest' : 'guests'}
+                      {guests.infants > 0 && `, ${guests.infants} ${guests.infants === 1 ? 'infant' : 'infants'}`}
                     </span>
                   </div>
                   <span className="text-xs">▾</span>
+                </button>
+
+                {/* Room Row: auto-matched to the party, or the guest's own pick */}
+                <button
+                  type="button"
+                  onClick={() => setCardDrawer(cardDrawer === 'room' ? 'none' : 'room')}
+                  aria-expanded={cardDrawer === 'room'}
+                  className={`w-full text-left p-3 border-t border-[#B0B0B0] hover:bg-[#F7F7F7] flex items-center justify-between gap-3 transition cursor-pointer ${
+                    cardDrawer === 'room' ? 'cal-input-active' : ''
+                  }`}
+                >
+                  <div className="min-w-0">
+                    <span className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-wider text-[#222222]">
+                      ROOM
+                      {!selectedFits ? (
+                        <span className="rounded-full bg-rose-50 px-1.5 py-0.5 text-[9px] font-extrabold tracking-wider text-rose-700">TOO SMALL</span>
+                      ) : roomMode === 'auto' ? (
+                        <span className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-extrabold tracking-wider text-emerald-700">AUTO-MATCHED</span>
+                      ) : (
+                        <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-extrabold tracking-wider text-slate-600">YOUR PICK</span>
+                      )}
+                    </span>
+                    <span className="block text-sm text-[#222222] mt-0.5 font-semibold truncate">
+                      {selectedRoom.name} · up to {selectedCapacity} {selectedCapacity === 1 ? 'guest' : 'guests'}
+                    </span>
+                  </div>
+                  <span className="text-xs shrink-0">▾</span>
                 </button>
               </div>
 
@@ -1543,52 +1685,43 @@ export default function MobileResortApp() {
               {/* Inline Guests Drawer */}
               {cardDrawer === 'guests' && (
                 <div className="mb-4 border border-[#DDDDDD] rounded-[12px] bg-[#FFFFFF] p-4 space-y-3.5 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-sm font-semibold text-[#222222]">Adults</div>
-                      <div className="text-xs text-[#6A6A6A]">Age 13+</div>
+                  {[
+                    { key: 'adults', label: 'Adults', hint: 'Age 13+', value: guests.adults, onMinus: () => changeAdults(-1), onPlus: () => changeAdults(1), canMinus: guests.adults > 1, canPlus: partySize < maxCapacity },
+                    { key: 'children', label: 'Children', hint: 'Ages 2–12', value: guests.children, onMinus: () => changeChildren(-1), onPlus: () => changeChildren(1), canMinus: guests.children > 0, canPlus: partySize < maxCapacity },
+                    { key: 'infants', label: 'Infants', hint: 'Under 2 · not counted toward capacity', value: guests.infants, onMinus: () => changeInfants(-1), onPlus: () => changeInfants(1), canMinus: guests.infants > 0, canPlus: guests.infants < MAX_INFANTS },
+                  ].map((row) => (
+                    <div key={row.key} className="flex items-center justify-between gap-3">
+                      <div>
+                        <div className="text-sm font-semibold text-[#222222]">{row.label}</div>
+                        <div className="text-xs text-[#6A6A6A]">{row.hint}</div>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <button
+                          onClick={row.onMinus}
+                          disabled={!row.canMinus}
+                          type="button"
+                          aria-label={`Fewer ${row.label.toLowerCase()}`}
+                          className="w-8 h-8 rounded-full border border-[#B0B0B0] flex items-center justify-center font-bold cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed"
+                        >
+                          −
+                        </button>
+                        <span className="w-4 text-center font-bold" aria-live="polite">{row.value}</span>
+                        <button
+                          onClick={row.onPlus}
+                          disabled={!row.canPlus}
+                          type="button"
+                          aria-label={`More ${row.label.toLowerCase()}`}
+                          className="w-8 h-8 rounded-full border border-[#B0B0B0] flex items-center justify-center font-bold cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed"
+                        >
+                          +
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => setGuests((p) => ({ ...p, adults: Math.max(1, p.adults - 1) }))}
-                        type="button"
-                        className="w-8 h-8 rounded-full border border-[#B0B0B0] flex items-center justify-center font-bold cursor-pointer"
-                      >
-                        −
-                      </button>
-                      <span className="w-4 text-center font-bold">{guests.adults}</span>
-                      <button
-                        onClick={() => setGuests((p) => ({ ...p, adults: Math.min(selectedRoom.capacity || 8, p.adults + 1) }))}
-                        type="button"
-                        className="w-8 h-8 rounded-full border border-[#B0B0B0] flex items-center justify-center font-bold cursor-pointer"
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-sm font-semibold text-[#222222]">Children</div>
-                      <div className="text-xs text-[#6A6A6A]">Ages 2–12</div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => setGuests((p) => ({ ...p, children: Math.max(0, p.children - 1) }))}
-                        type="button"
-                        className="w-8 h-8 rounded-full border border-[#B0B0B0] flex items-center justify-center font-bold cursor-pointer"
-                      >
-                        −
-                      </button>
-                      <span className="w-4 text-center font-bold">{guests.children}</span>
-                      <button
-                        onClick={() => setGuests((p) => ({ ...p, children: p.children + 1 }))}
-                        type="button"
-                        className="w-8 h-8 rounded-full border border-[#B0B0B0] flex items-center justify-center font-bold cursor-pointer"
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
+                  ))}
+                  <p className="border-t border-[#EBEBEB] pt-3 text-[11px] leading-relaxed text-[#6A6A6A]">
+                    Our largest room fits {maxCapacity} guests; for bigger groups, call the front desk.{' '}
+                    {roomMode === 'auto' ? 'We match a room to your party automatically.' : `${selectedRoom.name} fits up to ${selectedCapacity}.`}
+                  </p>
                   <button
                     onClick={() => setCardDrawer('none')}
                     type="button"
@@ -1599,27 +1732,149 @@ export default function MobileResortApp() {
                 </div>
               )}
 
+              {/* Inline Room Drawer: auto-match or a manual pick, with live capacity and date availability */}
+              {cardDrawer === 'room' && (
+                <div className="mb-4 border border-[#DDDDDD] rounded-[12px] bg-[#FFFFFF] p-4 shadow-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-semibold text-[#222222]">Choose your room</div>
+                      <div className="text-xs text-[#6A6A6A] mt-0.5">
+                        {partySize} {partySize === 1 ? 'guest' : 'guests'}
+                        {checkIn && checkOut ? ` · ${formatShortDate(checkIn)} – ${formatShortDate(checkOut)}` : ' · add dates to check availability'}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={roomMode === 'auto'}
+                      onClick={() => (roomMode === 'auto' ? setRoomMode('manual') : enableAutoMatch())}
+                      className="flex items-center gap-2 text-xs font-semibold text-[#222222] cursor-pointer shrink-0"
+                    >
+                      <span>Auto-match</span>
+                      <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition ${roomMode === 'auto' ? 'bg-[#18222B]' : 'bg-[#CBD5E1]'}`}>
+                        <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${roomMode === 'auto' ? 'translate-x-[18px]' : 'translate-x-[2px]'}`} />
+                      </span>
+                    </button>
+                  </div>
+                  <p className="mt-2 text-[11px] leading-relaxed text-[#6A6A6A]">
+                    {roomMode === 'auto'
+                      ? `We pick the smallest open room that fits ${partySize} ${partySize === 1 ? 'guest' : 'guests'}. `
+                      : 'You picked this room. Turn on auto-match to let us choose by party size. '}
+                    Capacity follows the resort's live room settings; infants don't count.
+                  </p>
+                  <div className="mt-3 space-y-2" role="radiogroup" aria-label="Rooms">
+                    {roomRanking.options.map((option) => {
+                      const isSelected = option.room.id === selectedRoom.id;
+                      const disabled = option.fit === 'too-small';
+                      return (
+                        <button
+                          key={option.room.id}
+                          type="button"
+                          role="radio"
+                          aria-checked={isSelected}
+                          disabled={disabled}
+                          onClick={() => chooseRoom(option.room.id)}
+                          className={`w-full flex items-center gap-3 rounded-xl border p-2.5 text-left transition ${
+                            isSelected ? 'border-[#222222] bg-[#F8FAFC] shadow-[inset_0_0_0_1px_#222222]' : 'border-[#E2E8F0] hover:border-[#94A3B8]'
+                          } ${disabled ? 'opacity-55 cursor-not-allowed hover:border-[#E2E8F0]' : 'cursor-pointer'}`}
+                        >
+                          <img src={option.room.image_url || '/images/cottage.jpg'} alt="" className="h-12 w-14 shrink-0 rounded-lg object-cover bg-slate-100" />
+                          <span className="min-w-0 flex-1">
+                            <span className="flex items-center justify-between gap-2">
+                              <span className="truncate text-sm font-semibold text-[#222222]">{option.room.name}</span>
+                              <span className="shrink-0 text-xs font-semibold text-[#222222]">
+                                {formatPHP(option.room.rate_php || 3500)}
+                                <span className="font-normal text-[#6A6A6A]">/night</span>
+                              </span>
+                            </span>
+                            <span className="mt-0.5 flex items-center justify-between gap-2 text-[11px]">
+                              <span className="text-[#6A6A6A]">
+                                {option.capacity > 0 ? `Up to ${option.capacity} ${option.capacity === 1 ? 'guest' : 'guests'}` : 'Capacity not set'}
+                              </span>
+                              <span className={`font-semibold ${FIT_TONE[option.fit]}`}>{fitLabel(option.fit, option.capacity, partySize)}</span>
+                            </span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-[#64748B]">
+                      <span className={`w-1.5 h-1.5 rounded-full ${dbStatus === 'connected' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                      {dbStatus === 'connected' ? 'Live room inventory' : 'Offline room list'}
+                    </span>
+                    <button
+                      onClick={() => setCardDrawer('none')}
+                      type="button"
+                      className="px-4 py-1.5 rounded-lg bg-[#222222] text-white text-xs font-semibold cursor-pointer"
+                    >
+                      Done
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Capacity and availability guidance */}
+              {reserveBlock === 'capacity' && (
+                <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-3 text-xs text-rose-950" role="status">
+                  <p className="font-semibold">
+                    {selectedRoom.name} fits up to {selectedCapacity} {selectedCapacity === 1 ? 'guest' : 'guests'}; your party has {partySize}.
+                  </p>
+                  <p className="mt-0.5 text-rose-900/80">
+                    {bestFreeRoom ? `${bestFreeRoom.name} fits ${bestFreeRoom.capacity} and is open.` : 'Try a different room or fewer guests.'}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {bestFreeRoom && (
+                      <button type="button" onClick={() => chooseRoom(bestFreeRoom.id)} className="rounded-lg bg-rose-600 px-3 py-1.5 font-semibold text-white hover:bg-rose-700 cursor-pointer">
+                        Switch to {bestFreeRoom.name}
+                      </button>
+                    )}
+                    <button type="button" onClick={enableAutoMatch} className="rounded-lg border border-rose-300 bg-white px-3 py-1.5 font-semibold text-rose-700 hover:bg-rose-100 cursor-pointer">
+                      Auto-match a room
+                    </button>
+                  </div>
+                </div>
+              )}
+              {reserveBlock === 'dates' && (
+                <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs text-amber-950" role="status">
+                  <p className="font-semibold">
+                    {bestFreeRoom
+                      ? `${selectedRoom.name} is booked on some of these dates.`
+                      : `No room for ${partySize} ${partySize === 1 ? 'guest' : 'guests'} is free for every night of these dates.`}
+                  </p>
+                  <p className="mt-0.5 text-amber-900/80">
+                    {bestFreeRoom ? `${bestFreeRoom.name} is open for your whole stay.` : 'Pick different dates to see open rooms.'}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {bestFreeRoom && (
+                      <button type="button" onClick={() => chooseRoom(bestFreeRoom.id)} className="rounded-lg bg-amber-600 px-3 py-1.5 font-semibold text-white hover:bg-amber-700 cursor-pointer">
+                        Switch to {bestFreeRoom.name}
+                      </button>
+                    )}
+                    <button type="button" onClick={clearDates} className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 font-semibold text-amber-800 hover:bg-amber-100 cursor-pointer">
+                      Change dates
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Primary Blue Reserve CTA */}
               <button
                 type="button"
-                onClick={() => {
-                  if (!checkIn || !checkOut) {
-                    const el = document.getElementById('calendar-section');
-                    el?.scrollIntoView({ behavior: 'smooth' });
-                  } else {
-                    setReserveStep('form');
-                    setShowReserveModal(true);
-                  }
-                }}
+                onClick={openReserve}
                 className="btn-airbnb-reserve w-full h-12 rounded-[8px] text-[15px] font-semibold tracking-wide cursor-pointer flex items-center justify-center"
               >
-                {checkIn && checkOut ? 'Reserve' : 'Check availability'}
+                {!checkIn || !checkOut
+                  ? 'Check availability'
+                  : reserveBlock === 'capacity'
+                  ? 'Choose a room that fits'
+                  : reserveBlock === 'dates'
+                  ? 'See open rooms'
+                  : 'Reserve'}
               </button>
 
               <p className="text-center text-xs text-[#6A6A6A] mt-3">
-                {checkIn && checkOut
-                  ? 'You won’t be charged yet · Official digital voucher'
-                  : 'Select dates to unlock direct booking rates'}
+                You won’t be charged yet · Official digital voucher
               </p>
 
               {/* Fee Breakdown */}
@@ -1765,7 +2020,7 @@ export default function MobileResortApp() {
             {checkIn && checkOut ? formatPHP(priceBreakdown.grandTotal) : `${formatPHP(selectedRoom.rate_php || 3500)} / night`}
           </span>
           <span className="block text-[11px] text-[#6A6A6A]">
-            {checkIn && checkOut ? `${totalNights} nights stay` : 'Select dates'}
+            {checkIn && checkOut ? `${totalNights} nights · ${selectedRoom.name}` : 'Select dates'}
           </span>
         </div>
         <button
@@ -1774,14 +2029,13 @@ export default function MobileResortApp() {
               const el = document.getElementById('calendar-section');
               el?.scrollIntoView({ behavior: 'smooth' });
             } else {
-              setReserveStep('form');
-              setShowReserveModal(true);
+              openReserve();
             }
           }}
           type="button"
           className="btn-airbnb-reserve px-5 py-2.5 rounded-lg text-xs font-semibold cursor-pointer"
         >
-          {checkIn && checkOut ? 'Reserve' : 'Check Dates'}
+          {!checkIn || !checkOut ? 'Check Dates' : reserveBlock ? 'Review room' : 'Reserve'}
         </button>
       </div>
 
@@ -1847,38 +2101,70 @@ export default function MobileResortApp() {
            MODAL 3: RESERVATION CONFIRMATION & OFFICIAL RECEIPT MODAL
            ===================================================================== */}
       {showReserveModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#FFFFFF] rounded-2xl max-w-md w-full border border-[#DDDDDD] shadow-2xl overflow-hidden animate-fade-in">
-            <div className="px-6 py-4 border-b border-[#EBEBEB] flex items-center justify-between">
-              <h3 className="text-lg font-bold text-[#222222]">
-                {reserveStep === 'form' ? 'Confirm your Bolinao reservation' : 'Reservation Confirmed & Locked'}
+        <div
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="reserve-modal-title"
+        >
+          <div className="bg-[#FFFFFF] rounded-2xl max-w-md w-full max-h-[92vh] border border-[#DDDDDD] shadow-2xl overflow-hidden animate-fade-in flex flex-col">
+            <div className="px-6 py-4 border-b border-[#EBEBEB] flex items-center justify-between shrink-0">
+              <h3 id="reserve-modal-title" className="text-lg font-bold text-[#222222]">
+                {reserveStep === 'form'
+                  ? 'Your Bolinao reservation'
+                  : reserveStep === 'review'
+                  ? 'Review & confirm'
+                  : savedBooking?.dbId
+                  ? 'Reservation confirmed'
+                  : 'Booking saved on this device'}
               </h3>
               <button
                 onClick={() => setShowReserveModal(false)}
                 type="button"
+                aria-label="Close"
                 className="w-8 h-8 rounded-full hover:bg-slate-100 text-sm font-bold flex items-center justify-center cursor-pointer text-slate-600"
               >
                 ✕
               </button>
             </div>
 
+            <div className="overflow-y-auto">
             {reserveStep === 'form' ? (
               <form onSubmit={handleReserveSubmit} className="p-6 space-y-4">
                 <div className="border border-[#DDDDDD] rounded-xl p-4 space-y-2.5 text-sm">
-                  <div className="font-bold text-[#222222]">{selectedRoom.name}</div>
-                  <div className="flex justify-between text-[#6A6A6A]">
+                  <div className="flex items-center gap-3 pb-1">
+                    <img
+                      src={selectedRoom.image_url || '/images/cottage.jpg'}
+                      alt=""
+                      className="w-14 h-14 rounded-lg object-cover bg-slate-100 shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <div className="font-bold text-[#222222] truncate">{selectedRoom.name}</div>
+                      <div className="text-xs text-[#6A6A6A]">
+                        {selectedRoom.category} · up to {selectedCapacity} {selectedCapacity === 1 ? 'guest' : 'guests'}
+                      </div>
+                      <span
+                        className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider ${
+                          roomMode === 'auto' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'
+                        }`}
+                      >
+                        {roomMode === 'auto' ? `Auto-matched for ${partySize}` : 'Chosen by you'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between gap-3 text-[#6A6A6A]">
                     <span>Dates</span>
-                    <span className="font-semibold text-[#222222]">
+                    <span className="font-semibold text-[#222222] text-right">
                       {formatFullDate(checkIn)} – {formatFullDate(checkOut)} ({totalNights} nights)
                     </span>
                   </div>
-                  <div className="flex justify-between text-[#6A6A6A]">
+                  <div className="flex justify-between gap-3 text-[#6A6A6A]">
                     <span>Guests</span>
-                    <span className="font-semibold text-[#222222]">{guests.adults + guests.children} guests</span>
+                    <span className="font-semibold text-[#222222] text-right">{guestSummary}</span>
                   </div>
                   <div className="flex justify-between text-[#6A6A6A]">
                     <span>Cleaning &amp; Conservation Fee</span>
-                    <span className="font-semibold text-[#222222]">₱650</span>
+                    <span className="font-semibold text-[#222222]">{formatPHP(priceBreakdown.cleaningFee + priceBreakdown.coastalFee)}</span>
                   </div>
                   <div className="pt-2.5 border-t border-[#DDDDDD] flex justify-between font-bold text-base text-[#222222]">
                     <span>Total</span>
@@ -1888,10 +2174,12 @@ export default function MobileResortApp() {
 
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-xs font-semibold text-[#222222] mb-1">Primary Guest Full Name</label>
+                    <label htmlFor="reserve-name" className="block text-xs font-semibold text-[#222222] mb-1">Primary Guest Full Name</label>
                     <input
+                      id="reserve-name"
                       type="text"
                       required
+                      autoComplete="name"
                       value={guestName}
                       onChange={(e) => setGuestName(e.target.value)}
                       placeholder="e.g. Maria Santos"
@@ -1899,10 +2187,12 @@ export default function MobileResortApp() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-[#222222] mb-1">Email for Digital Voucher</label>
+                    <label htmlFor="reserve-email" className="block text-xs font-semibold text-[#222222] mb-1">Email for Digital Voucher</label>
                     <input
+                      id="reserve-email"
                       type="email"
                       required
+                      autoComplete="email"
                       value={guestEmail}
                       onChange={(e) => setGuestEmail(e.target.value)}
                       placeholder="guest@example.ph"
@@ -1910,35 +2200,173 @@ export default function MobileResortApp() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-[#222222] mb-1">Philippine Mobile (SMS PIN alert)</label>
+                    <label htmlFor="reserve-phone" className="block text-xs font-semibold text-[#222222] mb-1">Philippine Mobile (SMS PIN alert)</label>
                     <input
+                      id="reserve-phone"
                       type="tel"
                       required
+                      inputMode="tel"
+                      autoComplete="tel"
                       value={guestPhone}
-                      onChange={(e) => setGuestPhone(e.target.value)}
+                      onChange={(e) => {
+                        setGuestPhone(e.target.value);
+                        if (reserveError) setReserveError(null);
+                      }}
                       placeholder="09171234567"
                       className="w-full px-3.5 py-2.5 rounded-lg border border-[#B0B0B0] text-sm focus:outline-none focus:border-[#222222]"
                     />
                   </div>
+                  <div>
+                    <label htmlFor="reserve-payment" className="block text-xs font-semibold text-[#222222] mb-1">How you'll pay at the resort</label>
+                    <select
+                      id="reserve-payment"
+                      value={paymentChoice}
+                      onChange={(e) => setPaymentChoice(e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-lg border border-[#B0B0B0] bg-white text-sm focus:outline-none focus:border-[#222222] cursor-pointer"
+                    >
+                      {savedPayments.map((method) => (
+                        <option key={method.id} value={`saved:${method.id}`}>
+                          {`${paymentDisplay(method)}${method.isDefault ? ' (default)' : ''}`}
+                        </option>
+                      ))}
+                      <option value="front-desk">Pay at the front desk</option>
+                      <option value="GCash">GCash</option>
+                      <option value="Maya">Maya</option>
+                      <option value="Card">Credit or debit card</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="reserve-requests" className="block text-xs font-semibold text-[#222222] mb-1">
+                      Special requests <span className="font-normal text-[#6A6A6A]">(optional)</span>
+                    </label>
+                    <textarea
+                      id="reserve-requests"
+                      rows={2}
+                      maxLength={300}
+                      value={guestRequests}
+                      onChange={(e) => setGuestRequests(e.target.value)}
+                      placeholder="Early arrival, extra pillows, celebrating a birthday…"
+                      className="w-full px-3.5 py-2.5 rounded-lg border border-[#B0B0B0] text-sm focus:outline-none focus:border-[#222222] resize-none"
+                    />
+                  </div>
                 </div>
+
+                {reserveError && (
+                  <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs font-medium text-rose-900">
+                    {reserveError}
+                  </div>
+                )}
 
                 <button
                   type="submit"
                   disabled={reserveSubmitting}
-                  className="btn-airbnb-reserve w-full h-12 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer"
+                  className="btn-airbnb-reserve w-full h-12 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70"
                 >
-                  <span>{reserveSubmitting ? 'Writing to Supabase...' : 'Confirm & Lock Dates in Supabase'}</span>
+                  <span>Review reservation</span>
                 </button>
+                <p className="text-center text-xs text-[#6A6A6A]">
+                  You won’t be charged yet · {signedInGuest ? 'Linked to your resident account' : 'Shows in your guest dashboard on this device'}
+                </p>
               </form>
+            ) : reserveStep === 'review' ? (
+              <div className="p-6 space-y-4">
+                <p className="text-sm text-[#6A6A6A]">
+                  Please check everything below. Your dates are only held once you confirm.
+                </p>
+
+                <div className="border border-[#DDDDDD] rounded-xl p-4 space-y-2.5 text-sm">
+                  <div className="flex items-center gap-3 pb-1">
+                    <img
+                      src={selectedRoom.image_url || '/images/cottage.jpg'}
+                      alt=""
+                      className="w-14 h-14 rounded-lg object-cover bg-slate-100 shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <div className="font-bold text-[#222222] truncate">{selectedRoom.name}</div>
+                      <div className="text-xs text-[#6A6A6A]">
+                        {selectedRoom.category} · up to {selectedCapacity} {selectedCapacity === 1 ? 'guest' : 'guests'}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-between gap-3 text-[#6A6A6A]">
+                    <span>Dates</span>
+                    <span className="font-semibold text-[#222222] text-right">
+                      {formatFullDate(checkIn)} – {formatFullDate(checkOut)} ({totalNights} nights)
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-3 text-[#6A6A6A]">
+                    <span>Guests</span>
+                    <span className="font-semibold text-[#222222] text-right">{guestSummary}</span>
+                  </div>
+                  <div className="pt-2.5 border-t border-[#DDDDDD] flex justify-between font-bold text-base text-[#222222]">
+                    <span>Total</span>
+                    <span className="text-[#1D4ED8]">{formatPHP(priceBreakdown.grandTotal)}</span>
+                  </div>
+                </div>
+
+                <div className="border border-[#DDDDDD] rounded-xl p-4 space-y-1.5 text-sm">
+                  <div className="flex justify-between gap-3 text-[#6A6A6A]">
+                    <span>Primary guest</span>
+                    <span className="font-semibold text-[#222222] text-right">{guestName.trim()}</span>
+                  </div>
+                  <div className="flex justify-between gap-3 text-[#6A6A6A]">
+                    <span>Email</span>
+                    <span className="font-semibold text-[#222222] text-right break-all">{guestEmail.trim()}</span>
+                  </div>
+                  <div className="flex justify-between gap-3 text-[#6A6A6A]">
+                    <span>Mobile</span>
+                    <span className="font-semibold text-[#222222] text-right">{to11Digits(guestPhone)}</span>
+                  </div>
+                  <div className="flex justify-between gap-3 text-[#6A6A6A]">
+                    <span>Payment</span>
+                    <span className="font-semibold text-[#222222] text-right">{resolvePayment().display}</span>
+                  </div>
+                </div>
+
+                <p className="text-xs leading-relaxed text-[#6A6A6A]">
+                  You can cancel yourself free of charge within 5 hours of booking. After that, the front desk at {RESORT_CONTACT.phoneDisplay} handles cancellations.
+                </p>
+
+                {reserveError && (
+                  <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs font-medium text-rose-900">
+                    {reserveError}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { setReserveError(null); setReserveStep('form'); }}
+                    disabled={reserveSubmitting}
+                    className="h-12 rounded-lg border border-[#DDDDDD] text-[#222222] text-sm font-semibold hover:bg-[#F7F7F7] transition cursor-pointer disabled:opacity-70"
+                  >
+                    Go back &amp; edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={finalizeReservation}
+                    disabled={reserveSubmitting}
+                    className="btn-airbnb-reserve h-12 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70"
+                  >
+                    <span>{reserveSubmitting ? 'Finalizing…' : 'Confirm & book'}</span>
+                  </button>
+                </div>
+              </div>
             ) : (
               <div className="p-6 text-center space-y-4">
-                <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 mx-auto flex items-center justify-center text-xl font-bold border border-emerald-200">
-                  ✓
+                <div
+                  className={`w-12 h-12 rounded-full mx-auto flex items-center justify-center text-xl font-bold border ${
+                    savedBooking?.dbId ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-amber-50 text-amber-600 border-amber-200'
+                  }`}
+                >
+                  {savedBooking?.dbId ? '✓' : '!'}
                 </div>
                 <div>
-                  <h4 className="text-xl font-bold text-[#222222]">Reservation Confirmed &amp; Locked</h4>
+                  <h4 className="text-xl font-bold text-[#222222]">{savedBooking?.dbId ? 'You’re booked!' : 'Saved on this device'}</h4>
                   <p className="text-sm text-[#6A6A6A] mt-1">
-                    Your booking has been written to the Supabase database.
+                    {savedBooking
+                      ? `${savedBooking.roomName} · ${formatFullDate(savedBooking.checkIn)} – ${formatFullDate(savedBooking.checkOut)}`
+                      : ''}
                   </p>
                 </div>
 
@@ -1948,23 +2376,37 @@ export default function MobileResortApp() {
                     {bookingRef}
                   </div>
                   <div className="text-xs font-semibold text-emerald-700 mt-1">
-                    Smart Keypad PIN: {smartPin}
+                    Smart Keypad PIN: {smartPin} · active from {RESORT_CONTACT.checkInTime} on check-in day
                   </div>
                   <div className="text-[10px] text-slate-500 mt-1.5 flex items-center justify-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                    <span>Recorded in Supabase Database</span>
+                    <span className={`w-1.5 h-1.5 rounded-full ${savedBooking?.dbId ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+                    <span>{savedBooking?.dbId ? 'Recorded in the resort reservation system' : 'Not yet in the resort reservation system'}</span>
                   </div>
                 </div>
 
+                {!savedBooking?.dbId && (
+                  <p className="text-left text-xs leading-relaxed text-amber-950 bg-amber-50 border border-amber-200 rounded-lg px-3.5 py-2.5">
+                    We couldn’t reach the reservation system, so these dates aren’t held yet. Please call the front desk at {RESORT_CONTACT.phoneDisplay} to confirm your booking.
+                  </p>
+                )}
+
+                <button
+                  onClick={() => navigate('/client')}
+                  type="button"
+                  className="btn-airbnb-reserve w-full h-12 rounded-lg text-sm font-semibold cursor-pointer flex items-center justify-center"
+                >
+                  Go to my dashboard
+                </button>
                 <button
                   onClick={() => setShowReserveModal(false)}
                   type="button"
-                  className="w-full py-3 rounded-lg bg-[#222222] text-white text-sm font-semibold hover:bg-black transition cursor-pointer"
+                  className="w-full py-3 rounded-lg border border-[#DDDDDD] text-[#222222] text-sm font-semibold hover:bg-[#F7F7F7] transition cursor-pointer"
                 >
-                  Done
+                  Back to the resort page
                 </button>
               </div>
             )}
+            </div>
           </div>
         </div>
       )}

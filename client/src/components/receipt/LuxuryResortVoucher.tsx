@@ -1,6 +1,7 @@
 import React from 'react';
 import { VoucherData } from './receiptTypes';
 import { VoucherBarcode } from './VoucherBarcode';
+import { computeOfficialReceipt, officialReceiptNo, RESORT_TAX_PROFILE, formatTaxPeso } from '../../lib/taxInvoice';
 
 interface LuxuryResortVoucherProps {
   voucher: VoucherData;
@@ -198,6 +199,41 @@ export const LuxuryResortVoucher: React.FC<LuxuryResortVoucherProps> = ({
               {peso(voucher.totalAmount)}
             </span>
           </div>
+
+          {/* TAX BREAKDOWN — Philippine prices are VAT-inclusive, so VAT is shown within the total */}
+          {(() => {
+            const or = computeOfficialReceipt(voucher.totalAmount);
+            return (
+              <div className="mt-2 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-3 text-[11px] text-slate-300">
+                <div className="mb-1.5 flex items-center justify-between text-[9px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                  <span>{or.vatRegistered ? 'VAT breakdown (inclusive)' : 'Non-VAT sale'}</span>
+                  <span className="font-mono text-slate-400">OR {officialReceiptNo(voucher.reference)}</span>
+                </div>
+                {or.vatRegistered ? (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <span>VATable sales (net of VAT)</span>
+                      <span className="font-mono text-slate-200">{formatTaxPeso(or.vatableSales)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>12% VAT</span>
+                      <span className="font-mono text-slate-200">{formatTaxPeso(or.vatAmount)}</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <span>VAT-exempt sale (Non-VAT registered)</span>
+                    <span className="font-mono text-slate-200">{formatTaxPeso(or.vatExemptSales)}</span>
+                  </div>
+                )}
+                <div className="mt-1.5 border-t border-white/10 pt-1.5 text-[9.5px] leading-relaxed text-slate-400">
+                  {RESORT_TAX_PROFILE.registeredName} · TIN {RESORT_TAX_PROFILE.tin}
+                  {or.vatRegistered ? ' (VAT-registered)' : ' (Non-VAT)'} · This is a booking confirmation.
+                  The Official Receipt is issued upon full payment at the resort.
+                </div>
+              </div>
+            );
+          })()}
 
           {/* 30% DOWNPAYMENT PAID */}
           <div className="flex items-center justify-between rounded-xl bg-emerald-950/40 border border-emerald-500/30 px-3.5 py-2.5 text-emerald-300">

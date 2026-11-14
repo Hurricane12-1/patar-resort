@@ -46,6 +46,8 @@ Thumbs.db
 *.tar.gz
 backups/snapshots/*.zip
 backups/snapshots/*.tar.gz
+_patch_backup*/
+**/_patch_backup*/
 
 # Helper scripts
 scripts/

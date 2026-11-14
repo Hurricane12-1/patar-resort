@@ -1,0 +1,162 @@
+/* Guest portal (/client): a light coastal theme that continues the landing page.
+   Legacy global styles colour headings white and use display serifs everywhere,
+   so typography and form colours are reset inside this scope only. */
+
+.guest-portal {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-weight: 400;
+  letter-spacing: normal;
+  color: #222222;
+  background-color: #f7f5f0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.guest-portal :is(h1, h2, h3, h4, h5, h6) {
+  font-family: inherit;
+  color: inherit;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  margin: 0;
+}
+
+.guest-portal p {
+  margin: 0;
+}
+
+.guest-portal .gp-display {
+  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  letter-spacing: -0.01em;
+}
+
+.guest-portal :is(input, select, textarea) {
+  color-scheme: light;
+  caret-color: #18222b;
+}
+
+.guest-portal :focus-visible {
+  outline: 2px solid #9e7e46;
+  outline-offset: 2px;
+}
+
+.guest-portal ::selection {
+  background: #18222b;
+  color: #ffffff;
+}
+
+.gp-scroll-x {
+  scrollbar-width: none;
+}
+
+.gp-scroll-x::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes gp-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes gp-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes gp-sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes gp-slide-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes gp-pop {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.gp-animate-in {
+  animation: gp-fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.gp-delay-1 {
+  animation-delay: 60ms;
+}
+
+.gp-delay-2 {
+  animation-delay: 120ms;
+}
+
+.gp-delay-3 {
+  animation-delay: 180ms;
+}
+
+.gp-backdrop {
+  animation: gp-fade 0.2s ease-out both;
+}
+
+.gp-drawer {
+  animation: gp-sheet-up 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.gp-dialog {
+  animation: gp-sheet-up 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.gp-menu {
+  animation: gp-pop 0.16s ease-out both;
+}
+
+@media (min-width: 768px) {
+  .gp-drawer {
+    animation-name: gp-slide-in;
+  }
+
+  .gp-dialog {
+    animation-name: gp-pop;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gp-animate-in,
+  .gp-backdrop,
+  .gp-drawer,
+  .gp-dialog,
+  .gp-menu {
+    animation: none;
+  }
+}
+
+/* Keep global toasts clear of the portal's mobile tab bar. */
+@media (max-width: 767px) {
+  body:has(.guest-portal) .toast-stack {
+    bottom: calc(88px + env(safe-area-inset-bottom));
+  }
+}

@@ -1,5 +1,6 @@
 import React from 'react';
 import { computeVatBreakdown } from '../../../lib/ledgerUtils';
+import { RESORT_TAX_PROFILE } from '../../../lib/taxInvoice';
 
 export interface GuestFolioReceiptModalProps {
   booking: any;
@@ -105,7 +106,7 @@ export const GuestFolioReceiptModal: React.FC<GuestFolioReceiptModalProps> = ({
                 Patar Beach Road, Barangay Patar, Bolinao, Pangasinan 2406
               </p>
               <p style={{ margin: '2px 0 0', fontSize: '.76rem', color: '#64748B' }}>
-                TIN: 009-847-192-000-NV • Non-VAT Official Resort Billing Folio
+                TIN: {RESORT_TAX_PROFILE.tin} • {RESORT_TAX_PROFILE.vatRegistered ? 'VAT-Registered Official Receipt' : 'Non-VAT Official Receipt'}
               </p>
               <p style={{ margin: '2px 0 0', fontSize: '.76rem', color: '#0EA5E9', fontWeight: 600 }}>
                 Tel: +63 917 123 4567 • Email: reservations@rockviewresort.ph
@@ -226,7 +227,7 @@ export const GuestFolioReceiptModal: React.FC<GuestFolioReceiptModalProps> = ({
             {/* Left Column: Tax & Settlement Info */}
             <div style={{ background: '#F8FAFC', padding: 14, borderRadius: 10, border: '1px solid #E2E8F0', fontSize: '.78rem' }}>
               <span style={{ fontSize: '.7rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase' }}>
-                TAX BREAKDOWN (NON-VAT ENTITY)
+                TAX BREAKDOWN ({RESORT_TAX_PROFILE.vatRegistered ? 'VAT-REGISTERED' : 'NON-VAT'})
               </span>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, color: '#475569' }}>
                 <span>VATable Sales:</span>

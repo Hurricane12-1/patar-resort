@@ -42,6 +42,10 @@ function computeVerifiedPoolAddonFee(notesText = '', guests = 1) {
 
 export const TWO_HOURS_MS = 2 * 60 * 60 * 1000; // 7,200,000 ms mandatory gap
 
+// A guest may cancel their own booking only within this window after it was created.
+// Once it passes, self-service cancellation is locked; front desk / admin can still cancel.
+export const GUEST_CANCEL_WINDOW_MS = 5 * 60 * 60 * 1000; // 18,000,000 ms (5 hours)
+
 export function normalizeTo24Hour(timeStr, defaultTime = '14:00') {
   if (!timeStr) return defaultTime;
   const clean = String(timeStr).trim();
@@ -537,6 +541,18 @@ r.patch('/reservations/:id/cancel', authenticate, asyncH(async (req, res) => {
   if (!isOwner && !isStaff) throw new ApiError(403, 'Unauthorized to cancel this booking');
   if (!['pending', 'confirmed'].includes(b.status))
     throw new ApiError(409, 'Only upcoming stays can be cancelled.');
+  // Guests may self-cancel only within 5 hours of booking. Staff and admins are not time-limited.
+  // A missing/unparseable created_at fails open (treated as just-created) so a guest is never trapped.
+  if (isOwner && !isStaff) {
+    const createdMs = Date.parse(b.created_at || b.createdAt || '');
+    const elapsed = Number.isFinite(createdMs) ? Date.now() - createdMs : 0;
+    if (elapsed > GUEST_CANCEL_WINDOW_MS) {
+      throw new ApiError(
+        409,
+        'The 5-hour self-cancellation window for this booking has closed. Please contact the front desk at +63 900 555 0123 to cancel.'
+      );
+    }
+  }
 
   updateLocalReservation(b.id, { status: 'cancelled' });
   let cancelledStay = { ...b, status: 'cancelled' };

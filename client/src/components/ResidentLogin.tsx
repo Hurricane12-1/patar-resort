@@ -9,34 +9,44 @@ interface ResidentLoginProps {
   returnTo?: string;
 }
 
-export default function ResidentLogin({ returnTo = '/client' }: ResidentLoginProps) {
+export default function ResidentLogin({ returnTo = '/user' }: ResidentLoginProps) {
   const navigate = useNavigate();
-  const { customerSignIn, signInWithGoogle, signInWithFacebook } = useAuth();
+  const { customerSignIn, signInWithGoogle, signInWithFacebook, signUp } = useAuth();
 
-  // Mode: 'login' | 'forgot-request' | 'forgot-verify'
-  const [mode, setMode] = useState<'login' | 'forgot-request' | 'forgot-verify'>('login');
+  // Mode: 'login' | 'signup' | 'forgot-request' | 'forgot-verify'
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot-request' | 'forgot-verify'>('login');
 
-  // Manual Login Form
+  // Manual Login Form State
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
 
-  // Recovery Form
+  // Create Account (Sign Up) Form State
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupPassword, setSignupPassword] = useState('');
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [termsAgreed, setTermsAgreed] = useState(false);
+  const [signupLoading, setSignupLoading] = useState(false);
+
+  // Recovery Form State
   const [recoveryEmail, setRecoveryEmail] = useState('');
   const [recoveryCode, setRecoveryCode] = useState('');
   const [recoveryNewPassword, setRecoveryNewPassword] = useState('');
   const [showRecoveryPassword, setShowRecoveryPassword] = useState(false);
   const [recoveryLoading, setRecoveryLoading] = useState(false);
 
-  // Manual Email & Password Login
+  // 1. Handle Manual Login
   const handleManualLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password) {
       toast('Please enter your email and password.', true);
       return;
     }
-    setLoading(true);
+    setLoginLoading(true);
     try {
       const res = await customerSignIn(email.trim(), password);
       if (res?.error) throw res.error;
@@ -45,11 +55,64 @@ export default function ResidentLogin({ returnTo = '/client' }: ResidentLoginPro
     } catch (err: any) {
       toast(err.message || 'Authentication failed. Please check your credentials.', true);
     } finally {
-      setLoading(false);
+      setLoginLoading(false);
     }
   };
 
-  // Google OAuth
+  // 2. Handle Create Account (Sign Up)
+  const handleCreateAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!firstName.trim() || !lastName.trim()) {
+      toast('Please enter both your first name and last name.', true);
+      return;
+    }
+    const cleanPhone = phone.replace(/\D/g, '').slice(0, 11);
+    if (!cleanPhone || cleanPhone.length !== 11 || !cleanPhone.startsWith('09')) {
+      toast('Philippine mobile number must be 11 digits starting with 09 (e.g. 09171234567).', true);
+      return;
+    }
+    if (!signupEmail.trim()) {
+      toast('Please enter your email address.', true);
+      return;
+    }
+    if (!signupPassword || signupPassword.length < 8) {
+      toast('Password must be at least 8 characters long with letters and numbers.', true);
+      return;
+    }
+    if (!termsAgreed) {
+      toast('Please agree to the Resort Terms of Stay and Privacy Policy to create your account.', true);
+      return;
+    }
+
+    setSignupLoading(true);
+    try {
+      const fullName = `${firstName.trim()} ${lastName.trim()}`;
+      const res = await signUp(signupEmail.trim(), signupPassword, {
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        phone: cleanPhone,
+        full_name: fullName,
+      });
+      if (res?.error) throw res.error;
+
+      // Automatically sign in the newly registered resident account
+      const signRes = await customerSignIn(signupEmail.trim(), signupPassword);
+      if (signRes?.error) {
+        toast('Account created! Please enter your password to sign in.');
+        setEmail(signupEmail.trim());
+        setMode('login');
+      } else {
+        toast(`Welcome to Rock View Beach Resort, ${fullName}! ✦`);
+        if (returnTo) navigate(returnTo, { replace: true });
+      }
+    } catch (err: any) {
+      toast(err.message || 'Account registration failed. Please check your details.', true);
+    } finally {
+      setSignupLoading(false);
+    }
+  };
+
+  // 3. Handle Google OAuth
   const handleGoogleAuth = async () => {
     try {
       toast('Connecting to Google Sign-In…');
@@ -57,14 +120,14 @@ export default function ResidentLogin({ returnTo = '/client' }: ResidentLoginPro
     } catch (err: any) {
       const msg = err.msg || err.message || '';
       if (msg.includes('not enabled') || msg.includes('Unsupported provider') || err.error_code === 'validation_failed') {
-        toast('Google OAuth is not enabled in Supabase yet. Please sign in with your email and password.', true);
+        toast('Google OAuth is initializing. Please sign in or create an account with email below.', true);
       } else {
         toast(msg || 'Google Sign-In failed', true);
       }
     }
   };
 
-  // Facebook OAuth
+  // 4. Handle Facebook OAuth
   const handleFacebookAuth = async () => {
     try {
       toast('Connecting to Facebook Sign-In…');
@@ -72,14 +135,14 @@ export default function ResidentLogin({ returnTo = '/client' }: ResidentLoginPro
     } catch (err: any) {
       const msg = err.msg || err.message || '';
       if (msg.includes('not enabled') || msg.includes('Unsupported provider') || err.error_code === 'validation_failed') {
-        toast('Facebook OAuth is not enabled in Supabase yet. Please sign in with your email and password.', true);
+        toast('Facebook OAuth is initializing. Please sign in or create an account with email below.', true);
       } else {
         toast(msg || 'Facebook Sign-In failed', true);
       }
     }
   };
 
-  // Step 1: Request Password Reset Code
+  // 5. Step 1: Request Password Reset Code
   const handleRequestRecovery = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!recoveryEmail.trim()) {
@@ -98,7 +161,7 @@ export default function ResidentLogin({ returnTo = '/client' }: ResidentLoginPro
     }
   };
 
-  // Step 2: Verify Code and Set New Password
+  // 6. Step 2: Verify Code and Set New Password
   const handleVerifyAndReset = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!recoveryCode.trim() || !recoveryNewPassword) {
@@ -113,7 +176,6 @@ export default function ResidentLogin({ returnTo = '/client' }: ResidentLoginPro
     try {
       const res = await api.resetPassword(recoveryEmail.trim(), recoveryCode.trim(), recoveryNewPassword);
       toast(res.message || 'Password reset successfully! Logging you in…');
-      // Sign in with new credentials
       const signRes = await customerSignIn(recoveryEmail.trim(), recoveryNewPassword);
       if (signRes?.error) {
         toast('Password updated. Please sign in with your new password.');
@@ -218,41 +280,41 @@ export default function ResidentLogin({ returnTo = '/client' }: ResidentLoginPro
             <h2 className="rl-card__resort-name">ROCK VIEW BEACH RESORT</h2>
             <span className="rl-card__portal-tag">Resident Guest Portal</span>
             
-            {mode === 'login' && (
-              <>
-                <h3 className="rl-card__title">Sign In</h3>
-                <p className="rl-card__subtitle">
-                  Sign in with your registered account to access your resort bookings,
-                  services, and digital room pass.
-                </p>
-              </>
-            )}
-
-            {mode === 'forgot-request' && (
-              <>
-                <h3 className="rl-card__title">Account Recovery</h3>
-                <p className="rl-card__subtitle">
-                  Enter your registered email address to receive a 6-digit recovery code.
-                </p>
-              </>
-            )}
-
-            {mode === 'forgot-verify' && (
-              <>
-                <h3 className="rl-card__title">Reset Password</h3>
-                <p className="rl-card__subtitle">
-                  Enter the verification code sent to <strong>{recoveryEmail}</strong> and your new password.
-                </p>
-              </>
-            )}
+            <p className="rl-card__subtitle">
+              {mode === 'login' && 'Sign in to access your resort bookings, services, and digital room pass.'}
+              {mode === 'signup' && 'Create your resident guest account to unlock direct rates & instant vouchers.'}
+              {mode === 'forgot-request' && 'Enter your registered email address to receive your 6-digit recovery code.'}
+              {mode === 'forgot-verify' && `Enter the verification code sent to ${recoveryEmail} and your new password.`}
+            </p>
           </div>
 
           {/* ============================================================ */}
-          {/* MODE: MANUAL LOGIN & SOCIAL AUTH                             */}
+          {/* TABS: SIGN IN vs CREATE ACCOUNT                              */}
           {/* ============================================================ */}
-          {mode === 'login' && (
+          {(mode === 'login' || mode === 'signup') && (
+            <div className="rl-tabs">
+              <button
+                type="button"
+                className={`rl-tab ${mode === 'login' ? 'rl-tab--active' : ''}`}
+                onClick={() => setMode('login')}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                className={`rl-tab ${mode === 'signup' ? 'rl-tab--active' : ''}`}
+                onClick={() => setMode('signup')}
+              >
+                Create Account
+              </button>
+            </div>
+          )}
+
+          {/* ============================================================ */}
+          {/* SHARED SOCIAL AUTH (GOOGLE & FACEBOOK)                       */}
+          {/* ============================================================ */}
+          {(mode === 'login' || mode === 'signup') && (
             <>
-              {/* Google & Facebook OAuth Buttons */}
               <div className="rl-social-grid">
                 <button
                   type="button"
@@ -280,76 +342,193 @@ export default function ResidentLogin({ returnTo = '/client' }: ResidentLoginPro
                 </button>
               </div>
 
-              {/* Divider */}
               <div className="rl-divider">
-                <span>or sign in with email</span>
+                <span>{mode === 'login' ? 'or sign in with email' : 'or register with email'}</span>
+              </div>
+            </>
+          )}
+
+          {/* ============================================================ */}
+          {/* MODE: SIGN IN FORM                                           */}
+          {/* ============================================================ */}
+          {mode === 'login' && (
+            <form onSubmit={handleManualLogin}>
+              <div className="rl-form-group">
+                <label className="rl-label" htmlFor="rl-email">Email Address</label>
+                <div className="rl-input-wrap">
+                  <i className="fas fa-envelope rl-input-icon" />
+                  <input
+                    id="rl-email"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="your@email.com"
+                    className="rl-input"
+                  />
+                </div>
               </div>
 
-              {/* Manual Email & Password Form */}
-              <form onSubmit={handleManualLogin}>
-                <div className="rl-form-group">
-                  <label className="rl-label" htmlFor="rl-email">Email Address</label>
-                  <div className="rl-input-wrap">
-                    <i className="fas fa-envelope rl-input-icon" />
-                    <input
-                      id="rl-email"
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="your@email.com"
-                      className="rl-input"
-                    />
-                  </div>
-                </div>
-
-                <div className="rl-form-group">
-                  <label className="rl-label" htmlFor="rl-password">Password</label>
-                  <div className="rl-input-wrap">
-                    <i className="fas fa-key rl-input-icon" />
-                    <input
-                      id="rl-password"
-                      type={showPassword ? 'text' : 'password'}
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="rl-input"
-                    />
-                    <button
-                      type="button"
-                      className="rl-eye-btn"
-                      onClick={() => setShowPassword(!showPassword)}
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    >
-                      <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`} />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="rl-forgot-row">
+              <div className="rl-form-group">
+                <label className="rl-label" htmlFor="rl-password">Password</label>
+                <div className="rl-input-wrap">
+                  <i className="fas fa-key rl-input-icon" />
+                  <input
+                    id="rl-password"
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="rl-input"
+                  />
                   <button
                     type="button"
-                    className="rl-forgot-link"
-                    onClick={() => {
-                      setRecoveryEmail(email || '');
-                      setMode('forgot-request');
-                    }}
+                    className="rl-eye-btn"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
-                    Forgot account or password?
+                    <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`} />
                   </button>
                 </div>
+              </div>
 
+              <div className="rl-forgot-row">
                 <button
-                  type="submit"
-                  disabled={loading}
-                  className="rl-submit-btn"
+                  type="button"
+                  className="rl-forgot-link"
+                  onClick={() => {
+                    setRecoveryEmail(email || '');
+                    setMode('forgot-request');
+                  }}
                 >
-                  {loading && <span className="rl-spinner" aria-hidden="true" />}
-                  {loading ? 'Authenticating…' : 'Sign In to Resident Guest Portal'}
+                  Forgot account or password?
                 </button>
-              </form>
-            </>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loginLoading}
+                className="rl-submit-btn"
+              >
+                {loginLoading && <span className="rl-spinner" aria-hidden="true" />}
+                {loginLoading ? 'Authenticating…' : 'Sign In to Resident Guest Portal'}
+              </button>
+            </form>
+          )}
+
+          {/* ============================================================ */}
+          {/* MODE: CREATE ACCOUNT FORM                                    */}
+          {/* ============================================================ */}
+          {mode === 'signup' && (
+            <form onSubmit={handleCreateAccount}>
+              <div className="rl-form-grid-2">
+                <div>
+                  <label className="rl-label" htmlFor="rl-firstname">First Name</label>
+                  <input
+                    id="rl-firstname"
+                    type="text"
+                    required
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value.replace(/[^a-zA-Z\s\-]/g, ''))}
+                    placeholder="Juan"
+                    className="rl-input"
+                    style={{ paddingLeft: '14px' }}
+                  />
+                </div>
+                <div>
+                  <label className="rl-label" htmlFor="rl-lastname">Last Name</label>
+                  <input
+                    id="rl-lastname"
+                    type="text"
+                    required
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value.replace(/[^a-zA-Z\s\-]/g, ''))}
+                    placeholder="Cruz"
+                    className="rl-input"
+                    style={{ paddingLeft: '14px' }}
+                  />
+                </div>
+              </div>
+
+              <div className="rl-form-group">
+                <label className="rl-label" htmlFor="rl-phone">Mobile Phone (11 Digits, 09XXXXXXXXX)</label>
+                <div className="rl-input-wrap">
+                  <i className="fas fa-phone rl-input-icon" />
+                  <input
+                    id="rl-phone"
+                    type="tel"
+                    inputMode="numeric"
+                    maxLength={11}
+                    required
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                    placeholder="09171234567"
+                    className="rl-input"
+                  />
+                </div>
+              </div>
+
+              <div className="rl-form-group">
+                <label className="rl-label" htmlFor="rl-signup-email">Email Address</label>
+                <div className="rl-input-wrap">
+                  <i className="fas fa-envelope rl-input-icon" />
+                  <input
+                    id="rl-signup-email"
+                    type="email"
+                    required
+                    value={signupEmail}
+                    onChange={(e) => setSignupEmail(e.target.value)}
+                    placeholder="your@email.com"
+                    className="rl-input"
+                  />
+                </div>
+              </div>
+
+              <div className="rl-form-group">
+                <label className="rl-label" htmlFor="rl-signup-password">Password (Min 8 Characters)</label>
+                <div className="rl-input-wrap">
+                  <i className="fas fa-key rl-input-icon" />
+                  <input
+                    id="rl-signup-password"
+                    type={showSignupPassword ? 'text' : 'password'}
+                    required
+                    value={signupPassword}
+                    onChange={(e) => setSignupPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="rl-input"
+                  />
+                  <button
+                    type="button"
+                    className="rl-eye-btn"
+                    onClick={() => setShowSignupPassword(!showSignupPassword)}
+                    aria-label={showSignupPassword ? 'Hide password' : 'Show password'}
+                  >
+                    <i className={`fas ${showSignupPassword ? 'fa-eye-slash' : 'fa-eye'}`} />
+                  </button>
+                </div>
+              </div>
+
+              <label className="rl-checkbox-row">
+                <input
+                  type="checkbox"
+                  required
+                  checked={termsAgreed}
+                  onChange={(e) => setTermsAgreed(e.target.checked)}
+                  className="rl-checkbox"
+                />
+                <span>I agree to the Resort Terms of Stay and Privacy Policy.</span>
+              </label>
+
+              <button
+                type="submit"
+                disabled={signupLoading}
+                className="rl-submit-btn"
+              >
+                {signupLoading && <span className="rl-spinner" aria-hidden="true" />}
+                {signupLoading ? 'Creating Account…' : 'Create Resident Account'}
+              </button>
+            </form>
           )}
 
           {/* ============================================================ */}

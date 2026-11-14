@@ -11,6 +11,7 @@ import { sendRecoveryOTP, sendPasswordResetSuccess, sendSignup2FAOTP, sendWelcom
 import { logAuditEvent } from '../lib/auditLogger.js';
 import { checkBruteForceLockout, recordFailedAttempt, recordSuccessfulAttempt } from '../middleware/bruteForceGuard.js';
 import { hashPassword, verifyPassword } from '../lib/passwords.js';
+import { saveCustomer } from '../lib/customerStore.js';
 
 // Modular Authentication Services (Separated Client & Administrator Modules)
 import { handleAdminLogin } from '../modules/admin-auth/index.js';
@@ -42,6 +43,156 @@ r.post('/auth/admin/login', handleAdminLogin);
  */
 r.post('/auth/login', handleClientLogin);
 r.post('/auth/client/login', handleClientLogin);
+
+/**
+ * Direct verified customer account registration (Instant email confirmation & resilient customer password store)
+ */
+r.post('/auth/register', asyncH(async (req, res) => {
+  const { email, password, first_name, last_name, phone } = req.body || {};
+  const cleanEmail = (email || '').trim().toLowerCase();
+  const cleanFirst = (first_name || '').trim();
+  const cleanLast = (last_name || '').trim();
+  const fullName = [cleanFirst, cleanLast].filter(Boolean).join(' ');
+  const normPhone = phone ? String(phone).replace(/\D/g, '').slice(0, 11) : '';
+
+  if (!cleanEmail || !cleanEmail.includes('@')) {
+    throw new ApiError(400, 'Valid email address is required.');
+  }
+  if (!password || password.length < 8) {
+    throw new ApiError(400, 'Password must be at least 8 characters.');
+  }
+  if (!normPhone || normPhone.length !== 11 || !normPhone.startsWith('09')) {
+    throw new ApiError(400, 'Philippine mobile phone must be 11 digits starting with 09 (e.g. 09171234567).');
+  }
+
+  // 1. Resolve or generate user ID
+  let userId = crypto.randomUUID();
+  try {
+    const { data: existingCust } = await admin
+      .from('customers')
+      .select('id')
+      .ilike('email', cleanEmail)
+      .maybeSingle();
+    if (existingCust?.id) userId = existingCust.id;
+  } catch {}
+
+  // 2. Try Supabase Auth creation if admin service role is active
+  try {
+    const { data: created } = await admin.auth.admin.createUser({
+      email: cleanEmail,
+      password,
+      email_confirm: true,
+      user_metadata: {
+        first_name: cleanFirst,
+        last_name: cleanLast,
+        full_name: fullName,
+        phone: normPhone,
+        role: 'customer',
+        provider: 'email',
+        confirmed: true,
+      },
+    });
+    if (created?.user?.id) userId = created.user.id;
+  } catch (err) {
+    console.warn('[Supabase Auth Admin Notice]:', err.message);
+  }
+
+  // 3. Upsert profiles
+  try {
+    await admin.from('profiles').upsert({
+      id: userId,
+      email: cleanEmail,
+      full_name: fullName,
+      first_name: cleanFirst,
+      last_name: cleanLast,
+      phone: normPhone,
+      role: 'customer',
+    }, { onConflict: 'id' });
+  } catch (err) {
+    console.warn('[Profiles Upsert Warning]:', err.message);
+  }
+
+  // 4. Save to resilient customer store
+  saveCustomer({
+    id: userId,
+    email: cleanEmail,
+    password,
+    full_name: fullName,
+    first_name: cleanFirst,
+    last_name: cleanLast,
+    phone: normPhone,
+    role: 'customer',
+  });
+
+  // 5. Upsert customers table with hashed password
+  const hashedPassword = hashPassword(password);
+  try {
+    await admin.from('customers').upsert({
+      id: userId,
+      email: cleanEmail,
+      full_name: fullName,
+      first_name: cleanFirst,
+      last_name: cleanLast,
+      phone: normPhone,
+      role: 'customer',
+      password: hashedPassword,
+      is_verified: true,
+    }, { onConflict: 'id' });
+  } catch (err) {
+    console.warn('[Customers Upsert Warning]:', err.message);
+  }
+
+  logAuditEvent({
+    action: 'CUSTOMER_REGISTRATION',
+    performed_by: userId,
+    details: { email: cleanEmail, phone: normPhone },
+  }).catch(() => {});
+
+  const sessionToken = jwt.sign(
+    {
+      id: userId,
+      email: cleanEmail,
+      role: 'customer',
+      persona: 'customer',
+      aud: 'authenticated',
+    },
+    env.SUPABASE_JWT_SECRET || 'rockview-customer-secret-key-2026',
+    { expiresIn: '7d' }
+  );
+
+  return res.json({
+    success: true,
+    userId,
+    email: cleanEmail,
+    token: sessionToken,
+    session: {
+      access_token: sessionToken,
+      token_type: 'bearer',
+      user: {
+        id: userId,
+        email: cleanEmail,
+        role: 'customer',
+        user_metadata: {
+          first_name: cleanFirst,
+          last_name: cleanLast,
+          full_name: fullName,
+          phone: normPhone,
+          role: 'customer',
+        },
+      },
+    },
+    user: {
+      id: userId,
+      email: cleanEmail,
+      full_name: fullName,
+      first_name: cleanFirst,
+      last_name: cleanLast,
+      phone: normPhone,
+      role: 'customer',
+    },
+    message: 'Resident account created and confirmed successfully.',
+  });
+}));
 
 /**
  * ============================================================================

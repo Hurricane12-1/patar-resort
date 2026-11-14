@@ -518,14 +518,7 @@ export function AuthProvider({ children }) {
           setNeedsProfileCompletion(false);
           return res;
         }
-
-        // Check if error is email_not_confirmed
-        if (res.error?.message?.includes('Email not confirmed') || (res.error as any)?.code === 'email_not_confirmed') {
-          return {
-            data: null,
-            error: new Error('Your email address has not been confirmed yet. Please check your inbox for the Supabase confirmation link.'),
-          };
-        }
+        // Supabase sign in did not produce a session; proceed to resilient server auth below
       }
 
       // 2. Server Auth endpoint /auth/login
@@ -862,6 +855,37 @@ export function AuthProvider({ children }) {
         };
       }
 
+      // Try direct server registration first (instantly confirmed via Admin service role)
+      try {
+        const regRes = await api.register({
+          email: cleanEmail,
+          password,
+          first_name: meta?.first_name || '',
+          last_name: meta?.last_name || '',
+          phone: cleanPhone || '',
+        });
+        if (regRes?.userId && regRes?.session) {
+          setCustomerSession(regRes.session);
+          const userObj = regRes.user || {
+            id: regRes.userId,
+            email: cleanEmail,
+            role: 'customer',
+            full_name: [meta?.first_name, meta?.last_name].filter(Boolean).join(' ') || cleanEmail.split('@')[0],
+            first_name: meta?.first_name || '',
+            last_name: meta?.last_name || '',
+            phone: cleanPhone || '',
+          };
+          setCustomerProfile(userObj);
+          setNeedsProfileCompletion(false);
+          return { data: regRes, error: null };
+        }
+        if (regRes?.userId) {
+          return await customerSignIn(cleanEmail, password);
+        }
+      } catch (regErr: any) {
+        console.warn('[Direct Register Fallback]:', regErr?.message);
+      }
+
       const res = await supabase.auth.signUp({ email: cleanEmail, password, options: { data: { ...meta, phone: cleanPhone } } });
       const uId = res.data?.user?.id;
       if (uId) {
@@ -896,7 +920,7 @@ export function AuthProvider({ children }) {
       return res;
     },
     signInWithGoogle: async () => {
-      const redirectUrl = `${window.location.origin}/`;
+      const redirectUrl = `${window.location.origin}/user`;
       const res = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -908,10 +932,13 @@ export function AuthProvider({ children }) {
         },
       });
       if (res.error) throw res.error;
+      if (res.data?.url && typeof window !== 'undefined') {
+        window.location.href = res.data.url;
+      }
       return res.data;
     },
     signInWithFacebook: async () => {
-      const redirectUrl = `${window.location.origin}/`;
+      const redirectUrl = `${window.location.origin}/user`;
       const res = await supabase.auth.signInWithOAuth({
         provider: 'facebook',
         options: {
@@ -919,6 +946,9 @@ export function AuthProvider({ children }) {
         },
       });
       if (res.error) throw res.error;
+      if (res.data?.url && typeof window !== 'undefined') {
+        window.location.href = res.data.url;
+      }
       return res.data;
     },
   };
