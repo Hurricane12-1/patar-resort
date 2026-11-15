@@ -739,7 +739,7 @@ export const api = {
       const res = await req('/reservations', { method: 'POST', body: normalizedBody });
       if (res && res.id) return res;
     } catch (err: any) {
-      if (err?.status && err.status !== 404 && err.status !== 405 && err.status < 500) {
+      if (err?.status && err.status !== 401 && err.status !== 404 && err.status !== 405 && err.status < 500) {
         throw err;
       }
     }
