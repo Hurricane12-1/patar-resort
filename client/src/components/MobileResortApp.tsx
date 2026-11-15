@@ -122,19 +122,19 @@ function diffNights(startIso: string | null, endIso: string | null): number {
 }
 
 function formatSlash(isoStr: string | null): string {
-  if (!isoStr) return 'Add date';
+  if (!isoStr) return 'N/A';
   const [y, m, d] = isoStr.split('-').map(Number);
   return `${m}/${d}/${y}`;
 }
 
 function formatShortDate(isoStr: string | null): string {
-  if (!isoStr) return '';
+  if (!isoStr) return 'N/A';
   const [, m, d] = isoStr.split('-').map(Number);
   return `${SHORT_MONTH_NAMES[m]} ${d}`;
 }
 
 function formatFullDate(isoStr: string | null): string {
-  if (!isoStr) return '';
+  if (!isoStr) return 'N/A';
   const [y, m, d] = isoStr.split('-').map(Number);
   return `${SHORT_MONTH_NAMES[m]} ${d}, ${y}`;
 }
@@ -187,11 +187,11 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   const pageMedia = usePageSettings();
   const heroImageUrl = pageMedia.heroImageUrl || '';
 
-  // Booking Dates & Selection
+  // Booking Dates & Selection (Defaults to N/A until selected)
   const [inlineYM, setInlineYM] = useState<YearMonth>({ y: 2026, m: 11 }); // Shangri-La dual view: Nov 2026
   const [popoverYM, setPopoverYM] = useState<YearMonth>({ y: 2026, m: 11 });
-  const [checkIn, setCheckIn] = useState<string | null>('2026-11-17');
-  const [checkOut, setCheckOut] = useState<string | null>('2026-11-28');
+  const [checkIn, setCheckIn] = useState<string | null>(null);
+  const [checkOut, setCheckOut] = useState<string | null>(null);
   const [hoverDate, setHoverDate] = useState<string | null>(null);
   const [activeField, setActiveField] = useState<'checkin' | 'checkout'>('checkin');
   const [cardDrawer, setCardDrawer] = useState<'none' | 'calendar' | 'guests' | 'room'>('none');
@@ -782,9 +782,14 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
       return;
     }
     if (!checkIn || !checkOut) {
-      setCardDrawer('calendar');
-      setActiveField(checkIn ? 'checkout' : 'checkin');
-      document.getElementById('reserve-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const cal = document.getElementById('calendar-section');
+      if (cal) {
+        cal.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        setCardDrawer('calendar');
+        setActiveField(checkIn ? 'checkout' : 'checkin');
+        document.getElementById('reserve-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
       return;
     }
     if (reserveBlock) {
@@ -1580,16 +1585,27 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                   </p>
                 </div>
 
-                {/* Step indicator */}
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-[#F8FAFC] border border-[#CBD5E1] text-xs font-semibold text-[#222222]">
-                  <span className="w-2 h-2 rounded-xs bg-[#222222]"></span>
-                  <span>
-                    {!checkIn
-                      ? 'Step 1: Select check-in box'
-                      : !checkOut
-                      ? 'Step 2: Select check-out box'
-                      : `${totalNights} nights selected`}
-                  </span>
+                {/* Step & Selection Indicator */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-[#F8FAFC] border border-[#CBD5E1] text-xs font-semibold text-[#222222]">
+                    <span className="w-2 h-2 rounded-xs bg-[#222222]"></span>
+                    <span>
+                      {!checkIn
+                        ? 'Dates: N/A · Select check-in box'
+                        : !checkOut
+                        ? `Check-in: ${formatShortDate(checkIn)} · Select checkout box`
+                        : `${formatShortDate(checkIn)} – ${formatShortDate(checkOut)} (${totalNights} ${totalNights === 1 ? 'night' : 'nights'} selected)`}
+                    </span>
+                  </div>
+                  {(checkIn || checkOut) && (
+                    <button
+                      type="button"
+                      onClick={clearDates}
+                      className="text-xs font-semibold text-rose-600 hover:text-rose-800 underline cursor-pointer"
+                    >
+                      Reset to N/A
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -2185,7 +2201,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
               </p>
 
               {/* Fee Breakdown */}
-              {checkIn && checkOut && totalNights > 0 && (
+              {checkIn && checkOut && totalNights > 0 ? (
                 <div className="mt-5 pt-4 border-t border-[#DDDDDD] space-y-2.5 text-sm text-[#222222]">
                   <div className="flex justify-between">
                     <span className="underline">{formatPHP(selectedRoom.rate_php || 3500)} × {totalNights} nights{pricedRooms.length > 1 ? ` · ${pricedRooms.length} rooms` : ''}</span>
@@ -2207,6 +2223,10 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                     <span>Total before taxes</span>
                     <span>{formatPHP(priceBreakdown.grandTotal)}</span>
                   </div>
+                </div>
+              ) : (
+                <div className="mt-5 pt-4 border-t border-[#DDDDDD] text-center text-xs text-[#6A6A6A]">
+                  <span>Stay dates default: <strong className="text-[#222222]">N/A</strong> · Select check-in and checkout to see pricing</span>
                 </div>
               )}
             </div>
