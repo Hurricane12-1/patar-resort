@@ -253,15 +253,36 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   }, []);
 
   const fetchLiveReservations = useCallback(async () => {
+    // Availability must reflect EVERY guest's bookings, not just the signed-in
+    // user's. Row-level security keeps `reservations` owner-only, so read the
+    // PII-free `room_availability` view (room_id + dates only) which exposes all
+    // active stays. Fall back to the table where the view isn't present.
+    try {
+      const { data, error } = await supabase
+        .from('room_availability')
+        .select('room_id, check_in, check_out, status');
+      if (!error && Array.isArray(data)) {
+        setReservations(
+          data.map((r: any, i: number) => ({
+            id: `avail-${r.room_id}-${r.check_in}-${i}`,
+            room_id: r.room_id,
+            check_in: r.check_in,
+            check_out: r.check_out,
+            status: r.status,
+          }))
+        );
+        return;
+      }
+    } catch {
+      /* view absent — fall back below */
+    }
     try {
       const { data, error } = await supabase
         .from('reservations')
         .select('id, room_id, check_in, check_out, status')
         .neq('status', 'cancelled');
       if (error) throw error;
-      if (data) {
-        setReservations(data);
-      }
+      if (data) setReservations(data);
     } catch (err: any) {
       console.warn('[Supabase Reservations] Fetch warning:', err?.message);
     }
@@ -291,11 +312,15 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     };
     document.addEventListener('visibilitychange', refreshWhenVisible);
     const roomPoll = window.setInterval(fetchLiveRooms, 60000);
+    // Realtime on `reservations` only delivers rows the anon key may see, so poll
+    // the availability view to catch other guests' bookings across accounts.
+    const reservationPoll = window.setInterval(fetchLiveReservations, 30000);
 
     return () => {
       supabase.removeChannel(channel);
       document.removeEventListener('visibilitychange', refreshWhenVisible);
       window.clearInterval(roomPoll);
+      window.clearInterval(reservationPoll);
     };
   }, [fetchLiveRooms, fetchLiveReservations]);
 
