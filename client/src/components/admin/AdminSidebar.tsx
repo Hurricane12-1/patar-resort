@@ -180,16 +180,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           )}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <button
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="sidebar-action-btn"
-            title={sidebarCollapsed ? 'Expand sidebar menu' : 'Collapse to icon rail'}
-            aria-label="Toggle compact sidebar"
-          >
-            {sidebarCollapsed ? '▶' : '◀'}
-          </button>
-          {!sidebarCollapsed && (
+        {!sidebarCollapsed && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <button
               onClick={() => setSidebarHidden(true)}
               className="sidebar-action-btn"
@@ -198,8 +190,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             >
               <i className="fas fa-xmark" />
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* SIDEBAR MENU NAVIGATION ITEMS */}
