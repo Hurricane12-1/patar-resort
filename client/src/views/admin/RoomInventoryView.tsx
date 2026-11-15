@@ -135,7 +135,7 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
           <button className="btn btn-sm" onClick={refreshRoomsAndInventory} disabled={loadingRoomsAndInv} style={{ border: `1px solid ${themeBorder}`, color: themeText }}>
             {loadingRoomsAndInv ? 'Syncing…' : '↻ Sync Now'}
           </button>
-          {inventorySubTab === 'accommodations' && (
+          {inventorySubTab === 'accommodations' ? (
             <>
               <button type="button" className="btn btn-sm" style={{ background: '#006699', color: '#FFFFFF', border: 'none', borderRadius: 10, padding: '8px 14px', fontWeight: 700, cursor: 'pointer' }} onClick={() => (openCreateOfferingModal ? openCreateOfferingModal('room') : setShowCreateRoomModal(true))}>
                 + Add Room
@@ -144,11 +144,6 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
                 + Add Cottage
               </button>
             </>
-          )}
-          {inventorySubTab === 'accommodations' ? (
-            <button type="button" className="btn btn-sm" style={{ background: '#B45309', color: '#FFFFFF', border: 'none', borderRadius: 10, padding: '8px 14px', fontWeight: 700, cursor: 'pointer' }} onClick={() => (openCreateOfferingModal ? openCreateOfferingModal('offer') : setShowCreateRoomModal(true))}>
-              + Add Island Tour / Offer
-            </button>
           ) : (
             <button className="btn btn-sky btn-sm" onClick={() => setShowCreateSupplyModal(true)}>
               + Add Supply Item
