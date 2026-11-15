@@ -22,7 +22,6 @@ import {
   PREVIEW_SCOPE,
   RESORT_CONTACT,
   accountScopeFor,
-  addDeviceBooking,
   loadGuestAccount,
   makeArrivalPin,
   makeBookingReference,
@@ -886,7 +885,6 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
       notes,
       createdAt: new Date().toISOString(),
     };
-    addDeviceBooking(record);
     if (!signedInGuest) rememberBookingGuest({ name, email, phone });
 
     setBookingRef(reference);

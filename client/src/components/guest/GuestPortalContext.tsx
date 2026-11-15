@@ -9,14 +9,11 @@ import {
   GUEST_BOOKINGS_STORAGE_KEY,
   PREVIEW_SCOPE,
   accountScopeFor,
-  applyReservationRow,
   clearPreviewData,
   createSampleAccount,
   emptyProfile,
-  loadDeviceBookings,
   loadGuestAccount,
   mapReservationRow,
-  saveDeviceBookings,
   saveGuestAccount,
   splitName,
   type GuestAccount,
@@ -151,61 +148,19 @@ export function GuestPortalProvider({ children }: { children: ReactNode }) {
         } catch {
           rows = [];
         }
-        // The fallback query can return other guests' rows, so keep only this resident's reservations.
+        // The query must strictly isolate this resident's reservations from Supabase.
         const mine = rows.filter((row) => {
           const rowEmail = String(row.email || row.guest_email || '').trim().toLowerCase();
           return (profileId && String(row.guest_id || '') === profileId) || (profileEmail && rowEmail === profileEmail);
         });
         const fromAccount = mine.map((row) => mapReservationRow(row, roomList));
-        const device = loadDeviceBookings().filter(
-          (b) => b.source === 'device' && profileEmail && b.guestEmail.trim().toLowerCase() === profileEmail
-        );
-        const merged = fromAccount.map((b) => {
-          const local = device.find((d) => d.dbId && d.dbId === b.dbId);
-          if (!local) return b;
-          const splitMatches = local.adults + local.children === b.guests;
-          return {
-            ...b,
-            reference: local.reference || b.reference,
-            arrivalPin: local.arrivalPin,
-            matchMode: local.matchMode,
-            paymentMethod: local.paymentMethod || b.paymentMethod,
-            adults: splitMatches ? local.adults : b.adults,
-            children: splitMatches ? local.children : b.children,
-          };
-        });
-        const syncedIds = new Set(fromAccount.map((b) => b.dbId));
-        // Only show real, verified reservations from the database for signed-in guests.
-        // Purge any phantom/device-only test bookings from local storage.
-        if (device.length > 0) {
-          saveDeviceBookings(device.filter((d) => d.dbId && syncedIds.has(d.dbId)));
-        }
-        setBookings(merged);
+        setBookings(fromAccount);
       } else {
-        let device = loadDeviceBookings();
-        const syncedIds = device.map((b) => b.dbId).filter(Boolean) as string[];
-        if (syncedIds.length) {
-          try {
-            const { data } = await supabase
-              .from('reservations')
-              .select('id, status, payment_status, check_in, check_out, guests, total_php')
-              .in('id', syncedIds);
-            if (Array.isArray(data) && data.length) {
-              device = device.map((b) => {
-                const row = data.find((r: any) => String(r.id) === b.dbId);
-                return row ? applyReservationRow(b, row) : b;
-              });
-              saveDeviceBookings(device);
-            }
-          } catch {
-            // Keep the copy saved on this device.
-          }
-        }
-        setBookings(device);
+        setBookings([]);
       }
       setLoading(false);
     },
-    [signedIn, profileId, profileEmail, today]
+    [signedIn, profileId, profileEmail]
   );
 
   // Latest values for realtime and storage listeners.
@@ -217,9 +172,8 @@ export function GuestPortalProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Purge any phantom/device-only test bookings from local storage on mount
     try {
-      const stored = loadDeviceBookings();
-      if (stored.some((b) => !b.dbId)) {
-        saveDeviceBookings(stored.filter((b) => Boolean(b.dbId)));
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem(GUEST_BOOKINGS_STORAGE_KEY);
       }
     } catch {}
     loadRooms();
@@ -280,7 +234,6 @@ export function GuestPortalProvider({ children }: { children: ReactNode }) {
     const matches = (b: GuestBooking) => b.id === booking.id || Boolean(booking.dbId && b.dbId === booking.dbId);
     const markCancelled = (b: GuestBooking): GuestBooking => (matches(b) ? { ...b, status: 'cancelled' } : b);
     setBookings((list) => list.map(markCancelled));
-    saveDeviceBookings(loadDeviceBookings().map(markCancelled));
   }, []);
 
   const saveProfile = useCallback(
@@ -396,7 +349,6 @@ export function GuestPortalProvider({ children }: { children: ReactNode }) {
     const empty = createSampleAccount();
     saveGuestAccount(PREVIEW_SCOPE, empty);
     setAccount(empty);
-    saveDeviceBookings([]);
     setBookings([]);
   }, []);
 

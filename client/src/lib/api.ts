@@ -296,7 +296,7 @@ export function normalizeRoom(room: any) {
   const cleanAmenities: string[] = [];
   const images: string[] = [];
 
-  let fallbackImage = 'https://res.cloudinary.com/juynm9ab/image/upload/jd_beach_house_accommodations/cottage.jpg';
+  let fallbackImage = 'https://res.cloudinary.com/juynm9ab/image/upload/jd_beach_house_accommodations/room.jpg';
   const cat = String(room.category || '').toLowerCase();
   const slug = String(room.slug || '').toLowerCase();
   if (cat.includes('villa') || slug.includes('villa')) fallbackImage = 'https://res.cloudinary.com/juynm9ab/image/upload/jd_beach_house_accommodations/villa.jpg';
@@ -304,7 +304,7 @@ export function normalizeRoom(room: any) {
   else if (cat.includes('garden') || slug.includes('garden')) fallbackImage = 'https://res.cloudinary.com/juynm9ab/image/upload/jd_beach_house_accommodations/garden.jpg';
   else if (cat.includes('dorm') || cat.includes('bunk') || slug.includes('dorm')) fallbackImage = 'https://res.cloudinary.com/juynm9ab/image/upload/jd_beach_house_accommodations/bunk.jpg';
   else if (cat.includes('tour') || cat.includes('island') || cat.includes('offer') || cat.includes('activity') || cat.includes('package') || slug.includes('tour') || slug.includes('island')) fallbackImage = 'https://res.cloudinary.com/juynm9ab/image/upload/jd_beach_house_accommodations/island.jpg';
-  else fallbackImage = 'https://res.cloudinary.com/juynm9ab/image/upload/jd_beach_house_accommodations/cottage.jpg';
+  else fallbackImage = 'https://res.cloudinary.com/juynm9ab/image/upload/jd_beach_house_accommodations/room.jpg';
 
   for (const item of rawAmenities) {
     if (typeof item === 'string' && (item.startsWith('__img__:') || item.startsWith('img:'))) {

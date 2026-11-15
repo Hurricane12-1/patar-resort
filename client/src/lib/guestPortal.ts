@@ -145,18 +145,23 @@ function writeStore(key: string, value: unknown) {
 }
 
 export function loadDeviceBookings(): GuestBooking[] {
-  const list = readStore<GuestBooking[]>(BOOKINGS_KEY, []);
-  return Array.isArray(list) ? list.filter((b) => b && b.id && b.checkIn && b.checkOut) : [];
+  if (typeof window !== 'undefined') {
+    try { window.localStorage.removeItem(BOOKINGS_KEY); } catch {}
+  }
+  return [];
 }
 
-export function saveDeviceBookings(list: GuestBooking[]) {
-  writeStore(BOOKINGS_KEY, list);
+export function saveDeviceBookings(_list: GuestBooking[]) {
+  if (typeof window !== 'undefined') {
+    try { window.localStorage.removeItem(BOOKINGS_KEY); } catch {}
+  }
 }
 
-/** Stores a booking made on this device. A real booking replaces any sample stays. */
-export function addDeviceBooking(booking: GuestBooking) {
-  const kept = loadDeviceBookings().filter((b) => b.source !== 'sample' && b.id !== booking.id);
-  saveDeviceBookings([booking, ...kept]);
+/** Legacy hook: real bookings are stored strictly in Supabase database. Purges any stale device cache. */
+export function addDeviceBooking(_booking: GuestBooking) {
+  if (typeof window !== 'undefined') {
+    try { window.localStorage.removeItem(BOOKINGS_KEY); } catch {}
+  }
 }
 
 export function emptyProfile(): GuestProfile {

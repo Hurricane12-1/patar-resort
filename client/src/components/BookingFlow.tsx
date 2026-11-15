@@ -21,98 +21,38 @@ export default function BookingFlow({ initialSlug }) {
   const { session, profile, setAuthOpen } = useAuth();
   const today = getManilaTodayISO();
   const [offeringFilter, setOfferingFilter] = useState<'all' | OfferingType>('all');
-  const [checkIn, setCheckIn] = useState(() => {
-    try {
-      const savedCin = localStorage.getItem('jd_booking_checkin');
-      return savedCin && savedCin > today ? savedCin : addDaysISO(today, 1);
-    } catch {
-      return addDaysISO(today, 1);
-    }
-  });
-  useEffect(() => {
-    try {
-      localStorage.setItem('jd_booking_checkin', checkIn);
-    } catch {}
-  }, [checkIn]);
-
-  const [checkOut, setCheckOut] = useState(() => {
-    try {
-      return localStorage.getItem('jd_booking_checkout') || addDaysISO(today, 3);
-    } catch {
-      return addDaysISO(today, 3);
-    }
-  });
-  useEffect(() => {
-    try {
-      localStorage.setItem('jd_booking_checkout', checkOut);
-    } catch {}
-  }, [checkOut]);
-
-  const [adults, setAdults] = useState<number>(() => {
-    try {
-      const a = Number(localStorage.getItem('jd_booking_adults'));
-      return a > 0 ? a : 2;
-    } catch {
-      return 2;
-    }
-  });
-  const [childrenCount, setChildrenCount] = useState<number>(() => {
-    try {
-      const c = Number(localStorage.getItem('jd_booking_children'));
-      return c >= 0 ? c : 0;
-    } catch {
-      return 0;
-    }
-  });
+  const [checkIn, setCheckIn] = useState<string>(() => addDaysISO(today, 1));
+  const [checkOut, setCheckOut] = useState<string>(() => addDaysISO(today, 3));
+  const [adults, setAdults] = useState<number>(2);
+  const [childrenCount, setChildrenCount] = useState<number>(0);
   const [roomsCount, setRoomsCount] = useState<number>(1);
   const [promoCode, setPromoCode] = useState<string>('');
-
-  const [guests, setGuests] = useState<number>(() => {
-    try {
-      const g = Number(localStorage.getItem('jd_booking_guests'));
-      return g > 0 ? g : 2;
-    } catch {
-      return 2;
-    }
-  });
-  useEffect(() => {
-    try {
-      localStorage.setItem('jd_booking_guests', String(guests));
-    } catch {}
-  }, [guests]);
-
-  const [poolAddonId, setPoolAddonId] = useState<string>(() => {
-    try {
-      return localStorage.getItem('jd_booking_pool_addon') || 'none';
-    } catch {
-      return 'none';
-    }
-  });
-  useEffect(() => {
-    try {
-      localStorage.setItem('jd_booking_pool_addon', poolAddonId);
-    } catch {}
-  }, [poolAddonId]);
-
+  const [guests, setGuests] = useState<number>(2);
+  const [poolAddonId, setPoolAddonId] = useState<string>('none');
   const [catalog, setCatalog] = useState<any[]>([]);
   const [catalogLoaded, setCatalogLoaded] = useState(false);
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [stage, setStage] = useState('search');   // search | results | details | done
   const [room, setRoom] = useState(null);
-  const [notes, setNotes] = useState(() => {
-    try {
-      return localStorage.getItem('jd_booking_notes') || '';
-    } catch {
-      return '';
-    }
-  });
+  const [notes, setNotes] = useState<string>('');
+  const [phone, setPhone] = useState('');
+
+  // Purge any legacy browser storage remnants so Supabase is the sole source of truth
   useEffect(() => {
     try {
-      localStorage.setItem('jd_booking_notes', notes);
+      [
+        'jd_booking_checkin',
+        'jd_booking_checkout',
+        'jd_booking_adults',
+        'jd_booking_children',
+        'jd_booking_guests',
+        'jd_booking_pool_addon',
+        'jd_booking_notes',
+        'rv_guest_bookings_v1',
+      ].forEach((k) => localStorage.removeItem(k));
     } catch {}
-  }, [notes]);
-  const [phone, setPhone] = useState('');
+  }, []);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(null);
   const [showVoucherModal, setShowVoucherModal] = useState(false);
@@ -240,13 +180,6 @@ export default function BookingFlow({ initialSlug }) {
         terms_accepted: true,
       });
       setDone(stay); setStage('done');
-      try {
-        localStorage.removeItem('jd_booking_checkin');
-        localStorage.removeItem('jd_booking_checkout');
-        localStorage.removeItem('jd_booking_guests');
-        localStorage.removeItem('jd_booking_pool_addon');
-        localStorage.removeItem('jd_booking_notes');
-      } catch {}
       toast(`Reserved! SMS ping sent${phone ? ` to ${phone}` : ''} ✦`);
     } catch (e: any) { toast(e.message, true); }
     finally { setBusy(false); }
@@ -260,13 +193,6 @@ export default function BookingFlow({ initialSlug }) {
     setResults([]);
     setPoolAddonId('none');
     setSelectedUnitNumber('auto');
-    try {
-      localStorage.removeItem('jd_booking_checkin');
-      localStorage.removeItem('jd_booking_checkout');
-      localStorage.removeItem('jd_booking_guests');
-      localStorage.removeItem('jd_booking_pool_addon');
-      localStorage.removeItem('jd_booking_notes');
-    } catch {}
   }
 
   return (
@@ -325,10 +251,6 @@ export default function BookingFlow({ initialSlug }) {
           onSelectDates={(cin, cout) => {
             setCheckIn(cin);
             setCheckOut(cout);
-            try {
-              localStorage.setItem('jd_booking_checkin', cin);
-              localStorage.setItem('jd_booking_checkout', cout);
-            } catch {}
             if (stage === 'results') {
               search(undefined, cin, cout);
             }
@@ -337,13 +259,11 @@ export default function BookingFlow({ initialSlug }) {
           onAdultsChange={(a) => {
             setAdults(a);
             setGuests(a + childrenCount);
-            try { localStorage.setItem('jd_booking_adults', String(a)); } catch {}
           }}
           childrenCount={childrenCount}
           onChildrenChange={(c) => {
             setChildrenCount(c);
             setGuests(adults + c);
-            try { localStorage.setItem('jd_booking_children', String(c)); } catch {}
           }}
           roomsCount={roomsCount}
           onRoomsChange={setRoomsCount}

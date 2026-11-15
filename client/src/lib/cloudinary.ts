@@ -50,7 +50,7 @@ export function getCategoryDefaultCloudinaryImage(category?: string, slug?: stri
   if (cat.includes('dorm') || cat.includes('bunk') || sl.includes('dorm')) {
     return 'https://res.cloudinary.com/juynm9ab/image/upload/jd_beach_house_accommodations/bunk.jpg';
   }
-  return 'https://res.cloudinary.com/juynm9ab/image/upload/jd_beach_house_accommodations/cottage.jpg';
+  return 'https://res.cloudinary.com/juynm9ab/image/upload/jd_beach_house_accommodations/room.jpg';
 }
 
 async function sha1Hex(input: string): Promise<string> {
@@ -258,7 +258,7 @@ export const RESORT_PRESET_IMAGES = [
     id: 'preset-cottage',
     title: 'Deluxe Beach Cottage',
     category: 'Cottage',
-    url: 'https://res.cloudinary.com/juynm9ab/image/upload/jd_beach_house_accommodations/cottage.jpg',
+    url: 'https://res.cloudinary.com/juynm9ab/image/upload/jd_beach_house_accommodations/room.jpg',
     description: 'Traditional native cottage with veranda and lush coconut grove.',
   },
   {
