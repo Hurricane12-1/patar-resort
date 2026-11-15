@@ -842,15 +842,23 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
         fetchLiveReservations();
         return;
       }
-      console.warn('[Reservation] Reservation system unreachable; saving on this device only:', message);
+      setReserveError(message || 'Unable to complete reservation with server. Please try again.');
+      setReserveSubmitting(false);
+      fetchLiveReservations();
+      return;
     }
 
-    const synced = Boolean(savedRow?.id);
+    if (!savedRow || !savedRow.id) {
+      setReserveError('Reservation could not be saved to resort database. Please try again.');
+      setReserveSubmitting(false);
+      return;
+    }
+
     const record: GuestBooking = {
-      id: synced ? String(savedRow.id) : `local-${Date.now().toString(36)}`,
-      dbId: synced ? String(savedRow.id) : undefined,
+      id: String(savedRow.id),
+      dbId: String(savedRow.id),
       reference,
-      source: 'device',
+      source: 'account',
       roomId: String(room.id),
       roomName: room.name,
       roomCategory: room.category || 'Room',

@@ -175,8 +175,12 @@ export function GuestPortalProvider({ children }: { children: ReactNode }) {
           };
         });
         const syncedIds = new Set(fromAccount.map((b) => b.dbId));
-        const deviceOnly = device.filter((d) => !d.dbId || !syncedIds.has(d.dbId));
-        setBookings([...merged, ...deviceOnly]);
+        // Only show real, verified reservations from the database for signed-in guests.
+        // Purge any phantom/device-only test bookings from local storage.
+        if (device.length > 0) {
+          saveDeviceBookings(device.filter((d) => d.dbId && syncedIds.has(d.dbId)));
+        }
+        setBookings(merged);
       } else {
         let device = loadDeviceBookings();
         const syncedIds = device.map((b) => b.dbId).filter(Boolean) as string[];
@@ -211,6 +215,13 @@ export function GuestPortalProvider({ children }: { children: ReactNode }) {
   loadBookingsRef.current = loadBookings;
 
   useEffect(() => {
+    // Purge any phantom/device-only test bookings from local storage on mount
+    try {
+      const stored = loadDeviceBookings();
+      if (stored.some((b) => !b.dbId)) {
+        saveDeviceBookings(stored.filter((b) => Boolean(b.dbId)));
+      }
+    } catch {}
     loadRooms();
   }, [loadRooms]);
 
