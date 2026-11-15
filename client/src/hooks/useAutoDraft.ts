@@ -5,7 +5,8 @@ export function useAutoDraft(key, initialValue) {
 
   const [value, setValue] = useState(() => {
     try {
-      const saved = localStorage.getItem(storageKey);
+      if (typeof localStorage !== 'undefined') localStorage.removeItem(storageKey);
+      const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(storageKey) : null;
       if (saved !== null) {
         return JSON.parse(saved);
       }
@@ -15,15 +16,17 @@ export function useAutoDraft(key, initialValue) {
 
   useEffect(() => {
     try {
-      if (value !== undefined && value !== null) {
-        localStorage.setItem(storageKey, JSON.stringify(value));
+      if (typeof localStorage !== 'undefined') localStorage.removeItem(storageKey);
+      if (value !== undefined && value !== null && typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem(storageKey, JSON.stringify(value));
       }
     } catch {}
   }, [storageKey, value]);
 
   const clearDraft = () => {
     try {
-      localStorage.removeItem(storageKey);
+      if (typeof localStorage !== 'undefined') localStorage.removeItem(storageKey);
+      if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem(storageKey);
     } catch {}
   };
 

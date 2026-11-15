@@ -46,27 +46,31 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
 }) => {
   const [accountsSubTab, setAccountsSubTab] = useState<'staff' | 'customers'>(() => {
     try {
-      const saved = localStorage.getItem('jd_admin_accounts_subtab');
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_accounts_subtab');
+      const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_accounts_subtab') : null;
       if (saved === 'staff' || saved === 'customers') return saved;
     } catch {}
     return 'staff';
   });
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_accounts_subtab', accountsSubTab);
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_accounts_subtab');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_accounts_subtab', accountsSubTab);
     } catch {}
   }, [accountsSubTab]);
 
   const [roleFilter, setRoleFilter] = useState<string>(() => {
     try {
-      return localStorage.getItem('jd_admin_accounts_role_filter') || '';
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_accounts_role_filter');
+      return (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_accounts_role_filter') : '') || '';
     } catch {
       return '';
     }
   });
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_accounts_role_filter', roleFilter);
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_accounts_role_filter');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_accounts_role_filter', roleFilter);
     } catch {}
   }, [roleFilter]);
 

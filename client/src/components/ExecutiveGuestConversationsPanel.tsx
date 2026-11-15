@@ -32,58 +32,68 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
     if (initialGuest) {
       return { ...initialGuest, messages: getMessages(initialGuest), status: initialGuest.status || 'Active' };
     }
-    const savedId = typeof localStorage !== 'undefined' ? localStorage.getItem('jd_admin_chat_guest_id') : null;
-    if (savedId) {
-      const match = guestList.find((g) => g.id === savedId || String(g.id) === String(savedId));
-      if (match) return match;
-    }
+    try {
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_chat_guest_id');
+      const savedId = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_chat_guest_id') : null;
+      if (savedId) {
+        const match = guestList.find((g) => g.id === savedId || String(g.id) === String(savedId));
+        if (match) return match;
+      }
+    } catch {}
     return guestList[0] || null;
   });
 
   useEffect(() => {
     if (selectedGuest?.id) {
       try {
-        localStorage.setItem('jd_admin_chat_guest_id', selectedGuest.id);
+        if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_chat_guest_id');
+        if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_chat_guest_id', selectedGuest.id);
       } catch {}
     }
   }, [selectedGuest]);
 
   const [inputText, setInputText] = useState(() => {
     try {
-      return localStorage.getItem('jd_admin_chat_input') || '';
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_chat_input');
+      return (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_chat_input') : '') || '';
     } catch {
       return '';
     }
   });
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_chat_input', inputText);
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_chat_input');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_chat_input', inputText);
     } catch {}
   }, [inputText]);
 
   const [filter, setFilter] = useState(() => {
     try {
-      return localStorage.getItem('jd_admin_chat_filter') || 'All';
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_chat_filter');
+      return (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_chat_filter') : 'All') || 'All';
     } catch {
       return 'All';
     }
   });
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_chat_filter', filter);
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_chat_filter');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_chat_filter', filter);
     } catch {}
   }, [filter]);
 
   const [search, setSearch] = useState(() => {
     try {
-      return localStorage.getItem('jd_admin_chat_search') || '';
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_chat_search');
+      return (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_chat_search') : '') || '';
     } catch {
       return '';
     }
   });
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_chat_search', search);
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_chat_search');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_chat_search', search);
     } catch {}
   }, [search]);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -233,7 +243,8 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
     if (!textToSend) {
       setInputText('');
       try {
-        localStorage.removeItem('jd_admin_chat_input');
+        if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_chat_input');
+        if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('jd_admin_chat_input');
       } catch {}
     }
 

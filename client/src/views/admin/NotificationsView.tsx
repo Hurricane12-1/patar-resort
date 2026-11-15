@@ -39,14 +39,16 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
 }) => {
   const [notifFilter, setNotifFilter] = useState<string>(() => {
     try {
-      return localStorage.getItem('jd_admin_notif_filter') || 'unread';
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_notif_filter');
+      return (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_notif_filter') : 'unread') || 'unread';
     } catch {
       return 'unread';
     }
   });
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_notif_filter', notifFilter);
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_notif_filter');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_notif_filter', notifFilter);
     } catch {}
   }, [notifFilter]);
 

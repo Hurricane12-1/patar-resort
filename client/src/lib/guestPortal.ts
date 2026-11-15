@@ -128,7 +128,8 @@ export function accountScopeFor(profile: any): string {
 function readStore<T>(key: string, fallback: T): T {
   if (typeof window === 'undefined') return fallback;
   try {
-    const raw = window.localStorage.getItem(key);
+    window.localStorage.removeItem(key);
+    const raw = window.sessionStorage.getItem(key);
     return raw ? (JSON.parse(raw) as T) : fallback;
   } catch {
     return fallback;
@@ -138,9 +139,10 @@ function readStore<T>(key: string, fallback: T): T {
 function writeStore(key: string, value: unknown) {
   if (typeof window === 'undefined') return;
   try {
-    window.localStorage.setItem(key, JSON.stringify(value));
+    window.localStorage.removeItem(key);
+    window.sessionStorage.setItem(key, JSON.stringify(value));
   } catch {
-    // Storage can be full or blocked (private mode); the UI keeps working from memory.
+    // Storage can be full or blocked; keep working from memory.
   }
 }
 
@@ -210,6 +212,8 @@ export function clearPreviewData() {
   try {
     window.localStorage.removeItem(BOOKINGS_KEY);
     window.localStorage.removeItem(ACCOUNT_KEY_PREFIX + PREVIEW_SCOPE);
+    window.sessionStorage.removeItem(BOOKINGS_KEY);
+    window.sessionStorage.removeItem(ACCOUNT_KEY_PREFIX + PREVIEW_SCOPE);
   } catch {
     // Ignore blocked storage.
   }

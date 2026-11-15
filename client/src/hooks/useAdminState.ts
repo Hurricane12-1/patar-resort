@@ -73,10 +73,13 @@ export function useAdminState() {
       if (validTabs.includes(hash)) {
         return hash;
       }
-      const saved = localStorage.getItem('jd_admin_active_tab');
-      if (saved && validTabs.includes(saved)) {
-        return saved;
-      }
+      try {
+        if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_active_tab');
+        const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_active_tab') : null;
+        if (saved && validTabs.includes(saved)) {
+          return saved;
+        }
+      } catch {}
     }
     return 'overview';
   };
@@ -91,7 +94,8 @@ export function useAdminState() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
-        localStorage.setItem('jd_admin_active_tab', activeTab);
+        if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_active_tab');
+        if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_active_tab', activeTab);
         if (window.location.pathname.includes('/admin')) {
           const currentHash = window.location.hash.replace('#', '');
           if (currentHash !== activeTab) {
@@ -116,7 +120,8 @@ export function useAdminState() {
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     try {
-      return localStorage.getItem('jd_admin_sidebar_collapsed') === 'true';
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_sidebar_collapsed');
+      return (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_sidebar_collapsed') : 'false') === 'true';
     } catch {
       return false;
     }
@@ -124,7 +129,8 @@ export function useAdminState() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_sidebar_collapsed', String(sidebarCollapsed));
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_sidebar_collapsed');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_sidebar_collapsed', String(sidebarCollapsed));
     } catch {}
   }, [sidebarCollapsed]);
 
@@ -132,17 +138,25 @@ export function useAdminState() {
   const [sidebarMobileOpen, setSidebarMobileOpen] = useState(false);
 
   const [isLightMode, setIsLightMode] = useState(() => {
-    const saved = localStorage.getItem('admin_theme_v2');
-    if (saved === 'dark') return false;
-    localStorage.removeItem('admin_theme_light');
-    localStorage.setItem('admin_theme_v2', 'light');
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('admin_theme_v2');
+        localStorage.removeItem('admin_theme_light');
+      }
+      const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('admin_theme_v2') : null;
+      if (saved === 'dark') return false;
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('admin_theme_v2', 'light');
+    } catch {}
     return true;
   });
 
   const toggleThemeMode = () => {
     const nextMode = !isLightMode;
     setIsLightMode(nextMode);
-    localStorage.setItem('admin_theme_v2', nextMode ? 'light' : 'dark');
+    try {
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('admin_theme_v2');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('admin_theme_v2', nextMode ? 'light' : 'dark');
+    } catch {}
     toast(nextMode ? '☀️ Executive White Theme Activated' : '🌙 Dark Luxury Mode Activated');
   };
 
@@ -241,7 +255,8 @@ export function useAdminState() {
 
   const [showAddReservationModal, setShowAddReservationModal] = useState<boolean>(() => {
     try {
-      return localStorage.getItem('jd_admin_show_add_reservation') === 'true';
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_show_add_reservation');
+      return (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_show_add_reservation') : 'false') === 'true';
     } catch {
       return false;
     }
@@ -249,7 +264,8 @@ export function useAdminState() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_show_add_reservation', String(showAddReservationModal));
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_show_add_reservation');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_show_add_reservation', String(showAddReservationModal));
     } catch {}
   }, [showAddReservationModal]);
 
@@ -257,7 +273,8 @@ export function useAdminState() {
 
   const [walkInPoolAddon, setWalkInPoolAddon] = useState<string>(() => {
     try {
-      return localStorage.getItem('jd_admin_draft_pool_addon') || 'none';
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_draft_pool_addon');
+      return (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_draft_pool_addon') : 'none') || 'none';
     } catch {
       return 'none';
     }
@@ -265,13 +282,15 @@ export function useAdminState() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_draft_pool_addon', walkInPoolAddon);
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_draft_pool_addon');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_draft_pool_addon', walkInPoolAddon);
     } catch {}
   }, [walkInPoolAddon]);
 
   const [newReservation, setNewReservation] = useState(() => {
     try {
-      const saved = localStorage.getItem('jd_admin_draft_reservation');
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_draft_reservation');
+      const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_draft_reservation') : null;
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === 'object') {
@@ -284,7 +303,8 @@ export function useAdminState() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_draft_reservation', JSON.stringify(newReservation));
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_draft_reservation');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_draft_reservation', JSON.stringify(newReservation));
     } catch {}
   }, [newReservation]);
 
@@ -362,7 +382,8 @@ export function useAdminState() {
 
   const [showCreateRoomModal, setShowCreateRoomModal] = useState<boolean>(() => {
     try {
-      return localStorage.getItem('jd_admin_show_create_room') === 'true';
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_show_create_room');
+      return (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_show_create_room') : 'false') === 'true';
     } catch {
       return false;
     }
@@ -370,7 +391,8 @@ export function useAdminState() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_show_create_room', String(showCreateRoomModal));
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_show_create_room');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_show_create_room', String(showCreateRoomModal));
     } catch {}
   }, [showCreateRoomModal]);
 
@@ -388,7 +410,8 @@ export function useAdminState() {
     images: string[];
   }>(() => {
     try {
-      const saved = localStorage.getItem('jd_admin_draft_room');
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_draft_room');
+      const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_draft_room') : null;
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === 'object') {
@@ -401,7 +424,8 @@ export function useAdminState() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_draft_room', JSON.stringify(newRoom));
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_draft_room');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_draft_room', JSON.stringify(newRoom));
     } catch {}
   }, [newRoom]);
 
@@ -420,7 +444,8 @@ export function useAdminState() {
 
   const [showCreateSupplyModal, setShowCreateSupplyModal] = useState<boolean>(() => {
     try {
-      return localStorage.getItem('jd_admin_show_create_supply') === 'true';
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_show_create_supply');
+      return (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_show_create_supply') : 'false') === 'true';
     } catch {
       return false;
     }
@@ -428,13 +453,15 @@ export function useAdminState() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_show_create_supply', String(showCreateSupplyModal));
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_show_create_supply');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_show_create_supply', String(showCreateSupplyModal));
     } catch {}
   }, [showCreateSupplyModal]);
 
   const [newSupply, setNewSupply] = useState(() => {
     try {
-      const saved = localStorage.getItem('jd_admin_draft_supply');
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_draft_supply');
+      const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_draft_supply') : null;
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === 'object') {
@@ -447,7 +474,8 @@ export function useAdminState() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_draft_supply', JSON.stringify(newSupply));
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_draft_supply');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_draft_supply', JSON.stringify(newSupply));
     } catch {}
   }, [newSupply]);
   const [supplyToRemove, setSupplyToRemove] = useState<any>(null);
@@ -532,8 +560,14 @@ export function useAdminState() {
       setRoomsList((prev) => [...prev, created]);
       setShowCreateRoomModal(false);
       try {
-        localStorage.removeItem('jd_admin_draft_room');
-        localStorage.setItem('jd_admin_show_create_room', 'false');
+        if (typeof localStorage !== 'undefined') {
+          localStorage.removeItem('jd_admin_draft_room');
+          localStorage.removeItem('jd_admin_show_create_room');
+        }
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.removeItem('jd_admin_draft_room');
+          sessionStorage.setItem('jd_admin_show_create_room', 'false');
+        }
       } catch {}
       setNewRoom(defaultRoomDraft);
       toast(`✦ Room "${created.name}" created successfully!`);
@@ -712,8 +746,14 @@ export function useAdminState() {
       setInventoryList((prev) => [...prev, created]);
       setShowCreateSupplyModal(false);
       try {
-        localStorage.removeItem('jd_admin_draft_supply');
-        localStorage.setItem('jd_admin_show_create_supply', 'false');
+        if (typeof localStorage !== 'undefined') {
+          localStorage.removeItem('jd_admin_draft_supply');
+          localStorage.removeItem('jd_admin_show_create_supply');
+        }
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.removeItem('jd_admin_draft_supply');
+          sessionStorage.setItem('jd_admin_show_create_supply', 'false');
+        }
       } catch {}
       setNewSupply(defaultSupplyDraft);
       toast(`✦ Supply "${created.item_name}" registered`);
@@ -924,9 +964,16 @@ export function useAdminState() {
       toast('✦ New reservation recorded and added to Ledger!');
       setShowAddReservationModal(false);
       try {
-        localStorage.removeItem('jd_admin_draft_reservation');
-        localStorage.removeItem('jd_admin_draft_pool_addon');
-        localStorage.setItem('jd_admin_show_add_reservation', 'false');
+        if (typeof localStorage !== 'undefined') {
+          localStorage.removeItem('jd_admin_draft_reservation');
+          localStorage.removeItem('jd_admin_draft_pool_addon');
+          localStorage.removeItem('jd_admin_show_add_reservation');
+        }
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.removeItem('jd_admin_draft_reservation');
+          sessionStorage.removeItem('jd_admin_draft_pool_addon');
+          sessionStorage.setItem('jd_admin_show_add_reservation', 'false');
+        }
       } catch {}
       setNewReservation({
         ...defaultReservationDraft,
@@ -951,7 +998,8 @@ export function useAdminState() {
 
   const [ledgerSubView, setLedgerSubView] = useState<'stay_folios' | 'availability' | 'debit_credit'>(() => {
     try {
-      const saved = localStorage.getItem('jd_admin_ledger_subview');
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_ledger_subview');
+      const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_ledger_subview') : null;
       if (saved && ['stay_folios', 'availability', 'debit_credit'].includes(saved)) {
         return saved as 'stay_folios' | 'availability' | 'debit_credit';
       }
@@ -961,13 +1009,15 @@ export function useAdminState() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_ledger_subview', ledgerSubView);
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_ledger_subview');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_ledger_subview', ledgerSubView);
     } catch {}
   }, [ledgerSubView]);
 
   const [ledgerAccountFilter, setLedgerAccountFilter] = useState(() => {
     try {
-      return localStorage.getItem('jd_admin_ledger_account_filter') || '';
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_ledger_account_filter');
+      return (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_ledger_account_filter') : '') || '';
     } catch {
       return '';
     }
@@ -975,13 +1025,15 @@ export function useAdminState() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_ledger_account_filter', ledgerAccountFilter);
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_ledger_account_filter');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_ledger_account_filter', ledgerAccountFilter);
     } catch {}
   }, [ledgerAccountFilter]);
 
   const [ledgerCategoryFilter, setLedgerCategoryFilter] = useState(() => {
     try {
-      return localStorage.getItem('jd_admin_ledger_category_filter') || '';
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_ledger_category_filter');
+      return (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_ledger_category_filter') : '') || '';
     } catch {
       return '';
     }
@@ -989,13 +1041,15 @@ export function useAdminState() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_ledger_category_filter', ledgerCategoryFilter);
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_ledger_category_filter');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_ledger_category_filter', ledgerCategoryFilter);
     } catch {}
   }, [ledgerCategoryFilter]);
 
   const [ledgerTypeFilter, setLedgerTypeFilter] = useState<'all' | 'debit' | 'credit'>(() => {
     try {
-      const saved = localStorage.getItem('jd_admin_ledger_type_filter');
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_ledger_type_filter');
+      const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_ledger_type_filter') : null;
       if (saved && ['all', 'debit', 'credit'].includes(saved)) {
         return saved as 'all' | 'debit' | 'credit';
       }
@@ -1005,13 +1059,15 @@ export function useAdminState() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_ledger_type_filter', ledgerTypeFilter);
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_ledger_type_filter');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_ledger_type_filter', ledgerTypeFilter);
     } catch {}
   }, [ledgerTypeFilter]);
 
   const [ledgerSearch, setLedgerSearch] = useState(() => {
     try {
-      return localStorage.getItem('jd_admin_ledger_search') || '';
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_ledger_search');
+      return (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_ledger_search') : '') || '';
     } catch {
       return '';
     }
@@ -1019,7 +1075,8 @@ export function useAdminState() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_ledger_search', ledgerSearch);
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_ledger_search');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_ledger_search', ledgerSearch);
     } catch {}
   }, [ledgerSearch]);
 
@@ -1035,7 +1092,8 @@ export function useAdminState() {
 
   const [showAddJournalModal, setShowAddJournalModal] = useState<boolean>(() => {
     try {
-      return localStorage.getItem('jd_admin_show_add_journal') === 'true';
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_show_add_journal');
+      return (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_show_add_journal') : 'false') === 'true';
     } catch {
       return false;
     }
@@ -1043,14 +1101,16 @@ export function useAdminState() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_show_add_journal', String(showAddJournalModal));
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_show_add_journal');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_show_add_journal', String(showAddJournalModal));
     } catch {}
   }, [showAddJournalModal]);
 
   const [postingJournal, setPostingJournal] = useState(false);
   const [journalForm, setJournalForm] = useState(() => {
     try {
-      const saved = localStorage.getItem('jd_admin_draft_journal');
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_draft_journal');
+      const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_draft_journal') : null;
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === 'object') {
@@ -1063,13 +1123,15 @@ export function useAdminState() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_draft_journal', JSON.stringify(journalForm));
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_draft_journal');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_draft_journal', JSON.stringify(journalForm));
     } catch {}
   }, [journalForm]);
 
   const [showBackupModal, setShowBackupModal] = useState<boolean>(() => {
     try {
-      return localStorage.getItem('jd_admin_show_backup_modal') === 'true';
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_show_backup_modal');
+      return (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_show_backup_modal') : 'false') === 'true';
     } catch {
       return false;
     }
@@ -1077,13 +1139,15 @@ export function useAdminState() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_show_backup_modal', String(showBackupModal));
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_show_backup_modal');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_show_backup_modal', String(showBackupModal));
     } catch {}
   }, [showBackupModal]);
 
   const [backupTab, setBackupTab] = useState<'export' | 'import' | 'notation' | 'auto'>(() => {
     try {
-      const saved = localStorage.getItem('jd_admin_backup_tab');
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_backup_tab');
+      const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_backup_tab') : null;
       if (saved && ['export', 'import', 'notation', 'auto'].includes(saved)) {
         return saved as any;
       }
@@ -1093,7 +1157,8 @@ export function useAdminState() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_backup_tab', backupTab);
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_backup_tab');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_backup_tab', backupTab);
     } catch {}
   }, [backupTab]);
   const [exportFormat, setExportFormat] = useState<'sql' | 'json' | 'csv'>('sql');
@@ -1157,8 +1222,14 @@ export function useAdminState() {
       toast('✦ Double-entry journal voucher recorded in General Ledger!');
       setShowAddJournalModal(false);
       try {
-        localStorage.removeItem('jd_admin_draft_journal');
-        localStorage.setItem('jd_admin_show_add_journal', 'false');
+        if (typeof localStorage !== 'undefined') {
+          localStorage.removeItem('jd_admin_draft_journal');
+          localStorage.removeItem('jd_admin_show_add_journal');
+        }
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.removeItem('jd_admin_draft_journal');
+          sessionStorage.setItem('jd_admin_show_add_journal', 'false');
+        }
       } catch {}
       setJournalForm(defaultJournalDraft);
       await refreshLedgerEntries();
@@ -1222,7 +1293,8 @@ export function useAdminState() {
 
   const [searchQuery, setSearchQuery] = useState(() => {
     try {
-      return localStorage.getItem('jd_admin_search_query') || '';
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_search_query');
+      return (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_search_query') : '') || '';
     } catch {
       return '';
     }
@@ -1230,13 +1302,15 @@ export function useAdminState() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_search_query', searchQuery);
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_search_query');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_search_query', searchQuery);
     } catch {}
   }, [searchQuery]);
 
   const [roleFilter, setRoleFilter] = useState(() => {
     try {
-      return localStorage.getItem('jd_admin_role_filter') || '';
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_role_filter');
+      return (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_role_filter') : '') || '';
     } catch {
       return '';
     }
@@ -1244,7 +1318,8 @@ export function useAdminState() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_role_filter', roleFilter);
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_role_filter');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_role_filter', roleFilter);
     } catch {}
   }, [roleFilter]);
 
@@ -1262,7 +1337,8 @@ export function useAdminState() {
 
   const [showCreateModal, setShowCreateModal] = useState<boolean>(() => {
     try {
-      return localStorage.getItem('jd_admin_show_create_staff') === 'true';
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_show_create_staff');
+      return (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_show_create_staff') : 'false') === 'true';
     } catch {
       return false;
     }
@@ -1270,13 +1346,15 @@ export function useAdminState() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_show_create_staff', String(showCreateModal));
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_show_create_staff');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_show_create_staff', String(showCreateModal));
     } catch {}
   }, [showCreateModal]);
 
   const [newStaff, setNewStaff] = useState(() => {
     try {
-      const saved = localStorage.getItem('jd_admin_draft_staff');
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_draft_staff');
+      const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_draft_staff') : null;
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === 'object') {
@@ -1289,7 +1367,8 @@ export function useAdminState() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_draft_staff', JSON.stringify(newStaff));
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_draft_staff');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_draft_staff', JSON.stringify(newStaff));
     } catch {}
   }, [newStaff]);
 
@@ -1356,8 +1435,14 @@ export function useAdminState() {
       setUsers((prev) => [created, ...prev]);
       setShowCreateModal(false);
       try {
-        localStorage.removeItem('jd_admin_draft_staff');
-        localStorage.setItem('jd_admin_show_create_staff', 'false');
+        if (typeof localStorage !== 'undefined') {
+          localStorage.removeItem('jd_admin_draft_staff');
+          localStorage.removeItem('jd_admin_show_create_staff');
+        }
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.removeItem('jd_admin_draft_staff');
+          sessionStorage.setItem('jd_admin_show_create_staff', 'false');
+        }
       } catch {}
       setNewStaff(defaultStaffDraft);
     } catch (err: any) {
@@ -1909,13 +1994,17 @@ export function useAdminState() {
 
       if (API_BASE || isLocal) {
         supabase.auth.getSession().then(({ data: authData }) => {
+          try {
+            if (typeof localStorage !== 'undefined') {
+              localStorage.removeItem('jd_admin_jwt');
+              localStorage.removeItem('jd_admin_token_key');
+            }
+          } catch {}
           const token =
             (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_jwt') : null) ||
-            localStorage.getItem('jd_admin_jwt') ||
             authData?.session?.access_token;
           const key =
             (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_token_key') : null) ||
-            localStorage.getItem('jd_admin_token_key') ||
             'etc-34';
           if (token) {
             const streamUrl = API_BASE

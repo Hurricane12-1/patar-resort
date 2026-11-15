@@ -38,53 +38,61 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({
 }) => {
   const [auditRoleFilter, setAuditRoleFilter] = useState<string>(() => {
     try {
-      return localStorage.getItem('jd_admin_audit_role_filter') || 'employee';
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_audit_role_filter');
+      return (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_audit_role_filter') : 'employee') || 'employee';
     } catch {
       return 'employee';
     }
   });
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_audit_role_filter', auditRoleFilter);
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_audit_role_filter');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_audit_role_filter', auditRoleFilter);
     } catch {}
   }, [auditRoleFilter]);
 
   const [auditDateFilter, setAuditDateFilter] = useState<string>(() => {
     try {
-      return localStorage.getItem('jd_admin_audit_date_filter') || 'ALL';
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_audit_date_filter');
+      return (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_audit_date_filter') : 'ALL') || 'ALL';
     } catch {
       return 'ALL';
     }
   });
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_audit_date_filter', auditDateFilter);
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_audit_date_filter');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_audit_date_filter', auditDateFilter);
     } catch {}
   }, [auditDateFilter]);
 
   const [auditSearchQuery, setAuditSearchQuery] = useState<string>(() => {
     try {
-      return localStorage.getItem('jd_admin_audit_search') || '';
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_audit_search');
+      return (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_audit_search') : '') || '';
     } catch {
       return '';
     }
   });
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_audit_search', auditSearchQuery);
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_audit_search');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_audit_search', auditSearchQuery);
     } catch {}
   }, [auditSearchQuery]);
 
   const [auditActionFilter, setAuditActionFilter] = useState<string>(() => {
     try {
-      return localStorage.getItem('jd_admin_audit_action_filter') || 'ALL';
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_audit_action_filter');
+      return (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_audit_action_filter') : 'ALL') || 'ALL';
     } catch {
       return 'ALL';
     }
   });
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_audit_action_filter', auditActionFilter);
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_audit_action_filter');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_audit_action_filter', auditActionFilter);
     } catch {}
   }, [auditActionFilter]);
   const [inspectAuditLog, setInspectAuditLog] = useState<any>(null);

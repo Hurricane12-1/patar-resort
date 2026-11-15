@@ -86,33 +86,38 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
 }) => {
   const [reservationFilter, setReservationFilter] = useState<string>(() => {
     try {
-      return localStorage.getItem('jd_admin_res_filter') || 'all';
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_res_filter');
+      return (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_res_filter') : 'all') || 'all';
     } catch {
       return 'all';
     }
   });
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_res_filter', reservationFilter);
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_res_filter');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_res_filter', reservationFilter);
     } catch {}
   }, [reservationFilter]);
 
   const [reservationSearch, setReservationSearch] = useState<string>(() => {
     try {
-      return localStorage.getItem('jd_admin_res_search') || '';
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_res_search');
+      return (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_res_search') : '') || '';
     } catch {
       return '';
     }
   });
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_res_search', reservationSearch);
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_res_search');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_res_search', reservationSearch);
     } catch {}
   }, [reservationSearch]);
 
   const [folioViewLimit, setFolioViewLimit] = useState<number | 'all'>(() => {
     try {
-      const saved = localStorage.getItem('jd_admin_folio_limit');
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_folio_limit');
+      const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_folio_limit') : null;
       if (saved === 'all') return 'all';
       if (saved && !isNaN(Number(saved))) return Number(saved);
     } catch {}
@@ -120,7 +125,8 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
   });
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_folio_limit', String(folioViewLimit));
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_folio_limit');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_folio_limit', String(folioViewLimit));
     } catch {}
   }, [folioViewLimit]);
   const [editingBooking, setEditingBooking] = useState<any>(null);

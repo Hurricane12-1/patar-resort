@@ -56,54 +56,62 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
 }) => {
   const [inventorySearch, setInventorySearch] = useState(() => {
     try {
-      return localStorage.getItem('jd_admin_inv_search') || '';
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_inv_search');
+      return (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_inv_search') : '') || '';
     } catch {
       return '';
     }
   });
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_inv_search', inventorySearch);
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_inv_search');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_inv_search', inventorySearch);
     } catch {}
   }, [inventorySearch]);
 
   const [inventorySubTab, setInventorySubTab] = useState<'accommodations' | 'supplies'>(() => {
     try {
-      const saved = localStorage.getItem('jd_admin_inv_subtab');
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_inv_subtab');
+      const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_inv_subtab') : null;
       if (saved === 'supplies' || saved === 'accommodations') return saved;
     } catch {}
     return 'accommodations';
   });
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_inv_subtab', inventorySubTab);
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_inv_subtab');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_inv_subtab', inventorySubTab);
     } catch {}
   }, [inventorySubTab]);
 
   const [offeringFilter, setOfferingFilter] = useState<'all' | OfferingType>('all');
   const [inventoryRoomFilter, setInventoryRoomFilter] = useState(() => {
     try {
-      return localStorage.getItem('jd_admin_inv_room_filter') || 'all';
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_inv_room_filter');
+      return (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_inv_room_filter') : 'all') || 'all';
     } catch {
       return 'all';
     }
   });
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_inv_room_filter', inventoryRoomFilter);
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_inv_room_filter');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_inv_room_filter', inventoryRoomFilter);
     } catch {}
   }, [inventoryRoomFilter]);
 
   const [inventoryDeptFilter, setInventoryDeptFilter] = useState(() => {
     try {
-      return localStorage.getItem('jd_admin_inv_dept_filter') || 'all';
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_inv_dept_filter');
+      return (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_inv_dept_filter') : 'all') || 'all';
     } catch {
       return 'all';
     }
   });
   useEffect(() => {
     try {
-      localStorage.setItem('jd_admin_inv_dept_filter', inventoryDeptFilter);
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_inv_dept_filter');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('jd_admin_inv_dept_filter', inventoryDeptFilter);
     } catch {}
   }, [inventoryDeptFilter]);
 

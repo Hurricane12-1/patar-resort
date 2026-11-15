@@ -65,7 +65,8 @@ async function sha1Hex(input: string): Promise<string> {
 
 export function getCloudinaryConfig(): CloudinaryConfig {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    if (typeof localStorage !== 'undefined') localStorage.removeItem(STORAGE_KEY);
+    const raw = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(STORAGE_KEY) : null;
     if (raw) {
       const parsed = JSON.parse(raw);
       return {
@@ -82,10 +83,11 @@ export function getCloudinaryConfig(): CloudinaryConfig {
 
 export function saveCloudinaryConfig(cfg: CloudinaryConfig): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
+    if (typeof localStorage !== 'undefined') localStorage.removeItem(STORAGE_KEY);
+    if (typeof sessionStorage !== 'undefined') sessionStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
     window.dispatchEvent(new CustomEvent('cloudinary-config-updated', { detail: cfg }));
   } catch (err) {
-    console.warn('[Cloudinary Config] Error saving to localStorage:', err);
+    console.warn('[Cloudinary Config] Error saving config:', err);
   }
 }
 
