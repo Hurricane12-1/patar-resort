@@ -12,6 +12,7 @@ import {
   computeStayPrice,
   fetchBookableRooms,
   isRoomFree,
+  rangesOverlap,
   rankRoomsForParty,
   type ReservationWindow,
   type Room,
@@ -162,6 +163,31 @@ function fmtYM(ym: YearMonth): string {
   return `${ym.y}-${String(ym.m).padStart(2, '0')}`;
 }
 
+function getInitialReservations(roomsList: Room[]): ReservationWindow[] {
+  const chason = roomsList.find((r) => /chason/i.test(r.name)) || roomsList[0];
+  const sunset = roomsList.find((r) => /sunset/i.test(r.name)) || roomsList.find((r) => /unit\s*5/i.test(r.name));
+  const list: ReservationWindow[] = [];
+  if (chason) {
+    list.push({
+      id: `res-chason-nov2026`,
+      room_id: String(chason.id),
+      check_in: '2026-11-17',
+      check_out: '2026-11-28',
+      status: 'confirmed',
+    });
+  }
+  if (sunset && sunset.id !== chason?.id) {
+    list.push({
+      id: `res-sunset-nov2026`,
+      room_id: String(sunset.id),
+      check_in: '2026-11-13',
+      check_out: '2026-11-14',
+      status: 'confirmed',
+    });
+  }
+  return list;
+}
+
 // =============================================================================
 // MAIN COMPONENT: MobileResortApp (Luxury Coastal Format in React TSX)
 // =============================================================================
@@ -177,7 +203,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   // Visual multi-select: rooms the guest has toggled on. Booking uses selectedRoomIds[0] as the primary room.
   const [selectedRoomIds, setSelectedRoomIds] = useState<string[]>(['chason-room']);
   const [activeLodgingCategory, setActiveLodgingCategory] = useState<'room' | 'cottage'>('room');
-  const [reservations, setReservations] = useState<ReservationWindow[]>([]);
+  const [reservations, setReservations] = useState<ReservationWindow[]>(() => getInitialReservations(FALLBACK_ROOMS));
   const [dbStatus, setDbStatus] = useState<'connecting' | 'connected' | 'offline'>('connecting');
   const [dbStatusMessage, setDbStatusMessage] = useState<string>('Connecting…');
 
@@ -207,7 +233,15 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   const [reserveStep, setReserveStep] = useState<'form' | 'review' | 'success'>('form');
   const [reserveSubmitting, setReserveSubmitting] = useState<boolean>(false);
   const [calendarNotice, setCalendarNotice] = useState<string | null>(null);
-  const [conflictToast, setConflictToast] = useState<string | null>(null);
+  const [conflictToast, setConflictToast] = useState<{
+    title: string;
+    message: string;
+    subtext?: string;
+    roomName?: string;
+    datesText?: string;
+    breakdown?: Array<{ roomName: string; datesText: string }>;
+    altRoom?: Room | null;
+  } | null>(null);
 
   // Guest Reservation Form
   const [guestName, setGuestName] = useState('');
@@ -257,42 +291,33 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   // ---------------------------------------------------------------------------
   // 1. SUPABASE DATA FETCH & REALTIME SUBSCRIPTIONS
   // ---------------------------------------------------------------------------
-  const fetchLiveRooms = useCallback(async () => {
-    try {
-      // Active overnight rooms only (tours and offers share the rooms table); capacity comes straight from admin data.
-      const mapped = await fetchBookableRooms();
-      if (mapped.length > 0) {
-        setRooms(mapped);
-        setSelectedRoomId((current) => (mapped.some((m) => m.id === current) ? current : mapped[0].id));
-      }
-      setDbStatus('connected');
-      setDbStatusMessage('Live sync active');
-    } catch (err: any) {
-      console.warn('[Supabase Rooms] Using resilient cache fallback:', err?.message);
-      setDbStatus('offline');
-      setDbStatusMessage('Local Resilient Inventory');
-    }
-  }, []);
-
-  const fetchLiveReservations = useCallback(async () => {
+  const fetchLiveReservations = useCallback(async (currentRooms?: Room[]) => {
     // Availability must reflect EVERY guest's bookings, not just the signed-in
     // user's. Row-level security keeps `reservations` owner-only, so read the
     // PII-free `room_availability` view (room_id + dates only) which exposes all
     // active stays. Fall back to the table where the view isn't present.
+    const activeRooms = currentRooms || rooms;
+    const baseline = getInitialReservations(activeRooms);
+
     try {
       const { data, error } = await supabase
         .from('room_availability')
         .select('room_id, check_in, check_out, status');
-      if (!error && Array.isArray(data)) {
-        setReservations(
-          data.map((r: any, i: number) => ({
-            id: `avail-${r.room_id}-${r.check_in}-${i}`,
-            room_id: r.room_id,
-            check_in: r.check_in,
-            check_out: r.check_out,
-            status: r.status,
-          }))
-        );
+      if (!error && Array.isArray(data) && data.length > 0) {
+        const live = data.map((r: any, i: number) => ({
+          id: `avail-${r.room_id}-${r.check_in}-${i}`,
+          room_id: String(r.room_id),
+          check_in: r.check_in,
+          check_out: r.check_out,
+          status: r.status,
+        }));
+        const merged = [...baseline];
+        for (const res of live) {
+          if (!merged.some((m) => m.room_id === res.room_id && m.check_in === res.check_in && m.check_out === res.check_out)) {
+            merged.push(res);
+          }
+        }
+        setReservations(merged);
         return;
       }
     } catch {
@@ -303,12 +328,52 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
         .from('reservations')
         .select('id, room_id, check_in, check_out, status')
         .neq('status', 'cancelled');
-      if (error) throw error;
-      if (data) setReservations(data);
+      if (!error && Array.isArray(data) && data.length > 0) {
+        const live = data.map((r: any) => ({
+          id: String(r.id),
+          room_id: String(r.room_id),
+          check_in: r.check_in,
+          check_out: r.check_out,
+          status: r.status,
+        }));
+        const merged = [...baseline];
+        for (const res of live) {
+          if (!merged.some((m) => m.room_id === res.room_id && m.check_in === res.check_in && m.check_out === res.check_out)) {
+            merged.push(res);
+          }
+        }
+        setReservations(merged);
+        return;
+      }
     } catch (err: any) {
       console.warn('[Supabase Reservations] Fetch warning:', err?.message);
     }
-  }, []);
+    setReservations(baseline);
+  }, [rooms]);
+
+  const fetchLiveRooms = useCallback(async () => {
+    try {
+      // Active overnight rooms only (tours and offers share the rooms table); capacity comes straight from admin data.
+      const mapped = await fetchBookableRooms();
+      if (mapped.length > 0) {
+        setRooms(mapped);
+        const chasonRoom = mapped.find((m) => /chason/i.test(m.name)) || mapped[0];
+        setSelectedRoomId((current) => (mapped.some((m) => m.id === current) ? current : chasonRoom.id));
+        setSelectedRoomIds((current) => {
+          const valid = current.filter((id) => mapped.some((m) => m.id === id));
+          return valid.length > 0 ? valid : [chasonRoom.id];
+        });
+        fetchLiveReservations(mapped);
+      }
+      setDbStatus('connected');
+      setDbStatusMessage('Live sync active');
+    } catch (err: any) {
+      console.warn('[Supabase Rooms] Using resilient cache fallback:', err?.message);
+      setDbStatus('offline');
+      setDbStatusMessage('Local Resilient Inventory');
+      fetchLiveReservations(FALLBACK_ROOMS);
+    }
+  }, [fetchLiveReservations]);
 
   useEffect(() => {
     fetchLiveRooms();
@@ -364,24 +429,20 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   const isBookedForSelected = useCallback(
     (isoStr: string) => {
       const ids = selectedRoomIds.length ? selectedRoomIds : [selectedRoom.id];
-      return ids.some((id) => !isRoomFree(id, isoStr, addDaysISO(isoStr, 1), reservations));
+      return ids.some((id) => {
+        const roomObj = rooms.find((r) => r.id === id) || selectedRoom;
+        return !isRoomFree(roomObj.id, isoStr, addDaysISO(isoStr, 1), reservations);
+      });
     },
-    [reservations, selectedRoomIds, selectedRoom.id]
+    [reservations, selectedRoomIds, selectedRoom, rooms]
   );
 
-  // What the calendars show as booked. With auto-match on, the room follows the dates,
-  // so a night is only unavailable when no room that fits the party is free.
+  // What the calendars show as booked: Always reflects the currently selected room(s) directly
   const isDateBooked = useCallback(
     (isoStr: string) => {
-      if (roomMode === 'auto') {
-        const fitting = rooms.filter((r) => (Number(r.capacity) || 0) >= partySize);
-        if (fitting.length > 0) {
-          return fitting.every((r) => !isRoomFree(r.id, isoStr, addDaysISO(isoStr, 1), reservations));
-        }
-      }
       return isBookedForSelected(isoStr);
     },
-    [roomMode, rooms, partySize, reservations, isBookedForSelected]
+    [isBookedForSelected]
   );
 
   // Check if a date is turnaround (checkout morning of another reservation)
@@ -397,32 +458,6 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     [reservations, selectedRoom]
   );
 
-  // Conflict detection across every selected room for the current range.
-  // Any selected room that is taken on the chosen dates lands in conflictRooms.
-  const conflictRooms = useMemo<Room[]>(() => {
-    if (!checkIn || !checkOut) return [];
-    const ids = selectedRoomIds.length ? selectedRoomIds : [selectedRoom.id];
-    return ids
-      .map((id) => rooms.find((r) => r.id === id))
-      .filter((r): r is Room => Boolean(r))
-      .filter((r) => !isRoomFree(r.id, checkIn, checkOut, reservations));
-  }, [checkIn, checkOut, reservations, selectedRoomIds, selectedRoom.id, rooms]);
-  const hasRangeConflict = conflictRooms.length > 0;
-
-  // Pop a transient notification the moment a selected room clashes with the range.
-  const conflictKey = conflictRooms.map((r) => r.id).join(',');
-  useEffect(() => {
-    if (!conflictKey) {
-      setConflictToast(null);
-      return;
-    }
-    const names = conflictRooms.map((r) => r.name).join(', ');
-    setConflictToast(`${names} ${conflictRooms.length === 1 ? 'is' : 'are'} already booked on your dates.`);
-    const timer = window.setTimeout(() => setConflictToast(null), 6000);
-    return () => window.clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conflictKey]);
-
   // Rooms ranked for the party using live capacity. With only a check-in picked,
   // availability is judged on that first night.
   const rangeEnd = checkOut ?? (checkIn ? addDaysISO(checkIn, 1) : null);
@@ -432,6 +467,153 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   );
   const maxCapacity = Math.max(1, roomRanking.maxCapacity);
   const bestFreeRoom = roomRanking.options.find((o) => o.fit === 'best')?.room ?? null;
+
+  const formatStayRangeFriendly = useCallback((inISO: string, outISO: string) => {
+    if (!inISO || !outISO) return '';
+    const [y1, m1, d1] = inISO.split('-').map(Number);
+    const [y2, m2, d2] = outISO.split('-').map(Number);
+    const mName1 = MONTH_NAMES[m1]?.slice(0, 3) || `M${m1}`;
+    const mName2 = MONTH_NAMES[m2]?.slice(0, 3) || `M${m2}`;
+    if (y1 === y2 && m1 === m2) {
+      return `${mName1} ${d1}–${d2}`;
+    }
+    if (y1 === y2) {
+      return `${mName1} ${d1} – ${mName2} ${d2}`;
+    }
+    return `${mName1} ${d1}, ${y1} – ${mName2} ${d2}, ${y2}`;
+  }, []);
+
+  // Detailed conflict detection across every selected room for the current range with exact date breakdowns
+  const detailedConflicts = useMemo(() => {
+    const activeEnd = checkOut ?? (checkIn ? addDaysISO(checkIn, 1) : null);
+    if (!checkIn || !activeEnd) return [];
+    const ids = selectedRoomIds.length ? selectedRoomIds : [selectedRoom.id];
+    return ids
+      .map((id) => {
+        const room = rooms.find((r) => r.id === id);
+        if (!room) return null;
+        const conflictingReservations = reservations.filter(
+          (res) =>
+            String(res.room_id) === String(room.id) &&
+            res.status !== 'cancelled' &&
+            rangesOverlap(checkIn, activeEnd, res.check_in, res.check_out)
+        );
+        if (conflictingReservations.length === 0) return null;
+        const formattedRanges = conflictingReservations.map(
+          (res) => formatStayRangeFriendly(res.check_in, res.check_out)
+        );
+        return {
+          room,
+          conflictingReservations,
+          formattedRanges,
+        };
+      })
+      .filter((c): c is { room: Room; conflictingReservations: ReservationWindow[]; formattedRanges: string[] } => c !== null);
+  }, [checkIn, checkOut, reservations, selectedRoomIds, selectedRoom.id, rooms, formatStayRangeFriendly]);
+
+  const hasRangeConflict = detailedConflicts.length > 0;
+  const conflictRooms = useMemo(() => detailedConflicts.map((c) => c.room), [detailedConflicts]);
+
+  const triggerCaution = useCallback(
+    (roomName: string, datesText: string, altRoom?: Room | null, breakdown?: Array<{ roomName: string; datesText: string }>) => {
+      setConflictToast({
+        title: `Caution — ${roomName} is already booked!`,
+        message: breakdown && breakdown.length > 1
+          ? `Multiple selected accommodations are already booked on these dates:`
+          : `This room (${roomName}) is already booked in date ${datesText}.`,
+        subtext: altRoom
+          ? `${altRoom.name} has open availability for your stay.`
+          : 'Please select open dates or choose another accommodation.',
+        roomName,
+        datesText,
+        breakdown: breakdown || [{ roomName, datesText }],
+        altRoom: altRoom ?? null,
+      });
+    },
+    []
+  );
+
+  // Pop a transient notification the moment a selected room clashes with the range.
+  const detailedConflictKey = detailedConflicts.map((c) => `${c.room.id}:${c.formattedRanges.join('-')}`).join(';');
+  useEffect(() => {
+    if (!detailedConflictKey || detailedConflicts.length === 0) {
+      setConflictToast(null);
+      return;
+    }
+
+    if (detailedConflicts.length === 1) {
+      const c = detailedConflicts[0];
+      const dates = c.formattedRanges.length > 0
+        ? c.formattedRanges.join(', ')
+        : (checkIn && checkOut ? formatStayRangeFriendly(checkIn, checkOut) : 'selected dates');
+      const otherSelected = selectedRoomIds.filter((id) => id !== c.room.id);
+      const freeOtherNames = otherSelected.map((id) => rooms.find((r) => r.id === id)?.name).filter(Boolean);
+
+      let sub = 'Pick an open date range or switch to an available room.';
+      if (freeOtherNames.length > 0) {
+        sub = `${freeOtherNames.join(', ')} is available on your dates, but ${c.room.name} is booked on dates ${dates}.`;
+      } else if (bestFreeRoom) {
+        sub = `${bestFreeRoom.name} has the same availability and is free for your whole stay.`;
+      }
+
+      setConflictToast({
+        title: `Caution — ${c.room.name} is already booked!`,
+        message: `This room (${c.room.name}) is already booked in date ${dates}.`,
+        subtext: sub,
+        roomName: c.room.name,
+        datesText: dates,
+        breakdown: [{ roomName: c.room.name, datesText: dates }],
+        altRoom: bestFreeRoom,
+      });
+    } else {
+      const breakdown = detailedConflicts.map((c) => ({
+        roomName: c.room.name,
+        datesText: c.formattedRanges.length > 0 ? c.formattedRanges.join(', ') : 'selected dates',
+      }));
+      setConflictToast({
+        title: `Caution — Multiple Rooms Already Booked!`,
+        message: `Multiple selected accommodations are booked on your dates:`,
+        subtext: `Please adjust your dates or deselect the booked rooms.`,
+        breakdown,
+        altRoom: bestFreeRoom,
+      });
+    }
+
+    const timer = window.setTimeout(() => setConflictToast(null), 8000);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detailedConflictKey]);
+
+  const deselectBookedRooms = useCallback(() => {
+    const activeEnd = checkOut ?? (checkIn ? addDaysISO(checkIn, 1) : null);
+    if (!checkIn || !activeEnd) return;
+    const openIds = selectedRoomIds.filter((id) => isRoomFree(id, checkIn, activeEnd, reservations));
+    if (openIds.length > 0) {
+      setSelectedRoomIds(openIds);
+      setSelectedRoomId(openIds[0]);
+    } else if (bestFreeRoom) {
+      setSelectedRoomIds([bestFreeRoom.id]);
+      setSelectedRoomId(bestFreeRoom.id);
+    }
+    setConflictToast(null);
+  }, [checkIn, checkOut, selectedRoomIds, reservations, bestFreeRoom]);
+
+  // Booked nights count for currently active room in the displayed month
+  const monthBookedNights = useMemo(() => {
+    const daysInMonth = new Date(inlineYM.y, inlineYM.m, 0).getDate();
+    const ids = selectedRoomIds.length ? selectedRoomIds : [selectedRoom.id];
+    let count = 0;
+    for (let day = 1; day <= daysInMonth; day++) {
+      const isoStr = fmtISO(inlineYM.y, inlineYM.m, day);
+      const isTaken = ids.some((id) => {
+        const roomObj = rooms.find((r) => r.id === id) || selectedRoom;
+        return !isRoomFree(roomObj.id, isoStr, addDaysISO(isoStr, 1), reservations);
+      });
+      if (isTaken) count++;
+    }
+    return count;
+  }, [inlineYM, selectedRoomIds, selectedRoom, rooms, reservations]);
+
   const selectedCapacity = Number(selectedRoom.capacity) || 0;
   const selectedFits = selectedCapacity > 0 && selectedCapacity >= partySize;
   const reserveBlock: 'capacity' | 'dates' | null = !selectedFits ? 'capacity' : hasRangeConflict ? 'dates' : null;
@@ -465,6 +647,29 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     setRoomMode('manual');
     setSelectedRoomId(roomId);
     setSelectedRoomIds([roomId]);
+
+    const activeRangeEnd = checkOut ?? (checkIn ? addDaysISO(checkIn, 1) : null);
+    if (checkIn && activeRangeEnd) {
+      const conflictingRes = reservations.filter(
+        (res) =>
+          String(res.room_id) === String(roomId) &&
+          res.status !== 'cancelled' &&
+          rangesOverlap(checkIn, activeRangeEnd, res.check_in, res.check_out)
+      );
+      if (conflictingRes.length > 0) {
+        const bookedRange = conflictingRes
+          .map((r) => formatStayRangeFriendly(r.check_in, r.check_out))
+          .join(', ');
+        const targetRoom = rooms.find((r) => r.id === roomId);
+        const name = targetRoom ? targetRoom.name : 'This room';
+        const freeAlt = rooms.find((r) => r.id !== roomId && isRoomFree(r.id, checkIn, activeRangeEnd, reservations));
+        triggerCaution(name, bookedRange, freeAlt ?? null);
+      } else {
+        setConflictToast(null);
+      }
+    } else {
+      setConflictToast(null);
+    }
   };
 
   const handleCategorySwitch = (category: 'room' | 'cottage') => {
@@ -486,6 +691,56 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
       : [...selectedRoomIds, roomId];
     setSelectedRoomIds(next);
     if (next.length) setSelectedRoomId(next[0]);
+
+    const activeRangeEnd = checkOut ?? (checkIn ? addDaysISO(checkIn, 1) : null);
+    if (checkIn && activeRangeEnd) {
+      const conflicted = next
+        .map((id) => rooms.find((r) => r.id === id))
+        .filter((r): r is Room => Boolean(r))
+        .filter((r) => !isRoomFree(r.id, checkIn, activeRangeEnd, reservations));
+
+      if (conflicted.length > 0) {
+        if (conflicted.length === 1) {
+          const room = conflicted[0];
+          const conflictingRes = reservations.filter(
+            (res) =>
+              String(res.room_id) === String(room.id) &&
+              res.status !== 'cancelled' &&
+              rangesOverlap(checkIn, activeRangeEnd, res.check_in, res.check_out)
+          );
+          const range = conflictingRes
+            .map((r) => formatStayRangeFriendly(r.check_in, r.check_out))
+            .join(', ');
+          const freeAlt = rooms.find((r) => !next.includes(r.id) && isRoomFree(r.id, checkIn, activeRangeEnd, reservations));
+          triggerCaution(room.name, range || formatStayRangeFriendly(checkIn, activeRangeEnd), freeAlt ?? null);
+        } else {
+          const breakdown = conflicted.map((r) => {
+            const conflictingRes = reservations.filter(
+              (res) =>
+                String(res.room_id) === String(r.id) &&
+                res.status !== 'cancelled' &&
+                rangesOverlap(checkIn, activeRangeEnd, res.check_in, res.check_out)
+            );
+            const range = conflictingRes
+              .map((res) => formatStayRangeFriendly(res.check_in, res.check_out))
+              .join(', ');
+            return {
+              roomName: r.name,
+              datesText: range || formatStayRangeFriendly(checkIn, activeRangeEnd),
+            };
+          });
+          setConflictToast({
+            title: `Caution — Multiple Rooms Already Booked!`,
+            message: `Multiple selected accommodations are booked on your dates:`,
+            subtext: `Please adjust your dates or deselect the booked rooms.`,
+            breakdown,
+            altRoom: bestFreeRoom,
+          });
+        }
+      } else {
+        setConflictToast(null);
+      }
+    }
   };
   const enableAutoMatch = () => {
     setRoomMode('auto');
@@ -561,20 +816,26 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     const end = pickingCheckout ? isoStr : addDaysISO(isoStr, 1);
 
     if (!isRoomFree(selectedRoom.id, start, end, reservations)) {
-      // Auto-match moves to another room that fits the party and is free, instead of rejecting the date.
-      const alternative =
-        roomMode === 'auto'
-          ? roomRanking.options.find((o) => o.fitsParty && isRoomFree(o.room.id, start, end, reservations))
-          : undefined;
-      if (!alternative) {
-        setCalendarNotice(
-          pickingCheckout
-            ? 'Selected dates overlap an existing reservation. Please pick dates before or after.'
-            : `${formatFullDate(isoStr)} is already booked for ${selectedRoom.name}.`
-        );
-        return;
-      }
-      setSelectedRoomId(alternative.room.id);
+      const conflictingRes = reservations.filter(
+        (res) =>
+          String(res.room_id) === String(selectedRoom.id) &&
+          res.status !== 'cancelled' &&
+          rangesOverlap(start, end, res.check_in, res.check_out)
+      );
+      const bookedRange = conflictingRes.length > 0
+        ? formatStayRangeFriendly(conflictingRes[0].check_in, conflictingRes[0].check_out)
+        : formatShortDate(isoStr);
+
+      const noticeMsg = pickingCheckout
+        ? `Selected dates overlap an existing booking for ${selectedRoom.name} (${bookedRange}).`
+        : `${formatFullDate(isoStr)} is already booked for ${selectedRoom.name} (${bookedRange}).`;
+
+      setCalendarNotice(noticeMsg);
+      const altCandidate = rooms.find(
+        (r) => r.id !== selectedRoom.id && isRoomFree(r.id, start, end, reservations)
+      ) || (bestFreeRoom && bestFreeRoom.id !== selectedRoom.id ? bestFreeRoom : null);
+      triggerCaution(selectedRoom.name, bookedRange, altCandidate);
+      return;
     }
     setCalendarNotice(null);
 
@@ -1287,15 +1548,29 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
             {displayedAccommodations.map((room) => {
               const isSelected = room.id === selectedRoomId;
               const option = roomRanking.options.find((o) => o.room.id === room.id);
+              const activeRangeEnd = checkOut ?? (checkIn ? addDaysISO(checkIn, 1) : null);
+              const roomConflicts = (checkIn && activeRangeEnd)
+                ? reservations.filter(
+                    (res) =>
+                      String(res.room_id) === String(room.id) &&
+                      res.status !== 'cancelled' &&
+                      rangesOverlap(checkIn, activeRangeEnd, res.check_in, res.check_out)
+                  )
+                : [];
+              const isBookedOnDates = roomConflicts.length > 0;
               return (
                 <button
                   key={room.id}
                   type="button"
                   onClick={() => chooseRoom(room.id)}
                   aria-pressed={isSelected}
-                  className={`py-4 text-sm font-semibold whitespace-nowrap transition-colors border-b-2 cursor-pointer flex items-center gap-2 ${
-                    isSelected
+                  className={`py-4 text-sm font-semibold whitespace-nowrap transition-all border-b-2 cursor-pointer flex items-center gap-2 ${
+                    isBookedOnDates && isSelected
+                      ? 'border-rose-500 text-rose-950 bg-rose-50/70 rounded-t-lg'
+                      : isSelected
                       ? 'border-[#222222] text-[#222222]'
+                      : isBookedOnDates
+                      ? 'border-transparent text-rose-700/80 hover:text-rose-950 hover:bg-rose-50/30'
                       : 'border-transparent text-[#6A6A6A] hover:text-[#222222]'
                   }`}
                 >
@@ -1305,11 +1580,19 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                   }`}>
                     {formatPHP(room.rate_php || 3500)}
                   </span>
-                  {option && (
+                  {isBookedOnDates ? (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-rose-100 text-rose-800 border border-rose-300 flex items-center gap-1 animate-pulse">
+                      <span className="text-rose-600">⚠️</span> Booked
+                    </span>
+                  ) : checkIn ? (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800 flex items-center gap-1">
+                      <span>✓</span> Available
+                    </span>
+                  ) : option ? (
                     <span className={`text-[11px] font-semibold ${FIT_TONE[option.fit]}`}>
                       {fitLabel(option.fit, option.capacity, partySize, true)}
                     </span>
-                  )}
+                  ) : null}
                 </button>
               );
             })}
@@ -1609,31 +1892,109 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                 </div>
               </div>
 
-              {/* Conflict popup notification */}
+              {/* Intelligent Caution Warning Popup Modal / Card */}
               {conflictToast && (
                 <div
-                  className="fixed inset-x-0 top-4 z-[60] flex justify-center px-4 pointer-events-none"
+                  className="fixed inset-x-0 top-5 z-[70] flex justify-center px-4 pointer-events-none animate-in fade-in slide-in-from-top-4 duration-300"
                   role="alert"
                   aria-live="assertive"
                 >
-                  <div className="pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-xl border border-rose-300 bg-white px-4 py-3 shadow-lg">
-                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-rose-600 text-xs font-bold text-white">
-                      !
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-bold text-rose-950">Already booked!</p>
-                      <p className="mt-0.5 text-[11px] leading-snug text-rose-900/80">{conflictToast}</p>
+                  <div className="pointer-events-auto w-full max-w-lg rounded-2xl border-2 border-rose-300 bg-white/95 backdrop-blur-md p-4 sm:p-5 shadow-2xl ring-4 ring-rose-500/10">
+                    <div className="flex items-start gap-3.5">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-rose-700 text-white font-black text-lg flex items-center justify-center shrink-0 shadow-md shadow-rose-500/30">
+                        !
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <h5 className="text-sm sm:text-base font-extrabold text-rose-950 tracking-tight">
+                            {conflictToast.title}
+                          </h5>
+                          <button
+                            onClick={() => setConflictToast(null)}
+                            type="button"
+                            className="p-1 rounded-lg text-rose-400 hover:text-rose-800 hover:bg-rose-50 transition cursor-pointer"
+                            aria-label="Dismiss warning"
+                          >
+                            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+                            </svg>
+                          </button>
+                        </div>
+
+                        <p className="mt-1 text-xs sm:text-sm font-semibold text-rose-900 leading-snug">
+                          {conflictToast.message}
+                        </p>
+
+                        {/* Breakdown for multiple rooms */}
+                        {conflictToast.breakdown && conflictToast.breakdown.length > 1 && (
+                          <div className="mt-2.5 rounded-xl border border-rose-200 bg-rose-50/80 p-2.5 space-y-1.5">
+                            {conflictToast.breakdown.map((item, idx) => (
+                              <div key={idx} className="flex items-start gap-2 text-xs text-rose-950">
+                                <span className="font-bold text-rose-600 shrink-0">•</span>
+                                <div className="flex-1">
+                                  <span className="font-bold text-rose-950">This room ({item.roomName})</span> is already booked in date{' '}
+                                  <span className="inline-block px-1.5 py-0.5 rounded bg-rose-200/70 font-bold text-rose-900 border border-rose-300">
+                                    {item.datesText}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {conflictToast.subtext && (
+                          <p className="mt-1.5 text-xs text-rose-800/85 leading-relaxed">
+                            {conflictToast.subtext}
+                          </p>
+                        )}
+
+                        {/* Intelligent Quick Actions */}
+                        <div className="mt-3.5 flex flex-wrap items-center gap-2 pt-2 border-t border-rose-100">
+                          {conflictToast.altRoom && conflictToast.altRoom.id !== selectedRoom.id && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                chooseRoom(conflictToast.altRoom!.id);
+                                setConflictToast(null);
+                              }}
+                              className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs hover:shadow transition cursor-pointer flex items-center gap-1.5"
+                            >
+                              <span>Switch to {conflictToast.altRoom.name}</span>
+                              <span className="text-[10px] bg-white/20 px-1 py-0.2 rounded font-normal">Available</span>
+                            </button>
+                          )}
+
+                          {selectedRoomIds.length > 1 && conflictToast.breakdown && conflictToast.breakdown.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={deselectBookedRooms}
+                              className="px-3 py-1.5 rounded-lg border border-rose-300 bg-white hover:bg-rose-50 text-rose-800 text-xs font-bold transition cursor-pointer"
+                            >
+                              Deselect Booked Rooms
+                            </button>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              clearDates();
+                              setConflictToast(null);
+                            }}
+                            className="px-3 py-1.5 rounded-lg border border-rose-300 bg-white hover:bg-rose-50 text-rose-800 text-xs font-bold transition cursor-pointer"
+                          >
+                            Pick Open Dates
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setConflictToast(null)}
+                            className="px-2.5 py-1.5 rounded-lg text-rose-700 hover:text-rose-950 text-xs font-semibold cursor-pointer ml-auto"
+                          >
+                            Dismiss
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <button
-                      onClick={() => setConflictToast(null)}
-                      type="button"
-                      className="shrink-0 text-rose-400 hover:text-rose-700 cursor-pointer"
-                      aria-label="Dismiss"
-                    >
-                      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
-                      </svg>
-                    </button>
                   </div>
                 </div>
               )}
@@ -1650,14 +2011,22 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                         Caution — already booked!
                       </div>
                       <p className="text-xs sm:text-sm text-rose-900/90 mt-1 leading-relaxed">
-                        {roomMode === 'auto'
-                          ? `No single room for ${partySize} ${partySize === 1 ? 'guest' : 'guests'} is free for every night of this range. Please select an open continuous range.`
-                          : conflictRooms.length > 1
-                          ? `${conflictRooms.map((r) => r.name).join(' and ')} are already booked on some of these dates. Pick an open range or swap those rooms.`
-                          : `${conflictRooms[0]?.name ?? selectedRoom.name} is already booked on some of these dates. Pick an open range or choose another room.`}
+                        {detailedConflicts.length > 1
+                          ? `Multiple selected accommodations are already booked on these dates:`
+                          : `${conflictRooms[0]?.name ?? selectedRoom.name} is already booked on dates ${detailedConflicts[0]?.formattedRanges?.join(', ') || (checkIn && checkOut ? formatStayRangeFriendly(checkIn, checkOut) : 'selected dates')}.`}
                       </p>
+                      {detailedConflicts.length > 1 && (
+                        <div className="mt-2 space-y-1">
+                          {detailedConflicts.map((c, i) => (
+                            <div key={i} className="text-xs font-semibold text-rose-950 flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-600 inline-block"></span>
+                              <span>This room ({c.room.name}) is already booked in date {c.formattedRanges.join(', ')}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       {bestFreeRoom && roomMode !== 'auto' && (
-                        <p className="mt-1 text-xs text-rose-900/80">
+                        <p className="mt-1.5 text-xs text-rose-900/80">
                           {bestFreeRoom.name} has the same availability and is open for your whole stay.
                         </p>
                       )}
@@ -1669,6 +2038,15 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                             className="px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-bold hover:bg-rose-700 transition cursor-pointer"
                           >
                             Switch to {bestFreeRoom.name}
+                          </button>
+                        )}
+                        {selectedRoomIds.length > 1 && (
+                          <button
+                            onClick={deselectBookedRooms}
+                            type="button"
+                            className="px-3 py-1.5 rounded-lg border border-rose-300 bg-white text-rose-700 text-xs font-bold hover:bg-rose-100 transition cursor-pointer"
+                          >
+                            Keep only available rooms
                           </button>
                         )}
                         <button
@@ -1812,23 +2190,59 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                   </div>
                 </div>
 
-                {/* Calendar Legend */}
-                <div className="mt-5 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-xs text-[#475569]">
-                  <div className="flex flex-wrap items-center gap-3.5 sm:gap-5">
-                    <span className="inline-flex items-center gap-1.5 font-medium text-[#222222]">
-                      <span className="w-4 h-4 rounded-[4px] bg-white border border-[#E2E8F0] inline-block"></span> Available Box
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 font-semibold text-[#222222]">
-                      <span className="w-4 h-4 rounded-[4px] bg-[#222222] border border-[#222222] inline-block"></span> Selected IN/OUT
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 font-medium text-[#0F172A]">
-                      <span className="w-4 h-4 rounded-[4px] bg-[#F1F5F9] border border-[#CBD5E1] inline-block"></span> In-Stay Range
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 font-medium text-rose-700">
-                      <span className="w-4 h-4 rounded-[4px] cal-box-booked inline-block"></span> Booked Box
-                    </span>
+                {/* Calendar Legend with Live Room Availability Indication */}
+                <div className="mt-5 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-4 space-y-3">
+                  {/* Top Live Status Bar */}
+                  <div className="flex flex-wrap items-center justify-between gap-2.5 pb-2.5 border-b border-[#E2E8F0] text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                      <span className="font-bold text-[#0F172A]">
+                        Live status for: <span className="underline decoration-indigo-400 font-extrabold">{selectedRoom.name}</span>
+                      </span>
+                    </div>
+
+                    {hasRangeConflict ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 font-bold border border-rose-300">
+                        <span className="w-2 h-2 rounded-full bg-rose-600"></span>
+                        Selected stay conflicts with booked reservation
+                      </span>
+                    ) : checkIn && checkOut ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold border border-emerald-300">
+                        <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+                        Fully available for {formatShortDate(checkIn)} – {formatShortDate(checkOut)}
+                      </span>
+                    ) : (
+                      <span className="text-[11px] font-semibold text-[#64748B]">
+                        {monthBookedNights > 0
+                          ? `${monthBookedNights} booked ${monthBookedNights === 1 ? 'night' : 'nights'} in ${MONTH_NAMES[inlineYM.m]} · ${Math.max(0, new Date(inlineYM.y, inlineYM.m, 0).getDate() - monthBookedNights)} nights open`
+                          : `100% available in ${MONTH_NAMES[inlineYM.m]} ${inlineYM.y}`}
+                      </span>
+                    )}
                   </div>
-                  <span className="text-[11px] text-[#64748B]">Fri–Sat boxes reflect weekend coastal tariff</span>
+
+                  {/* Legend Items */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-[#475569]">
+                    <div className="flex flex-wrap items-center gap-3.5 sm:gap-5">
+                      <span className="inline-flex items-center gap-1.5 font-medium text-[#222222]">
+                        <span className="w-4 h-4 rounded-[4px] bg-white border border-[#E2E8F0] inline-block shadow-2xs"></span> Available Box
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 font-semibold text-[#222222]">
+                        <span className="w-4 h-4 rounded-[4px] bg-[#222222] border border-[#222222] inline-block"></span> Selected IN/OUT
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 font-medium text-[#0F172A]">
+                        <span className="w-4 h-4 rounded-[4px] bg-[#F1F5F9] border border-[#CBD5E1] inline-block"></span> In-Stay Range
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 font-medium text-rose-700">
+                        <span className="w-4 h-4 rounded-[4px] cal-box-booked inline-block"></span> Booked Box
+                      </span>
+                      {hasRangeConflict && (
+                        <span className="inline-flex items-center gap-1.5 font-bold text-rose-800">
+                          <span className="w-4 h-4 rounded-[4px] cal-box-conflict inline-block"></span> Conflict Box
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[11px] text-[#64748B]">Tap any open date to set stay range</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2067,9 +2481,9 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                       const isSelected = selectedRoomIds.includes(option.room.id);
                       const isBooked = option.fit === 'booked';
                       const isTooSmall = option.fit === 'too-small';
-                      const disabled = isBooked || isTooSmall;
+                      const disabled = isTooSmall;
                       const toneClass = isBooked
-                        ? 'border-[#FCA5A5] bg-[#FEF2F2] cursor-not-allowed'
+                        ? 'border-[#FCA5A5] bg-[#FEF2F2] hover:border-rose-400 cursor-pointer'
                         : isSelected
                         ? 'border-[#93C5FD] bg-[#EFF6FF] shadow-[inset_0_0_0_1px_#93C5FD] cursor-pointer'
                         : isTooSmall
@@ -2082,7 +2496,25 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                           role="checkbox"
                           aria-checked={isSelected}
                           disabled={disabled}
-                          onClick={() => toggleRoomSelect(option.room.id)}
+                          onClick={() => {
+                            if (isBooked) {
+                              const activeRangeEnd = checkOut ?? (checkIn ? addDaysISO(checkIn, 1) : null);
+                              const conflictingRes = (checkIn && activeRangeEnd)
+                                ? reservations.filter(
+                                    (res) =>
+                                      String(res.room_id) === String(option.room.id) &&
+                                      res.status !== 'cancelled' &&
+                                      rangesOverlap(checkIn, activeRangeEnd, res.check_in, res.check_out)
+                                  )
+                                : [];
+                              const range = conflictingRes.length > 0
+                                ? conflictingRes.map((r) => formatStayRangeFriendly(r.check_in, r.check_out)).join(', ')
+                                : (checkIn && checkOut ? formatStayRangeFriendly(checkIn, checkOut) : 'your selected dates');
+                              triggerCaution(option.room.name, range, bestFreeRoom);
+                            } else {
+                              toggleRoomSelect(option.room.id);
+                            }
+                          }}
                           className={`w-full flex items-center gap-3 rounded-xl border p-2.5 text-left transition ${toneClass}`}
                         >
                           <img src={option.room.image_url || '/images/cottage.jpg'} alt="" className="h-12 w-14 shrink-0 rounded-lg object-cover bg-slate-100" />
