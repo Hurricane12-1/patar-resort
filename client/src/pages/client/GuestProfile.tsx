@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import GuestIcon, { type GuestIconName } from '../../components/guest/GuestIcon';
 import { useGuestPortal } from '../../components/guest/GuestPortalContext';
+import { usePageSettings } from '../../lib/pageSettings';
 import { toast } from '../../components/Toasts';
 import { isValidPHMobile, to11Digits } from '../../lib/format';
 import {
@@ -32,6 +33,7 @@ function formatMobile(phone: string): string {
 
 export default function GuestProfile() {
   const portal = useGuestPortal();
+  const pageMedia = usePageSettings();
   const { account, mode } = portal;
   const p = account.profile;
 
@@ -51,9 +53,18 @@ export default function GuestProfile() {
 
   return (
     <div>
+      {pageMedia.dashboardAnnouncement && (
+        <div className="mb-6 rounded-2xl bg-amber-50 border border-amber-300/80 px-4 py-3 flex items-center gap-3 text-amber-900 shadow-xs">
+          <i className="fas fa-bullhorn text-amber-600 shrink-0 text-sm" />
+          <div className="text-xs sm:text-[13px] font-medium leading-snug">
+            <span className="font-bold uppercase tracking-wider text-amber-800 mr-2 text-[11px]">Notice:</span>
+            {pageMedia.dashboardAnnouncement}
+          </div>
+        </div>
+      )}
       <section className={`gp-animate-in relative overflow-hidden rounded-[26px] border border-[#E8E2D6] bg-white ${CARD_SHADOW}`}>
         <div className="absolute inset-y-0 right-0 hidden w-[42%] md:block" aria-hidden="true">
-          <img src="/images/hero.jpg" alt="" className="h-full w-full object-cover" />
+          <img src={pageMedia.heroImageUrl || "/images/hero.jpg"} alt="" className="h-full w-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-r from-white via-white/70 to-white/0" />
         </div>
         <div className="relative flex flex-col gap-6 p-6 sm:p-8 md:max-w-[64%]">

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import GuestIcon, { type GuestIconName } from '../../components/guest/GuestIcon';
 import { useGuestPortal, type RoomSnapshot } from '../../components/guest/GuestPortalContext';
+import { usePageSettings } from '../../lib/pageSettings';
 import { toast } from '../../components/Toasts';
 import { nightsBetween } from '../../lib/guestRooms';
 import {
@@ -53,6 +54,7 @@ function paymentLine(booking: GuestBooking): string {
 
 export default function GuestStays() {
   const portal = useGuestPortal();
+  const pageMedia = usePageSettings();
   const { today } = portal;
   const [searchParams, setSearchParams] = useSearchParams();
   const [filter, setFilter] = useState<Filter | null>(null);
@@ -109,11 +111,24 @@ export default function GuestStays() {
     <div>
       <section className="gp-animate-in flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div className="max-w-2xl">
-          <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#9E7E46]">Guest dashboard</p>
+          <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#9E7E46]">
+            {pageMedia.dashboardBadge || 'Guest dashboard'}
+          </p>
           <h1 className="gp-display mt-2 text-[30px] font-semibold leading-[1.1] text-[#18222B] sm:text-[40px]">
-            {greeting}, {portal.firstName}
+            {pageMedia.dashboardGreeting ? `${pageMedia.dashboardGreeting}, ${portal.firstName}` : `${greeting}, ${portal.firstName}`}
           </h1>
-          <p className="mt-2 text-[15px] leading-relaxed text-[#5F5B53] sm:text-base">{portal.loading ? 'Loading your stays…' : summary}</p>
+          <p className="mt-2 text-[15px] leading-relaxed text-[#5F5B53] sm:text-base">
+            {portal.loading ? 'Loading your stays…' : (pageMedia.dashboardSubtitle || summary)}
+          </p>
+          {pageMedia.dashboardAnnouncement && (
+            <div className="mt-4 rounded-xl bg-amber-50 border border-amber-300/80 px-3.5 py-2.5 flex items-center gap-2.5 text-amber-900 shadow-xs">
+              <i className="fas fa-bullhorn text-amber-600 shrink-0 text-sm" />
+              <div className="text-[12.5px] font-medium leading-snug">
+                <span className="font-bold uppercase tracking-wider text-amber-800 mr-1.5 text-[11px]">Notice:</span>
+                {pageMedia.dashboardAnnouncement}
+              </div>
+            </div>
+          )}
         </div>
         <dl className="grid grid-cols-3 gap-2 sm:gap-3 lg:w-[420px]">
           <StatTile label="Upcoming" value={portal.loading ? '–' : String(upcoming.length)} />

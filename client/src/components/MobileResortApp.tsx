@@ -3,10 +3,11 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
-import { usePageSettings } from '../lib/pageSettings';
+import { usePageSettings, savePageSettings } from '../lib/pageSettings';
 import { isValidPHMobile, to11Digits } from '../lib/format';
 import { getManilaTodayISO, inferOfferingType, type OfferingType } from '../lib/offeringSpecs';
 import { VoucherBarcode } from './receipt/VoucherBarcode';
+import { toast } from './Toasts';
 import {
   FALLBACK_ROOMS,
   computeStayPrice,
@@ -194,8 +195,26 @@ function getInitialReservations(roomsList: Room[]): ReservationWindow[] {
 export default function MobileResortApp({ embedded = false }: { embedded?: boolean } = {}) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { customerSession, customerProfile, setAuthOpen } = useAuth();
+  const {
+    customerSession,
+    customerProfile,
+    setAuthOpen,
+    adminSession,
+    adminProfile,
+    isAdminAuthenticated,
+    staffSession,
+    staffProfile,
+    isStaffAuthenticated,
+  } = useAuth();
   const signedInGuest = Boolean(customerSession && customerProfile);
+
+  const isStaffOrAdmin = Boolean(
+    isAdminAuthenticated ||
+    isStaffAuthenticated ||
+    (adminProfile && ['administrator', 'admin', 'staff', 'superadmin'].includes(adminProfile.role)) ||
+    (staffProfile && ['staff', 'receptionist', 'accounting', 'housekeeping', 'operations'].includes(staffProfile.role)) ||
+    (typeof window !== 'undefined' && (sessionStorage.getItem('jd_admin_session') || sessionStorage.getItem('jd_staff_session')))
+  );
 
   // Application Data States (Live Supabase)
   const [rooms, setRooms] = useState<Room[]>(FALLBACK_ROOMS);
@@ -209,9 +228,99 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
 
   // Active Hero Slide
   const [heroSlide, setHeroSlide] = useState<number>(0);
-  // Admin-managed hero image (Page Adjustment). Empty → keep the vector art.
+  // Admin-managed hero image & titles (Page Adjustment).
   const pageMedia = usePageSettings();
   const heroImageUrl = pageMedia.heroImageUrl || '';
+
+  // Upfront Hero & Title Editor State (Admin / Staff)
+  const [showHeroQuickEdit, setShowHeroQuickEdit] = useState<boolean>(false);
+  const [quickHeadline, setQuickHeadline] = useState<string>('');
+  const [quickSubtitle, setQuickSubtitle] = useState<string>('');
+  const [quickKicker, setQuickKicker] = useState<string>('');
+  const [quickHeroUrl, setQuickHeroUrl] = useState<string>('');
+  const [quickSaving, setQuickSaving] = useState<boolean>(false);
+  const [quickUploading, setQuickUploading] = useState<boolean>(false);
+  const quickFileRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (showHeroQuickEdit) {
+      setQuickHeadline(pageMedia.heroHeadline || '');
+      setQuickSubtitle(pageMedia.heroSubtitle || '');
+      setQuickKicker(pageMedia.heroKicker || '');
+      setQuickHeroUrl(pageMedia.heroImageUrl || '');
+    }
+  }, [showHeroQuickEdit, pageMedia]);
+
+  const handleSaveHeroUpfront = async () => {
+    try {
+      setQuickSaving(true);
+      await savePageSettings({
+        heroHeadline: quickHeadline.trim(),
+        heroSubtitle: quickSubtitle.trim(),
+        heroKicker: quickKicker.trim(),
+        heroImageUrl: quickHeroUrl.trim(),
+      });
+      setShowHeroQuickEdit(false);
+      toast('✓ Hero title & imagery updated upfront!');
+    } catch (err: any) {
+      toast(err?.message || 'Failed to update hero upfront', true);
+    } finally {
+      setQuickSaving(false);
+    }
+  };
+
+  const handleResetHeroUpfront = async () => {
+    try {
+      setQuickSaving(true);
+      await savePageSettings({
+        heroHeadline: '',
+        heroSubtitle: '',
+        heroKicker: '',
+        heroImageUrl: '',
+      });
+      setQuickHeadline('');
+      setQuickSubtitle('');
+      setQuickKicker('');
+      setQuickHeroUrl('');
+      setShowHeroQuickEdit(false);
+      toast('Hero reset to default artwork and resort headlines.');
+    } catch (err: any) {
+      toast(err?.message || 'Failed to reset hero', true);
+    } finally {
+      setQuickSaving(false);
+    }
+  };
+
+  const handleQuickImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (quickFileRef.current) quickFileRef.current.value = '';
+    if (!file) return;
+    if (!/^image\/(jpeg|png|webp|gif)$/.test(file.type)) {
+      toast('Only JPG, PNG, WEBP or GIF images are allowed.', true);
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      toast('Image exceeds 8MB limit.', true);
+      return;
+    }
+    try {
+      setQuickUploading(true);
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = () => reject(new Error('Could not read image'));
+        reader.readAsDataURL(file);
+      });
+      const result: any = await api.uploadImage(dataUrl, file.name);
+      const url = result?.url || dataUrl;
+      setQuickHeroUrl(url);
+      toast('Image uploaded. Click "Save & Publish Upfront" to apply.');
+    } catch (err: any) {
+      toast(err?.message || 'Image upload failed.', true);
+    } finally {
+      setQuickUploading(false);
+    }
+  };
 
   // Booking Dates & Selection (Defaults to N/A until selected)
   const [inlineYM, setInlineYM] = useState<YearMonth>({ y: 2026, m: 11 }); // Shangri-La dual view: Nov 2026
@@ -1304,9 +1413,12 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
           {heroImageUrl && (
             <img
               src={heroImageUrl}
-              alt=""
+              alt="Rock View Resort"
               aria-hidden="true"
-              className="absolute inset-0 w-full h-full object-cover"
+              className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }}
             />
           )}
           <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/20 to-[#18222B]/85"></div>
@@ -1332,16 +1444,29 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
 
         {/* Content Container */}
         <div className="relative z-10 max-w-[1120px] mx-auto px-4 sm:px-6 pt-14 pb-16 sm:pt-20 sm:pb-20 text-center">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/10 backdrop-blur-xs border border-white/20 text-[11px] font-semibold tracking-[0.22em] uppercase text-[#F3D9A4] mb-5">
-            <span>{HERO_SLIDES[heroSlide].kicker}</span>
+          <div className="flex flex-wrap items-center justify-center gap-2.5 mb-5">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/10 backdrop-blur-xs border border-white/20 text-[11px] font-semibold tracking-[0.22em] uppercase text-[#F3D9A4]">
+              <span>{heroSlide === 0 && pageMedia.heroKicker ? pageMedia.heroKicker : HERO_SLIDES[heroSlide].kicker}</span>
+            </div>
+            {isStaffOrAdmin && (
+              <button
+                type="button"
+                onClick={() => setShowHeroQuickEdit(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#18222B]/85 hover:bg-[#18222B] border border-[#D4B475]/80 text-[#F3D9A4] text-[11px] font-bold backdrop-blur-md transition shadow-md cursor-pointer hover:scale-105 active:scale-95"
+                title="Admin: Change headline and background image upfront"
+              >
+                <i className="fas fa-pen-to-square text-[10px]" />
+                <span>Edit Hero Upfront (Admin)</span>
+              </button>
+            )}
           </div>
 
           <h1 className="font-serif-luxury text-3xl sm:text-5xl lg:text-[54px] font-semibold tracking-tight text-white leading-[1.14] max-w-3xl mx-auto drop-shadow-sm">
-            {HERO_SLIDES[heroSlide].headline}
+            {heroSlide === 0 && pageMedia.heroHeadline ? pageMedia.heroHeadline : HERO_SLIDES[heroSlide].headline}
           </h1>
 
           <p className="mt-4 text-sm sm:text-base text-white/85 max-w-2xl mx-auto leading-relaxed">
-            {HERO_SLIDES[heroSlide].subcopy}
+            {heroSlide === 0 && pageMedia.heroSubtitle ? pageMedia.heroSubtitle : HERO_SLIDES[heroSlide].subcopy}
           </p>
 
           {/* Dots */}
@@ -3201,6 +3326,150 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                 </button>
               </div>
             )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===================================================================
+          ADMIN UPFRONT HERO & TITLE QUICK EDIT MODAL
+          =================================================================== */}
+      {showHeroQuickEdit && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+          onClick={() => setShowHeroQuickEdit(false)}
+        >
+          <div
+            className="w-full max-w-lg bg-[#FFFFFF] text-[#18222B] rounded-2xl shadow-2xl border border-[#E8E2D6] overflow-hidden flex flex-col max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#E8E2D6] bg-[#FBF9F5]">
+              <div className="flex items-center gap-2.5">
+                <i className="fas fa-pen-to-square text-[#0EA5E9]" />
+                <h3 className="font-serif-luxury text-lg font-bold text-[#18222B]">
+                  Edit Hero Upfront (Admin)
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowHeroQuickEdit(false)}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-[#8A857B] hover:text-[#18222B] hover:bg-black/5 transition cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-4 overflow-y-auto">
+              <div>
+                <label className="block text-[11px] font-extrabold uppercase tracking-wider text-[#9E7E46] mb-1.5">
+                  Hero Headline (Main Upfront Title)
+                </label>
+                <input
+                  type="text"
+                  value={quickHeadline}
+                  onChange={(e) => setQuickHeadline(e.target.value)}
+                  placeholder="Where Limestone Cliffs Meet the West Philippine Sea"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#D5CEBF] bg-[#FBF9F5] text-sm text-[#18222B] focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-extrabold uppercase tracking-wider text-[#9E7E46] mb-1.5">
+                  Hero Subtitle / Description
+                </label>
+                <textarea
+                  rows={3}
+                  value={quickSubtitle}
+                  onChange={(e) => setQuickSubtitle(e.target.value)}
+                  placeholder="Private oceanfront villas perched above Bolinao’s sculpted coral coves..."
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#D5CEBF] bg-[#FBF9F5] text-sm text-[#18222B] focus:outline-none focus:ring-2 focus:ring-[#0EA5E9] resize-vertical"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-extrabold uppercase tracking-wider text-[#9E7E46] mb-1.5">
+                  Location Kicker / Top Badge
+                </label>
+                <input
+                  type="text"
+                  value={quickKicker}
+                  onChange={(e) => setQuickKicker(e.target.value)}
+                  placeholder="Patar Coastal Road · Bolinao, Pangasinan, Philippines"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#D5CEBF] bg-[#FBF9F5] text-sm text-[#18222B] focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
+                />
+              </div>
+
+              <div className="pt-2 border-t border-[#E8E2D6]">
+                <label className="block text-[11px] font-extrabold uppercase tracking-wider text-[#9E7E46] mb-1.5">
+                  Hero Background Image
+                </label>
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <button
+                    type="button"
+                    onClick={() => quickFileRef.current?.click()}
+                    disabled={quickUploading || quickSaving}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0EA5E9] text-white text-xs font-bold hover:bg-[#0284C7] transition cursor-pointer"
+                  >
+                    <i className={quickUploading ? 'fas fa-spinner fa-spin' : 'fas fa-upload'} />
+                    <span>{quickUploading ? 'Uploading…' : 'Upload Image'}</span>
+                  </button>
+                  <input
+                    ref={quickFileRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    onChange={handleQuickImageUpload}
+                    className="hidden"
+                  />
+                  {quickHeroUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setQuickHeroUrl('')}
+                      className="text-xs text-rose-600 hover:text-rose-800 font-semibold cursor-pointer"
+                    >
+                      Remove image
+                    </button>
+                  )}
+                </div>
+                <input
+                  type="text"
+                  value={quickHeroUrl}
+                  onChange={(e) => setQuickHeroUrl(e.target.value)}
+                  placeholder="https://... or /uploads/..."
+                  className="w-full px-3.5 py-2 rounded-xl border border-[#D5CEBF] bg-[#FBF9F5] text-xs text-[#18222B] focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
+                />
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 border-t border-[#E8E2D6] bg-[#FBF9F5] flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={handleResetHeroUpfront}
+                disabled={quickSaving || quickUploading}
+                className="text-xs text-[#8A857B] hover:text-[#18222B] font-semibold underline cursor-pointer"
+              >
+                Reset to default
+              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowHeroQuickEdit(false)}
+                  className="px-4 py-2 rounded-xl border border-[#D5CEBF] text-xs font-bold text-[#18222B] hover:bg-black/5 transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveHeroUpfront}
+                  disabled={quickSaving || quickUploading}
+                  className="px-5 py-2 rounded-xl bg-[#18222B] text-white text-xs font-bold hover:bg-[#273644] transition cursor-pointer flex items-center gap-1.5"
+                >
+                  {quickSaving ? <i className="fas fa-spinner fa-spin" /> : <i className="fas fa-floppy-disk" />}
+                  <span>{quickSaving ? 'Publishing…' : 'Save & Publish Upfront'}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

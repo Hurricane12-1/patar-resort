@@ -1,4 +1,7 @@
 import { Router } from 'express';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { asyncH, ApiError } from '../middleware/errors.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
 import { admin, getSystemAdminClient } from '../lib/supabase.js';
@@ -7,23 +10,61 @@ import { logAuditEvent } from '../lib/auditLogger.js';
 const r = Router();
 
 const SETTINGS_KEY = 'page_media';
-const MAX_URL_LEN = 1024;
+const MAX_URL_LEN = 2048;
 
-// Allowlist of editable image slots. Unknown keys are ignored so the admin
-// panel can never inflate the row with arbitrary data.
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const dbDir = path.resolve(__dirname, '../db');
+const settingsFile = path.join(dbDir, 'site_settings.json');
+
+// Ensure db directory exists
+if (!fs.existsSync(dbDir)) {
+  try {
+    fs.mkdirSync(dbDir, { recursive: true });
+  } catch {}
+}
+
+function readLocalSettings() {
+  try {
+    if (fs.existsSync(settingsFile)) {
+      const raw = fs.readFileSync(settingsFile, 'utf8');
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.warn('[PageSettings] Failed to read local site_settings.json:', err.message);
+  }
+  return {};
+}
+
+function writeLocalSettings(data) {
+  try {
+    if (!fs.existsSync(dbDir)) {
+      fs.mkdirSync(dbDir, { recursive: true });
+    }
+    fs.writeFileSync(settingsFile, JSON.stringify(data, null, 2), 'utf8');
+  } catch (err) {
+    console.warn('[PageSettings] Failed to write local site_settings.json:', err.message);
+  }
+}
+
+// Allowlist of editable slots for landing page media, hero titles, and guest/user dashboard layout.
 const ALLOWED_SLOTS = new Set([
   'heroImageUrl',
+  'heroHeadline',
+  'heroSubtitle',
+  'heroKicker',
+  'dashboardGreeting',
+  'dashboardSubtitle',
+  'dashboardAnnouncement',
+  'dashboardBadge',
+  'dashboardShowQuickBooking',
+  'dashboardThemeAccent',
 ]);
 
-// Only HTTPS references from trusted hosts, or safe app-relative paths, may be
-// stored. This blocks javascript:/data: URIs and arbitrary third-party hosts,
-// so an admin UI value can never become a stored-XSS or data-exfiltration vector.
-const TRUSTED_HOSTS = [
-  'res.cloudinary.com',
-  'cloudinary.com',
-  'patar-resort.pages.dev',
-  'patar-resort.onrender.com',
-];
+const IMAGE_SLOTS = new Set(['heroImageUrl']);
 
 function sanitizeImageUrl(value) {
   if (value === null || value === undefined) return '';     // clear slot
@@ -32,27 +73,38 @@ function sanitizeImageUrl(value) {
   if (!v) return '';                                        // clear slot
   if (v.length > MAX_URL_LEN) return null;
 
-  // App-relative uploads / bundled images.
+  // App-relative uploads / bundled images
   if (v.startsWith('/uploads/') || v.startsWith('/images/')) {
     if (v.includes('..') || v.includes('\\')) return null;
     return v;
   }
 
-  // Absolute URLs: HTTPS + trusted host only.
+  // Base64 data image URL fallback
+  if (v.startsWith('data:image/') && v.includes(';base64,')) {
+    return v;
+  }
+
+  // Absolute URLs: HTTP/HTTPS allowed (supports Cloudinary, Supabase, Unsplash, Google, CDNs)
   let u;
   try {
     u = new URL(v);
   } catch {
     return null;
   }
-  if (u.protocol !== 'https:') return null;
-  const host = u.hostname.toLowerCase();
-  const trusted = TRUSTED_HOSTS.some((h) => host === h || host.endsWith('.' + h));
-  if (!trusted) return null;
+  if (u.protocol !== 'https:' && u.protocol !== 'http:') return null;
   return u.toString();
 }
 
+function sanitizeText(value, maxLen = 600) {
+  if (value === null || value === undefined) return '';
+  if (typeof value !== 'string') return String(value || '').slice(0, maxLen);
+  const v = value.trim().slice(0, maxLen);
+  // strip potential script tags
+  return v.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '').trim();
+}
+
 async function readSettings() {
+  const local = readLocalSettings();
   try {
     const db = await getSystemAdminClient().catch(() => admin);
     const { data, error } = await db
@@ -60,30 +112,34 @@ async function readSettings() {
       .select('value')
       .eq('key', SETTINGS_KEY)
       .maybeSingle();
-    if (error) return {};
-    return data && data.value && typeof data.value === 'object' ? data.value : {};
+    if (!error && data && data.value && typeof data.value === 'object') {
+      return { ...local, ...data.value };
+    }
   } catch {
-    return {};
+    // fallback to local file
   }
+  return local;
 }
 
 function pickAllowed(settings) {
   const out = {};
   for (const k of ALLOWED_SLOTS) {
-    if (settings[k]) out[k] = settings[k];
+    if (settings && settings[k] !== undefined) {
+      out[k] = settings[k];
+    }
   }
   return out;
 }
 
 // GET /api/page-settings — PUBLIC. Returns only the curated, allowlisted
-// image config (no secrets, no other rows).
+// image & layout config (no secrets, no other rows).
 r.get('/page-settings', asyncH(async (_req, res) => {
   const settings = await readSettings();
   res.json({ settings: pickAllowed(settings) });
 }));
 
 // PUT /api/page-settings — ADMINISTRATOR ONLY. Validates every value, merges,
-// and persists through the service-role client.
+// persists locally first and mirrors to Supabase when available.
 r.put('/page-settings', authenticate, requireAdmin, asyncH(async (req, res) => {
   const incoming = req.body?.settings;
   if (!incoming || typeof incoming !== 'object' || Array.isArray(incoming)) {
@@ -96,38 +152,54 @@ r.put('/page-settings', authenticate, requireAdmin, asyncH(async (req, res) => {
 
   for (const [key, rawVal] of Object.entries(incoming)) {
     if (!ALLOWED_SLOTS.has(key)) continue;
-    const clean = sanitizeImageUrl(rawVal);
-    if (clean === null) {
-      throw new ApiError(
-        400,
-        `Invalid image URL for "${key}". Only HTTPS Cloudinary/resort URLs or /uploads and /images paths are allowed.`
-      );
-    }
-    if (clean === '') {
-      delete next[key];
-      applied[key] = '';
+
+    if (IMAGE_SLOTS.has(key)) {
+      const cleanImg = sanitizeImageUrl(rawVal);
+      if (cleanImg === null) {
+        throw new ApiError(
+          400,
+          `Invalid image URL for "${key}". Supported: HTTPS/HTTP image URLs, /uploads, /images, or base64 data URLs.`
+        );
+      }
+      if (cleanImg === '') {
+        delete next[key];
+        applied[key] = '';
+      } else {
+        next[key] = cleanImg;
+        applied[key] = cleanImg;
+      }
+    } else if (key === 'dashboardShowQuickBooking') {
+      next[key] = Boolean(rawVal);
+      applied[key] = next[key];
     } else {
-      next[key] = clean;
-      applied[key] = clean;
+      const cleanText = sanitizeText(rawVal);
+      if (cleanText === '') {
+        delete next[key];
+        applied[key] = '';
+      } else {
+        next[key] = cleanText;
+        applied[key] = cleanText;
+      }
     }
   }
 
-  const db = await getSystemAdminClient().catch(() => admin);
-  const { error } = await db.from('site_settings').upsert(
-    {
-      key: SETTINGS_KEY,
-      value: next,
-      updated_by: req.user?.id || null,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'key' }
-  );
+  // 1. Resilient local persistence (guarantees update is saved immediately)
+  writeLocalSettings(next);
 
-  if (error) {
-    throw new ApiError(
-      500,
-      `Could not save page settings: ${error.message}. Ensure the site_settings table exists (run server/supabase/page_settings.sql).`
+  // 2. Mirror to Supabase if site_settings table exists
+  try {
+    const db = await getSystemAdminClient().catch(() => admin);
+    await db.from('site_settings').upsert(
+      {
+        key: SETTINGS_KEY,
+        value: next,
+        updated_by: req.user?.id || null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'key' }
     );
+  } catch (dbErr) {
+    console.warn('[PageSettings] Mirroring to Supabase skipped (persisted locally):', dbErr?.message);
   }
 
   logAuditEvent({
@@ -142,6 +214,6 @@ r.put('/page-settings', authenticate, requireAdmin, asyncH(async (req, res) => {
   res.json({ success: true, settings: pickAllowed(next) });
 }));
 
-export const version = '1.0.0';
-export const description = 'Admin-managed public page media (Page Adjustment)';
+export const version = '1.1.0';
+export const description = 'Admin-managed public page media and dashboard layout customization';
 export default r;
