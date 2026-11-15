@@ -17,11 +17,20 @@ interface StaffGuardProps {
  */
 export default function StaffGuard({ children, portal, title }: StaffGuardProps) {
   const location = useLocation();
-  const { adminSession, adminProfile, profile, signOutAdmin } = useAuth();
-  const activeProfile = adminProfile || profile;
+  const { staffSession, staffProfile, adminSession, adminProfile, signOutStaff, signOutAdmin } = useAuth();
+  const activeSession = staffSession || adminSession;
+  const activeProfile = staffProfile || adminProfile;
+
+  const handleSignOut = () => {
+    if (staffSession) {
+      signOutStaff();
+    } else {
+      signOutAdmin();
+    }
+  };
 
   // 1. Unauthenticated -> Redirect to dedicated /staff/login
-  if (!adminSession || !activeProfile || !isInternalEmployee(activeProfile)) {
+  if (!activeSession || !activeProfile || !isInternalEmployee(activeProfile)) {
     const returnUrl = encodeURIComponent(location.pathname + location.search);
     return <Navigate to={`/staff/login?redirect=${returnUrl}`} replace />;
   }
@@ -74,7 +83,7 @@ export default function StaffGuard({ children, portal, title }: StaffGuardProps)
               </Link>
               <button
                 type="button"
-                onClick={signOutAdmin}
+                onClick={handleSignOut}
                 style={{
                   padding: '8px 14px',
                   borderRadius: 10,

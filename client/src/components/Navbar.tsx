@@ -7,7 +7,7 @@ import { LiveClock } from './LiveClock.tsx';
 import { isAdministrator, isInternalEmployee, getDefaultStaffPath, formatDepartmentBadge } from '../lib/rbac.ts';
 
 export default function Navbar() {
-  const { session, profile, adminSession, adminProfile, signOut, signOutCustomer, signOutAdmin, setAuthOpen } = useAuth();
+  const { session, profile, adminSession, adminProfile, staffSession, staffProfile, signOut, signOutCustomer, signOutAdmin, signOutStaff, setAuthOpen } = useAuth();
   const [open, setOpen] = useState(false);
   const [menu, setMenu] = useState(false);
   const [notes, setNotes] = useState([]);
@@ -22,13 +22,14 @@ export default function Navbar() {
   }, [session]);
 
   const isExecAdmin = Boolean(adminSession && adminProfile && isAdministrator(adminProfile));
-  const isStaff = Boolean(adminSession && adminProfile && isInternalEmployee(adminProfile));
-  const staffHome = getDefaultStaffPath(adminProfile);
+  const isStaff = Boolean((staffSession && staffProfile && isInternalEmployee(staffProfile)) || (adminSession && adminProfile && isInternalEmployee(adminProfile)));
+  const employeeBadge = formatDepartmentBadge(staffProfile || adminProfile);
+  const staffHome = staffProfile ? getDefaultStaffPath(staffProfile) : (adminProfile ? getDefaultStaffPath(adminProfile) : '/staff/operations');
   const links = [
     ['/', 'Home'],
     ['/rooms', 'Rooms'],
     ['/client/bookings', 'My Bookings'],
-    ...(isExecAdmin ? [['/admin', 'Admin Console'], ['/staff/operations', 'Operations']] : isStaff ? [[staffHome, formatDepartmentBadge(adminProfile)]] : []),
+    ...(isExecAdmin ? [['/admin', 'Admin Console'], ['/staff/operations', 'Operations']] : isStaff ? [[staffHome, employeeBadge]] : []),
   ];
 
   return (
@@ -115,7 +116,7 @@ export default function Navbar() {
               </>
             ) : (
               <>
-                {adminSession && (
+                {(adminSession || staffSession) && (
                   <Link
                     to={isExecAdmin ? '/admin' : staffHome}
                     className="btn btn-sm"
@@ -128,10 +129,10 @@ export default function Navbar() {
                       gap: 6,
                       textDecoration: 'none',
                     }}
-                    title={isExecAdmin ? 'Active Executive Administrator Session' : `Active ${formatDepartmentBadge(adminProfile)} Session`}
+                    title={isExecAdmin ? 'Active Executive Administrator Session' : `Active ${employeeBadge} Session`}
                   >
                     <i className="fas fa-shield-halved" />
-                    <span>{isExecAdmin ? 'Admin Console' : formatDepartmentBadge(adminProfile)}</span>
+                    <span>{isExecAdmin ? 'Admin Console' : employeeBadge}</span>
                   </Link>
                 )}
                 <button

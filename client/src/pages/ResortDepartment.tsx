@@ -15,9 +15,9 @@ import {
 } from '../lib/rbac.ts';
 
 export default function ResortDepartment() {
-  const { session, adminSession, profile, adminProfile, setAuthOpen } = useAuth();
-  const currentSession = adminSession || session;
-  const activeProfile = adminProfile || profile;
+  const { adminSession, adminProfile, staffSession, staffProfile, setAuthOpen } = useAuth();
+  const currentSession = staffSession || adminSession;
+  const activeProfile = staffProfile || adminProfile;
   const isExecAdmin = isAdministrator(activeProfile);
   const allowedDepts = getAllowedOperationalDepartments(activeProfile);
   const allowRoomReadiness = canUseRoomReadiness(activeProfile);

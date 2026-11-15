@@ -8,9 +8,9 @@ import { money, fmtDate } from '../../lib/format.ts';
 export default function RecoveryPortal() {
   const [searchParams] = useSearchParams();
   const filterRef = searchParams.get('ref');
-  const { adminProfile, profile, session, adminSession, customerSession, setAuthOpen } = useAuth();
-  const isAuthenticated = Boolean(session || adminSession || customerSession);
-  const activeProfile = adminProfile || profile;
+  const { adminProfile, staffProfile, adminSession, staffSession, setAuthOpen } = useAuth();
+  const isAuthenticated = Boolean(adminSession || staffSession);
+  const activeProfile = adminProfile || staffProfile;
 
   const [activeTab, setActiveTab] = useState<'cases' | 'audit'>('cases');
   const [disputedBookings, setDisputedBookings] = useState<any[]>([]);

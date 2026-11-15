@@ -10,13 +10,13 @@ export default function StaffLogin() {
   const [searchParams] = useSearchParams();
   const redirectTarget = searchParams.get('redirect');
 
-  const { adminSignIn, adminProfile, profile } = useAuth();
+  const { staffSignIn, staffProfile, adminProfile } = useAuth();
   const [email, setEmail]                       = useState('');
   const [password, setPassword]                 = useState('');
   const [showPassword, setShowPassword]         = useState(false);
   const [submitting, setSubmitting]             = useState(false);
 
-  const activeEmployee = adminProfile || profile;
+  const activeEmployee = staffProfile || adminProfile;
 
   React.useEffect(() => {
     if (activeEmployee && normalizeRole(activeEmployee.role) !== 'customer') {
@@ -33,7 +33,7 @@ export default function StaffLogin() {
     }
     setSubmitting(true);
     try {
-      const res = await adminSignIn(email.trim(), password);
+      const res = await staffSignIn(email.trim(), password);
       if (res?.error) throw res.error;
 
       const user = res?.data?.profile || res?.data?.user;

@@ -10,8 +10,8 @@ import PriceChangeRequestPanel from '../components/PriceChangeRequestPanel.tsx';
 import { canAccessPortal } from '../lib/rbac.ts';
 
 export default function Accounting() {
-  const { profile, adminProfile } = useAuth();
-  const currentProf = adminProfile || profile;
+  const { staffProfile, adminProfile } = useAuth();
+  const currentProf = staffProfile || adminProfile;
   const isAuthorized = canAccessPortal(currentProf, 'accounting');
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);

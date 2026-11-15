@@ -147,6 +147,35 @@ export function AuthProvider({ children }) {
     } catch { return null; }
   });
 
+  // ────────────────────────────────────────────────────────────
+  // 3. STAFF SCOPE (Operational Desks: Receptionist, Housekeeping, Accounting, Operations)
+  // ────────────────────────────────────────────────────────────
+  const [staffSession, setStaffSession] = useState<any>(() => {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('jd_staff_session');
+      }
+      const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_staff_session') : null;
+      if (saved) {
+        return JSON.parse(saved);
+      }
+      return null;
+    } catch { return null; }
+  });
+
+  const [staffProfile, setStaffProfile] = useState<any>(() => {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('jd_staff_profile');
+      }
+      const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_staff_profile') : null;
+      if (saved) {
+        return JSON.parse(saved);
+      }
+      return null;
+    } catch { return null; }
+  });
+
   const [authOpen, setAuthOpen] = useState(false);
   const [needsProfileCompletion, setNeedsProfileCompletion] = useState(false);
 
@@ -209,6 +238,31 @@ export function AuthProvider({ children }) {
     }
   }, [adminProfile]);
 
+  // Synchronize Staff Session & Profile with sessionStorage
+  useEffect(() => {
+    if (typeof sessionStorage !== 'undefined') {
+      if (staffSession) {
+        sessionStorage.setItem('jd_staff_session', JSON.stringify(staffSession));
+        if (staffSession.access_token) {
+          sessionStorage.setItem('jd_staff_jwt', staffSession.access_token);
+        }
+      } else {
+        sessionStorage.removeItem('jd_staff_session');
+        sessionStorage.removeItem('jd_staff_jwt');
+      }
+    }
+  }, [staffSession]);
+
+  useEffect(() => {
+    if (typeof sessionStorage !== 'undefined') {
+      if (staffProfile) {
+        sessionStorage.setItem('jd_staff_profile', JSON.stringify(staffProfile));
+      } else {
+        sessionStorage.removeItem('jd_staff_profile');
+      }
+    }
+  }, [staffProfile]);
+
   // Clean any old localStorage legacy keys immediately
   useEffect(() => {
     if (typeof localStorage !== 'undefined') {
@@ -224,6 +278,16 @@ export function AuthProvider({ children }) {
       if (!s) return;
       if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED') {
         try {
+          const pathname = typeof window !== 'undefined' ? window.location.pathname.toLowerCase() : '';
+          const onAdminPath = pathname.startsWith('/admin');
+          const onStaffPath = pathname.startsWith('/staff') || pathname.startsWith('/recovery') || pathname.startsWith('/receptionist') || pathname.startsWith('/accounting') || pathname.startsWith('/resort-department');
+
+          // STRICT SCOPE ISOLATION:
+          // A customer/guest OAuth session MUST NEVER pop up toasts or run inside Admin or Staff portals!
+          if (onAdminPath || onStaffPath) {
+            return;
+          }
+
           let prof: any = null;
           try {
             const { data: dbProf } = await supabase.from('profiles').select('*').eq('id', s.user.id).maybeSingle();
@@ -242,45 +306,39 @@ export function AuthProvider({ children }) {
             avatar_url: meta.avatar_url || meta.picture || '',
           };
 
-          if (['administrator', 'admin', 'staff', 'receptionist', 'accounting'].includes(fallbackRole) && window.location.pathname.startsWith('/admin')) {
-            setAdminSession(s);
-            setAdminProfile({ ...finalProfile, role: fallbackRole });
-            if (typeof sessionStorage !== 'undefined') {
-              sessionStorage.setItem('jd_admin_session', JSON.stringify(s));
-              sessionStorage.setItem('jd_admin_jwt', s.access_token);
-              sessionStorage.setItem('jd_admin_profile', JSON.stringify(finalProfile));
-            }
-          } else {
-            // Customer public website login
-            setCustomerSession(s);
-            setCustomerProfile({ ...finalProfile, role: 'customer' });
-            if (typeof sessionStorage !== 'undefined') {
-              sessionStorage.setItem('jd_customer_session', JSON.stringify(s));
-              sessionStorage.setItem('jd_customer_jwt', s.access_token);
-              sessionStorage.setItem('jd_customer_profile', JSON.stringify(finalProfile));
-            }
-
-            // Automatically synchronize new Google / Facebook / OAuth customer with Supabase database
-            if (!prof && s.user?.id) {
-              supabase.from('profiles').upsert({
-                id: s.user.id,
-                email: s.user.email,
-                full_name: finalProfile.full_name,
-                first_name: finalProfile.first_name,
-                last_name: finalProfile.last_name,
-                avatar_url: finalProfile.avatar_url,
-                role: 'customer',
-              }, { onConflict: 'id' }).then(() => {}).catch(() => {});
-
-              supabase.from('customers').upsert({
-                id: s.user.id,
-                email: s.user.email,
-                full_name: finalProfile.full_name,
-              }, { onConflict: 'id' }).then(() => {}).catch(() => {});
-            }
+          // Customer public website login
+          setCustomerSession(s);
+          setCustomerProfile({ ...finalProfile, role: 'customer' });
+          if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.setItem('jd_customer_session', JSON.stringify(s));
+            sessionStorage.setItem('jd_customer_jwt', s.access_token);
+            sessionStorage.setItem('jd_customer_profile', JSON.stringify(finalProfile));
           }
+
+          // Automatically synchronize new Google / Facebook / OAuth customer with Supabase database
+          if (!prof && s.user?.id) {
+            supabase.from('profiles').upsert({
+              id: s.user.id,
+              email: s.user.email,
+              full_name: finalProfile.full_name,
+              first_name: finalProfile.first_name,
+              last_name: finalProfile.last_name,
+              avatar_url: finalProfile.avatar_url,
+              role: 'customer',
+            }, { onConflict: 'id' }).then(() => {}).catch(() => {});
+
+            supabase.from('customers').upsert({
+              id: s.user.id,
+              email: s.user.email,
+              full_name: finalProfile.full_name,
+            }, { onConflict: 'id' }).then(() => {}).catch(() => {});
+          }
+
           setAuthOpen(false);
-          if (event === 'SIGNED_IN') {
+          // Only show welcome toast on explicit sign in from client portal, once per session
+          const greetedKey = 'jd_customer_greeted_' + s.user.id;
+          if (event === 'SIGNED_IN' && typeof sessionStorage !== 'undefined' && !sessionStorage.getItem(greetedKey)) {
+            sessionStorage.setItem(greetedKey, '1');
             toast(`Welcome, ${finalProfile.full_name || 'Guest'}! You are signed in.`);
           }
         } catch {
@@ -291,57 +349,50 @@ export function AuthProvider({ children }) {
     return () => data?.subscription?.unsubscribe();
   }, []);
 
-  // Live Database Profile Retrieval & Synchronization
+  // Live Database Profile Retrieval & Synchronization across the 3 Scopes
   const refreshProfile = useCallback(async () => {
     try {
-      const hasAdminJwt = typeof sessionStorage !== 'undefined' && Boolean(sessionStorage.getItem('jd_admin_jwt'));
-      const hasCustomerJwt = typeof sessionStorage !== 'undefined' && Boolean(sessionStorage.getItem('jd_customer_jwt'));
-      const onAdminPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+      const pathname = typeof window !== 'undefined' ? window.location.pathname.toLowerCase() : '';
+      const onAdminPath = pathname.startsWith('/admin');
+      const onStaffPath = pathname.startsWith('/staff') || pathname.startsWith('/recovery') || pathname.startsWith('/receptionist') || pathname.startsWith('/accounting') || pathname.startsWith('/resort-department');
 
-      if (adminSession || customerSession || hasAdminJwt || hasCustomerJwt) {
-        try {
-          const freshMe = await api.me();
-          if (freshMe && freshMe.id) {
-            const role = freshMe.role || 'customer';
-            const isAdminRole = ['administrator', 'admin', 'staff', 'receptionist', 'accounting'].includes(role);
-
-            if ((hasAdminJwt || onAdminPath || adminSession) && isAdminRole) {
-              setAdminProfile((prev: any) => ({
-                ...(prev || {}),
-                ...freshMe,
-                role: role,
-              }));
-              return freshMe;
-            } else if (hasCustomerJwt || customerSession || !onAdminPath) {
-              setCustomerProfile((prev: any) => ({
-                ...(prev || {}),
-                ...freshMe,
-                role: 'customer',
-              }));
+      if (onAdminPath) {
+        if (adminSession || (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('jd_admin_jwt'))) {
+          try {
+            const freshMe = await api.me();
+            if (freshMe && freshMe.id && ['administrator', 'admin'].includes(freshMe.role)) {
+              setAdminProfile((prev: any) => ({ ...(prev || {}), ...freshMe, role: freshMe.role }));
               return freshMe;
             }
-          }
-        } catch {
-          // Fallback directly to Supabase table
-          const targetId = (onAdminPath ? adminSession?.user?.id : customerSession?.user?.id) || adminSession?.user?.id;
-          if (targetId) {
-            const { data: sbProf } = await supabase.from('profiles').select('*').eq('id', targetId).maybeSingle();
-            if (sbProf) {
-              if (onAdminPath || adminSession) {
-                setAdminProfile((prev: any) => ({ ...(prev || {}), ...sbProf }));
-              } else {
-                setCustomerProfile((prev: any) => ({ ...(prev || {}), ...sbProf, role: 'customer' }));
-              }
-              return sbProf;
+          } catch {}
+        }
+      } else if (onStaffPath) {
+        if (staffSession || adminSession || (typeof sessionStorage !== 'undefined' && (sessionStorage.getItem('jd_staff_jwt') || sessionStorage.getItem('jd_admin_jwt')))) {
+          try {
+            const freshMe = await api.me();
+            if (freshMe && freshMe.id && freshMe.role !== 'customer') {
+              setStaffProfile((prev: any) => ({ ...(prev || {}), ...freshMe }));
+              return freshMe;
             }
-          }
+          } catch {}
+        }
+      } else {
+        // Client / Public Scope
+        if (customerSession || (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('jd_customer_jwt'))) {
+          try {
+            const freshMe = await api.me();
+            if (freshMe && freshMe.id) {
+              setCustomerProfile((prev: any) => ({ ...(prev || {}), ...freshMe, role: 'customer' }));
+              return freshMe;
+            }
+          } catch {}
         }
       }
     } catch (e) {
       console.warn('[AuthContext] Profile sync notice:', e);
     }
     return null;
-  }, [adminSession, customerSession]);
+  }, [adminSession, staffSession, customerSession]);
 
   useEffect(() => {
     refreshProfile();
@@ -351,11 +402,13 @@ export function AuthProvider({ children }) {
   // 3. COMPLETE DEEP PURGE SIGN-OUT (Removes ALL User Credentials)
   // ─────────────────────────────────────────────────────────────
   const signOut = useCallback(async () => {
-    // 1. Reset all in-memory React states
+    // 1. Reset all in-memory React states across all 3 scopes
     setCustomerSession(null);
     setCustomerProfile(null);
     setAdminSession(null);
     setAdminProfile(null);
+    setStaffSession(null);
+    setStaffProfile(null);
     setNeedsProfileCompletion(false);
 
     // 2. Clear entire sessionStorage
@@ -371,6 +424,7 @@ export function AuthProvider({ children }) {
         const keysToRemove = [
           'jd_session', 'jd_profile', 'jd_customer_session', 'jd_customer_profile', 'jd_customer_jwt',
           'jd_admin_session', 'jd_admin_profile', 'jd_admin_jwt', 'jd_admin_token_key',
+          'jd_staff_session', 'jd_staff_profile', 'jd_staff_jwt',
           'alon_session', 'alon_profile', 'sb-access-token', 'sb-refresh-token',
           'customer_profile', 'guest_manifest', 'rockview_booking_draft',
         ];
@@ -424,7 +478,18 @@ export function AuthProvider({ children }) {
     toast('✦ Successfully signed out. All sessions, keys, and credentials have been purged.');
   }, []);
 
-  const signOutScope = useCallback(async (scope: 'customer' | 'admin') => {
+  const signOutStaff = useCallback(async () => {
+    setStaffSession(null);
+    setStaffProfile(null);
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem('jd_staff_session');
+      sessionStorage.removeItem('jd_staff_profile');
+      sessionStorage.removeItem('jd_staff_jwt');
+    }
+    toast('✦ Staff station session terminated.');
+  }, []);
+
+  const signOutScope = useCallback(async (scope: 'customer' | 'admin' | 'staff') => {
     if (scope === 'customer') {
       setCustomerSession(null);
       setCustomerProfile(null);
@@ -434,7 +499,7 @@ export function AuthProvider({ children }) {
         sessionStorage.removeItem('jd_customer_jwt');
       }
       toast('✦ Customer session terminated.');
-    } else {
+    } else if (scope === 'admin') {
       setAdminSession(null);
       setAdminProfile(null);
       if (typeof sessionStorage !== 'undefined') {
@@ -444,12 +509,14 @@ export function AuthProvider({ children }) {
         sessionStorage.removeItem('jd_admin_token_key');
       }
       toast('✦ Administrator session terminated.');
+    } else if (scope === 'staff') {
+      signOutStaff();
     }
-  }, []);
+  }, [signOutStaff]);
 
   // 40-Minute Inactivity Auto-Logout Effect
   useEffect(() => {
-    if (!customerSession && !adminSession) return;
+    if (!customerSession && !adminSession && !staffSession) return;
     const INACTIVITY_LIMIT_MS = 40 * 60 * 1000;
     let timeoutId: any;
 
@@ -469,7 +536,7 @@ export function AuthProvider({ children }) {
       if (timeoutId) clearTimeout(timeoutId);
       events.forEach((evt) => window.removeEventListener(evt, resetTimer));
     };
-  }, [customerSession, adminSession, signOut]);
+  }, [customerSession, adminSession, staffSession, signOut]);
 
   // ─────────────────────────────────────────────────────────────
   // 4. CUSTOMER AUTHENTICATION (Customer / Client Scope Only)
@@ -568,19 +635,24 @@ export function AuthProvider({ children }) {
         });
 
         if (adminAuthRes?.session) {
-          const userObj = {
-            ...(adminAuthRes.user || adminAuthRes.profile),
-            role: String((adminAuthRes.user || adminAuthRes.profile)?.role || 'staff').toLowerCase() === 'admin' ? 'administrator' : String((adminAuthRes.user || adminAuthRes.profile)?.role || 'staff').toLowerCase(),
+          const userObj = adminAuthRes.user || adminAuthRes.profile;
+          const role = String(userObj?.role || 'staff').toLowerCase();
+          if (!['administrator', 'admin'].includes(role)) {
+            throw new Error('Access denied: Operational staff accounts must sign in at the Station Portal (/staff/login).');
+          }
+          const adminObj = {
+            ...userObj,
+            role: role === 'admin' ? 'administrator' : role,
           };
           setAdminSession(adminAuthRes.session);
-          setAdminProfile(userObj);
+          setAdminProfile(adminObj);
           if (typeof sessionStorage !== 'undefined') {
             sessionStorage.setItem('jd_admin_session', JSON.stringify(adminAuthRes.session));
             if (adminAuthRes.session.access_token) {
               sessionStorage.setItem('jd_admin_jwt', adminAuthRes.session.access_token);
             }
-            sessionStorage.setItem('jd_admin_profile', JSON.stringify(userObj));
-            if (['administrator', 'admin'].includes(String(userObj.role || '').toLowerCase())) { sessionStorage.setItem('jd_admin_token_key', key || adminAuthRes.tokenIdKey || 'etc-34'); } else { sessionStorage.removeItem('jd_admin_token_key'); }
+            sessionStorage.setItem('jd_admin_profile', JSON.stringify(adminObj));
+            sessionStorage.setItem('jd_admin_token_key', key || adminAuthRes.tokenIdKey || 'etc-34');
           }
           return { data: adminAuthRes, error: null };
         }
@@ -597,9 +669,9 @@ export function AuthProvider({ children }) {
               } catch {}
 
               const role = prof?.role || sbRes.data.session.user.user_metadata?.role || 'customer';
-              if (!['administrator', 'admin', 'staff', 'receptionist', 'accounting', 'housekeeping', 'kitchen', 'tours'].includes(role)) {
+              if (!['administrator', 'admin'].includes(role)) {
                 await supabase.auth.signOut().catch(() => {});
-                throw new Error('Access denied: Account is not authorized for executive administrator portal.');
+                throw new Error('Access denied: Only administrators are authorized for the Executive Hub. Staff must use /staff/login.');
               }
 
               const adminObj = {
@@ -639,7 +711,7 @@ export function AuthProvider({ children }) {
             .eq('is_active', true)
             .maybeSingle();
 
-          if (emp && ['administrator', 'admin', 'staff', 'receptionist', 'accounting', 'housekeeping', 'kitchen', 'tours'].includes(emp.role)) {
+          if (emp && ['administrator', 'admin'].includes(emp.role)) {
             const adminObj = {
               id: emp.auth_user_id || emp.id,
               email: emp.email,
@@ -678,6 +750,101 @@ export function AuthProvider({ children }) {
       }
 
       return { data: null, error: new Error('Administrator authentication failed.') };
+    } catch (err: any) {
+      return { data: null, error: err };
+    }
+  };
+
+  // ────────────────────────────────────────────────────────────
+  // 6. STAFF AUTHENTICATION (Operational Stations Scope: /staff)
+  // ────────────────────────────────────────────────────────────
+  const staffSignIn = async (emailOrUsername: string, password: string) => {
+    try {
+      const cleanIdent = (emailOrUsername || '').trim();
+      const rawPass = (password || '').trim();
+
+      // 1. Employee Station Login route /auth/admin-login
+      try {
+        const staffRes = await api.adminLogin({
+          identifier: cleanIdent,
+          password: rawPass,
+          position: '',
+        });
+
+        if (staffRes?.session) {
+          const userObj = staffRes.user || staffRes.profile;
+          const role = String(userObj?.role || 'staff').toLowerCase();
+          if (role === 'customer') {
+            throw new Error('Access denied: Guest customer accounts cannot access the operational staff station.');
+          }
+
+          setStaffSession(staffRes.session);
+          setStaffProfile(userObj);
+          if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.setItem('jd_staff_session', JSON.stringify(staffRes.session));
+            if (staffRes.session.access_token) {
+              sessionStorage.setItem('jd_staff_jwt', staffRes.session.access_token);
+            }
+            sessionStorage.setItem('jd_staff_profile', JSON.stringify(userObj));
+          }
+          return { data: staffRes, error: null };
+        }
+      } catch (staffApiErr: any) {
+        // Fallback: direct employee_accounts verified query
+        try {
+          const empEmail = cleanIdent.includes('@') ? cleanIdent : `${cleanIdent}@rockview.ph`;
+          const empFilters = [
+            `email.ilike.${cleanIdent}`,
+            `email.ilike.${empEmail}`,
+            `employee_id.ilike.${cleanIdent}`,
+          ];
+          const { data: emp } = await supabase
+            .from('employee_accounts')
+            .select('*')
+            .or(empFilters.join(','))
+            .eq('password', rawPass)
+            .eq('is_active', true)
+            .maybeSingle();
+
+          if (emp && emp.role !== 'customer') {
+            const staffObj = {
+              id: emp.auth_user_id || emp.id,
+              email: emp.email,
+              full_name: emp.full_name,
+              role: emp.role || 'staff',
+              position: emp.position || 'Operations Staff',
+              department: emp.department || 'FrontDesk',
+              employee_id: emp.employee_id,
+              has_password: true,
+              password_status: 'Configured',
+            };
+            const syntheticSession = {
+              access_token: 'emp_session_' + emp.id,
+              token_type: 'bearer',
+              user: {
+                id: emp.auth_user_id || emp.id,
+                email: emp.email,
+                user_metadata: { role: emp.role, full_name: emp.full_name, employee_id: emp.employee_id },
+              },
+            };
+            setStaffSession(syntheticSession);
+            setStaffProfile(staffObj);
+            if (typeof sessionStorage !== 'undefined') {
+              sessionStorage.setItem('jd_staff_session', JSON.stringify(syntheticSession));
+              sessionStorage.setItem('jd_staff_jwt', syntheticSession.access_token);
+              sessionStorage.setItem('jd_staff_profile', JSON.stringify(staffObj));
+            }
+            return { data: { session: syntheticSession, profile: staffObj }, error: null };
+          }
+        } catch {}
+
+        const errMessage = staffApiErr?.message && staffApiErr.message !== '{}' && staffApiErr.message !== '[object Object]'
+          ? staffApiErr.message
+          : 'Invalid employee credentials. Access restricted.';
+        return { data: null, error: new Error(errMessage) };
+      }
+
+      return { data: null, error: new Error('Staff station authentication failed.') };
     } catch (err: any) {
       return { data: null, error: err };
     }
@@ -730,7 +897,7 @@ export function AuthProvider({ children }) {
   };
 
   const value = {
-    // Customer Scope (Default for public website view: Navbar, Home, Rooms, MyBookings, BookingFlow)
+    // 1. Customer Scope (Default for public website view: Navbar, Home, Rooms, MyBookings, BookingFlow)
     session: customerSession,
     profile: customerProfile,
     customerSession,
@@ -739,15 +906,25 @@ export function AuthProvider({ children }) {
     customerSignIn,
     signOutCustomer: () => signOutScope('customer'),
 
-    // Administrator & Staff Scope (For administrative & staff portals: Admin, Receptionist, Accounting, Department)
+    // 2. Administrator Scope (For executive hub portal: /admin)
     adminSession,
     adminProfile,
     isAdminAuthenticated: Boolean(adminSession && adminProfile && ['administrator', 'admin'].includes(adminProfile.role)),
-    isStaffAuthenticated: Boolean(adminSession && adminProfile && ['administrator', 'admin', 'receptionist', 'accounting', 'staff', 'housekeeping', 'kitchen', 'tours'].includes(adminProfile.role)),
     adminSignIn,
     signOutAdmin: () => signOutScope('admin'),
 
+    // 3. Staff Scope (For operational desks: /staff, /receptionist, /accounting, /resort-department)
+    staffSession,
+    staffProfile,
+    isStaffAuthenticated: Boolean(
+      (staffSession && staffProfile && ['staff', 'receptionist', 'accounting', 'housekeeping', 'kitchen', 'tours', 'operations'].includes(staffProfile.role)) ||
+      (adminSession && adminProfile && ['administrator', 'admin'].includes(adminProfile.role))
+    ),
+    staffSignIn,
+    signOutStaff: () => signOutScope('staff'),
+
     // Universal / Backward-compatible methods
+    signOutScope,
     signIn: customerSignIn,
     signOut,
     signOutAll: signOut,

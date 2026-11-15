@@ -11,9 +11,9 @@ interface RecoveryLayoutProps {
  * Dedicated to resolving edge cases, disputed bookings, account restoration, and legal/financial escalations.
  */
 export default function RecoveryLayout({ children }: RecoveryLayoutProps) {
-  const { adminProfile, profile, signOut, setAuthOpen, session, adminSession, customerSession } = useAuth();
-  const isAuthenticated = Boolean(session || adminSession || customerSession);
-  const activeProfile = adminProfile || profile;
+  const { adminProfile, staffProfile, signOutAdmin, signOutStaff, adminSession, staffSession } = useAuth();
+  const isAuthenticated = Boolean(adminSession || staffSession);
+  const activeProfile = adminProfile || staffProfile;
 
   const recoveryNavItems = [
     { to: '/recovery', label: 'Resolution Console', icon: 'fas fa-shield-virus' },
@@ -127,7 +127,7 @@ export default function RecoveryLayout({ children }: RecoveryLayoutProps) {
 
           {isAuthenticated ? (
             <button
-              onClick={signOut}
+              onClick={() => (adminSession ? signOutAdmin() : signOutStaff())}
               style={{
                 fontSize: '.74rem',
                 fontWeight: 700,

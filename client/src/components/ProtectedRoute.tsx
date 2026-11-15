@@ -59,7 +59,8 @@ export default function ProtectedRoute({
   const {
     customerSession, customerProfile,
     adminSession, adminProfile,
-    customerSignIn, adminSignIn,
+    staffSession, staffProfile,
+    customerSignIn, adminSignIn, staffSignIn,
   } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -70,36 +71,40 @@ export default function ProtectedRoute({
   useEffect(() => { setMounted(true); }, []);
 
   const isCustomerOnly = requiredPortal === 'client' || (allowedRoles.length > 0 && allowedRoles.every((r: string) => r === 'customer'));
+  const isAdminOnly = allowedRoles.length > 0 && allowedRoles.every((r: string) => ['administrator', 'admin'].includes(r));
   const isStaffRoute = Boolean(
     (requiredPortal && requiredPortal !== 'client') ||
-    allowedRoles.some((r: string) => ['administrator', 'admin', 'receptionist', 'accounting', 'staff', 'housekeeping', 'kitchen', 'tours'].includes(r))
+    allowedRoles.some((r: string) => ['receptionist', 'accounting', 'staff', 'housekeeping', 'kitchen', 'tours', 'operations'].includes(r))
   );
-
-  const activeSession = isCustomerOnly ? customerSession : (adminSession || customerSession);
-  const activeProfile = isCustomerOnly ? customerProfile : (adminProfile || customerProfile);
-  const isAuthenticated = Boolean(activeSession && activeProfile);
 
   let isAuthorized = false;
   if (isCustomerOnly) {
     isAuthorized = Boolean(customerSession && customerProfile);
+  } else if (isAdminOnly) {
+    isAuthorized = Boolean(adminSession && adminProfile && ['administrator', 'admin'].includes(adminProfile.role));
   } else if (requiredPortal) {
+    const activeStaffProfile = staffProfile || adminProfile;
+    const activeStaffSession = staffSession || adminSession;
     isAuthorized = Boolean(
-      adminSession &&
-      adminProfile &&
-      isInternalEmployee(adminProfile) &&
-      canAccessPortal(adminProfile, requiredPortal)
+      activeStaffSession &&
+      activeStaffProfile &&
+      isInternalEmployee(activeStaffProfile) &&
+      canAccessPortal(activeStaffProfile, requiredPortal)
     );
   } else if (isStaffRoute) {
+    const activeStaffProfile = staffProfile || adminProfile;
+    const activeStaffSession = staffSession || adminSession;
     isAuthorized = Boolean(
-      adminSession && adminProfile && (
-        allowedRoles.includes(adminProfile.role) ||
-        ['administrator', 'admin'].includes(adminProfile.role)
+      activeStaffSession && activeStaffProfile && (
+        allowedRoles.includes(activeStaffProfile.role) ||
+        ['administrator', 'admin'].includes(activeStaffProfile.role)
       )
     );
   } else {
     isAuthorized = Boolean(
       (customerSession && customerProfile) ||
-      (adminSession && adminProfile)
+      (adminSession && adminProfile) ||
+      (staffSession && staffProfile)
     );
   }
 
@@ -110,7 +115,7 @@ export default function ProtectedRoute({
   }
 
   const isCustomer = isCustomerOnly;
-  const isAdmin = allowedRoles.includes('administrator');
+  const isAdmin = isAdminOnly;
 
   const handleGateLogin = async (e) => {
     e.preventDefault();
@@ -124,6 +129,8 @@ export default function ProtectedRoute({
       const targetEmail = email.trim();
       const res = isCustomerOnly
         ? await customerSignIn(targetEmail, password)
+        : isStaffRoute
+        ? await staffSignIn(targetEmail, password)
         : await adminSignIn(targetEmail, password);
       if (res?.error) throw res.error;
       toast(`Welcome to ${portalTitle} ✦`);

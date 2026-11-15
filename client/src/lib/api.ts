@@ -87,32 +87,41 @@ async function req<T = any>(path: string, { method = 'GET', body }: { method?: s
 
   const adminTokenKey = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_token_key') : null;
   const adminJwt = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_jwt') : null;
+  const staffJwt = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_staff_jwt') : null;
   const customerJwt = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_customer_jwt') : null;
-  const isAdminPath = typeof window !== 'undefined' && (
-    window.location.pathname.startsWith('/admin') ||
-    window.location.pathname.startsWith('/staff') ||
-    window.location.pathname.startsWith('/recovery') ||
-    window.location.pathname.startsWith('/receptionist') ||
-    window.location.pathname.startsWith('/accounting') ||
-    window.location.pathname.startsWith('/resort-department')
-  );
-  const isAdminEndpoint = path.startsWith('/admin') || path.includes('admin') || path.startsWith('/analytics') || path.startsWith('/audit') || path.startsWith('/department');
-  const isAdminContext = isAdminPath || isAdminEndpoint;
-  
-  if (adminTokenKey && (isAdminContext || !customerJwt)) {
-    headers['x-admin-token-key'] = adminTokenKey;
-  }
 
-  if (isAdminContext && adminJwt) {
-    headers['Authorization'] = `Bearer ${adminJwt}`;
-  } else if (!isAdminContext && customerJwt) {
-    headers['Authorization'] = `Bearer ${customerJwt}`;
-  } else if (adminJwt && !customerJwt) {
-    headers['Authorization'] = `Bearer ${adminJwt}`;
-  } else if (customerJwt) {
-    headers['Authorization'] = `Bearer ${customerJwt}`;
-  } else if (session?.access_token) {
-    headers['Authorization'] = `Bearer ${session.access_token}`;
+  const currentPath = typeof window !== 'undefined' ? window.location.pathname.toLowerCase() : '';
+  const onAdminPath = currentPath.startsWith('/admin');
+  const onStaffPath = currentPath.startsWith('/staff') || currentPath.startsWith('/recovery') || currentPath.startsWith('/receptionist') || currentPath.startsWith('/accounting') || currentPath.startsWith('/resort-department');
+
+  const isAdminEndpoint = path.startsWith('/admin') || path.includes('/admin') || path.startsWith('/analytics') || path.startsWith('/audit');
+  const isStaffEndpoint = path.startsWith('/staff') || path.startsWith('/department') || path.startsWith('/reception') || path.startsWith('/housekeeping');
+
+  if (onAdminPath || isAdminEndpoint) {
+    // 1. Executive Admin Scope
+    if (adminTokenKey) {
+      headers['x-admin-token-key'] = adminTokenKey;
+    }
+    if (adminJwt) {
+      headers['Authorization'] = `Bearer ${adminJwt}`;
+    }
+  } else if (onStaffPath || isStaffEndpoint) {
+    // 2. Operational Staff Scope
+    if (staffJwt) {
+      headers['Authorization'] = `Bearer ${staffJwt}`;
+    } else if (adminJwt) {
+      headers['Authorization'] = `Bearer ${adminJwt}`;
+      if (adminTokenKey) headers['x-admin-token-key'] = adminTokenKey;
+    }
+  } else {
+    // 3. Client / Guest Scope
+    if (customerJwt) {
+      headers['Authorization'] = `Bearer ${customerJwt}`;
+    } else if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`;
+    } else if (adminJwt && !customerJwt && !staffJwt) {
+      headers['Authorization'] = `Bearer ${adminJwt}`;
+    }
   }
 
   if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase())) {
@@ -212,7 +221,14 @@ async function ensureSupabaseSession() {
     const { data } = await supabase.auth.getSession();
     if (data?.session?.access_token) return supabase;
     if (typeof sessionStorage !== 'undefined') {
-      const savedRaw = sessionStorage.getItem('jd_admin_session') || sessionStorage.getItem('jd_customer_session');
+      const currentPath = typeof window !== 'undefined' ? window.location.pathname.toLowerCase() : '';
+      const onAdmin = currentPath.startsWith('/admin');
+      const onStaff = currentPath.startsWith('/staff') || currentPath.startsWith('/recovery') || currentPath.startsWith('/receptionist') || currentPath.startsWith('/accounting') || currentPath.startsWith('/resort-department');
+      const savedRaw = onAdmin
+        ? sessionStorage.getItem('jd_admin_session')
+        : onStaff
+        ? (sessionStorage.getItem('jd_staff_session') || sessionStorage.getItem('jd_admin_session'))
+        : (sessionStorage.getItem('jd_customer_session') || sessionStorage.getItem('jd_admin_session'));
       if (savedRaw) {
         const parsed = JSON.parse(savedRaw);
         if (parsed?.access_token && parsed?.refresh_token) {
@@ -390,7 +406,14 @@ export const api = {
         if (data) return data;
       }
       if (typeof sessionStorage !== 'undefined') {
-        const savedProfile = sessionStorage.getItem('jd_admin_profile') || sessionStorage.getItem('jd_customer_profile');
+        const currentPath = typeof window !== 'undefined' ? window.location.pathname.toLowerCase() : '';
+        const onAdmin = currentPath.startsWith('/admin');
+        const onStaff = currentPath.startsWith('/staff') || currentPath.startsWith('/recovery') || currentPath.startsWith('/receptionist') || currentPath.startsWith('/accounting') || currentPath.startsWith('/resort-department');
+        const savedProfile = onAdmin
+          ? sessionStorage.getItem('jd_admin_profile')
+          : onStaff
+          ? (sessionStorage.getItem('jd_staff_profile') || sessionStorage.getItem('jd_admin_profile'))
+          : (sessionStorage.getItem('jd_customer_profile') || sessionStorage.getItem('jd_admin_profile'));
         if (savedProfile) return JSON.parse(savedProfile);
       }
     } catch {}
@@ -405,7 +428,14 @@ export const api = {
     const { data: { session } } = await sb.auth.getSession();
     let userId = session?.user?.id;
     if (!userId && typeof sessionStorage !== 'undefined') {
-      const savedProfile = sessionStorage.getItem('jd_admin_profile') || sessionStorage.getItem('jd_customer_profile');
+      const currentPath = typeof window !== 'undefined' ? window.location.pathname.toLowerCase() : '';
+      const onAdmin = currentPath.startsWith('/admin');
+      const onStaff = currentPath.startsWith('/staff') || currentPath.startsWith('/recovery') || currentPath.startsWith('/receptionist') || currentPath.startsWith('/accounting') || currentPath.startsWith('/resort-department');
+      const savedProfile = onAdmin
+        ? sessionStorage.getItem('jd_admin_profile')
+        : onStaff
+        ? (sessionStorage.getItem('jd_staff_profile') || sessionStorage.getItem('jd_admin_profile'))
+        : (sessionStorage.getItem('jd_customer_profile') || sessionStorage.getItem('jd_admin_profile'));
       if (savedProfile) {
         try { userId = JSON.parse(savedProfile)?.id; } catch {}
       }

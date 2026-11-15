@@ -16,9 +16,17 @@ interface StaffLayoutProps {
  * Fully modular CSS styling, clean design parity with executive portal.
  */
 export default function StaffLayout({ children }: StaffLayoutProps) {
-  const { adminProfile, profile, signOutAdmin } = useAuth();
+  const { staffSession, staffProfile, adminSession, adminProfile, signOutStaff, signOutAdmin } = useAuth();
   const navigate = useNavigate();
-  const activeProfile = adminProfile || profile;
+  const activeProfile = staffProfile || adminProfile;
+
+  const handleSignOut = () => {
+    if (staffSession) {
+      signOutStaff();
+    } else {
+      signOutAdmin();
+    }
+  };
 
   // Escalation Handoff Modal State
   const [showEscalationModal, setShowEscalationModal] = useState(false);
@@ -149,7 +157,7 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
 
           {/* Sign Out Button */}
           <button
-            onClick={signOutAdmin}
+            onClick={handleSignOut}
             className="staff-signout-btn"
             title="Sign out of staff operational station"
           >
