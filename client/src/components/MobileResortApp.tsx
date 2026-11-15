@@ -68,7 +68,7 @@ const HERO_SLIDES = [
   {
     kicker: 'Punta Piedra Ridge · Pristine Oceanfront Living',
     headline: 'Panoramic Horizons & Five-Star Sanctuary Serenity',
-    subcopy: 'From oceanview cottages to spacious family suites, every stay includes Starlink Wi-Fi, backup solar power, and seamless smart keypad arrival.',
+    subcopy: 'From oceanview cottages to spacious family suites, every stay includes Wi-Fi, backup solar power, and seamless smart keypad arrival.',
     badge: 'Sunset Villa Deck'
   }
 ];
@@ -1382,7 +1382,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
               <div className="text-[15px] text-[#222222] leading-[1.6] space-y-4">
                 <p>{selectedRoom.description}</p>
                 <p className="text-sm text-[#6A6A6A]">
-                  Equipped with high-speed Starlink satellite Wi-Fi, solar microgrid power backup, and complimentary tropical breakfast prepared daily by our local staff.
+                  Equipped with high-speed Wi-Fi, solar microgrid power backup, and complimentary tropical breakfast prepared daily by our local staff.
                 </p>
               </div>
             </div>
@@ -1413,7 +1413,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
             <div className="py-7 border-b border-[#DDDDDD]">
               <h4 className="text-[22px] font-semibold text-[#222222] mb-5">What this place offers</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-8 text-[15px] text-[#222222]">
-                {(selectedRoom.amenities || ['Starlink Wi-Fi', 'Ocean View', 'Air Conditioning', 'Private Bath']).map((amenity, i) => (
+                {(selectedRoom.amenities || ['Wi-Fi', 'Ocean View', 'Air Conditioning', 'Private Bath']).map((amenity, i) => (
                   <div key={i} className="flex items-center gap-3">
                     <span className="w-5 h-5 text-[#9E7E46]">✦</span>
                     <span>{amenity}</span>
@@ -2141,7 +2141,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
 
             <div className="space-y-2">
               <div className="font-bold text-[#18222B] uppercase tracking-wider">Hospitality</div>
-              <div><span className="text-[#6A6A6A]">Starlink Wi-Fi</span></div>
+              <div><span className="text-[#6A6A6A]">Wi-Fi</span></div>
               <div><span className="text-[#6A6A6A]">Solar Microgrid</span></div>
               <div><span className="text-[#6A6A6A]">Keypad Entry</span></div>
             </div>

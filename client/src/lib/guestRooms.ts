@@ -38,8 +38,8 @@ export const FALLBACK_ROOMS: Room[] = [
     capacity: 4,
     beds_count: 2,
     baths_count: 1,
-    description: 'An executive oceanfront sanctuary villa with panoramic views of the West Philippine Sea, featuring handcrafted wood furnishings, private limestone terrace, and high-speed Starlink internet.',
-    amenities: ['Oceanfront Balcony', 'Starlink High-Speed Wi-Fi', 'Air Conditioning', 'Private Coral Steps', 'Solar Microgrid Backup', 'Keypad Smart Lock', 'Complimentary Breakfast', 'Snorkeling Gear'],
+    description: 'An executive oceanfront sanctuary villa with panoramic views of the West Philippine Sea, featuring handcrafted wood furnishings, private limestone terrace, and high-speed Wi-Fi internet.',
+    amenities: ['Oceanfront Balcony', 'High-Speed Wi-Fi', 'Air Conditioning', 'Private Coral Steps', 'Solar Microgrid Backup', 'Keypad Smart Lock', 'Complimentary Breakfast', 'Snorkeling Gear'],
     image_url: '/images/cottage.jpg',
     images: ['/images/cottage.jpg', '/images/suite.jpg', '/images/villa.jpg', '/images/island.jpg', '/images/garden.jpg']
   },
@@ -52,7 +52,7 @@ export const FALLBACK_ROOMS: Room[] = [
     beds_count: 1,
     baths_count: 1,
     description: 'Charming coastal cottage nestled among tropical flora with direct garden walkway to the tidal rock pools and beach.',
-    amenities: ['Garden View', 'Starlink Wi-Fi', 'Air Conditioning', 'King Bed', 'Private Bath', 'Breakfast Included'],
+    amenities: ['Garden View', 'Wi-Fi', 'Air Conditioning', 'King Bed', 'Private Bath', 'Breakfast Included'],
     image_url: '/images/suite.jpg',
     images: ['/images/suite.jpg', '/images/cottage.jpg', '/images/villa.jpg', '/images/room.jpg', '/images/island.jpg']
   },
@@ -65,7 +65,7 @@ export const FALLBACK_ROOMS: Room[] = [
     beds_count: 3,
     baths_count: 2,
     description: 'Our premier cliffside villa offering unobstructed 180-degree sunset panoramas, an expansive private viewing deck, and deluxe family amenities.',
-    amenities: ['180° Sunset View', 'Private Living Deck', 'Starlink Wi-Fi', 'Air Conditioning', 'Full Kitchenette', 'Solar Backup', 'Dedicated Host'],
+    amenities: ['180° Sunset View', 'Private Living Deck', 'Wi-Fi', 'Air Conditioning', 'Full Kitchenette', 'Solar Backup', 'Dedicated Host'],
     image_url: '/images/villa.jpg',
     images: ['/images/villa.jpg', '/images/island.jpg', '/images/cottage.jpg', '/images/suite.jpg', '/images/garden.jpg']
   },
@@ -78,7 +78,7 @@ export const FALLBACK_ROOMS: Room[] = [
     beds_count: 2,
     baths_count: 1,
     description: 'Modern coastal sanctuary suite designed for peaceful retreats, with floor-to-ceiling glass doors opening directly to the ocean breeze.',
-    amenities: ['Ocean Breeze Balcony', 'Starlink Wi-Fi', 'Air Conditioning', 'Work Desk', 'Rain Shower', 'Private Patio'],
+    amenities: ['Ocean Breeze Balcony', 'Wi-Fi', 'Air Conditioning', 'Work Desk', 'Rain Shower', 'Private Patio'],
     image_url: '/images/island.jpg',
     images: ['/images/island.jpg', '/images/villa.jpg', '/images/suite.jpg', '/images/cottage.jpg', '/images/bunk.jpg']
   }
@@ -128,7 +128,7 @@ export function mapLiveRoom(row: any, idx: number): Room {
     description: row.description || 'Private oceanfront villa perched above Bolinao limestone coves.',
     amenities: Array.isArray(row.amenities) && row.amenities.length > 0
       ? row.amenities.filter((a: any) => typeof a === 'string' && !a.startsWith('__'))
-      : ['Oceanfront Balcony', 'Starlink Wi-Fi', 'Air Conditioning', 'Solar Microgrid Backup'],
+      : ['Oceanfront Balcony', 'Wi-Fi', 'Air Conditioning', 'Solar Microgrid Backup'],
     image_url: primaryImg,
     images: Array.isArray(row.images) && row.images.length > 0
       ? row.images

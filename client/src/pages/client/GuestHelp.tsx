@@ -65,7 +65,7 @@ const FAQS: { topic: FaqTopic; q: string; a: string }[] = [
   {
     topic: 'During your stay',
     q: 'Is there Wi-Fi and backup power?',
-    a: 'Yes. Every stay includes Starlink Wi-Fi, and the resort has solar backup power.',
+    a: 'Yes. Every stay includes Wi-Fi, and the resort has solar backup power.',
   },
   {
     topic: 'During your stay',
@@ -395,7 +395,7 @@ function ResortInfo() {
   const rows: { icon: GuestIconName; label: string; value: string }[] = [
     { icon: 'clock', label: 'Check-in / check-out', value: `From ${RESORT_CONTACT.checkInTime} · By ${RESORT_CONTACT.checkOutTime}` },
     { icon: 'calendar', label: 'Cancellation', value: 'Free up to 7 days before check-in' },
-    { icon: 'wifi', label: 'Connectivity', value: 'Starlink Wi-Fi with solar backup power' },
+    { icon: 'wifi', label: 'Connectivity', value: 'Wi-Fi with solar backup power' },
     { icon: 'map-pin', label: 'Address', value: RESORT_CONTACT.addressLine },
   ];
   return (
