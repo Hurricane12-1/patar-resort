@@ -515,6 +515,7 @@ export async function insertLedgerReservation(payload) {
 
       await supabaseAdmin.from('reservations').insert({
         id: record.id,
+        booking_code: record.booking_code || `RV-AGENT-${Math.floor(100000 + Math.random() * 900000)}`,
         guest_id: record.guest_id,
         room_id: record.room_id,
         check_in: record.check_in,

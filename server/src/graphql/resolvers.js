@@ -129,6 +129,7 @@ export const resolvers = {
     const totalPhp = (room.rate_php || 2500) * nights;
 
     const payload = {
+      booking_code: `RV-GQL-${Math.floor(100000 + Math.random() * 900000)}`,
       room_id: roomId,
       check_in,
       check_out,

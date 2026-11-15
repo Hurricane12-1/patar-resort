@@ -24,3 +24,8 @@ CREATE POLICY "Enable select for all" ON public.reservations
 DROP POLICY IF EXISTS "Staff manage reservations" ON public.reservations;
 CREATE POLICY "Staff manage reservations" ON public.reservations
   FOR UPDATE USING (true) WITH CHECK (true);
+
+-- 4. Allow staff and admins to delete reservations
+DROP POLICY IF EXISTS "Enable delete for all" ON public.reservations;
+CREATE POLICY "Enable delete for all" ON public.reservations
+  FOR DELETE USING (true);

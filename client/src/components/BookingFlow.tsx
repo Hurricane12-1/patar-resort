@@ -169,7 +169,9 @@ export default function BookingFlow({ initialSlug }) {
 
       const stay = await api.createReservation({
         roomId: room.room_id,
-        room_id: room.room_id, offering_type: inferOfferingType(room), check_in: checkIn,
+        room_id: room.room_id,
+        offering_type: inferOfferingType(room),
+        check_in: checkIn,
         check_out: checkOut,
         guests,
         notes: fullNotes,
@@ -177,6 +179,7 @@ export default function BookingFlow({ initialSlug }) {
         total_php: totalWithAdjustments,
         guest_name: (profile?.full_name || '').trim(),
         guest_email: profile?.email || '',
+        guest_id: session?.user?.id || profile?.id || undefined,
         terms_accepted: true,
       });
       setDone(stay); setStage('done');

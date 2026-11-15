@@ -733,7 +733,19 @@ export const api = {
     }
     const manilaToday = getManilaTodayISO();
     if (checkIn < manilaToday) throw new Error('Check-in date cannot be in the past.');
-    const normalizedBody = { ...body, guest_name: guestName, phone, check_in: checkIn, check_out: checkOut };
+    const bookingCode = String(
+      body.booking_code ||
+      body.reference ||
+      `RV-${(checkIn || new Date().toISOString()).slice(0, 4)}-${Math.floor(100000 + Math.random() * 900000)}`
+    );
+    const normalizedBody = {
+      ...body,
+      guest_name: guestName,
+      phone,
+      check_in: checkIn,
+      check_out: checkOut,
+      booking_code: bookingCode,
+    };
 
     try {
       const res = await req('/reservations', { method: 'POST', body: normalizedBody });
@@ -809,6 +821,7 @@ export const api = {
     const total_php = Number(normalizedBody.total_php) || 3500 * nights;
     const finalGuestEmail = (normalizedBody.email || normalizedBody.guest_email || '').trim();
     const insertPayload: Record<string, any> = {
+      booking_code: bookingCode,
       room_id: targetRoomId,
       check_in: checkIn,
       check_out: checkOut,

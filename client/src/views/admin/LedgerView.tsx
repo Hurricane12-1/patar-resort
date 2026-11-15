@@ -148,7 +148,8 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
       const phone = (b.phone || b.profiles?.phone || '').toLowerCase();
       const room = (b.rooms?.name || '').toLowerCase();
       const id = (b.id || '').toLowerCase();
-      if (!guestName.includes(q) && !phone.includes(q) && !room.includes(q) && !id.includes(q)) return false;
+      const code = (b.booking_code || '').toLowerCase();
+      if (!guestName.includes(q) && !phone.includes(q) && !room.includes(q) && !id.includes(q) && !code.includes(q)) return false;
     }
     return true;
   });
@@ -1061,6 +1062,9 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                           </span>
                           <div>
                             <b>{b.guest_name || b.profiles?.full_name || 'Guest User'}</b>
+                            <span style={{ display: 'block', fontSize: '.72rem', color: '#0EA5E9', fontFamily: 'monospace', fontWeight: 600 }}>
+                              {b.booking_code || ('RV-' + String(b.id || '').slice(0, 8).toUpperCase())}
+                            </span>
                             <small style={{ color: themeMuted, display: 'block' }}>{b.phone || b.profiles?.phone || 'No phone recorded'}</small>
                           </div>
                         </div>

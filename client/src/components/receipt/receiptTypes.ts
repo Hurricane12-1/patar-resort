@@ -22,7 +22,7 @@ export interface VoucherData {
 
 export function normalizeVoucherData(raw: any): VoucherData {
   const idStr = String(raw?.id || '');
-  const refCode = raw?.reference || (idStr ? `RV-RES-${idStr.slice(0, 8).toUpperCase()}` : 'RV-RES-GUARANTEED');
+  const refCode = raw?.booking_code || raw?.reference || (idStr ? `RV-RES-${idStr.slice(0, 8).toUpperCase()}` : 'RV-RES-GUARANTEED');
   
   const checkInDate = raw?.check_in || raw?.checkIn || new Date().toISOString().split('T')[0];
   const checkOutDate = raw?.check_out || raw?.checkOut || new Date(Date.now() + 86400000).toISOString().split('T')[0];

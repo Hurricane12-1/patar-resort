@@ -386,8 +386,11 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
     }
   }
 
+  const bookingCode = req.body?.booking_code || req.body?.reference || `RV-${(check_in || getManilaTodayISO()).slice(0, 4)}-${Math.floor(100000 + Math.random() * 900000)}`;
+
   const client = req.sb || sysClient;
   const insertPayload = {
+    booking_code: bookingCode,
     room_id: targetRoomId,
     check_in,
     check_out,
@@ -421,6 +424,7 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
       const reservationId = crypto.randomUUID();
       stay = {
         id: reservationId,
+        booking_code: bookingCode,
         guest_id: targetGuestId,
         room_id: targetRoomId,
         check_in,
