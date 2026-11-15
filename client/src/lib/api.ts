@@ -971,7 +971,7 @@ export const api = {
     try {
       const { data } = await supabase
         .from('reviews')
-        .select('*, rooms(name, slug, category, amenities, rate_php), profiles(full_name)')
+        .select('*, admin_reply, admin_reply_at, rooms(name, slug, category, amenities, rate_php), profiles(full_name)')
         .eq('is_approved', true)
         .order('created_at', { ascending: false })
         .limit(12);
@@ -990,7 +990,8 @@ export const api = {
       rating: Number(body.rating) || 5,
       comment: body.comment || '',
       guest_name: body.guest_name || 'Verified Guest',
-      is_approved: true,
+      moderation_status: 'pending',
+      is_approved: false,
     }).select().single();
     if (error) throw new Error(error.message);
     return data;
@@ -1831,6 +1832,20 @@ export const api = {
   },
   rejectPriceRequest: async (id: string, review_note?: string) => {
     return await req(`/price-requests/${id}/reject`, { method: 'POST', body: review_note ? { review_note } : {} });
+  },
+
+  // Guest Review Moderation (management console)
+  adminReviews: async (status: string = 'all') => {
+    return await req(`/reviews/admin?status=${encodeURIComponent(status)}`);
+  },
+  moderateReview: async (id: string, status: 'pending' | 'approved' | 'rejected' | 'flagged', note?: string) => {
+    return await req(`/reviews/admin/${id}/moderation`, {
+      method: 'PATCH',
+      body: note ? { status, note } : { status },
+    });
+  },
+  replyToReview: async (id: string, reply: string) => {
+    return await req(`/reviews/admin/${id}/reply`, { method: 'PUT', body: { reply } });
   },
 
   // CSV Operations

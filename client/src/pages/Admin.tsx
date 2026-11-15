@@ -6,6 +6,7 @@ import { OverviewView } from '../views/admin/OverviewView';
 import { LedgerView } from '../views/admin/LedgerView';
 import { RoomInventoryView } from '../views/admin/RoomInventoryView';
 import { ApprovalRequestsView } from '../views/admin/ApprovalRequestsView';
+import { ReviewModerationView } from '../views/admin/ReviewModerationView';
 import { AccountDirectoryView } from '../views/admin/AccountDirectoryView';
 import { AuditTrailView } from '../views/admin/AuditTrailView';
 import { NotificationsView } from '../views/admin/NotificationsView';
@@ -79,6 +80,7 @@ export default function Admin() {
         allBookingsCount={state.allBookings.length} unreadNotifsCount={state.unreadNotifsCount}
         usersCount={state.users.length} conversationsCount={state.guestConversations.length}
         pendingApprovalsCount={state.pendingPriceRequestsCount}
+        pendingReviewsCount={state.pendingReviewsCount}
         setShowGlossaryModal={state.setShowGlossaryModal} signOut={state.signOut}
         isStaffRestricted={false}
       />
@@ -175,6 +177,19 @@ export default function Admin() {
               {...themeProps}
               initialGuest={state.selectedPanelGuest}
               conversations={state.guestConversations}
+            />
+          )}
+
+          {state.isFullAdmin && state.activeTab === 'reviews' && (
+            <ReviewModerationView
+              {...themeProps}
+              toast={toast}
+              reviewsList={state.reviewsList}
+              reviewCounts={state.reviewCounts}
+              loadingReviews={state.loadingReviews}
+              refreshReviews={state.refreshReviews}
+              onModerate={state.handleModerateReview}
+              onReply={state.handleReplyReview}
             />
           )}
 

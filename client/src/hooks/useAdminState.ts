@@ -1831,6 +1831,61 @@ export function useAdminState() {
     [priceRequests]
   );
 
+  // Guest review moderation queue
+  const [reviewsList, setReviewsList] = useState<any[]>([]);
+  const [reviewCounts, setReviewCounts] = useState<Record<string, number>>({
+    pending: 0, approved: 0, rejected: 0, flagged: 0, total: 0,
+  });
+  const [loadingReviews, setLoadingReviews] = useState(false);
+
+  const refreshReviews = useCallback(async () => {
+    setLoadingReviews(true);
+    try {
+      const res = await api.adminReviews('all');
+      if (Array.isArray(res?.reviews)) setReviewsList(res.reviews);
+      if (res?.counts) setReviewCounts(res.counts);
+    } catch {
+      // Silent background catch
+    } finally {
+      setLoadingReviews(false);
+    }
+  }, []);
+
+  const handleModerateReview = async (
+    id: string,
+    status: 'pending' | 'approved' | 'rejected' | 'flagged',
+    note?: string,
+  ) => {
+    try {
+      const res = await api.moderateReview(id, status, note);
+      if (res?.review) {
+        setReviewsList((prev) => prev.map((rv) => (rv.id === id ? res.review : rv)));
+      }
+      const verb = status === 'approved' ? 'published'
+        : status === 'rejected' ? 'rejected'
+        : status === 'flagged' ? 'flagged for review'
+        : 're-queued';
+      toast(`Review ${verb}.`);
+      refreshReviews();
+    } catch (err: any) {
+      toast(err.message || 'Could not update review', true);
+    }
+  };
+
+  const handleReplyReview = async (id: string, reply: string) => {
+    try {
+      const res = await api.replyToReview(id, reply);
+      if (res?.review) {
+        setReviewsList((prev) => prev.map((rv) => (rv.id === id ? res.review : rv)));
+      }
+      toast(reply.trim() ? 'Reply posted to the public review.' : 'Reply removed.');
+    } catch (err: any) {
+      toast(err.message || 'Could not save reply', true);
+    }
+  };
+
+  const pendingReviewsCount = reviewCounts.pending || 0;
+
   // Conversations & Modals
   const [guestConversations, setGuestConversations] = useState<any[]>([]);
   const [activeChatGuest, setActiveChatGuest] = useState<any>(null);
@@ -1986,12 +2041,16 @@ export function useAdminState() {
     if (activeTab === 'approvals') {
       refreshPriceRequests();
     }
+    if (activeTab === 'reviews') {
+      refreshReviews();
+    }
   }, [
     activeTab,
     refreshRoomsAndInventory,
     refreshReservations,
     refreshLedgerEntries,
     refreshPriceRequests,
+    refreshReviews,
     fetchUsers,
     fetchAuditLogs,
     fetchSecurityPosture,
@@ -2289,6 +2348,15 @@ export function useAdminState() {
     handleIssuePriceCode,
     handleRejectPriceRequest,
     pendingPriceRequestsCount,
+
+    // Guest Review Moderation
+    reviewsList,
+    reviewCounts,
+    loadingReviews,
+    refreshReviews,
+    handleModerateReview,
+    handleReplyReview,
+    pendingReviewsCount,
   };
 }
 

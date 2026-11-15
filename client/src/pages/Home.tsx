@@ -321,6 +321,14 @@ export default function Home() {
               <div className="quote-who">
                 {reviews[0].profiles?.full_name || 'A guest'} · {reviews[0].rooms?.name}
               </div>
+              {reviews[0].admin_reply && (
+                <div className="review-reply">
+                  <span className="review-reply-label">
+                    <i className="fas fa-reply" /> Rock View Beach Resort
+                  </span>
+                  <p>{reviews[0].admin_reply}</p>
+                </div>
+              )}
             </div>
           )}
           <div className="reviews-cols" style={{ marginTop: 40 }}>
@@ -332,6 +340,14 @@ export default function Home() {
                   <span className="avatar">{initials(r.profiles?.full_name)}</span>
                   <span><b style={{ color: '#F8FAFC' }}>{r.profiles?.full_name || 'Guest'}</b><br />{r.rooms?.name}</span>
                 </div>
+                {r.admin_reply && (
+                  <div className="review-reply">
+                    <span className="review-reply-label">
+                      <i className="fas fa-reply" /> Resort reply
+                    </span>
+                    <p>{r.admin_reply}</p>
+                  </div>
+                )}
               </div>
             ))}
           </div>

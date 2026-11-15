@@ -19,6 +19,7 @@ export interface AdminSidebarProps {
   usersCount: number;
   conversationsCount: number;
   pendingApprovalsCount?: number;
+  pendingReviewsCount?: number;
   setShowGlossaryModal: (show: boolean) => void;
   signOut: () => void;
   isStaffRestricted?: boolean;
@@ -42,6 +43,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   usersCount,
   conversationsCount,
   pendingApprovalsCount = 0,
+  pendingReviewsCount = 0,
   setShowGlossaryModal,
   signOut,
   isStaffRestricted = false,
@@ -84,6 +86,13 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       icon: <i className="fas fa-comments" style={{ fontSize: 17 }} />,
       count: conversationsCount,
       badgeColor: '#6366F1',
+    },
+    {
+      key: 'reviews',
+      label: 'Guest Reviews',
+      icon: <i className="fas fa-star-half-stroke" style={{ fontSize: 17 }} />,
+      count: pendingReviewsCount,
+      badgeColor: '#D97706',
     },
     {
       key: 'accounts',

@@ -1,10 +1,13 @@
 import { supabase } from './supabaseClient';
+import { inferOfferingType } from './offeringSpecs';
 
 /** A bookable stay as shown on the landing page and in the guest dashboard. */
 export interface Room {
   id: string;
   name: string;
   category?: string;
+  /** 'room' = overnight stays, 'cottage' = day-use. Drives the day-use date guard. */
+  offering_type?: 'room' | 'cottage';
   rate_php?: number;
   capacity?: number;
   beds_count?: number;
@@ -34,6 +37,7 @@ export const FALLBACK_ROOMS: Room[] = [
     id: 'chason-room',
     name: 'chason room',
     category: 'Suite',
+    offering_type: 'room',
     rate_php: 3500,
     capacity: 4,
     beds_count: 2,
@@ -47,6 +51,7 @@ export const FALLBACK_ROOMS: Room[] = [
     id: 'unit-3',
     name: 'Unit 3',
     category: 'Cottage',
+    offering_type: 'cottage',
     rate_php: 3200,
     capacity: 2,
     beds_count: 1,
@@ -120,6 +125,8 @@ export function mapLiveRoom(row: any, idx: number): Room {
     id: String(row.id),
     name: String(row.name || `Villa ${idx + 1}`).trim(),
     category: row.category || 'Oceanfront Sanctuary',
+    // Resolved from the raw row (type tag / column / category) before the __ tags are stripped below.
+    offering_type: inferOfferingType(row),
     rate_php: Number(row.rate_php) || 3500,
     // A missing or invalid capacity stays 0 so the room is never auto-assigned to a party it may not fit.
     capacity: capacity > 0 ? capacity : 0,

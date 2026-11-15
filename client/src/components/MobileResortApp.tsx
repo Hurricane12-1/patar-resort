@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
 import { usePageSettings } from '../lib/pageSettings';
 import { isValidPHMobile, to11Digits } from '../lib/format';
-import { getManilaTodayISO } from '../lib/offeringSpecs';
+import { getManilaTodayISO, inferOfferingType } from '../lib/offeringSpecs';
 import { VoucherBarcode } from './receipt/VoucherBarcode';
 import {
   FALLBACK_ROOMS,
@@ -225,6 +225,21 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   const selectedRoom = useMemo(() => {
     return rooms.find((r) => r.id === selectedRoomId) || rooms[0] || FALLBACK_ROOMS[0];
   }, [rooms, selectedRoomId]);
+
+  // Cottages are day-use only; the booking API rejects any cottage stay longer
+  // than a single day. The guest flow must never offer a multi-night range for one.
+  const isSelectedCottage = useMemo(
+    () => (selectedRoom?.offering_type || inferOfferingType(selectedRoom)) === 'cottage',
+    [selectedRoom]
+  );
+
+  // Safety net: if a cottage ends up with a multi-night range — from a quick
+  // preset, a room switch, or the initial default — collapse it to one day.
+  useEffect(() => {
+    if (!isSelectedCottage || !checkIn) return;
+    const oneDay = addDaysISO(checkIn, 1);
+    if (checkOut !== oneDay) setCheckOut(oneDay);
+  }, [isSelectedCottage, checkIn, checkOut]);
 
   // Capacity counts adults and children only.
   const partySize = guests.adults + guests.children;
@@ -480,6 +495,34 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   const handleDateClick = (isoStr: string) => {
     if (isoStr < todayISO) return;
 
+    // Day-use cottage: one tap books a single day — no multi-night ranges offered.
+    if (isSelectedCottage) {
+      const start = isoStr;
+      const end = addDaysISO(isoStr, 1);
+      // Tap the same day again to clear it.
+      if (checkIn === isoStr) {
+        setCheckIn(null);
+        setCheckOut(null);
+        setActiveField('checkin');
+        setCalendarNotice(null);
+        return;
+      }
+      if (!isRoomFree(selectedRoom.id, start, end, reservations)) {
+        setCalendarNotice(`${formatFullDate(isoStr)} is already booked for ${selectedRoom.name}.`);
+        return;
+      }
+      setCheckIn(start);
+      setCheckOut(end);
+      setActiveField('checkin');
+      setCardDrawer('none');
+      setCalendarNotice(
+        checkIn && checkIn !== isoStr
+          ? 'Day-use cottage — one day per booking. Moved to your new date.'
+          : null
+      );
+      return;
+    }
+
     // Tap-again-to-unselect check-in
     if (checkIn === isoStr && !checkOut) {
       setCheckIn(null);
@@ -542,6 +585,13 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   const applyQuickPreset = (preset: 'weekend' | 'stay3' | 'stay5') => {
     // Find next available span
     let start = todayISO < '2026-11-01' ? '2026-11-06' : todayISO;
+    // A cottage is day-use; every preset collapses to a single-day booking.
+    if (isSelectedCottage) {
+      setCheckIn(start);
+      setCheckOut(addDaysISO(start, 1));
+      setCardDrawer('none');
+      return;
+    }
     if (preset === 'weekend') {
       // Find upcoming Friday
       let dt = parseLocal(start);
@@ -810,10 +860,18 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
       });
     } catch (err: any) {
       const message = String(err?.message || '').replace(/^⚠️\s*/, '');
-      // Real conflicts and validation problems go back to the guest instead of being saved locally.
-      if (/already reserved|in the past|required information/i.test(message)) {
+      const status = Number(err?.status) || 0;
+      // A 4xx from the resort means the request arrived and was deliberately
+      // rejected (date conflict, cottage day-use rule, capacity, bad dates).
+      // Surfacing it to the guest is mandatory — saving a local copy that looks
+      // confirmed but was never booked is worse than showing the real reason.
+      const isGuestFacingRejection =
+        (status >= 400 && status < 500) ||
+        /already reserved|in the past|required information|day-use|overnight|desk unit allocation|allocation failure|category|capacity|check-?out|check-?in/i.test(message);
+      if (isGuestFacingRejection && message) {
         setReserveError(message);
         setReserveSubmitting(false);
+        setReserveStep('form');
         fetchLiveReservations();
         return;
       }
@@ -1444,7 +1502,9 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                     Select stay dates
                   </h4>
                   <p className="text-sm text-[#6A6A6A] mt-0.5">
-                    Rock View Beach Resort · 2-night minimum on coastal weekends
+                    {isSelectedCottage
+                      ? 'Day-use cottage · single-day booking, no overnight stay'
+                      : 'Rock View Beach Resort · 2-night minimum on coastal weekends'}
                   </p>
                 </div>
 
@@ -1453,7 +1513,9 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                   <span className="w-2 h-2 rounded-xs bg-[#222222]"></span>
                   <span>
                     {!checkIn
-                      ? 'Step 1: Select check-in box'
+                      ? (isSelectedCottage ? 'Tap a day for your day-use booking' : 'Step 1: Select check-in box')
+                      : isSelectedCottage
+                      ? 'Day-use · 1 day selected'
                       : !checkOut
                       ? 'Step 2: Select check-out box'
                       : `${totalNights} nights selected`}
@@ -1556,27 +1618,36 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
               {/* Quick Preset Buttons & Month Jump */}
               <div className="flex flex-wrap items-center justify-between gap-2.5 pb-4 mb-5 border-b border-[#EBEBEB]">
                 <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    onClick={() => applyQuickPreset('weekend')}
-                    type="button"
-                    className="px-3 py-1.5 rounded-lg border border-[#CBD5E1] hover:border-[#222222] bg-white text-xs font-semibold text-[#222222] transition cursor-pointer"
-                  >
-                    Next Open Weekend
-                  </button>
-                  <button
-                    onClick={() => applyQuickPreset('stay3')}
-                    type="button"
-                    className="px-3 py-1.5 rounded-lg border border-[#CBD5E1] hover:border-[#222222] bg-white text-xs font-semibold text-[#222222] transition cursor-pointer"
-                  >
-                    3-Night Stay
-                  </button>
-                  <button
-                    onClick={() => applyQuickPreset('stay5')}
-                    type="button"
-                    className="px-3 py-1.5 rounded-lg border border-[#CBD5E1] hover:border-[#222222] bg-white text-xs font-semibold text-[#222222] transition cursor-pointer"
-                  >
-                    5-Night Retreat
-                  </button>
+                  {isSelectedCottage ? (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-300 bg-amber-50 text-xs font-semibold text-amber-900">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                      Day-use cottage · one day per booking
+                    </span>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => applyQuickPreset('weekend')}
+                        type="button"
+                        className="px-3 py-1.5 rounded-lg border border-[#CBD5E1] hover:border-[#222222] bg-white text-xs font-semibold text-[#222222] transition cursor-pointer"
+                      >
+                        Next Open Weekend
+                      </button>
+                      <button
+                        onClick={() => applyQuickPreset('stay3')}
+                        type="button"
+                        className="px-3 py-1.5 rounded-lg border border-[#CBD5E1] hover:border-[#222222] bg-white text-xs font-semibold text-[#222222] transition cursor-pointer"
+                      >
+                        3-Night Stay
+                      </button>
+                      <button
+                        onClick={() => applyQuickPreset('stay5')}
+                        type="button"
+                        className="px-3 py-1.5 rounded-lg border border-[#CBD5E1] hover:border-[#222222] bg-white text-xs font-semibold text-[#222222] transition cursor-pointer"
+                      >
+                        5-Night Retreat
+                      </button>
+                    </>
+                  )}
                   <select
                     value={fmtYM(inlineYM)}
                     onChange={(e) => {
