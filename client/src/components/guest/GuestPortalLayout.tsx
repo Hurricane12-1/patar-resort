@@ -6,7 +6,7 @@ import { GuestPortalProvider, useGuestPortal } from './GuestPortalContext';
 import { RESORT_CONTACT } from '../../lib/guestPortal';
 import { toast } from '../Toasts';
 
-const BOOK_A_STAY = { pathname: '/', hash: '#reserve' };
+const BOOK_A_STAY = '/client/book';
 const BANNER_KEY = 'rv_guest_preview_banner_hidden';
 
 interface NavItem {

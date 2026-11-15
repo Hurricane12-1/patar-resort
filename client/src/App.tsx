@@ -185,6 +185,7 @@ function MainAppShell() {
             <Route path="bookings" element={<GuestStays />} />
             <Route path="profile" element={<GuestProfile />} />
             <Route path="help" element={<GuestHelp />} />
+            <Route path="book" element={<MobileResortApp embedded />} />
             <Route path="requests" element={<Navigate to="/client/help" replace />} />
           </Route>
           {/* Previous resident portal, kept for reviews and refund requests (sign-in required) */}

@@ -165,7 +165,7 @@ function fmtYM(ym: YearMonth): string {
 // =============================================================================
 // MAIN COMPONENT: MobileResortApp (Luxury Coastal Format in React TSX)
 // =============================================================================
-export default function MobileResortApp() {
+export default function MobileResortApp({ embedded = false }: { embedded?: boolean } = {}) {
   const navigate = useNavigate();
   const location = useLocation();
   const { customerSession, customerProfile, setAuthOpen } = useAuth();
@@ -203,6 +203,7 @@ export default function MobileResortApp() {
   const [reserveStep, setReserveStep] = useState<'form' | 'review' | 'success'>('form');
   const [reserveSubmitting, setReserveSubmitting] = useState<boolean>(false);
   const [calendarNotice, setCalendarNotice] = useState<string | null>(null);
+  const [conflictToast, setConflictToast] = useState<string | null>(null);
 
   // Guest Reservation Form
   const [guestName, setGuestName] = useState('');
@@ -307,9 +308,14 @@ export default function MobileResortApp() {
   // 2. CALENDAR COMPUTATIONS, ROOM MATCHING & CONFLICT DETECTION
   // ---------------------------------------------------------------------------
   // Nights already taken for the currently selected room
+  // A night is flagged red when ANY selected room is taken that night, so the
+  // calendar reflects conflicts across every room in a multi-room selection.
   const isBookedForSelected = useCallback(
-    (isoStr: string) => !isRoomFree(selectedRoom.id, isoStr, addDaysISO(isoStr, 1), reservations),
-    [reservations, selectedRoom.id]
+    (isoStr: string) => {
+      const ids = selectedRoomIds.length ? selectedRoomIds : [selectedRoom.id];
+      return ids.some((id) => !isRoomFree(id, isoStr, addDaysISO(isoStr, 1), reservations));
+    },
+    [reservations, selectedRoomIds, selectedRoom.id]
   );
 
   // What the calendars show as booked. With auto-match on, the room follows the dates,
@@ -340,11 +346,31 @@ export default function MobileResortApp() {
     [reservations, selectedRoom]
   );
 
-  // Conflict detection for the current range and the selected room
-  const hasRangeConflict = useMemo(() => {
-    if (!checkIn || !checkOut) return false;
-    return !isRoomFree(selectedRoom.id, checkIn, checkOut, reservations);
-  }, [checkIn, checkOut, reservations, selectedRoom.id]);
+  // Conflict detection across every selected room for the current range.
+  // Any selected room that is taken on the chosen dates lands in conflictRooms.
+  const conflictRooms = useMemo<Room[]>(() => {
+    if (!checkIn || !checkOut) return [];
+    const ids = selectedRoomIds.length ? selectedRoomIds : [selectedRoom.id];
+    return ids
+      .map((id) => rooms.find((r) => r.id === id))
+      .filter((r): r is Room => Boolean(r))
+      .filter((r) => !isRoomFree(r.id, checkIn, checkOut, reservations));
+  }, [checkIn, checkOut, reservations, selectedRoomIds, selectedRoom.id, rooms]);
+  const hasRangeConflict = conflictRooms.length > 0;
+
+  // Pop a transient notification the moment a selected room clashes with the range.
+  const conflictKey = conflictRooms.map((r) => r.id).join(',');
+  useEffect(() => {
+    if (!conflictKey) {
+      setConflictToast(null);
+      return;
+    }
+    const names = conflictRooms.map((r) => r.name).join(', ');
+    setConflictToast(`${names} ${conflictRooms.length === 1 ? 'is' : 'are'} already booked on your dates.`);
+    const timer = window.setTimeout(() => setConflictToast(null), 6000);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conflictKey]);
 
   // Rooms ranked for the party using live capacity. With only a check-in picked,
   // availability is judged on that first night.
@@ -851,6 +877,7 @@ export default function MobileResortApp() {
       {/* =====================================================================
            HEADER: CLEAN SINGLE STICKY WHITE HEADER (76px Height)
            ===================================================================== */}
+      {!embedded && (
       <header className="sticky top-0 z-40 h-[76px] bg-[#FFFFFF] border-b border-[#EBEBEB]">
         <div className="max-w-[1160px] mx-auto px-4 sm:px-6 h-full flex items-center justify-between gap-4">
           
@@ -895,10 +922,12 @@ export default function MobileResortApp() {
           </div>
         </div>
       </header>
+      )}
 
       {/* =====================================================================
            HERO SECTION: 3 ATMOSPHERIC SLIDES & OVERLAID QUICK SEARCH BAR
            ===================================================================== */}
+      {!embedded && (
       <section className="relative overflow-hidden bg-[#18222B] text-white">
         {/* Animated Background Vector Art */}
         <div className="absolute inset-0 pointer-events-none">
@@ -1098,9 +1127,10 @@ export default function MobileResortApp() {
           </div>
         </div>
       </section>
+      )}
 
       {/* =====================================================================
-           UNIFIED BOOKING WORKSPACE (DRIVEN BY REAL-TIME SUPABASE DATA)
+           UNIFIED BOOKING WORKSPACE
            ===================================================================== */}
       <main id="booking-workspace" className="max-w-[1120px] mx-auto px-4 sm:px-6 pt-8 pb-16">
 
@@ -1282,17 +1312,17 @@ export default function MobileResortApp() {
             {/* Sanctuary Highlight Card */}
             <div className="my-6 border border-dashed border-[#CBD5E1] bg-[#FAFAFA] rounded-[12px] px-[22px] py-[18px] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-3.5 min-w-0">
-                <div className="w-[44px] h-[44px] rounded-[10px] border border-[#E2E8F0] bg-[#FFFFFF] flex items-center justify-center text-[#9E7E46] shrink-0">
-                  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <div className="w-[44px] h-[44px] rounded-[10px] border border-[#FDE68A] bg-[#FEF3C7] flex items-center justify-center text-[#D97706] shrink-0">
+                  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="#F59E0B" stroke="#D97706" strokeWidth="1.2">
                     <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </div>
                 <div className="min-w-0 space-y-0.5">
-                  <div className="text-xs sm:text-sm font-bold text-[#18222B] truncate">
-                    Direct Accommodation Booking
+                  <div className="text-xs sm:text-sm font-bold text-[#18222B]">
+                    Guest Favorite · Highly Rated Stay
                   </div>
-                  <div className="text-xs text-[#64748B] truncate">
-                    Mandatory 2-hour cleaning buffer strictly enforced between reservations
+                  <div className="text-xs text-[#64748B]">
+                    “Breathtaking sea views, immaculate coastal villas, and wonderfully peaceful atmosphere.”
                   </div>
                 </div>
               </div>
@@ -1419,6 +1449,35 @@ export default function MobileResortApp() {
                 </div>
               </div>
 
+              {/* Conflict popup notification */}
+              {conflictToast && (
+                <div
+                  className="fixed inset-x-0 top-4 z-[60] flex justify-center px-4 pointer-events-none"
+                  role="alert"
+                  aria-live="assertive"
+                >
+                  <div className="pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-xl border border-rose-300 bg-white px-4 py-3 shadow-lg">
+                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-rose-600 text-xs font-bold text-white">
+                      !
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-rose-950">Already booked!</p>
+                      <p className="mt-0.5 text-[11px] leading-snug text-rose-900/80">{conflictToast}</p>
+                    </div>
+                    <button
+                      onClick={() => setConflictToast(null)}
+                      type="button"
+                      className="shrink-0 text-rose-400 hover:text-rose-700 cursor-pointer"
+                      aria-label="Dismiss"
+                    >
+                      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Conflict Advisor Banner */}
               {hasRangeConflict && (
                 <div className="mb-5 rounded-xl border-2 border-rose-300 bg-rose-50/90 p-4 sm:p-5 shadow-xs">
@@ -1428,20 +1487,45 @@ export default function MobileResortApp() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm sm:text-[15px] font-bold text-rose-950">
-                        Date Conflict Detected
+                        Caution — already booked!
                       </div>
                       <p className="text-xs sm:text-sm text-rose-900/90 mt-1 leading-relaxed">
                         {roomMode === 'auto'
                           ? `No single room for ${partySize} ${partySize === 1 ? 'guest' : 'guests'} is free for every night of this range. Please select an open continuous range.`
-                          : `Your chosen date span crosses dates that are already booked for ${selectedRoom.name}. Please select an open continuous range or choose another room.`}
+                          : conflictRooms.length > 1
+                          ? `${conflictRooms.map((r) => r.name).join(' and ')} are already booked on some of these dates. Pick an open range or swap those rooms.`
+                          : `${conflictRooms[0]?.name ?? selectedRoom.name} is already booked on some of these dates. Pick an open range or choose another room.`}
                       </p>
-                      <button
-                        onClick={clearDates}
-                        type="button"
-                        className="mt-3 px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-bold hover:bg-rose-700 transition cursor-pointer"
-                      >
-                        Reset Dates
-                      </button>
+                      {bestFreeRoom && roomMode !== 'auto' && (
+                        <p className="mt-1 text-xs text-rose-900/80">
+                          {bestFreeRoom.name} has the same availability and is open for your whole stay.
+                        </p>
+                      )}
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {bestFreeRoom && roomMode !== 'auto' && (
+                          <button
+                            onClick={() => chooseRoom(bestFreeRoom.id)}
+                            type="button"
+                            className="px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-bold hover:bg-rose-700 transition cursor-pointer"
+                          >
+                            Switch to {bestFreeRoom.name}
+                          </button>
+                        )}
+                        <button
+                          onClick={enableAutoMatch}
+                          type="button"
+                          className="px-3 py-1.5 rounded-lg border border-rose-300 bg-white text-rose-700 text-xs font-bold hover:bg-rose-100 transition cursor-pointer"
+                        >
+                          Auto-match empty room
+                        </button>
+                        <button
+                          onClick={clearDates}
+                          type="button"
+                          className="px-3 py-1.5 rounded-lg border border-rose-300 bg-white text-rose-700 text-xs font-bold hover:bg-rose-100 transition cursor-pointer"
+                        >
+                          Reset dates
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1607,7 +1691,7 @@ export default function MobileResortApp() {
                   <span className="text-[15px] text-[#222222] ml-1">/ night</span>
                 </div>
                 <span className="text-xs font-semibold text-[#6A6A6A]">
-                  ★ 4.98 · 48 reviews
+                  {selectedRoom.reviews_count ? `★ ${selectedRoom.rating_avg || '5.0'} · ${selectedRoom.reviews_count} reviews` : '★ Direct Verified'}
                 </span>
               </div>
 
@@ -1909,7 +1993,7 @@ export default function MobileResortApp() {
                 <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs text-amber-950" role="status">
                   <p className="font-semibold">
                     {bestFreeRoom
-                      ? `${selectedRoom.name} is booked on some of these dates.`
+                      ? `${conflictRooms.map((r) => r.name).join(' and ') || selectedRoom.name} ${conflictRooms.length > 1 ? 'are' : 'is'} booked on some of these dates.`
                       : `No room for ${partySize} ${partySize === 1 ? 'guest' : 'guests'} is free for every night of these dates.`}
                   </p>
                   <p className="mt-0.5 text-amber-900/80">
@@ -2270,20 +2354,53 @@ export default function MobileResortApp() {
                     />
                   </div>
                   <div>
-                    <label htmlFor="reserve-phone" className="block text-xs font-semibold text-[#222222] mb-1">Philippine Mobile (SMS PIN alert)</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label htmlFor="reserve-phone" className="block text-xs font-semibold text-[#222222]">
+                        Philippine Mobile (SMS PIN alert)
+                      </label>
+                      <span className={`text-[11px] font-semibold transition-colors ${
+                        guestPhone.length === 11 && guestPhone.startsWith('09')
+                          ? 'text-emerald-600'
+                          : guestPhone.length > 0 && !guestPhone.startsWith('09')
+                          ? 'text-rose-600'
+                          : guestPhone.length > 0
+                          ? 'text-amber-600'
+                          : 'text-[#717171]'
+                      }`}>
+                        {guestPhone.length === 11 && guestPhone.startsWith('09')
+                          ? '✓ 11/11 digits'
+                          : guestPhone.length > 0 && !guestPhone.startsWith('09')
+                          ? 'Must start with 09'
+                          : guestPhone.length > 0
+                          ? `${guestPhone.length}/11 digits`
+                          : '11 digits only (09...)'}
+                      </span>
+                    </div>
                     <input
                       id="reserve-phone"
                       type="tel"
                       required
-                      inputMode="tel"
+                      inputMode="numeric"
                       autoComplete="tel"
+                      maxLength={11}
+                      pattern="09[0-9]{9}"
                       value={guestPhone}
                       onChange={(e) => {
-                        setGuestPhone(e.target.value);
+                        let digits = e.target.value.replace(/\D/g, '');
+                        if (digits.startsWith('63') && digits.length >= 3) {
+                          digits = '0' + digits.slice(2);
+                        }
+                        setGuestPhone(digits.slice(0, 11));
                         if (reserveError) setReserveError(null);
                       }}
                       placeholder="09171234567"
-                      className="w-full px-3.5 py-2.5 rounded-lg border border-[#B0B0B0] text-sm focus:outline-none focus:border-[#222222]"
+                      className={`w-full px-3.5 py-2.5 rounded-lg border text-sm transition-colors focus:outline-none ${
+                        guestPhone.length === 11 && guestPhone.startsWith('09')
+                          ? 'border-emerald-500 focus:border-emerald-600'
+                          : guestPhone.length > 0 && (!guestPhone.startsWith('09') || guestPhone.length < 11)
+                          ? 'border-amber-400 focus:border-amber-500'
+                          : 'border-[#B0B0B0] focus:border-[#222222]'
+                      }`}
                     />
                   </div>
                   <div>
