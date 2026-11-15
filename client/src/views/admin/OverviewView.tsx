@@ -45,6 +45,31 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
   setActiveChatGuest,
 }) => {
   const [selectedSalesItem, setSelectedSalesItem] = useState<any>(null);
+  const [bookingStatusFilter, setBookingStatusFilter] = useState<'all' | 'confirmed' | 'checked_in' | 'pending' | 'cancelled'>('all');
+  const [bookingSearch, setBookingSearch] = useState('');
+
+  const fmtDate = (d?: string) => {
+    if (!d) return '—';
+    try {
+      const dt = new Date(d);
+      return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    } catch {
+      return String(d).slice(5, 10);
+    }
+  };
+
+  const nonCancelledBookings = (allBookings || []).filter((b: any) => b.status !== 'cancelled');
+  const filteredBookedList = (allBookings || []).filter((b: any) => {
+    if (bookingStatusFilter !== 'all' && b.status !== bookingStatusFilter) return false;
+    if (bookingSearch.trim()) {
+      const q = bookingSearch.toLowerCase();
+      const name = String(b.guest_name || b.profiles?.full_name || '').toLowerCase();
+      const code = String(b.booking_code || b.id || '').toLowerCase();
+      const room = String(b.rooms?.name || b.room_name || '').toLowerCase();
+      return name.includes(q) || code.includes(q) || room.includes(q);
+    }
+    return true;
+  });
 
   const totalUnitsCount = Math.max(1, roomsList.reduce((s: number, r: any) => s + (Number(r.units) || 1), 0));
   const activeBookings = allBookings.filter((b: any) => b.status !== 'cancelled');
@@ -347,7 +372,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
       {/* ROW 2: OPERATIONS DISPATCH & TURNAROUND (LEFT) + OPEN CONVERSATIONS (RIGHT) */}
       <div className="admin-grid-split-2">
-        {/* LEFT: TODAY'S MOVEMENTS & RESERVATIONS GATEWAY */}
+        {/* LEFT: LIST OF BOOKED STAYS */}
         <div
           className="panel panel-card"
           style={{
@@ -366,17 +391,17 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
               <div>
                 <span style={{ fontSize: '.72rem', color: '#0EA5E9', fontWeight: 800, letterSpacing: '.12em', textTransform: 'uppercase', display: 'block', marginBottom: 2 }}>
-                  RESORT MOVEMENTS &amp; DISPATCH
+                  LIVE BOOKING LEDGER
                 </span>
                 <h3 style={{ fontSize: '1.25rem', margin: 0, color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800 }}>
-                  Today's Turnaround &amp; Occupancy
+                  List of Booked Stays
                 </h3>
               </div>
               <span style={{
                 fontSize: '.72rem',
-                color: '#0EA5E9',
-                background: 'rgba(14, 165, 233, 0.12)',
-                border: '1px solid rgba(14, 165, 233, 0.3)',
+                color: '#10B981',
+                background: 'rgba(16, 185, 129, 0.12)',
+                border: '1px solid rgba(16, 185, 129, 0.3)',
                 padding: '3px 10px',
                 borderRadius: 20,
                 fontWeight: 800,
@@ -384,102 +409,273 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 alignItems: 'center',
                 gap: 5,
               }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#0EA5E9', display: 'inline-block' }} />
-                2h Cleaner Gap Active
+                ● {nonCancelledBookings.length} Booked
               </span>
             </div>
 
-            <p style={{ margin: '0 0 16px', fontSize: '.78rem', color: themeMuted, lineHeight: 1.4 }}>
-              Active overview of today's guest check-ins, departures, and turnover preparation buffer.
+            <p style={{ margin: '0 0 12px', fontSize: '.78rem', color: themeMuted, lineHeight: 1.4 }}>
+              Real-time overview of guest reservations, room units, scheduled dates, and check-in status.
             </p>
 
-            {/* Quick Metrics Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 16 }}>
-              <div style={{
-                padding: '12px 14px',
-                borderRadius: 12,
-                background: isLightMode ? '#F0FDF4' : 'rgba(16, 185, 129, 0.1)',
-                border: `1px solid ${isLightMode ? '#BBF7D0' : 'rgba(16, 185, 129, 0.25)'}`,
-                textAlign: 'center',
-              }}>
-                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#10B981', lineHeight: 1 }}>
-                  {(allBookings || []).filter((b: any) => String(b.check_in || '').slice(0, 10) === new Date().toISOString().slice(0, 10) && b.status !== 'cancelled').length}
-                </div>
-                <div style={{ fontSize: '.72rem', fontWeight: 700, color: themeText, marginTop: 4 }}>Arriving Today</div>
-                <div style={{ fontSize: '.65rem', color: themeMuted }}>Check-in from 2:00 PM</div>
+            {/* Filter pills & search */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {[
+                  { key: 'all', label: `All (${allBookings.length})` },
+                  { key: 'confirmed', label: `Confirmed (${allBookings.filter((b: any) => b.status === 'confirmed').length})` },
+                  { key: 'checked_in', label: `In-House (${allBookings.filter((b: any) => b.status === 'checked_in').length})` },
+                  { key: 'pending', label: `Pending (${allBookings.filter((b: any) => b.status === 'pending').length})` },
+                ].map((f) => {
+                  const active = bookingStatusFilter === f.key;
+                  return (
+                    <button
+                      key={f.key}
+                      type="button"
+                      onClick={() => setBookingStatusFilter(f.key as any)}
+                      style={{
+                        padding: '3px 10px',
+                        borderRadius: 16,
+                        border: `1px solid ${active ? '#0EA5E9' : themeBorder}`,
+                        background: active ? (isLightMode ? 'rgba(14, 165, 233, 0.15)' : 'rgba(14, 165, 233, 0.25)') : (isLightMode ? '#F1F5F9' : 'rgba(255, 255, 255, 0.05)'),
+                        color: active ? '#0EA5E9' : themeMuted,
+                        fontSize: '.72rem',
+                        fontWeight: active ? 700 : 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      {f.label}
+                    </button>
+                  );
+                })}
               </div>
 
-              <div style={{
-                padding: '12px 14px',
-                borderRadius: 12,
-                background: isLightMode ? '#FEF2F2' : 'rgba(239, 68, 68, 0.1)',
-                border: `1px solid ${isLightMode ? '#FECACA' : 'rgba(239, 68, 68, 0.25)'}`,
-                textAlign: 'center',
-              }}>
-                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#EF4444', lineHeight: 1 }}>
-                  {(allBookings || []).filter((b: any) => String(b.check_out || '').slice(0, 10) === new Date().toISOString().slice(0, 10) && b.status !== 'cancelled').length}
+              {allBookings.length > 3 && (
+                <div style={{ position: 'relative', minWidth: 140 }}>
+                  <input
+                    type="text"
+                    value={bookingSearch}
+                    onChange={(e) => setBookingSearch(e.target.value)}
+                    placeholder="Search guest, code..."
+                    style={{
+                      width: '100%',
+                      padding: '4px 8px 4px 24px',
+                      borderRadius: 10,
+                      border: `1px solid ${themeBorder}`,
+                      background: isLightMode ? '#FFFFFF' : 'rgba(15, 23, 42, 0.6)',
+                      color: themeText,
+                      fontSize: '.72rem',
+                      outline: 'none',
+                    }}
+                  />
+                  <i className="fas fa-search" style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', fontSize: '.65rem', color: themeMuted }} />
                 </div>
-                <div style={{ fontSize: '.72rem', fontWeight: 700, color: themeText, marginTop: 4 }}>Departing Today</div>
-                <div style={{ fontSize: '.65rem', color: themeMuted }}>Check-out by 12:00 PM</div>
-              </div>
-
-              <div style={{
-                padding: '12px 14px',
-                borderRadius: 12,
-                background: isLightMode ? '#EFF6FF' : 'rgba(59, 130, 246, 0.1)',
-                border: `1px solid ${isLightMode ? '#BFDBFE' : 'rgba(59, 130, 246, 0.25)'}`,
-                textAlign: 'center',
-              }}>
-                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#3B82F6', lineHeight: 1 }}>
-                  {occupiedTonight}
-                </div>
-                <div style={{ fontSize: '.72rem', fontWeight: 700, color: themeText, marginTop: 4 }}>Units Occupied</div>
-                <div style={{ fontSize: '.65rem', color: themeMuted }}>of {totalUnitsCount} active units</div>
-              </div>
+              )}
             </div>
 
-            {/* Housekeeping Buffer Standard Callout */}
-            <div style={{
-              padding: '12px 14px',
-              borderRadius: 12,
-              background: isLightMode ? '#FFFBEB' : 'rgba(245, 158, 11, 0.08)',
-              border: `1px solid ${isLightMode ? '#FDE68A' : 'rgba(245, 158, 11, 0.25)'}`,
-              marginBottom: 16,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-            }}>
-              <span style={{ fontSize: '1.2rem', color: '#F59E0B' }}>🧹</span>
-              <div style={{ fontSize: '.76rem', lineHeight: 1.4, color: themeText }}>
-                <strong>Mandatory 2-Hour Cleaning Buffer:</strong> Stays in the same accommodation require a minimum 2-hour window between check-out (12:00 PM) and check-in (2:00 PM) to allow room sanitation.
-              </div>
+            {/* Scrollable Booked List */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 420, overflowY: 'auto', paddingRight: 4 }}>
+              {filteredBookedList.length > 0 ? (
+                filteredBookedList.map((b: any, idx: number) => {
+                  const guestName = b.guest_name || b.profiles?.full_name || 'Guest User';
+                  const initials = guestName.split(' ').filter(Boolean).map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'GU';
+                  const roomName = b.rooms?.name || b.room_name || 'Assigned Accommodation';
+                  const bookingCode = b.booking_code || ('RV-' + String(b.id || '').slice(0, 8).toUpperCase());
+                  const checkInStr = fmtDate(b.check_in);
+                  const checkOutStr = fmtDate(b.check_out);
+                  const nightsCount = b.nights || 1;
+                  const total = Number(b.total_php) || 0;
+                  const status = b.status || 'confirmed';
+
+                  const statusConfig: Record<string, { label: string; bg: string; text: string; border: string }> = {
+                    confirmed: { label: 'Confirmed', bg: 'rgba(16, 185, 129, 0.12)', text: '#10B981', border: 'rgba(16, 185, 129, 0.3)' },
+                    checked_in: { label: 'In-House', bg: 'rgba(59, 130, 246, 0.12)', text: '#3B82F6', border: 'rgba(59, 130, 246, 0.3)' },
+                    pending: { label: 'Pending', bg: 'rgba(245, 158, 11, 0.12)', text: '#F59E0B', border: 'rgba(245, 158, 11, 0.3)' },
+                    checked_out: { label: 'Checked Out', bg: 'rgba(100, 116, 139, 0.12)', text: '#64748B', border: 'rgba(100, 116, 139, 0.3)' },
+                    cancelled: { label: 'Cancelled', bg: 'rgba(239, 68, 68, 0.12)', text: '#EF4444', border: 'rgba(239, 68, 68, 0.3)' },
+                  };
+                  const sc = statusConfig[status] || statusConfig.confirmed;
+
+                  return (
+                    <div
+                      key={b.id || idx}
+                      onClick={() => {
+                        setActiveTab('ledger');
+                        toast(`📋 Folio ${bookingCode}: ${guestName} (${roomName})`);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '12px 14px',
+                        background: isLightMode ? '#F8FAFC' : 'rgba(15, 23, 42, 0.65)',
+                        borderRadius: 14,
+                        border: `1px solid ${themeBorder}`,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                        gap: 12,
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = '#0EA5E9';
+                        e.currentTarget.style.boxShadow = isLightMode
+                          ? '0 4px 12px rgba(14, 165, 233, 0.12)'
+                          : '0 0 14px rgba(14, 165, 233, 0.25)';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = themeBorder;
+                        e.currentTarget.style.boxShadow = 'none';
+                        e.currentTarget.style.transform = 'none';
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                        <div style={{
+                          width: 38,
+                          height: 38,
+                          borderRadius: '50%',
+                          background: 'rgba(14, 165, 233, 0.12)',
+                          color: '#0EA5E9',
+                          fontWeight: 800,
+                          fontSize: '.82rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          fontFamily: "'Plus Jakarta Sans', sans-serif",
+                          border: '1px solid rgba(14, 165, 233, 0.25)',
+                        }}>
+                          {initials}
+                        </div>
+
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                            <b style={{ fontSize: '.86rem', color: themeText, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {guestName}
+                            </b>
+                            <span style={{ fontSize: '.7rem', color: '#0EA5E9', fontFamily: 'monospace', fontWeight: 600 }}>
+                              {bookingCode}
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, flexWrap: 'wrap' }}>
+                            <span style={{
+                              fontSize: '.72rem',
+                              color: themeText,
+                              fontWeight: 600,
+                              background: isLightMode ? '#E2E8F0' : 'rgba(255, 255, 255, 0.08)',
+                              padding: '1px 6px',
+                              borderRadius: 6,
+                            }}>
+                              🛏️ {roomName}
+                            </span>
+                            <span style={{ fontSize: '.72rem', color: themeMuted }}>
+                              📅 {checkInStr} → {checkOutStr} ({nightsCount}n)
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                        <b style={{ display: 'block', fontSize: '.88rem', color: themeText, fontWeight: 800 }}>
+                          ₱{total.toLocaleString()}
+                        </b>
+                        <span style={{
+                          fontSize: '.68rem',
+                          color: sc.text,
+                          background: sc.bg,
+                          border: `1px solid ${sc.border}`,
+                          padding: '2px 8px',
+                          borderRadius: 12,
+                          fontWeight: 700,
+                          display: 'inline-block',
+                          marginTop: 3,
+                        }}>
+                          {sc.label}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div style={{
+                  padding: '36px 16px',
+                  textAlign: 'center',
+                  background: isLightMode ? '#F8FAFC' : 'rgba(15, 23, 42, 0.4)',
+                  borderRadius: 14,
+                  border: `1px dashed ${themeBorder}`,
+                  color: themeMuted,
+                  fontSize: '0.82rem',
+                }}>
+                  <div style={{ fontSize: '1.6rem', marginBottom: 6 }}>📑</div>
+                  <div style={{ fontWeight: 700, color: themeText, marginBottom: 2 }}>No Booked Stays Found</div>
+                  <div style={{ fontSize: '0.74rem', opacity: 0.85, maxWidth: 320, margin: '0 auto 12px' }}>
+                    {bookingStatusFilter !== 'all'
+                      ? `There are no reservations currently matching "${bookingStatusFilter}".`
+                      : 'Active and upcoming guest reservations will stream into this ledger live.'}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (activeRoomsList.length === 0) {
+                        toast("There's no present room around. Please add a room in Room Management first.", true);
+                        return;
+                      }
+                      const activeRoom = activeRoomsList[0];
+                      setNewReservation((prev: any) => ({
+                        ...prev,
+                        room_id: prev.room_id || activeRoom?.id || '',
+                        check_in: prev.check_in || '2026-10-20',
+                        check_out: prev.check_out || '2026-10-21',
+                        total_php: activeRoom?.rate_php || 3500,
+                      }));
+                      setShowAddReservationModal(true);
+                    }}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: 10,
+                      background: '#0EA5E9',
+                      border: 'none',
+                      color: '#031726',
+                      fontWeight: 700,
+                      fontSize: '.76rem',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
+                  >
+                    <i className="fas fa-plus" />
+                    <span>Create Reservation</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Action to Full Reservations Page */}
-          <div style={{ display: 'flex', gap: 10, borderTop: `1px solid ${themeBorder}`, paddingTop: 14 }}>
+          {/* Bottom Footer Actions */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 14, borderTop: `1px solid ${themeBorder}`, marginTop: 14 }}>
             <button
-              type="button"
-              onClick={() => setActiveTab('ledger')}
+              onClick={() => {
+                setActiveTab('ledger');
+                toast('📋 Navigated to Reservations Ledger');
+              }}
               style={{
-                flex: 1,
-                padding: '10px 16px',
-                borderRadius: 12,
-                background: '#0EA5E9',
+                background: 'transparent',
                 border: 'none',
-                color: '#031726',
-                fontWeight: 800,
-                fontSize: '.82rem',
+                color: '#0EA5E9',
+                fontSize: '.84rem',
+                fontWeight: 700,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                transition: 'all 0.2s ease',
+                gap: 6,
+                padding: 0,
+                transition: 'gap 0.2s ease',
               }}
+              onMouseEnter={(e) => (e.currentTarget.style.gap = '10px')}
+              onMouseLeave={(e) => (e.currentTarget.style.gap = '6px')}
             >
-              <i className="fas fa-list-ul" />
-              <span>View All Reservations &amp; Folios →</span>
+              view all in reservations ledger <i className="fas fa-arrow-right" style={{ marginLeft: 4 }} />
             </button>
             <button
               type="button"
@@ -499,13 +695,13 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 setShowAddReservationModal(true);
               }}
               style={{
-                padding: '10px 16px',
-                borderRadius: 12,
+                padding: '7px 14px',
+                borderRadius: 10,
                 background: isLightMode ? '#F1F5F9' : 'rgba(255, 255, 255, 0.08)',
                 border: `1px solid ${themeBorder}`,
                 color: themeText,
                 fontWeight: 700,
-                fontSize: '.82rem',
+                fontSize: '.78rem',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -513,7 +709,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
               }}
             >
               <i className="fas fa-plus" />
-              <span>New Booking</span>
+              <span>+ New Booking</span>
             </button>
           </div>
         </div>
