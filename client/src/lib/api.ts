@@ -633,6 +633,16 @@ export const api = {
   },
   uploadImage: (image_data: string, filename?: string, extra?: Record<string, any>) =>
     req('/upload/image', { method: 'POST', body: { image_data, filename, ...(extra || {}) } }),
+  // Public page media (admin-managed images) — Page Adjustment
+  getPageSettings: async (): Promise<{ settings: Record<string, string> }> => {
+    try {
+      return await req('/page-settings');
+    } catch {
+      return { settings: {} };
+    }
+  },
+  savePageSettings: (settings: Record<string, string>) =>
+    req('/page-settings', { method: 'PUT', body: { settings } }),
   getCloudinaryConfig: async () => {
     try {
       return await req('/cloudinary/config');

@@ -81,7 +81,11 @@ function MainAppShell() {
 
   const isGuestHome = path === '/' || path === '/guest';
   const hideNavbarAndFooter = isDedicatedPortal || isLegacyInternal || isGuestHome;
-  const hideChatbot = isDedicatedPortal || isLegacyInternal;
+
+  // Staff/admin/recovery are the only internal consoles where the public AI
+  // concierge should stay hidden. Guests (/client, /user) keep the chat.
+  const isInternalConsole = ['/admin', '/staff', '/recovery'].some((p) => path.startsWith(p));
+  const hideChatbot = isInternalConsole || isLegacyInternal;
 
   return (
     <div className="app-shell">

@@ -10,6 +10,7 @@ import { AccountDirectoryView } from '../views/admin/AccountDirectoryView';
 import { AuditTrailView } from '../views/admin/AuditTrailView';
 import { NotificationsView } from '../views/admin/NotificationsView';
 import { SettingsView } from '../views/admin/SettingsView';
+import { PageAdjustmentView } from '../views/admin/PageAdjustmentView';
 import { ExecutiveGuestConversationsPanel } from '../components/ExecutiveGuestConversationsPanel';
 import CsvTableViewer from '../components/CsvTableViewer';
 import { AdminSidebar } from '../components/admin/AdminSidebar';
@@ -175,6 +176,10 @@ export default function Admin() {
               initialGuest={state.selectedPanelGuest}
               conversations={state.guestConversations}
             />
+          )}
+
+          {state.isFullAdmin && state.activeTab === 'page-adjustment' && (
+            <PageAdjustmentView {...themeProps} toast={toast} />
           )}
 
           {state.isFullAdmin && state.activeTab === 'settings' && (

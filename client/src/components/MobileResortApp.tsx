@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
+import { usePageSettings } from '../lib/pageSettings';
 import { isValidPHMobile, to11Digits } from '../lib/format';
 import { getManilaTodayISO } from '../lib/offeringSpecs';
 import { VoucherBarcode } from './receipt/VoucherBarcode';
@@ -182,6 +183,9 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
 
   // Active Hero Slide
   const [heroSlide, setHeroSlide] = useState<number>(0);
+  // Admin-managed hero image (Page Adjustment). Empty → keep the vector art.
+  const pageMedia = usePageSettings();
+  const heroImageUrl = pageMedia.heroImageUrl || '';
 
   // Booking Dates & Selection
   const [inlineYM, setInlineYM] = useState<YearMonth>({ y: 2026, m: 11 }); // Shangri-La dual view: Nov 2026
@@ -965,6 +969,14 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
             <polygon points="1210,274 1222,274 1216,265" fill="#FFE8A3"/>
             <circle cx="1216" cy="270" r="14" fill="#FFF3C4" fillOpacity="0.35"/>
           </svg>
+          {heroImageUrl && (
+            <img
+              src={heroImageUrl}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          )}
           <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/20 to-[#18222B]/85"></div>
         </div>
 
