@@ -147,6 +147,7 @@ export default function Admin() {
               roomsList={state.roomsList} allBookings={state.allBookings}
               inventoryList={state.inventoryList} loadingRoomsAndInv={state.loadingRoomsAndInv}
               refreshRoomsAndInventory={state.refreshRoomsAndInventory}
+              refreshReservations={state.refreshReservations}
               setShowCreateRoomModal={state.setShowCreateRoomModal}
               openCreateOfferingModal={state.openCreateOfferingModal}
               setShowCreateSupplyModal={state.setShowCreateSupplyModal}

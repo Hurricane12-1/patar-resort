@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { money } from '../../lib/format';
+import { api } from '../../lib/api';
 import RoomImageCarousel from '../../components/RoomImageCarousel';
 import {
   inferOfferingType,
@@ -15,6 +16,7 @@ export interface RoomInventoryViewProps {
   inventoryList: any[];
   loadingRoomsAndInv: boolean;
   refreshRoomsAndInventory: () => void;
+  refreshReservations?: () => void;
   setShowCreateRoomModal: (show: boolean) => void;
   openCreateOfferingModal?: (type: OfferingType) => void;
   setShowCreateSupplyModal: (show: boolean) => void;
@@ -38,6 +40,7 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
   inventoryList,
   loadingRoomsAndInv,
   refreshRoomsAndInventory,
+  refreshReservations,
   setShowCreateRoomModal,
   openCreateOfferingModal,
   setShowCreateSupplyModal,
@@ -54,6 +57,71 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
   themeMuted,
   toast,
 }) => {
+  // Local real-time overrides for instant UI response
+  const [bookingStatusOverrides, setBookingStatusOverrides] = useState<Record<string, string>>({});
+  const [roomMaintenanceOverrides, setRoomMaintenanceOverrides] = useState<Record<string, boolean>>({});
+
+  const handleProceedBooking = async (booking: any, room: any) => {
+    try {
+      setBookingStatusOverrides((prev) => ({ ...prev, [booking.id]: 'confirmed' }));
+      if (room && !room.is_active && !roomMaintenanceOverrides[room.id]) {
+        await api.updateRoom(room.id, { is_active: true });
+        setRoomMaintenanceOverrides((prev) => ({ ...prev, [room.id]: true }));
+        handleToggleRoomActive({ ...room, is_active: false });
+      }
+      await api.updateReservation(booking.id, { status: 'confirmed' });
+      toast(`✅ Booking for ${booking.guest_name || 'Guest'} confirmed to proceed.`);
+      if (refreshReservations) refreshReservations();
+      if (refreshRoomsAndInventory) refreshRoomsAndInventory();
+    } catch (err: any) {
+      toast(`Error proceeding booking: ${err.message}`, true);
+    }
+  };
+
+  const handleHoldBooking = async (booking: any) => {
+    try {
+      setBookingStatusOverrides((prev) => ({ ...prev, [booking.id]: 'on_hold' }));
+      await api.updateReservation(booking.id, { status: 'on_hold' });
+      toast(`⏸ Booking for ${booking.guest_name || 'Guest'} placed ON HOLD for review.`);
+      if (refreshReservations) refreshReservations();
+    } catch (err: any) {
+      toast(`Error placing booking on hold: ${err.message}`, true);
+    }
+  };
+
+  const handleMarkMaintenanceWithBooking = async (room: any, booking?: any) => {
+    try {
+      setRoomMaintenanceOverrides((prev) => ({ ...prev, [room.id]: false }));
+      await api.updateRoom(room.id, { is_active: false });
+      handleToggleRoomActive({ ...room, is_active: true });
+
+      if (booking && booking.id) {
+        setBookingStatusOverrides((prev) => ({ ...prev, [booking.id]: 'on_hold' }));
+        await api.updateReservation(booking.id, { status: 'on_hold' });
+        toast(`⚠️ ${room.name} marked on MAINTENANCE. Booking for ${booking.guest_name || 'Guest'} placed ON HOLD.`);
+      } else {
+        toast(`⏸️ ${room.name} placed in MAINTENANCE.`);
+      }
+      if (refreshReservations) refreshReservations();
+      if (refreshRoomsAndInventory) refreshRoomsAndInventory();
+    } catch (err: any) {
+      toast(`Error updating maintenance: ${err.message}`, true);
+    }
+  };
+
+  const formatDates = (cin?: string, cout?: string) => {
+    if (!cin) return 'Upcoming';
+    try {
+      const dIn = new Date(cin);
+      const inStr = dIn.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      if (!cout) return inStr;
+      const dOut = new Date(cout);
+      const outStr = dOut.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      return `${inStr} → ${outStr}`;
+    } catch {
+      return `${String(cin).slice(0, 10)} → ${String(cout || '').slice(0, 10)}`;
+    }
+  };
   const [inventorySearch, setInventorySearch] = useState(() => {
     try {
       if (typeof localStorage !== 'undefined') localStorage.removeItem('jd_admin_inv_search');
@@ -182,7 +250,7 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
           className="kpi-card-clickable"
           onClick={() => {
             setInventorySubTab('accommodations');
-            toast(`Total Resort Capacity: ${roomsList.reduce((acc, r) => acc + (r.units || 0), 0)} Physical Rooms across Patar coastline`);
+            toast(`Total Resort Capacity: ${roomsList.reduce((acc, r) => acc + (r.units || 0), 0)} Units across Patar coastline`);
           }}
           style={{
             background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)',
@@ -199,7 +267,7 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
             <i className="fas fa-bed" style={{ fontSize: '.68rem', color: '#38BDF8' }} />
           </span>
           <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#38BDF8', marginTop: 4 }}>
-            {roomsList.reduce((acc, r) => acc + (r.units || 0), 0)} Physical Rooms
+            {roomsList.reduce((acc, r) => acc + (r.units || 0), 0)} Total Units
           </div>
         </div>
 
@@ -291,9 +359,9 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
               </span>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginRight: 8 }}>
                 {([
-                  { key: 'all' as const, label: `All (${roomsList.filter((r) => r.is_active !== false).length})` },
-                  { key: 'room' as const, label: `Rooms (${roomsList.filter((r) => r.is_active !== false && inferOfferingType(r) === 'room').length})` },
-                  { key: 'cottage' as const, label: `Cottages (${roomsList.filter((r) => r.is_active !== false && inferOfferingType(r) === 'cottage').length})` },
+                  { key: 'all' as const, label: `All (${roomsList.length})` },
+                  { key: 'room' as const, label: `Rooms (${roomsList.filter((r) => inferOfferingType(r) === 'room').length})` },
+                  { key: 'cottage' as const, label: `Cottages (${roomsList.filter((r) => inferOfferingType(r) === 'cottage').length})` },
                 ]).map((pill) => {
                   const isSel = offeringFilter === pill.key;
                   return (
@@ -364,7 +432,6 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
             <div className="skel" style={{ height: 260 }} />
           ) : (() => {
             const filteredRooms = roomsList
-              .filter((r) => r.is_active !== false)
               .filter((r) => offeringFilter === 'all' || inferOfferingType(r) === offeringFilter)
               .filter((r) => {
                 if (inventoryRoomFilter === 'all') return true;
@@ -392,6 +459,24 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
                   const roomImages = Array.isArray(room.images) && room.images.length > 0
                     ? room.images
                     : (room.image_url ? [room.image_url] : []);
+
+                  const isRoomActive = roomMaintenanceOverrides[room.id] !== undefined
+                    ? roomMaintenanceOverrides[room.id]
+                    : Boolean(room.is_active);
+
+                  const matchingBookings = (Array.isArray(allBookings) ? allBookings : []).filter((b: any) => {
+                    if (!b) return false;
+                    const currStatus = bookingStatusOverrides[b.id] || b.status;
+                    if (currStatus === 'cancelled') return false;
+                    const matchId = b.room_id && room.id && String(b.room_id) === String(room.id);
+                    const matchName = b.room_name && room.name && String(b.room_name).toLowerCase().trim() === String(room.name).toLowerCase().trim();
+                    return matchId || matchName;
+                  });
+
+                  const primaryBooking = matchingBookings[0] || null;
+                  const primaryBookingStatus = primaryBooking
+                    ? (bookingStatusOverrides[primaryBooking.id] || primaryBooking.status || 'pending')
+                    : null;
 
                   return (
                     <div
@@ -428,20 +513,29 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                             <h4 style={{ margin: 0, fontSize: '1.15rem', color: themeText }}>{room.name}</h4>
                             <button
-                              onClick={() => handleToggleRoomActive(room)}
+                              onClick={() => {
+                                if (isRoomActive) {
+                                  handleMarkMaintenanceWithBooking(room, primaryBooking);
+                                } else {
+                                  handleProceedBooking(primaryBooking || {}, room);
+                                }
+                              }}
                               style={{
                                 border: 'none',
                                 borderRadius: 12,
-                                padding: '3px 10px',
+                                padding: '4px 11px',
                                 fontSize: '.72rem',
                                 fontWeight: 700,
                                 cursor: 'pointer',
-                                background: room.is_active ? 'rgba(16,185,129,0.15)' : 'rgba(244,63,94,0.15)',
-                                color: room.is_active ? '#10B981' : '#F43F5E',
+                                background: isRoomActive ? 'rgba(16,185,129,0.15)' : 'rgba(244,63,94,0.15)',
+                                color: isRoomActive ? '#10B981' : '#F43F5E',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
                               }}
                               title="Click to toggle Active vs Maintenance"
                             >
-                              {room.is_active ? '● Active' : '⏸ Maintenance'}
+                              {isRoomActive ? '● Active' : '⏸ Maintenance'}
                             </button>
                           </div>
 
@@ -456,12 +550,237 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
                               </span>
                             ))}
                           </div>
-                          <div style={{ display: 'flex', gap: 14, marginBottom: 12, fontSize: '.84rem', color: themeText, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)', padding: '8px 12px', borderRadius: 10 }}>
-                            <div><span style={{ color: themeMuted, fontSize: '.72rem', display: 'block' }}>{inferOfferingType(room) === 'offer' ? 'Group Limit' : 'Capacity'}</span><b>{inferOfferingType(room) === 'offer' ? `Up to ${room.capacity || 10} pax` : `Sleeps ${room.capacity || 2}`}</b></div>
-                            <div><span style={{ color: themeMuted, fontSize: '.72rem', display: 'block' }}>{inferOfferingType(room) === 'offer' ? 'Daily Slots' : 'Physical Units'}</span><b style={{ color: '#0EA5E9' }}>{room.units || 1} {inferOfferingType(room) === 'offer' ? 'slots' : 'units'}</b></div>
-                            <div><span style={{ color: themeMuted, fontSize: '.72rem', display: 'block' }}>Rate</span><b>₱{Number(room.rate_php || 0).toLocaleString()} {getRateUnitSuffix(inferOfferingType(room), room.specs)}</b></div>
-                            <div><span style={{ color: themeMuted, fontSize: '.72rem', display: 'block' }}>Rating</span><b><i className="fas fa-star" style={{ color: '#F59E0B', marginRight: 4 }} />{room.rating_avg || 5.0}</b></div>
+
+                          {/* REFINED CAPACITY, RATE & STATUS BAR (PHYSICAL UNITS & RATING REMOVED) */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, fontSize: '.84rem', color: themeText, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: 12, border: `1px solid ${themeBorder}` }}>
+                            <div>
+                              <span style={{ color: themeMuted, fontSize: '.7rem', display: 'block', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.03em' }}>Capacity</span>
+                              <b style={{ fontSize: '.88rem' }}>{inferOfferingType(room) === 'offer' ? `Up to ${room.capacity || 10} pax` : `Sleeps ${room.capacity || 2}`}</b>
+                            </div>
+                            <div>
+                              <span style={{ color: themeMuted, fontSize: '.7rem', display: 'block', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.03em' }}>Rate</span>
+                              <b style={{ fontSize: '.88rem', color: '#10B981' }}>₱{Number(room.rate_php || 0).toLocaleString()} <span style={{ fontSize: '.7rem', color: themeMuted, fontWeight: 500 }}>{getRateUnitSuffix(inferOfferingType(room), room.specs)}</span></b>
+                            </div>
+                            <div>
+                              <span style={{ color: themeMuted, fontSize: '.7rem', display: 'block', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.03em' }}>Status</span>
+                              {!isRoomActive ? (
+                                <span style={{ fontSize: '.74rem', fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: 'rgba(244,63,94,0.12)', color: '#F43F5E', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                  ⏸ Maintenance
+                                </span>
+                              ) : primaryBooking ? (
+                                primaryBookingStatus === 'on_hold' ? (
+                                  <span style={{ fontSize: '.74rem', fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: 'rgba(245,158,11,0.12)', color: '#D97706', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                    🟡 On Hold
+                                  </span>
+                                ) : primaryBookingStatus === 'pending' ? (
+                                  <span style={{ fontSize: '.74rem', fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: 'rgba(249,115,22,0.12)', color: '#EA580C', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                    🟠 Pending
+                                  </span>
+                                ) : primaryBookingStatus === 'checked_in' ? (
+                                  <span style={{ fontSize: '.74rem', fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: 'rgba(14,165,233,0.12)', color: '#0EA5E9', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                    🔴 In-House
+                                  </span>
+                                ) : (
+                                  <span style={{ fontSize: '.74rem', fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: 'rgba(79,70,229,0.12)', color: '#4F46E5', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                    🔵 Booked
+                                  </span>
+                                )
+                              ) : (
+                                <span style={{ fontSize: '.74rem', fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: 'rgba(16,185,129,0.12)', color: '#10B981', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                  ● Available
+                                </span>
+                              )}
+                            </div>
                           </div>
+
+                          {/* OPERATIONAL GUARDRAIL: NOTIFY ADMIN/STAFF WHEN BOOKED OR CONFLICTED */}
+                          {primaryBooking ? (
+                            <div
+                              style={{
+                                marginBottom: 12,
+                                padding: '12px 14px',
+                                borderRadius: 12,
+                                background: !isRoomActive
+                                  ? (isLightMode ? '#FFF1F2' : 'rgba(244, 63, 94, 0.12)')
+                                  : (primaryBookingStatus === 'on_hold'
+                                      ? (isLightMode ? '#FFFBEB' : 'rgba(245, 158, 11, 0.12)')
+                                      : (isLightMode ? '#F0FDF4' : 'rgba(16, 185, 129, 0.1)')),
+                                border: `1px solid ${
+                                  !isRoomActive
+                                    ? '#F43F5E'
+                                    : (primaryBookingStatus === 'on_hold' ? '#F59E0B' : '#10B981')
+                                }`,
+                              }}
+                            >
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 6 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <i
+                                    className={
+                                      !isRoomActive
+                                        ? "fas fa-triangle-exclamation"
+                                        : (primaryBookingStatus === 'on_hold' ? "fas fa-hand" : "fas fa-shield-halved")
+                                    }
+                                    style={{
+                                      color: !isRoomActive
+                                        ? '#F43F5E'
+                                        : (primaryBookingStatus === 'on_hold' ? '#D97706' : '#059669'),
+                                      fontSize: '.9rem',
+                                    }}
+                                  />
+                                  <span
+                                    style={{
+                                      fontSize: '.76rem',
+                                      fontWeight: 800,
+                                      textTransform: 'uppercase',
+                                      letterSpacing: '0.04em',
+                                      color: !isRoomActive
+                                        ? '#F43F5E'
+                                        : (primaryBookingStatus === 'on_hold' ? '#D97706' : '#059669'),
+                                    }}
+                                  >
+                                    {!isRoomActive
+                                      ? '⚠️ Maintenance Conflict Guardrail'
+                                      : (primaryBookingStatus === 'on_hold'
+                                          ? 'Booking On Hold · Staff Review'
+                                          : 'Booking Guardrail Alert')}
+                                  </span>
+                                </div>
+
+                                <span
+                                  style={{
+                                    fontSize: '.66rem',
+                                    fontWeight: 800,
+                                    padding: '2px 7px',
+                                    borderRadius: 6,
+                                    background: !isRoomActive ? '#F43F5E' : (primaryBookingStatus === 'on_hold' ? '#D97706' : '#059669'),
+                                    color: '#FFFFFF',
+                                    textTransform: 'uppercase',
+                                  }}
+                                >
+                                  {!isRoomActive ? 'Conflict' : (primaryBookingStatus === 'on_hold' ? 'On Hold' : primaryBookingStatus)}
+                                </span>
+                              </div>
+
+                              <div style={{ fontSize: '.78rem', color: themeText, lineHeight: 1.45, marginBottom: 8 }}>
+                                Guest: <b>{primaryBooking.guest_name || 'Guest'}</b>
+                                {primaryBooking.phone ? ` (${primaryBooking.phone})` : ''}
+                                <div style={{ color: themeMuted, fontSize: '.72rem', marginTop: 2 }}>
+                                  Stay Dates: <b>{formatDates(primaryBooking.check_in, primaryBooking.check_out)}</b> · Total: {money(primaryBooking.total_php)}
+                                </div>
+                              </div>
+
+                              {/* Interactive Decision Guardrail Buttons */}
+                              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', paddingTop: 6, borderTop: `1px dashed ${!isRoomActive ? 'rgba(244,63,94,0.3)' : 'rgba(0,0,0,0.08)'}` }}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleProceedBooking(primaryBooking, room)}
+                                  style={{
+                                    border: 'none',
+                                    borderRadius: 8,
+                                    padding: '5px 10px',
+                                    fontSize: '.72rem',
+                                    fontWeight: 700,
+                                    background: '#059669',
+                                    color: '#FFFFFF',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                  }}
+                                  title="Approve booking to proceed and clear maintenance hold"
+                                >
+                                  <i className="fas fa-check" /> Proceed Booking
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleHoldBooking(primaryBooking)}
+                                  style={{
+                                    border: '1px solid rgba(217, 119, 6, 0.4)',
+                                    borderRadius: 8,
+                                    padding: '5px 10px',
+                                    fontSize: '.72rem',
+                                    fontWeight: 700,
+                                    background: primaryBookingStatus === 'on_hold' ? '#D97706' : (isLightMode ? '#FFFBEB' : 'rgba(217,119,6,0.15)'),
+                                    color: primaryBookingStatus === 'on_hold' ? '#FFFFFF' : '#D97706',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                  }}
+                                  title="Put booking on hold pending staff review"
+                                >
+                                  <i className="fas fa-pause" /> {primaryBookingStatus === 'on_hold' ? 'Booking On Hold' : 'Put on Hold'}
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleMarkMaintenanceWithBooking(room, primaryBooking)}
+                                  style={{
+                                    border: '1px solid rgba(244, 63, 94, 0.4)',
+                                    borderRadius: 8,
+                                    padding: '5px 10px',
+                                    fontSize: '.72rem',
+                                    fontWeight: 700,
+                                    background: !isRoomActive ? '#F43F5E' : (isLightMode ? '#FFF1F2' : 'rgba(244,63,94,0.15)'),
+                                    color: !isRoomActive ? '#FFFFFF' : '#F43F5E',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                  }}
+                                  title="Mark room on maintenance and hold booking"
+                                >
+                                  <i className="fas fa-screwdriver-wrench" /> {!isRoomActive ? 'Under Maintenance' : 'Mark Maintenance'}
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div
+                              style={{
+                                marginBottom: 12,
+                                padding: '8px 12px',
+                                borderRadius: 10,
+                                background: !isRoomActive
+                                  ? (isLightMode ? '#FFF1F2' : 'rgba(244, 63, 94, 0.08)')
+                                  : (isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.02)'),
+                                border: `1px solid ${!isRoomActive ? 'rgba(244,63,94,0.3)' : themeBorder}`,
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                              }}
+                            >
+                              <div style={{ fontSize: '.74rem', color: !isRoomActive ? '#F43F5E' : themeMuted, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <i className={!isRoomActive ? "fas fa-screwdriver-wrench" : "fas fa-circle-check"} style={{ color: !isRoomActive ? '#F43F5E' : '#10B981' }} />
+                                <span>{!isRoomActive ? 'Room is Offline for Maintenance' : 'No active bookings · Ready for guests'}</span>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (!isRoomActive) {
+                                    handleProceedBooking({}, room);
+                                  } else {
+                                    handleMarkMaintenanceWithBooking(room);
+                                  }
+                                }}
+                                style={{
+                                  border: 'none',
+                                  borderRadius: 6,
+                                  padding: '4px 10px',
+                                  fontSize: '.7rem',
+                                  fontWeight: 700,
+                                  background: !isRoomActive ? '#10B981' : (isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.06)'),
+                                  color: !isRoomActive ? '#FFFFFF' : themeMuted,
+                                  cursor: 'pointer',
+                                }}
+                                title={!isRoomActive ? 'Reactivate room' : 'Take offline for maintenance'}
+                              >
+                                <i className={!isRoomActive ? "fas fa-play" : "fas fa-screwdriver-wrench"} style={{ marginRight: 4 }} />
+                                {!isRoomActive ? 'Reactivate' : 'Mark Maintenance'}
+                              </button>
+                            </div>
+                          )}
 
                           {Array.isArray(room.amenities) && room.amenities.length > 0 && (
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 14 }}>
