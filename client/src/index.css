@@ -61,12 +61,31 @@
   margin: 0;
   padding: 0;
   border: 0 solid;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
 }
 
-.jd-app *::-webkit-scrollbar {
-  display: none;
+.jd-app {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(56, 189, 248, 0.35) transparent;
+}
+
+.jd-app ::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+.jd-app ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.jd-app ::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.28);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.jd-app ::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.55);
 }
 
 .jd-app h1,

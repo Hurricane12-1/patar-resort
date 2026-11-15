@@ -564,7 +564,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             </p>
 
             {/* Guest conversation cards list */}
-            <div className="custom-scrollbar" style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 420, overflowY: 'auto', paddingRight: 4 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 420, overflowY: 'auto', paddingRight: 4 }}>
               {guestConversations.length > 0 ? (
                 guestConversations.slice(0, 5).map((g: any, idx: number) => {
                   const initials = g.name.split(' ').filter(Boolean).map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'GU';

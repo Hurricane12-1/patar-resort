@@ -101,7 +101,7 @@ export default function Admin() {
         />
 
         <main
-          className="admin-main-content admin-content"
+          className="admin-main-content"
           style={{ background: state.themeBg, color: state.themeText, minHeight: 'calc(100vh - 70px)' }}
         >
           {state.isFullAdmin && state.activeTab === 'overview' && (

@@ -121,8 +121,8 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
           <i className="fas fa-bars" style={{ fontSize: '.95rem' }} />
         </button>
 
-        {/* BREADCRUMB & TITLE */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {/* BREADCRUMB & TITLE (class hooks the ≤768px shrink and ≤640px hide rules in admin.css) */}
+        <div className="admin-header-title" style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 'max-content' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '.72rem', color: themeMuted, fontWeight: 600 }}>
             <span>Executive hub</span>
             <i className="fas fa-chevron-right" style={{ fontSize: '.55rem', opacity: 0.5 }} />
@@ -146,34 +146,38 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
         </div>
 
         {/* SEARCH INPUT */}
-        <div className="admin-header-search-wrap" style={{ position: 'relative', display: 'flex', alignItems: 'center', marginLeft: 14 }}>
+        <div className="admin-header-search-wrap" style={{ position: 'relative', display: 'flex', alignItems: 'center', marginLeft: 16 }}>
           <i
             className="fas fa-magnifying-glass"
             style={{ position: 'absolute', left: 14, color: themeMuted, fontSize: '.8rem', pointerEvents: 'none' }}
           />
           <input
             className="search admin-header-search"
-            placeholder="Search guests, rooms, references"
+            placeholder="Search guests, rooms, reference..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
-              paddingLeft: 36,
+              paddingLeft: 38,
               paddingRight: 38,
               height: 38,
               borderRadius: 20,
               fontSize: '.82rem',
-              minWidth: 260,
+              width: 'clamp(260px, 24vw, 380px)',
               background: isLightMode ? '#F8FAFC' : 'rgba(15,23,42,0.6)',
               border: `1px solid ${themeBorder}`,
               color: themeText,
+              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+              boxSizing: 'border-box',
             }}
           />
           <kbd
             style={{
               position: 'absolute',
               right: 12,
-              padding: '2px 6px',
-              borderRadius: 4,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              padding: '2px 7px',
+              borderRadius: 6,
               fontSize: '.68rem',
               fontWeight: 700,
               color: themeMuted,
@@ -181,6 +185,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
               border: `1px solid ${isLightMode ? '#CBD5E1' : 'rgba(255,255,255,0.15)'}`,
               fontFamily: 'monospace',
               pointerEvents: 'none',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
             }}
           >
             /

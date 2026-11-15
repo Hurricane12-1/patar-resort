@@ -11,6 +11,7 @@
 /* Viewport */
 .sl-viewport {
   min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
   display: flex;
   align-items: center;
@@ -298,6 +299,7 @@
 
 .staff-namespace-wrapper {
   min-height: 100vh;
+  min-height: 100dvh;
   background: radial-gradient(circle at 50% 0%, #0d1a30 0%, #060b18 50%, #020617 100%);
   color: #F8FAFC;
   font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;

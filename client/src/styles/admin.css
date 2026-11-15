@@ -46,8 +46,10 @@
   inset: 0 !important;
   width: 100vw !important;
   height: 100vh !important;
+  height: 100dvh !important; /* Dynamic viewport: tracks mobile browser toolbar collapse */
   max-width: 100vw !important;
   max-height: 100vh !important;
+  max-height: 100dvh !important;
   overflow: hidden !important;
   display: flex !important;
   flex-direction: row !important;
@@ -60,6 +62,7 @@
 /* 3. FIXED STATE EXECUTIVE SIDEBAR (DOCK) */
 .admin-portal aside.sidebar {
   height: 100vh;
+  height: 100dvh;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -131,6 +134,7 @@
 .admin-portal .admin-right-pane {
   flex: 1;
   height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -150,41 +154,40 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
+  padding: 0 24px;
   background: rgba(255, 255, 255, 0.98);
   border-bottom: 1px solid #E2E8F0;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
   box-sizing: border-box;
   overflow: visible !important; /* CRITICAL: Must be visible so alert dropdowns and action menus float over dashboard content */
-  gap: 10px;
+  gap: 16px;
 }
 
 /* Left Group */
 .admin-portal .admin-header-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 16px;
   min-width: 0;
   flex-shrink: 1;
-  overflow: hidden;
 }
 
 .admin-portal .sidebar-toggle-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  height: 34px;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
   background: #F1F5F9;
   border: 1px solid #E2E8F0;
   border-radius: 10px;
   color: #334155;
-  font-size: 0.78rem;
+  font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap !important;
   flex-shrink: 0 !important;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   box-sizing: border-box;
 }
 
@@ -192,17 +195,15 @@
   background: #E2E8F0;
   color: #0F172A;
   border-color: #CBD5E1;
+  transform: translateY(-1px);
 }
 
 .admin-portal .admin-header-title {
-  font-size: 0.86rem;
-  color: #64748B;
-  font-weight: 600;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  flex-shrink: 1;
-  min-width: 0;
+  flex-shrink: 0;
 }
 
 .admin-portal .admin-header-tab-name {
@@ -219,21 +220,35 @@
 }
 
 .admin-portal .admin-header-search {
-  width: clamp(120px, 15vw, 220px);
+  width: clamp(240px, 22vw, 360px);
   max-width: 100%;
-  padding: 6px 12px 6px 30px;
-  font-size: 0.8rem;
+  padding: 8px 38px 8px 36px;
+  font-size: 0.82rem;
   border-radius: 20px;
   background: #F1F5F9;
   color: #0F172A;
   border: 1px solid #E2E8F0;
   box-sizing: border-box;
   white-space: nowrap;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.admin-portal .admin-header-search:focus {
+  outline: none;
+  border-color: #6366F1 !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18) !important;
+  background: #FFFFFF !important;
+}
+
+.admin-portal.dark-mode .admin-header-search:focus {
+  border-color: #38BDF8 !important;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.22) !important;
+  background: rgba(15, 23, 42, 0.95) !important;
 }
 
 .admin-portal .admin-header-search-icon {
   position: absolute;
-  left: 10px;
+  left: 12px;
   display: flex;
   align-items: center;
   color: #64748B;
@@ -410,7 +425,9 @@
 .admin-portal .admin-main-content {
   flex: 1;
   height: calc(100vh - 64px);
+  height: calc(100dvh - 64px);
   max-height: calc(100vh - 64px);
+  max-height: calc(100dvh - 64px);
   overflow-y: auto;
   overflow-x: hidden;
   padding: 24px 28px 80px 28px;
@@ -419,24 +436,76 @@
   -webkit-overflow-scrolling: touch;
 }
 
-/* ISOLATED SLEEK RESORT MANAGEMENT: HIDE SCROLLBARS GLOBALLY ACROSS ADMIN */
-.admin-portal,
-.admin-portal *,
+/* ============ PREMIER RESORT EXECUTIVE SCROLLBAR SYSTEM ============ */
 .admin-portal .admin-main-content,
 .admin-portal aside.sidebar,
-.admin-portal .table-wrap {
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
+.admin-portal .table-wrap,
+.admin-portal .admin-scrollable {
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(148, 163, 184, 0.45) transparent !important;
 }
 
-.admin-portal::-webkit-scrollbar,
-.admin-portal *::-webkit-scrollbar,
 .admin-portal .admin-main-content::-webkit-scrollbar,
 .admin-portal aside.sidebar::-webkit-scrollbar,
-.admin-portal .table-wrap::-webkit-scrollbar {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
+.admin-portal .table-wrap::-webkit-scrollbar,
+.admin-portal .admin-scrollable::-webkit-scrollbar {
+  display: block !important;
+  width: 8px !important;
+  height: 8px !important;
+}
+
+.admin-portal .admin-main-content::-webkit-scrollbar-track,
+.admin-portal aside.sidebar::-webkit-scrollbar-track,
+.admin-portal .table-wrap::-webkit-scrollbar-track,
+.admin-portal .admin-scrollable::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.admin-portal .admin-main-content::-webkit-scrollbar-thumb,
+.admin-portal aside.sidebar::-webkit-scrollbar-thumb,
+.admin-portal .table-wrap::-webkit-scrollbar-thumb,
+.admin-portal .admin-scrollable::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.45) !important;
+  border-radius: 9999px !important;
+  border: 2px solid transparent !important;
+  background-clip: padding-box !important;
+  transition: background-color 0.2s ease !important;
+}
+
+.admin-portal .admin-main-content::-webkit-scrollbar-thumb:hover,
+.admin-portal aside.sidebar::-webkit-scrollbar-thumb:hover,
+.admin-portal .table-wrap::-webkit-scrollbar-thumb:hover,
+.admin-portal .admin-scrollable::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.75) !important;
+  border: 2px solid transparent !important;
+  background-clip: padding-box !important;
+}
+
+/* Dark Mode Scrollbars */
+.admin-portal.dark-mode .admin-main-content,
+.admin-portal.dark-mode aside.sidebar,
+.admin-portal.dark-mode .table-wrap,
+.admin-portal.dark-mode .admin-scrollable {
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent !important;
+}
+
+.admin-portal.dark-mode .admin-main-content::-webkit-scrollbar-thumb,
+.admin-portal.dark-mode aside.sidebar::-webkit-scrollbar-thumb,
+.admin-portal.dark-mode .table-wrap::-webkit-scrollbar-thumb,
+.admin-portal.dark-mode .admin-scrollable::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22) !important;
+  border: 2px solid transparent !important;
+  background-clip: padding-box !important;
+}
+
+.admin-portal.dark-mode .admin-main-content::-webkit-scrollbar-thumb:hover,
+.admin-portal.dark-mode aside.sidebar::-webkit-scrollbar-thumb:hover,
+.admin-portal.dark-mode .table-wrap::-webkit-scrollbar-thumb:hover,
+.admin-portal.dark-mode .admin-scrollable::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.42) !important;
+  border: 2px solid transparent !important;
+  background-clip: padding-box !important;
 }
 
 /* 7. PREMIER EXECUTIVE CARDS, PANELS & GLASSMORPHISM */
@@ -748,18 +817,6 @@
   background: rgba(255, 255, 255, 0.04) !important;
 }
 
-.admin-portal.dark-mode,
-.admin-portal.dark-mode * {
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
-}
-
-.admin-portal.dark-mode::-webkit-scrollbar,
-.admin-portal.dark-mode *::-webkit-scrollbar {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
-}
 
 /* 13. RESPONSIVE EXECUTIVE GRID SYSTEM */
 .admin-grid-top-banner {
@@ -962,6 +1019,17 @@
   .admin-portal aside.sidebar.mobile-open {
     transform: translateX(0) !important;
   }
+  /* On tablet/mobile the drawer hides off-canvas via transform, so the desktop
+     zero-width .hidden state must not shrink it when it slides back in. The
+     !important flags also override the inline width/minWidth/maxWidth: 0 set
+     by AdminSidebar while sidebarHidden persists from a desktop session. */
+  .admin-portal aside.sidebar.hidden {
+    width: 268px !important;
+    min-width: 0 !important;
+    max-width: 85vw !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
   .admin-portal .admin-main-content {
     width: 100% !important;
     padding: 16px 16px 90px 16px !important;
@@ -1033,6 +1101,11 @@
   .admin-portal .admin-header-title {
     max-width: 140px !important;
     font-size: 0.78rem !important;
+  }
+  /* The live clock (time + date + PST badge) crowds out the menu toggle and
+     page title on handsets; drop it so navigation stays reachable. */
+  .admin-portal header.admin-header .top-live-clock {
+    display: none !important;
   }
 
   .admin-grid-bottom-3 {
@@ -1106,7 +1179,7 @@
   }
 }
 
-/* 11. ROOM IMAGE CAROUSEL & AUTO-SCROLL ANIMATIONS */
+/* 15. ROOM IMAGE CAROUSEL & AUTO-SCROLL ANIMATIONS */
 @keyframes roomCarouselFadeIn {
   from {
     opacity: 0.4;
@@ -1127,7 +1200,7 @@
   box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.4);
 }
 
-/* 12. OFFICIAL RECEIPT & FOLIO PRINT STYLING */
+/* 16. OFFICIAL RECEIPT & FOLIO PRINT STYLING */
 @media print {
   body * {
     visibility: hidden !important;
@@ -1158,7 +1231,7 @@
   }
 }
 
-/* 13. ROUNDED PILL BUTTON & CURVED CONTROLS ARCHITECTURE */
+/* 17. ROUNDED PILL BUTTON & CURVED CONTROLS ARCHITECTURE */
 .admin-portal button,
 .admin-portal .btn,
 .admin-portal .btn-sm,
@@ -1192,7 +1265,7 @@
   box-shadow: 0 16px 36px -8px rgba(99, 102, 241, 0.35) !important;
 }
 
-/* 14. PREMIUM EXECUTIVE MENU & MODAL NEON GLOW STATES */
+/* 18. PREMIUM EXECUTIVE MENU & MODAL NEON GLOW STATES */
 .admin-portal button:active,
 .admin-portal .btn:active,
 .admin-portal .pms-view-tab:active,

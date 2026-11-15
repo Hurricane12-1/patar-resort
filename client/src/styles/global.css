@@ -119,27 +119,41 @@ body {
   font-size: 16px;
   line-height: 1.6;
   min-height: 100vh;
+  min-height: 100dvh;
   overflow-x: clip !important;
 }
 
-/* ============ HIDE SCROLLBARS GLOBALLY WHILE PRESERVING SCROLLABILITY ============ */
-html, body, * {
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
+/* ============ MODERN, ELEGANT GLOBAL SCROLLBARS ============ */
+html, body {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.45) transparent;
 }
 
 ::-webkit-scrollbar {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  display: none !important;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  display: none !important;
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.75);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 h1, h2, h3, h4 {
@@ -2165,6 +2179,7 @@ footer a:hover {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 main {
