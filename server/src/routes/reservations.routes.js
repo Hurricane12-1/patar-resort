@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import crypto from 'crypto';
 import { z } from 'zod';
 import { asyncH, ApiError } from '../middleware/errors.js';
 import {
@@ -412,43 +411,22 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
     .select('*, rooms(name, slug, category, amenities, rate_php), profiles(full_name, phone, email)').single();
   
   if (error) {
-    const raced = ['23P01', '23505'].includes(error.code);
-    if (raced) {
+    if (['23P01', '23505'].includes(error.code)) {
       throw new ApiError(409, 'That room was just booked for those dates — please pick another.');
     }
+    // A write the database refused — RLS / permission — must never be reported as
+    // a confirmed booking. The old behaviour wrote the reservation to an in-memory
+    // store and returned 201, so the guest saw success while nothing persisted and
+    // the record vanished on restart. Surface the failure instead.
     if (error.code === '42501' || (error.message && error.message.includes('row-level security'))) {
-      console.warn('[Reservations Service] Supabase RLS active; committing to resilient local reservation store.');
-      const reservationId = crypto.randomUUID();
-      stay = {
-        id: reservationId,
-        guest_id: targetGuestId,
-        room_id: targetRoomId,
-        check_in,
-        check_out,
-        guests,
-        notes: finalNotes,
-        total_php,
-        downpayment_php,
-        payment_method: finalPaymentMethod,
-        payment_status: payment_status || 'unpaid',
-        status: customStatus || 'confirmed',
-        guest_name: finalGuestName,
-        email: finalGuestEmail,
-        guest_email: finalGuestEmail,
-        phone: finalPhone,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        rooms: { name: roomName, slug: room.slug, category: room.category, amenities: room.amenities, rate_php: roomRate },
-        profiles: { full_name: finalGuestName, phone: finalPhone, email: finalGuestEmail },
-      };
-      addLocalReservation(stay);
-    } else {
-      throw new ApiError(500, error.message);
+      console.error('[Reservations] Insert rejected by RLS (42501). The reservations table needs an INSERT policy for the guest role (supabase/reservations_rls.sql) and a real SUPABASE_SERVICE_ROLE_KEY must be configured.', { room_id: targetRoomId, guest_id: targetGuestId });
+      throw new ApiError(503, 'We could not save your booking just now due to a server configuration issue. You have not been charged — please try again shortly or contact the resort directly.');
     }
-  } else {
-    stay = dbStay;
-    addLocalReservation(stay);
+    throw new ApiError(500, error.message);
   }
+
+  stay = dbStay;
+  addLocalReservation(stay);
 
   await redis.clear();
 

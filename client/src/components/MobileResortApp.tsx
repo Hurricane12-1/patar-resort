@@ -865,17 +865,21 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
       // rejected (date conflict, cottage day-use rule, capacity, bad dates).
       // Surfacing it to the guest is mandatory — saving a local copy that looks
       // confirmed but was never booked is worse than showing the real reason.
-      const isGuestFacingRejection =
+      const isKnownRejection =
         (status >= 400 && status < 500) ||
         /already reserved|in the past|required information|day-use|overnight|desk unit allocation|allocation failure|category|capacity|check-?out|check-?in/i.test(message);
-      if (isGuestFacingRejection && message) {
-        setReserveError(message);
-        setReserveSubmitting(false);
-        setReserveStep('form');
-        fetchLiveReservations();
-        return;
-      }
-      console.warn('[Reservation] Reservation system unreachable; saving on this device only:', message);
+      // Every failure is shown to the guest. We never create a confirmed-looking
+      // copy for a reservation the server did not actually save: a 4xx carries the
+      // real reason; anything else means the booking simply did not go through.
+      setReserveError(
+        isKnownRejection && message
+          ? message
+          : 'We couldn’t complete your booking just now. You have not been charged — please try again in a moment, or contact the resort if it keeps happening.'
+      );
+      setReserveSubmitting(false);
+      setReserveStep('form');
+      fetchLiveReservations();
+      return;
     }
 
     const synced = Boolean(savedRow?.id);

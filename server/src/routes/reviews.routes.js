@@ -46,7 +46,10 @@ r.post('/reviews', authenticate,
       throw new ApiError(409, 'You can review after you check out.');
     const { data, error } = await req.sb.from('reviews')
       .insert({ reservation_id: reservationId, guest_id: req.user.id,
-                room_id: b.room_id, rating, comment,
+                room_id: b.room_id,
+                // reviews.guest_name is NOT NULL; fall back to the reservation's guest name.
+                guest_name: req.user.full_name || b.guest_name || 'Verified Guest',
+                rating, comment,
                 moderation_status: 'pending', is_approved: false })
       .select().single();
     if (error) throw new ApiError(error.code === '23505' ? 409 : 500,

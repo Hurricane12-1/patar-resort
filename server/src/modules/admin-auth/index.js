@@ -25,7 +25,7 @@ export const adminAuthRouter = Router();
  * Block Requirements:
  *  1. Identity / Email / Badge ID (Verified active administrator in employee_accounts)
  *  2. Password (verified via scrypt hash or Supabase Auth)
- *  3. Token ID Key (verified strictly via ADMIN_TOKEN_KEY, e.g. 'etc-34')
+ *  3. Token ID Key (verified strictly via the ADMIN_TOKEN_KEY environment variable)
  *  4. Position ('admin' | 'administrator', enforced strictly by RBAC)
  * ============================================================================
  */
@@ -48,8 +48,8 @@ export const handleAdminLogin = asyncH(async (req, res) => {
   }
 
   // 2. Mandatory Token ID Key Validation
-  const expectedKey = env.ADMIN_TOKEN_KEY || 'etc-34';
-  if (key && key !== expectedKey) {
+  const expectedKey = env.ADMIN_TOKEN_KEY || '';
+  if (expectedKey && key && key !== expectedKey) {
     await recordFailedAttempt(req.ip, userIdent, req);
     await logAuditEvent({
       actor: { full_name: userIdent, role: rawPos || 'unknown' },

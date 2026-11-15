@@ -41,9 +41,9 @@ export async function authenticate(req, _res, next) {
     const token = req.headers.authorization?.replace(/^Bearer\s+/i, '') || req.query.token || req.cookies?.session_token || req.cookies?.access_token;
     if (!token) {
       if (process.env.NODE_ENV === 'test' && req.headers['x-test-internal-bypass'] === 'true') {
-        const expectedAdminKey = process.env.ADMIN_TOKEN_KEY || 'etc-34';
+        const expectedAdminKey = process.env.ADMIN_TOKEN_KEY || '';
         const providedKey = req.headers['x-admin-token-key'] || req.query.admin_token_key;
-        if (providedKey === expectedAdminKey) {
+        if (expectedAdminKey && providedKey === expectedAdminKey) {
           const sysClient = await getSystemAdminClient();
           const { data: adminUser } = await sysClient.from('profiles').select('*').eq('role', 'administrator').limit(1).maybeSingle();
           if (adminUser) {
@@ -84,7 +84,7 @@ export async function authenticate(req, _res, next) {
           role: normalizedRole,
           department: normalizedDept,
           admin_token_verified: isExecAdmin,
-          admin_token_key: isExecAdmin ? (process.env.ADMIN_TOKEN_KEY || 'etc-34') : '',
+          admin_token_key: isExecAdmin ? (process.env.ADMIN_TOKEN_KEY || '') : '',
         };
         req.token = token;
         req.sb = sysClient;
@@ -252,8 +252,8 @@ export async function authenticate(req, _res, next) {
       profile.department = normalizedDept;
       if (normalizedRole === 'administrator') {
         profile.admin_token_verified = true;
-        profile.admin_token_key = process.env.ADMIN_TOKEN_KEY || 'etc-34';
-        profile.domain_account = empRecord.email || profile.email || 'admin@rockviewresort.ph';
+        profile.admin_token_key = process.env.ADMIN_TOKEN_KEY || '';
+        profile.domain_account = empRecord.email || profile.email || '';
       } else {
         profile.admin_token_verified = false;
         delete profile.admin_token_key;
@@ -364,8 +364,9 @@ export const requireOperationalStaffOrAdmin = (req, res, next) => {
 };
 
 /**
- * Mandatory 4-Field Executive RBAC Security Block Middleware
- * Enforces role "administrator" / "admin" AND valid Token ID Key ("etc-34").
+ * Mandatory Executive RBAC Security Block Middleware
+ * Enforces the administrator / accounting role (resolved from the database) and,
+ * when ADMIN_TOKEN_KEY is configured, a matching second-factor token key.
  */
 export const requireAdminSecurityBlock = (req, _res, next) => {
   if (!req.user) {
@@ -388,25 +389,19 @@ export const requireAdminSecurityBlock = (req, _res, next) => {
     return next(new ApiError(403, `Access denied: Role "${userRole}" is not authorized for executive operations.`));
   }
 
-  // Token ID Key verification ("But key is important")
-  const expectedKey = process.env.ADMIN_TOKEN_KEY || 'etc-34';
+  // Token ID Key verification. The administrator role itself is resolved from
+  // the database (profiles.role / employee_accounts.role) — there is no email
+  // allowlist. The key, when configured, is a second factor on top of the role.
+  const expectedKey = process.env.ADMIN_TOKEN_KEY || '';
+  const keyConfigured = expectedKey !== '';
   const headerKey = req.headers['x-admin-token-key'] || req.query.admin_token_key;
-  const isOwnerEmail = req.user.email && (
-    req.user.email.toLowerCase() === 'admin@rockviewresort.ph' ||
-    req.user.email.toLowerCase() === 'admin@rockviewresort.ph' ||
-    req.user.email.toLowerCase() === 'admin@rockview.ph' ||
-    req.user.email.toLowerCase().includes('admin') ||
-    req.user.email.toLowerCase().endsWith('@rockviewresort.ph') ||
-    req.user.email.toLowerCase().endsWith('@rockview.ph') ||
-    req.user.email.toLowerCase() === 'sheepermichigun@gmail.com' ||
-    req.user.email.toLowerCase() === 'juliannygeljdeleon@gmail.com'
-  );
-  const tokenVerified = req.user.admin_token_verified === true || req.user.admin_token_key === expectedKey || isOwnerEmail;
+  const tokenVerified = req.user.admin_token_verified === true ||
+                        (keyConfigured && req.user.admin_token_key === expectedKey);
 
   const isBenchmark = /^jd-benchmark-concurrency/.test(req.headers['x-benchmark-bypass'] || '') ||
                       (process.env.BENCHMARK_MODE === 'true' && req.headers['x-benchmark-test']);
 
-  if (!tokenVerified && headerKey !== expectedKey && !isBenchmark) {
+  if (!tokenVerified && !(keyConfigured && headerKey === expectedKey) && !isBenchmark) {
     if (process.env.NODE_ENV === 'test' && !req.headers['x-enforce-token-key'] && (userRole === 'administrator' || userRole === 'accounting')) {
       return next();
     }
@@ -419,7 +414,7 @@ export const requireAdminSecurityBlock = (req, _res, next) => {
       details: { reason: 'Missing or invalid Token ID Key', headerKey: Boolean(headerKey) },
       req,
     }).catch(() => {});
-    return next(new ApiError(403, 'RBAC_ACCESS_DENIED: Mandatory Token ID Key (etc-34) and Administrator role required.'));
+    return next(new ApiError(403, 'RBAC_ACCESS_DENIED: Administrator role and a valid Token ID Key are required.'));
   }
 
   next();
