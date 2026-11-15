@@ -5,6 +5,7 @@ export interface Room {
   id: string;
   name: string;
   category?: string;
+  offering_type?: string;
   rate_php?: number;
   capacity?: number;
   beds_count?: number;
@@ -120,6 +121,7 @@ export function mapLiveRoom(row: any, idx: number): Room {
     id: String(row.id),
     name: String(row.name || `Villa ${idx + 1}`).trim(),
     category: row.category || 'Oceanfront Sanctuary',
+    offering_type: row.offering_type || (/\bcottage\b/i.test(row.category || '') ? 'cottage' : 'room'),
     rate_php: Number(row.rate_php) || 3500,
     // A missing or invalid capacity stays 0 so the room is never auto-assigned to a party it may not fit.
     capacity: capacity > 0 ? capacity : 0,

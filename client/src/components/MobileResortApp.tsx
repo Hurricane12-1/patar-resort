@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
 import { usePageSettings } from '../lib/pageSettings';
 import { isValidPHMobile, to11Digits } from '../lib/format';
-import { getManilaTodayISO } from '../lib/offeringSpecs';
+import { getManilaTodayISO, inferOfferingType, type OfferingType } from '../lib/offeringSpecs';
 import { VoucherBarcode } from './receipt/VoucherBarcode';
 import {
   FALLBACK_ROOMS,
@@ -176,6 +176,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   const [selectedRoomId, setSelectedRoomId] = useState<string>('chason-room');
   // Visual multi-select: rooms the guest has toggled on. Booking uses selectedRoomIds[0] as the primary room.
   const [selectedRoomIds, setSelectedRoomIds] = useState<string[]>(['chason-room']);
+  const [activeLodgingCategory, setActiveLodgingCategory] = useState<'room' | 'cottage'>('room');
   const [reservations, setReservations] = useState<ReservationWindow[]>([]);
   const [dbStatus, setDbStatus] = useState<'connecting' | 'connected' | 'offline'>('connecting');
   const [dbStatusMessage, setDbStatusMessage] = useState<string>('Connecting…');
@@ -224,6 +225,28 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   const selectedRoom = useMemo(() => {
     return rooms.find((r) => r.id === selectedRoomId) || rooms[0] || FALLBACK_ROOMS[0];
   }, [rooms, selectedRoomId]);
+
+  // Segmented accommodations by category: Room vs Cottage
+  const roomAccommodations = useMemo(
+    () => rooms.filter((r) => inferOfferingType(r) === 'room'),
+    [rooms]
+  );
+  const cottageAccommodations = useMemo(
+    () => rooms.filter((r) => inferOfferingType(r) === 'cottage'),
+    [rooms]
+  );
+  const displayedAccommodations = useMemo(() => {
+    const list = activeLodgingCategory === 'cottage' ? cottageAccommodations : roomAccommodations;
+    return list.length > 0 ? list : rooms;
+  }, [activeLodgingCategory, roomAccommodations, cottageAccommodations, rooms]);
+
+  // Synchronize category with currently active room
+  useEffect(() => {
+    if (selectedRoom) {
+      const type = inferOfferingType(selectedRoom);
+      setActiveLodgingCategory(type);
+    }
+  }, [selectedRoom]);
 
   // Capacity counts adults and children only.
   const partySize = guests.adults + guests.children;
@@ -442,6 +465,18 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     setRoomMode('manual');
     setSelectedRoomId(roomId);
     setSelectedRoomIds([roomId]);
+  };
+
+  const handleCategorySwitch = (category: 'room' | 'cottage') => {
+    setActiveLodgingCategory(category);
+    const targetList = category === 'cottage' ? cottageAccommodations : roomAccommodations;
+    if (targetList.length > 0 && !targetList.some((r) => r.id === selectedRoomId)) {
+      const bestInCat = roomRanking.options.find(
+        (o) => targetList.some((t) => t.id === o.room.id) && o.fit === 'best'
+      )?.room;
+      const nextRoom = bestInCat || targetList[0];
+      chooseRoom(nextRoom.id);
+    }
   };
   // Toggle a room in the multi-select list; booking uses the first still-selected room as primary.
   const toggleRoomSelect = (roomId: string) => {
@@ -1075,13 +1110,28 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                   <option value="__auto">
                     {`Best match for ${partySize} ${partySize === 1 ? 'guest' : 'guests'}${roomRanking.best ? ` — ${roomRanking.best.name}` : ''}`}
                   </option>
-                  {roomRanking.options.map((option) => (
-                    <option key={option.room.id} value={option.room.id} disabled={!option.fitsParty}>
-                      {`${option.room.name} — up to ${option.capacity} · ${formatPHP(option.room.rate_php || 3500)}/night${
-                        option.fit === 'booked' ? ' · booked on your dates' : option.fit === 'too-small' ? ' · too small' : ''
-                      }`}
-                    </option>
-                  ))}
+                  <optgroup label="Rooms">
+                    {roomRanking.options
+                      .filter((option) => inferOfferingType(option.room) === 'room')
+                      .map((option) => (
+                        <option key={option.room.id} value={option.room.id} disabled={!option.fitsParty}>
+                          {`${option.room.name} — up to ${option.capacity} · ${formatPHP(option.room.rate_php || 3500)}/night${
+                            option.fit === 'booked' ? ' · booked on your dates' : option.fit === 'too-small' ? ' · too small' : ''
+                          }`}
+                        </option>
+                      ))}
+                  </optgroup>
+                  <optgroup label="Cottages">
+                    {roomRanking.options
+                      .filter((option) => inferOfferingType(option.room) === 'cottage')
+                      .map((option) => (
+                        <option key={option.room.id} value={option.room.id} disabled={!option.fitsParty}>
+                          {`${option.room.name} — up to ${option.capacity} · ${formatPHP(option.room.rate_php || 3500)}/night${
+                            option.fit === 'booked' ? ' · booked on your dates' : option.fit === 'too-small' ? ' · too small' : ''
+                          }`}
+                        </option>
+                      ))}
+                  </optgroup>
                 </select>
               </div>
 
@@ -1177,47 +1227,98 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
            ===================================================================== */}
       <main id="booking-workspace" className="max-w-[1120px] mx-auto px-4 sm:px-6 pt-8 pb-16">
 
-        {/* Accommodation Selection Tabs */}
-        <div className="border-b border-[#DDDDDD] mb-6 flex items-stretch gap-6 sm:gap-8 overflow-x-auto no-scrollbar">
-          {rooms.map((room) => {
-            const isSelected = room.id === selectedRoomId;
-            const option = roomRanking.options.find((o) => o.room.id === room.id);
-            return (
+        {/* Accommodation Selection Tabs by Category */}
+        <div className="mb-6 space-y-3">
+          {/* Two Categories: Room & Cottage */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+            <div className="inline-flex items-center p-1 bg-[#F5F2EB] rounded-2xl border border-[#E5E0D5]">
               <button
-                key={room.id}
                 type="button"
-                onClick={() => chooseRoom(room.id)}
-                aria-pressed={isSelected}
-                className={`py-4 text-sm font-semibold whitespace-nowrap transition-colors border-b-2 cursor-pointer flex items-center gap-2 ${
-                  isSelected
-                    ? 'border-[#222222] text-[#222222]'
-                    : 'border-transparent text-[#6A6A6A] hover:text-[#222222]'
+                onClick={() => handleCategorySwitch('room')}
+                className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                  activeLodgingCategory === 'room'
+                    ? 'bg-[#18222B] text-white shadow-xs'
+                    : 'text-[#6A6A6A] hover:text-[#222222]'
                 }`}
               >
-                <span>{room.name}</span>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                  isSelected ? 'bg-[#18222B] text-white' : 'bg-slate-100 text-slate-600'
+                <span>🛏️ Rooms</span>
+                <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${
+                  activeLodgingCategory === 'room' ? 'bg-white/20 text-white' : 'bg-[#EAE6DF] text-[#6A6A6A]'
                 }`}>
-                  {formatPHP(room.rate_php || 3500)}
+                  {roomAccommodations.length}
                 </span>
-                {option && (
-                  <span className={`text-[11px] font-semibold ${FIT_TONE[option.fit]}`}>
-                    {fitLabel(option.fit, option.capacity, partySize, true)}
-                  </span>
-                )}
               </button>
-            );
-          })}
+
+              <button
+                type="button"
+                onClick={() => handleCategorySwitch('cottage')}
+                className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                  activeLodgingCategory === 'cottage'
+                    ? 'bg-[#18222B] text-white shadow-xs'
+                    : 'text-[#6A6A6A] hover:text-[#222222]'
+                }`}
+              >
+                <span>🏡 Cottages</span>
+                <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${
+                  activeLodgingCategory === 'cottage' ? 'bg-white/20 text-white' : 'bg-[#EAE6DF] text-[#6A6A6A]'
+                }`}>
+                  {cottageAccommodations.length}
+                </span>
+              </button>
+            </div>
+
+            <div className="text-xs text-[#888888] font-medium hidden sm:flex items-center gap-2">
+              <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>
+                {activeLodgingCategory === 'room'
+                  ? 'Air-conditioned rooms & suites for overnight sanctuary stays'
+                  : 'Open-air beachfront nipa cottages for day use & coastal relaxation'}
+              </span>
+            </div>
+          </div>
+
+          {/* Accommodation Selection Sub-Tabs for Active Category */}
+          <div className="border-b border-[#DDDDDD] flex items-stretch gap-6 sm:gap-8 overflow-x-auto no-scrollbar">
+            {displayedAccommodations.map((room) => {
+              const isSelected = room.id === selectedRoomId;
+              const option = roomRanking.options.find((o) => o.room.id === room.id);
+              return (
+                <button
+                  key={room.id}
+                  type="button"
+                  onClick={() => chooseRoom(room.id)}
+                  aria-pressed={isSelected}
+                  className={`py-4 text-sm font-semibold whitespace-nowrap transition-colors border-b-2 cursor-pointer flex items-center gap-2 ${
+                    isSelected
+                      ? 'border-[#222222] text-[#222222]'
+                      : 'border-transparent text-[#6A6A6A] hover:text-[#222222]'
+                  }`}
+                >
+                  <span>{room.name}</span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                    isSelected ? 'bg-[#18222B] text-white' : 'bg-slate-100 text-slate-600'
+                  }`}>
+                    {formatPHP(room.rate_php || 3500)}
+                  </span>
+                  {option && (
+                    <span className={`text-[11px] font-semibold ${FIT_TONE[option.fit]}`}>
+                      {fitLabel(option.fit, option.capacity, partySize, true)}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Listing Title Row */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
           <div>
             <h2 className="text-[22px] sm:text-[26px] font-semibold text-[#222222] tracking-[-0.02em] leading-snug">
-              {selectedRoom.name} · Oceanfront Sanctuary Villa
+              {selectedRoom.name} · {inferOfferingType(selectedRoom) === 'cottage' ? 'Beachfront Coastal Cottage' : 'Oceanfront Sanctuary Villa'}
             </h2>
             <div className="text-[11px] font-mono text-[#888888] mt-0.5">
-              Room Code: {selectedRoom.id} · Verified live inventory
+              {inferOfferingType(selectedRoom) === 'cottage' ? 'Cottage' : 'Room'} Code: {selectedRoom.id} · Verified live inventory
             </div>
           </div>
 
@@ -1971,7 +2072,16 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                           <img src={option.room.image_url || '/images/cottage.jpg'} alt="" className="h-12 w-14 shrink-0 rounded-lg object-cover bg-slate-100" />
                           <span className="min-w-0 flex-1">
                             <span className="flex items-center justify-between gap-2">
-                              <span className="truncate text-sm font-semibold text-[#222222]">{option.room.name}</span>
+                              <span className="flex items-center gap-2 min-w-0">
+                                <span className="truncate text-sm font-semibold text-[#222222]">{option.room.name}</span>
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider shrink-0 ${
+                                  inferOfferingType(option.room) === 'cottage'
+                                    ? 'bg-amber-100 text-amber-800'
+                                    : 'bg-slate-100 text-slate-700'
+                                }`}>
+                                  {inferOfferingType(option.room) === 'cottage' ? 'Cottage' : 'Room'}
+                                </span>
+                              </span>
                               <span className="shrink-0 text-xs font-semibold text-[#222222]">
                                 {formatPHP(option.room.rate_php || 3500)}
                                 <span className="font-normal text-[#6A6A6A]">/night</span>
