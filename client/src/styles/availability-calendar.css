@@ -1395,6 +1395,98 @@
 }
 
 /* ==========================================================================
+   HOSPITALITY REVENUE FORECAST & PACE PROJECTION ENGINE
+   ========================================================================== */
+.pms-forecast-section {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  margin-bottom: 24px;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.dark-mode .pms-forecast-section,
+.admin-portal.dark-mode .pms-forecast-section {
+  background: rgba(15, 23, 42, 0.75);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.pms-forecast-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #F1F5F9;
+}
+
+.dark-mode .pms-forecast-header,
+.admin-portal.dark-mode .pms-forecast-header {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.pms-forecast-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 1024px) {
+  .pms-forecast-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pms-forecast-card {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.dark-mode .pms-forecast-card,
+.admin-portal.dark-mode .pms-forecast-card {
+  background: rgba(30, 41, 59, 0.5);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.pms-forecast-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+}
+
+.pms-forecast-scenario-track {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #E2E8F0;
+}
+
+.dark-mode .pms-forecast-scenario-track,
+.admin-portal.dark-mode .pms-forecast-scenario-track {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+.pms-forecast-scenario-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.78rem;
+}
+
+/* ==========================================================================
    MONTH GRID PMS DESIGN SYSTEM (Tokenized Month Calendar System)
    ========================================================================== */
 
