@@ -1165,21 +1165,9 @@ export function AuthProvider({ children }) {
         }
       }
 
-      // 3. Check Supabase OAuth ONLY if healthy & responsive (never blindly navigate away to a 522 black hole!)
-      const rawUrl = (import.meta as any).env?.VITE_SUPABASE_URL || 'https://owhodkhzldygavuwnqfg.supabase.co';
-      let supabaseReachable = false;
+      // 3. Supabase OAuth directly with prompt: 'select_account'
       try {
-        const ping = await Promise.race([
-          fetch(`${rawUrl}/auth/v1/settings`, { method: 'GET', headers: { apikey: (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '' } }).catch(() => null),
-          new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 1000))
-        ]).catch(() => null);
-        if (ping && (ping as Response).ok) {
-          supabaseReachable = true;
-        }
-      } catch {}
-
-      if (supabaseReachable) {
-        const redirectUrl = `${window.location.origin}/user`;
+        const redirectUrl = `${window.location.origin}/client`;
         const res = await supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
@@ -1190,14 +1178,19 @@ export function AuthProvider({ children }) {
             },
           },
         });
-        if (!res.error && res.data?.url && typeof window !== 'undefined') {
+        if (res.error) throw res.error;
+        if (res.data?.url && typeof window !== 'undefined') {
           window.location.href = res.data.url;
           return res.data;
         }
+      } catch (oauthErr: any) {
+        throw new Error(
+          oauthErr.message?.includes('fetch') || oauthErr.message?.includes('Failed') || oauthErr.message?.includes('Network')
+            ? 'Cannot connect to Supabase Auth (Supabase project is currently paused or unreachable). Please unpause your project in the Supabase Dashboard.'
+            : (oauthErr.message || 'Google OAuth failed')
+        );
       }
-
-      // 4. Default: return status indicating Google Account fast sign-in prompt is ready
-      return { needsPrompt: true };
+      return { ok: true };
     },
     signInWithFacebook: async (directPayload?: { email?: string; name?: string; first_name?: string; last_name?: string; picture?: string }) => {
       if (directPayload?.email) {

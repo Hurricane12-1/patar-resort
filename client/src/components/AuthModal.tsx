@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useAuth, generateAccountEmail, to11Digits } from '../context/AuthContext.tsx';
 import { api } from '../lib/api.ts';
 import { toast } from './Toasts.tsx';
-import GoogleAccountChooserModal, { GoogleAccount } from './GoogleAccountChooserModal.tsx';
 
 export default function AuthModal() {
   const {
@@ -51,10 +50,6 @@ export default function AuthModal() {
   const [recoveryEmail, setRecoveryEmail] = useState('');
   const [recoveryCode, setRecoveryCode] = useState('');
   const [recoveryNewPassword, setRecoveryNewPassword] = useState('');
-
-  // Express Google Account Chooser State
-  const [googleChooserOpen, setGoogleChooserOpen] = useState(false);
-  const [googleChooserLoading, setGoogleChooserLoading] = useState(false);
 
   // 1-Minute Confirmation Countdown Timer
   useEffect(() => {
@@ -138,29 +133,21 @@ export default function AuthModal() {
   }, [f.first_name, f.middle_name, f.last_name, mode, signupProvider]);
 
   // Social Auth Handlers (Google & Facebook OAuth)
-  const handleGoogleLogin = () => {
-    setGoogleChooserOpen(true);
-  };
-
-  const handleSelectGoogleAccount = async (account: GoogleAccount) => {
+  async function handleGoogleLogin() {
     try {
-      setGoogleChooserLoading(true);
       toast('Connecting to Google Sign-In…');
-      const res: any = await signInWithGoogle({
-        email: account.email,
-        name: account.name,
-      });
+      const res: any = await signInWithGoogle();
       if (res?.error) throw res.error;
-      setGoogleChooserOpen(false);
-      setAuthOpen(false);
-      toast(`Welcome to Rock View Beach Resort, ${account.name}! ✦`);
+      if (res?.data?.url) return;
+      if (res?.data || res?.session) {
+        setAuthOpen(false);
+        toast('Welcome to Rock View Beach Resort! ✦');
+      }
     } catch (err: any) {
       const msg = err.msg || err.message || '';
       toast(msg || 'Google Sign-In failed', true);
-    } finally {
-      setGoogleChooserLoading(false);
     }
-  };
+  }
 
   async function handleFacebookLogin() {
     try {
@@ -1639,13 +1626,6 @@ export default function AuthModal() {
           )}
         </div>
       </div>
-
-      <GoogleAccountChooserModal
-        isOpen={googleChooserOpen}
-        onClose={() => setGoogleChooserOpen(false)}
-        onSelectAccount={handleSelectGoogleAccount}
-        loading={googleChooserLoading}
-      />
     </div>
   );
 }

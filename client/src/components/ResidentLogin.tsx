@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.tsx';
 import { api } from '../lib/api.ts';
 import { toast } from './Toasts.tsx';
-import GoogleAccountChooserModal, { GoogleAccount } from './GoogleAccountChooserModal.tsx';
 import '../styles/resident-login.css';
 
 interface ResidentLoginProps {
@@ -59,10 +58,6 @@ export default function ResidentLogin({ returnTo = '/user' }: ResidentLoginProps
   const [gmailOtpCode, setGmailOtpCode] = useState('');
   const [gmailOtpStep, setGmailOtpStep] = useState<1 | 2>(1);
   const [gmailOtpLoading, setGmailOtpLoading] = useState(false);
-
-  // Google Account Chooser State
-  const [googleChooserOpen, setGoogleChooserOpen] = useState(false);
-  const [googleChooserLoading, setGoogleChooserLoading] = useState(false);
 
   // 1. Handle Manual Login
   const handleManualLogin = async (e: React.FormEvent) => {
@@ -166,27 +161,22 @@ export default function ResidentLogin({ returnTo = '/user' }: ResidentLoginProps
     }
   };
 
-  // 3. Handle Google OAuth Account Chooser
-  const handleGoogleAuth = () => {
-    setGoogleChooserOpen(true);
-  };
-
-  const handleSelectGoogleAccount = async (account: GoogleAccount) => {
-    setGoogleChooserLoading(true);
+  // 3. Handle Google OAuth
+  const handleGoogleAuth = async () => {
     try {
-      const res: any = await signInWithGoogle({
-        email: account.email,
-        name: account.name,
-      });
+      toast('Connecting to Google Sign-In…');
+      const res: any = await signInWithGoogle();
       if (res?.error) throw res.error;
-      setGoogleChooserOpen(false);
-      toast(`Welcome to Rock View Beach Resort, ${account.name}! ✦`);
-      if (returnTo) navigate(returnTo, { replace: true });
-      else navigate('/user', { replace: true });
+      if (res?.data?.url) {
+        return;
+      }
+      if (res?.data || res?.session) {
+        toast('Welcome to Rock View Beach Resort! ✦');
+        if (returnTo) navigate(returnTo, { replace: true });
+        else navigate('/user', { replace: true });
+      }
     } catch (err: any) {
       toast(err.msg || err.message || 'Google Sign-In failed', true);
-    } finally {
-      setGoogleChooserLoading(false);
     }
   };
 
@@ -1136,14 +1126,6 @@ export default function ResidentLogin({ returnTo = '/user' }: ResidentLoginProps
           </div>
         </div>
       </div>
-
-      {/* GOOGLE ACCOUNT CHOOSER POPUP DIALOG */}
-      <GoogleAccountChooserModal
-        isOpen={googleChooserOpen}
-        onClose={() => setGoogleChooserOpen(false)}
-        onSelectAccount={handleSelectGoogleAccount}
-        isLoading={googleChooserLoading}
-      />
     </div>
   );
 }
