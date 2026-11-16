@@ -344,18 +344,6 @@ export default function ProtectedRoute({
             </Link>
           </div>
         </div>
-
-        {/* Trust badges for customer */}
-        {isCustomer && (
-          <div style={{
-            display: 'flex', justifyContent: 'center', gap: 24, marginTop: 20,
-            opacity: 0.5, fontSize: '.72rem', color: '#64748B', letterSpacing: '.05em',
-          }}>
-            <span><i className="fas fa-shield-halved" style={{ marginRight: 4 }} />SSL Encrypted</span>
-            <span><i className="fas fa-hotel" style={{ marginRight: 4 }} />Verified Resort</span>
-            <span><i className="fas fa-mobile-screen-button" style={{ marginRight: 4 }} />SMS Alerts</span>
-          </div>
-        )}
       </div>
     </div>
   );

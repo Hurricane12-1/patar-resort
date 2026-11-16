@@ -34,18 +34,18 @@ interface StayItem {
 
 const BOOK_A_STAY = { pathname: '/', hash: '#reserve' };
 
-const CARD_SHADOW = 'shadow-[0_1px_2px_rgba(24,34,43,0.04),0_10px_28px_rgba(24,34,43,0.06)]';
+const CARD_SHADOW = 'shadow-[0_8px_32px_rgba(0,0,0,0.36)]';
 
 function statusMeta(item: StayItem, today: string): { label: string; tone: string } {
   const { booking, phase } = item;
-  if (phase === 'cancelled') return { label: 'Cancelled', tone: 'bg-[#FCEDEE] text-[#B4233C] ring-[#F5C9CF]' };
-  if (phase === 'past') return { label: 'Completed', tone: 'bg-[#F1EFEA] text-[#57534B] ring-[#E2DED5]' };
-  if (booking.status === 'disputed') return { label: 'Under review', tone: 'bg-[#FDF2E4] text-[#9A5B0B] ring-[#F3D9B1]' };
+  if (phase === 'cancelled') return { label: 'Cancelled', tone: 'bg-rose-950/70 text-rose-300 ring-rose-500/30' };
+  if (phase === 'past') return { label: 'Completed', tone: 'bg-slate-800/80 text-slate-300 ring-slate-600/40' };
+  if (booking.status === 'disputed') return { label: 'Under review', tone: 'bg-amber-950/70 text-amber-300 ring-amber-500/30' };
   if (phase === 'current') {
-    return { label: booking.checkOut === today ? 'Checking out today' : 'Staying now', tone: 'bg-[#E8F2FB] text-[#1D5F96] ring-[#C7DEF3]' };
+    return { label: booking.checkOut === today ? 'Checking out today' : 'Staying now', tone: 'bg-sky-950/70 text-sky-300 ring-sky-500/30' };
   }
-  if (booking.status === 'pending') return { label: 'Awaiting confirmation', tone: 'bg-[#FDF5E6] text-[#95600F] ring-[#F1DDB4]' };
-  return { label: 'Confirmed', tone: 'bg-[#EAF6EF] text-[#1F7A4D] ring-[#C8E8D6]' };
+  if (booking.status === 'pending') return { label: 'Awaiting confirmation', tone: 'bg-amber-950/70 text-amber-300 ring-amber-500/30' };
+  return { label: 'Confirmed', tone: 'bg-emerald-950/70 text-emerald-300 ring-emerald-500/30' };
 }
 
 function paymentLine(booking: GuestBooking): string {
@@ -112,20 +112,20 @@ export default function GuestStays() {
     <div>
       <section className="gp-animate-in flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div className="max-w-2xl">
-          <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#9E7E46]">
+          <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#38BDF8]">
             {pageMedia.dashboardBadge || 'Guest dashboard'}
           </p>
-          <h1 className="gp-display mt-2 text-[30px] font-semibold leading-[1.1] text-[#18222B] sm:text-[40px]">
+          <h1 className="gp-display mt-2 text-[30px] font-semibold leading-[1.1] text-white sm:text-[40px]">
             {pageMedia.dashboardGreeting ? `${pageMedia.dashboardGreeting}, ${portal.firstName}` : `${greeting}, ${portal.firstName}`}
           </h1>
-          <p className="mt-2 text-[15px] leading-relaxed text-[#5F5B53] sm:text-base">
+          <p className="mt-2 text-[15px] leading-relaxed text-slate-300 sm:text-base">
             {portal.loading ? 'Loading your stays…' : (pageMedia.dashboardSubtitle || summary)}
           </p>
           {pageMedia.dashboardAnnouncement && (
-            <div className="mt-4 rounded-xl bg-amber-50 border border-amber-300/80 px-3.5 py-2.5 flex items-center gap-2.5 text-amber-900 shadow-xs">
-              <i className="fas fa-bullhorn text-amber-600 shrink-0 text-sm" />
+            <div className="mt-4 rounded-xl bg-sky-950/60 border border-sky-500/30 px-3.5 py-2.5 flex items-center gap-2.5 text-sky-200 shadow-[0_0_15px_rgba(14,165,233,0.15)]">
+              <i className="fas fa-bullhorn text-[#38BDF8] shrink-0 text-sm" />
               <div className="text-[12.5px] font-medium leading-snug">
-                <span className="font-bold uppercase tracking-wider text-amber-800 mr-1.5 text-[11px]">Notice:</span>
+                <span className="font-bold uppercase tracking-wider text-[#38BDF8] mr-1.5 text-[11px]">Notice:</span>
                 {pageMedia.dashboardAnnouncement}
               </div>
             </div>
@@ -141,13 +141,14 @@ export default function GuestStays() {
       <section aria-labelledby="booked-rooms-title" className="gp-animate-in gp-delay-1 mt-8 sm:mt-10">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
-            <h2 id="booked-rooms-title" className="text-[21px] font-semibold tracking-[-0.02em] text-[#18222B] sm:text-[23px]">
+            <h2 id="booked-rooms-title" className="text-[21px] font-semibold tracking-[-0.02em] text-white sm:text-[23px]">
               Your booked rooms
             </h2>
-            <p className="mt-1 text-[14px] text-[#6A6A6A]">
+            <p className="mt-1 text-[14px] text-slate-400">
               {hasSamples ? 'Sample stays for this preview. Book a room and it replaces them here.' : 'Every room you have booked with Rock View, newest plans first.'}
             </p>
           </div>
+
           <div role="tablist" aria-label="Filter stays" className="gp-scroll-x -mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0">
             {tabs.map((tab) => {
               const active = activeFilter === tab.id;
@@ -160,12 +161,12 @@ export default function GuestStays() {
                   onClick={() => setFilter(tab.id)}
                   className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-[13.5px] font-semibold transition ${
                     active
-                      ? 'border-[#18222B] bg-[#18222B] text-white'
-                      : 'border-[#E2DCD0] bg-white text-[#4A4740] hover:border-[#BDB4A3] hover:text-[#18222B]'
+                      ? 'border-[#0EA5E9] bg-gradient-to-r from-[#0284C7] to-[#2563EB] text-white shadow-[0_0_12px_rgba(14,165,233,0.35)]'
+                      : 'border-white/15 bg-[#061533]/60 text-slate-300 hover:border-sky-400/40 hover:text-white'
                   }`}
                 >
                   {tab.label}
-                  <span className={`rounded-full px-1.5 text-[11.5px] ${active ? 'bg-white/15 text-white' : 'bg-[#F2EEE6] text-[#6A6A6A]'}`}>{tab.count}</span>
+                  <span className={`rounded-full px-1.5 text-[11.5px] ${active ? 'bg-white/20 text-white' : 'bg-white/10 text-slate-400'}`}>{tab.count}</span>
                 </button>
               );
             })}
@@ -218,9 +219,9 @@ export default function GuestStays() {
 
 function StatTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-[#E8E2D6] bg-white px-3 py-3 sm:px-4">
-      <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8A857B]">{label}</dt>
-      <dd className="mt-1 text-[24px] font-bold leading-none tracking-[-0.02em] text-[#18222B]">{value}</dd>
+    <div className="rounded-2xl border border-white/10 bg-[#061533]/70 backdrop-blur-md px-3 py-3 sm:px-4 shadow-[0_4px_20px_rgba(0,0,0,0.25)] hover:border-sky-400/40 transition">
+      <dt className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">{label}</dt>
+      <dd className="mt-1 text-[24px] font-bold leading-none tracking-[-0.02em] text-white">{value}</dd>
     </div>
   );
 }
@@ -241,91 +242,91 @@ function BookingCard({ item, today, featured, onOpen }: { item: StayItem; today:
 
   return (
     <article
-      className={`group relative flex flex-col overflow-hidden rounded-[22px] border border-[#E8E2D6] bg-white transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_2px_4px_rgba(24,34,43,0.05),0_18px_40px_rgba(24,34,43,0.10)] ${CARD_SHADOW} ${
+      className={`group relative flex flex-col overflow-hidden rounded-[22px] border border-white/10 bg-[#061533]/80 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-sky-400/50 hover:shadow-[0_12px_36px_rgba(14,165,233,0.18)] ${CARD_SHADOW} ${
         featured ? 'md:col-span-2 md:flex-row' : ''
       }`}
     >
-      <div className={`relative overflow-hidden bg-[#E9E4DA] ${featured ? 'aspect-[16/10] md:aspect-auto md:min-h-[340px] md:w-[52%]' : 'aspect-[16/10]'}`}>
+      <div className={`relative overflow-hidden bg-[#040e22] ${featured ? 'aspect-[16/10] md:aspect-auto md:min-h-[340px] md:w-[52%]' : 'aspect-[16/10]'}`}>
         <img
           src={room.image}
           alt={`${room.name} at Rock View Beach Resort`}
           loading="lazy"
           className={`absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03] ${muted ? 'opacity-70 grayscale' : ''}`}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/0 to-black/15" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#061533] via-black/20 to-black/30" />
         <div className="absolute left-4 top-4 flex flex-wrap items-center gap-2">
           <StatusPill label={status.label} tone={status.tone} />
           {booking.source === 'sample' && (
-            <span className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-[#6A6A6A]">Sample</span>
+            <span className="rounded-full bg-black/60 backdrop-blur-sm border border-white/20 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-slate-300">Sample</span>
           )}
         </div>
         {phase === 'upcoming' && (
-          <span className="absolute right-4 top-4 rounded-full bg-white px-3 py-1 text-[12px] font-bold text-[#18222B] shadow-sm">
+          <span className="absolute right-4 top-4 rounded-full bg-gradient-to-r from-[#0284C7] to-[#2563EB] px-3 py-1 text-[12px] font-bold text-white shadow-[0_0_12px_rgba(56,189,248,0.4)]">
             {countdownLabel(booking.checkIn, today)}
           </span>
         )}
         {featured && (
           <div className="absolute bottom-4 left-4 right-4 text-white">
-            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/80">{phase === 'current' ? 'Current stay' : 'Next stay'}</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#38BDF8]">{phase === 'current' ? 'Current stay' : 'Next stay'}</p>
             <p className="mt-1 text-[15px] font-semibold">{formatDateRange(booking.checkIn, booking.checkOut)}</p>
           </div>
         )}
       </div>
 
       <div className={`flex flex-1 flex-col p-5 ${featured ? 'sm:p-7' : 'sm:p-6'}`}>
-        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#9E7E46]">
+        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#38BDF8]">
           {room.category} · Up to {room.capacity} guests
         </p>
-        <h3 className={`mt-1.5 font-semibold tracking-[-0.02em] text-[#18222B] ${featured ? 'text-[24px] sm:text-[28px]' : 'text-[19px]'}`}>
+        <h3 className={`mt-1.5 font-semibold tracking-[-0.02em] text-white ${featured ? 'text-[24px] sm:text-[28px]' : 'text-[19px]'}`}>
           {room.name}
         </h3>
 
-        <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3 rounded-2xl bg-[#F7F5F0] px-4 py-3.5">
+        <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3 rounded-2xl border border-white/10 bg-[#040e22]/90 px-4 py-3.5">
           <div>
-            <p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-[#8A857B]">Check-in</p>
-            <p className="mt-1 text-[14.5px] font-semibold text-[#18222B]">{formatStayDate(booking.checkIn)}</p>
-            <p className="text-[12px] text-[#6A6A6A]">from {RESORT_CONTACT.checkInTime}</p>
+            <p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-slate-400">Check-in</p>
+            <p className="mt-1 text-[14.5px] font-semibold text-white">{formatStayDate(booking.checkIn)}</p>
+            <p className="text-[12px] text-slate-400">from {RESORT_CONTACT.checkInTime}</p>
           </div>
-          <div className="flex flex-col items-center text-[#B39563]">
+          <div className="flex flex-col items-center text-[#38BDF8]">
             <GuestIcon name="arrow-right" className="h-4 w-4" />
-            <span className="mt-1 whitespace-nowrap text-[11px] font-semibold text-[#6A6A6A]">
+            <span className="mt-1 whitespace-nowrap text-[11px] font-semibold text-slate-300">
               {booking.nights} night{booking.nights === 1 ? '' : 's'}
             </span>
           </div>
           <div className="text-right">
-            <p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-[#8A857B]">Check-out</p>
-            <p className="mt-1 text-[14.5px] font-semibold text-[#18222B]">{formatStayDate(booking.checkOut)}</p>
-            <p className="text-[12px] text-[#6A6A6A]">by {RESORT_CONTACT.checkOutTime}</p>
+            <p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-slate-400">Check-out</p>
+            <p className="mt-1 text-[14.5px] font-semibold text-white">{formatStayDate(booking.checkOut)}</p>
+            <p className="text-[12px] text-slate-400">by {RESORT_CONTACT.checkOutTime}</p>
           </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13.5px] text-[#4A4740]">
+        <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13.5px] text-slate-300">
           <span className="inline-flex items-center gap-1.5">
-            <GuestIcon name="users" className="h-4 w-4 text-[#9E7E46]" />
+            <GuestIcon name="users" className="h-4 w-4 text-[#38BDF8]" />
             {guestCountLabel(booking)}
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <GuestIcon name="receipt" className="h-4 w-4 text-[#9E7E46]" />
-            <span className="font-mono text-[12.5px] tracking-tight">{booking.reference}</span>
+            <GuestIcon name="receipt" className="h-4 w-4 text-[#38BDF8]" />
+            <span className="font-mono text-[12.5px] tracking-tight text-white">{booking.reference}</span>
           </span>
           {featured && booking.matchMode === 'auto' && (
-            <span className="inline-flex items-center gap-1.5">
-              <GuestIcon name="sparkles" className="h-4 w-4 text-[#9E7E46]" />
+            <span className="inline-flex items-center gap-1.5 text-sky-300">
+              <GuestIcon name="sparkles" className="h-4 w-4 text-[#38BDF8]" />
               Matched to your party size
             </span>
           )}
         </div>
 
         <div className="mt-auto pt-5">
-          <div className="flex items-end justify-between gap-3 border-t border-[#EFEAE0] pt-4">
+          <div className="flex items-end justify-between gap-3 border-t border-white/10 pt-4">
             <div className="min-w-0">
-              <p className={`text-[19px] font-bold tracking-[-0.01em] ${muted ? 'text-[#8A857B] line-through' : 'text-[#18222B]'}`}>{formatPeso(booking.total)}</p>
-              <p className="truncate text-[12.5px] text-[#6A6A6A]">{paymentLine(booking)}</p>
+              <p className={`text-[19px] font-bold tracking-[-0.01em] ${muted ? 'text-slate-500 line-through' : 'text-white'}`}>{formatPeso(booking.total)}</p>
+              <p className="truncate text-[12.5px] text-slate-400">{paymentLine(booking)}</p>
             </div>
             <button
               type="button"
               onClick={onOpen}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-[#18222B] px-4 py-2.5 text-[13.5px] font-semibold text-white transition hover:bg-[#273644]"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#0284C7] to-[#2563EB] px-4 py-2.5 text-[13.5px] font-semibold text-white shadow-[0_0_12px_rgba(14,165,233,0.3)] transition hover:brightness-110"
               aria-label={`View details for ${room.name}, ${formatDateRange(booking.checkIn, booking.checkOut)}`}
             >
               View stay
@@ -340,12 +341,12 @@ function BookingCard({ item, today, featured, onOpen }: { item: StayItem; today:
 
 function SkeletonCard({ featured = false }: { featured?: boolean }) {
   return (
-    <div className={`overflow-hidden rounded-[22px] border border-[#E8E2D6] bg-white ${featured ? 'md:col-span-2' : ''}`} aria-hidden="true">
-      <div className="aspect-[16/9] animate-pulse bg-[#EEE9DF]" />
+    <div className={`overflow-hidden rounded-[22px] border border-white/10 bg-[#061533]/70 ${featured ? 'md:col-span-2' : ''}`} aria-hidden="true">
+      <div className="aspect-[16/9] animate-pulse bg-white/5" />
       <div className="space-y-3 p-6">
-        <div className="h-3 w-24 animate-pulse rounded bg-[#EEE9DF]" />
-        <div className="h-5 w-48 animate-pulse rounded bg-[#EEE9DF]" />
-        <div className="h-16 animate-pulse rounded-2xl bg-[#F4F1EA]" />
+        <div className="h-3 w-24 animate-pulse rounded bg-white/10" />
+        <div className="h-5 w-48 animate-pulse rounded bg-white/10" />
+        <div className="h-16 animate-pulse rounded-2xl bg-white/5" />
       </div>
     </div>
   );
@@ -354,20 +355,21 @@ function SkeletonCard({ featured = false }: { featured?: boolean }) {
 function EmptyStays({ filter, hasAny }: { filter: Filter; hasAny: boolean }) {
   if (!hasAny || filter === 'all') {
     return (
-      <div className={`relative overflow-hidden rounded-[22px] border border-[#E8E2D6] bg-white md:col-span-2 xl:col-span-3 ${CARD_SHADOW}`}>
+      <div className={`relative overflow-hidden rounded-[22px] border border-white/10 bg-[#061533]/80 backdrop-blur-md md:col-span-2 xl:col-span-3 ${CARD_SHADOW}`}>
         <div className="grid md:grid-cols-2">
           <div className="relative min-h-[220px]">
             <img src="/images/hero.jpg" alt="Rock View coastline at Patar, Bolinao" className="absolute inset-0 h-full w-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-transparent to-[#061533]" />
           </div>
           <div className="flex flex-col justify-center p-7 sm:p-10">
-            <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#9E7E46]">No stays yet</p>
-            <h3 className="gp-display mt-2 text-[28px] font-semibold leading-tight text-[#18222B]">Your Bolinao room is waiting</h3>
-            <p className="mt-3 text-[15px] leading-relaxed text-[#5F5B53]">
+            <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#38BDF8]">No stays yet</p>
+            <h3 className="gp-display mt-2 text-[28px] font-semibold leading-tight text-white">Your Bolinao room is waiting</h3>
+            <p className="mt-3 text-[15px] leading-relaxed text-slate-300">
               Pick your dates and party size. We suggest the room that fits, or you can choose one yourself. Your booking shows up here right away.
             </p>
             <Link
               to={BOOK_A_STAY}
-              className="mt-6 inline-flex w-fit items-center gap-2 rounded-xl bg-gradient-to-r from-[#0284C7] via-[#2563EB] to-[#1D4ED8] px-5 py-3 text-[14px] font-semibold text-white shadow-[0_8px_20px_rgba(37,99,235,0.25)] transition hover:brightness-110"
+              className="mt-6 inline-flex w-fit items-center gap-2 rounded-xl bg-gradient-to-r from-[#0284C7] via-[#2563EB] to-[#1D4ED8] px-5 py-3 text-[14px] font-semibold text-white shadow-[0_0_20px_rgba(14,165,233,0.4)] transition hover:brightness-110"
             >
               Book a room
               <GuestIcon name="arrow-right" className="h-4 w-4" />
@@ -385,14 +387,14 @@ function EmptyStays({ filter, hasAny }: { filter: Filter; hasAny: boolean }) {
   };
   const { title, body } = copy[filter as Exclude<Filter, 'all'>];
   return (
-    <div className="flex flex-col items-center rounded-[22px] border border-dashed border-[#D9D1C2] bg-white/60 px-6 py-12 text-center md:col-span-2 xl:col-span-3">
-      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F4EDE0] text-[#9E7E46]">
+    <div className="flex flex-col items-center rounded-[22px] border border-dashed border-white/20 bg-[#061533]/50 px-6 py-12 text-center md:col-span-2 xl:col-span-3">
+      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 border border-white/10 text-[#38BDF8]">
         <GuestIcon name="bed" className="h-6 w-6" />
       </span>
-      <h3 className="mt-4 text-[17px] font-semibold text-[#18222B]">{title}</h3>
-      <p className="mt-1 max-w-sm text-[14px] text-[#6A6A6A]">{body}</p>
+      <h3 className="mt-4 text-[17px] font-semibold text-white">{title}</h3>
+      <p className="mt-1 max-w-sm text-[14px] text-slate-400">{body}</p>
       {filter === 'upcoming' && (
-        <Link to={BOOK_A_STAY} className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#18222B] px-4 py-2.5 text-[13.5px] font-semibold text-white transition hover:bg-[#273644]">
+        <Link to={BOOK_A_STAY} className="mt-5 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#0284C7] to-[#2563EB] px-4 py-2.5 text-[13.5px] font-semibold text-white shadow-[0_0_12px_rgba(14,165,233,0.3)] transition hover:brightness-110">
           Book a room
           <GuestIcon name="arrow-right" className="h-4 w-4" />
         </Link>
@@ -410,7 +412,7 @@ function ArrivalStrip() {
       label: 'Find us',
       value: 'Brgy. Patar, Bolinao',
       detail: (
-        <a href={RESORT_CONTACT.mapsUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-semibold text-[#1D4ED8] hover:underline">
+        <a href={RESORT_CONTACT.mapsUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-semibold text-[#38BDF8] hover:underline">
           Get directions <GuestIcon name="external" className="h-3.5 w-3.5" />
         </a>
       ),
@@ -420,7 +422,7 @@ function ArrivalStrip() {
       label: 'Front desk',
       value: RESORT_CONTACT.phoneDisplay,
       detail: (
-        <a href={`tel:${RESORT_CONTACT.phoneHref}`} className="font-semibold text-[#1D4ED8] hover:underline">
+        <a href={`tel:${RESORT_CONTACT.phoneHref}`} className="font-semibold text-[#38BDF8] hover:underline">
           Call the resort
         </a>
       ),
@@ -428,21 +430,21 @@ function ArrivalStrip() {
   ];
 
   return (
-    <section aria-labelledby="arrival-title" className={`gp-animate-in gp-delay-2 mt-10 rounded-[22px] border border-[#E8E2D6] bg-white p-5 sm:p-7 ${CARD_SHADOW}`}>
+    <section aria-labelledby="arrival-title" className={`gp-animate-in gp-delay-2 mt-10 rounded-[22px] border border-white/10 bg-[#061533]/80 backdrop-blur-md p-5 sm:p-7 ${CARD_SHADOW}`}>
       <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-        <h2 id="arrival-title" className="text-[18px] font-semibold text-[#18222B]">Good to know before you arrive</h2>
-        <p className="text-[13px] text-[#6A6A6A]">{RESORT_CONTACT.addressLine}</p>
+        <h2 id="arrival-title" className="text-[18px] font-semibold text-white">Good to know before you arrive</h2>
+        <p className="text-[13px] text-slate-400">{RESORT_CONTACT.addressLine}</p>
       </div>
       <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {tiles.map((tile) => (
           <div key={tile.label} className="flex gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F4EDE0] text-[#9E7E46]">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-sky-400/30 bg-sky-500/15 text-[#38BDF8]">
               <GuestIcon name={tile.icon} className="h-5 w-5" />
             </span>
             <div className="min-w-0">
-              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#8A857B]">{tile.label}</p>
-              <p className="mt-0.5 text-[15px] font-semibold text-[#18222B]">{tile.value}</p>
-              <p className="mt-0.5 text-[13px] text-[#6A6A6A]">{tile.detail}</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">{tile.label}</p>
+              <p className="mt-0.5 text-[15px] font-semibold text-white">{tile.value}</p>
+              <p className="mt-0.5 text-[13px] text-slate-400">{tile.detail}</p>
             </div>
           </div>
         ))}
@@ -455,16 +457,16 @@ function ShortcutCard({ to, icon, title, detail }: { to: string; icon: GuestIcon
   return (
     <Link
       to={to}
-      className="group flex items-center gap-4 rounded-[22px] border border-[#E8E2D6] bg-white p-5 transition hover:border-[#CFC5B2] hover:shadow-[0_10px_28px_rgba(24,34,43,0.07)]"
+      className="group flex items-center gap-4 rounded-[22px] border border-white/10 bg-[#061533]/80 backdrop-blur-md p-5 transition hover:border-sky-400/50 hover:shadow-[0_8px_30px_rgba(14,165,233,0.18)]"
     >
-      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#18222B] text-white">
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0EA5E9] to-[#2563EB] text-white shadow-[0_0_12px_rgba(14,165,233,0.35)]">
         <GuestIcon name={icon} className="h-5 w-5" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-[15px] font-semibold text-[#18222B]">{title}</span>
-        <span className="mt-0.5 block text-[13px] text-[#6A6A6A]">{detail}</span>
+        <span className="block text-[15px] font-semibold text-white">{title}</span>
+        <span className="mt-0.5 block text-[13px] text-slate-400">{detail}</span>
       </span>
-      <GuestIcon name="chevron-right" className="h-5 w-5 text-[#B5AC9B] transition group-hover:translate-x-0.5 group-hover:text-[#18222B]" />
+      <GuestIcon name="chevron-right" className="h-5 w-5 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-[#38BDF8]" />
     </Link>
   );
 }
@@ -476,17 +478,17 @@ function ShortcutCard({ to, icon, title, detail }: { to: string; icon: GuestIcon
 function DetailRow({ label, value, hint }: { label: string; value: ReactNode; hint?: ReactNode }) {
   return (
     <div>
-      <dt className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#8A857B]">{label}</dt>
-      <dd className="mt-1 text-[14.5px] font-semibold text-[#18222B]">{value}</dd>
-      {hint && <dd className="text-[12.5px] text-[#6A6A6A]">{hint}</dd>}
+      <dt className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">{label}</dt>
+      <dd className="mt-1 text-[14.5px] font-semibold text-white">{value}</dd>
+      {hint && <dd className="text-[12.5px] text-slate-400">{hint}</dd>}
     </div>
   );
 }
 
 function DrawerSection({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="border-t border-[#EFEAE0] px-5 py-5 sm:px-6">
-      <h3 className="text-[13px] font-bold uppercase tracking-[0.14em] text-[#18222B]">{title}</h3>
+    <section className="border-t border-white/10 px-5 py-5 sm:px-6">
+      <h3 className="text-[13px] font-bold uppercase tracking-[0.14em] text-white">{title}</h3>
       <div className="mt-4">{children}</div>
     </section>
   );
@@ -521,7 +523,6 @@ function BookingDrawer({ item, today, onClose }: { item: StayItem; today: string
   const canCancel = phase === 'upcoming' && booking.status !== 'disputed' && canGuestCancel(booking);
   const cancelCountdown = cancelWindowLabel(booking.createdAt);
   const refundPct = guestRefundPercent(booking.createdAt);
-  const daysAway = nightsBetween(today, booking.checkIn);
   const showArrival = phase === 'upcoming' || phase === 'current';
 
   const steps = ['Booked', 'Confirmed', 'Checked in', 'Checked out'];
@@ -560,17 +561,17 @@ function BookingDrawer({ item, today, onClose }: { item: StayItem; today: string
 
   return createPortal(
     <div className="guest-portal fixed inset-0 z-[90] flex items-end justify-end bg-transparent md:items-stretch">
-      <button type="button" aria-label="Close stay details" onClick={onClose} className="gp-backdrop absolute inset-0 cursor-default bg-[#0F1720]/45 backdrop-blur-[2px]" />
+      <button type="button" aria-label="Close stay details" onClick={onClose} className="gp-backdrop absolute inset-0 cursor-default bg-[#020713]/80 backdrop-blur-md" />
       <aside
         role="dialog"
         aria-modal="true"
         aria-labelledby="stay-drawer-title"
-        className="gp-drawer relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-[28px] bg-white shadow-[0_-12px_40px_rgba(15,23,32,0.25)] md:h-full md:max-h-none md:max-w-[500px] md:rounded-none md:rounded-l-[28px]"
+        className="gp-drawer relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-[28px] bg-[#040e22] text-white shadow-[0_-12px_40px_rgba(0,0,0,0.8)] md:h-full md:max-h-none md:max-w-[500px] md:rounded-none md:rounded-l-[28px] border-l border-white/15"
       >
-        <div className="flex items-center justify-between gap-3 border-b border-[#EFEAE0] px-5 py-4 sm:px-6">
+        <div className="flex items-center justify-between gap-3 border-b border-white/10 px-5 py-4 sm:px-6">
           <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#9E7E46]">Stay details</p>
-            <button type="button" onClick={copyReference} className="mt-0.5 inline-flex items-center gap-1.5 font-mono text-[13px] font-semibold text-[#18222B] hover:text-[#1D4ED8]">
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#38BDF8]">Stay details</p>
+            <button type="button" onClick={copyReference} className="mt-0.5 inline-flex items-center gap-1.5 font-mono text-[13px] font-semibold text-white hover:text-[#38BDF8] transition">
               {booking.reference}
               <GuestIcon name="copy" className="h-3.5 w-3.5" />
               <span className="sr-only">Copy booking reference</span>
@@ -581,7 +582,7 @@ function BookingDrawer({ item, today, onClose }: { item: StayItem; today: string
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-[#E8E2D6] text-[#4A4740] transition hover:bg-[#F7F5F0]"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-slate-300 transition hover:bg-white/10 hover:text-white"
           >
             <GuestIcon name="close" className="h-5 w-5" />
           </button>
@@ -589,28 +590,29 @@ function BookingDrawer({ item, today, onClose }: { item: StayItem; today: string
 
         <div className="flex-1 overflow-y-auto overscroll-contain">
           <div className="px-5 pt-5 sm:px-6">
-            <div className="relative aspect-[16/9] overflow-hidden rounded-2xl bg-[#E9E4DA]">
+            <div className="relative aspect-[16/9] overflow-hidden rounded-2xl bg-[#061533]">
               <img src={room.image} alt={`${room.name} at Rock View Beach Resort`} className={`absolute inset-0 h-full w-full object-cover ${phase === 'cancelled' ? 'opacity-70 grayscale' : ''}`} />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#040e22]/80 via-transparent to-transparent" />
               <div className="absolute left-3 top-3 flex gap-2">
                 <StatusPill label={status.label} tone={status.tone} />
-                {booking.source === 'sample' && <span className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-[#6A6A6A]">Sample</span>}
+                {booking.source === 'sample' && <span className="rounded-full bg-black/60 border border-white/20 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-slate-300">Sample</span>}
               </div>
             </div>
-            <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.16em] text-[#9E7E46]">
+            <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.16em] text-[#38BDF8]">
               {room.category} · Up to {room.capacity} guests
             </p>
-            <h2 id="stay-drawer-title" className="mt-1 text-[24px] font-semibold tracking-[-0.02em] text-[#18222B]">
+            <h2 id="stay-drawer-title" className="mt-1 text-[24px] font-semibold tracking-[-0.02em] text-white">
               {room.name}
             </h2>
-            <p className="mt-1 text-[14px] text-[#5F5B53]">
+            <p className="mt-1 text-[14px] text-slate-300">
               {formatDateRange(booking.checkIn, booking.checkOut)} · {booking.nights} night{booking.nights === 1 ? '' : 's'} · {guestCountLabel(booking)}
             </p>
 
             {phase === 'cancelled' && (
-              <div className="mt-4 rounded-2xl border border-[#F5C9CF] bg-[#FDF3F4] px-4 py-3 text-[13.5px] text-[#8C1D30]">This booking was cancelled. The room is open for other guests again.</div>
+              <div className="mt-4 rounded-2xl border border-rose-500/30 bg-rose-950/60 px-4 py-3 text-[13.5px] text-rose-200">This booking was cancelled. The room is open for other guests again.</div>
             )}
             {booking.status === 'disputed' && phase !== 'cancelled' && (
-              <div className="mt-4 rounded-2xl border border-[#F3D9B1] bg-[#FDF7EC] px-4 py-3 text-[13.5px] text-[#7A4A0A]">Our guest recovery team is reviewing the issue you reported and will contact you shortly.</div>
+              <div className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-950/60 px-4 py-3 text-[13.5px] text-amber-200">Our guest recovery team is reviewing the issue you reported and will contact you shortly.</div>
             )}
 
             {phase !== 'cancelled' && (
@@ -620,13 +622,13 @@ function BookingDrawer({ item, today, onClose }: { item: StayItem; today: string
                   return (
                     <li key={step} className="flex flex-col items-center text-center">
                       <div className="flex w-full items-center">
-                        <span className={`h-[2px] flex-1 ${index === 0 ? 'opacity-0' : done ? 'bg-[#18222B]' : 'bg-[#E2DCD0]'}`} />
-                        <span className={`flex h-7 w-7 items-center justify-center rounded-full border-2 ${done ? 'border-[#18222B] bg-[#18222B] text-white' : 'border-[#D9D1C2] bg-white text-[#B5AC9B]'}`}>
-                          {done ? <GuestIcon name="check" className="h-3.5 w-3.5" strokeWidth={2.4} /> : <span className="h-1.5 w-1.5 rounded-full bg-current" />}
+                        <span className={`h-[2px] flex-1 ${index === 0 ? 'opacity-0' : done ? 'bg-[#38BDF8]' : 'bg-white/15'}`} />
+                        <span className={`flex h-7 w-7 items-center justify-center rounded-full border-2 ${done ? 'border-[#38BDF8] bg-[#38BDF8] text-[#020713] shadow-[0_0_8px_#38bdf8]' : 'border-white/20 bg-white/5 text-slate-400'}`}>
+                          {done ? <GuestIcon name="check" className="h-3.5 w-3.5" strokeWidth={2.6} /> : <span className="h-1.5 w-1.5 rounded-full bg-current" />}
                         </span>
-                        <span className={`h-[2px] flex-1 ${index === steps.length - 1 ? 'opacity-0' : index + 1 < reached ? 'bg-[#18222B]' : 'bg-[#E2DCD0]'}`} />
+                        <span className={`h-[2px] flex-1 ${index === steps.length - 1 ? 'opacity-0' : index + 1 < reached ? 'bg-[#38BDF8]' : 'bg-white/15'}`} />
                       </div>
-                      <span className={`mt-1.5 text-[11.5px] font-semibold ${done ? 'text-[#18222B]' : 'text-[#8A857B]'}`}>{step}</span>
+                      <span className={`mt-1.5 text-[11.5px] font-semibold ${done ? 'text-white' : 'text-slate-400'}`}>{step}</span>
                     </li>
                   );
                 })}
@@ -658,37 +660,37 @@ function BookingDrawer({ item, today, onClose }: { item: StayItem; today: string
             {showArrival && (
               <DrawerSection title="Arrival">
                 {booking.arrivalPin ? (
-                  <div className="rounded-2xl bg-[#18222B] p-4 text-white">
+                  <div className="rounded-2xl border border-sky-500/30 bg-gradient-to-br from-[#061533] to-[#081d45] p-4 text-white shadow-[0_0_20px_rgba(14,165,233,0.15)]">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#D4B475]">Keypad PIN</p>
-                        <p className="mt-1 font-mono text-[28px] font-bold tracking-[0.2em]">{booking.arrivalPin}</p>
+                        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#38BDF8]">Keypad PIN</p>
+                        <p className="mt-1 font-mono text-[28px] font-bold tracking-[0.2em] text-white">{booking.arrivalPin}</p>
                       </div>
-                      <GuestIcon name="key" className="h-8 w-8 text-[#D4B475]" />
+                      <GuestIcon name="key" className="h-8 w-8 text-[#38BDF8]" />
                     </div>
-                    <p className="mt-2 text-[12.5px] leading-relaxed text-white/75">
+                    <p className="mt-2 text-[12.5px] leading-relaxed text-slate-300">
                       Works from {RESORT_CONTACT.checkInTime} on {formatStayDate(booking.checkIn)}. Shown only on the device you booked with. Keep it private.
                     </p>
                   </div>
                 ) : (
-                  <div className="flex gap-3 rounded-2xl bg-[#F7F5F0] p-4 text-[13.5px] text-[#4A4740]">
-                    <GuestIcon name="key" className="mt-0.5 h-5 w-5 text-[#9E7E46]" />
+                  <div className="flex gap-3 rounded-2xl border border-white/10 bg-[#061533]/60 p-4 text-[13.5px] text-slate-300">
+                    <GuestIcon name="key" className="mt-0.5 h-5 w-5 text-[#38BDF8]" />
                     <p>Your keypad PIN is sent by SMS to {booking.guestPhone || 'your mobile number'} on check-in day.</p>
                   </div>
                 )}
                 <div className="mt-4 flex items-start justify-between gap-3">
                   <div className="flex gap-3">
-                    <GuestIcon name="map-pin" className="mt-0.5 h-5 w-5 text-[#9E7E46]" />
+                    <GuestIcon name="map-pin" className="mt-0.5 h-5 w-5 text-[#38BDF8]" />
                     <div>
-                      <p className="text-[14px] font-semibold text-[#18222B]">Rock View Beach Resort</p>
-                      <p className="text-[13px] text-[#6A6A6A]">{RESORT_CONTACT.addressLine}</p>
+                      <p className="text-[14px] font-semibold text-white">Rock View Beach Resort</p>
+                      <p className="text-[13px] text-slate-400">{RESORT_CONTACT.addressLine}</p>
                     </div>
                   </div>
                   <a
                     href={RESORT_CONTACT.mapsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[#E2DCD0] px-3 py-1.5 text-[12.5px] font-semibold text-[#18222B] transition hover:bg-[#F7F5F0]"
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-sky-400/30 bg-white/5 px-3 py-1.5 text-[12.5px] font-semibold text-sky-200 transition hover:bg-white/10"
                   >
                     <GuestIcon name="navigation" className="h-3.5 w-3.5" />
                     Directions
@@ -706,32 +708,32 @@ function BookingDrawer({ item, today, onClose }: { item: StayItem; today: string
                   hint={booking.paymentStatus === 'unpaid' && phase !== 'cancelled' ? "You won't be charged until you settle at the resort." : undefined}
                 />
               </dl>
-              <div className="mt-4 space-y-2 rounded-2xl border border-[#EFEAE0] p-4 text-[14px]">
+              <div className="mt-4 space-y-2 rounded-2xl border border-white/10 bg-[#061533]/60 p-4 text-[14px]">
                 {booking.nightsTotal > 0 && (
                   <>
-                    <div className="flex justify-between text-[#4A4740]">
+                    <div className="flex justify-between text-slate-300">
                       <span>
                         Room · {booking.nights} night{booking.nights === 1 ? '' : 's'}
                       </span>
                       <span>{formatPeso(booking.nightsTotal)}</span>
                     </div>
-                    <div className="flex justify-between text-[#6A6A6A]">
+                    <div className="flex justify-between text-slate-400">
                       <span>Resort cleaning fee</span>
                       <span>{formatPeso(booking.cleaningFee)}</span>
                     </div>
-                    <div className="flex justify-between text-[#6A6A6A]">
+                    <div className="flex justify-between text-slate-400">
                       <span>Coastal conservation fee</span>
                       <span>{formatPeso(booking.coastalFee)}</span>
                     </div>
-                    <div className="flex justify-between font-medium text-[#1F7A4D]">
+                    <div className="flex justify-between font-medium text-emerald-400">
                       <span>Direct booking tourism tax</span>
                       <span>Waived</span>
                     </div>
                   </>
                 )}
-                <div className={`flex justify-between text-[16px] font-bold text-[#18222B] ${booking.nightsTotal > 0 ? 'border-t border-[#EFEAE0] pt-3' : ''}`}>
+                <div className={`flex justify-between text-[16px] font-bold text-white ${booking.nightsTotal > 0 ? 'border-t border-white/10 pt-3' : ''}`}>
                   <span>Total</span>
-                  <span className={phase === 'cancelled' ? 'text-[#8A857B] line-through' : ''}>{formatPeso(booking.total)}</span>
+                  <span className={phase === 'cancelled' ? 'text-slate-500 line-through' : ''}>{formatPeso(booking.total)}</span>
                 </div>
               </div>
             </DrawerSection>
@@ -744,20 +746,20 @@ function BookingDrawer({ item, today, onClose }: { item: StayItem; today: string
                   <DetailRow label="Email" value={<span className="break-all">{booking.guestEmail || '—'}</span>} />
                 </div>
               </dl>
-              <p className="mt-4 flex gap-2 text-[12.5px] leading-relaxed text-[#6A6A6A]">
-                <GuestIcon name="info" className="mt-0.5 h-4 w-4 text-[#9E7E46]" />
+              <p className="mt-4 flex gap-2 text-[12.5px] leading-relaxed text-slate-400">
+                <GuestIcon name="info" className="mt-0.5 h-4 w-4 text-[#38BDF8]" />
                 {recordNote}
               </p>
             </DrawerSection>
           </div>
         </div>
 
-        <div className="border-t border-[#EFEAE0] bg-white px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6">
-          {error && <p className="mb-3 rounded-xl bg-[#FDF3F4] px-3 py-2 text-[13px] text-[#8C1D30]">{error}</p>}
+        <div className="border-t border-white/10 bg-[#040e22] px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6">
+          {error && <p className="mb-3 rounded-xl border border-rose-500/30 bg-rose-950/60 px-3 py-2 text-[13px] text-rose-200">{error}</p>}
           {confirmCancel ? (
             <div>
-              <p className="text-[15px] font-semibold text-[#18222B]">Cancel your stay at {room.name}?</p>
-              <p className="mt-1 text-[13px] leading-relaxed text-[#6A6A6A]">
+              <p className="text-[15px] font-semibold text-white">Cancel your stay at {room.name}?</p>
+              <p className="mt-1 text-[13px] leading-relaxed text-slate-400">
                 {refundPct === 100
                   ? `Free cancellation within 5 hours of booking — you'll be refunded in full.${cancelCountdown ? ` ${cancelCountdown}.` : ''}`
                   : 'The 5-hour free window has passed, so this cancellation is refunded 50% per resort policy.'}
@@ -767,7 +769,7 @@ function BookingDrawer({ item, today, onClose }: { item: StayItem; today: string
                   type="button"
                   onClick={() => setConfirmCancel(false)}
                   disabled={cancelling}
-                  className="rounded-xl border border-[#D9D1C2] px-4 py-3 text-[14px] font-semibold text-[#18222B] transition hover:bg-[#F7F5F0]"
+                  className="rounded-xl border border-white/20 px-4 py-3 text-[14px] font-semibold text-white transition hover:bg-white/10"
                 >
                   Keep booking
                 </button>
@@ -775,7 +777,7 @@ function BookingDrawer({ item, today, onClose }: { item: StayItem; today: string
                   type="button"
                   onClick={handleCancel}
                   disabled={cancelling}
-                  className="rounded-xl bg-[#B4233C] px-4 py-3 text-[14px] font-semibold text-white transition hover:bg-[#981C31] disabled:opacity-60"
+                  className="rounded-xl bg-rose-600 px-4 py-3 text-[14px] font-semibold text-white transition hover:bg-rose-700 disabled:opacity-60 shadow-[0_0_12px_rgba(225,29,72,0.3)]"
                 >
                   {cancelling ? 'Cancelling…' : 'Yes, cancel'}
                 </button>
@@ -786,7 +788,7 @@ function BookingDrawer({ item, today, onClose }: { item: StayItem; today: string
               {phase === 'past' || phase === 'cancelled' ? (
                 <Link
                   to={BOOK_A_STAY}
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0284C7] via-[#2563EB] to-[#1D4ED8] px-4 py-3 text-[14px] font-semibold text-white transition hover:brightness-110"
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0284C7] via-[#2563EB] to-[#1D4ED8] px-4 py-3 text-[14px] font-semibold text-white transition hover:brightness-110 shadow-[0_0_16px_rgba(14,165,233,0.35)]"
                 >
                   <GuestIcon name="calendar-plus" className="h-4 w-4" />
                   {phase === 'past' ? 'Book again' : 'Book a new stay'}
@@ -795,7 +797,7 @@ function BookingDrawer({ item, today, onClose }: { item: StayItem; today: string
                 <button
                   type="button"
                   onClick={() => navigate(`/client/help?booking=${encodeURIComponent(booking.id)}`)}
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#18222B] px-4 py-3 text-[14px] font-semibold text-white transition hover:bg-[#273644]"
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0284C7] to-[#2563EB] px-4 py-3 text-[14px] font-semibold text-white transition hover:brightness-110 shadow-[0_0_12px_rgba(14,165,233,0.3)]"
                 >
                   <GuestIcon name="message" className="h-4 w-4" />
                   Contact the resort
@@ -805,7 +807,7 @@ function BookingDrawer({ item, today, onClose }: { item: StayItem; today: string
                 <button
                   type="button"
                   onClick={() => setConfirmCancel(true)}
-                  className="inline-flex items-center justify-center rounded-xl border border-[#F0C4CB] px-4 py-3 text-[14px] font-semibold text-[#B4233C] transition hover:bg-[#FDF3F4]"
+                  className="inline-flex items-center justify-center rounded-xl border border-rose-500/40 px-4 py-3 text-[14px] font-semibold text-rose-300 transition hover:bg-rose-500/10"
                 >
                   Cancel booking
                 </button>

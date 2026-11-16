@@ -1,20 +1,40 @@
-/* Guest portal (/client): a light coastal theme that continues the landing page.
-   Legacy global styles colour headings white and use display serifs everywhere,
-   so typography and form colours are reset inside this scope only. */
+/* ==========================================================================
+   ROCK VIEW BEACH RESORT · GUEST PORTAL STYLESHEET (/client & /user)
+   Deep Blue Marine Palette · Scoped strictly under .guest-portal
+   Matches ResidentLogin.tsx and the signature dark marine aesthetic.
+   ========================================================================== */
+
+:root {
+  --gp-marine-950: #020713;
+  --gp-marine-900: #040e22;
+  --gp-marine-850: #061533;
+  --gp-marine-800: #081d45;
+  --gp-marine-700: #0c275e;
+  --gp-azure-500:  #0ea5e9;
+  --gp-cyan-400:   #38bdf8;
+  --gp-blue-600:   #2563eb;
+  --gp-glow:       rgba(56, 189, 248, 0.25);
+  --gp-border:     rgba(56, 189, 248, 0.18);
+  --gp-gold-400:   #D4B475;
+  --gp-gold-500:   #9E7E46;
+}
 
 .guest-portal {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
   font-weight: 400;
   letter-spacing: normal;
-  color: #222222;
-  background-color: #f7f5f0;
+  color: #F1F5F9;
+  background: radial-gradient(circle at 50% 0%, #061533 0%, #020713 70%, #01040a 100%) fixed;
+  background-color: #020713;
+  min-height: 100vh;
+  min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 .guest-portal :is(h1, h2, h3, h4, h5, h6) {
   font-family: inherit;
-  color: inherit;
+  color: #FFFFFF;
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: -0.015em;
@@ -31,17 +51,18 @@
 }
 
 .guest-portal :is(input, select, textarea) {
-  color-scheme: light;
-  caret-color: #18222b;
+  color-scheme: dark;
+  caret-color: #38bdf8;
+  color: #FFFFFF;
 }
 
 .guest-portal :focus-visible {
-  outline: 2px solid #9e7e46;
+  outline: 2px solid #38bdf8;
   outline-offset: 2px;
 }
 
 .guest-portal ::selection {
-  background: #18222b;
+  background: rgba(14, 165, 233, 0.35);
   color: #ffffff;
 }
 

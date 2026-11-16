@@ -1117,13 +1117,6 @@ export default function ResidentLogin({ returnTo = '/user' }: ResidentLoginProps
               <i className="fas fa-arrow-left" /> Return to Public Guest Website
             </Link>
           </div>
-
-          {/* Trust Badges */}
-          <div className="rl-trust-row">
-            <span className="rl-trust-item"><i className="fas fa-shield-halved" /> SSL Encrypted</span>
-            <span className="rl-trust-item"><i className="fas fa-hotel" /> Verified Resort</span>
-            <span className="rl-trust-item"><i className="fas fa-bolt" /> Instant Pass</span>
-          </div>
         </div>
       </div>
     </div>

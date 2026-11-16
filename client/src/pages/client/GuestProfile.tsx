@@ -15,7 +15,7 @@ import {
   type GuestPaymentMethod,
 } from '../../lib/guestPortal';
 
-const CARD_SHADOW = 'shadow-[0_1px_2px_rgba(24,34,43,0.04),0_10px_28px_rgba(24,34,43,0.06)]';
+const CARD_SHADOW = 'shadow-[0_8px_32px_rgba(0,0,0,0.36)]';
 
 const SECTIONS: { id: string; label: string; icon: GuestIconName }[] = [
   { id: 'personal', label: 'Personal info', icon: 'user' },
@@ -54,38 +54,38 @@ export default function GuestProfile() {
   return (
     <div>
       {pageMedia.dashboardAnnouncement && (
-        <div className="mb-6 rounded-2xl bg-amber-50 border border-amber-300/80 px-4 py-3 flex items-center gap-3 text-amber-900 shadow-xs">
-          <i className="fas fa-bullhorn text-amber-600 shrink-0 text-sm" />
+        <div className="mb-6 rounded-2xl bg-sky-950/60 border border-sky-500/30 px-4 py-3 flex items-center gap-3 text-sky-200 shadow-[0_0_15px_rgba(14,165,233,0.15)]">
+          <i className="fas fa-bullhorn text-[#38BDF8] shrink-0 text-sm" />
           <div className="text-xs sm:text-[13px] font-medium leading-snug">
-            <span className="font-bold uppercase tracking-wider text-amber-800 mr-2 text-[11px]">Notice:</span>
+            <span className="font-bold uppercase tracking-wider text-[#38BDF8] mr-2 text-[11px]">Notice:</span>
             {pageMedia.dashboardAnnouncement}
           </div>
         </div>
       )}
-      <section className={`gp-animate-in relative overflow-hidden rounded-[26px] border border-[#E8E2D6] bg-white ${CARD_SHADOW}`}>
+      <section className={`gp-animate-in relative overflow-hidden rounded-[26px] border border-white/10 bg-[#061533]/80 backdrop-blur-md ${CARD_SHADOW}`}>
         <div className="absolute inset-y-0 right-0 hidden w-[42%] md:block" aria-hidden="true">
           <img src={pageMedia.heroImageUrl || "/images/hero.jpg"} alt="" className="h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/70 to-white/0" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#061533] via-[#061533]/85 to-transparent" />
         </div>
         <div className="relative flex flex-col gap-6 p-6 sm:p-8 md:max-w-[64%]">
           <div className="flex items-center gap-4 sm:gap-5">
-            <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#18222B] text-[22px] font-bold tracking-wide text-white ring-4 ring-[#F4EDE0] sm:h-20 sm:w-20 sm:text-[26px]">
+            <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#0EA5E9] to-[#2563EB] text-[22px] font-bold tracking-wide text-white ring-4 ring-sky-500/30 shadow-[0_0_20px_rgba(14,165,233,0.4)] sm:h-20 sm:w-20 sm:text-[26px]">
               {portal.initials}
             </span>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 {mode === 'account' ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[#EAF6EF] px-2.5 py-0.5 text-[11.5px] font-semibold text-[#1F7A4D]">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-950/60 px-2.5 py-0.5 text-[11.5px] font-semibold text-emerald-300">
                     <GuestIcon name="shield" className="h-3.5 w-3.5" /> Resident account
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[#FBF6EC] px-2.5 py-0.5 text-[11.5px] font-semibold text-[#8A6A33]">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-sky-500/30 bg-sky-950/60 px-2.5 py-0.5 text-[11.5px] font-semibold text-sky-300">
                     <GuestIcon name="eye" className="h-3.5 w-3.5" /> {account.isSample ? 'Sample preview profile' : 'Preview profile · this device'}
                   </span>
                 )}
               </div>
-              <h1 className="gp-display mt-1.5 truncate text-[28px] font-semibold leading-tight text-[#18222B] sm:text-[36px]">{portal.displayName}</h1>
-              <p className="mt-1 text-[14px] text-[#6A6A6A]">{since ? `Guest since ${since}` : 'Rock View guest'}</p>
+              <h1 className="gp-display mt-1.5 truncate text-[28px] font-semibold leading-tight text-white sm:text-[36px]">{portal.displayName}</h1>
+              <p className="mt-1 text-[14px] text-slate-400">{since ? `Guest since ${since}` : 'Rock View guest'}</p>
             </div>
           </div>
           <dl className="grid max-w-md grid-cols-3 gap-3">
@@ -94,9 +94,9 @@ export default function GuestProfile() {
               { label: 'Nights', value: nights },
               { label: 'Saved payments', value: account.payments.length },
             ].map((stat) => (
-              <div key={stat.label} className="rounded-2xl bg-[#F7F5F0] px-3 py-2.5">
-                <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8A857B]">{stat.label}</dt>
-                <dd className="mt-0.5 text-[20px] font-bold text-[#18222B]">{stat.value}</dd>
+              <div key={stat.label} className="rounded-2xl border border-white/10 bg-[#040e22]/90 px-3 py-2.5">
+                <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">{stat.label}</dt>
+                <dd className="mt-0.5 text-[20px] font-bold text-white">{stat.value}</dd>
               </div>
             ))}
           </dl>
@@ -106,14 +106,14 @@ export default function GuestProfile() {
       <div className="mt-8 grid gap-8 lg:grid-cols-[250px_minmax(0,1fr)]">
         <aside className="hidden lg:block">
           <div className="sticky top-28 space-y-4">
-            <nav aria-label="Profile sections" className="rounded-[22px] border border-[#E8E2D6] bg-white p-2">
+            <nav aria-label="Profile sections" className="rounded-[22px] border border-white/10 bg-[#061533]/80 backdrop-blur-md p-2">
               {SECTIONS.map((section) => (
                 <a
                   key={section.id}
                   href={`#gp-${section.id}`}
-                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium text-[#4A4740] transition hover:bg-[#F7F5F0] hover:text-[#18222B]"
+                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium text-slate-300 transition hover:bg-white/10 hover:text-white"
                 >
-                  <GuestIcon name={section.icon} className="h-[18px] w-[18px] text-[#9E7E46]" />
+                  <GuestIcon name={section.icon} className="h-[18px] w-[18px] text-[#38BDF8]" />
                   {section.label}
                 </a>
               ))}
@@ -128,9 +128,9 @@ export default function GuestProfile() {
               <a
                 key={section.id}
                 href={`#gp-${section.id}`}
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[#E2DCD0] bg-white px-3.5 py-2 text-[13px] font-semibold text-[#4A4740]"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/15 bg-[#061533]/80 px-3.5 py-2 text-[13px] font-semibold text-slate-300 hover:border-sky-400/40 hover:text-white"
               >
-                <GuestIcon name={section.icon} className="h-4 w-4 text-[#9E7E46]" />
+                <GuestIcon name={section.icon} className="h-4 w-4 text-[#38BDF8]" />
                 {section.label}
               </a>
             ))}
@@ -154,27 +154,27 @@ export default function GuestProfile() {
 function CompletenessCard({ percent, checks }: { percent: number; checks: { section: string; label: string; done: boolean }[] }) {
   const missing = checks.filter((c) => !c.done);
   return (
-    <div className="rounded-[22px] border border-[#E8E2D6] bg-white p-5">
+    <div className="rounded-[22px] border border-white/10 bg-[#061533]/80 backdrop-blur-md p-5">
       <div className="flex items-center justify-between">
-        <p className="text-[14px] font-semibold text-[#18222B]">Profile {percent === 100 ? 'complete' : 'progress'}</p>
-        <p className="text-[14px] font-bold text-[#18222B]">{percent}%</p>
+        <p className="text-[14px] font-semibold text-white">Profile {percent === 100 ? 'complete' : 'progress'}</p>
+        <p className="text-[14px] font-bold text-[#38BDF8]">{percent}%</p>
       </div>
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#F0ECE3]" role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100} aria-label="Profile completeness">
-        <div className="h-full rounded-full bg-gradient-to-r from-[#B89658] to-[#9E7E46] transition-all duration-500" style={{ width: `${percent}%` }} />
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100} aria-label="Profile completeness">
+        <div className="h-full rounded-full bg-gradient-to-r from-[#0284C7] to-[#38BDF8] shadow-[0_0_8px_rgba(56,189,248,0.5)] transition-all duration-500" style={{ width: `${percent}%` }} />
       </div>
       {missing.length > 0 ? (
         <ul className="mt-4 space-y-2">
           {missing.map((item) => (
             <li key={item.label}>
-              <a href={`#gp-${item.section}`} className="flex items-center gap-2 text-[13px] font-medium text-[#4A4740] hover:text-[#18222B]">
-                <span className="flex h-4 w-4 items-center justify-center rounded-full border border-dashed border-[#B5AC9B]" />
+              <a href={`#gp-${item.section}`} className="flex items-center gap-2 text-[13px] font-medium text-slate-300 hover:text-white transition">
+                <span className="flex h-4 w-4 items-center justify-center rounded-full border border-dashed border-sky-400/50" />
                 Add {item.label.toLowerCase()}
               </a>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="mt-3 text-[13px] text-[#6A6A6A]">You're ready for a quick check-in.</p>
+        <p className="mt-3 text-[13px] text-slate-400">You're ready for a quick check-in.</p>
       )}
     </div>
   );
@@ -186,11 +186,11 @@ function CompletenessCard({ percent, checks }: { percent: number; checks: { sect
 
 function StorageBadge({ synced }: { synced?: boolean }) {
   return synced ? (
-    <span className="inline-flex items-center gap-1 rounded-full bg-[#EAF6EF] px-2 py-0.5 text-[11px] font-semibold text-[#1F7A4D]">
+    <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-950/60 px-2 py-0.5 text-[11px] font-semibold text-emerald-300">
       <GuestIcon name="check" className="h-3 w-3" strokeWidth={2.4} /> Synced to your account
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1 rounded-full bg-[#F4EDE0] px-2 py-0.5 text-[11px] font-semibold text-[#7A5F30]">
+    <span className="inline-flex items-center gap-1 rounded-full border border-sky-500/30 bg-sky-950/60 px-2 py-0.5 text-[11px] font-semibold text-sky-300">
       <GuestIcon name="lock" className="h-3 w-3" /> This device only
     </span>
   );
@@ -214,20 +214,20 @@ function SectionCard({
   children: ReactNode;
 }) {
   return (
-    <section id={`gp-${id}`} aria-labelledby={`gp-${id}-title`} className={`scroll-mt-28 rounded-[22px] border border-[#E8E2D6] bg-white p-5 sm:p-7 ${CARD_SHADOW}`}>
+    <section id={`gp-${id}`} aria-labelledby={`gp-${id}-title`} className={`scroll-mt-28 rounded-[22px] border border-white/10 bg-[#061533]/80 backdrop-blur-md p-5 sm:p-7 ${CARD_SHADOW}`}>
       <div className="flex items-start justify-between gap-4">
         <div className="flex min-w-0 gap-3.5">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F4EDE0] text-[#9E7E46]">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-sky-400/30 bg-sky-500/15 text-[#38BDF8]">
             <GuestIcon name={icon} className="h-5 w-5" />
           </span>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 id={`gp-${id}-title`} className="text-[18px] font-semibold text-[#18222B]">
+              <h2 id={`gp-${id}-title`} className="text-[18px] font-semibold text-white">
                 {title}
               </h2>
               {badge}
             </div>
-            <p className="mt-0.5 text-[13.5px] text-[#6A6A6A]">{description}</p>
+            <p className="mt-0.5 text-[13.5px] text-slate-400">{description}</p>
           </div>
         </div>
         {action}
@@ -242,7 +242,7 @@ function EditButton({ onClick, label = 'Edit' }: { onClick: () => void; label?: 
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[#E2DCD0] px-3.5 py-1.5 text-[13px] font-semibold text-[#18222B] transition hover:border-[#BDB4A3] hover:bg-[#F7F5F0]"
+      className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-sky-400/30 bg-white/5 px-3.5 py-1.5 text-[13px] font-semibold text-sky-200 transition hover:border-sky-400/60 hover:bg-white/10"
     >
       <GuestIcon name={label === 'Edit' ? 'edit' : 'plus'} className="h-3.5 w-3.5" />
       {label}
@@ -270,7 +270,7 @@ function TextField({ label, value, onChange, type = 'text', placeholder, hint, e
   const describedBy = error || hint ? `${id}-note` : undefined;
   return (
     <div className={className}>
-      <label htmlFor={id} className="block text-[12.5px] font-semibold text-[#3D3A34]">
+      <label htmlFor={id} className="block text-[12.5px] font-semibold text-slate-300">
         {label}
       </label>
       <input
@@ -285,12 +285,12 @@ function TextField({ label, value, onChange, type = 'text', placeholder, hint, e
         readOnly={readOnly}
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy}
-        className={`mt-1.5 h-11 w-full rounded-xl border px-3.5 text-[15px] outline-none transition placeholder:text-[#A8A398] focus:border-[#18222B] focus:ring-4 focus:ring-[#18222B]/10 ${
-          error ? 'border-[#D9485F]' : 'border-[#DCD5C8]'
-        } ${readOnly ? 'cursor-not-allowed bg-[#F7F5F0] text-[#6A6A6A]' : 'bg-white text-[#222222]'}`}
+        className={`mt-1.5 h-11 w-full rounded-xl border px-3.5 text-[15px] outline-none transition placeholder:text-slate-500 focus:border-[#38BDF8] focus:ring-2 focus:ring-sky-500/20 ${
+          error ? 'border-rose-500/50' : 'border-white/15'
+        } ${readOnly ? 'cursor-not-allowed bg-[#040e22]/50 text-slate-400' : 'bg-[#040e22]/90 text-white'}`}
       />
       {(error || hint) && (
-        <p id={describedBy} className={`mt-1 text-[12px] ${error ? 'text-[#B4233C]' : 'text-[#8A857B]'}`}>
+        <p id={describedBy} className={`mt-1 text-[12px] ${error ? 'text-rose-400' : 'text-slate-400'}`}>
           {error || hint}
         </p>
       )}
@@ -302,18 +302,18 @@ function SelectField({ label, value, onChange, options, className = '' }: { labe
   const id = useId();
   return (
     <div className={className}>
-      <label htmlFor={id} className="block text-[12.5px] font-semibold text-[#3D3A34]">
+      <label htmlFor={id} className="block text-[12.5px] font-semibold text-slate-300">
         {label}
       </label>
       <select
         id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-1.5 h-11 w-full rounded-xl border border-[#DCD5C8] bg-white px-3 text-[15px] text-[#222222] outline-none transition focus:border-[#18222B] focus:ring-4 focus:ring-[#18222B]/10"
+        className="mt-1.5 h-11 w-full rounded-xl border border-white/15 bg-[#040e22]/90 px-3 text-[15px] text-white outline-none transition focus:border-[#38BDF8] focus:ring-2 focus:ring-sky-500/20"
       >
-        <option value="">Select…</option>
+        <option value="" className="bg-[#040e22] text-slate-400">Select…</option>
         {options.map((option) => (
-          <option key={option} value={option}>
+          <option key={option} value={option} className="bg-[#040e22] text-white">
             {option}
           </option>
         ))}
@@ -324,11 +324,11 @@ function SelectField({ label, value, onChange, options, className = '' }: { labe
 
 function FormActions({ onCancel, saving, label = 'Save changes' }: { onCancel: () => void; saving: boolean; label?: string }) {
   return (
-    <div className="mt-6 flex flex-col-reverse gap-2 border-t border-[#EFEAE0] pt-5 sm:flex-row sm:justify-end">
-      <button type="button" onClick={onCancel} disabled={saving} className="rounded-xl border border-[#D9D1C2] px-5 py-2.5 text-[14px] font-semibold text-[#18222B] transition hover:bg-[#F7F5F0]">
+    <div className="mt-6 flex flex-col-reverse gap-2 border-t border-white/10 pt-5 sm:flex-row sm:justify-end">
+      <button type="button" onClick={onCancel} disabled={saving} className="rounded-xl border border-white/20 px-5 py-2.5 text-[14px] font-semibold text-slate-300 transition hover:bg-white/10 hover:text-white">
         Cancel
       </button>
-      <button type="submit" disabled={saving} className="rounded-xl bg-[#18222B] px-5 py-2.5 text-[14px] font-semibold text-white transition hover:bg-[#273644] disabled:opacity-60">
+      <button type="submit" disabled={saving} className="rounded-xl bg-gradient-to-r from-[#0284C7] to-[#2563EB] px-5 py-2.5 text-[14px] font-semibold text-white shadow-[0_0_12px_rgba(14,165,233,0.35)] transition hover:brightness-110 disabled:opacity-60">
         {saving ? 'Saving…' : label}
       </button>
     </div>
@@ -338,8 +338,8 @@ function FormActions({ onCancel, saving, label = 'Save changes' }: { onCancel: (
 function InfoItem({ label, value, className = '' }: { label: string; value: ReactNode; className?: string }) {
   return (
     <div className={className}>
-      <dt className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#8A857B]">{label}</dt>
-      <dd className="mt-1 break-words text-[15px] font-medium text-[#18222B]">{value || <span className="font-normal text-[#A8A398]">Not added</span>}</dd>
+      <dt className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">{label}</dt>
+      <dd className="mt-1 break-words text-[15px] font-medium text-white">{value || <span className="font-normal text-slate-500">Not added</span>}</dd>
     </div>
   );
 }
@@ -432,7 +432,7 @@ function PersonalSection() {
               error={errors.phone}
             />
           </div>
-          {errors.form && <p className="mt-4 rounded-xl bg-[#FDF3F4] px-3 py-2 text-[13px] text-[#8C1D30]">{errors.form}</p>}
+          {errors.form && <p className="mt-4 rounded-xl border border-rose-500/30 bg-rose-950/60 px-3 py-2 text-[13px] text-rose-200">{errors.form}</p>}
           <FormActions onCancel={() => setEditing(false)} saving={saving} />
         </form>
       ) : (
@@ -507,13 +507,13 @@ function AddressSection() {
           <FormActions onCancel={() => setEditing(false)} saving={saving} />
         </form>
       ) : hasAddress ? (
-        <address className="not-italic text-[15px] leading-relaxed text-[#18222B]">
+        <address className="not-italic text-[15px] leading-relaxed text-white">
           {p.street && <span className="block font-medium">{p.street}</span>}
-          <span className="block text-[#4A4740]">{[p.city, p.province, p.zip].filter(Boolean).join(', ')}</span>
-          {p.country && <span className="block text-[#6A6A6A]">{p.country}</span>}
+          <span className="block text-slate-300">{[p.city, p.province, p.zip].filter(Boolean).join(', ')}</span>
+          {p.country && <span className="block text-slate-400">{p.country}</span>}
         </address>
       ) : (
-        <p className="text-[14px] text-[#6A6A6A]">No address yet. Add one to skip the paperwork at check-in.</p>
+        <p className="text-[14px] text-slate-400">No address yet. Add one to skip the paperwork at check-in.</p>
       )}
     </SectionCard>
   );
@@ -593,7 +593,7 @@ function EmergencySection() {
           <InfoItem label="Mobile" value={p.emergencyPhone ? formatMobile(p.emergencyPhone) : ''} />
         </dl>
       ) : (
-        <p className="text-[14px] text-[#6A6A6A]">No emergency contact yet.</p>
+        <p className="text-[14px] text-slate-400">No emergency contact yet.</p>
       )}
     </SectionCard>
   );
@@ -638,24 +638,24 @@ function PaymentsSection() {
         <button
           type="button"
           onClick={() => setAdding(true)}
-          className="flex w-full flex-col items-center rounded-2xl border border-dashed border-[#D9D1C2] px-6 py-8 text-center transition hover:bg-[#FBFAF7]"
+          className="flex w-full flex-col items-center rounded-2xl border border-dashed border-white/20 bg-white/5 px-6 py-8 text-center transition hover:bg-white/10"
         >
-          <GuestIcon name="card" className="h-7 w-7 text-[#9E7E46]" />
-          <span className="mt-2 text-[15px] font-semibold text-[#18222B]">Add GCash, Maya, or a card</span>
-          <span className="mt-1 text-[13px] text-[#6A6A6A]">We'll pre-select it next time you book.</span>
+          <GuestIcon name="card" className="h-7 w-7 text-[#38BDF8]" />
+          <span className="mt-2 text-[15px] font-semibold text-white">Add GCash, Maya, or a card</span>
+          <span className="mt-1 text-[13px] text-slate-400">We'll pre-select it next time you book.</span>
         </button>
       ) : (
         <ul className="space-y-3">
           {payments.map((method) => (
-            <li key={method.id} className={`rounded-2xl border p-4 transition ${method.isDefault ? 'border-[#18222B] bg-[#FBFAF7]' : 'border-[#E8E2D6]'}`}>
+            <li key={method.id} className={`rounded-2xl border p-4 transition ${method.isDefault ? 'border-sky-400/50 bg-[#040e22]/90 shadow-[0_0_15px_rgba(56,189,248,0.15)]' : 'border-white/10 bg-[#040e22]/70'}`}>
               <div className="flex items-center gap-4">
                 <PaymentMark method={method} />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-[15px] font-semibold text-[#18222B]">{paymentDisplay(method)}</p>
-                    {method.isDefault && <span className="rounded-full bg-[#18222B] px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-[0.08em] text-white">Default</span>}
+                    <p className="text-[15px] font-semibold text-white">{paymentDisplay(method)}</p>
+                    {method.isDefault && <span className="rounded-full bg-gradient-to-r from-[#0284C7] to-[#2563EB] px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-[0.08em] text-white">Default</span>}
                   </div>
-                  <p className="truncate text-[13px] text-[#6A6A6A]">
+                  <p className="truncate text-[13px] text-slate-400">
                     {method.holder}
                     {method.expiry ? ` · Expires ${method.expiry}` : method.type !== 'card' ? ' · Mobile wallet' : ''}
                   </p>
@@ -663,21 +663,21 @@ function PaymentsSection() {
                 {confirmingId !== method.id && (
                   <div className="hidden items-center gap-1 sm:flex">
                     {!method.isDefault && (
-                      <button type="button" onClick={() => { portal.setDefaultPaymentMethod(method.id); toast(`${paymentDisplay(method)} is now your default`); }} className="rounded-lg px-3 py-1.5 text-[13px] font-semibold text-[#18222B] hover:bg-[#F1EDE4]">
+                      <button type="button" onClick={() => { portal.setDefaultPaymentMethod(method.id); toast(`${paymentDisplay(method)} is now your default`); }} className="rounded-lg px-3 py-1.5 text-[13px] font-semibold text-slate-200 hover:bg-white/10">
                         Make default
                       </button>
                     )}
-                    <button type="button" onClick={() => setConfirmingId(method.id)} className="rounded-lg px-3 py-1.5 text-[13px] font-semibold text-[#B4233C] hover:bg-[#FDF3F4]">
+                    <button type="button" onClick={() => setConfirmingId(method.id)} className="rounded-lg px-3 py-1.5 text-[13px] font-semibold text-rose-400 hover:bg-rose-500/10">
                       Remove
                     </button>
                   </div>
                 )}
               </div>
               {confirmingId === method.id ? (
-                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#FDF3F4] px-3 py-2.5">
-                  <p className="text-[13px] font-medium text-[#8C1D30]">Remove {paymentDisplay(method)}?</p>
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-rose-500/30 bg-rose-950/60 px-3 py-2.5">
+                  <p className="text-[13px] font-medium text-rose-200">Remove {paymentDisplay(method)}?</p>
                   <div className="flex gap-2">
-                    <button type="button" onClick={() => setConfirmingId(null)} className="rounded-lg bg-white px-3 py-1.5 text-[13px] font-semibold text-[#18222B]">
+                    <button type="button" onClick={() => setConfirmingId(null)} className="rounded-lg border border-white/20 bg-white/10 px-3 py-1.5 text-[13px] font-semibold text-white">
                       Keep
                     </button>
                     <button
@@ -687,7 +687,7 @@ function PaymentsSection() {
                         setConfirmingId(null);
                         toast('Payment method removed');
                       }}
-                      className="rounded-lg bg-[#B4233C] px-3 py-1.5 text-[13px] font-semibold text-white"
+                      className="rounded-lg bg-rose-600 px-3 py-1.5 text-[13px] font-semibold text-white"
                     >
                       Remove
                     </button>
@@ -696,11 +696,11 @@ function PaymentsSection() {
               ) : (
                 <div className="mt-3 flex gap-2 sm:hidden">
                   {!method.isDefault && (
-                    <button type="button" onClick={() => { portal.setDefaultPaymentMethod(method.id); toast(`${paymentDisplay(method)} is now your default`); }} className="flex-1 rounded-lg border border-[#E2DCD0] px-3 py-2 text-[13px] font-semibold text-[#18222B]">
+                    <button type="button" onClick={() => { portal.setDefaultPaymentMethod(method.id); toast(`${paymentDisplay(method)} is now your default`); }} className="flex-1 rounded-lg border border-white/20 px-3 py-2 text-[13px] font-semibold text-white">
                       Make default
                     </button>
                   )}
-                  <button type="button" onClick={() => setConfirmingId(method.id)} className="flex-1 rounded-lg border border-[#F0C4CB] px-3 py-2 text-[13px] font-semibold text-[#B4233C]">
+                  <button type="button" onClick={() => setConfirmingId(method.id)} className="flex-1 rounded-lg border border-rose-500/40 px-3 py-2 text-[13px] font-semibold text-rose-300">
                     Remove
                   </button>
                 </div>
@@ -709,8 +709,8 @@ function PaymentsSection() {
           ))}
         </ul>
       )}
-      <p className="mt-4 flex gap-2 text-[12.5px] leading-relaxed text-[#6A6A6A]">
-        <GuestIcon name="lock" className="mt-0.5 h-4 w-4 text-[#9E7E46]" />
+      <p className="mt-4 flex gap-2 text-[12.5px] leading-relaxed text-slate-400">
+        <GuestIcon name="lock" className="mt-0.5 h-4 w-4 text-[#38BDF8]" />
         Only the brand, the last 4 digits, and the expiry are kept, on this device. We never ask for your CVV, and nothing is charged until you settle at the resort.
       </p>
       {adding && <AddPaymentDialog onClose={() => setAdding(false)} />}
@@ -786,16 +786,16 @@ function AddPaymentDialog({ onClose }: { onClose: () => void }) {
 
   return createPortal(
     <div className="guest-portal fixed inset-0 z-[90] flex items-end justify-center bg-transparent md:items-center md:p-6">
-      <button type="button" aria-label="Close" onClick={onClose} className="gp-backdrop absolute inset-0 cursor-default bg-[#0F1720]/45 backdrop-blur-[2px]" />
-      <div role="dialog" aria-modal="true" aria-labelledby="add-payment-title" className="gp-dialog relative max-h-[92vh] w-full overflow-y-auto rounded-t-[28px] bg-white p-6 shadow-2xl md:max-w-[460px] md:rounded-[28px] md:p-7">
+      <button type="button" aria-label="Close" onClick={onClose} className="gp-backdrop absolute inset-0 cursor-default bg-[#020713]/80 backdrop-blur-md" />
+      <div role="dialog" aria-modal="true" aria-labelledby="add-payment-title" className="gp-dialog relative max-h-[92vh] w-full overflow-y-auto rounded-t-[28px] bg-[#040e22] border border-white/15 p-6 shadow-2xl md:max-w-[460px] md:rounded-[28px] md:p-7 text-white">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 id="add-payment-title" className="text-[20px] font-semibold text-[#18222B]">
+            <h2 id="add-payment-title" className="text-[20px] font-semibold text-white">
               Add a payment method
             </h2>
-            <p className="mt-1 text-[13.5px] text-[#6A6A6A]">Saved on this device to speed up your next booking.</p>
+            <p className="mt-1 text-[13.5px] text-slate-400">Saved on this device to speed up your next booking.</p>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#E8E2D6] text-[#4A4740] hover:bg-[#F7F5F0]">
+          <button type="button" onClick={onClose} aria-label="Close" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/15 text-slate-300 hover:bg-white/10 hover:text-white">
             <GuestIcon name="close" className="h-4 w-4" />
           </button>
         </div>
@@ -813,7 +813,7 @@ function AddPaymentDialog({ onClose }: { onClose: () => void }) {
                   aria-checked={active}
                   onClick={() => switchType(option.id)}
                   className={`flex flex-col items-center gap-1.5 rounded-2xl border px-3 py-3 text-[13.5px] font-semibold transition ${
-                    active ? 'border-[#18222B] bg-[#FBFAF7] text-[#18222B] shadow-[inset_0_0_0_1px_#18222B]' : 'border-[#E2DCD0] text-[#4A4740] hover:border-[#BDB4A3]'
+                    active ? 'border-[#38BDF8] bg-sky-950/60 text-white shadow-[0_0_12px_rgba(56,189,248,0.25)]' : 'border-white/15 text-slate-400 hover:border-white/30'
                   }`}
                 >
                   <GuestIcon name={option.icon} className="h-5 w-5" />
@@ -872,15 +872,15 @@ function AddPaymentDialog({ onClose }: { onClose: () => void }) {
             )}
           </div>
 
-          <label className="mt-5 flex cursor-pointer items-center gap-3 text-[14px] text-[#2F2C27]">
-            <input type="checkbox" checked={makeDefault} onChange={(e) => setMakeDefault(e.target.checked)} className="h-4 w-4 accent-[#18222B]" />
+          <label className="mt-5 flex cursor-pointer items-center gap-3 text-[14px] text-slate-300">
+            <input type="checkbox" checked={makeDefault} onChange={(e) => setMakeDefault(e.target.checked)} className="h-4 w-4 accent-[#0284C7]" />
             Use as my default payment method
           </label>
 
-          <button type="submit" className="mt-6 w-full rounded-xl bg-[#18222B] py-3 text-[15px] font-semibold text-white transition hover:bg-[#273644]">
+          <button type="submit" className="mt-6 w-full rounded-xl bg-gradient-to-r from-[#0284C7] to-[#2563EB] py-3 text-[15px] font-semibold text-white shadow-[0_0_15px_rgba(14,165,233,0.35)] transition hover:brightness-110">
             Save payment method
           </button>
-          <p className="mt-3 text-center text-[12px] text-[#8A857B]">We never ask for your CVV or PIN.</p>
+          <p className="mt-3 text-center text-[12px] text-slate-400">We never ask for your CVV or PIN.</p>
         </form>
       </div>
     </div>,
@@ -893,10 +893,10 @@ function Toggle({ checked, onChange, label, description }: { checked: boolean; o
   return (
     <div className="flex items-center justify-between gap-4 py-3.5">
       <div className="min-w-0">
-        <p id={`${id}-label`} className="text-[14.5px] font-semibold text-[#18222B]">
+        <p id={`${id}-label`} className="text-[14.5px] font-semibold text-white">
           {label}
         </p>
-        <p className="text-[13px] text-[#6A6A6A]">{description}</p>
+        <p className="text-[13px] text-slate-400">{description}</p>
       </div>
       <button
         type="button"
@@ -904,7 +904,7 @@ function Toggle({ checked, onChange, label, description }: { checked: boolean; o
         aria-checked={checked}
         aria-labelledby={`${id}-label`}
         onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition ${checked ? 'bg-[#18222B]' : 'bg-[#D6CFC2]'}`}
+        className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition ${checked ? 'bg-gradient-to-r from-[#0284C7] to-[#2563EB] shadow-[0_0_8px_rgba(56,189,248,0.4)]' : 'bg-white/20'}`}
       >
         <span className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${checked ? 'translate-x-6' : 'translate-x-1'}`} />
       </button>
@@ -939,13 +939,13 @@ function PreferencesSection() {
 
   return (
     <SectionCard id="preferences" icon="bell" title="Preferences" description="How we keep in touch, and what helps us prepare your room." badge={<StorageBadge />}>
-      <div className="divide-y divide-[#EFEAE0]">
+      <div className="divide-y divide-white/10">
         <Toggle checked={p.notifySms} onChange={(v) => toggle('notifySms', v)} label="Booking updates by SMS" description="Confirmations, reminders, and your keypad PIN." />
         <Toggle checked={p.notifyEmail} onChange={(v) => toggle('notifyEmail', v)} label="Booking updates by email" description="Your digital voucher and receipts." />
         <Toggle checked={p.notifyOffers} onChange={(v) => toggle('notifyOffers', v)} label="Offers and seasonal rates" description="Occasional news from Rock View." />
       </div>
       <div className="mt-5">
-        <label htmlFor="gp-special-requests" className="block text-[12.5px] font-semibold text-[#3D3A34]">
+        <label htmlFor="gp-special-requests" className="block text-[12.5px] font-semibold text-slate-300">
           Special requests
         </label>
         <textarea
@@ -955,15 +955,15 @@ function PreferencesSection() {
           rows={3}
           maxLength={400}
           placeholder="Extra pillows, early check-in, celebrating a birthday…"
-          className="mt-1.5 w-full resize-y rounded-xl border border-[#DCD5C8] bg-white px-3.5 py-3 text-[15px] text-[#222222] outline-none transition placeholder:text-[#A8A398] focus:border-[#18222B] focus:ring-4 focus:ring-[#18222B]/10"
+          className="mt-1.5 w-full resize-y rounded-xl border border-white/15 bg-[#040e22]/90 px-3.5 py-3 text-[15px] text-white outline-none transition placeholder:text-slate-500 focus:border-[#38BDF8] focus:ring-2 focus:ring-sky-500/20"
         />
         <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-[12px] text-[#8A857B]">Added to your next booking so the front desk can prepare.</p>
+          <p className="text-[12px] text-slate-400">Added to your next booking so the front desk can prepare.</p>
           <button
             type="button"
             onClick={saveRequests}
             disabled={saving || requests.trim() === p.specialRequests.trim()}
-            className="rounded-xl bg-[#18222B] px-4 py-2 text-[13.5px] font-semibold text-white transition hover:bg-[#273644] disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-xl bg-gradient-to-r from-[#0284C7] to-[#2563EB] px-4 py-2 text-[13.5px] font-semibold text-white shadow-[0_0_12px_rgba(14,165,233,0.3)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {saving ? 'Saving…' : 'Save requests'}
           </button>
@@ -983,24 +983,24 @@ function SecuritySection() {
   if (!portal.changePassword) {
     return (
       <SectionCard id="security" icon="lock" title="Sign-in & security" description="Manage how you sign in to your resident account.">
-        <div className="flex flex-col gap-4 rounded-2xl bg-[#F7F5F0] p-5 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-[14px] leading-relaxed text-[#4A4740]">
+        <div className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-[#040e22]/90 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-[14px] leading-relaxed text-slate-300">
             You're viewing a preview without signing in. Sign in to manage your password and see reservations linked to your account.
           </p>
-          <Link to="/client/login" className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#18222B] px-4 py-2.5 text-[14px] font-semibold text-white transition hover:bg-[#273644]">
+          <Link to="/client/login" className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0284C7] to-[#2563EB] px-4 py-2.5 text-[14px] font-semibold text-white shadow-[0_0_12px_rgba(14,165,233,0.3)] transition hover:brightness-110">
             <GuestIcon name="login" className="h-4 w-4" />
             Sign in
           </Link>
         </div>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-[13px] text-[#6A6A6A]">Preview bookings and details live only in this browser.</p>
+          <p className="text-[13px] text-slate-400">Preview bookings and details live only in this browser.</p>
           <button
             type="button"
             onClick={() => {
               portal.resetPreview();
               toast('Preview reset');
             }}
-            className="inline-flex items-center gap-1.5 rounded-full border border-[#E2DCD0] px-3.5 py-1.5 text-[13px] font-semibold text-[#18222B] transition hover:bg-[#F7F5F0]"
+            className="inline-flex items-center gap-1.5 rounded-full border border-sky-400/30 bg-white/5 px-3.5 py-1.5 text-[13px] font-semibold text-sky-200 transition hover:bg-white/10"
           >
             <GuestIcon name="refresh" className="h-3.5 w-3.5" />
             Reset preview data
@@ -1037,7 +1037,7 @@ function SecuritySection() {
           <TextField label="New password" type="password" value={password} onChange={setPassword} autoComplete="new-password" error={errors.password} />
           <TextField label="Confirm new password" type="password" value={confirm} onChange={setConfirm} autoComplete="new-password" error={errors.confirm} />
         </div>
-        {errors.form && <p className="mt-4 rounded-xl bg-[#FDF3F4] px-3 py-2 text-[13px] text-[#8C1D30]">{errors.form}</p>}
+        {errors.form && <p className="mt-4 rounded-xl border border-rose-500/30 bg-rose-950/60 px-3 py-2 text-[13px] text-rose-200">{errors.form}</p>}
         <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
           {portal.signOut && (
             <button
@@ -1050,13 +1050,13 @@ function SecuritySection() {
                   toast('Could not sign out. Please try again.', true);
                 }
               }}
-              className="inline-flex items-center gap-2 text-[14px] font-semibold text-[#B4233C] hover:underline"
+              className="inline-flex items-center gap-2 text-[14px] font-semibold text-rose-400 hover:text-rose-300 transition"
             >
               <GuestIcon name="logout" className="h-4 w-4" />
               Sign out of this device
             </button>
           )}
-          <button type="submit" disabled={saving || !password} className="rounded-xl bg-[#18222B] px-5 py-2.5 text-[14px] font-semibold text-white transition hover:bg-[#273644] disabled:cursor-not-allowed disabled:opacity-40">
+          <button type="submit" disabled={saving || !password} className="rounded-xl bg-gradient-to-r from-[#0284C7] to-[#2563EB] px-5 py-2.5 text-[14px] font-semibold text-white shadow-[0_0_12px_rgba(14,165,233,0.3)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40">
             {saving ? 'Updating…' : 'Update password'}
           </button>
         </div>
