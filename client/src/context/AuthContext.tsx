@@ -1224,6 +1224,96 @@ export function AuthProvider({ children }) {
       }
       return { needsPrompt: true };
     },
+    sendGmailOtp: async (email: string, name?: string) => {
+      const cleanEmail = email.trim().toLowerCase();
+      // Try Supabase Auth signInWithOtp first if reachable
+      try {
+        const rawUrl = (import.meta as any).env?.VITE_SUPABASE_URL || 'https://owhodkhzldygavuwnqfg.supabase.co';
+        const ping = await Promise.race([
+          fetch(`${rawUrl}/auth/v1/settings`, { headers: { apikey: (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '' } }).catch(() => null),
+          new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 1000))
+        ]).catch(() => null);
+
+        if (ping && (ping as Response).ok) {
+          const { error: sbErr } = await supabase.auth.signInWithOtp({
+            email: cleanEmail,
+            options: { shouldCreateUser: true }
+          });
+          if (!sbErr) {
+            return { success: true, provider: 'supabase', message: `6-digit OTP dispatched to ${cleanEmail} via Supabase.` };
+          }
+        }
+      } catch {}
+
+      // Resilient server fallback endpoint
+      return await api.sendOtp(cleanEmail, name);
+    },
+    verifyGmailOtp: async (email: string, code: string, name?: string) => {
+      const cleanEmail = email.trim().toLowerCase();
+      const cleanCode = code.trim();
+
+      // Try Supabase verifyOtp first if reachable
+      try {
+        const rawUrl = (import.meta as any).env?.VITE_SUPABASE_URL || 'https://owhodkhzldygavuwnqfg.supabase.co';
+        const ping = await Promise.race([
+          fetch(`${rawUrl}/auth/v1/settings`, { headers: { apikey: (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '' } }).catch(() => null),
+          new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 1000))
+        ]).catch(() => null);
+
+        if (ping && (ping as Response).ok) {
+          const { data: sbData, error: sbErr } = await Promise.race([
+            supabase.auth.verifyOtp({
+              email: cleanEmail,
+              token: cleanCode,
+              type: 'email'
+            }),
+            new Promise<any>((_, r) => setTimeout(() => r(new Error('timeout')), 1500))
+          ]);
+          if (!sbErr && sbData?.session) {
+            setCustomerSession(sbData.session);
+            const prof = {
+              id: sbData.session.user.id,
+              email: cleanEmail,
+              full_name: name || cleanEmail.split('@')[0],
+              role: 'customer',
+              provider: 'gmail_otp',
+            };
+            setCustomerProfile(prof);
+            if (typeof sessionStorage !== 'undefined') {
+              sessionStorage.setItem('jd_customer_session', JSON.stringify(sbData.session));
+              sessionStorage.setItem('jd_customer_jwt', sbData.session.access_token);
+              sessionStorage.setItem('jd_customer_profile', JSON.stringify(prof));
+            }
+            setAuthOpen(false);
+            toast(`Welcome to Rock View Beach Resort, ${prof.full_name}! ✦`);
+            return { data: sbData, error: null };
+          }
+        }
+      } catch {}
+
+      // Resilient server fallback endpoint
+      const res: any = await api.verifyOtp(cleanEmail, cleanCode, name);
+      if (res?.session) {
+        setCustomerSession(res.session);
+        const prof = res.profile || res.user || {
+          id: res.user?.id || 'otp_guest',
+          email: cleanEmail,
+          full_name: name || cleanEmail.split('@')[0],
+          role: 'customer',
+          provider: 'gmail_otp',
+        };
+        setCustomerProfile(prof);
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem('jd_customer_session', JSON.stringify(res.session));
+          sessionStorage.setItem('jd_customer_jwt', res.session.access_token);
+          sessionStorage.setItem('jd_customer_profile', JSON.stringify(prof));
+        }
+        setAuthOpen(false);
+        toast(`Welcome to Rock View Beach Resort, ${prof.full_name || 'Resident Guest'}! ✦`);
+        return { data: res, error: null };
+      }
+      return { data: null, error: new Error('Invalid or expired OTP verification code.') };
+    },
   };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

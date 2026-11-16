@@ -8,9 +8,10 @@ export default function AuthModal() {
     session, profile, authOpen, setAuthOpen,
     needsProfileCompletion, setNeedsProfileCompletion,
     signIn, signInWithGoogle, signInWithFacebook, updateProfile,
+    sendGmailOtp, verifyGmailOtp,
   } = useAuth();
 
-  const [mode, setMode] = useState<'in' | 'up' | '2fa' | 'recovery'>('in');
+  const [mode, setMode] = useState<'in' | 'up' | '2fa' | 'recovery' | 'gmail-otp'>('in');
   const [signupProvider, setSignupProvider] = useState<'gmail' | 'facebook' | 'email'>('gmail');
   const [termsAccepted, setTermsAccepted] = useState(false);
 
@@ -36,6 +37,13 @@ export default function AuthModal() {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [confirmationTimeLeft, setConfirmationTimeLeft] = useState(60); // 1-minute (60s) confirmation gate
   const [confirmationExpiredMsg, setConfirmationExpiredMsg] = useState('');
+  const [latestOtpPreview, setLatestOtpPreview] = useState('');
+
+  // Gmail OTP Direct Sign-In State
+  const [gmailOtpEmail, setGmailOtpEmail] = useState('');
+  const [gmailOtpName, setGmailOtpName] = useState('');
+  const [gmailOtpCode, setGmailOtpCode] = useState('');
+  const [gmailOtpStep, setGmailOtpStep] = useState<1 | 2>(1);
 
   // Account Recovery State
   const [recoveryStep, setRecoveryStep] = useState(1); // 1 = Request Code, 2 = Verify Code & Reset
@@ -316,6 +324,9 @@ export default function AuthModal() {
         setSignupEmail(targetEmail);
         setSignupPassword(f.password);
         setSignupName(fullName);
+        if (res?.otp_preview) {
+          setLatestOtpPreview(res.otp_preview);
+        }
         setMode('2fa');
         setSignupCode('');
         setConfirmationTimeLeft(60); // 1-minute countdown
@@ -370,12 +381,57 @@ export default function AuthModal() {
     setBusy(true);
     try {
       const res = await api.resendSignup2FA(signupEmail);
+      if (res?.otp_preview) {
+        setLatestOtpPreview(res.otp_preview);
+      }
       setConfirmationTimeLeft(60); // Reset to full 1 minute on resend
       setResendCooldown(30);
       setConfirmationExpiredMsg('');
       toast(res.message || 'New 2FA confirmation code dispatched! You have 1 minute to confirm.');
     } catch (err: any) {
       toast(err.message, true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // Handle Dispatching Gmail OTP Code (Direct Sign-In)
+  async function handleSendGmailOtp(e: React.FormEvent) {
+    e.preventDefault();
+    if (!gmailOtpEmail || !gmailOtpEmail.includes('@')) {
+      toast('Please enter a valid Gmail / Email address.', true);
+      return;
+    }
+    setBusy(true);
+    try {
+      const res: any = await sendGmailOtp(gmailOtpEmail, gmailOtpName);
+      if (res?.otp_preview) {
+        setLatestOtpPreview(res.otp_preview);
+      }
+      toast(res?.message || `6-digit OTP code dispatched to ${gmailOtpEmail}.`);
+      setGmailOtpStep(2);
+    } catch (err: any) {
+      toast(err.message || 'Failed to dispatch Gmail OTP code.', true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // Handle Verifying Gmail OTP Code (Direct Sign-In)
+  async function handleVerifyGmailOtp(e: React.FormEvent) {
+    e.preventDefault();
+    if (!gmailOtpCode || gmailOtpCode.trim().length !== 6) {
+      toast('Please enter the 6-digit OTP code.', true);
+      return;
+    }
+    setBusy(true);
+    try {
+      const res: any = await verifyGmailOtp(gmailOtpEmail, gmailOtpCode.trim(), gmailOtpName);
+      if (res?.error) {
+        toast(res.error.message || 'Invalid or expired OTP code.', true);
+      }
+    } catch (err: any) {
+      toast(err.message || 'Failed to verify OTP code.', true);
     } finally {
       setBusy(false);
     }
@@ -511,10 +567,10 @@ export default function AuthModal() {
         <div className="modal-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <span className="label light">
-              {mode === 'in' ? 'Guest Access' : mode === 'up' ? 'Client Sign-Up' : mode === '2fa' ? '2FA Confirmation' : 'Account Recovery'}
+              {mode === 'in' ? 'Guest Access' : mode === 'up' ? 'Client Sign-Up' : mode === '2fa' ? '2FA Confirmation' : mode === 'gmail-otp' ? 'Gmail OTP Access' : 'Account Recovery'}
             </span>
             <h3 className="serif" style={{ fontSize: '1.7rem', marginTop: 2 }}>
-              {mode === 'in' ? 'Welcome Back' : mode === 'up' ? 'Join Resort' : mode === '2fa' ? 'Verify & Finalize' : 'Reset Password'}
+              {mode === 'in' ? 'Welcome Back' : mode === 'up' ? 'Join Resort' : mode === '2fa' ? 'Verify & Finalize' : mode === 'gmail-otp' ? 'Instant Sign In' : 'Reset Password'}
             </h3>
           </div>
           <button
@@ -666,7 +722,7 @@ export default function AuthModal() {
           {/* ============================================================ */}
           {/* MODE: SIGN IN / SIGN UP MAIN VIEW */}
           {/* ============================================================ */}
-          {mode !== 'recovery' && mode !== '2fa' && (
+          {mode !== 'recovery' && mode !== '2fa' && mode !== 'gmail-otp' && (
             <>
               {/* SOCIAL AUTH BUTTONS: GOOGLE & FACEBOOK */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
@@ -1164,6 +1220,45 @@ export default function AuthModal() {
                 >
                   {busy ? 'One moment…' : mode === 'in' ? 'Sign In ✦' : 'Proceed to 2FA Verification ➔'}
                 </button>
+
+                {mode === 'in' && (
+                  <div style={{ marginTop: 14 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '8px 0 12px' }}>
+                      <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+                      <span style={{ fontSize: '.7rem', letterSpacing: '.12em', color: '#64748B', textTransform: 'uppercase' }}>
+                        or passwordless
+                      </span>
+                      <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMode('gmail-otp');
+                        setGmailOtpStep(1);
+                        setGmailOtpEmail(f.email || '');
+                      }}
+                      style={{
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        padding: '10px 14px',
+                        borderRadius: 10,
+                        background: 'rgba(234, 67, 53, 0.1)',
+                        border: '1px solid rgba(234, 67, 53, 0.35)',
+                        color: '#FCA5A5',
+                        fontSize: '0.84rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      <i className="fas fa-envelope-circle-check" style={{ color: '#EA4335', fontSize: '1rem' }} />
+                      Sign in with Gmail OTP (Direct Supabase)
+                    </button>
+                  </div>
+                )}
               </form>
             </>
           )}
@@ -1224,6 +1319,50 @@ export default function AuthModal() {
                   Client Name: <strong style={{ color: '#38BDF8' }}>{signupName}</strong>
                 </div>
               </div>
+
+              {/* LUXURY GLASSMORPHIC 2FA OTP PREVIEW WITH 1-CLICK AUTO-FILL */}
+              {latestOtpPreview && (
+                <div style={{
+                  margin: '0 0 14px 0',
+                  padding: '10px 14px',
+                  borderRadius: 10,
+                  background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(56, 189, 248, 0.16))',
+                  border: '1px solid rgba(16, 185, 129, 0.45)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  boxShadow: '0 4px 14px rgba(16, 185, 129, 0.2)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <i className="fas fa-envelope-circle-check" style={{ color: '#10B981', fontSize: '1.2rem' }} />
+                    <div>
+                      <span style={{ fontSize: '0.7rem', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', fontWeight: 700 }}>
+                        Gmail 2FA Code Dispatched
+                      </span>
+                      <span style={{ fontFamily: 'Consolas, monospace', fontSize: '1.15rem', fontWeight: 800, color: '#34D399', letterSpacing: '0.15em' }}>
+                        {latestOtpPreview}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSignupCode(latestOtpPreview)}
+                    style={{
+                      background: 'rgba(16, 185, 129, 0.25)',
+                      border: '1px solid #10B981',
+                      borderRadius: 8,
+                      color: '#A7F3D0',
+                      fontWeight: 700,
+                      fontSize: '0.78rem',
+                      padding: '6px 12px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    Auto-Fill
+                  </button>
+                </div>
+              )}
 
               <form onSubmit={submitSignup2FA}>
                 <div className="field">
@@ -1347,6 +1486,9 @@ export default function AuthModal() {
                   setBusy(true);
                   try {
                     const res = await api.forgotPassword(recoveryEmail);
+                    if (res?.otp_preview) {
+                      setLatestOtpPreview(res.otp_preview);
+                    }
                     toast(res.message || 'OTP verification code dispatched to your email!');
                     setRecoveryStep(2);
                   } catch (err: any) {
@@ -1400,6 +1542,51 @@ export default function AuthModal() {
                   <p className="muted small" style={{ marginBottom: 16, lineHeight: 1.5 }}>
                     Enter the 6-digit OTP code dispatched to <strong>{recoveryEmail}</strong> and choose a new password.
                   </p>
+
+                  {/* LUXURY GLASSMORPHIC RECOVERY OTP PREVIEW WITH 1-CLICK AUTO-FILL */}
+                  {latestOtpPreview && (
+                    <div style={{
+                      margin: '0 0 14px 0',
+                      padding: '10px 14px',
+                      borderRadius: 10,
+                      background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(56, 189, 248, 0.16))',
+                      border: '1px solid rgba(16, 185, 129, 0.45)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      boxShadow: '0 4px 14px rgba(16, 185, 129, 0.2)',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <i className="fas fa-envelope-circle-check" style={{ color: '#10B981', fontSize: '1.2rem' }} />
+                        <div>
+                          <span style={{ fontSize: '0.7rem', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', fontWeight: 700 }}>
+                            Recovery OTP Dispatched
+                          </span>
+                          <span style={{ fontFamily: 'Consolas, monospace', fontSize: '1.15rem', fontWeight: 800, color: '#34D399', letterSpacing: '0.15em' }}>
+                            {latestOtpPreview}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setRecoveryCode(latestOtpPreview)}
+                        style={{
+                          background: 'rgba(16, 185, 129, 0.25)',
+                          border: '1px solid #10B981',
+                          borderRadius: 8,
+                          color: '#A7F3D0',
+                          fontWeight: 700,
+                          fontSize: '0.78rem',
+                          padding: '6px 12px',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        Auto-Fill
+                      </button>
+                    </div>
+                  )}
+
                   <div className="field">
                     <label>6-DIGIT EMAIL OTP VERIFICATION CODE</label>
                     <input
@@ -1432,6 +1619,9 @@ export default function AuthModal() {
                       onClick={async () => {
                         try {
                           const res = await api.forgotPassword(recoveryEmail);
+                          if (res?.otp_preview) {
+                            setLatestOtpPreview(res.otp_preview);
+                          }
                           toast(res.message || 'New OTP dispatched!');
                         } catch (err: any) {
                           toast(err.message, true);
@@ -1447,6 +1637,196 @@ export default function AuthModal() {
                       style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: '0.82rem', cursor: 'pointer', padding: 0 }}
                     >
                       Cancel & Return
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          )}
+
+          {/* ============================================================ */}
+          {/* MODE: GMAIL OTP DIRECT PASSWORDLESS SIGN IN                  */}
+          {/* ============================================================ */}
+          {mode === 'gmail-otp' && (
+            <div style={{ marginTop: 6 }}>
+              {gmailOtpStep === 1 ? (
+                <form onSubmit={handleSendGmailOtp}>
+                  <div style={{
+                    background: 'rgba(234, 67, 53, 0.12)',
+                    border: '1px solid rgba(234, 67, 53, 0.35)',
+                    borderRadius: 12,
+                    padding: '16px',
+                    marginBottom: 16,
+                    textAlign: 'center',
+                  }}>
+                    <i className="fas fa-envelope-open-text" style={{ fontSize: '1.6rem', display: 'block', marginBottom: 6, color: '#EA4335' }} />
+                    <h4 style={{ color: '#FFFFFF', margin: '0 0 6px', fontSize: '1.1rem' }}>Gmail OTP Fast Sign-In</h4>
+                    <p style={{ color: '#CBD5E1', fontSize: '0.82rem', margin: 0, lineHeight: 1.5 }}>
+                      Sign in instantly with a secure 6-digit one-time code delivered to your Gmail inbox via Supabase Auth & Google Mail.
+                    </p>
+                  </div>
+
+                  <div className="field">
+                    <label>GMAIL / EMAIL ADDRESS *</label>
+                    <input
+                      type="email"
+                      required
+                      autoFocus
+                      value={gmailOtpEmail}
+                      placeholder="resident@gmail.com"
+                      onChange={(e) => setGmailOtpEmail(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="field" style={{ marginTop: 10 }}>
+                    <label>RESIDENT NAME (OPTIONAL)</label>
+                    <input
+                      type="text"
+                      value={gmailOtpName}
+                      placeholder="e.g. Maria Santos"
+                      onChange={(e) => setGmailOtpName(e.target.value)}
+                    />
+                  </div>
+
+                  <button
+                    className="btn btn-sky"
+                    style={{ width: '100%', justifyContent: 'center', marginTop: 14, padding: '12px' }}
+                    disabled={busy}
+                  >
+                    {busy ? 'Dispatching OTP…' : 'Send 6-Digit OTP to Gmail ✦'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setMode('in')}
+                    style={{ width: '100%', background: 'none', border: 'none', color: 'var(--muted)', fontSize: '0.82rem', marginTop: 12, cursor: 'pointer', textAlign: 'center' }}
+                  >
+                    ← Back to Sign In
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleVerifyGmailOtp}>
+                  <div style={{
+                    background: 'rgba(14, 165, 233, 0.12)',
+                    border: '1px solid rgba(56, 189, 248, 0.35)',
+                    borderRadius: 12,
+                    padding: '16px',
+                    marginBottom: 16,
+                    textAlign: 'center',
+                  }}>
+                    <i className="fas fa-shield-halved" style={{ fontSize: '1.6rem', display: 'block', marginBottom: 6, color: '#38BDF8' }} />
+                    <h4 style={{ color: '#FFFFFF', margin: '0 0 6px', fontSize: '1.1rem' }}>Enter 6-Digit Gmail OTP</h4>
+                    <p style={{ color: '#CBD5E1', fontSize: '0.82rem', margin: 0, lineHeight: 1.5 }}>
+                      A secure one-time passcode was dispatched to <strong>{gmailOtpEmail}</strong>.
+                    </p>
+                  </div>
+
+                  {/* LUXURY GLASSMORPHIC OTP PREVIEW WITH 1-CLICK AUTO-FILL */}
+                  {latestOtpPreview && (
+                    <div style={{
+                      margin: '0 0 14px 0',
+                      padding: '10px 14px',
+                      borderRadius: 10,
+                      background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(56, 189, 248, 0.16))',
+                      border: '1px solid rgba(16, 185, 129, 0.45)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      boxShadow: '0 4px 14px rgba(16, 185, 129, 0.2)',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <i className="fas fa-envelope-circle-check" style={{ color: '#10B981', fontSize: '1.2rem' }} />
+                        <div>
+                          <span style={{ fontSize: '0.7rem', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', fontWeight: 700 }}>
+                            Gmail OTP Code Dispatched
+                          </span>
+                          <span style={{ fontFamily: 'Consolas, monospace', fontSize: '1.15rem', fontWeight: 800, color: '#34D399', letterSpacing: '0.15em' }}>
+                            {latestOtpPreview}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setGmailOtpCode(latestOtpPreview)}
+                        style={{
+                          background: 'rgba(16, 185, 129, 0.25)',
+                          border: '1px solid #10B981',
+                          borderRadius: 8,
+                          color: '#A7F3D0',
+                          fontWeight: 700,
+                          fontSize: '0.78rem',
+                          padding: '6px 12px',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        Auto-Fill
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="field">
+                    <label style={{ textAlign: 'center', display: 'block', letterSpacing: '0.08em' }}>
+                      ENTER 6-DIGIT VERIFICATION CODE
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={6}
+                      required
+                      autoFocus
+                      value={gmailOtpCode}
+                      placeholder="••••••"
+                      style={{
+                        letterSpacing: '0.38em',
+                        fontSize: '1.5rem',
+                        textAlign: 'center',
+                        fontWeight: 800,
+                        background: 'rgba(15, 23, 42, 0.8)',
+                        borderColor: '#0284C7',
+                        color: '#38BDF8',
+                      }}
+                      onChange={(e) => setGmailOtpCode(e.target.value.trim())}
+                    />
+                  </div>
+
+                  <button
+                    className="btn btn-sky"
+                    style={{ width: '100%', justifyContent: 'center', marginTop: 14, padding: '12px', fontSize: '0.96rem' }}
+                    disabled={busy}
+                  >
+                    {busy ? 'Verifying OTP & Signing In…' : 'Verify OTP & Sign In ✦'}
+                  </button>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 }}>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={handleSendGmailOtp}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#38BDF8',
+                        fontSize: '0.82rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        padding: 0,
+                      }}
+                    >
+                      Resend OTP Code
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setGmailOtpStep(1); setGmailOtpCode(''); }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--muted)',
+                        fontSize: '0.82rem',
+                        cursor: 'pointer',
+                        padding: 0,
+                      }}
+                    >
+                      ← Change Email
                     </button>
                   </div>
                 </form>
