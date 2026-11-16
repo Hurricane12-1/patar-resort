@@ -1533,24 +1533,21 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
             <p className="mt-5 max-w-md text-[15px] md:text-base font-light leading-relaxed text-white/80">
               Barefoot luxury on Patar's quietest sand. Ten minutes from the Cape Bolinao lighthouse.
             </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <button
-                type="button"
-                onClick={() => document.getElementById('booking-workspace')?.scrollIntoView({ behavior: 'smooth' })}
-                className="inline-flex items-center justify-center rounded-full bg-cyan px-6 py-3.5 text-[#060B18] text-xs font-semibold uppercase tracking-[0.18em] shadow-[0_10px_30px_-8px_rgba(34,195,238,.7)] hover:brightness-110 active:scale-[.98] transition w-full py-4 sm:w-auto sm:px-10 cursor-pointer"
-              >
-                Begin your journey
-              </button>
+            <div className="mt-5">
               <Link
-                to="/client/login"
-                className="py-2 text-xs tracking-wide text-white/70 hover:text-white transition sm:px-4 cursor-pointer text-center sm:text-left"
+                to={signedInGuest ? '/client' : '/client/login'}
+                className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-white/75 hover:text-white transition-colors duration-200 cursor-pointer group"
               >
-                Already have an account? <span className="font-medium text-cyan underline underline-offset-4">Sign in to account</span>
+                <span>Already have an account?</span>
+                <span className="font-medium text-cyan underline underline-offset-4 decoration-cyan/60 group-hover:text-cyan-300 group-hover:decoration-cyan transition-colors">
+                  {signedInGuest ? 'Go to your account' : 'Sign in'}
+                </span>
+                <span className="text-cyan text-xs transition-transform duration-200 group-hover:translate-x-0.5">→</span>
               </Link>
             </div>
           </div>
 
-          <div className="mt-10 flex flex-col items-center text-[11px] uppercase tracking-[0.25em] text-white/50 lg:items-start">
+          <div className="mt-8 flex flex-col items-center text-[11px] uppercase tracking-[0.25em] text-white/50 lg:items-start">
             <span className="text-base text-cyan animate-bounce">↓</span>
             <span className="mt-1">Scroll to explore</span>
           </div>
