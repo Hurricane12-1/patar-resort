@@ -883,10 +883,12 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     }
 
     const synced = Boolean(savedRow?.id);
+    // The database issues a different code when this one was already taken.
+    const confirmedRef = String(savedRow?.booking_code || reference);
     const record: GuestBooking = {
       id: synced ? String(savedRow.id) : `local-${Date.now().toString(36)}`,
       dbId: synced ? String(savedRow.id) : undefined,
-      reference,
+      reference: confirmedRef,
       source: 'device',
       roomId: String(room.id),
       roomName: room.name,
@@ -918,7 +920,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     addDeviceBooking(record);
     if (!signedInGuest) rememberBookingGuest({ name, email, phone });
 
-    setBookingRef(reference);
+    setBookingRef(confirmedRef);
     setSmartPin(pin);
     setSavedBooking(record);
     await fetchLiveReservations();

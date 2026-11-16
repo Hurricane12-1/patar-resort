@@ -301,7 +301,10 @@ export function mapReservationRow(row: any, rooms: Room[]): GuestBooking {
   const price = rate ? computeStayPrice(rate, checkIn, checkOut) : null;
   // Only show an itemised breakdown when it adds up to what the resort recorded.
   const itemised = price && price.grandTotal === total ? price : null;
-  const reference = notes.match(/\bRef\s+(RV-[A-Z0-9-]+)/i)?.[1] || `RV-${String(row.id).replace(/-/g, '').slice(0, 8).toUpperCase()}`;
+  const reference =
+    String(row.booking_code || '').trim() ||
+    notes.match(/\bRef\s+(RV-[A-Z0-9-]+)/i)?.[1] ||
+    `RV-${String(row.id).replace(/-/g, '').slice(0, 8).toUpperCase()}`;
 
   return {
     id: String(row.id),

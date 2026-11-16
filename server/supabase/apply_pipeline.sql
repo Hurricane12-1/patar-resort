@@ -10,6 +10,9 @@
 --      moderation queue errors with "column moderation_status does not exist".
 --   B. security_hardening.sql  — blocks self-service role escalation and stops
 --      profiles being world-readable.
+--   C. reservations_rls.sql    — lets a guest insert/read their own booking.
+--   D. room_availability view  — PII-free source for the booking calendar.
+--   E. booking_code.sql        — fills the NOT NULL booking_code on every insert.
 --
 -- Idempotent: safe to run more than once. Run as the project owner (the SQL
 -- editor runs with full rights). After running, restart / redeploy the API so
@@ -124,6 +127,71 @@ drop policy if exists "Staff manage reservations" on public.reservations;
 create policy "Staff manage reservations" on public.reservations for update
   using (public.get_auth_role() = any (array['staff','receptionist','accounting','administrator']))
   with check (public.get_auth_role() = any (array['staff','receptionist','accounting','administrator']));
+
+
+-- ============================================================================
+-- D. ROOM AVAILABILITY VIEW  — fixes the booking calendar's 404
+-- ----------------------------------------------------------------------------
+-- The client greys out taken dates by reading public.room_availability, but the
+-- view was never created in the live DB, so the request 404s. This PII-free view
+-- exposes only room_id + dates + status (never guest identity) and runs as its
+-- owner, so anon/guest can read availability without opening up reservations.
+-- ============================================================================
+
+create or replace view public.room_availability
+  with (security_invoker = false) as
+  select room_id, check_in, check_out, status
+  from public.reservations
+  where status in ('pending', 'confirmed', 'checked_in');
+grant select on public.room_availability to anon, authenticated;
+
+
+-- ============================================================================
+-- E. BOOKING CODE  — fixes "null value in column booking_code"
+-- ----------------------------------------------------------------------------
+-- booking_code is NOT NULL with no default, and no insert path sets it. This
+-- trigger reuses the voucher reference from notes ("Ref RV-BOL-2026-6276"), or
+-- mints a fresh code when there is none or it is taken. Same as booking_code.sql.
+-- ============================================================================
+
+create or replace function public.set_booking_code()
+  returns trigger
+  language plpgsql
+  security definer
+  set search_path = public
+as $$
+declare
+  noted_ref text;
+  candidate text;
+begin
+  if NEW.booking_code is not null and btrim(NEW.booking_code) <> '' then
+    return NEW;
+  end if;
+
+  noted_ref := substring(coalesce(NEW.notes, '') from 'Ref\s+(RV-[A-Z0-9-]+)');
+  candidate := noted_ref;
+
+  while candidate is null
+     or exists (select 1 from public.reservations r where r.booking_code = candidate) loop
+    candidate := 'RV-BOL-'
+      || to_char(coalesce(NEW.check_in, (now() at time zone 'Asia/Manila')::date), 'YYYY')
+      || '-'
+      || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 6));
+  end loop;
+
+  if noted_ref is not null and noted_ref <> candidate then
+    NEW.notes := regexp_replace(NEW.notes, 'Ref\s+RV-[A-Z0-9-]+', 'Ref ' || candidate);
+  end if;
+
+  NEW.booking_code := candidate;
+  return NEW;
+end;
+$$;
+
+drop trigger if exists trg_set_booking_code on public.reservations;
+create trigger trg_set_booking_code
+  before insert on public.reservations
+  for each row execute function public.set_booking_code();
 
 
 -- ============================================================================
