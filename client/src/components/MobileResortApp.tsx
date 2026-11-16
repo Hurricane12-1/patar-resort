@@ -56,25 +56,25 @@ const SHORT_MONTH_NAMES = [
 
 const HERO_SLIDES = [
   {
-    image: '/images/cliffside_hero_generated.jpg',
-    kicker: 'Patar Coastal Road · Bolinao, Pangasinan, Philippines',
-    headline: 'Where Limestone Cliffs Meet the West Philippine Sea',
-    subcopy: 'Private oceanfront villas perched above Bolinao’s sculpted coral coves—combining coastal sanctuary serenity with instant, conflict-free direct booking.',
+    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&q=80',
+    kicker: 'ROCK VIEW · BEACH RESORT',
+    headline: 'Where days slow to the tide.',
+    subcopy: "Barefoot luxury on Patar's quietest sand. Ten minutes from the Cape Bolinao lighthouse.",
     badge: 'Cape Bolinao Lighthouse Vista'
   },
   {
-    image: '/images/rockview/04_swimming_pool_deck_loungers.jpg',
-    kicker: '4 Minutes to Patar White Beach · Private Coral Steps',
-    headline: 'Sun-Drenched Pools Above Golden Coral Reefs',
-    subcopy: 'Dip into crystal waters overlooking Patar’s iconic tides. Unhurried afternoons, salted sea breezes, and direct stairway access to Bolinao’s private cove.',
-    badge: 'Patar Natural Tidal Pools'
+    image: '/images/rockview/20_resort_coastal_viewpoint.jpg',
+    kicker: 'Patar Coastal Road · Bolinao, Pangasinan',
+    headline: 'Where Limestone Cliffs Meet the Sea',
+    subcopy: 'Private oceanfront villas perched above Bolinao’s sculpted coral coves—combining coastal sanctuary serenity with instant direct booking.',
+    badge: 'Limestone Oceanfront'
   },
   {
-    image: '/images/rockview/08_sunset_seashore_horizon.jpg',
-    kicker: 'Punta Piedra Ridge · Pristine Oceanfront Living',
-    headline: 'Front-Row Sunsets Across the Open Ocean',
-    subcopy: 'Every twilight paints the sky in shades of amber and rose. Watch the day fade from your private balcony or beachfront dining deck.',
-    badge: 'Sunset Villa Deck'
+    image: '/images/rockview/19_beachfront_sunbed_view.jpg',
+    kicker: 'Patar Tidal Shore · Private Coral Steps',
+    headline: 'Turquoise Coves Above Golden Reefs',
+    subcopy: 'Dip into crystal waters overlooking Patar’s iconic tides. Unhurried afternoons, salted sea breezes, and direct stairway access to the cove.',
+    badge: 'Patar Natural Tidal Pools'
   },
   {
     image: '/images/rockview/02_ocean_rock_formation_cliff.jpg',
@@ -84,7 +84,7 @@ const HERO_SLIDES = [
     badge: 'Patar Rock Formations'
   },
   {
-    image: '/images/rockview/13_rockview_landscape_panoramic.jpg',
+    image: '/images/rockview/01_aerial_resort_pool_building.jpg',
     kicker: 'Historic Cape Bolinao · Emerald Bluffs',
     headline: 'A Restorative Haven Built for Stillness',
     subcopy: 'Breathe in the freshest sea breeze and unwind in unhurried silence, 50 steps from the sand and under a canopy of starlight.',
@@ -255,6 +255,17 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
       setHeroSlide((prev) => (prev + 1) % HERO_SLIDES.length);
     }, 5000);
     return () => clearInterval(timer);
+  }, []);
+
+  // Scroll listener for seamless transparent-to-sticky navbar transition
+  const [isScrolled, setIsScrolled] = useState<boolean>(false);
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 40);
+    };
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   // Auto-rotate primary room bento photo
@@ -1442,11 +1453,11 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     <div className="bg-[#060B18] text-[#E8EEF7] min-h-screen selection:bg-cyan selection:text-[#060B18]">
 
       {/* =====================================================================
-           HEADER: CLEAN SINGLE STICKY DARK LUXURY HEADER (76px Height)
+           HEADER: CLEAN SINGLE FIXED/STICKY DARK LUXURY HEADER (76px Height)
            ===================================================================== */}
       {!embedded && (
-      <header className="sticky top-0 z-40 h-[76px] bg-[#060B18]/90 backdrop-blur-md border-b border-white/10">
-        <div className="max-w-[1160px] mx-auto px-4 sm:px-6 h-full flex items-center justify-between gap-4">
+      <header className={`fixed top-0 inset-x-0 z-40 h-[76px] transition-all duration-300 ${isScrolled ? 'bg-[#060B18]/90 backdrop-blur-md border-b border-white/10 shadow-lg' : 'bg-transparent border-b border-transparent'}`}>
+        <div className="max-w-6xl mx-auto px-5 sm:px-8 lg:px-10 h-full flex items-center justify-between gap-4">
           
           {/* Left: Custom ROCK VIEW Emblem + Title (matching https://34ed5487.patar-resort.pages.dev/) */}
           <Link to="/" className="flex items-center gap-3 group" aria-label="Rock View Beach Resort">
@@ -1481,51 +1492,16 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
       )}
 
       {/* =====================================================================
-           HERO SECTION: 3 ATMOSPHERIC SLIDES & OVERLAID QUICK SEARCH BAR
+           HERO SECTION: EXACT ORIGINAL DESIGN (https://34ed5487.patar-resort.pages.dev/)
            ===================================================================== */}
       {!embedded && (
-      <section className="relative overflow-hidden bg-[#18222B] text-white">
-        {/* Animated Background Vector Art */}
+      <section className="relative flex min-h-[100dvh] flex-col justify-end overflow-hidden bg-[#060B18] text-white">
+        {/* Auto-scrolling Hero Background Slides */}
         <div className="absolute inset-0 pointer-events-none">
-          <svg viewBox="0 0 1440 620" preserveAspectRatio="xMidYMid slice" className="w-full h-full" fill="none">
-            <defs>
-              <linearGradient id="heroSkyGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#131E29"/>
-                <stop offset="38%" stopColor="#254259"/>
-                <stop offset="72%" stopColor="#9E6A4B"/>
-                <stop offset="100%" stopColor="#D99B66"/>
-              </linearGradient>
-              <radialGradient id="heroSunGlow" cx="50%" cy="52%" r="36%">
-                <stop offset="0%" stopColor="#FFF2CC" stopOpacity="0.88"/>
-                <stop offset="45%" stopColor="#F4B860" stopOpacity="0.38"/>
-                <stop offset="100%" stopColor="#F4B860" stopOpacity="0"/>
-              </radialGradient>
-              <linearGradient id="heroSeaGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#1A3B4C"/>
-                <stop offset="50%" stopColor="#132B38"/>
-                <stop offset="100%" stopColor="#0D1D26"/>
-              </linearGradient>
-            </defs>
-            <rect width="1440" height="620" fill="url(#heroSkyGrad)"/>
-            <circle cx="720" cy="315" r="240" fill="url(#heroSunGlow)" className="animate-sun-glow"/>
-            <circle cx="720" cy="315" r="56" fill="#FFF7DF" fillOpacity="0.85"/>
-            <rect x="0" y="325" width="1440" height="295" fill="url(#heroSeaGrad)"/>
-            <g className="animate-wave-slow">
-              <path d="M560 350 Q 720 342, 880 350" stroke="#FFE3A3" strokeWidth="2.5" strokeOpacity="0.55" strokeLinecap="round"/>
-              <path d="M610 378 Q 720 370, 830 378" stroke="#FFD07B" strokeWidth="2" strokeOpacity="0.42" strokeLinecap="round"/>
-              <path d="M0 405 Q 240 390, 480 405 T 960 405 T 1440 405" stroke="#64A6BD" strokeWidth="1.5" strokeOpacity="0.3"/>
-            </g>
-            {/* Cape Bolinao Silhouette */}
-            <path d="M1140 326 L1240 315 L1440 318 L1440 342 L1140 342 Z" fill="#131D24"/>
-            <rect x="1212" y="274" width="8" height="42" fill="#1C2933"/>
-            <polygon points="1210,274 1222,274 1216,265" fill="#FFE8A3"/>
-            <circle cx="1216" cy="270" r="14" fill="#FFF3C4" fillOpacity="0.35"/>
-          </svg>
-          {/* Auto-scrolling Hero Background Slides */}
           {HERO_SLIDES.map((slide, idx) => (
             <img
               key={idx}
-              src={idx === 0 && pageMedia.heroImageUrl ? pageMedia.heroImageUrl : slide.image}
+              src={slide.image}
               alt={slide.headline}
               aria-hidden="true"
               className={`absolute inset-0 w-full h-full object-cover transition-all duration-1000 ease-in-out ${
@@ -1539,59 +1515,42 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
               }}
             />
           ))}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/25 to-[#060B18]/90 z-10 pointer-events-none"></div>
+          {/* Authentic Gradient Overlays matching https://34ed5487.patar-resort.pages.dev/ */}
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#060B18]/30 via-[#060B18]/10 to-[#060B18] z-10" />
+          <div className="pointer-events-none absolute inset-0 hidden bg-gradient-to-r from-[#060B18]/70 via-[#060B18]/20 to-transparent lg:block z-10" />
         </div>
 
-        {/* Hero Slide Controls */}
-        <button
-          onClick={() => setHeroSlide((prev) => (prev === 0 ? HERO_SLIDES.length - 1 : prev - 1))}
-          type="button"
-          aria-label="Previous slide"
-          className="hidden sm:flex absolute left-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/35 hover:bg-black/55 border border-white/25 text-white items-center justify-center backdrop-blur-xs transition cursor-pointer"
-        >
-          ‹
-        </button>
-        <button
-          onClick={() => setHeroSlide((prev) => (prev === HERO_SLIDES.length - 1 ? 0 : prev + 1))}
-          type="button"
-          aria-label="Next slide"
-          className="hidden sm:flex absolute right-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/35 hover:bg-black/55 border border-white/25 text-white items-center justify-center backdrop-blur-xs transition cursor-pointer"
-        >
-          ›
-        </button>
-
-        {/* Content Container */}
-        <div className="relative z-10 max-w-[1120px] mx-auto px-4 sm:px-6 pt-14 pb-16 sm:pt-20 sm:pb-20 text-center">
-          <div className="flex flex-wrap items-center justify-center gap-2.5 mb-5">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/10 backdrop-blur-xs border border-white/20 text-[11px] font-semibold tracking-[0.22em] uppercase text-[#F3D9A4]">
-              <span>{heroSlide === 0 && pageMedia.heroKicker ? pageMedia.heroKicker : HERO_SLIDES[heroSlide].kicker}</span>
+        {/* Content Container - Matching exact original design from media_1794804629184_35433499.jpg */}
+        <div className="mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-10 relative z-10 mt-auto pb-10 md:pb-16 pt-32">
+          <div className="max-w-xl text-left">
+            <span className="block text-[11px] font-medium uppercase tracking-[0.28em] text-cyan">
+              Rock View · Beach Resort
+            </span>
+            <h1 className="mt-3 font-serif text-6xl md:text-7xl lg:text-8xl font-medium leading-[0.95] text-white">
+              Where days slow<br />
+              <em className="font-serif italic text-cyan">to the tide.</em>
+            </h1>
+            <p className="mt-5 max-w-md text-[15px] md:text-base font-light leading-relaxed text-white/80">
+              Barefoot luxury on Patar's quietest sand. Ten minutes from the Cape Bolinao lighthouse.
+            </p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <button
+                type="button"
+                onClick={() => document.getElementById('booking-workspace')?.scrollIntoView({ behavior: 'smooth' })}
+                className="inline-flex items-center justify-center rounded-full bg-cyan px-6 py-3.5 text-[#060B18] text-xs font-semibold uppercase tracking-[0.18em] shadow-[0_10px_30px_-8px_rgba(34,195,238,.7)] hover:brightness-110 active:scale-[.98] transition w-full py-4 sm:w-auto sm:px-10 cursor-pointer"
+              >
+                Begin your journey
+              </button>
+              <Link
+                to="/client/login"
+                className="py-2 text-xs tracking-wide text-white/70 hover:text-white transition sm:px-4 cursor-pointer text-center sm:text-left"
+              >
+                Already have an account? <span className="font-medium text-cyan underline underline-offset-4">Sign in to account</span>
+              </Link>
             </div>
           </div>
 
-          <h1 className="font-serif-luxury text-3xl sm:text-5xl lg:text-[54px] font-semibold tracking-tight text-white leading-[1.14] max-w-3xl mx-auto drop-shadow-sm">
-            {heroSlide === 0 && pageMedia.heroHeadline ? pageMedia.heroHeadline : HERO_SLIDES[heroSlide].headline}
-          </h1>
-
-          <p className="mt-4 text-sm sm:text-base text-white/85 max-w-2xl mx-auto leading-relaxed">
-            {heroSlide === 0 && pageMedia.heroSubtitle ? pageMedia.heroSubtitle : HERO_SLIDES[heroSlide].subcopy}
-          </p>
-
-          {/* Dots */}
-          <div className="mt-5 flex items-center justify-center gap-2">
-            {HERO_SLIDES.map((_, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => setHeroSlide(idx)}
-                className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                  heroSlide === idx ? 'w-6 bg-[#D4B475]' : 'w-2 bg-white/40 hover:bg-white/75'
-                }`}
-              />
-            ))}
-          </div>
-
-          {/* Scroll to Explore Indicator */}
-          <div className="mt-12 flex flex-col items-center text-[11px] uppercase tracking-[0.25em] text-white/50">
+          <div className="mt-10 flex flex-col items-center text-[11px] uppercase tracking-[0.25em] text-white/50 lg:items-start">
             <span className="text-base text-cyan animate-bounce">↓</span>
             <span className="mt-1">Scroll to explore</span>
           </div>
@@ -1616,7 +1575,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
             <article className="rounded-3xl border border-white/10 bg-[#0B1426] overflow-hidden group transition duration-300 hover:border-cyan/40">
               <div className="h-48 md:h-56 overflow-hidden">
                 <img
-                  src="/images/rockview/16_coastal_cove_clear_water.jpg"
+                  src="https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=800&q=80"
                   alt="Quiet Sands of Patar"
                   loading="lazy"
                   className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
@@ -1636,7 +1595,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
             <article className="rounded-3xl border border-white/10 bg-[#0B1426] overflow-hidden group transition duration-300 hover:border-cyan/40">
               <div className="h-48 md:h-56 overflow-hidden">
                 <img
-                  src="/images/rockview/12_resort_patio_dining_area.jpg"
+                  src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&q=80"
                   alt="Lanterns at Dusk"
                   loading="lazy"
                   className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
@@ -1656,7 +1615,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
             <article className="rounded-3xl border border-white/10 bg-[#0B1426] overflow-hidden group transition duration-300 hover:border-cyan/40">
               <div className="h-48 md:h-56 overflow-hidden">
                 <img
-                  src="/images/rockview/02_ocean_rock_formation_cliff.jpg"
+                  src="https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=800&q=80"
                   alt="The Historic Cape"
                   loading="lazy"
                   className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
