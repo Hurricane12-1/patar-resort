@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { asyncH, ApiError } from '../middleware/errors.js';
 import { validate } from '../middleware/validate.js';
 import { admin, getSystemAdminClient } from '../lib/supabase.js';
-import { authenticate, requireAdmin } from '../middleware/auth.js';
+import { authenticate, optionalAuth, requireAdmin } from '../middleware/auth.js';
 import {
   parseOfferingTags,
   packOfferingAmenities,
@@ -320,14 +320,18 @@ r.get('/availability', validate(rangeSchema, 'query'), asyncH(async (req, res) =
   return res.json(list);
 }));
 
-r.get('/availability/calendar', asyncH(async (req, res) => {
+r.get('/availability/calendar', optionalAuth, asyncH(async (req, res) => {
   const { room_id, from, to } = req.query;
   const today = new Date().toISOString().slice(0, 10);
   const startDate = (from && /^\d{4}-\d{2}-\d{2}$/.test(from)) ? from : today;
   const defaultEnd = new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10);
   const endDate = (to && /^\d{4}-\d{2}-\d{2}$/.test(to) && to > startDate) ? to : defaultEnd;
 
-  const cacheKey = `calendar:${room_id || 'all'}:${startDate}:${endDate}`;
+  const viewerId = req.user?.id ? String(req.user.id) : '';
+  const viewerEmail = req.user?.email ? String(req.user.email).trim().toLowerCase() : '';
+  const viewerScope = viewerId || viewerEmail || 'anon';
+
+  const cacheKey = `calendar:${room_id || 'all'}:${startDate}:${endDate}:${viewerScope}`;
   const cached = await redis.get(cacheKey);
   if (cached) {
     res.setHeader('X-Cache', 'HIT');
@@ -361,7 +365,7 @@ r.get('/availability/calendar', asyncH(async (req, res) => {
   if (activeCalRoomIds.length > 0) {
     try {
       let q = sysClient.from('reservations')
-        .select('id, room_id, check_in, check_out, status, guests, notes, rooms(id, name, units)')
+        .select('id, room_id, guest_id, email, check_in, check_out, status, notes, rooms(id, name, units)')
         .in('room_id', room_id ? [room_id] : activeCalRoomIds)
         .in('status', ['pending', 'confirmed', 'checked_in'])
         .lt('check_in', endDate)
@@ -370,19 +374,6 @@ r.get('/availability/calendar', asyncH(async (req, res) => {
       if (data) reservations = [...data];
     } catch (err) {
       console.warn('[Calendar API] Reservations notice:', err.message);
-    }
-  }
-
-  // Resilient local store calendar reservations merge
-  const localCalRes = getLocalReservations().filter((b) =>
-    (!room_id || b.room_id === room_id) &&
-    ['pending', 'confirmed', 'checked_in'].includes(b.status) &&
-    b.check_in < endDate &&
-    b.check_out > startDate
-  );
-  for (const lb of localCalRes) {
-    if (!reservations.some((r) => r.id === lb.id)) {
-      reservations.push(lb);
     }
   }
 
@@ -434,12 +425,19 @@ r.get('/availability/calendar', asyncH(async (req, res) => {
     };
   }
 
+  // Strip all PII (guest_id, email, notes) before returning booked_ranges;
+  // only expose `is_own` boolean so the booking owner sees their own stay highlighted in white
+  // while other users see it as red Booked.
   const payload = {
     start_date: startDate,
     end_date: endDate,
     rooms: rooms.map(normalizeRoom),
     booked_ranges: reservations.map((b) => {
       const times = extractBookingTimes(b);
+      const isOwn = Boolean(
+        (viewerId && b.guest_id && String(b.guest_id) === viewerId) ||
+        (viewerEmail && b.email && String(b.email).trim().toLowerCase() === viewerEmail)
+      );
       return {
         id: b.id,
         room_id: b.room_id,
@@ -449,7 +447,7 @@ r.get('/availability/calendar', asyncH(async (req, res) => {
         check_in_time: times.check_in_time,
         check_out_time: times.check_out_time,
         status: b.status,
-        notes: b.notes || '',
+        is_own: isOwn,
       };
     }),
     daily_status: dailyStatus,

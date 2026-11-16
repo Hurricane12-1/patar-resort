@@ -494,24 +494,89 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   // 1. SUPABASE DATA FETCH & REALTIME SUBSCRIPTIONS
   // ---------------------------------------------------------------------------
   const fetchLiveReservations = useCallback(async () => {
-    // Availability must reflect EVERY guest's bookings, not just the signed-in
-    // user's. Row-level security keeps `reservations` owner-only, so read the
-    // PII-free `room_availability` view (room_id + dates only) which exposes all
-    // active stays. Fall back to the table where the view isn't present.
+    // Availability reflects every guest's bookings without leaking PII.
+    // Simultaneously check the signed-in user's own reservations so their own
+    // booked dates render as a normal white-highlighted "BOOKED" cell, while
+    // other users see those dates as red "BOOKED".
+    const ownIds = new Set<string>();
+    const ownKeys = new Set<string>();
+    const ownWindows: ReservationWindow[] = [];
+
+    if (signedInGuest) {
+      try {
+        const mine = await api.myReservations();
+        if (Array.isArray(mine)) {
+          for (const m of mine) {
+            if (!m || m.status === 'cancelled') continue;
+            const idStr = String(m.id || '');
+            const rId = String(m.room_id || '');
+            const cIn = String(m.check_in || '').slice(0, 10);
+            const cOut = String(m.check_out || '').slice(0, 10);
+            if (idStr) ownIds.add(idStr);
+            if (rId && cIn && cOut) {
+              ownKeys.add(`${rId}:${cIn}:${cOut}`);
+              ownWindows.push({
+                id: idStr || `own-${rId}-${cIn}`,
+                room_id: rId,
+                check_in: cIn,
+                check_out: cOut,
+                status: m.status || 'confirmed',
+                is_own: true,
+              });
+            }
+          }
+        }
+      } catch {}
+    }
+
+    const mergeWithOwn = (rawList: Array<any>): ReservationWindow[] => {
+      const result: ReservationWindow[] = [];
+      const seenKeys = new Set<string>();
+      for (const r of rawList) {
+        if (!r || r.status === 'cancelled') continue;
+        const rId = String(r.room_id || '');
+        const cIn = String(r.check_in || '').slice(0, 10);
+        const cOut = String(r.check_out || '').slice(0, 10);
+        if (!rId || !cIn || !cOut) continue;
+        const key = `${rId}:${cIn}:${cOut}`;
+        const idStr = String(r.id || `avail-${rId}-${cIn}`);
+        const isOwn = Boolean(
+          signedInGuest && (r.is_own === true || (r.id && ownIds.has(String(r.id))) || ownKeys.has(key))
+        );
+        seenKeys.add(key);
+        result.push({
+          id: idStr,
+          room_id: rId,
+          check_in: cIn,
+          check_out: cOut,
+          status: r.status || 'confirmed',
+          is_own: isOwn,
+        });
+      }
+      for (const own of ownWindows) {
+        const key = `${own.room_id}:${own.check_in}:${own.check_out}`;
+        if (!seenKeys.has(key)) {
+          seenKeys.add(key);
+          result.push(own);
+        }
+      }
+      return result;
+    };
+
+    try {
+      const calRes: any = await api.availabilityCalendar();
+      if (calRes && Array.isArray(calRes.booked_ranges)) {
+        setReservations(mergeWithOwn(calRes.booked_ranges));
+        return;
+      }
+    } catch {}
+
     try {
       const { data, error } = await supabase
         .from('room_availability')
         .select('room_id, check_in, check_out, status');
       if (!error && Array.isArray(data)) {
-        setReservations(
-          data.map((r: any, i: number) => ({
-            id: `avail-${r.room_id}-${r.check_in}-${i}`,
-            room_id: String(r.room_id),
-            check_in: r.check_in,
-            check_out: r.check_out,
-            status: r.status,
-          }))
-        );
+        setReservations(mergeWithOwn(data));
         return;
       }
     } catch {
@@ -523,22 +588,14 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
         .select('id, room_id, check_in, check_out, status')
         .neq('status', 'cancelled');
       if (!error && Array.isArray(data)) {
-        setReservations(
-          data.map((r: any) => ({
-            id: String(r.id),
-            room_id: String(r.room_id),
-            check_in: r.check_in,
-            check_out: r.check_out,
-            status: r.status,
-          }))
-        );
+        setReservations(mergeWithOwn(data));
         return;
       }
     } catch (err: any) {
       console.warn('[Supabase Reservations] Fetch warning:', err?.message);
     }
-    setReservations([]);
-  }, []);
+    setReservations(mergeWithOwn([]));
+  }, [signedInGuest, customerProfile?.id, customerProfile?.email]);
 
   const fetchLiveRooms = useCallback(async () => {
     try {
@@ -629,6 +686,33 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
       return isBookedForSelected(isoStr);
     },
     [isBookedForSelected]
+  );
+
+  // True when the date is booked for the selected room(s) AND belongs to the currently signed-in user
+  const isOwnBookedForSelected = useCallback(
+    (isoStr: string) => {
+      if (!signedInGuest) return false;
+      const ids = selectedRoomIds.length ? selectedRoomIds : [selectedRoom.id];
+      const nextIso = addDaysISO(isoStr, 1);
+      let anyOwn = false;
+      for (const id of ids) {
+        if (!id) continue;
+        const roomObj = rooms.find((r) => r.id === id) || selectedRoom;
+        if (!roomObj?.id) continue;
+        const overlapping = reservations.filter(
+          (res) =>
+            String(res.room_id) === String(roomObj.id) &&
+            res.status !== 'cancelled' &&
+            rangesOverlap(isoStr, nextIso, String(res.check_in).slice(0, 10), String(res.check_out).slice(0, 10))
+        );
+        if (overlapping.length > 0) {
+          if (overlapping.some((res) => !res.is_own)) return false;
+          anyOwn = true;
+        }
+      }
+      return anyOwn;
+    },
+    [signedInGuest, reservations, selectedRoomIds, selectedRoom, rooms]
   );
 
   // Check if a date is turnaround (checkout morning of another reservation)
@@ -1043,6 +1127,12 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
         ? formatStayRangeFriendly(conflictingRes[0].check_in, conflictingRes[0].check_out)
         : formatShortDate(isoStr);
 
+      const isAllOwn = conflictingRes.length > 0 && conflictingRes.every((r) => r.is_own);
+      if (isAllOwn) {
+        setCalendarNotice(`You have already booked ${selectedRoom.name} for ${bookedRange}.`);
+        return;
+      }
+
       const noticeMsg = pickingCheckout
         ? `Selected dates overlap an existing booking for ${selectedRoom.name} (${bookedRange}).`
         : `${formatFullDate(isoStr)} is already booked for ${selectedRoom.name} (${bookedRange}).`;
@@ -1117,6 +1207,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
       const isoStr = fmtISO(ym.y, ym.m, day);
       const isPast = isoStr < todayISO;
       const isBooked = isDateBooked(isoStr);
+      const isOwnBooked = isBooked && isOwnBookedForSelected(isoStr);
       const isTurnaround = isDateTurnaround(isoStr);
       const isSelectedIn = isoStr === checkIn;
       const isSelectedOut = isoStr === checkOut;
@@ -1132,6 +1223,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
       else if (hasRangeConflict && isInRange) cellClass = 'cal-box-conflict';
       else if (isInRange) cellClass = 'cal-box-range';
       else if (isHoverRange) cellClass = 'cal-box-hover';
+      else if (isOwnBooked) cellClass = 'cal-box-own-booked';
       else if (isBooked) cellClass = 'cal-box-booked';
       else if (isTurnaround) cellClass = 'cal-box-turnaround';
 
@@ -1157,7 +1249,13 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
               </span>
             )}
             {isBooked && !isSelectedIn && !isSelectedOut && (
-              <span className="text-[9px] font-bold text-rose-700 uppercase">Booked</span>
+              isOwnBooked ? (
+                <span className="text-[9px] font-extrabold text-white bg-white/20 border border-white/50 px-1.5 py-0.5 rounded-[4px] uppercase tracking-wider">
+                  Booked
+                </span>
+              ) : (
+                <span className="text-[9px] font-bold text-rose-400 uppercase">Booked</span>
+              )
             )}
           </div>
           <span className="text-[11px] sm:text-xs font-semibold opacity-85 leading-none mt-1">
@@ -1184,6 +1282,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
       const isoStr = fmtISO(ym.y, ym.m, day);
       const isPast = isoStr < todayISO;
       const isBooked = isDateBooked(isoStr);
+      const isOwnBooked = isBooked && isOwnBookedForSelected(isoStr);
       const isSelectedIn = isoStr === checkIn;
       const isSelectedOut = isoStr === checkOut;
       const isInRange = checkIn && checkOut && isoStr > checkIn && isoStr < checkOut;
@@ -1192,6 +1291,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
       if (isPast) cellClass = 'cal-box-past';
       else if (isSelectedIn || isSelectedOut) cellClass = 'cal-box-selected';
       else if (isInRange) cellClass = 'cal-box-range';
+      else if (isOwnBooked) cellClass = 'cal-box-own-booked';
       else if (isBooked) cellClass = 'cal-box-booked';
 
       cells.push(
@@ -2598,6 +2698,9 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                       </span>
                       <span className="inline-flex items-center gap-1.5 font-medium text-white/90">
                         <span className="w-4 h-4 rounded-[4px] bg-cyan/20 border border-cyan/40 inline-block"></span> In-Stay Range
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 font-semibold text-white">
+                        <span className="w-4 h-4 rounded-[4px] cal-box-own-booked inline-block"></span> Your Booked Stay
                       </span>
                       <span className="inline-flex items-center gap-1.5 font-medium text-rose-400">
                         <span className="w-4 h-4 rounded-[4px] cal-box-booked inline-block"></span> Booked Box

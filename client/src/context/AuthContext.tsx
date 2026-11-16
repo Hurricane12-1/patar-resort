@@ -540,7 +540,24 @@ export function AuthProvider({ children }) {
         sessionStorage.removeItem('jd_customer_session');
         sessionStorage.removeItem('jd_customer_profile');
         sessionStorage.removeItem('jd_customer_jwt');
+        for (let i = sessionStorage.length - 1; i >= 0; i--) {
+          const k = sessionStorage.key(i);
+          if (k && (k.startsWith('rv_guest_') || k.startsWith('jd_customer_') || k.startsWith('sb-'))) {
+            sessionStorage.removeItem(k);
+          }
+        }
       }
+      if (typeof localStorage !== 'undefined') {
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const k = localStorage.key(i);
+          if (k && (k.startsWith('rv_guest_') || k.startsWith('jd_customer_') || k.startsWith('sb-'))) {
+            localStorage.removeItem(k);
+          }
+        }
+      }
+      try { await api.logout(); } catch {}
+      try { await supabase.auth.signOut({ scope: 'global' }); } catch {}
+      resetApiSecurityTokens();
       toast('✦ Customer session terminated.');
     } else if (scope === 'admin') {
       setAdminSession(null);
@@ -551,6 +568,8 @@ export function AuthProvider({ children }) {
         sessionStorage.removeItem('jd_admin_jwt');
         sessionStorage.removeItem('jd_admin_token_key');
       }
+      try { await api.logout(); } catch {}
+      resetApiSecurityTokens();
       toast('✦ Administrator session terminated.');
     } else if (scope === 'staff') {
       signOutStaff();

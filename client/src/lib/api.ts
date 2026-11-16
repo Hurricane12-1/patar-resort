@@ -114,13 +114,11 @@ async function req<T = any>(path: string, { method = 'GET', body }: { method?: s
       if (adminTokenKey) headers['x-admin-token-key'] = adminTokenKey;
     }
   } else {
-    // 3. Client / Guest Scope
+    // 3. Client / Guest Scope — strictly isolated to customer credentials (never escalate to adminJwt)
     if (customerJwt) {
       headers['Authorization'] = `Bearer ${customerJwt}`;
     } else if (session?.access_token) {
       headers['Authorization'] = `Bearer ${session.access_token}`;
-    } else if (adminJwt && !customerJwt && !staffJwt) {
-      headers['Authorization'] = `Bearer ${adminJwt}`;
     }
   }
 
@@ -227,8 +225,8 @@ async function ensureSupabaseSession() {
       const savedRaw = onAdmin
         ? sessionStorage.getItem('jd_admin_session')
         : onStaff
-        ? (sessionStorage.getItem('jd_staff_session') || sessionStorage.getItem('jd_admin_session'))
-        : (sessionStorage.getItem('jd_customer_session') || sessionStorage.getItem('jd_admin_session'));
+        ? sessionStorage.getItem('jd_staff_session')
+        : sessionStorage.getItem('jd_customer_session');
       if (savedRaw) {
         const parsed = JSON.parse(savedRaw);
         if (parsed?.access_token && parsed?.refresh_token) {
@@ -420,8 +418,8 @@ export const api = {
         const savedProfile = onAdmin
           ? sessionStorage.getItem('jd_admin_profile')
           : onStaff
-          ? (sessionStorage.getItem('jd_staff_profile') || sessionStorage.getItem('jd_admin_profile'))
-          : (sessionStorage.getItem('jd_customer_profile') || sessionStorage.getItem('jd_admin_profile'));
+          ? sessionStorage.getItem('jd_staff_profile')
+          : sessionStorage.getItem('jd_customer_profile');
         if (savedProfile) return JSON.parse(savedProfile);
       }
     } catch {}
@@ -745,7 +743,7 @@ export const api = {
     const sb = await ensureSupabaseSession();
     const [{ data: rooms }, { data: bookings }] = await Promise.all([
       sb.from('rooms').select('*').eq('is_active', true),
-      sb.from('reservations').select('*, rooms(name, slug, category, amenities, rate_php), profiles(full_name, phone, email)'),
+      sb.from('reservations').select('id, room_id, check_in, check_out, status'),
     ]);
     return {
       rooms: (rooms || []).map(normalizeRoom),
@@ -817,7 +815,7 @@ export const api = {
 
     const { data: existingBookings } = await sb
       .from('reservations')
-      .select('id, guest_name, check_in, check_out, status, notes, room_id')
+      .select('id, check_in, check_out, status, notes, room_id')
       .in('status', ['pending', 'confirmed', 'checked_in'])
       .lt('check_in', searchEnd)
       .gt('check_out', searchStart);

@@ -23,6 +23,7 @@ export interface ReservationWindow {
   check_in: string;
   check_out: string;
   status?: string;
+  is_own?: boolean;
 }
 
 export const CLEANING_FEE_PHP = 500;
