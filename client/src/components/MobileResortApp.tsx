@@ -330,6 +330,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   const [hoverDate, setHoverDate] = useState<string | null>(null);
   const [activeField, setActiveField] = useState<'checkin' | 'checkout'>('checkin');
   const [cardDrawer, setCardDrawer] = useState<'none' | 'calendar' | 'guests' | 'room'>('none');
+  const [drawerCategory, setDrawerCategory] = useState<'all' | 'room' | 'cottage'>('all');
   const [guests, setGuests] = useState({ adults: 2, children: 0, infants: 0 });
   // Auto-match assigns the best-fitting free room; picking a room yourself switches to manual.
   const [roomMode, setRoomMode] = useState<'auto' | 'manual'>('auto');
@@ -576,6 +577,19 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   );
   const maxCapacity = Math.max(1, roomRanking.maxCapacity);
   const bestFreeRoom = roomRanking.options.find((o) => o.fit === 'best')?.room ?? null;
+
+  const drawerRoomCount = useMemo(
+    () => roomRanking.options.filter((o) => inferOfferingType(o.room) === 'room').length,
+    [roomRanking.options]
+  );
+  const drawerCottageCount = useMemo(
+    () => roomRanking.options.filter((o) => inferOfferingType(o.room) === 'cottage').length,
+    [roomRanking.options]
+  );
+  const filteredDrawerOptions = useMemo(() => {
+    if (drawerCategory === 'all') return roomRanking.options;
+    return roomRanking.options.filter((o) => inferOfferingType(o.room) === drawerCategory);
+  }, [roomRanking.options, drawerCategory]);
 
   const formatStayRangeFriendly = useCallback((inISO: string, outISO: string) => {
     if (!inISO || !outISO) return '';
@@ -2601,82 +2615,156 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                     <span className="inline-flex items-center gap-1 whitespace-nowrap"><span className="h-2.5 w-2.5 shrink-0 rounded-[3px] border border-[#FCA5A5] bg-[#FEF2F2]" /> Already booked</span>
                     <span className="inline-flex items-center whitespace-nowrap text-[#94A3B8]">Tap to select or deselect</span>
                   </div>
-                  <div className="mt-2 space-y-2 max-h-72 overflow-y-auto no-scrollbar pr-0.5" role="group" aria-label="Rooms">
-                    {roomRanking.options.map((option) => {
-                      const isSelected = selectedRoomIds.includes(option.room.id);
-                      const isBooked = option.fit === 'booked';
-                      const isTooSmall = option.fit === 'too-small';
-                      const disabled = isTooSmall;
-                      const toneClass = isBooked
-                        ? 'border-[#FCA5A5] bg-[#FEF2F2] hover:border-rose-400 cursor-pointer'
-                        : isSelected
-                        ? 'border-[#93C5FD] bg-[#EFF6FF] shadow-[inset_0_0_0_1px_#93C5FD] cursor-pointer'
-                        : isTooSmall
-                        ? 'border-[#E2E8F0] opacity-55 cursor-not-allowed'
-                        : 'border-[#E2E8F0] hover:border-[#94A3B8] cursor-pointer';
-                      return (
-                        <button
-                          key={option.room.id}
-                          type="button"
-                          role="checkbox"
-                          aria-checked={isSelected}
-                          disabled={disabled}
-                          onClick={() => {
-                            if (isBooked) {
-                              const activeRangeEnd = checkOut ?? (checkIn ? addDaysISO(checkIn, 1) : null);
-                              const conflictingRes = (checkIn && activeRangeEnd)
-                                ? reservations.filter(
-                                    (res) =>
-                                      String(res.room_id) === String(option.room.id) &&
-                                      res.status !== 'cancelled' &&
-                                      rangesOverlap(checkIn, activeRangeEnd, res.check_in, res.check_out)
-                                  )
-                                : [];
-                              const range = conflictingRes.length > 0
-                                ? conflictingRes.map((r) => formatStayRangeFriendly(r.check_in, r.check_out)).join(', ')
-                                : (checkIn && checkOut ? formatStayRangeFriendly(checkIn, checkOut) : 'your selected dates');
-                              triggerCaution(option.room.name, range, bestFreeRoom);
-                            } else {
-                              toggleRoomSelect(option.room.id);
-                            }
-                          }}
-                          className={`w-full flex items-center gap-3 rounded-xl border p-2.5 text-left transition ${toneClass}`}
-                        >
-                          <img src={option.room.image_url || '/images/cottage.jpg'} alt="" className="h-12 w-14 shrink-0 rounded-lg object-cover bg-slate-100" />
-                          <span className="min-w-0 flex-1">
-                            <span className="flex items-center justify-between gap-2">
-                              <span className="flex items-center gap-2 min-w-0">
-                                <span className="truncate text-sm font-semibold text-[#222222]">{option.room.name}</span>
-                                <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider shrink-0 ${
-                                  inferOfferingType(option.room) === 'cottage'
-                                    ? 'bg-amber-100 text-amber-800'
-                                    : 'bg-slate-100 text-slate-700'
-                                }`}>
-                                  {inferOfferingType(option.room) === 'cottage' ? 'Cottage' : 'Room'}
-                                </span>
-                              </span>
-                              <span className="shrink-0 text-xs font-semibold text-[#222222]">
-                                {formatPHP(option.room.rate_php || 3500)}
-                                <span className="font-normal text-[#6A6A6A]">/night</span>
-                              </span>
-                            </span>
-                            <span className="mt-0.5 flex items-center justify-between gap-2 text-[11px]">
-                              <span className="text-[#6A6A6A]">
-                                {option.capacity > 0 ? `Up to ${option.capacity} ${option.capacity === 1 ? 'guest' : 'guests'}` : 'Capacity not set'}
-                              </span>
-                              <span className={`inline-flex items-center gap-1 font-semibold ${isBooked ? 'text-[#DC2626]' : FIT_TONE[option.fit]}`}>
-                                {isBooked && (
-                                  <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor" aria-hidden="true">
-                                    <path d="M12 2 1 21h22L12 2zm0 13a1 1 0 110 2 1 1 0 010-2zm-1-7h2v5h-2V8z" />
-                                  </svg>
-                                )}
-                                {fitLabel(option.fit, option.capacity, partySize)}
-                              </span>
-                            </span>
-                          </span>
-                        </button>
-                      );
-                    })}
+
+                  {/* Category Filter Tabs */}
+                  <div className="mt-2.5 mb-1.5 flex items-center gap-1.5 p-1 rounded-xl bg-[#F5F2EB] border border-[#E5E0D5]">
+                    <button
+                      type="button"
+                      onClick={() => setDrawerCategory('all')}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        drawerCategory === 'all'
+                          ? 'bg-[#18222B] text-white shadow-xs'
+                          : 'text-[#6A6A6A] hover:text-[#222222]'
+                      }`}
+                    >
+                      <span>All Units</span>
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                        drawerCategory === 'all' ? 'bg-white/20 text-white' : 'bg-[#EAE6DF] text-[#6A6A6A]'
+                      }`}>
+                        {roomRanking.options.length}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDrawerCategory('room');
+                        setActiveLodgingCategory('room');
+                      }}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        drawerCategory === 'room'
+                          ? 'bg-[#18222B] text-white shadow-xs'
+                          : 'text-[#6A6A6A] hover:text-[#222222]'
+                      }`}
+                    >
+                      <span>🛏️ Rooms</span>
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                        drawerCategory === 'room' ? 'bg-white/20 text-white' : 'bg-[#EAE6DF] text-[#6A6A6A]'
+                      }`}>
+                        {drawerRoomCount}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDrawerCategory('cottage');
+                        setActiveLodgingCategory('cottage');
+                      }}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        drawerCategory === 'cottage'
+                          ? 'bg-[#18222B] text-white shadow-xs'
+                          : 'text-[#6A6A6A] hover:text-[#222222]'
+                      }`}
+                    >
+                      <span>🏡 Cottages</span>
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                        drawerCategory === 'cottage' ? 'bg-white/20 text-white' : 'bg-[#EAE6DF] text-[#6A6A6A]'
+                      }`}>
+                        {drawerCottageCount}
+                      </span>
+                    </button>
+                  </div>
+
+                  <div className="mt-2 space-y-2 max-h-72 overflow-y-auto no-scrollbar pr-0.5" role="group" aria-label="Accommodations">
+                    {filteredDrawerOptions.length === 0 ? (
+                      <div className="py-8 text-center text-xs text-[#6A6A6A]">
+                        No {drawerCategory === 'room' ? 'rooms' : drawerCategory === 'cottage' ? 'cottages' : 'accommodations'} available.
+                      </div>
+                    ) : (
+                      filteredDrawerOptions.map((option) => {
+                        const isSelected = selectedRoomIds.includes(option.room.id);
+                        const isBooked = option.fit === 'booked';
+                        const isTooSmall = option.fit === 'too-small';
+                        const disabled = isTooSmall;
+                        const offering = inferOfferingType(option.room);
+                        const toneClass = isBooked
+                          ? 'border-[#FCA5A5] bg-[#FEF2F2] hover:border-rose-400 cursor-pointer'
+                          : isSelected
+                          ? 'border-[#93C5FD] bg-[#EFF6FF] shadow-[inset_0_0_0_1px_#93C5FD] cursor-pointer'
+                          : isTooSmall
+                          ? 'border-[#E2E8F0] opacity-55 cursor-not-allowed'
+                          : 'border-[#E2E8F0] hover:border-[#94A3B8] cursor-pointer';
+                        return (
+                          <button
+                            key={option.room.id}
+                            type="button"
+                            role="checkbox"
+                            aria-checked={isSelected}
+                            disabled={disabled}
+                            onClick={() => {
+                              if (isBooked) {
+                                const activeRangeEnd = checkOut ?? (checkIn ? addDaysISO(checkIn, 1) : null);
+                                const conflictingRes = (checkIn && activeRangeEnd)
+                                  ? reservations.filter(
+                                      (res) =>
+                                        String(res.room_id) === String(option.room.id) &&
+                                        res.status !== 'cancelled' &&
+                                        rangesOverlap(checkIn, activeRangeEnd, res.check_in, res.check_out)
+                                    )
+                                  : [];
+                                const range = conflictingRes.length > 0
+                                  ? conflictingRes.map((r) => formatStayRangeFriendly(r.check_in, r.check_out)).join(', ')
+                                  : (checkIn && checkOut ? formatStayRangeFriendly(checkIn, checkOut) : 'your selected dates');
+                                triggerCaution(option.room.name, range, bestFreeRoom);
+                              } else {
+                                toggleRoomSelect(option.room.id);
+                              }
+                            }}
+                            className={`w-full flex items-start gap-3 rounded-xl border p-2.5 text-left transition ${toneClass}`}
+                          >
+                            <img
+                              src={option.room.image_url || '/images/cottage.jpg'}
+                              alt=""
+                              className="h-12 w-14 shrink-0 rounded-lg object-cover bg-slate-100 mt-0.5"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0 flex-1 pr-1">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="text-sm font-semibold text-[#222222] leading-snug break-words">
+                                      {option.room.name}
+                                    </span>
+                                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider shrink-0 ${
+                                      offering === 'cottage'
+                                        ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                                        : 'bg-slate-100 text-slate-700 border border-slate-200'
+                                    }`}>
+                                      {offering === 'cottage' ? 'Cottage' : 'Room'}
+                                    </span>
+                                  </div>
+                                  <div className="text-[11px] text-[#6A6A6A] mt-0.5">
+                                    {option.capacity > 0 ? `Up to ${option.capacity} ${option.capacity === 1 ? 'guest' : 'guests'}` : 'Capacity not set'}
+                                  </div>
+                                </div>
+                                <div className="shrink-0 text-right">
+                                  <div className="text-xs font-semibold text-[#222222]">
+                                    {formatPHP(option.room.rate_php || 3500)}
+                                    <span className="font-normal text-[#6A6A6A]">/night</span>
+                                  </div>
+                                  <div className={`mt-0.5 inline-flex items-center gap-1 text-[11px] font-semibold ${isBooked ? 'text-[#DC2626]' : FIT_TONE[option.fit]}`}>
+                                    {isBooked && (
+                                      <svg viewBox="0 0 24 24" className="h-3 w-3" fill="currentColor" aria-hidden="true">
+                                        <path d="M12 2 1 21h22L12 2zm0 13a1 1 0 110 2 1 1 0 010-2zm-1-7h2v5h-2V8z" />
+                                      </svg>
+                                    )}
+                                    {fitLabel(option.fit, option.capacity, partySize)}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })
+                    )}
                   </div>
                   <div className="mt-3 flex items-center justify-between gap-3">
                     <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-[#64748B]">
