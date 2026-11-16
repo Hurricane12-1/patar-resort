@@ -8,5 +8,11 @@ export const supabase = createClient(url, key, {
   auth: {
     storage: typeof window !== 'undefined' ? window.sessionStorage : undefined,
     persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    // PKCE is Supabase's recommended OAuth flow for browser apps. The code verifier
+    // is kept in sessionStorage (see storage above), and AuthCallback waits for the
+    // exchange to finish before routing.
+    flowType: 'pkce',
   },
 });
