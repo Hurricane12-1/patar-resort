@@ -1483,31 +1483,38 @@ body.light-mode .hbar,
   position: fixed;
   bottom: 24px;
   right: 24px;
-  z-index: 99999;
-  width: 54px;
-  height: 54px;
+  z-index: 35;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #22c3ee, #0284c7);
+  background: linear-gradient(135deg, #0284c7, #0369a1);
   color: #FFFFFF;
   display: grid;
   place-items: center;
-  box-shadow: 0 10px 24px rgba(34, 195, 238, 0.45);
-  transition: 0.2s;
+  box-shadow: 0 8px 20px rgba(2, 132, 199, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
   cursor: pointer;
   border: none;
+  outline: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  pointer-events: auto;
+}
+
+.chat-fab:focus,
+.chat-fab:active {
+  outline: none;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.45);
 }
 
 .chat-fab:hover {
-  transform: scale(1.08) rotate(-4deg);
+  transform: scale(1.05);
+  box-shadow: 0 10px 24px rgba(2, 132, 199, 0.45);
 }
 
 .chat-fab::after {
-  content: '';
-  position: absolute;
-  inset: -5px;
-  border-radius: 50%;
-  border: 2px solid rgba(34, 195, 238, 0.4);
-  animation: ring 2.2s infinite;
+  display: none !important;
+  pointer-events: none !important;
 }
 
 @keyframes ring {

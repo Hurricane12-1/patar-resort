@@ -331,6 +331,19 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   const [activeField, setActiveField] = useState<'checkin' | 'checkout'>('checkin');
   const [cardDrawer, setCardDrawer] = useState<'none' | 'calendar' | 'guests' | 'room'>('none');
   const [drawerCategory, setDrawerCategory] = useState<'all' | 'room' | 'cottage'>('all');
+
+  // Close card drawer when clicking outside the reservation card
+  useEffect(() => {
+    if (cardDrawer === 'none') return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const card = document.getElementById('reserve-card');
+      if (card && !card.contains(e.target as Node)) {
+        setCardDrawer('none');
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [cardDrawer]);
   const [guests, setGuests] = useState({ adults: 2, children: 0, infants: 0 });
   // Auto-match assigns the best-fitting free room; picking a room yourself switches to manual.
   const [roomMode, setRoomMode] = useState<'auto' | 'manual'>('manual');
@@ -1179,14 +1192,13 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
       return;
     }
     if (!selectedRoomId || selectedRoomIds.length === 0) {
-      setCardDrawer('room');
       document.getElementById('reserve-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       toast('Please choose a room or cottage to continue.', true);
       return;
     }
     if (reserveBlock) {
-      setCardDrawer('room');
       document.getElementById('reserve-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      toast('Selected accommodation or dates have a conflict. Please choose another stay.', true);
       return;
     }
     prefillGuestDetails();
@@ -2408,7 +2420,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
           {/* RIGHT COLUMN (~35%): STICKY RESERVATION CARD */}
           <aside
             id="reserve-card"
-            className="lg:col-span-5 xl:col-span-4 self-start lg:sticky lg:top-24 scroll-mt-24"
+            className="lg:col-span-5 xl:col-span-4 self-start lg:sticky lg:top-24 scroll-mt-24 relative z-40"
             style={{ position: 'sticky', top: '96px', alignSelf: 'flex-start' }}
           >
             <div className="bg-[#FFFFFF] border border-[#DDDDDD] rounded-[12px] p-6 shadow-[0_6px_16px_rgba(0,0,0,0.12)]">
@@ -2613,26 +2625,36 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                         {checkIn && checkOut ? ` · ${formatShortDate(checkIn)} – ${formatShortDate(checkOut)}` : ' · add dates to check availability'}
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={roomMode === 'auto'}
-                      onClick={() => {
-                        if (roomMode === 'auto') {
-                          setRoomMode('manual');
-                          setSelectedRoomIds([]);
-                          setSelectedRoomId(null);
-                        } else {
-                          enableAutoMatch();
-                        }
-                      }}
-                      className="flex items-center gap-2 text-xs font-semibold text-[#222222] cursor-pointer shrink-0"
-                    >
-                      <span>Auto-match</span>
-                      <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition ${roomMode === 'auto' ? 'bg-[#18222B]' : 'bg-[#CBD5E1]'}`}>
-                        <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${roomMode === 'auto' ? 'translate-x-[18px]' : 'translate-x-[2px]'}`} />
-                      </span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={roomMode === 'auto'}
+                        onClick={() => {
+                          if (roomMode === 'auto') {
+                            setRoomMode('manual');
+                            setSelectedRoomIds([]);
+                            setSelectedRoomId(null);
+                          } else {
+                            enableAutoMatch();
+                          }
+                        }}
+                        className="flex items-center gap-2 text-xs font-semibold text-[#222222] cursor-pointer shrink-0"
+                      >
+                        <span>Auto-match</span>
+                        <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition ${roomMode === 'auto' ? 'bg-[#18222B]' : 'bg-[#CBD5E1]'}`}>
+                          <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${roomMode === 'auto' ? 'translate-x-[18px]' : 'translate-x-[2px]'}`} />
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCardDrawer('none')}
+                        aria-label="Close room drawer"
+                        className="h-6 w-6 rounded-full bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#64748B] hover:text-[#0F172A] flex items-center justify-center text-xs font-bold transition cursor-pointer shrink-0"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   </div>
                   <p className="mt-2 text-[11px] leading-relaxed text-[#6A6A6A]">
                     {roomMode === 'auto'
