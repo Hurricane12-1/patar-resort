@@ -56,22 +56,39 @@ const SHORT_MONTH_NAMES = [
 
 const HERO_SLIDES = [
   {
+    image: '/images/cliffside_hero_generated.jpg',
     kicker: 'Patar Coastal Road · Bolinao, Pangasinan, Philippines',
     headline: 'Where Limestone Cliffs Meet the West Philippine Sea',
     subcopy: 'Private oceanfront villas perched above Bolinao’s sculpted coral coves—combining coastal sanctuary serenity with instant, conflict-free direct booking.',
     badge: 'Cape Bolinao Lighthouse Vista'
   },
   {
+    image: '/images/rockview/04_swimming_pool_deck_loungers.jpg',
     kicker: '4 Minutes to Patar White Beach · Private Coral Steps',
-    headline: 'Sculpted Coral Coves & Golden-Hour Verandas',
-    subcopy: 'Step directly from your cantilevered limestone terrace into crystal snorkeling lagoons, followed by sunset dining curated by our coastal hospitality staff.',
+    headline: 'Sun-Drenched Pools Above Golden Coral Reefs',
+    subcopy: 'Dip into crystal waters overlooking Patar’s iconic tides. Unhurried afternoons, salted sea breezes, and direct stairway access to Bolinao’s private cove.',
     badge: 'Patar Natural Tidal Pools'
   },
   {
+    image: '/images/rockview/08_sunset_seashore_horizon.jpg',
     kicker: 'Punta Piedra Ridge · Pristine Oceanfront Living',
-    headline: 'Panoramic Horizons & Five-Star Sanctuary Serenity',
-    subcopy: 'From oceanview cottages to spacious family suites, every stay includes Wi-Fi, backup solar power, and seamless smart keypad arrival.',
+    headline: 'Front-Row Sunsets Across the Open Ocean',
+    subcopy: 'Every twilight paints the sky in shades of amber and rose. Watch the day fade from your private balcony or beachfront dining deck.',
     badge: 'Sunset Villa Deck'
+  },
+  {
+    image: '/images/rockview/02_ocean_rock_formation_cliff.jpg',
+    kicker: 'Natural Limestone Sculptures · Patar Shoreline',
+    headline: 'Ancient Coral Arches Carved by Living Tides',
+    subcopy: 'Experience Bolinao’s legendary rock formations right at your doorstep, where golden sunsets reflect on calm tidal pools.',
+    badge: 'Patar Rock Formations'
+  },
+  {
+    image: '/images/rockview/13_rockview_landscape_panoramic.jpg',
+    kicker: 'Historic Cape Bolinao · Emerald Bluffs',
+    headline: 'A Restorative Haven Built for Stillness',
+    subcopy: 'Breathe in the freshest sea breeze and unwind in unhurried silence, 50 steps from the sand and under a canopy of starlight.',
+    badge: 'Emerald Cove Horizon'
   }
 ];
 
@@ -231,6 +248,57 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   // Admin-managed hero image & titles (Page Adjustment).
   const pageMedia = usePageSettings();
   const heroImageUrl = pageMedia.heroImageUrl || '/images/cliffside_hero_generated.jpg';
+
+  // Auto-scroll / advance hero background images every 5 seconds
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setHeroSlide((prev) => (prev + 1) % HERO_SLIDES.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Auto-rotate primary room bento photo
+  const [bentoPhotoIdx, setBentoPhotoIdx] = useState<number>(0);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setBentoPhotoIdx((prev) => (prev + 1) % 5);
+    }, 4500);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Horizontal rooms showcase ref & auto-scroll
+  const roomScrollRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = roomScrollRef.current;
+    if (!el) return;
+    let isHovered = false;
+    const onEnter = () => { isHovered = true; };
+    const onLeave = () => { isHovered = false; };
+    el.addEventListener('mouseenter', onEnter);
+    el.addEventListener('mouseleave', onLeave);
+    el.addEventListener('touchstart', onEnter, { passive: true });
+    el.addEventListener('touchend', onLeave);
+
+    const interval = setInterval(() => {
+      if (isHovered || !el) return;
+      if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 15) {
+        el.scrollTo({ left: 0, behavior: 'smooth' });
+      } else {
+        el.scrollBy({ left: 320, behavior: 'smooth' });
+      }
+    }, 4000);
+
+    return () => {
+      clearInterval(interval);
+      el.removeEventListener('mouseenter', onEnter);
+      el.removeEventListener('mouseleave', onLeave);
+      el.removeEventListener('touchstart', onEnter);
+      el.removeEventListener('touchend', onLeave);
+    };
+  }, []);
+
+  // FAQ Accordion State (from old site)
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   // Upfront Hero & Title Editor State (Admin / Staff)
   const [showHeroQuickEdit, setShowHeroQuickEdit] = useState<boolean>(false);
@@ -1453,18 +1521,25 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
             <polygon points="1210,274 1222,274 1216,265" fill="#FFE8A3"/>
             <circle cx="1216" cy="270" r="14" fill="#FFF3C4" fillOpacity="0.35"/>
           </svg>
-          {heroImageUrl && (
+          {/* Auto-scrolling Hero Background Slides */}
+          {HERO_SLIDES.map((slide, idx) => (
             <img
-              src={heroImageUrl}
-              alt="Rock View Resort"
+              key={idx}
+              src={idx === 0 && pageMedia.heroImageUrl ? pageMedia.heroImageUrl : slide.image}
+              alt={slide.headline}
               aria-hidden="true"
-              className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
+              className={`absolute inset-0 w-full h-full object-cover transition-all duration-1000 ease-in-out ${
+                heroSlide === idx
+                  ? 'opacity-100 scale-100 z-10'
+                  : 'opacity-0 scale-105 pointer-events-none z-0'
+              }`}
+              style={{ transition: 'opacity 1s ease-in-out, transform 8s ease-out' }}
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
               }}
             />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/20 to-[#18222B]/85"></div>
+          ))}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/25 to-[#060B18]/90 z-10 pointer-events-none"></div>
         </div>
 
         {/* Hero Slide Controls */}
@@ -1541,7 +1616,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
             <article className="rounded-3xl border border-white/10 bg-[#0B1426] overflow-hidden group transition duration-300 hover:border-cyan/40">
               <div className="h-48 md:h-56 overflow-hidden">
                 <img
-                  src="https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=800&q=80"
+                  src="/images/rockview/16_coastal_cove_clear_water.jpg"
                   alt="Quiet Sands of Patar"
                   loading="lazy"
                   className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
@@ -1549,7 +1624,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
               </div>
               <div className="p-6">
                 <div className="flex items-baseline gap-3">
-                  <span className="font-serif text-lg italic text-cyan/70 font-semibold">01</span>
+                  <span className="font-serif text-lg italic text-cyan font-semibold">01</span>
                   <h3 className="font-serif text-2xl font-medium text-white">Quiet Sands of Patar</h3>
                 </div>
                 <p className="mt-2 text-sm font-light leading-relaxed text-white/60">
@@ -1561,7 +1636,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
             <article className="rounded-3xl border border-white/10 bg-[#0B1426] overflow-hidden group transition duration-300 hover:border-cyan/40">
               <div className="h-48 md:h-56 overflow-hidden">
                 <img
-                  src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&q=80"
+                  src="/images/rockview/12_resort_patio_dining_area.jpg"
                   alt="Lanterns at Dusk"
                   loading="lazy"
                   className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
@@ -1569,7 +1644,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
               </div>
               <div className="p-6">
                 <div className="flex items-baseline gap-3">
-                  <span className="font-serif text-lg italic text-cyan/70 font-semibold">02</span>
+                  <span className="font-serif text-lg italic text-cyan font-semibold">02</span>
                   <h3 className="font-serif text-2xl font-medium text-white">Lanterns at Dusk</h3>
                 </div>
                 <p className="mt-2 text-sm font-light leading-relaxed text-white/60">
@@ -1581,7 +1656,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
             <article className="rounded-3xl border border-white/10 bg-[#0B1426] overflow-hidden group transition duration-300 hover:border-cyan/40">
               <div className="h-48 md:h-56 overflow-hidden">
                 <img
-                  src="https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=800&q=80"
+                  src="/images/rockview/02_ocean_rock_formation_cliff.jpg"
                   alt="The Historic Cape"
                   loading="lazy"
                   className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
@@ -1589,7 +1664,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
               </div>
               <div className="p-6">
                 <div className="flex items-baseline gap-3">
-                  <span className="font-serif text-lg italic text-cyan/70 font-semibold">03</span>
+                  <span className="font-serif text-lg italic text-cyan font-semibold">03</span>
                   <h3 className="font-serif text-2xl font-medium text-white">The Historic Cape</h3>
                 </div>
                 <p className="mt-2 text-sm font-light leading-relaxed text-white/60">
@@ -1627,16 +1702,50 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
         </section>
 
         {/* =====================================================================
-             ROOMS & SUITES SHOWCASE (From https://34ed5487.patar-resort.pages.dev/)
+             ROOMS & SUITES SHOWCASE (Auto-Scrolling Accommodations Strip)
              ===================================================================== */}
         <section id="rooms-showcase" className="mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-10 pt-16 md:pt-24 scroll-mt-20">
-          <span className="block text-[11px] font-medium uppercase tracking-[0.28em] text-cyan font-bold">
-            Rooms &amp; Suites
-          </span>
-          <h2 className="mt-3 font-serif text-4xl md:text-5xl font-medium leading-tight text-white">
-            Private Coastal Living
-          </h2>
-          <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory -mx-5 px-5 sm:-mx-8 sm:px-8 pb-2 lg:mx-0 lg:px-0 lg:grid lg:overflow-visible mt-8 lg:grid-cols-4">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div>
+              <span className="block text-[11px] font-medium uppercase tracking-[0.28em] text-cyan font-bold">
+                Rooms &amp; Suites
+              </span>
+              <h2 className="mt-3 font-serif text-4xl md:text-5xl font-medium leading-tight text-white">
+                Private Coastal Living
+              </h2>
+            </div>
+            
+            {/* Auto-scroll Status & Navigation Controls */}
+            <div className="flex items-center gap-3">
+              <div className="hidden sm:inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan/10 border border-cyan/30 text-[11px] font-mono text-cyan">
+                <span className="w-2 h-2 rounded-full bg-cyan animate-pulse" />
+                <span>Auto-scrolling showcase</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => roomScrollRef.current?.scrollBy({ left: -340, behavior: 'smooth' })}
+                  aria-label="Scroll accommodations left"
+                  className="w-10 h-10 rounded-full border border-white/20 bg-white/5 hover:bg-white/15 text-white flex items-center justify-center transition cursor-pointer text-xl font-bold"
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  onClick={() => roomScrollRef.current?.scrollBy({ left: 340, behavior: 'smooth' })}
+                  aria-label="Scroll accommodations right"
+                  className="w-10 h-10 rounded-full border border-white/20 bg-white/5 hover:bg-white/15 text-white flex items-center justify-center transition cursor-pointer text-xl font-bold"
+                >
+                  ›
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div
+            ref={roomScrollRef}
+            className="flex gap-5 overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory py-6 -mx-5 px-5 sm:-mx-8 sm:px-8 lg:mx-0 lg:px-0"
+          >
             {/* Chason Room */}
             <article
               onClick={() => {
@@ -1647,18 +1756,18 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                 }
                 document.getElementById('booking-workspace')?.scrollIntoView({ behavior: 'smooth' });
               }}
-              className="group relative h-72 w-[78%] shrink-0 snap-start overflow-hidden rounded-3xl border border-white/10 sm:w-[46%] lg:w-auto cursor-pointer transition hover:border-cyan/50 shadow-lg"
+              className="group relative h-80 w-[280px] sm:w-[320px] shrink-0 snap-start overflow-hidden rounded-3xl border border-white/10 cursor-pointer transition hover:border-cyan/50 shadow-xl"
             >
               <img
                 src="/images/chason_room_generated.jpg"
-                alt="chason room"
+                alt="Chason Room"
                 loading="lazy"
                 className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#060B18] via-[#060B18]/30 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#060B18] via-[#060B18]/35 to-transparent" />
               <div className="absolute inset-x-0 bottom-0 p-5">
                 <span className="text-[10px] uppercase font-mono tracking-widest text-cyan font-bold block mb-1">
-                  ✦ Standard
+                  ✦ Air-Conditioned Room
                 </span>
                 <h3 className="font-serif text-2xl font-medium leading-tight text-white">
                   Chason Room
@@ -1679,7 +1788,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                 }
                 document.getElementById('booking-workspace')?.scrollIntoView({ behavior: 'smooth' });
               }}
-              className="group relative h-72 w-[78%] shrink-0 snap-start overflow-hidden rounded-3xl border border-white/10 sm:w-[46%] lg:w-auto cursor-pointer transition hover:border-cyan/50 shadow-lg"
+              className="group relative h-80 w-[280px] sm:w-[320px] shrink-0 snap-start overflow-hidden rounded-3xl border border-white/10 cursor-pointer transition hover:border-cyan/50 shadow-xl"
             >
               <img
                 src="/images/sunset_cottage_generated.jpg"
@@ -1687,13 +1796,13 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                 loading="lazy"
                 className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#060B18] via-[#060B18]/30 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#060B18] via-[#060B18]/35 to-transparent" />
               <div className="absolute inset-x-0 bottom-0 p-5">
                 <span className="text-[10px] uppercase font-mono tracking-widest text-cyan font-bold block mb-1">
-                  ✦ Cottage
+                  ✦ Beachfront Cottage
                 </span>
                 <h3 className="font-serif text-2xl font-medium leading-tight text-white">
-                  Sunset
+                  Sunset Cottage
                 </h3>
                 <p className="mt-1 font-serif text-lg text-cyan">
                   ₱3,500 <span className="font-sans text-[11px] text-white/60">/ night</span>
@@ -1711,7 +1820,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                 }
                 document.getElementById('booking-workspace')?.scrollIntoView({ behavior: 'smooth' });
               }}
-              className="group relative h-72 w-[78%] shrink-0 snap-start overflow-hidden rounded-3xl border border-white/10 sm:w-[46%] lg:w-auto cursor-pointer transition hover:border-cyan/50 shadow-lg"
+              className="group relative h-80 w-[280px] sm:w-[320px] shrink-0 snap-start overflow-hidden rounded-3xl border border-white/10 cursor-pointer transition hover:border-cyan/50 shadow-xl"
             >
               <img
                 src="/images/unit3_veranda.jpg"
@@ -1719,10 +1828,10 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                 loading="lazy"
                 className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#060B18] via-[#060B18]/30 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#060B18] via-[#060B18]/35 to-transparent" />
               <div className="absolute inset-x-0 bottom-0 p-5">
                 <span className="text-[10px] uppercase font-mono tracking-widest text-cyan font-bold block mb-1">
-                  ✦ Standard
+                  ✦ Veranda Suite
                 </span>
                 <h3 className="font-serif text-2xl font-medium leading-tight text-white">
                   Unit 3
@@ -1743,7 +1852,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                 }
                 document.getElementById('booking-workspace')?.scrollIntoView({ behavior: 'smooth' });
               }}
-              className="group relative h-72 w-[78%] shrink-0 snap-start overflow-hidden rounded-3xl border border-white/10 sm:w-[46%] lg:w-auto cursor-pointer transition hover:border-cyan/50 shadow-lg"
+              className="group relative h-80 w-[280px] sm:w-[320px] shrink-0 snap-start overflow-hidden rounded-3xl border border-white/10 cursor-pointer transition hover:border-cyan/50 shadow-xl"
             >
               <img
                 src="/images/unit5_suite.jpg"
@@ -1751,13 +1860,73 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                 loading="lazy"
                 className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#060B18] via-[#060B18]/30 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#060B18] via-[#060B18]/35 to-transparent" />
               <div className="absolute inset-x-0 bottom-0 p-5">
                 <span className="text-[10px] uppercase font-mono tracking-widest text-cyan font-bold block mb-1">
-                  ✦ Room
+                  ✦ Oceanfront Room
                 </span>
                 <h3 className="font-serif text-2xl font-medium leading-tight text-white">
                   Unit 5
+                </h3>
+                <p className="mt-1 font-serif text-lg text-cyan">
+                  ₱3,500 <span className="font-sans text-[11px] text-white/60">/ night</span>
+                </p>
+              </div>
+            </article>
+
+            {/* Family Suite */}
+            <article
+              onClick={() => {
+                const found = rooms.find((r) => r.name.toLowerCase().includes('family') || r.name.toLowerCase().includes('suite'));
+                if (found) {
+                  chooseRoom(found.id);
+                  handleCategorySwitch('room');
+                }
+                document.getElementById('booking-workspace')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="group relative h-80 w-[280px] sm:w-[320px] shrink-0 snap-start overflow-hidden rounded-3xl border border-white/10 cursor-pointer transition hover:border-cyan/50 shadow-xl"
+            >
+              <img
+                src="/images/rockview/15_family_suite_bedroom_view.jpg"
+                alt="Family Suite"
+                loading="lazy"
+                className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#060B18] via-[#060B18]/35 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-5">
+                <span className="text-[10px] uppercase font-mono tracking-widest text-cyan font-bold block mb-1">
+                  ✦ Family Living
+                </span>
+                <h3 className="font-serif text-2xl font-medium leading-tight text-white">
+                  Family Suite
+                </h3>
+                <p className="mt-1 font-serif text-lg text-cyan">
+                  ₱4,500 <span className="font-sans text-[11px] text-white/60">/ night</span>
+                </p>
+              </div>
+            </article>
+
+            {/* Beachside Cottage Deck */}
+            <article
+              onClick={() => {
+                handleCategorySwitch('cottage');
+                document.getElementById('booking-workspace')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="group relative h-80 w-[280px] sm:w-[320px] shrink-0 snap-start overflow-hidden rounded-3xl border border-white/10 cursor-pointer transition hover:border-cyan/50 shadow-xl"
+            >
+              <img
+                src="/images/rockview/11_beachside_cottage_porch.jpg"
+                alt="Beachside Cottage"
+                loading="lazy"
+                className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#060B18] via-[#060B18]/35 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-5">
+                <span className="text-[10px] uppercase font-mono tracking-widest text-cyan font-bold block mb-1">
+                  ✦ Coastal Porch
+                </span>
+                <h3 className="font-serif text-2xl font-medium leading-tight text-white">
+                  Seaside Cottage Porch
                 </h3>
                 <p className="mt-1 font-serif text-lg text-cyan">
                   ₱3,500 <span className="font-sans text-[11px] text-white/60">/ night</span>
@@ -1924,26 +2093,31 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
         <section className="relative mb-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 h-[280px] sm:h-[360px] md:h-[420px] rounded-[12px] overflow-hidden">
             
-            {/* Slot 0 (Hero Image) */}
+            {/* Slot 0 (Hero Image - Auto-cycling through room views) */}
             <div
               onClick={() => {
-                setTourIndex(0);
+                setTourIndex(bentoPhotoIdx % (galleryPhotos.length || 1));
                 setShowPhotoTour(true);
               }}
-              className="coastal-slot slot-sky-sunset h-full p-5 flex flex-col justify-between cursor-pointer group"
+              className="coastal-slot slot-sky-sunset h-full p-5 flex flex-col justify-between cursor-pointer group relative overflow-hidden"
             >
               <img
-                src={galleryPhotos[0]}
+                key={bentoPhotoIdx}
+                src={galleryPhotos[bentoPhotoIdx % (galleryPhotos.length || 1)] || galleryPhotos[0]}
                 alt="Primary Oceanfront View"
-                className="absolute inset-0 w-full h-full object-cover z-0 transition-transform duration-500 group-hover:scale-105"
+                className="absolute inset-0 w-full h-full object-cover z-0 transition-all duration-700 ease-in-out group-hover:scale-105 animate-fade-in"
                 onError={(e) => {
                   (e.target as HTMLElement).style.display = 'none';
                 }}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 z-0" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30 z-0 pointer-events-none" />
               <div className="relative z-10 flex items-center justify-between">
-                <span className="px-3 py-1 rounded-full bg-black/40 backdrop-blur-xs text-white text-xs font-medium">
+                <span className="px-3 py-1 rounded-full bg-black/50 backdrop-blur-xs text-white text-xs font-medium border border-white/15">
                   Oceanfront Living Deck
+                </span>
+                <span className="px-2.5 py-1 rounded-full bg-cyan/20 border border-cyan/40 text-cyan text-[11px] font-mono font-bold flex items-center gap-1.5 backdrop-blur-xs">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan animate-pulse" />
+                  Auto-view · {((bentoPhotoIdx % (galleryPhotos.length || 1)) + 1)}/{galleryPhotos.length}
                 </span>
               </div>
               <div className="relative z-10 text-white">
@@ -3127,6 +3301,243 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
           </div>
         </section>
       </main>
+
+      {/* =====================================================================
+           CURATED MOMENTS (From https://34ed5487.patar-resort.pages.dev/)
+           ===================================================================== */}
+      {!embedded && (
+      <>
+        <section id="experiences-section" className="mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-10 pt-16">
+          <div className="rounded-3xl bg-[#f4e9d8] text-[#060b18] p-8 sm:p-10 border border-[#e8d8be] shadow-xl">
+            <span className="block text-[11px] font-medium uppercase tracking-[0.28em] text-[#060b18]/60 font-bold">
+              Curated Moments
+            </span>
+            <h3 className="font-serif text-3xl sm:text-4xl font-medium text-[#060b18] mt-2">
+              Bolinao Unhurried
+            </h3>
+
+            <div className="mt-8 grid sm:grid-cols-2 gap-6 divide-y sm:divide-y-0 sm:divide-x divide-[#060b18]/10">
+              <div className="space-y-6">
+                <div className="pt-2">
+                  <div className="flex items-baseline gap-3">
+                    <span className="font-serif italic text-sky-800 text-xl font-bold">01</span>
+                    <h4 className="font-serif text-xl font-medium text-[#060b18]">Sunset Outrigger Sail</h4>
+                  </div>
+                  <p className="text-sm text-[#060b18]/75 leading-relaxed mt-2 font-light">
+                    Glide through calm Lingayen waters on a traditional wooden bangka as the golden sun sets over the West Philippine Sea.
+                  </p>
+                </div>
+                <div className="pt-6 border-t border-[#060b18]/10">
+                  <div className="flex items-baseline gap-3">
+                    <span className="font-serif italic text-sky-800 text-xl font-bold">02</span>
+                    <h4 className="font-serif text-xl font-medium text-[#060b18]">Lighthouse Lantern Walk</h4>
+                  </div>
+                  <p className="text-sm text-[#060b18]/75 leading-relaxed mt-2 font-light">
+                    Evening stroll to the historic 1905 Cape Bolinao Lighthouse, carrying warm woven bamboo lanterns along the breezy cliffside.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-6 sm:pl-6 pt-6 sm:pt-0">
+                <div className="pt-2">
+                  <div className="flex items-baseline gap-3">
+                    <span className="font-serif italic text-sky-800 text-xl font-bold">03</span>
+                    <h4 className="font-serif text-xl font-medium text-[#060b18]">Balingasay River Cruise</h4>
+                  </div>
+                  <p className="text-sm text-[#060b18]/75 leading-relaxed mt-2 font-light">
+                    Gentle drift through one of Luzon’s cleanest river ecosystems surrounded by lush centuries-old mangroves and native birdlife.
+                  </p>
+                </div>
+                <div className="pt-6 border-t border-[#060b18]/10">
+                  <div className="flex items-baseline gap-3">
+                    <span className="font-serif italic text-sky-800 text-xl font-bold">04</span>
+                    <h4 className="font-serif text-xl font-medium text-[#060b18]">Fresh Coral Reef Snorkeling</h4>
+                  </div>
+                  <p className="text-sm text-[#060b18]/75 leading-relaxed mt-2 font-light">
+                    Guided morning snorkel right along the preserved giant clam sanctuaries and living coral reef gardens of Patar cove.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* =====================================================================
+             VISUAL JOURNAL: SHORE SCENES GALLERY (From https://34ed5487.patar-resort.pages.dev/)
+             ===================================================================== */}
+        <section className="mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-10 pt-16">
+          <div className="flex items-end justify-between mb-6">
+            <div>
+              <span className="block text-[11px] font-medium uppercase tracking-[0.28em] text-cyan font-bold">
+                Visual Journal
+              </span>
+              <h3 className="mt-2 font-serif text-3xl sm:text-4xl font-medium leading-tight text-white">
+                Scenes from the Shore
+              </h3>
+            </div>
+            <span className="text-xs text-white/50 hidden sm:block font-mono">Patar Coral Ridge &amp; Living Coves</span>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 h-[380px] sm:h-[440px]">
+            <div className="col-span-2 row-span-2 rounded-2xl overflow-hidden border border-white/10 group relative">
+              <img
+                src="/images/rockview/04_swimming_pool_deck_loungers.jpg"
+                alt="Pool Deck Loungers"
+                className="w-full h-full object-cover transition duration-700 group-hover:scale-105"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+              <div className="absolute bottom-4 left-4 right-4">
+                <span className="text-[10px] uppercase tracking-widest text-cyan font-mono font-bold block">Sanctuary Pool</span>
+                <p className="text-white text-sm font-medium mt-0.5">Sun-drenched loungers above the West Philippine Sea</p>
+              </div>
+            </div>
+
+            <div className="rounded-2xl overflow-hidden border border-white/10 group relative">
+              <img
+                src="/images/rockview/08_sunset_seashore_horizon.jpg"
+                alt="Sunset Horizon"
+                className="w-full h-full object-cover transition duration-700 group-hover:scale-105"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
+              <span className="absolute bottom-3 left-3 text-[11px] font-medium text-white">Golden Hour Horizon</span>
+            </div>
+
+            <div className="rounded-2xl overflow-hidden border border-white/10 group relative">
+              <img
+                src="/images/rockview/02_ocean_rock_formation_cliff.jpg"
+                alt="Coral Cliffs"
+                className="w-full h-full object-cover transition duration-700 group-hover:scale-105"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
+              <span className="absolute bottom-3 left-3 text-[11px] font-medium text-white">Carved Coral Cliffs</span>
+            </div>
+
+            <div className="rounded-2xl overflow-hidden border border-white/10 group relative">
+              <img
+                src="/images/rockview/10_coastal_waves_and_cliff_view.jpg"
+                alt="Coastal Waves"
+                className="w-full h-full object-cover transition duration-700 group-hover:scale-105"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
+              <span className="absolute bottom-3 left-3 text-[11px] font-medium text-white">Living Tidal Coves</span>
+            </div>
+
+            <div className="rounded-2xl overflow-hidden border border-white/10 group relative">
+              <img
+                src="/images/rockview/14_resort_grounds_night_lighting.jpg"
+                alt="Evening Ambiance"
+                className="w-full h-full object-cover transition duration-700 group-hover:scale-105"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
+              <span className="absolute bottom-3 left-3 text-[11px] font-medium text-white">Evening Lanterns</span>
+            </div>
+          </div>
+        </section>
+
+        {/* =====================================================================
+             RESORT AMENITIES (From https://34ed5487.patar-resort.pages.dev/)
+             ===================================================================== */}
+        <section className="mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-10 pt-16">
+          <span className="block text-[11px] font-medium uppercase tracking-[0.28em] text-cyan font-bold">
+            Sanctuary Amenities
+          </span>
+          <h3 className="mt-2 font-serif text-3xl sm:text-4xl font-medium leading-tight text-white">
+            Every Comfort for Unhurried Stays
+          </h3>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 mt-8">
+            {[
+              { title: 'Oceanview Swimming Pool', desc: 'Overlooking the coral reef and sunset horizon' },
+              { title: 'Direct Limestone Cove Access', desc: 'Private carved coral steps straight to snorkeling' },
+              { title: 'Solar 24/7 Backup Power', desc: 'Continuous lights and cooling during island outages' },
+              { title: 'High-Speed Wi-Fi', desc: 'Reliable wireless internet across rooms and dining' },
+              { title: 'Beachfront Grilling Stations', desc: 'Complimentary outdoor BBQ setups for guests' },
+              { title: 'Free Secure Parking', desc: 'Spacious on-site gated parking for cars and vans' }
+            ].map((item, idx) => (
+              <div
+                key={idx}
+                className="rounded-2xl border border-white/10 bg-[#0B1426] p-4 sm:p-5 flex items-start gap-3.5 hover:border-cyan/40 transition"
+              >
+                <div className="w-9 h-9 rounded-xl bg-cyan/15 border border-cyan/30 flex items-center justify-center text-cyan shrink-0 font-serif font-bold text-sm">
+                  ✦
+                </div>
+                <div>
+                  <h5 className="text-sm font-semibold text-white">{item.title}</h5>
+                  <p className="text-xs text-white/60 mt-1 leading-relaxed">{item.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* =====================================================================
+             FREQUENTLY INQUIRED DETAILS (FAQ Accordion with 50% Downpayment Policy)
+             ===================================================================== */}
+        <section id="faq-section" className="mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-10 pt-16">
+          <span className="block text-[11px] font-medium uppercase tracking-[0.28em] text-cyan font-bold">
+            Frequently Inquired
+          </span>
+          <h3 className="mt-2 font-serif text-3xl sm:text-4xl font-medium leading-tight text-white">
+            Helpful Details
+          </h3>
+
+          <div className="mt-8 space-y-3.5">
+            {[
+              {
+                q: "What is the reservation deposit requirement?",
+                a: "To confirm and secure your reservation pass, a mandatory 50% reservation downpayment is required via GCash, Maya, or Online Bank Transfer. The remaining 50% balance is settled upon check-in at our front desk reception."
+              },
+              {
+                q: "What are your check-in and check-out times?",
+                a: "Check-in begins at 2:00 PM and check-out is at 12:00 PM noon. Early check-in or late check-out may be arranged with our concierge subject to room availability."
+              },
+              {
+                q: "Can we bring our own food or cook on site?",
+                a: "Yes! Guests are welcome to bring food and utilize our beachfront charcoal grilling stations free of charge. No corkage fee is charged for personal food items or beverages."
+              },
+              {
+                q: "Is Patar beach swimmable and child-friendly?",
+                a: "Yes, Patar features natural shallow limestone tidal pools and calm coral coves with gentle turquoise water, perfect for wading, swimming, and snorkeling at low and mid tides."
+              },
+              {
+                q: "What is your cancellation and refund policy?",
+                a: "Bookings cancelled within 5 hours of reservation receive a 100% full refund. Cancellations made 7 or more days prior to check-in receive an 80% refund of the downpayment. In case of government-issued storm signals, full rebooking without penalty is guaranteed."
+              }
+            ].map((item, idx) => {
+              const isOpen = openFaq === idx;
+              return (
+                <div
+                  key={idx}
+                  className="rounded-2xl border border-white/10 bg-[#0B1426] overflow-hidden transition"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setOpenFaq(isOpen ? null : idx)}
+                    className="w-full p-5 text-left flex items-center justify-between gap-4 cursor-pointer hover:bg-white/[0.02] transition"
+                  >
+                    <span className="font-serif text-lg text-white font-medium">{item.q}</span>
+                    <span className={`text-cyan text-xl font-bold shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-45' : 'rotate-0'}`}>
+                      +
+                    </span>
+                  </button>
+
+                  {isOpen && (
+                    <div className="px-5 pb-5 pt-1 text-sm text-white/70 leading-relaxed font-light border-t border-white/5 animate-fade-in">
+                      {item.a}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      </>
+      )}
 
       {/* =====================================================================
            FOOTER: EDITORIAL DARK LUXURY FOOTER (From https://34ed5487.patar-resort.pages.dev/)
