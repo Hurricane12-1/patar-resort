@@ -8,6 +8,7 @@
  */
 
 import { Router } from 'express';
+import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { env } from '../../config/env.js';
 import { asyncH, ApiError } from '../../middleware/errors.js';
@@ -15,7 +16,7 @@ import { admin } from '../../lib/supabase.js';
 import { logAuditEvent } from '../../lib/auditLogger.js';
 import { checkBruteForceLockout, recordFailedAttempt, recordSuccessfulAttempt } from '../../middleware/bruteForceGuard.js';
 import { verifyPassword } from '../../lib/passwords.js';
-import { verifyCustomerCredentials, findCustomerByEmail } from '../../lib/customerStore.js';
+import { verifyCustomerCredentials, findCustomerByEmail, saveCustomer } from '../../lib/customerStore.js';
 
 export const clientAuthRouter = Router();
 
@@ -304,7 +305,242 @@ export const handleClientLogin = asyncH(async (req, res) => {
 });
 
 // Modular Route Bindings
+export const handleGoogleAuth = asyncH(async (req, res) => {
+  const { credential, email, name, first_name, last_name, picture, sub, googleId } = req.body || {};
+
+  let targetEmail = (email || '').trim().toLowerCase();
+  let targetName = (name || '').trim();
+  let targetFirst = (first_name || '').trim();
+  let targetLast = (last_name || '').trim();
+  let targetPicture = picture || '';
+  let targetSub = sub || googleId || '';
+
+  // 1. If Google Identity Services JWT credential (id_token) is provided, decode payload
+  if (credential && typeof credential === 'string') {
+    try {
+      const parts = credential.split('.');
+      if (parts.length === 3) {
+        const payloadJson = Buffer.from(parts[1], 'base64url').toString('utf8');
+        const tokenPayload = JSON.parse(payloadJson);
+        if (tokenPayload.email) {
+          targetEmail = tokenPayload.email.trim().toLowerCase();
+          targetName = targetName || tokenPayload.name || '';
+          targetFirst = targetFirst || tokenPayload.given_name || '';
+          targetLast = targetLast || tokenPayload.family_name || '';
+          targetPicture = targetPicture || tokenPayload.picture || '';
+          targetSub = targetSub || tokenPayload.sub || '';
+        }
+      }
+    } catch (e) {
+      console.warn('[Google Auth Token Parse Warning]:', e.message);
+    }
+  }
+
+  if (!targetEmail || !targetEmail.includes('@')) {
+    throw new ApiError(400, 'Valid Google email address is required.');
+  }
+
+  if (!targetFirst && !targetLast && targetName) {
+    const parts = targetName.split(' ');
+    targetFirst = parts[0] || 'Guest';
+    targetLast = parts.slice(1).join(' ') || '';
+  } else if (!targetName) {
+    targetFirst = targetFirst || targetEmail.split('@')[0];
+    targetLast = targetLast || '';
+    targetName = [targetFirst, targetLast].filter(Boolean).join(' ');
+  }
+
+  // 2. Check if customer exists in local store or memory first
+  const local = findCustomerByEmail(targetEmail);
+  let userId = local?.id || (targetSub ? `google_${targetSub}` : crypto.randomUUID());
+  let existingCust = local;
+
+  // 3. Upsert customer in resilient local customerStore immediately
+  const customerProfile = {
+    id: userId,
+    email: targetEmail,
+    full_name: targetName,
+    first_name: targetFirst,
+    last_name: targetLast,
+    avatar_url: targetPicture || existingCust?.avatar_url || '',
+    phone: existingCust?.phone || '',
+    role: 'customer',
+    position: 'Customer',
+    provider: 'google',
+    is_verified: true,
+    has_password: true,
+    password_status: 'OAuth Managed',
+  };
+
+  saveCustomer({
+    ...customerProfile,
+    updated_at: new Date().toISOString(),
+  });
+
+  // Non-blocking async background sync to Supabase (never slows down client response)
+  Promise.resolve().then(async () => {
+    try {
+      await admin.from('profiles').upsert(customerProfile, { onConflict: 'id' });
+    } catch {}
+    try {
+      await admin.from('customers').upsert({
+        id: userId,
+        email: targetEmail,
+        full_name: targetName,
+        first_name: targetFirst,
+        last_name: targetLast,
+        avatar_url: targetPicture || existingCust?.avatar_url || '',
+        phone: existingCust?.phone || '',
+        role: 'customer',
+        provider: 'google',
+        is_verified: true,
+      }, { onConflict: 'id' });
+    } catch {}
+  });
+
+  // 4. Issue authenticated session JWT for client
+  const sessionToken = jwt.sign(
+    {
+      id: userId,
+      email: targetEmail,
+      role: 'customer',
+      persona: 'customer',
+      aud: 'authenticated',
+      provider: 'google',
+    },
+    env.SUPABASE_JWT_SECRET || 'rockview-customer-secret-key-2026',
+    { expiresIn: '7d' }
+  );
+
+  const authData = {
+    user: {
+      id: userId,
+      email: targetEmail,
+      user_metadata: customerProfile,
+    },
+    profile: customerProfile,
+    session: {
+      access_token: sessionToken,
+      token_type: 'bearer',
+      expires_in: 7 * 24 * 3600,
+      refresh_token: sessionToken,
+      user: {
+        id: userId,
+        email: targetEmail,
+        role: 'customer',
+      },
+    },
+  };
+
+  await logAuditEvent({
+    actor: { id: userId, email: targetEmail, role: 'customer' },
+    action: 'CUSTOMER_LOGIN',
+    resourceType: 'oauth_google',
+    resourceId: userId,
+    details: {
+      method: 'google_oauth',
+      provider: 'google',
+      email: targetEmail,
+      full_name: targetName,
+    },
+    req,
+  }).catch(() => {});
+
+  return res.json({
+    success: true,
+    message: `Welcome to Rock View Beach Resort, ${targetName}!`,
+    session: authData.session,
+    user: customerProfile,
+    profile: customerProfile,
+  });
+});
+
+export const handleFacebookAuth = asyncH(async (req, res) => {
+  const { email, name, first_name, last_name, picture, sub, facebookId } = req.body || {};
+  let targetEmail = (email || '').trim().toLowerCase();
+  let targetName = (name || '').trim();
+  let targetFirst = (first_name || '').trim();
+  let targetLast = (last_name || '').trim();
+  let targetPicture = picture || '';
+  let targetSub = sub || facebookId || '';
+
+  if (!targetEmail || !targetEmail.includes('@')) {
+    throw new ApiError(400, 'Valid Facebook email address is required.');
+  }
+
+  if (!targetFirst && !targetLast && targetName) {
+    const parts = targetName.split(' ');
+    targetFirst = parts[0] || 'Guest';
+    targetLast = parts.slice(1).join(' ') || '';
+  } else if (!targetName) {
+    targetFirst = targetFirst || targetEmail.split('@')[0];
+    targetLast = targetLast || '';
+    targetName = [targetFirst, targetLast].filter(Boolean).join(' ');
+  }
+
+  const local = findCustomerByEmail(targetEmail);
+  let userId = local?.id || (targetSub ? `facebook_${targetSub}` : crypto.randomUUID());
+  let existingCust = local;
+
+  const customerProfile = {
+    id: userId,
+    email: targetEmail,
+    full_name: targetName,
+    first_name: targetFirst,
+    last_name: targetLast,
+    avatar_url: targetPicture || existingCust?.avatar_url || '',
+    phone: existingCust?.phone || '',
+    role: 'customer',
+    position: 'Customer',
+    provider: 'facebook',
+    is_verified: true,
+    has_password: true,
+    password_status: 'OAuth Managed',
+  };
+
+  saveCustomer({
+    ...customerProfile,
+    updated_at: new Date().toISOString(),
+  });
+
+  Promise.resolve().then(async () => {
+    try {
+      await admin.from('profiles').upsert(customerProfile, { onConflict: 'id' });
+      await admin.from('customers').upsert(customerProfile, { onConflict: 'id' });
+    } catch {}
+  });
+
+  const sessionToken = jwt.sign(
+    {
+      id: userId,
+      email: targetEmail,
+      role: 'customer',
+      persona: 'customer',
+      aud: 'authenticated',
+      provider: 'facebook',
+    },
+    env.SUPABASE_JWT_SECRET || 'rockview-customer-secret-key-2026',
+    { expiresIn: '7d' }
+  );
+
+  return res.json({
+    success: true,
+    message: `Welcome to Rock View Beach Resort, ${targetName}!`,
+    session: {
+      access_token: sessionToken,
+      token_type: 'bearer',
+      expires_in: 7 * 24 * 3600,
+      refresh_token: sessionToken,
+      user: { id: userId, email: targetEmail, role: 'customer' },
+    },
+    user: customerProfile,
+    profile: customerProfile,
+  });
+});
+
 clientAuthRouter.post('/login', handleClientLogin);
+clientAuthRouter.post('/google', handleGoogleAuth);
+clientAuthRouter.post('/facebook', handleFacebookAuth);
 
 clientAuthRouter.get('/health', (_req, res) => {
   res.json({

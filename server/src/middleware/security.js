@@ -122,6 +122,8 @@ export const cspDirectives = {
     "'unsafe-eval'",
     'https://cdn.tailwindcss.com',
     'https://cdn.jsdelivr.net',
+    'https://accounts.google.com',
+    'https://apis.google.com',
   ],
   'style-src': [
     "'self'",
@@ -157,6 +159,8 @@ export const cspDirectives = {
     'https://api.cloudinary.com',
     'https://res.cloudinary.com',
     'https://*.cloudinary.com',
+    'https://accounts.google.com',
+    'https://oauth2.googleapis.com',
     `https://${supabaseHost}`,
     `wss://${supabaseHost}`,
     'ws:',
@@ -167,6 +171,7 @@ export const cspDirectives = {
   'form-action': ["'self'"],
   'frame-src': [
     "'self'",
+    'https://accounts.google.com',
     'https://www.google.com',
     'https://maps.google.com',
     'https://*.google.com',

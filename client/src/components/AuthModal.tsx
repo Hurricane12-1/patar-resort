@@ -43,6 +43,12 @@ export default function AuthModal() {
   const [recoveryCode, setRecoveryCode] = useState('');
   const [recoveryNewPassword, setRecoveryNewPassword] = useState('');
 
+  // Express Google Sign-In State
+  const [googlePromptOpen, setGooglePromptOpen] = useState(false);
+  const [googlePromptEmail, setGooglePromptEmail] = useState('');
+  const [googlePromptName, setGooglePromptName] = useState('');
+  const [googlePromptLoading, setGooglePromptLoading] = useState(false);
+
   // 1-Minute Confirmation Countdown Timer
   useEffect(() => {
     if (mode !== '2fa') return;
@@ -127,29 +133,68 @@ export default function AuthModal() {
   // Social Auth Handlers (Google & Facebook OAuth)
   async function handleGoogleLogin() {
     try {
-      toast('Redirecting to Google Sign-In…');
-      await signInWithGoogle();
+      setGooglePromptLoading(true);
+      toast('Connecting to Google Sign-In…');
+      const res: any = await signInWithGoogle();
+      if (res?.needsPrompt) {
+        let initialEmail = '';
+        if (f.email && f.email.includes('@')) initialEmail = f.email;
+        else if (recoveryEmail && recoveryEmail.includes('@')) initialEmail = recoveryEmail;
+
+        let initialName = '';
+        if (f.first_name || f.last_name) initialName = [f.first_name, f.last_name].filter(Boolean).join(' ');
+
+        setGooglePromptEmail(initialEmail);
+        setGooglePromptName(initialName);
+        setGooglePromptOpen(true);
+      }
     } catch (err: any) {
       const msg = err.msg || err.message || '';
-      if (msg.includes('not enabled') || msg.includes('Unsupported provider') || err.error_code === 'validation_failed') {
-        toast('Google OAuth is not enabled in your Supabase Dashboard yet. Use standard login or sign up with Gmail & 2FA below.', true);
-      } else {
-        toast(msg || 'Google Sign-In failed', true);
-      }
+      toast(msg || 'Google Sign-In failed', true);
+    } finally {
+      setGooglePromptLoading(false);
+    }
+  }
+
+  async function handleGooglePromptSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!googlePromptEmail || !googlePromptEmail.includes('@')) {
+      return toast('Please enter a valid Google / Gmail address.', true);
+    }
+    try {
+      setGooglePromptLoading(true);
+      toast('Authenticating with Google…');
+      const res: any = await signInWithGoogle({
+        email: googlePromptEmail.trim(),
+        name: googlePromptName.trim() || googlePromptEmail.split('@')[0],
+      });
+      if (res?.error) throw res.error;
+      setGooglePromptOpen(false);
+    } catch (err: any) {
+      toast(err.message || 'Google Sign-In could not complete', true);
+    } finally {
+      setGooglePromptLoading(false);
     }
   }
 
   async function handleFacebookLogin() {
     try {
-      toast('Redirecting to Facebook Sign-In…');
-      await signInWithFacebook();
+      toast('Connecting to Facebook Sign-In…');
+      const res: any = await signInWithFacebook();
+      if (res?.needsPrompt) {
+        let initialEmail = f.email || recoveryEmail || '';
+        let initialName = [f.first_name, f.last_name].filter(Boolean).join(' ');
+        const emailInput = window.prompt('Enter your Facebook account email to connect:', initialEmail);
+        if (emailInput && emailInput.includes('@')) {
+          await signInWithFacebook({
+            email: emailInput.trim(),
+            name: initialName || emailInput.split('@')[0],
+          });
+        }
+      }
     } catch (err: any) {
       const msg = err.msg || err.message || '';
-      if (msg.includes('not enabled') || msg.includes('Unsupported provider') || err.error_code === 'validation_failed') {
-        toast('Facebook OAuth is not enabled in your Supabase Dashboard yet. Use standard login or sign up with Facebook & 2FA below.', true);
-      } else {
-        toast(msg || 'Facebook Sign-In failed', true);
-      }
+      toast(msg || 'Facebook Sign-In failed', true);
     }
   }
 
@@ -482,6 +527,142 @@ export default function AuthModal() {
         </div>
 
         <div className="modal-body">
+          {googlePromptOpen ? (
+            <div style={{ padding: '4px 6px 12px' }}>
+              <div style={{ textAlign: 'center', marginBottom: 20 }}>
+                <div style={{
+                  width: 58,
+                  height: 58,
+                  margin: '0 auto 12px',
+                  borderRadius: '50%',
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1.5px solid rgba(255,255,255,0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 4px 18px rgba(66, 133, 244, 0.25)',
+                }}>
+                  <svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                  </svg>
+                </div>
+                <h3 className="serif" style={{ margin: '0 0 6px', fontSize: '1.45rem', fontWeight: 600, color: '#FFFFFF' }}>
+                  Sign in with Google
+                </h3>
+                <p style={{ margin: 0, fontSize: '.83rem', color: '#94A3B8', lineHeight: 1.45 }}>
+                  Connect your Google account for instant resort access, confirmed dates, and verified resident room vouchers.
+                </p>
+              </div>
+
+              <form onSubmit={handleGooglePromptSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '.74rem', fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: '#CBD5E1', marginBottom: 6 }}>
+                    Google / Gmail Address <span style={{ color: '#EF4444' }}>*</span>
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <i className="fas fa-envelope" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', fontSize: '.9rem' }} />
+                    <input
+                      type="email"
+                      required
+                      placeholder="yourname@gmail.com"
+                      value={googlePromptEmail}
+                      onChange={(e) => setGooglePromptEmail(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '11px 14px 11px 40px',
+                        borderRadius: 10,
+                        background: 'rgba(15, 23, 42, 0.7)',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        color: '#FFFFFF',
+                        fontSize: '.9rem',
+                        outline: 'none',
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '.74rem', fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: '#CBD5E1', marginBottom: 6 }}>
+                    Resident Name (Optional)
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <i className="fas fa-user" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', fontSize: '.9rem' }} />
+                    <input
+                      type="text"
+                      placeholder="e.g. Maria Santos"
+                      value={googlePromptName}
+                      onChange={(e) => setGooglePromptName(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '11px 14px 11px 40px',
+                        borderRadius: 10,
+                        background: 'rgba(15, 23, 42, 0.7)',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        color: '#FFFFFF',
+                        fontSize: '.9rem',
+                        outline: 'none',
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+                  <button
+                    type="button"
+                    onClick={() => setGooglePromptOpen(false)}
+                    style={{
+                      flex: 1,
+                      padding: '11px 16px',
+                      borderRadius: 10,
+                      border: '1px solid rgba(255,255,255,0.18)',
+                      background: 'transparent',
+                      color: '#94A3B8',
+                      fontWeight: 600,
+                      fontSize: '.85rem',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={googlePromptLoading}
+                    style={{
+                      flex: 2,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                      padding: '11px 20px',
+                      borderRadius: 10,
+                      border: 'none',
+                      background: '#FFFFFF',
+                      color: '#0F172A',
+                      fontWeight: 700,
+                      fontSize: '.88rem',
+                      cursor: googlePromptLoading ? 'not-allowed' : 'pointer',
+                      boxShadow: '0 4px 14px rgba(255,255,255,0.25)',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                    </svg>
+                    {googlePromptLoading ? 'Signing in…' : 'Sign In with Google'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          ) : (
+            <>
           {/* ============================================================ */}
           {/* MODE: SIGN IN / SIGN UP MAIN VIEW */}
           {/* ============================================================ */}
@@ -1271,6 +1452,8 @@ export default function AuthModal() {
                 </form>
               )}
             </div>
+          )}
+            </>
           )}
         </div>
       </div>

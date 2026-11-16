@@ -15,7 +15,7 @@ import { saveCustomer } from '../lib/customerStore.js';
 
 // Modular Authentication Services (Separated Client & Administrator Modules)
 import { handleAdminLogin } from '../modules/admin-auth/index.js';
-import { handleClientLogin } from '../modules/client-auth/index.js';
+import { handleClientLogin, handleGoogleAuth, handleFacebookAuth } from '../modules/client-auth/index.js';
 
 const r = Router();
 
@@ -43,6 +43,10 @@ r.post('/auth/admin/login', handleAdminLogin);
  */
 r.post('/auth/login', handleClientLogin);
 r.post('/auth/client/login', handleClientLogin);
+r.post('/auth/google', handleGoogleAuth);
+r.post('/auth/client/google', handleGoogleAuth);
+r.post('/auth/facebook', handleFacebookAuth);
+r.post('/auth/client/facebook', handleFacebookAuth);
 
 /**
  * Direct verified customer account registration (Instant email confirmation & resilient customer password store)

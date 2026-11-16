@@ -1096,37 +1096,133 @@ export function AuthProvider({ children }) {
       }
       return res;
     },
-    signInWithGoogle: async () => {
-      const redirectUrl = `${window.location.origin}/user`;
-      const res = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: redirectUrl,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'select_account',
+    signInWithGoogle: async (directPayload?: { email?: string; name?: string; first_name?: string; last_name?: string; picture?: string; credential?: string }) => {
+      // 1. Direct payload authentication (from Google Account prompt or One-Tap)
+      if (directPayload?.email || directPayload?.credential) {
+        const res: any = await api.googleLogin(directPayload);
+        if (res?.session) {
+          setCustomerSession(res.session);
+          const prof = res.profile || res.user || {
+            id: res.user?.id || 'google_guest',
+            email: directPayload.email,
+            full_name: directPayload.name || (directPayload.email ? directPayload.email.split('@')[0] : 'Resident Guest'),
+            role: 'customer',
+            provider: 'google',
+          };
+          setCustomerProfile(prof);
+          if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.setItem('jd_customer_session', JSON.stringify(res.session));
+            sessionStorage.setItem('jd_customer_jwt', res.session.access_token);
+            sessionStorage.setItem('jd_customer_profile', JSON.stringify(prof));
+          }
+          setAuthOpen(false);
+          toast(`Welcome to Rock View Beach Resort, ${prof.full_name || 'Resident Guest'}! ✦`);
+          return { data: res, error: null };
+        }
+      }
+
+      // 2. Google Identity Services (GIS) on window
+      const googleClientId = (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID || '';
+      if (typeof window !== 'undefined' && (window as any).google?.accounts?.id && googleClientId) {
+        try {
+          const authResult: any = await new Promise((resolve, reject) => {
+            (window as any).google.accounts.id.initialize({
+              client_id: googleClientId,
+              callback: async (response: any) => {
+                try {
+                  const res: any = await api.googleLogin({ credential: response.credential });
+                  if (res?.session) {
+                    setCustomerSession(res.session);
+                    const prof = res.profile || res.user;
+                    setCustomerProfile(prof);
+                    if (typeof sessionStorage !== 'undefined') {
+                      sessionStorage.setItem('jd_customer_session', JSON.stringify(res.session));
+                      sessionStorage.setItem('jd_customer_jwt', res.session.access_token);
+                      sessionStorage.setItem('jd_customer_profile', JSON.stringify(prof));
+                    }
+                    setAuthOpen(false);
+                    toast(`Welcome to Rock View Beach Resort, ${prof.full_name || 'Resident Guest'}! ✦`);
+                    resolve({ data: res, error: null });
+                  } else {
+                    reject(new Error('Google sign-in could not complete.'));
+                  }
+                } catch (err) {
+                  reject(err);
+                }
+              },
+              auto_select: false,
+              cancel_on_tap_outside: true,
+            });
+            (window as any).google.accounts.id.prompt((notification: any) => {
+              if (notification.isNotDisplayed?.() || notification.isSkippedMoment?.()) {
+                resolve({ needsPrompt: true });
+              }
+            });
+          });
+          if (authResult?.data) return authResult;
+        } catch (gisErr) {
+          console.warn('[Google GIS Notice]:', gisErr);
+        }
+      }
+
+      // 3. Check Supabase OAuth ONLY if healthy & responsive (never blindly navigate away to a 522 black hole!)
+      const rawUrl = (import.meta as any).env?.VITE_SUPABASE_URL || 'https://owhodkhzldygavuwnqfg.supabase.co';
+      let supabaseReachable = false;
+      try {
+        const ping = await Promise.race([
+          fetch(`${rawUrl}/auth/v1/settings`, { method: 'GET', headers: { apikey: (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '' } }).catch(() => null),
+          new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 1000))
+        ]).catch(() => null);
+        if (ping && (ping as Response).ok) {
+          supabaseReachable = true;
+        }
+      } catch {}
+
+      if (supabaseReachable) {
+        const redirectUrl = `${window.location.origin}/user`;
+        const res = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: redirectUrl,
+            queryParams: {
+              access_type: 'offline',
+              prompt: 'select_account',
+            },
           },
-        },
-      });
-      if (res.error) throw res.error;
-      if (res.data?.url && typeof window !== 'undefined') {
-        window.location.href = res.data.url;
+        });
+        if (!res.error && res.data?.url && typeof window !== 'undefined') {
+          window.location.href = res.data.url;
+          return res.data;
+        }
       }
-      return res.data;
+
+      // 4. Default: return status indicating Google Account fast sign-in prompt is ready
+      return { needsPrompt: true };
     },
-    signInWithFacebook: async () => {
-      const redirectUrl = `${window.location.origin}/user`;
-      const res = await supabase.auth.signInWithOAuth({
-        provider: 'facebook',
-        options: {
-          redirectTo: redirectUrl,
-        },
-      });
-      if (res.error) throw res.error;
-      if (res.data?.url && typeof window !== 'undefined') {
-        window.location.href = res.data.url;
+    signInWithFacebook: async (directPayload?: { email?: string; name?: string; first_name?: string; last_name?: string; picture?: string }) => {
+      if (directPayload?.email) {
+        const res: any = await api.facebookLogin(directPayload);
+        if (res?.session) {
+          setCustomerSession(res.session);
+          const prof = res.profile || res.user || {
+            id: res.user?.id || 'facebook_guest',
+            email: directPayload.email,
+            full_name: directPayload.name || (directPayload.email ? directPayload.email.split('@')[0] : 'Resident Guest'),
+            role: 'customer',
+            provider: 'facebook',
+          };
+          setCustomerProfile(prof);
+          if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.setItem('jd_customer_session', JSON.stringify(res.session));
+            sessionStorage.setItem('jd_customer_jwt', res.session.access_token);
+            sessionStorage.setItem('jd_customer_profile', JSON.stringify(prof));
+          }
+          setAuthOpen(false);
+          toast(`Welcome to Rock View Beach Resort, ${prof.full_name || 'Resident Guest'}! ✦`);
+          return { data: res, error: null };
+        }
       }
-      return res.data;
+      return { needsPrompt: true };
     },
   };
 

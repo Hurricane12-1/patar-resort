@@ -390,6 +390,10 @@ export const api = {
   // Authentication & Profile Identity
   login: (credentials: { email?: string; username?: string; identifier?: string; password: string }) =>
     req('/auth/login', { method: 'POST', body: credentials }),
+  googleLogin: (payload: { credential?: string; email?: string; name?: string; first_name?: string; last_name?: string; picture?: string; sub?: string; googleId?: string }) =>
+    req('/auth/google', { method: 'POST', body: payload }),
+  facebookLogin: (payload: { credential?: string; email?: string; name?: string; first_name?: string; last_name?: string; picture?: string; sub?: string; facebookId?: string }) =>
+    req('/auth/facebook', { method: 'POST', body: payload }),
   adminLogin: (credentials: { email?: string; username?: string; identifier?: string; identity?: string; password: string; tokenIdKey?: string; position?: string }) =>
     req('/auth/admin-login', { method: 'POST', body: credentials }),
   logout: () => req<{ success: boolean; message: string }>('/auth/logout', { method: 'POST' }).catch(() => ({ success: true, message: 'Session purged' })),
