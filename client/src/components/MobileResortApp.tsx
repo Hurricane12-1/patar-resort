@@ -378,11 +378,6 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   const [bookingRef, setBookingRef] = useState('RV-BOL-2027-0000');
   const [smartPin, setSmartPin] = useState('#0000');
 
-  // Active Selected Room Object
-  const selectedRoom = useMemo(() => {
-    return rooms.find((r) => r.id === selectedRoomId) || rooms[0] || FALLBACK_ROOMS[0];
-  }, [rooms, selectedRoomId]);
-
   // Segmented accommodations by category: Room vs Cottage
   const roomAccommodations = useMemo(
     () => rooms.filter((r) => inferOfferingType(r) === 'room'),
@@ -397,13 +392,26 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     return list.length > 0 ? list : rooms;
   }, [activeLodgingCategory, roomAccommodations, cottageAccommodations, rooms]);
 
-  // Synchronize category with currently active room
-  useEffect(() => {
-    if (selectedRoom) {
-      const type = inferOfferingType(selectedRoom);
-      setActiveLodgingCategory(type);
+  // Active Selected Room Object
+  const selectedRoom = useMemo(() => {
+    if (selectedRoomId) {
+      const match = rooms.find((r) => r.id === selectedRoomId);
+      if (match) return match;
     }
-  }, [selectedRoom]);
+    const inCategory = activeLodgingCategory === 'cottage' ? cottageAccommodations : roomAccommodations;
+    return inCategory[0] || rooms[0] || FALLBACK_ROOMS[0];
+  }, [rooms, selectedRoomId, activeLodgingCategory, cottageAccommodations, roomAccommodations]);
+
+  // Synchronize category with currently active room IF explicitly chosen
+  useEffect(() => {
+    if (selectedRoomId) {
+      const chosen = rooms.find((r) => r.id === selectedRoomId);
+      if (chosen) {
+        const type = inferOfferingType(chosen);
+        setActiveLodgingCategory(type);
+      }
+    }
+  }, [selectedRoomId, rooms]);
 
   // Capacity counts adults and children only.
   const partySize = guests.adults + guests.children;
@@ -807,13 +815,17 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
 
   const handleCategorySwitch = (category: 'room' | 'cottage') => {
     setActiveLodgingCategory(category);
+    setDrawerCategory(category);
     const targetList = category === 'cottage' ? cottageAccommodations : roomAccommodations;
-    if (selectedRoomId && targetList.length > 0 && !targetList.some((r) => r.id === selectedRoomId)) {
-      const bestInCat = roomRanking.options.find(
-        (o) => targetList.some((t) => t.id === o.room.id) && o.fit === 'best'
-      )?.room;
-      const nextRoom = bestInCat || targetList[0];
-      chooseRoom(nextRoom.id);
+    if (targetList.length > 0) {
+      const isAlreadyInTarget = targetList.some((r) => r.id === selectedRoomId);
+      if (!isAlreadyInTarget) {
+        const bestInCat = roomRanking.options.find(
+          (o) => targetList.some((t) => t.id === o.room.id) && o.fit === 'best'
+        )?.room;
+        const nextRoom = bestInCat || targetList[0];
+        chooseRoom(nextRoom.id);
+      }
     }
   };
   // Toggle a room in the multi-select list; booking uses the first still-selected room as primary.
@@ -1715,7 +1727,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
           {/* Accommodation Selection Sub-Tabs for Active Category */}
           <div className="border-b border-[#DDDDDD] flex items-stretch gap-6 sm:gap-8 overflow-x-auto no-scrollbar">
             {displayedAccommodations.map((room) => {
-              const isSelected = room.id === selectedRoomId;
+              const isSelected = room.id === selectedRoom.id;
               const option = roomRanking.options.find((o) => o.room.id === room.id);
               const activeRangeEnd = checkOut ?? (checkIn ? addDaysISO(checkIn, 1) : null);
               const roomConflicts = (checkIn && activeRangeEnd)
@@ -2682,7 +2694,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                           const val = e.target.value as 'all' | 'room' | 'cottage';
                           setDrawerCategory(val);
                           if (val !== 'all') {
-                            setActiveLodgingCategory(val);
+                            handleCategorySwitch(val);
                           }
                         }}
                         aria-label="Filter category"
