@@ -493,13 +493,22 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   // ---------------------------------------------------------------------------
   // 1. SUPABASE DATA FETCH & REALTIME SUBSCRIPTIONS
   // ---------------------------------------------------------------------------
+  // Tracks bookings just completed in the current user session so they are
+  // immediately recognized as `is_own: true` and never trigger a self-conflict warning.
+  const justBookedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!signedInGuest) {
+      justBookedRef.current.clear();
+    }
+  }, [signedInGuest, customerProfile?.id]);
+
   const fetchLiveReservations = useCallback(async () => {
     // Availability reflects every guest's bookings without leaking PII.
     // Simultaneously check the signed-in user's own reservations so their own
     // booked dates render as a normal white-highlighted "BOOKED" cell, while
     // other users see those dates as red "BOOKED".
-    const ownIds = new Set<string>();
-    const ownKeys = new Set<string>();
+    const ownIds = new Set<string>(justBookedRef.current);
+    const ownKeys = new Set<string>(justBookedRef.current);
     const ownWindows: ReservationWindow[] = [];
 
     if (signedInGuest) {
@@ -768,6 +777,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
 
   // Detailed conflict detection across every selected room for the current range with exact date breakdowns
   const detailedConflicts = useMemo(() => {
+    if (showReserveModal || reserveSubmitting) return [];
     const activeEnd = checkOut ?? (checkIn ? addDaysISO(checkIn, 1) : null);
     if (!checkIn || !activeEnd) return [];
     const ids = selectedRoomIds.length ? selectedRoomIds : [selectedRoom.id];
@@ -779,6 +789,9 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
           (res) =>
             String(res.room_id) === String(room.id) &&
             res.status !== 'cancelled' &&
+            !res.is_own &&
+            !justBookedRef.current.has(String(res.id || '')) &&
+            !justBookedRef.current.has(`${res.room_id}:${res.check_in}:${res.check_out}`) &&
             rangesOverlap(checkIn, activeEnd, res.check_in, res.check_out)
         );
         if (conflictingReservations.length === 0) return null;
@@ -792,7 +805,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
         };
       })
       .filter((c): c is { room: Room; conflictingReservations: ReservationWindow[]; formattedRanges: string[] } => c !== null);
-  }, [checkIn, checkOut, reservations, selectedRoomIds, selectedRoom.id, rooms, formatStayRangeFriendly]);
+  }, [showReserveModal, reserveSubmitting, checkIn, checkOut, reservations, selectedRoomIds, selectedRoom.id, rooms, formatStayRangeFriendly]);
 
   const hasRangeConflict = detailedConflicts.length > 0;
   const conflictRooms = useMemo(() => detailedConflicts.map((c) => c.room), [detailedConflicts]);
@@ -1510,12 +1523,34 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     };
     if (!signedInGuest) rememberBookingGuest({ name, email, phone });
 
+    const newBookingKey = `${room.id}:${checkIn}:${checkOut}`;
+    justBookedRef.current.add(String(savedRow.id));
+    justBookedRef.current.add(newBookingKey);
+
+    setConflictToast(null);
+    setCalendarNotice(null);
+    setCheckIn(null);
+    setCheckOut(null);
+    setHoverDate(null);
+    setReservations((prev) => [
+      ...prev.filter((r) => `${r.room_id}:${r.check_in}:${r.check_out}` !== newBookingKey),
+      {
+        id: String(savedRow.id),
+        room_id: String(room.id),
+        check_in: checkIn,
+        check_out: checkOut,
+        status: 'confirmed',
+        is_own: true,
+      },
+    ]);
+
     setBookingRef(reference);
     setSmartPin(pin);
     setSavedBooking(record);
-    await fetchLiveReservations();
     setReserveSubmitting(false);
     setReserveStep('success');
+    toast('✓ You have successfully booked your stay!');
+    fetchLiveReservations();
   };
 
   // Gallery Photos for Bento Grid
