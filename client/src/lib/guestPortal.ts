@@ -6,7 +6,7 @@ import { computeStayPrice, nightsBetween, type Room } from './guestRooms';
  * sign-in and shows only that account's real, database-backed data — nothing on-device
  * or sampled. Set to true only to re-enable the sign-in-skipped preview mode for review.
  */
-export const CLIENT_DIRECT_ACCESS = true;
+export const CLIENT_DIRECT_ACCESS = false;
 
 export const RESORT_CONTACT = {
   phoneDisplay: '+63 900 555 0123',

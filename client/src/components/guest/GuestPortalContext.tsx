@@ -72,9 +72,7 @@ function resolveAccount(scope: string, signedIn: boolean, customerProfile: any):
   const stored = loadGuestAccount(scope);
   if (!signedIn) {
     if (stored) return stored;
-    const sample = createSampleAccount();
-    saveGuestAccount(scope, sample);
-    return sample;
+    return createSampleAccount();
   }
   // Signed-in residents: name, email, and phone come from their account; the rest stays on this device.
   const base: GuestAccount = stored || {
@@ -128,10 +126,10 @@ export function GuestPortalProvider({ children }: { children: ReactNode }) {
   const loadRooms = useCallback(async () => {
     try {
       const live = await fetchBookableRooms();
-      setRooms(live.length ? live : FALLBACK_ROOMS);
+      setRooms(live);
       setLiveRooms(live.length > 0);
     } catch {
-      setRooms((prev) => (prev.length ? prev : FALLBACK_ROOMS));
+      setRooms([]);
       setLiveRooms(false);
     } finally {
       setRoomsReady(true);

@@ -29,61 +29,8 @@ export const CLEANING_FEE_PHP = 500;
 export const COASTAL_FEE_PHP = 150;
 export const WEEKEND_RATE_MULTIPLIER = 1.15;
 
-/** Used only when the live room inventory cannot be reached. */
-export const FALLBACK_ROOMS: Room[] = [
-  {
-    id: 'chason-room',
-    name: 'chason room',
-    category: 'Suite',
-    rate_php: 3500,
-    capacity: 4,
-    beds_count: 2,
-    baths_count: 1,
-    description: 'An executive oceanfront sanctuary villa with panoramic views of the West Philippine Sea, featuring handcrafted wood furnishings, private limestone terrace, and high-speed Wi-Fi internet.',
-    amenities: ['Oceanfront Balcony', 'High-Speed Wi-Fi', 'Air Conditioning', 'Private Coral Steps', 'Solar Microgrid Backup', 'Keypad Smart Lock', 'Complimentary Breakfast', 'Snorkeling Gear'],
-    image_url: '/images/chason_room_generated.jpg',
-    images: ['/images/chason_room_generated.jpg', '/images/rockview/03_deluxe_bedroom_swan_towels.jpg', '/images/cliffside_hero_generated.jpg', '/images/rockview/02_ocean_rock_formation_cliff.jpg', '/images/rockview/04_swimming_pool_deck_loungers.jpg']
-  },
-  {
-    id: 'unit-3',
-    name: 'Unit 3',
-    category: 'Cottage',
-    rate_php: 3200,
-    capacity: 2,
-    beds_count: 1,
-    baths_count: 1,
-    description: 'Charming coastal cottage nestled among tropical flora with direct garden walkway to the tidal rock pools and beach.',
-    amenities: ['Garden View', 'Wi-Fi', 'Air Conditioning', 'King Bed', 'Private Bath', 'Breakfast Included'],
-    image_url: '/images/unit3_veranda.jpg',
-    images: ['/images/unit3_veranda.jpg', '/images/chason_room_generated.jpg', '/images/rockview/06_modern_tiled_bathroom_shower.jpg', '/images/rockview/12_resort_patio_dining_area.jpg', '/images/cliffside_hero_generated.jpg']
-  },
-  {
-    id: 'sunset',
-    name: 'Sunset',
-    category: 'Villa',
-    rate_php: 4500,
-    capacity: 6,
-    beds_count: 3,
-    baths_count: 2,
-    description: 'Our premier cliffside villa offering unobstructed 180-degree sunset panoramas, an expansive private viewing deck, and deluxe family amenities.',
-    amenities: ['180° Sunset View', 'Private Living Deck', 'Wi-Fi', 'Air Conditioning', 'Full Kitchenette', 'Solar Backup', 'Dedicated Host'],
-    image_url: '/images/sunset_cottage_generated.jpg',
-    images: ['/images/sunset_cottage_generated.jpg', '/images/rockview/11_beachside_cottage_porch.jpg', '/images/rockview/18_outdoor_cottage_seating.jpg', '/images/rockview/08_sunset_seashore_horizon.jpg', '/images/rockview/09_cottage_garden_pathway.jpg']
-  },
-  {
-    id: 'unit-5',
-    name: 'Unit 5',
-    category: 'Suite',
-    rate_php: 3800,
-    capacity: 4,
-    beds_count: 2,
-    baths_count: 1,
-    description: 'Modern coastal sanctuary suite designed for peaceful retreats, with floor-to-ceiling glass doors opening directly to the ocean breeze.',
-    amenities: ['Ocean Breeze Balcony', 'Wi-Fi', 'Air Conditioning', 'Work Desk', 'Rain Shower', 'Private Patio'],
-    image_url: '/images/unit5_suite.jpg',
-    images: ['/images/unit5_suite.jpg', '/images/rockview/15_family_suite_bedroom_view.jpg', '/images/rockview/05_dormitory_wooden_bunk_beds.jpg', '/images/cliffside_hero_generated.jpg', '/images/rockview/01_aerial_resort_pool_building.jpg']
-  }
-];
+/** Empty fallback — all rooms come strictly from the live database. */
+export const FALLBACK_ROOMS: Room[] = [];
 
 // ---------------------------------------------------------------------------
 // Live room inventory

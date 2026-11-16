@@ -181,30 +181,20 @@ function fmtYM(ym: YearMonth): string {
   return `${ym.y}-${String(ym.m).padStart(2, '0')}`;
 }
 
-function getInitialReservations(roomsList: Room[]): ReservationWindow[] {
-  const chason = roomsList.find((r) => /chason/i.test(r.name)) || roomsList[0];
-  const sunset = roomsList.find((r) => /sunset/i.test(r.name)) || roomsList.find((r) => /unit\s*5/i.test(r.name));
-  const list: ReservationWindow[] = [];
-  if (chason) {
-    list.push({
-      id: `res-chason-nov2026`,
-      room_id: String(chason.id),
-      check_in: '2026-11-17',
-      check_out: '2026-11-28',
-      status: 'confirmed',
-    });
-  }
-  if (sunset && sunset.id !== chason?.id) {
-    list.push({
-      id: `res-sunset-nov2026`,
-      room_id: String(sunset.id),
-      check_in: '2026-11-13',
-      check_out: '2026-11-14',
-      status: 'confirmed',
-    });
-  }
-  return list;
-}
+const EMPTY_ROOM: Room = {
+  id: '',
+  name: '',
+  category: '',
+  offering_type: 'room',
+  rate_php: 0,
+  capacity: 0,
+  beds_count: 0,
+  baths_count: 0,
+  description: '',
+  amenities: [],
+  image_url: '',
+  images: [],
+};
 
 // =============================================================================
 // MAIN COMPONENT: MobileResortApp (Luxury Coastal Format in React TSX)
@@ -236,12 +226,12 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   );
 
   // Application Data States (Live Supabase)
-  const [rooms, setRooms] = useState<Room[]>(FALLBACK_ROOMS);
+  const [rooms, setRooms] = useState<Room[]>([]);
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   // Visual multi-select: rooms the guest has toggled on. Booking uses selectedRoomIds[0] as the primary room.
   const [selectedRoomIds, setSelectedRoomIds] = useState<string[]>([]);
   const [activeLodgingCategory, setActiveLodgingCategory] = useState<'room' | 'cottage'>('room');
-  const [reservations, setReservations] = useState<ReservationWindow[]>(() => getInitialReservations(FALLBACK_ROOMS));
+  const [reservations, setReservations] = useState<ReservationWindow[]>([]);
   const [dbStatus, setDbStatus] = useState<'connecting' | 'connected' | 'offline'>('connecting');
   const [dbStatusMessage, setDbStatusMessage] = useState<string>('Connecting…');
 
@@ -480,7 +470,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
       if (match) return match;
     }
     const inCategory = activeLodgingCategory === 'cottage' ? cottageAccommodations : roomAccommodations;
-    return inCategory[0] || rooms[0] || FALLBACK_ROOMS[0];
+    return inCategory[0] || rooms[0] || EMPTY_ROOM;
   }, [rooms, selectedRoomId, activeLodgingCategory, cottageAccommodations, roomAccommodations]);
 
   // Synchronize category with currently active room IF explicitly chosen
@@ -503,33 +493,25 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   // ---------------------------------------------------------------------------
   // 1. SUPABASE DATA FETCH & REALTIME SUBSCRIPTIONS
   // ---------------------------------------------------------------------------
-  const fetchLiveReservations = useCallback(async (currentRooms?: Room[]) => {
+  const fetchLiveReservations = useCallback(async () => {
     // Availability must reflect EVERY guest's bookings, not just the signed-in
     // user's. Row-level security keeps `reservations` owner-only, so read the
     // PII-free `room_availability` view (room_id + dates only) which exposes all
     // active stays. Fall back to the table where the view isn't present.
-    const activeRooms = currentRooms || rooms;
-    const baseline = getInitialReservations(activeRooms);
-
     try {
       const { data, error } = await supabase
         .from('room_availability')
         .select('room_id, check_in, check_out, status');
-      if (!error && Array.isArray(data) && data.length > 0) {
-        const live = data.map((r: any, i: number) => ({
-          id: `avail-${r.room_id}-${r.check_in}-${i}`,
-          room_id: String(r.room_id),
-          check_in: r.check_in,
-          check_out: r.check_out,
-          status: r.status,
-        }));
-        const merged = [...baseline];
-        for (const res of live) {
-          if (!merged.some((m) => m.room_id === res.room_id && m.check_in === res.check_in && m.check_out === res.check_out)) {
-            merged.push(res);
-          }
-        }
-        setReservations(merged);
+      if (!error && Array.isArray(data)) {
+        setReservations(
+          data.map((r: any, i: number) => ({
+            id: `avail-${r.room_id}-${r.check_in}-${i}`,
+            room_id: String(r.room_id),
+            check_in: r.check_in,
+            check_out: r.check_out,
+            status: r.status,
+          }))
+        );
         return;
       }
     } catch {
@@ -540,46 +522,40 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
         .from('reservations')
         .select('id, room_id, check_in, check_out, status')
         .neq('status', 'cancelled');
-      if (!error && Array.isArray(data) && data.length > 0) {
-        const live = data.map((r: any) => ({
-          id: String(r.id),
-          room_id: String(r.room_id),
-          check_in: r.check_in,
-          check_out: r.check_out,
-          status: r.status,
-        }));
-        const merged = [...baseline];
-        for (const res of live) {
-          if (!merged.some((m) => m.room_id === res.room_id && m.check_in === res.check_in && m.check_out === res.check_out)) {
-            merged.push(res);
-          }
-        }
-        setReservations(merged);
+      if (!error && Array.isArray(data)) {
+        setReservations(
+          data.map((r: any) => ({
+            id: String(r.id),
+            room_id: String(r.room_id),
+            check_in: r.check_in,
+            check_out: r.check_out,
+            status: r.status,
+          }))
+        );
         return;
       }
     } catch (err: any) {
       console.warn('[Supabase Reservations] Fetch warning:', err?.message);
     }
-    setReservations(baseline);
-  }, [rooms]);
+    setReservations([]);
+  }, []);
 
   const fetchLiveRooms = useCallback(async () => {
     try {
       // Active overnight rooms only (tours and offers share the rooms table); capacity comes straight from admin data.
       const mapped = await fetchBookableRooms();
-      if (mapped.length > 0) {
-        setRooms(mapped);
-        setSelectedRoomId((current) => (current && mapped.some((m) => m.id === current) ? current : null));
-        setSelectedRoomIds((current) => current.filter((id) => mapped.some((m) => m.id === id)));
-        fetchLiveReservations(mapped);
-      }
+      setRooms(mapped);
+      setSelectedRoomId((current) => (current && mapped.some((m) => m.id === current) ? current : null));
+      setSelectedRoomIds((current) => current.filter((id) => mapped.some((m) => m.id === id)));
+      fetchLiveReservations();
       setDbStatus('connected');
       setDbStatusMessage('Live sync active');
     } catch (err: any) {
-      console.warn('[Supabase Rooms] Using resilient cache fallback:', err?.message);
+      console.warn('[Supabase Rooms] Fetch warning:', err?.message);
+      setRooms([]);
       setDbStatus('offline');
-      setDbStatusMessage('Local Resilient Inventory');
-      fetchLiveReservations(FALLBACK_ROOMS);
+      setDbStatusMessage('Database unreachable');
+      fetchLiveReservations();
     }
   }, [fetchLiveReservations]);
 
@@ -638,7 +614,9 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     (isoStr: string) => {
       const ids = selectedRoomIds.length ? selectedRoomIds : [selectedRoom.id];
       return ids.some((id) => {
+        if (!id) return false;
         const roomObj = rooms.find((r) => r.id === id) || selectedRoom;
+        if (!roomObj?.id) return false;
         return !isRoomFree(roomObj.id, isoStr, addDaysISO(isoStr, 1), reservations);
       });
     },

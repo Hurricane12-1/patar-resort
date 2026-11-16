@@ -51,7 +51,7 @@ export async function loadPageSettings(force = false): Promise<PageMedia> {
     .getPageSettings()
     .then((res) => {
       const remote = res && res.settings ? (res.settings as PageMedia) : {};
-      cache = { ...cache, ...remote };
+      cache = { ...remote };
       persistToLocalStorage(cache);
       notify();
       return cache;
