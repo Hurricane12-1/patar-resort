@@ -181,26 +181,35 @@ r.get('/analytics/overview', authenticate, requireAdminSecurityBlock, asyncH(asy
       }
     }
 
-    const defaultWeekAuto = [38, 45, 62, 75, 98, 125, 110];
-    const defaultWeekStaff = [18, 24, 35, 50, 76, 92, 80];
-    const hasWeekLive = weekAuto.some(v => v > 0) || weekStaff.some(v => v > 0);
-    const finalWeekAuto = weekDays.map((_, i) => hasWeekLive ? Math.max(weekAuto[i], Math.round(defaultWeekAuto[i] * (Math.max(1, totalChats) / 20))) : defaultWeekAuto[i]);
-    const finalWeekStaff = weekDays.map((_, i) => hasWeekLive ? Math.max(weekStaff[i], Math.round(defaultWeekStaff[i] * (Math.max(1, staffRequestsCount) / 8))) : defaultWeekStaff[i]);
-
     const monthDays = Array.from({ length: 30 }, (_, i) => i + 1);
-    const defaultMonthAuto = [5, 12, 18, 14, 28, 35, 25, 28, 36, 40, 52, 45, 62, 50, 48, 65, 95, 42, 60, 85, 58, 62, 40, 32, 28, 25, 15, 8, 5, 2];
-    const defaultMonthStaff = [2, 8, 10, 15, 22, 18, 35, 75, 55, 42, 25, 85, 48, 32, 45, 68, 90, 28, 42, 25, 30, 45, 48, 42, 50, 48, 35, 12, 6, 2];
+    const monthAuto = Array.from({ length: 30 }, () => 0);
+    const monthStaff = Array.from({ length: 30 }, () => 0);
+
+    const monthStart = new Date(currDate.getFullYear(), currDate.getMonth(), 1);
+    for (const msg of chatMessages) {
+      const msgDate = new Date(msg.created_at);
+      if (msgDate >= monthStart && msgDate.getMonth() === currDate.getMonth()) {
+        const dayIdx = msgDate.getDate() - 1;
+        if (dayIdx >= 0 && dayIdx < 30) {
+          if (msg.metadata?.requested_staff) {
+            monthStaff[dayIdx] += 1;
+          } else {
+            monthAuto[dayIdx] += 1;
+          }
+        }
+      }
+    }
 
     const conversations_evolution = {
       week: {
         labels: weekDays,
-        lineA: finalWeekAuto,
-        lineB: finalWeekStaff,
+        lineA: weekAuto,
+        lineB: weekStaff,
       },
       month: {
         labels: monthDays,
-        lineA: defaultMonthAuto,
-        lineB: defaultMonthStaff,
+        lineA: monthAuto,
+        lineB: monthStaff,
       }
     };
 

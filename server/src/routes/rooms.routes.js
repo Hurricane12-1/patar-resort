@@ -228,7 +228,7 @@ r.get('/availability', validate(rangeSchema, 'query'), asyncH(async (req, res) =
   if (activeRoomIds.length > 0) {
     try {
       const { data } = await sysClient.from('reservations')
-        .select('room_id, check_in, check_out, status, notes')
+        .select('id, room_id, check_in, check_out, status, notes')
         .in('room_id', activeRoomIds)
         .in('status', ['pending', 'confirmed', 'checked_in'])
         .lt('check_in', check_out)
@@ -236,18 +236,6 @@ r.get('/availability', validate(rangeSchema, 'query'), asyncH(async (req, res) =
       if (data) overlappingRes = [...data];
     } catch (err) {
       console.warn('[Availability] Overlapping reservations notice:', err.message);
-    }
-  }
-
-  // Resilient local store overlapping reservations merge
-  const localOverlapping = getLocalReservations().filter((b) =>
-    ['pending', 'confirmed', 'checked_in'].includes(b.status) &&
-    b.check_in < check_out &&
-    b.check_out > check_in
-  );
-  for (const lb of localOverlapping) {
-    if (!overlappingRes.some((ob) => ob.id === lb.id)) {
-      overlappingRes.push(lb);
     }
   }
 
