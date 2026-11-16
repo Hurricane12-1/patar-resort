@@ -5,6 +5,7 @@ import GuestIcon, { type GuestIconName } from '../../components/guest/GuestIcon'
 import { useGuestPortal, type RoomSnapshot } from '../../components/guest/GuestPortalContext';
 import { usePageSettings } from '../../lib/pageSettings';
 import { toast } from '../../components/Toasts';
+import { VoucherBarcode } from '../../components/receipt/VoucherBarcode';
 import { nightsBetween } from '../../lib/guestRooms';
 import {
   RESORT_CONTACT,
@@ -630,6 +631,13 @@ function BookingDrawer({ item, today, onClose }: { item: StayItem; today: string
                   );
                 })}
               </ol>
+            )}
+
+            {/* Scannable RFID Keycard & Barcode Digital Pass */}
+            {phase !== 'cancelled' && (
+              <div className="mt-5">
+                <VoucherBarcode reference={booking.reference} />
+              </div>
             )}
           </div>
 
