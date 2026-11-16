@@ -224,6 +224,8 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     isStaffAuthenticated,
   } = useAuth();
   const signedInGuest = Boolean(customerSession && customerProfile);
+  // Booking tools (calendar & reservation sidebar) are visible when logged in or inside the guest portal
+  const showBookingTools = Boolean(signedInGuest || embedded);
 
   const isStaffOrAdmin = Boolean(
     isAdminAuthenticated ||
@@ -2135,12 +2137,12 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
         </section>
 
         {/* =====================================================================
-             ROOM OVERVIEW WORKSPACE (Centered on Landing, 2-Col in Embedded)
+             ROOM OVERVIEW WORKSPACE (Centered on Landing, 2-Col in Embedded/Logged-in)
              ===================================================================== */}
-        <div className={embedded ? "grid grid-cols-1 lg:grid-cols-12 gap-12 items-start" : "max-w-4xl mx-auto space-y-6"}>
+        <div className={showBookingTools ? "grid grid-cols-1 lg:grid-cols-12 gap-12 items-start" : "max-w-4xl mx-auto space-y-6"}>
           
           {/* LEFT / MAIN COLUMN */}
-          <div className={embedded ? "lg:col-span-7 xl:col-span-8" : "w-full"}>
+          <div className={showBookingTools ? "lg:col-span-7 xl:col-span-8" : "w-full"}>
             
             {/* Specs Header */}
             <div className="pb-6 border-b border-white/10">
@@ -2243,7 +2245,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
             {/* =================================================================
                  SHANGRI-LA BORACAY DUAL-MONTH RECTANGULAR BOX CALENDAR
                  ================================================================= */}
-            {embedded && (
+            {showBookingTools && (
             <div id="calendar-section" className="py-7">
               <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-4">
                 <div>
@@ -2637,7 +2639,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
           </div>
 
           {/* RIGHT COLUMN (~35%): STICKY RESERVATION CARD */}
-          {embedded && (
+          {showBookingTools && (
           <aside
             id="reserve-card"
             className="lg:col-span-5 xl:col-span-4 self-start lg:sticky lg:top-24 scroll-mt-24 relative z-40"
@@ -3555,7 +3557,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
       {/* =====================================================================
            MOBILE FIXED BOTTOM BAR
            ===================================================================== */}
-      {embedded && (
+      {showBookingTools && (
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-[#EBEBEB] px-5 py-3 flex items-center justify-between shadow-lg">
         <div>
           <span className="text-base font-bold text-[#222222]">
