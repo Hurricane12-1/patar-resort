@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.tsx';
 import { api } from '../lib/api.ts';
 import { toast } from './Toasts.tsx';
+import GoogleAccountChooserModal, { GoogleAccount } from './GoogleAccountChooserModal.tsx';
 import '../styles/resident-login.css';
 
 interface ResidentLoginProps {
@@ -59,11 +60,9 @@ export default function ResidentLogin({ returnTo = '/user' }: ResidentLoginProps
   const [gmailOtpStep, setGmailOtpStep] = useState<1 | 2>(1);
   const [gmailOtpLoading, setGmailOtpLoading] = useState(false);
 
-  // Express Google Sign-In State
-  const [googlePromptOpen, setGooglePromptOpen] = useState(false);
-  const [googlePromptEmail, setGooglePromptEmail] = useState('');
-  const [googlePromptName, setGooglePromptName] = useState('');
-  const [googlePromptLoading, setGooglePromptLoading] = useState(false);
+  // Google Account Chooser State
+  const [googleChooserOpen, setGoogleChooserOpen] = useState(false);
+  const [googleChooserLoading, setGoogleChooserLoading] = useState(false);
 
   // 1. Handle Manual Login
   const handleManualLogin = async (e: React.FormEvent) => {
@@ -167,56 +166,27 @@ export default function ResidentLogin({ returnTo = '/user' }: ResidentLoginProps
     }
   };
 
-  // 3. Handle Google OAuth
-  const handleGoogleAuth = async () => {
-    try {
-      setGooglePromptLoading(true);
-      toast('Connecting to Google Sign-In…');
-      const res: any = await signInWithGoogle();
-      if (res?.needsPrompt) {
-        let initialEmail = '';
-        if (email && email.includes('@')) initialEmail = email;
-        else if (signupEmail && signupEmail.includes('@')) initialEmail = signupEmail;
-        else if (recoveryEmail && recoveryEmail.includes('@')) initialEmail = recoveryEmail;
-
-        let initialName = [firstName, lastName].filter(Boolean).join(' ');
-
-        setGooglePromptEmail(initialEmail);
-        setGooglePromptName(initialName);
-        setGooglePromptOpen(true);
-      } else if (res?.data) {
-        toast('Signed in via Google successfully! ✦');
-        if (returnTo) navigate(returnTo, { replace: true });
-        else navigate('/user', { replace: true });
-      }
-    } catch (err: any) {
-      toast(err.message || 'Google Sign-In failed', true);
-    } finally {
-      setGooglePromptLoading(false);
-    }
+  // 3. Handle Google OAuth Account Chooser
+  const handleGoogleAuth = () => {
+    setGoogleChooserOpen(true);
   };
 
-  const handleGooglePromptSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!googlePromptEmail || !googlePromptEmail.includes('@')) {
-      return toast('Please enter a valid Google / Gmail address.', true);
-    }
+  const handleSelectGoogleAccount = async (account: GoogleAccount) => {
+    setGoogleChooserLoading(true);
     try {
-      setGooglePromptLoading(true);
-      toast('Authenticating with Google…');
       const res: any = await signInWithGoogle({
-        email: googlePromptEmail.trim(),
-        name: googlePromptName.trim() || googlePromptEmail.split('@')[0],
+        email: account.email,
+        name: account.name,
       });
       if (res?.error) throw res.error;
-      toast(`Welcome to Rock View Beach Resort, ${googlePromptName.trim() || 'Resident Guest'}! ✦`);
-      setGooglePromptOpen(false);
+      setGoogleChooserOpen(false);
+      toast(`Welcome to Rock View Beach Resort, ${account.name}! ✦`);
       if (returnTo) navigate(returnTo, { replace: true });
       else navigate('/user', { replace: true });
     } catch (err: any) {
-      toast(err.message || 'Google Sign-In could not complete', true);
+      toast(err.msg || err.message || 'Google Sign-In failed', true);
     } finally {
-      setGooglePromptLoading(false);
+      setGoogleChooserLoading(false);
     }
   };
 
@@ -421,135 +391,14 @@ export default function ResidentLogin({ returnTo = '/user' }: ResidentLoginProps
             <span className="rl-card__portal-tag">Resident Guest Portal</span>
             
             <p className="rl-card__subtitle">
-              {googlePromptOpen && 'Sign in with your Google account for express resort check-in & member privileges.'}
-              {!googlePromptOpen && mode === 'login' && 'Sign in to access your resort bookings, services, and digital room pass.'}
-              {!googlePromptOpen && mode === 'signup' && 'Create your resident guest account to unlock direct rates & instant vouchers.'}
-              {!googlePromptOpen && mode === 'forgot-request' && 'Enter your registered email address to receive your 6-digit recovery code.'}
-              {!googlePromptOpen && mode === 'forgot-verify' && `Enter the verification code sent to ${recoveryEmail} and your new password.`}
-              {!googlePromptOpen && mode === 'gmail-otp' && 'Fast passwordless access with your Gmail address and 6-digit OTP.'}
+              {mode === 'login' && 'Sign in to access your resort bookings, services, and digital room pass.'}
+              {mode === 'signup' && 'Create your resident guest account to unlock direct rates & instant vouchers.'}
+              {mode === 'forgot-request' && 'Enter your registered email address to receive your 6-digit recovery code.'}
+              {mode === 'forgot-verify' && `Enter the verification code sent to ${recoveryEmail} and your new password.`}
+              {mode === 'gmail-otp' && 'Fast passwordless access with your Gmail address and 6-digit OTP.'}
             </p>
           </div>
 
-          {googlePromptOpen ? (
-            <div className="rl-google-box" style={{ padding: '8px 2px 14px' }}>
-              <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                <div style={{
-                  width: 58,
-                  height: 58,
-                  margin: '0 auto 12px',
-                  borderRadius: '50%',
-                  background: 'rgba(255,255,255,0.06)',
-                  border: '1.5px solid rgba(255,255,255,0.18)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 4px 18px rgba(66, 133, 244, 0.25)',
-                }}>
-                  <svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                  </svg>
-                </div>
-                <h3 style={{ margin: '0 0 6px', fontSize: '1.35rem', fontWeight: 700, color: '#FFFFFF' }}>
-                  Sign in with Google
-                </h3>
-                <p style={{ margin: 0, fontSize: '.84rem', color: '#94A3B8', lineHeight: 1.45 }}>
-                  Connect your Google account for express resort check-in, confirmed dates, and verified resident room vouchers.
-                </p>
-              </div>
-
-              <form onSubmit={handleGooglePromptSubmit}>
-                <div className="rl-form-group">
-                  <label className="rl-label" htmlFor="rl-google-email">
-                    Google / Gmail Address <span style={{ color: '#ef4444' }}>*</span>
-                  </label>
-                  <div className="rl-input-wrap">
-                    <i className="fas fa-envelope rl-input-icon" />
-                    <input
-                      id="rl-google-email"
-                      type="email"
-                      required
-                      placeholder="yourname@gmail.com"
-                      value={googlePromptEmail}
-                      onChange={(e) => setGooglePromptEmail(e.target.value)}
-                      className="rl-input"
-                      autoFocus
-                    />
-                  </div>
-                </div>
-
-                <div className="rl-form-group" style={{ marginTop: 14 }}>
-                  <label className="rl-label" htmlFor="rl-google-name">
-                    Resident Guest Name
-                  </label>
-                  <div className="rl-input-wrap">
-                    <i className="fas fa-user rl-input-icon" />
-                    <input
-                      id="rl-google-name"
-                      type="text"
-                      placeholder="e.g. Maria Santos"
-                      value={googlePromptName}
-                      onChange={(e) => setGooglePromptName(e.target.value)}
-                      className="rl-input"
-                    />
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: 12, marginTop: 22 }}>
-                  <button
-                    type="button"
-                    onClick={() => setGooglePromptOpen(false)}
-                    className="rl-btn-secondary"
-                    style={{
-                      flex: 1,
-                      padding: '13px 16px',
-                      borderRadius: 12,
-                      border: '1px solid rgba(255,255,255,0.18)',
-                      background: 'transparent',
-                      color: '#94a3b8',
-                      fontWeight: 600,
-                      fontSize: '.88rem',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={googlePromptLoading}
-                    style={{
-                      flex: 2,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 10,
-                      padding: '13px 20px',
-                      borderRadius: 12,
-                      border: 'none',
-                      background: '#FFFFFF',
-                      color: '#0f172a',
-                      fontWeight: 700,
-                      fontSize: '.92rem',
-                      cursor: googlePromptLoading ? 'not-allowed' : 'pointer',
-                      boxShadow: '0 4px 18px rgba(255,255,255,0.22)',
-                      transition: 'all 0.2s ease',
-                    }}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                    </svg>
-                    {googlePromptLoading ? 'Signing in…' : 'Sign In with Google'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          ) : (
-            <>
           {/* ============================================================ */}
           {/* TABS: SIGN IN vs CREATE ACCOUNT                              */}
           {/* ============================================================ */}
@@ -676,43 +525,6 @@ export default function ResidentLogin({ returnTo = '/user' }: ResidentLoginProps
                 {loginLoading && <span className="rl-spinner" aria-hidden="true" />}
                 {loginLoading ? 'Authenticating…' : 'Sign In to Resident Guest Portal'}
               </button>
-
-              <div style={{ marginTop: 14 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '10px 0 12px' }}>
-                  <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
-                  <span style={{ fontSize: '.72rem', letterSpacing: '.12em', color: '#64748B', textTransform: 'uppercase' }}>
-                    or fast passwordless
-                  </span>
-                  <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMode('gmail-otp');
-                    setGmailOtpStep(1);
-                    setGmailOtpEmail(email || '');
-                  }}
-                  style={{
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 10,
-                    padding: '12px 16px',
-                    borderRadius: 12,
-                    background: 'rgba(234, 67, 53, 0.1)',
-                    border: '1px solid rgba(234, 67, 53, 0.35)',
-                    color: '#FCA5A5',
-                    fontSize: '0.88rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                  }}
-                >
-                  <i className="fas fa-envelope-circle-check" style={{ color: '#EA4335', fontSize: '1.1rem' }} />
-                  Sign in with Gmail OTP (Direct Supabase)
-                </button>
-              </div>
             </form>
           )}
 
@@ -1308,8 +1120,6 @@ export default function ResidentLogin({ returnTo = '/user' }: ResidentLoginProps
               )}
             </div>
           )}
-            </>
-          )}
 
           {/* Footer Return Link */}
           <div className="rl-card__footer">
@@ -1326,6 +1136,14 @@ export default function ResidentLogin({ returnTo = '/user' }: ResidentLoginProps
           </div>
         </div>
       </div>
+
+      {/* GOOGLE ACCOUNT CHOOSER POPUP DIALOG */}
+      <GoogleAccountChooserModal
+        isOpen={googleChooserOpen}
+        onClose={() => setGoogleChooserOpen(false)}
+        onSelectAccount={handleSelectGoogleAccount}
+        isLoading={googleChooserLoading}
+      />
     </div>
   );
 }
