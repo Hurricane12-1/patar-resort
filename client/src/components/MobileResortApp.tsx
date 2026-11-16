@@ -3740,7 +3740,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                       autoComplete="name"
                       value={guestName}
                       onChange={(e) => setGuestName(e.target.value)}
-                      placeholder="e.g. Maria Santos"
+                      placeholder="Enter your full name"
                       className="w-full px-3.5 py-2.5 rounded-lg border border-[#B0B0B0] text-sm focus:outline-none focus:border-[#222222]"
                     />
                   </div>

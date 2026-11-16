@@ -964,7 +964,7 @@ export default function ResidentLogin({ returnTo = '/user' }: ResidentLoginProps
                         type="text"
                         value={gmailOtpName}
                         onChange={(e) => setGmailOtpName(e.target.value)}
-                        placeholder="e.g. Maria Santos"
+                        placeholder="Enter your full name"
                         className="rl-input"
                       />
                     </div>

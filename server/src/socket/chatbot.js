@@ -44,7 +44,7 @@ export async function findAvailableServiceAgent() {
       if (receptionist) {
         return {
           id: receptionist.id,
-          name: receptionist.full_name || `${receptionist.first_name || ''} ${receptionist.last_name || ''}`.trim() || 'Maria Santos',
+          name: receptionist.full_name || `${receptionist.first_name || ''} ${receptionist.last_name || ''}`.trim() || 'Front Desk Receptionist',
           role: 'Front Desk Receptionist',
           phone: receptionist.phone || '+63 900 555 0123',
           email: receptionist.email || 'receptionist@rockviewresort.ph',
@@ -56,7 +56,7 @@ export async function findAvailableServiceAgent() {
       if (staffAgent) {
         return {
           id: staffAgent.id,
-          name: staffAgent.full_name || `${staffAgent.first_name || ''} ${staffAgent.last_name || ''}`.trim() || 'Elena Reyes',
+          name: staffAgent.full_name || `${staffAgent.first_name || ''} ${staffAgent.last_name || ''}`.trim() || 'Guest Concierge',
           role: 'Front Desk & Guest Concierge',
           phone: staffAgent.phone || '+63 900 555 0123',
           email: staffAgent.email || 'staff@rockviewresort.ph',
@@ -81,7 +81,7 @@ export async function findAvailableServiceAgent() {
   // Resilient High-Availability Concierge Fallback
   return {
     id: '22222222-2222-2222-2222-222222222222',
-    name: 'Maria Santos',
+    name: 'Rock View Guest Concierge',
     role: 'Front Desk Receptionist & Guest Concierge',
     phone: '+63 900 555 0123',
     email: 'receptionist@rockviewresort.ph',

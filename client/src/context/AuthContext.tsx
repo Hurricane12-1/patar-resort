@@ -1164,96 +1164,23 @@ export function AuthProvider({ children }) {
         }
       }
 
-      // 2. Google Identity Services (GIS) on window
-      const googleClientId = (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID || '';
-      if (typeof window !== 'undefined' && (window as any).google?.accounts?.id && googleClientId) {
-        try {
-          const authResult: any = await new Promise((resolve, reject) => {
-            (window as any).google.accounts.id.initialize({
-              client_id: googleClientId,
-              callback: async (response: any) => {
-                try {
-                  const res: any = await api.googleLogin({ credential: response.credential });
-                  if (res?.session) {
-                    setCustomerSession(res.session);
-                    const prof = res.profile || res.user;
-                    setCustomerProfile(prof);
-                    if (typeof sessionStorage !== 'undefined') {
-                      sessionStorage.setItem('jd_customer_session', JSON.stringify(res.session));
-                      sessionStorage.setItem('jd_customer_jwt', res.session.access_token);
-                      sessionStorage.setItem('jd_customer_profile', JSON.stringify(prof));
-                    }
-                    setAuthOpen(false);
-                    toast(`Welcome to Rock View Beach Resort, ${prof.full_name || 'Resident Guest'}! ✦`);
-                    resolve({ data: res, error: null });
-                  } else {
-                    reject(new Error('Google sign-in could not complete.'));
-                  }
-                } catch (err) {
-                  reject(err);
-                }
-              },
-              auto_select: false,
-              cancel_on_tap_outside: true,
-            });
-            (window as any).google.accounts.id.prompt((notification: any) => {
-              if (notification.isNotDisplayed?.() || notification.isSkippedMoment?.()) {
-                resolve({ needsPrompt: true });
-              }
-            });
-          });
-          if (authResult?.data) return authResult;
-        } catch (gisErr) {
-          console.warn('[Google GIS Notice]:', gisErr);
-        }
-      }
-
+      // Google OAuth via Supabase (matches Google Console redirect: https://owhodkhzldygavuwnqfg.supabase.co/auth/v1/callback)
       const redirectUrl = `${window.location.origin}/client`;
-
-      // 1. If Google OAuth 2.0 Web Client ID is configured, redirect to Google OAuth consent & account selection
-      if (googleClientId && typeof window !== 'undefined') {
-        const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(googleClientId)}&redirect_uri=${encodeURIComponent(redirectUrl)}&response_type=token&scope=openid%20email%20profile&prompt=select_account`;
-        window.location.href = oauthUrl;
-        return { redirected: true, url: oauthUrl };
-      }
-
-      // 2. Try Supabase OAuth ONLY if responsive, redirect to provider url
-      const rawUrl = (import.meta as any).env?.VITE_SUPABASE_URL || 'https://owhodkhzldygavuwnqfg.supabase.co';
-      let supabaseReachable = false;
-      try {
-        const ping = await Promise.race([
-          fetch(`${rawUrl}/auth/v1/settings`, { method: 'GET', headers: { apikey: (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '' } }).catch(() => null),
-          new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 800))
-        ]).catch(() => null);
-        if (ping && (ping as Response).ok) {
-          supabaseReachable = true;
-        }
-      } catch {}
-
-      if (supabaseReachable) {
-        const res = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: redirectUrl,
-            queryParams: {
-              access_type: 'offline',
-              prompt: 'select_account',
-            },
+      const res = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUrl,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'select_account',
           },
-        });
-        if (!res.error && res.data?.url && typeof window !== 'undefined') {
-          window.location.href = res.data.url;
-          return res.data;
-        }
+        },
+      });
+      if (res?.error) throw res.error;
+      if (res?.data?.url && typeof window !== 'undefined') {
+        window.location.href = res.data.url;
+        return res.data;
       }
-
-      // 3. Guaranteed Direct Redirect to official Gmail / Google Account login authentication page
-      if (typeof window !== 'undefined') {
-        const googleLoginUrl = 'https://accounts.google.com/ServiceLogin';
-        window.location.href = googleLoginUrl;
-        return { redirected: true, url: googleLoginUrl };
-      }
-
       return { ok: true };
     },
     signInWithFacebook: async (directPayload?: { email?: string; name?: string; first_name?: string; last_name?: string; picture?: string }) => {

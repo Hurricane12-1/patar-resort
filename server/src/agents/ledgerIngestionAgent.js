@@ -123,15 +123,6 @@ export const memoryStore = {
   reservations: [],
 };
 
-// Seed baseline profiles
-const demoGuestId = 'a1111111-2222-4333-8444-555555555555';
-memoryStore.profiles.set('Juan Dela Cruz', {
-  id: demoGuestId,
-  full_name: 'Juan Dela Cruz',
-  phone: '+639171234567',
-  role: 'customer',
-});
-
 /**
  * -------------------------------------------------------------------------------------
  * FINANCIAL PARSER
@@ -326,8 +317,8 @@ export function normalizeLedgerDates(dateStr, defaultYear = 2026) {
  * -------------------------------------------------------------------------------------
  * GUEST & CO-GUEST PARSER
  * Examples:
- * - "Juan Dela Cruz" -> guest: "Juan Dela Cruz", co_guests: []
- * - "Mr. Juan Dela Cruz & Ana Dela Cruz" -> guest: "Juan Dela Cruz", co_guests: ["Ana Dela Cruz"]
+ * - "Jane Smith" -> guest: "Jane Smith", co_guests: []
+ * - "Mr. Jane Smith & John Smith" -> guest: "Jane Smith", co_guests: ["John Smith"]
  * - "Carlos Gomez w/ Ana Gomez, Bea Gomez" -> guest: "Carlos Gomez", co_guests: ["Ana Gomez", "Bea Gomez"]
  * -------------------------------------------------------------------------------------
  */

@@ -1474,7 +1474,7 @@ export default function AuthModal() {
                     <input
                       type="text"
                       value={gmailOtpName}
-                      placeholder="e.g. Maria Santos"
+                      placeholder="Enter your full name"
                       onChange={(e) => setGmailOtpName(e.target.value)}
                     />
                   </div>

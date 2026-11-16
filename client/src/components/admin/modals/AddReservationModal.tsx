@@ -921,7 +921,7 @@ export default function AddReservationModal({
               <input
                 ref={guestNameInputRef}
                 required
-                placeholder="e.g. Maria Santos (Required)"
+                placeholder="Guest full name (Required)"
                 value={newReservation.guest_name}
                 onChange={(e) => setNewReservation({ ...newReservation, guest_name: e.target.value })}
                 style={{
