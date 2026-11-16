@@ -2069,9 +2069,9 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                   alert('Link copied to clipboard!');
                 }
               }}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[#F7F7F7] text-sm font-semibold text-[#222222] underline transition cursor-pointer"
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-xs font-semibold text-white/90 transition cursor-pointer"
             >
-              <svg viewBox="0 0 20 20" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <svg viewBox="0 0 20 20" className="w-4 h-4 text-cyan" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path d="M10 3v9.5M6.5 6.5L10 3l3.5 3.5M4 12v4a1 1 0 001 1h10a1 1 0 001-1v-4" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               Share
@@ -2079,9 +2079,9 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
             <button
               type="button"
               onClick={() => setIsSaved(!isSaved)}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[#F7F7F7] text-sm font-semibold text-[#222222] underline transition cursor-pointer"
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-xs font-semibold text-white/90 transition cursor-pointer"
             >
-              <svg viewBox="0 0 20 20" className={`w-4 h-4 transition-colors ${isSaved ? 'text-rose-600 fill-rose-600' : ''}`} fill="none" stroke="currentColor" strokeWidth="1.8">
+              <svg viewBox="0 0 20 20" className={`w-4 h-4 transition-colors ${isSaved ? 'text-rose-500 fill-rose-500' : 'text-cyan'}`} fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path d="M10 17.2s-6.2-4-6.2-8.7A3.6 3.6 0 0110 5.8a3.6 3.6 0 016.2 2.7c0 4.7-6.2 8.7-6.2 8.7z" strokeLinejoin="round"/>
               </svg>
               <span>{isSaved ? 'Saved' : 'Save'}</span>
@@ -2091,7 +2091,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
 
         {/* 1+4 Bento Media Grid */}
         <section className="relative mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 h-[280px] sm:h-[360px] md:h-[420px] rounded-[12px] overflow-hidden">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 h-[280px] sm:h-[360px] md:h-[420px] rounded-[16px] overflow-hidden border border-white/10">
             
             {/* Slot 0 (Hero Image - Auto-cycling through room views) */}
             <div
@@ -2147,7 +2147,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                     }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/15 z-0" />
-                  <span className="relative z-10 self-start px-2.5 py-0.5 rounded-full bg-black/40 backdrop-blur-xs text-white text-[11px] font-medium">
+                  <span className="relative z-10 self-start px-2.5 py-0.5 rounded-full bg-black/40 backdrop-blur-xs text-white text-[11px] font-medium border border-white/10">
                     {idx === 0 ? 'Sunset Veranda' : idx === 1 ? 'Sanctuary Suite' : idx === 2 ? 'Horizon Vantage' : 'Coral Steps'}
                   </span>
                   <span className="relative z-10 text-white text-xs font-medium truncate">
@@ -2166,9 +2166,9 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                 setShowPhotoTour(true);
               }}
               type="button"
-              className="px-4 py-2 rounded-lg bg-[#FFFFFF] hover:bg-[#F7F7F7] text-[#222222] text-xs font-semibold border border-[#222222] shadow-sm flex items-center gap-2 transition cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-[#0B1426]/90 hover:bg-[#0B1426] text-white text-xs font-semibold border border-white/20 shadow-lg backdrop-blur-md flex items-center gap-2 transition cursor-pointer"
             >
-              <svg viewBox="0 0 16 16" className="w-3.5 h-3.5 text-[#222222]" fill="currentColor">
+              <svg viewBox="0 0 16 16" className="w-3.5 h-3.5 text-cyan" fill="currentColor">
                 <circle cx="3" cy="3" r="1.3"/><circle cx="8" cy="3" r="1.3"/><circle cx="13" cy="3" r="1.3"/>
                 <circle cx="3" cy="8" r="1.3"/><circle cx="8" cy="8" r="1.3"/><circle cx="13" cy="8" r="1.3"/>
                 <circle cx="3" cy="13" r="1.3"/><circle cx="8" cy="13" r="1.3"/><circle cx="13" cy="13" r="1.3"/>
@@ -2187,91 +2187,97 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
           <div className="lg:col-span-7 xl:col-span-8">
             
             {/* Specs Header */}
-            <div className="pb-6 border-b border-[#DDDDDD]">
-              <h3 className="text-[20px] sm:text-[22px] font-semibold text-[#222222] leading-snug">
+            <div className="pb-6 border-b border-white/10">
+              <h3 className="font-serif text-2xl sm:text-3xl font-medium text-white leading-snug">
                 Coastal Accommodation in Bolinao, Pangasinan
               </h3>
-              <p className="text-[15px] text-[#222222] mt-1">
+              <p className="text-sm sm:text-base text-white/70 mt-1.5 font-light">
                 Up to {selectedCapacity} guests · {selectedRoom.beds_count || 2} bedrooms · {selectedRoom.beds_count || 2} beds · {selectedRoom.baths_count || 1} private bath
               </p>
             </div>
 
             {/* 3 Property Highlights */}
-            <div className="py-6 border-b border-[#DDDDDD] space-y-5">
+            <div className="py-6 border-b border-white/10 space-y-5">
               <div className="flex items-start gap-4">
-                <svg viewBox="0 0 24 24" className="w-6 h-6 text-[#222222] shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="1.7">
-                  <rect x="5" y="3" width="14" height="18" rx="2"/>
-                  <circle cx="9.5" cy="8.5" r="1"/><circle cx="14.5" cy="8.5" r="1"/>
-                  <circle cx="9.5" cy="12.5" r="1"/><circle cx="14.5" cy="12.5" r="1"/>
-                  <path d="M9.5 16.5h5" strokeLinecap="round"/>
-                </svg>
+                <div className="w-9 h-9 rounded-xl bg-cyan/15 border border-cyan/30 flex items-center justify-center text-cyan shrink-0 mt-0.5">
+                  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <rect x="5" y="3" width="14" height="18" rx="2"/>
+                    <circle cx="9.5" cy="8.5" r="1"/><circle cx="14.5" cy="8.5" r="1"/>
+                    <circle cx="9.5" cy="12.5" r="1"/><circle cx="14.5" cy="12.5" r="1"/>
+                    <path d="M9.5 16.5h5" strokeLinecap="round"/>
+                  </svg>
+                </div>
                 <div>
-                  <h5 className="text-[15px] font-semibold text-[#222222]">Self check-in &amp; Smart Arrival</h5>
-                  <p className="text-sm text-[#6A6A6A] mt-0.5">Check yourself in seamlessly with verified keypad PIN issued upon booking.</p>
+                  <h5 className="text-base font-semibold text-white">Self check-in &amp; Smart Arrival</h5>
+                  <p className="text-sm text-white/65 mt-0.5 leading-relaxed font-light">Check yourself in seamlessly with verified keypad PIN issued upon booking.</p>
                 </div>
               </div>
 
               <div className="flex items-start gap-4">
-                <svg viewBox="0 0 24 24" className="w-6 h-6 text-[#222222] shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="1.7">
-                  <path d="M3 16c3-2 6 2 9 0s6 2 9 0M3 20c3-2 6 2 9 0s6 2 9 0M4 12l5.5-7L14 11l3-4 3 5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+                <div className="w-9 h-9 rounded-xl bg-cyan/15 border border-cyan/30 flex items-center justify-center text-cyan shrink-0 mt-0.5">
+                  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <path d="M3 16c3-2 6 2 9 0s6 2 9 0M3 20c3-2 6 2 9 0s6 2 9 0M4 12l5.5-7L14 11l3-4 3 5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
                 <div>
-                  <h5 className="text-[15px] font-semibold text-[#222222]">Direct limestone cliff &amp; cove access</h5>
-                  <p className="text-sm text-[#6A6A6A] mt-0.5">Private carved coral steps lead straight to crystal snorkeling waters, 4 minutes from Patar White Beach.</p>
+                  <h5 className="text-base font-semibold text-white">Direct limestone cliff &amp; cove access</h5>
+                  <p className="text-sm text-white/65 mt-0.5 leading-relaxed font-light">Private carved coral steps lead straight to crystal snorkeling waters, 4 minutes from Patar White Beach.</p>
                 </div>
               </div>
 
               <div className="flex items-start gap-4">
-                <svg viewBox="0 0 24 24" className="w-6 h-6 text-[#222222] shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="1.7">
-                  <rect x="3" y="4" width="18" height="17" rx="2"/>
-                  <path d="M8 2v4M16 2v4M3 10h18" strokeLinecap="round"/>
-                </svg>
+                <div className="w-9 h-9 rounded-xl bg-cyan/15 border border-cyan/30 flex items-center justify-center text-cyan shrink-0 mt-0.5">
+                  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <rect x="3" y="4" width="18" height="17" rx="2"/>
+                    <path d="M8 2v4M16 2v4M3 10h18" strokeLinecap="round"/>
+                  </svg>
+                </div>
                 <div>
-                  <h5 className="text-[15px] font-semibold text-[#222222]">Free cancellation within 5 hours of booking</h5>
-                  <p className="text-sm text-[#6A6A6A] mt-0.5">Change your mind within 5 hours and cancel yourself from your dashboard. After that, the front desk handles cancellations.</p>
+                  <h5 className="text-base font-semibold text-white">Free cancellation within 5 hours of booking</h5>
+                  <p className="text-sm text-white/65 mt-0.5 leading-relaxed font-light">Change your mind within 5 hours and cancel yourself from your dashboard. After that, the front desk handles cancellations.</p>
                 </div>
               </div>
             </div>
 
             {/* Description */}
-            <div className="py-6 border-b border-[#DDDDDD]">
-              <div className="text-[15px] text-[#222222] leading-[1.6] space-y-4">
+            <div className="py-6 border-b border-white/10">
+              <div className="text-sm sm:text-base text-white/80 leading-relaxed space-y-4 font-light">
                 <p>{selectedRoom.description}</p>
-                <p className="text-sm text-[#6A6A6A]">
+                <p className="text-xs sm:text-sm text-white/60">
                   Equipped with high-speed Wi-Fi, solar microgrid power backup, and complimentary tropical breakfast prepared daily by our local staff.
                 </p>
               </div>
             </div>
 
             {/* Bedroom Cards */}
-            <div className="py-7 border-b border-[#DDDDDD]">
-              <h4 className="text-[22px] font-semibold text-[#222222] mb-5">Where you'll sleep</h4>
+            <div className="py-7 border-b border-white/10">
+              <h4 className="font-serif text-2xl font-medium text-white mb-5">Where you'll sleep</h4>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="p-4 rounded-xl border border-[#DDDDDD] bg-[#FAFAFA] space-y-2">
-                  <div className="w-6 h-6 text-[#18222B]">🛏️</div>
-                  <div className="text-sm font-bold text-[#18222B]">Primary Bedroom</div>
-                  <div className="text-xs text-[#6A6A6A]">1 Queen Bed · Ocean View</div>
+                <div className="p-5 rounded-2xl border border-white/10 bg-[#0B1426] space-y-2.5 hover:border-cyan/40 transition shadow-lg">
+                  <div className="text-2xl">🛏️</div>
+                  <div className="text-sm font-semibold text-white">Primary Bedroom</div>
+                  <div className="text-xs text-white/60 font-light">1 Queen Bed · Ocean View</div>
                 </div>
-                <div className="p-4 rounded-xl border border-[#DDDDDD] bg-[#FAFAFA] space-y-2">
-                  <div className="w-6 h-6 text-[#18222B]">🛋️</div>
-                  <div className="text-sm font-bold text-[#18222B]">Living Suite</div>
-                  <div className="text-xs text-[#6A6A6A]">1 Daybed · Private Veranda</div>
+                <div className="p-5 rounded-2xl border border-white/10 bg-[#0B1426] space-y-2.5 hover:border-cyan/40 transition shadow-lg">
+                  <div className="text-2xl">🛋️</div>
+                  <div className="text-sm font-semibold text-white">Living Suite</div>
+                  <div className="text-xs text-white/60 font-light">1 Daybed · Private Veranda</div>
                 </div>
-                <div className="p-4 rounded-xl border border-[#DDDDDD] bg-[#FAFAFA] space-y-2">
-                  <div className="w-6 h-6 text-[#18222B]">🌅</div>
-                  <div className="text-sm font-bold text-[#18222B]">Viewing Deck</div>
-                  <div className="text-xs text-[#6A6A6A]">2 Teak Loungers · Sunset Vantage</div>
+                <div className="p-5 rounded-2xl border border-white/10 bg-[#0B1426] space-y-2.5 hover:border-cyan/40 transition shadow-lg">
+                  <div className="text-2xl">🌅</div>
+                  <div className="text-sm font-semibold text-white">Viewing Deck</div>
+                  <div className="text-xs text-white/60 font-light">2 Teak Loungers · Sunset Vantage</div>
                 </div>
               </div>
             </div>
 
             {/* Amenities Grid */}
-            <div className="py-7 border-b border-[#DDDDDD]">
-              <h4 className="text-[22px] font-semibold text-[#222222] mb-5">What this place offers</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-8 text-[15px] text-[#222222]">
+            <div className="py-7 border-b border-white/10">
+              <h4 className="font-serif text-2xl font-medium text-white mb-5">What this place offers</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-8 text-sm sm:text-base text-white/85">
                 {(selectedRoom.amenities || ['Wi-Fi', 'Ocean View', 'Air Conditioning', 'Private Bath']).map((amenity, i) => (
                   <div key={i} className="flex items-center gap-3">
-                    <span className="w-5 h-5 text-[#9E7E46]">✦</span>
+                    <span className="w-5 h-5 text-cyan font-serif font-bold text-sm">✦</span>
                     <span>{amenity}</span>
                   </div>
                 ))}
@@ -2504,26 +2510,26 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
               )}
 
               {/* Quick Preset Buttons & Month Jump */}
-              <div className="flex flex-wrap items-center justify-between gap-2.5 pb-4 mb-5 border-b border-[#EBEBEB]">
+              <div className="flex flex-wrap items-center justify-between gap-2.5 pb-4 mb-5 border-b border-white/10">
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     onClick={() => applyQuickPreset('weekend')}
                     type="button"
-                    className="px-3 py-1.5 rounded-lg border border-[#CBD5E1] hover:border-[#222222] bg-white text-xs font-semibold text-[#222222] transition cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-xl border border-white/15 hover:border-cyan/50 hover:bg-white/10 bg-white/5 text-xs font-semibold text-white transition cursor-pointer"
                   >
                     Next Open Weekend
                   </button>
                   <button
                     onClick={() => applyQuickPreset('stay3')}
                     type="button"
-                    className="px-3 py-1.5 rounded-lg border border-[#CBD5E1] hover:border-[#222222] bg-white text-xs font-semibold text-[#222222] transition cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-xl border border-white/15 hover:border-cyan/50 hover:bg-white/10 bg-white/5 text-xs font-semibold text-white transition cursor-pointer"
                   >
                     3-Night Stay
                   </button>
                   <button
                     onClick={() => applyQuickPreset('stay5')}
                     type="button"
-                    className="px-3 py-1.5 rounded-lg border border-[#CBD5E1] hover:border-[#222222] bg-white text-xs font-semibold text-[#222222] transition cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-xl border border-white/15 hover:border-cyan/50 hover:bg-white/10 bg-white/5 text-xs font-semibold text-white transition cursor-pointer"
                   >
                     5-Night Retreat
                   </button>
@@ -2534,7 +2540,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                       setInlineYM({ y, m });
                     }}
                     aria-label="Jump to month"
-                    className="px-3 py-1.5 rounded-lg border border-[#CBD5E1] hover:border-[#222222] bg-[#F8FAFC] text-xs font-semibold text-[#222222] focus:outline-none focus:border-[#222222] cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-xl border border-white/15 bg-[#0B1426] text-xs font-semibold text-white focus:outline-none focus:border-cyan cursor-pointer"
                   >
                     <option value="2026-11">November 2026</option>
                     <option value="2026-12">December 2026</option>
@@ -2550,7 +2556,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                 <button
                   onClick={clearDates}
                   type="button"
-                  className="text-xs sm:text-sm font-semibold text-[#222222] underline hover:text-[#6A6A6A] transition cursor-pointer"
+                  className="text-xs sm:text-sm font-semibold text-cyan underline hover:text-cyan/80 transition cursor-pointer"
                 >
                   Clear dates
                 </button>
@@ -2559,16 +2565,16 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
               {/* Single Large Calendar View */}
               <div>
                 {/* Single Month Box Card */}
-                <div className="cal-month-box p-4 sm:p-6 shadow-sm border border-[#DDDDDD] rounded-2xl bg-white" onMouseLeave={() => setHoverDate(null)}>
+                <div className="cal-month-box p-4 sm:p-6 shadow-2xl border border-white/10 rounded-2xl bg-[#0B1426]" onMouseLeave={() => setHoverDate(null)}>
                   
                   {/* Big Month Navigation Header */}
-                  <div className="flex items-center justify-between pb-4 mb-4 border-b border-[#E5E7EB]">
+                  <div className="flex items-center justify-between pb-4 mb-4 border-b border-white/10">
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setInlineYM(shiftYM(inlineYM, -1))}
                         type="button"
                         aria-label="Previous month"
-                        className="px-3 sm:px-4 h-9 sm:h-10 rounded-xl border border-[#CBD5E1] hover:border-[#222222] hover:bg-[#F8FAFC] bg-white flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold text-[#222222] transition cursor-pointer"
+                        className="px-3 sm:px-4 h-9 sm:h-10 rounded-xl border border-white/15 hover:border-cyan/50 hover:bg-white/10 bg-white/5 flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold text-white transition cursor-pointer"
                       >
                         ‹ Prev
                       </button>
@@ -2576,19 +2582,19 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                         onClick={() => setInlineYM(shiftYM(inlineYM, 1))}
                         type="button"
                         aria-label="Next month"
-                        className="px-3 sm:px-4 h-9 sm:h-10 rounded-xl border border-[#CBD5E1] hover:border-[#222222] hover:bg-[#F8FAFC] bg-white flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold text-[#222222] transition cursor-pointer"
+                        className="px-3 sm:px-4 h-9 sm:h-10 rounded-xl border border-white/15 hover:border-cyan/50 hover:bg-white/10 bg-white/5 flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold text-white transition cursor-pointer"
                       >
                         Next ›
                       </button>
                     </div>
 
                     <div className="text-center">
-                      <h5 className="text-lg sm:text-2xl font-bold text-[#222222] tracking-tight">
+                      <h5 className="text-lg sm:text-2xl font-serif font-medium text-white tracking-tight">
                         {MONTH_NAMES[inlineYM.m]} {inlineYM.y}
                       </h5>
                     </div>
 
-                    <span className="text-xs font-semibold text-[#64748B] bg-[#F1F5F9] px-3 py-1.5 rounded-lg border border-[#E2E8F0] hidden sm:inline-block">
+                    <span className="text-xs font-mono font-semibold text-cyan bg-cyan/10 px-3 py-1.5 rounded-lg border border-cyan/30 hidden sm:inline-block">
                       ₱ / night
                     </span>
                   </div>
@@ -2598,8 +2604,8 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                     {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((w, i) => (
                       <div
                         key={i}
-                        className={`py-2 rounded-lg bg-[#F8FAFC] border border-[#E5E7EB] text-xs sm:text-sm font-bold ${
-                          i === 0 || i === 6 ? 'text-[#0F172A]' : 'text-[#475569]'
+                        className={`py-2 rounded-lg bg-white/5 border border-white/10 text-xs sm:text-sm font-bold ${
+                          i === 0 || i === 6 ? 'text-cyan' : 'text-white/80'
                         }`}
                       >
                         <span className="hidden md:inline">{w}</span>
@@ -2615,28 +2621,28 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                 </div>
 
                 {/* Calendar Legend with Live Room Availability Indication */}
-                <div className="mt-5 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-4 space-y-3">
+                <div className="mt-5 rounded-xl border border-white/10 bg-[#0B1426] p-4 space-y-3">
                   {/* Top Live Status Bar */}
-                  <div className="flex flex-wrap items-center justify-between gap-2.5 pb-2.5 border-b border-[#E2E8F0] text-xs">
+                  <div className="flex flex-wrap items-center justify-between gap-2.5 pb-2.5 border-b border-white/10 text-xs">
                     <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                      <span className="font-bold text-[#0F172A]">
-                        Live status for: <span className="underline decoration-indigo-400 font-extrabold">{selectedRoom.name}</span>
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                      <span className="font-bold text-white">
+                        Live status for: <span className="underline decoration-cyan font-extrabold text-cyan">{selectedRoom.name}</span>
                       </span>
                     </div>
 
                     {hasRangeConflict ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 font-bold border border-rose-300">
-                        <span className="w-2 h-2 rounded-full bg-rose-600"></span>
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-300 font-bold border border-rose-500/40">
+                        <span className="w-2 h-2 rounded-full bg-rose-400"></span>
                         Selected stay conflicts with booked reservation
                       </span>
                     ) : checkIn && checkOut ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold border border-emerald-300">
-                        <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
                         Fully available for {formatShortDate(checkIn)} – {formatShortDate(checkOut)}
                       </span>
                     ) : (
-                      <span className="text-[11px] font-semibold text-[#64748B]">
+                      <span className="text-[11px] font-semibold text-white/60">
                         {monthBookedNights > 0
                           ? `${monthBookedNights} booked ${monthBookedNights === 1 ? 'night' : 'nights'} in ${MONTH_NAMES[inlineYM.m]} · ${Math.max(0, new Date(inlineYM.y, inlineYM.m, 0).getDate() - monthBookedNights)} nights open`
                           : `100% available in ${MONTH_NAMES[inlineYM.m]} ${inlineYM.y}`}
@@ -2645,22 +2651,22 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                   </div>
 
                   {/* Legend Items */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-[#475569]">
+                  <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-white/70">
                     <div className="flex flex-wrap items-center gap-3.5 sm:gap-5">
-                      <span className="inline-flex items-center gap-1.5 font-medium text-[#222222]">
-                        <span className="w-4 h-4 rounded-[4px] bg-white border border-[#E2E8F0] inline-block shadow-2xs"></span> Available Box
+                      <span className="inline-flex items-center gap-1.5 font-medium text-white/90">
+                        <span className="w-4 h-4 rounded-[4px] bg-white/10 border border-white/20 inline-block shadow-2xs"></span> Available Box
                       </span>
-                      <span className="inline-flex items-center gap-1.5 font-semibold text-[#222222]">
-                        <span className="w-4 h-4 rounded-[4px] bg-[#222222] border border-[#222222] inline-block"></span> Selected IN/OUT
+                      <span className="inline-flex items-center gap-1.5 font-semibold text-cyan">
+                        <span className="w-4 h-4 rounded-[4px] bg-cyan border border-cyan inline-block"></span> Selected IN/OUT
                       </span>
-                      <span className="inline-flex items-center gap-1.5 font-medium text-[#0F172A]">
-                        <span className="w-4 h-4 rounded-[4px] bg-[#F1F5F9] border border-[#CBD5E1] inline-block"></span> In-Stay Range
+                      <span className="inline-flex items-center gap-1.5 font-medium text-white/90">
+                        <span className="w-4 h-4 rounded-[4px] bg-cyan/20 border border-cyan/40 inline-block"></span> In-Stay Range
                       </span>
-                      <span className="inline-flex items-center gap-1.5 font-medium text-rose-700">
+                      <span className="inline-flex items-center gap-1.5 font-medium text-rose-400">
                         <span className="w-4 h-4 rounded-[4px] cal-box-booked inline-block"></span> Booked Box
                       </span>
                       {hasRangeConflict && (
-                        <span className="inline-flex items-center gap-1.5 font-bold text-rose-800">
+                        <span className="inline-flex items-center gap-1.5 font-bold text-rose-400">
                           <span className="w-4 h-4 rounded-[4px] cal-box-conflict inline-block"></span> Conflict Box
                         </span>
                       )}
@@ -2678,38 +2684,38 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
             className="lg:col-span-5 xl:col-span-4 self-start lg:sticky lg:top-24 scroll-mt-24 relative z-40"
             style={{ position: 'sticky', top: '96px', alignSelf: 'flex-start' }}
           >
-            <div className="bg-[#FFFFFF] border border-[#DDDDDD] rounded-[12px] p-6 shadow-[0_6px_16px_rgba(0,0,0,0.12)]">
+            <div className="bg-[#0B1426] border border-white/15 rounded-3xl p-6 sm:p-7 shadow-2xl text-white">
               
               {/* Price Header */}
               <div className="flex items-baseline justify-between gap-2 mb-5">
                 <div>
-                  <span className="text-[22px] font-bold text-[#222222]">
+                  <span className="font-serif text-3xl font-bold text-white tracking-tight">
                     {formatPHP(selectedRoom.rate_php || 3500)}
                   </span>
-                  <span className="text-[15px] text-[#222222] ml-1">/ night</span>
+                  <span className="text-sm text-white/60 ml-1.5 font-light">/ night</span>
                 </div>
-                <span className="text-xs font-semibold text-[#6A6A6A]">
+                <span className="text-xs font-semibold text-[#F3D9A4] bg-white/5 border border-white/10 px-2.5 py-1 rounded-full">
                   {selectedRoom.reviews_count ? `★ ${selectedRoom.rating_avg || '5.0'} · ${selectedRoom.reviews_count} reviews` : '★ Direct Verified'}
                 </span>
               </div>
 
               {/* 2x2 Unified Input Box */}
-              <div className="border border-[#B0B0B0] rounded-[8px] mb-4 bg-white overflow-hidden">
-                <div className="grid grid-cols-2">
+              <div className="border border-white/15 rounded-2xl mb-4 bg-white/5 overflow-hidden shadow-inner">
+                <div className="grid grid-cols-2 divide-x divide-white/10">
                   <button
                     type="button"
                     onClick={() => {
                       setCardDrawer(cardDrawer === 'calendar' ? 'none' : 'calendar');
                       setActiveField('checkin');
                     }}
-                    className={`text-left p-3 hover:bg-[#F7F7F7] transition cursor-pointer ${
+                    className={`text-left p-3 hover:bg-white/10 transition cursor-pointer ${
                       cardDrawer === 'calendar' && activeField === 'checkin' ? 'cal-input-active' : ''
                     }`}
                   >
-                    <span className="block text-[10px] font-extrabold uppercase tracking-wider text-[#222222]">
+                    <span className="block text-[10px] font-extrabold uppercase tracking-wider text-white/50">
                       CHECK-IN
                     </span>
-                    <span className="block text-sm text-[#222222] mt-0.5 font-semibold">
+                    <span className="block text-sm text-white mt-0.5 font-semibold">
                       {formatSlash(checkIn)}
                     </span>
                   </button>
@@ -2720,14 +2726,14 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                       setCardDrawer(cardDrawer === 'calendar' ? 'none' : 'calendar');
                       setActiveField('checkout');
                     }}
-                    className={`text-left p-3 border-l border-[#B0B0B0] hover:bg-[#F7F7F7] transition cursor-pointer ${
+                    className={`text-left p-3 hover:bg-white/10 transition cursor-pointer ${
                       cardDrawer === 'calendar' && activeField === 'checkout' ? 'cal-input-active' : ''
                     }`}
                   >
-                    <span className="block text-[10px] font-extrabold uppercase tracking-wider text-[#222222]">
+                    <span className="block text-[10px] font-extrabold uppercase tracking-wider text-white/50">
                       CHECKOUT
                     </span>
-                    <span className="block text-sm text-[#222222] mt-0.5 font-semibold">
+                    <span className="block text-sm text-white mt-0.5 font-semibold">
                       {formatSlash(checkOut)}
                     </span>
                   </button>
@@ -2738,20 +2744,20 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                   type="button"
                   onClick={() => setCardDrawer(cardDrawer === 'guests' ? 'none' : 'guests')}
                   aria-expanded={cardDrawer === 'guests'}
-                  className={`w-full text-left p-3 border-t border-[#B0B0B0] hover:bg-[#F7F7F7] flex items-center justify-between transition cursor-pointer ${
+                  className={`w-full text-left p-3 border-t border-white/10 hover:bg-white/10 flex items-center justify-between transition cursor-pointer ${
                     cardDrawer === 'guests' ? 'cal-input-active' : ''
                   }`}
                 >
                   <div>
-                    <span className="block text-[10px] font-extrabold uppercase tracking-wider text-[#222222]">
+                    <span className="block text-[10px] font-extrabold uppercase tracking-wider text-white/50">
                       GUESTS
                     </span>
-                    <span className="block text-sm text-[#222222] mt-0.5 font-semibold">
+                    <span className="block text-sm text-white mt-0.5 font-semibold">
                       {partySize} {partySize === 1 ? 'guest' : 'guests'}
                       {guests.infants > 0 && `, ${guests.infants} ${guests.infants === 1 ? 'infant' : 'infants'}`}
                     </span>
                   </div>
-                  <span className="text-xs">▾</span>
+                  <span className="text-xs text-white/60">▾</span>
                 </button>
 
                 {/* Room Row: auto-matched to the party, or the guest's own pick */}
@@ -2759,58 +2765,58 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                   type="button"
                   onClick={() => setCardDrawer(cardDrawer === 'room' ? 'none' : 'room')}
                   aria-expanded={cardDrawer === 'room'}
-                  className={`w-full text-left p-3 border-t border-[#B0B0B0] hover:bg-[#F7F7F7] flex items-center justify-between gap-3 transition cursor-pointer ${
+                  className={`w-full text-left p-3 border-t border-white/10 hover:bg-white/10 flex items-center justify-between gap-3 transition cursor-pointer ${
                     cardDrawer === 'room' ? 'cal-input-active' : ''
                   }`}
                 >
                   <div className="min-w-0">
-                    <span className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-wider text-[#222222]">
+                    <span className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-wider text-white/50">
                       ROOM
                       {selectedRoomIds.length === 0 ? (
-                        <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-extrabold tracking-wider text-slate-600">NOT SELECTED</span>
+                        <span className="rounded-full bg-white/10 px-2 py-0.5 text-[9px] font-extrabold tracking-wider text-white/70 border border-white/10">NOT SELECTED</span>
                       ) : !selectedFits ? (
-                        <span className="rounded-full bg-rose-50 px-1.5 py-0.5 text-[9px] font-extrabold tracking-wider text-rose-700">TOO SMALL</span>
+                        <span className="rounded-full bg-rose-500/20 px-2 py-0.5 text-[9px] font-extrabold tracking-wider text-rose-300 border border-rose-500/30">TOO SMALL</span>
                       ) : roomMode === 'auto' ? (
-                        <span className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-extrabold tracking-wider text-emerald-700">AUTO-MATCHED</span>
+                        <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[9px] font-extrabold tracking-wider text-emerald-300 border border-emerald-500/30">AUTO-MATCHED</span>
                       ) : (
-                        <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-extrabold tracking-wider text-slate-600">YOUR PICK</span>
+                        <span className="rounded-full bg-cyan/20 px-2 py-0.5 text-[9px] font-extrabold tracking-wider text-cyan border border-cyan/30">YOUR PICK</span>
                       )}
                     </span>
-                    <span className="block text-sm text-[#222222] mt-0.5 font-semibold truncate">
+                    <span className="block text-sm text-white mt-0.5 font-semibold truncate">
                       {selectedRoomIds.length === 0
                         ? 'Select accommodation · tap to choose'
                         : `${selectedRoom.name} · up to ${selectedCapacity} ${selectedCapacity === 1 ? 'guest' : 'guests'}`}
                     </span>
                   </div>
-                  <span className="text-xs shrink-0">▾</span>
+                  <span className="text-xs text-white/60 shrink-0">▾</span>
                 </button>
               </div>
 
               {/* Inline Calendar Drawer */}
               {cardDrawer === 'calendar' && (
-                <div className="mb-4 border border-[#DDDDDD] rounded-[12px] bg-[#FFFFFF] p-3.5 shadow-sm">
-                  <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#EBEBEB]">
+                <div className="mb-4 border border-white/15 rounded-2xl bg-[#060B18] p-4 shadow-xl text-white">
+                  <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-white/10">
                     <button
                       onClick={() => setPopoverYM(shiftYM(popoverYM, -1))}
                       type="button"
-                      className="w-7 h-7 rounded border border-[#CBD5E1] text-xs font-bold cursor-pointer"
+                      className="w-7 h-7 rounded-lg border border-white/15 hover:border-cyan text-white text-xs font-bold cursor-pointer hover:bg-white/10 transition"
                     >
                       ‹
                     </button>
-                    <span className="text-xs font-bold text-[#222222]">
+                    <span className="text-xs font-bold text-white tracking-wide">
                       {MONTH_NAMES[popoverYM.m]} {popoverYM.y}
                     </span>
                     <button
                       onClick={() => setPopoverYM(shiftYM(popoverYM, 1))}
                       type="button"
-                      className="w-7 h-7 rounded border border-[#CBD5E1] text-xs font-bold cursor-pointer"
+                      className="w-7 h-7 rounded-lg border border-white/15 hover:border-cyan text-white text-xs font-bold cursor-pointer hover:bg-white/10 transition"
                     >
                       ›
                     </button>
                   </div>
-                  <div className="cal-grid-7-compact mb-1 text-center">
+                  <div className="cal-grid-7-compact mb-1.5 text-center">
                     {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((w, i) => (
-                      <div key={i} className="text-[10px] font-bold text-slate-500">{w}</div>
+                      <div key={i} className="text-[10px] font-bold text-white/50">{w}</div>
                     ))}
                   </div>
                   <div className="cal-grid-7-compact">
@@ -2821,7 +2827,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
 
               {/* Inline Guests Drawer */}
               {cardDrawer === 'guests' && (
-                <div className="mb-4 border border-[#DDDDDD] rounded-[12px] bg-[#FFFFFF] p-4 space-y-3.5 shadow-sm">
+                <div className="mb-4 border border-white/15 rounded-2xl bg-[#060B18] p-4 space-y-3.5 shadow-xl text-white">
                   {[
                     { key: 'adults', label: 'Adults', hint: 'Age 13+', value: guests.adults, onMinus: () => changeAdults(-1), onPlus: () => changeAdults(1), canMinus: guests.adults > 1, canPlus: partySize < maxCapacity },
                     { key: 'children', label: 'Children', hint: 'Ages 2–12', value: guests.children, onMinus: () => changeChildren(-1), onPlus: () => changeChildren(1), canMinus: guests.children > 0, canPlus: partySize < maxCapacity },
@@ -2829,8 +2835,8 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                   ].map((row) => (
                     <div key={row.key} className="flex items-center justify-between gap-3">
                       <div>
-                        <div className="text-sm font-semibold text-[#222222]">{row.label}</div>
-                        <div className="text-xs text-[#6A6A6A]">{row.hint}</div>
+                        <div className="text-sm font-semibold text-white">{row.label}</div>
+                        <div className="text-xs text-white/60">{row.hint}</div>
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
                         <button
@@ -2838,31 +2844,31 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                           disabled={!row.canMinus}
                           type="button"
                           aria-label={`Fewer ${row.label.toLowerCase()}`}
-                          className="w-8 h-8 rounded-full border border-[#B0B0B0] flex items-center justify-center font-bold cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed"
+                          className="w-8 h-8 rounded-full border border-white/20 text-white flex items-center justify-center font-bold cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 hover:border-cyan transition"
                         >
                           −
                         </button>
-                        <span className="w-4 text-center font-bold" aria-live="polite">{row.value}</span>
+                        <span className="w-4 text-center font-bold text-white" aria-live="polite">{row.value}</span>
                         <button
                           onClick={row.onPlus}
                           disabled={!row.canPlus}
                           type="button"
                           aria-label={`More ${row.label.toLowerCase()}`}
-                          className="w-8 h-8 rounded-full border border-[#B0B0B0] flex items-center justify-center font-bold cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed"
+                          className="w-8 h-8 rounded-full border border-white/20 text-white flex items-center justify-center font-bold cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 hover:border-cyan transition"
                         >
                           +
                         </button>
                       </div>
                     </div>
                   ))}
-                  <p className="border-t border-[#EBEBEB] pt-3 text-[11px] leading-relaxed text-[#6A6A6A]">
+                  <p className="border-t border-white/10 pt-3 text-[11px] leading-relaxed text-white/60">
                     Our largest room fits {maxCapacity} guests; for bigger groups, call the front desk.{' '}
                     {roomMode === 'auto' ? 'We match a room to your party automatically.' : `${selectedRoom.name} fits up to ${selectedCapacity}.`}
                   </p>
                   <button
                     onClick={() => setCardDrawer('none')}
                     type="button"
-                    className="w-full py-1.5 rounded-lg bg-[#222222] text-white text-xs font-semibold cursor-pointer"
+                    className="w-full py-2 rounded-xl bg-cyan text-[#060B18] text-xs font-bold hover:bg-cyan/90 cursor-pointer shadow-md transition"
                   >
                     Done
                   </button>
@@ -2871,11 +2877,11 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
 
               {/* Inline Room Drawer: auto-match or a manual pick, with live capacity and date availability */}
               {cardDrawer === 'room' && (
-                <div className="mb-4 border border-[#DDDDDD] rounded-[12px] bg-[#FFFFFF] p-4 shadow-sm">
+                <div className="mb-4 border border-white/15 rounded-2xl bg-[#060B18] p-4 shadow-xl text-white">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div className="text-sm font-semibold text-[#222222]">Choose your room</div>
-                      <div className="text-xs text-[#6A6A6A] mt-0.5">
+                      <div className="text-sm font-semibold text-white">Choose your room</div>
+                      <div className="text-xs text-white/60 mt-0.5">
                         {partySize} {partySize === 1 ? 'guest' : 'guests'}
                         {checkIn && checkOut ? ` · ${formatShortDate(checkIn)} – ${formatShortDate(checkOut)}` : ' · add dates to check availability'}
                       </div>
@@ -2894,10 +2900,10 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                             enableAutoMatch();
                           }
                         }}
-                        className="flex items-center gap-2 text-xs font-semibold text-[#222222] cursor-pointer shrink-0"
+                        className="flex items-center gap-2 text-xs font-semibold text-white cursor-pointer shrink-0"
                       >
                         <span>Auto-match</span>
-                        <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition ${roomMode === 'auto' ? 'bg-[#18222B]' : 'bg-[#CBD5E1]'}`}>
+                        <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition ${roomMode === 'auto' ? 'bg-cyan' : 'bg-white/20'}`}>
                           <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${roomMode === 'auto' ? 'translate-x-[18px]' : 'translate-x-[2px]'}`} />
                         </span>
                       </button>
@@ -2905,13 +2911,13 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                         type="button"
                         onClick={() => setCardDrawer('none')}
                         aria-label="Close room drawer"
-                        className="h-6 w-6 rounded-full bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#64748B] hover:text-[#0F172A] flex items-center justify-center text-xs font-bold transition cursor-pointer shrink-0"
+                        className="h-6 w-6 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-xs font-bold transition cursor-pointer shrink-0"
                       >
                         ✕
                       </button>
                     </div>
                   </div>
-                  <p className="mt-2 text-[11px] leading-relaxed text-[#6A6A6A]">
+                  <p className="mt-2 text-[11px] leading-relaxed text-white/60">
                     {roomMode === 'auto'
                       ? `We pick the smallest open room that fits ${partySize} ${partySize === 1 ? 'guest' : 'guests'}. `
                       : selectedRoomIds.length > 0
@@ -2919,16 +2925,16 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                       : 'Tap any room to select it. Turn on auto-match to let us choose by party size. '}
                     Capacity follows the resort's live room settings; infants don't count.
                   </p>
-                  <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-medium text-[#64748B]">
-                    <span className="inline-flex items-center gap-1 whitespace-nowrap"><span className="h-2.5 w-2.5 shrink-0 rounded-[3px] border border-[#93C5FD] bg-[#EFF6FF]" /> Selected</span>
-                    <span className="inline-flex items-center gap-1 whitespace-nowrap"><span className="h-2.5 w-2.5 shrink-0 rounded-[3px] border border-[#FCA5A5] bg-[#FEF2F2]" /> Already booked</span>
-                    <span className="inline-flex items-center whitespace-nowrap text-[#94A3B8]">Tap to select or deselect</span>
+                  <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-medium text-white/60">
+                    <span className="inline-flex items-center gap-1 whitespace-nowrap"><span className="h-2.5 w-2.5 shrink-0 rounded-[3px] border border-cyan bg-cyan/20" /> Selected</span>
+                    <span className="inline-flex items-center gap-1 whitespace-nowrap"><span className="h-2.5 w-2.5 shrink-0 rounded-[3px] border border-rose-500/40 bg-rose-500/20" /> Already booked</span>
+                    <span className="inline-flex items-center whitespace-nowrap text-white/40">Tap to select or deselect</span>
                   </div>
 
                   {/* Category Filter Dropdown */}
-                  <div className="mt-2.5 mb-2 flex items-center justify-between gap-2.5 p-2 rounded-xl bg-[#F8F7F4] border border-[#E5E0D5]">
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-[#18222B] shrink-0">
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E7E46]">Category</span>
+                  <div className="mt-2.5 mb-2 flex items-center justify-between gap-2.5 p-2 rounded-xl bg-white/5 border border-white/10">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-white shrink-0">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-cyan">Category</span>
                     </div>
                     <div className="relative flex-1">
                       <select
@@ -2941,13 +2947,13 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                           }
                         }}
                         aria-label="Filter category"
-                        className="w-full appearance-none pl-3 pr-8 py-1.5 rounded-lg bg-white border border-[#CBD5E1] hover:border-[#18222B] text-xs font-bold text-[#18222B] shadow-xs focus:outline-none focus:border-[#18222B] cursor-pointer transition"
+                        className="w-full appearance-none pl-3 pr-8 py-1.5 rounded-lg bg-[#0B1426] border border-white/15 hover:border-cyan text-xs font-bold text-white shadow-xs focus:outline-none focus:border-cyan cursor-pointer transition"
                       >
                         <option value="all">All Units ({roomRanking.options.length})</option>
                         <option value="room">🛏️ Rooms ({drawerRoomCount})</option>
                         <option value="cottage">🏡 Cottages ({drawerCottageCount})</option>
                       </select>
-                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-[#64748B]">
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-white/50">
                         <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                         </svg>
@@ -2957,7 +2963,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
 
                   <div className="mt-2 space-y-2 max-h-72 overflow-y-auto no-scrollbar pr-0.5" role="group" aria-label="Accommodations">
                     {filteredDrawerOptions.length === 0 ? (
-                      <div className="py-8 text-center text-xs text-[#6A6A6A]">
+                      <div className="py-8 text-center text-xs text-white/50">
                         No {drawerCategory === 'room' ? 'rooms' : drawerCategory === 'cottage' ? 'cottages' : 'accommodations'} available.
                       </div>
                     ) : (
@@ -2968,12 +2974,12 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                         const disabled = isTooSmall;
                         const offering = inferOfferingType(option.room);
                         const toneClass = isBooked
-                          ? 'border-[#FCA5A5] bg-[#FEF2F2] hover:border-rose-400 cursor-pointer'
+                          ? 'border-rose-500/40 bg-rose-950/30 hover:border-rose-400 cursor-pointer'
                           : isSelected
-                          ? 'border-[#93C5FD] bg-[#EFF6FF] shadow-[inset_0_0_0_1px_#93C5FD] cursor-pointer'
+                          ? 'border-cyan bg-cyan/15 shadow-[inset_0_0_0_1px_rgba(34,211,238,0.4)] cursor-pointer'
                           : isTooSmall
-                          ? 'border-[#E2E8F0] opacity-55 cursor-not-allowed'
-                          : 'border-[#E2E8F0] hover:border-[#94A3B8] cursor-pointer';
+                          ? 'border-white/5 opacity-40 cursor-not-allowed'
+                          : 'border-white/10 bg-white/5 hover:border-white/25 cursor-pointer';
                         return (
                           <button
                             key={option.room.id}
@@ -3005,33 +3011,33 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                             <img
                               src={option.room.image_url || '/images/cottage.jpg'}
                               alt=""
-                              className="h-12 w-14 shrink-0 rounded-lg object-cover bg-slate-100 mt-0.5"
+                              className="h-12 w-14 shrink-0 rounded-lg object-cover bg-slate-800 mt-0.5 border border-white/10"
                             />
                             <div className="min-w-0 flex-1">
                               <div className="flex items-start justify-between gap-2">
                                 <div className="min-w-0 flex-1 pr-1">
                                   <div className="flex items-center gap-1.5 flex-wrap">
-                                    <span className="text-sm font-semibold text-[#222222] leading-snug break-words">
+                                    <span className="text-sm font-semibold text-white leading-snug break-words">
                                       {option.room.name}
                                     </span>
                                     <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider shrink-0 ${
                                       offering === 'cottage'
-                                        ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                                        : 'bg-slate-100 text-slate-700 border border-slate-200'
+                                        ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30'
+                                        : 'bg-white/10 text-white/80 border border-white/10'
                                     }`}>
                                       {offering === 'cottage' ? 'Cottage' : 'Room'}
                                     </span>
                                   </div>
-                                  <div className="text-[11px] text-[#6A6A6A] mt-0.5">
+                                  <div className="text-[11px] text-white/60 mt-0.5">
                                     {option.capacity > 0 ? `Up to ${option.capacity} ${option.capacity === 1 ? 'guest' : 'guests'}` : 'Capacity not set'}
                                   </div>
                                 </div>
                                 <div className="shrink-0 text-right">
-                                  <div className="text-xs font-semibold text-[#222222]">
+                                  <div className="text-xs font-semibold text-cyan">
                                     {formatPHP(option.room.rate_php || 3500)}
-                                    <span className="font-normal text-[#6A6A6A]">/night</span>
+                                    <span className="font-normal text-white/50">/night</span>
                                   </div>
-                                  <div className={`mt-0.5 inline-flex items-center gap-1 text-[11px] font-semibold ${isBooked ? 'text-[#DC2626]' : FIT_TONE[option.fit]}`}>
+                                  <div className={`mt-0.5 inline-flex items-center gap-1 text-[11px] font-semibold ${isBooked ? 'text-rose-400' : FIT_TONE[option.fit]}`}>
                                     {isBooked && (
                                       <svg viewBox="0 0 24 24" className="h-3 w-3" fill="currentColor" aria-hidden="true">
                                         <path d="M12 2 1 21h22L12 2zm0 13a1 1 0 110 2 1 1 0 010-2zm-1-7h2v5h-2V8z" />
@@ -3048,14 +3054,14 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                     )}
                   </div>
                   <div className="mt-3 flex items-center justify-between gap-3">
-                    <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-[#64748B]">
-                      <span className={`w-1.5 h-1.5 rounded-full ${dbStatus === 'connected' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                    <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-white/60">
+                      <span className={`w-1.5 h-1.5 rounded-full ${dbStatus === 'connected' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
                       {dbStatus === 'connected' ? 'Live room inventory' : 'Offline room list'}
                     </span>
                     <button
                       onClick={() => setCardDrawer('none')}
                       type="button"
-                      className="px-4 py-1.5 rounded-lg bg-[#222222] text-white text-xs font-semibold cursor-pointer"
+                      className="px-4 py-1.5 rounded-lg bg-cyan text-[#060B18] text-xs font-bold cursor-pointer hover:bg-cyan/90 transition shadow-sm"
                     >
                       Done
                     </button>
@@ -3065,42 +3071,42 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
 
               {/* Capacity and availability guidance */}
               {reserveBlock === 'capacity' && (
-                <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-3 text-xs text-rose-950" role="status">
+                <div className="mb-4 rounded-xl border border-rose-500/30 bg-rose-950/40 px-3.5 py-3 text-xs text-rose-200" role="status">
                   <p className="font-semibold">
                     {selectedRoom.name} fits up to {selectedCapacity} {selectedCapacity === 1 ? 'guest' : 'guests'}; your party has {partySize}.
                   </p>
-                  <p className="mt-0.5 text-rose-900/80">
+                  <p className="mt-0.5 text-rose-300/80">
                     {bestFreeRoom ? `${bestFreeRoom.name} fits ${bestFreeRoom.capacity} and is open.` : 'Try a different room or fewer guests.'}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {bestFreeRoom && (
-                      <button type="button" onClick={() => chooseRoom(bestFreeRoom.id)} className="rounded-lg bg-rose-600 px-3 py-1.5 font-semibold text-white hover:bg-rose-700 cursor-pointer">
+                      <button type="button" onClick={() => chooseRoom(bestFreeRoom.id)} className="rounded-lg bg-rose-600 px-3 py-1.5 font-semibold text-white hover:bg-rose-700 cursor-pointer shadow-xs">
                         Switch to {bestFreeRoom.name}
                       </button>
                     )}
-                    <button type="button" onClick={enableAutoMatch} className="rounded-lg border border-rose-300 bg-white px-3 py-1.5 font-semibold text-rose-700 hover:bg-rose-100 cursor-pointer">
+                    <button type="button" onClick={enableAutoMatch} className="rounded-lg border border-rose-400/40 bg-white/10 px-3 py-1.5 font-semibold text-rose-200 hover:bg-white/20 cursor-pointer">
                       Auto-match a room
                     </button>
                   </div>
                 </div>
               )}
               {reserveBlock === 'dates' && (
-                <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs text-amber-950" role="status">
+                <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-950/40 px-3.5 py-3 text-xs text-amber-200" role="status">
                   <p className="font-semibold">
                     {bestFreeRoom
                       ? `${conflictRooms.map((r) => r.name).join(' and ') || selectedRoom.name} ${conflictRooms.length > 1 ? 'are' : 'is'} booked on some of these dates.`
                       : `No room for ${partySize} ${partySize === 1 ? 'guest' : 'guests'} is free for every night of these dates.`}
                   </p>
-                  <p className="mt-0.5 text-amber-900/80">
+                  <p className="mt-0.5 text-amber-300/80">
                     {bestFreeRoom ? `${bestFreeRoom.name} is open for your whole stay.` : 'Pick different dates to see open rooms.'}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {bestFreeRoom && (
-                      <button type="button" onClick={() => chooseRoom(bestFreeRoom.id)} className="rounded-lg bg-amber-600 px-3 py-1.5 font-semibold text-white hover:bg-amber-700 cursor-pointer">
+                      <button type="button" onClick={() => chooseRoom(bestFreeRoom.id)} className="rounded-lg bg-amber-600 px-3 py-1.5 font-semibold text-white hover:bg-amber-700 cursor-pointer shadow-xs">
                         Switch to {bestFreeRoom.name}
                       </button>
                     )}
-                    <button type="button" onClick={clearDates} className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 font-semibold text-amber-800 hover:bg-amber-100 cursor-pointer">
+                    <button type="button" onClick={clearDates} className="rounded-lg border border-amber-400/40 bg-white/10 px-3 py-1.5 font-semibold text-amber-200 hover:bg-white/20 cursor-pointer">
                       Change dates
                     </button>
                   </div>
@@ -3111,7 +3117,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
               <button
                 type="button"
                 onClick={openReserve}
-                className="btn-airbnb-reserve w-full h-12 rounded-[8px] text-[15px] font-semibold tracking-wide cursor-pointer flex items-center justify-center"
+                className="btn-airbnb-reserve w-full h-12 rounded-xl text-[15px] font-bold tracking-wide cursor-pointer flex items-center justify-center shadow-lg shadow-cyan-500/20"
               >
                 {!checkIn || !checkOut
                   ? 'Check availability'
@@ -3122,50 +3128,50 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                   : 'Reserve'}
               </button>
 
-              <p className="text-center text-xs text-[#6A6A6A] mt-3">
+              <p className="text-center text-xs text-white/60 mt-3">
                 You won’t be charged yet · Official digital voucher
               </p>
 
               {/* Fee Breakdown */}
               {checkIn && checkOut && totalNights > 0 ? (
-                <div className="mt-5 pt-4 border-t border-[#DDDDDD] space-y-2.5 text-sm text-[#222222]">
+                <div className="mt-5 pt-4 border-t border-white/10 space-y-2.5 text-sm text-white/80">
                   <div className="flex justify-between">
-                    <span className="underline">{formatPHP(selectedRoom.rate_php || 3500)} × {totalNights} nights{pricedRooms.length > 1 ? ` · ${pricedRooms.length} rooms` : ''}</span>
-                    <span>{formatPHP(priceBreakdown.nightsTotal)}</span>
+                    <span className="underline text-white/70">{formatPHP(selectedRoom.rate_php || 3500)} × {totalNights} nights{pricedRooms.length > 1 ? ` · ${pricedRooms.length} rooms` : ''}</span>
+                    <span className="text-white font-medium">{formatPHP(priceBreakdown.nightsTotal)}</span>
                   </div>
-                  <div className="flex justify-between text-[#6A6A6A]">
+                  <div className="flex justify-between text-white/60">
                     <span className="underline">Resort Cleaning Fee</span>
-                    <span>{formatPHP(priceBreakdown.cleaningFee)}</span>
+                    <span className="text-white/90">{formatPHP(priceBreakdown.cleaningFee)}</span>
                   </div>
-                  <div className="flex justify-between text-[#6A6A6A]">
+                  <div className="flex justify-between text-white/60">
                     <span className="underline">Coastal Conservation Fee</span>
-                    <span>{formatPHP(priceBreakdown.coastalFee)}</span>
+                    <span className="text-white/90">{formatPHP(priceBreakdown.coastalFee)}</span>
                   </div>
-                  <div className="flex justify-between text-emerald-700 font-medium">
+                  <div className="flex justify-between text-cyan font-medium">
                     <span>Direct Booking Tourism Tax</span>
-                    <span>Waived (₱0)</span>
+                    <span className="text-cyan font-bold">Waived (₱0)</span>
                   </div>
-                  <div className="pt-3 border-t border-[#DDDDDD] flex justify-between font-bold text-base text-[#222222]">
+                  <div className="pt-3 border-t border-white/10 flex justify-between font-bold text-base text-white">
                     <span>Total Stay Amount</span>
-                    <span>{formatPHP(priceBreakdown.grandTotal)}</span>
+                    <span className="text-cyan font-serif text-xl font-bold">{formatPHP(priceBreakdown.grandTotal)}</span>
                   </div>
-                  <div className="pt-2.5 border-t border-dashed border-[#DDDDDD] space-y-1.5 text-xs">
-                    <div className="flex justify-between font-bold text-sky-950 bg-sky-50 px-2.5 py-1.5 rounded-lg border border-sky-200">
+                  <div className="pt-2.5 border-t border-dashed border-white/10 space-y-1.5 text-xs">
+                    <div className="flex justify-between font-bold text-cyan bg-cyan/15 px-3 py-2 rounded-xl border border-cyan/40">
                       <span>50% Downpayment (Required)</span>
-                      <span>{formatPHP(priceBreakdown.downpaymentRequired)}</span>
+                      <span className="font-serif text-sm font-bold">{formatPHP(priceBreakdown.downpaymentRequired)}</span>
                     </div>
-                    <div className="flex justify-between text-[#6A6A6A] px-2.5">
+                    <div className="flex justify-between text-white/70 px-2.5">
                       <span>50% Balance on Check-in</span>
-                      <span>{formatPHP(priceBreakdown.remainingBalance)}</span>
+                      <span className="text-white font-semibold">{formatPHP(priceBreakdown.remainingBalance)}</span>
                     </div>
-                    <p className="text-[10px] text-[#6A6A6A] px-2.5 pt-0.5">
-                      🛡️ <Link to="/policy" className="text-[#9E7E46] underline hover:text-[#18222B]">50% Downpayment Policy</Link> applies to lock reservation dates.
+                    <p className="text-[10px] text-white/60 px-2.5 pt-0.5">
+                      🛡️ <Link to="/policy" className="text-[#F3D9A4] underline hover:text-white">50% Downpayment Policy</Link> applies to lock reservation dates.
                     </p>
                   </div>
                 </div>
               ) : (
-                <div className="mt-5 pt-4 border-t border-[#DDDDDD] text-center text-xs text-[#6A6A6A]">
-                  <span>Stay dates default: <strong className="text-[#222222]">N/A</strong> · Select check-in and checkout to see pricing</span>
+                <div className="mt-5 pt-4 border-t border-white/10 text-center text-xs text-white/50">
+                  <span>Stay dates default: <strong className="text-white">N/A</strong> · Select check-in and checkout to see pricing</span>
                 </div>
               )}
             </div>
