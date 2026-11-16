@@ -2616,62 +2616,34 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                     <span className="inline-flex items-center whitespace-nowrap text-[#94A3B8]">Tap to select or deselect</span>
                   </div>
 
-                  {/* Category Filter Tabs */}
-                  <div className="mt-2.5 mb-1.5 flex items-center gap-1.5 p-1 rounded-xl bg-[#F5F2EB] border border-[#E5E0D5]">
-                    <button
-                      type="button"
-                      onClick={() => setDrawerCategory('all')}
-                      className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                        drawerCategory === 'all'
-                          ? 'bg-[#18222B] text-white shadow-xs'
-                          : 'text-[#6A6A6A] hover:text-[#222222]'
-                      }`}
-                    >
-                      <span>All Units</span>
-                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                        drawerCategory === 'all' ? 'bg-white/20 text-white' : 'bg-[#EAE6DF] text-[#6A6A6A]'
-                      }`}>
-                        {roomRanking.options.length}
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDrawerCategory('room');
-                        setActiveLodgingCategory('room');
-                      }}
-                      className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                        drawerCategory === 'room'
-                          ? 'bg-[#18222B] text-white shadow-xs'
-                          : 'text-[#6A6A6A] hover:text-[#222222]'
-                      }`}
-                    >
-                      <span>🛏️ Rooms</span>
-                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                        drawerCategory === 'room' ? 'bg-white/20 text-white' : 'bg-[#EAE6DF] text-[#6A6A6A]'
-                      }`}>
-                        {drawerRoomCount}
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDrawerCategory('cottage');
-                        setActiveLodgingCategory('cottage');
-                      }}
-                      className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                        drawerCategory === 'cottage'
-                          ? 'bg-[#18222B] text-white shadow-xs'
-                          : 'text-[#6A6A6A] hover:text-[#222222]'
-                      }`}
-                    >
-                      <span>🏡 Cottages</span>
-                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                        drawerCategory === 'cottage' ? 'bg-white/20 text-white' : 'bg-[#EAE6DF] text-[#6A6A6A]'
-                      }`}>
-                        {drawerCottageCount}
-                      </span>
-                    </button>
+                  {/* Category Filter Dropdown */}
+                  <div className="mt-2.5 mb-2 flex items-center justify-between gap-2.5 p-2 rounded-xl bg-[#F8F7F4] border border-[#E5E0D5]">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-[#18222B] shrink-0">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E7E46]">Category</span>
+                    </div>
+                    <div className="relative flex-1">
+                      <select
+                        value={drawerCategory}
+                        onChange={(e) => {
+                          const val = e.target.value as 'all' | 'room' | 'cottage';
+                          setDrawerCategory(val);
+                          if (val !== 'all') {
+                            setActiveLodgingCategory(val);
+                          }
+                        }}
+                        aria-label="Filter category"
+                        className="w-full appearance-none pl-3 pr-8 py-1.5 rounded-lg bg-white border border-[#CBD5E1] hover:border-[#18222B] text-xs font-bold text-[#18222B] shadow-xs focus:outline-none focus:border-[#18222B] cursor-pointer transition"
+                      >
+                        <option value="all">All Units ({roomRanking.options.length})</option>
+                        <option value="room">🛏️ Rooms ({drawerRoomCount})</option>
+                        <option value="cottage">🏡 Cottages ({drawerCottageCount})</option>
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-[#64748B]">
+                        <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="mt-2 space-y-2 max-h-72 overflow-y-auto no-scrollbar pr-0.5" role="group" aria-label="Accommodations">
