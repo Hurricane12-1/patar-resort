@@ -218,9 +218,9 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
 
   // Application Data States (Live Supabase)
   const [rooms, setRooms] = useState<Room[]>(FALLBACK_ROOMS);
-  const [selectedRoomId, setSelectedRoomId] = useState<string>('chason-room');
+  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   // Visual multi-select: rooms the guest has toggled on. Booking uses selectedRoomIds[0] as the primary room.
-  const [selectedRoomIds, setSelectedRoomIds] = useState<string[]>(['chason-room']);
+  const [selectedRoomIds, setSelectedRoomIds] = useState<string[]>([]);
   const [activeLodgingCategory, setActiveLodgingCategory] = useState<'room' | 'cottage'>('room');
   const [reservations, setReservations] = useState<ReservationWindow[]>(() => getInitialReservations(FALLBACK_ROOMS));
   const [dbStatus, setDbStatus] = useState<'connecting' | 'connected' | 'offline'>('connecting');
@@ -333,7 +333,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   const [drawerCategory, setDrawerCategory] = useState<'all' | 'room' | 'cottage'>('all');
   const [guests, setGuests] = useState({ adults: 2, children: 0, infants: 0 });
   // Auto-match assigns the best-fitting free room; picking a room yourself switches to manual.
-  const [roomMode, setRoomMode] = useState<'auto' | 'manual'>('auto');
+  const [roomMode, setRoomMode] = useState<'auto' | 'manual'>('manual');
   const [isSaved, setIsSaved] = useState<boolean>(false);
 
   // Modals
@@ -467,12 +467,8 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
       const mapped = await fetchBookableRooms();
       if (mapped.length > 0) {
         setRooms(mapped);
-        const chasonRoom = mapped.find((m) => /chason/i.test(m.name)) || mapped[0];
-        setSelectedRoomId((current) => (mapped.some((m) => m.id === current) ? current : chasonRoom.id));
-        setSelectedRoomIds((current) => {
-          const valid = current.filter((id) => mapped.some((m) => m.id === id));
-          return valid.length > 0 ? valid : [chasonRoom.id];
-        });
+        setSelectedRoomId((current) => (current && mapped.some((m) => m.id === current) ? current : null));
+        setSelectedRoomIds((current) => current.filter((id) => mapped.some((m) => m.id === id)));
         fetchLiveReservations(mapped);
       }
       setDbStatus('connected');
@@ -714,12 +710,12 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     if (openIds.length > 0) {
       setSelectedRoomIds(openIds);
       setSelectedRoomId(openIds[0]);
-    } else if (bestFreeRoom) {
-      setSelectedRoomIds([bestFreeRoom.id]);
-      setSelectedRoomId(bestFreeRoom.id);
+    } else {
+      setSelectedRoomIds([]);
+      setSelectedRoomId(null);
     }
     setConflictToast(null);
-  }, [checkIn, checkOut, selectedRoomIds, reservations, bestFreeRoom]);
+  }, [checkIn, checkOut, selectedRoomIds, reservations]);
 
   // Booked nights count for currently active room in the displayed month
   const monthBookedNights = useMemo(() => {
@@ -741,10 +737,11 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   const selectedFits = selectedCapacity > 0 && selectedCapacity >= partySize;
   const reserveBlock: 'capacity' | 'dates' | null = !selectedFits ? 'capacity' : hasRangeConflict ? 'dates' : null;
 
-  // Auto-match follows party size, dates, and live inventory changes.
+  // Auto-match follows party size, dates, and live inventory changes only when explicitly enabled.
   useEffect(() => {
+    if (roomMode !== 'auto') return;
     const best = roomRanking.best;
-    if (roomMode === 'auto' && best && best.id !== selectedRoomId) {
+    if (best && best.id !== selectedRoomId) {
       setSelectedRoomId(best.id);
       setSelectedRoomIds([best.id]);
     }
@@ -798,7 +795,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   const handleCategorySwitch = (category: 'room' | 'cottage') => {
     setActiveLodgingCategory(category);
     const targetList = category === 'cottage' ? cottageAccommodations : roomAccommodations;
-    if (targetList.length > 0 && !targetList.some((r) => r.id === selectedRoomId)) {
+    if (selectedRoomId && targetList.length > 0 && !targetList.some((r) => r.id === selectedRoomId)) {
       const bestInCat = roomRanking.options.find(
         (o) => targetList.some((t) => t.id === o.room.id) && o.fit === 'best'
       )?.room;
@@ -814,6 +811,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
       : [...selectedRoomIds, roomId];
     setSelectedRoomIds(next);
     if (next.length) setSelectedRoomId(next[0]);
+    else setSelectedRoomId(null);
 
     const activeRangeEnd = checkOut ?? (checkIn ? addDaysISO(checkIn, 1) : null);
     if (checkIn && activeRangeEnd) {
@@ -867,7 +865,11 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   };
   const enableAutoMatch = () => {
     setRoomMode('auto');
-    setSelectedRoomIds(selectedRoomId ? [selectedRoomId] : []);
+    const best = roomRanking.best;
+    if (best) {
+      setSelectedRoomId(best.id);
+      setSelectedRoomIds([best.id]);
+    }
   };
 
   const guestSummary = [
@@ -1174,6 +1176,12 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
         setActiveField(checkIn ? 'checkout' : 'checkin');
         document.getElementById('reserve-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
+      return;
+    }
+    if (!selectedRoomId || selectedRoomIds.length === 0) {
+      setCardDrawer('room');
+      document.getElementById('reserve-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      toast('Please choose a room or cottage to continue.', true);
       return;
     }
     if (reserveBlock) {
@@ -1507,13 +1515,23 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                   Select Accommodation
                 </label>
                 <select
-                  value={roomMode === 'auto' ? '__auto' : selectedRoomId}
-                  onChange={(e) => (e.target.value === '__auto' ? enableAutoMatch() : chooseRoom(e.target.value))}
+                  value={roomMode === 'auto' ? '__auto' : (selectedRoomId || '')}
+                  onChange={(e) => {
+                    if (e.target.value === '__auto') enableAutoMatch();
+                    else if (!e.target.value) {
+                      setRoomMode('manual');
+                      setSelectedRoomId(null);
+                      setSelectedRoomIds([]);
+                    } else {
+                      chooseRoom(e.target.value);
+                    }
+                  }}
                   aria-label="Select accommodation"
                   className="w-full bg-transparent text-xs sm:text-sm font-bold text-[#18222B] mt-0.5 focus:outline-none cursor-pointer"
                 >
+                  <option value="">Select accommodation...</option>
                   <option value="__auto">
-                    {`Best match for ${partySize} ${partySize === 1 ? 'guest' : 'guests'}${roomRanking.best ? ` — ${roomRanking.best.name}` : ''}`}
+                    {`⚡ Auto-match for ${partySize} ${partySize === 1 ? 'guest' : 'guests'}${roomRanking.best ? ` — ${roomRanking.best.name}` : ''}`}
                   </option>
                   <optgroup label="Rooms">
                     {roomRanking.options
@@ -2481,7 +2499,9 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                   <div className="min-w-0">
                     <span className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-wider text-[#222222]">
                       ROOM
-                      {!selectedFits ? (
+                      {selectedRoomIds.length === 0 ? (
+                        <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-extrabold tracking-wider text-slate-600">NOT SELECTED</span>
+                      ) : !selectedFits ? (
                         <span className="rounded-full bg-rose-50 px-1.5 py-0.5 text-[9px] font-extrabold tracking-wider text-rose-700">TOO SMALL</span>
                       ) : roomMode === 'auto' ? (
                         <span className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-extrabold tracking-wider text-emerald-700">AUTO-MATCHED</span>
@@ -2490,7 +2510,9 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                       )}
                     </span>
                     <span className="block text-sm text-[#222222] mt-0.5 font-semibold truncate">
-                      {selectedRoom.name} · up to {selectedCapacity} {selectedCapacity === 1 ? 'guest' : 'guests'}
+                      {selectedRoomIds.length === 0
+                        ? 'Select accommodation · tap to choose'
+                        : `${selectedRoom.name} · up to ${selectedCapacity} ${selectedCapacity === 1 ? 'guest' : 'guests'}`}
                     </span>
                   </div>
                   <span className="text-xs shrink-0">▾</span>
@@ -2595,7 +2617,15 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                       type="button"
                       role="switch"
                       aria-checked={roomMode === 'auto'}
-                      onClick={() => (roomMode === 'auto' ? setRoomMode('manual') : enableAutoMatch())}
+                      onClick={() => {
+                        if (roomMode === 'auto') {
+                          setRoomMode('manual');
+                          setSelectedRoomIds([]);
+                          setSelectedRoomId(null);
+                        } else {
+                          enableAutoMatch();
+                        }
+                      }}
                       className="flex items-center gap-2 text-xs font-semibold text-[#222222] cursor-pointer shrink-0"
                     >
                       <span>Auto-match</span>
@@ -2607,7 +2637,9 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                   <p className="mt-2 text-[11px] leading-relaxed text-[#6A6A6A]">
                     {roomMode === 'auto'
                       ? `We pick the smallest open room that fits ${partySize} ${partySize === 1 ? 'guest' : 'guests'}. `
-                      : 'You picked this room. Turn on auto-match to let us choose by party size. '}
+                      : selectedRoomIds.length > 0
+                      ? 'You picked this accommodation. Tap any room to select or deselect, or turn on auto-match. '
+                      : 'Tap any room to select it. Turn on auto-match to let us choose by party size. '}
                     Capacity follows the resort's live room settings; infants don't count.
                   </p>
                   <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-medium text-[#64748B]">
