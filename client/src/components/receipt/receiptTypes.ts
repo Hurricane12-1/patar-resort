@@ -35,7 +35,7 @@ export function normalizeVoucherData(raw: any): VoucherData {
   }
 
   const total = Number(raw?.total_price || raw?.total_amount || raw?.total_php || raw?.totalAmount || 0);
-  const downpayment = Number(raw?.downpayment_php || raw?.downpaymentAmount || Math.round(total * 0.3));
+  const downpayment = Number(raw?.downpayment_php || raw?.downpaymentAmount || Math.round(total * 0.5));
   const balance = Math.max(0, total - downpayment);
 
   const roomTitle = raw?.roomName || raw?.rooms?.name || raw?.room_name || 'Beachfront Suite';

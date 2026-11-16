@@ -754,7 +754,7 @@ export default function BookingFlow({ initialSlug }) {
                   Digital Pass & RFID Access Folio
                 </div>
                 <div style={{ fontSize: '0.78rem', color: '#94A3B8', marginTop: 2 }}>
-                  30% downpayment breakdown, printable PDF receipt & contactless pass.
+                  50% downpayment breakdown, printable PDF receipt & contactless pass.
                 </div>
               </div>
               <button

@@ -209,14 +209,14 @@ export function detectSystemIntent(input: string): SystemIntent {
 
   // 6. System: Payment & Downpayment
   if (
-    /payment|downpayment|down\s*payment|gcash|maya|bank|credit\s*card|deposit|balance|30%|bayad|pera/i.test(
+    /payment|downpayment|down\s*payment|gcash|maya|bank|credit\s*card|deposit|balance|50%|30%|bayad|pera/i.test(
       t
     )
   ) {
     return {
       intent: 'SYSTEM_PAYMENT',
       title: 'System Payment & Downpayment Guide',
-      summary: 'How 30% reservation downpayment, GCash, Maya, and cash work.',
+      summary: 'How 50% reservation downpayment, GCash, Maya, and cash work.',
     };
   }
 

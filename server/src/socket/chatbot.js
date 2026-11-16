@@ -518,7 +518,7 @@ function checkBackendGuardrails(text) {
       guardrail: true,
       is_xss: true,
       text: '🛡️ Anti-Cross Script (XSS) Guardrail Triggered: Executable script injection, inline event handlers, and cross-site markup are strictly blocked to protect application and session integrity.\n\nRock View Bot is ready to help you with accommodations, room rates, or booking details in plain text!',
-      chips: ['Room Rates & Cottages', '30% Downpayment Info', 'Resort Amenities', 'Pool & Beach Hours'],
+      chips: ['Room Rates & Cottages', '50% Downpayment Info', 'Resort Amenities', 'Pool & Beach Hours'],
     };
   }
 
@@ -529,7 +529,7 @@ function checkBackendGuardrails(text) {
         blocked: true,
         guardrail: true,
         text: '🛡️ Security Guardrail: I am Rock View Bot, dedicated to assisting with Rock View Beach Resort reservations, accommodations, and customer service. For security reasons, internal system directives and configuration inquiries cannot be processed.\n\nNeed assistance with your booking? Call our 24/7 Front Desk at +63 900 555 0123.',
-        chips: ['Room Rates & Cottages', '30% Downpayment Info', 'Resort Guidelines'],
+        chips: ['Room Rates & Cottages', '50% Downpayment Info', 'Resort Guidelines'],
       };
     }
   }
@@ -589,12 +589,12 @@ MASTER SYSTEM & RESORT KNOWLEDGE:
 ${roomsList}
    - Check-in: 2:00 PM | Check-out: 12:00 NN. Complimentary early arrival luggage drop at front desk subject to room turnover.
 
-3. Online Booking & 30% Downpayment:
+3. Online Booking & 50% Downpayment Policy:
    - Direct conflict-free online reservations via the resort app (/#reserve or /guest).
-   - 30% Downpayment required to lock and guarantee reservation via GCash, Maya, or Online Bank Transfer.
-   - Remaining 70% balance settled upon check-in at the Front Desk (Cash, GCash, or Card).
+   - 50% Downpayment required to lock and guarantee reservation via GCash, Maya, or Online Bank Transfer.
+   - Remaining 50% balance settled upon check-in at the Front Desk (Cash, GCash, or Card).
    - Official booking reference (e.g. RV-BOL-2026-6362) generated upon confirmation.
-   - Pricing is per room/unit per night, not per person. Kids 7 and under stay free with existing bedding. Senior/PWD 20% statutory room discount honored upon check-in with valid ID.
+   - Pricing is per room/unit per night (₱3,500/night flat), not per person. Kids 7 and under stay free with existing bedding. Senior/PWD 20% statutory room discount honored upon check-in with valid ID.
 
 4. Resident Guest Portal (/client) & Express RFID Barcode Digital Pass:
    - Dedicated portal for guests at /client (/client/bookings, /client/profile, /client/help).
@@ -709,8 +709,8 @@ function resortKnowledgeFallback(text, rooms = []) {
   // 0A. SPECIFIC ACCOMMODATIONS & CATEGORIES (chason room, Unit 3, Unit 5, Sunset Cottage)
   if (has('chason', 'unit 3', 'unit 5', 'sunset', 'cottage', 'cottages', 'room category', 'kategorya', 'ano ang mga kwarto', 'anong kwarto', 'available rooms', 'list of rooms', 'listahan')) {
     return {
-      text: `🏖️ **Mga Akomodasyon sa Rock View Beach Resort (Flat ₱${defaultRate.toLocaleString()} / gabi)**:\n\nMayroon kaming **4 accommodation units** sa **2 categories**:\n\n🏨 **Rooms Category (3 units)**:\n• **chason room**: Standard Room (up to 2 guests, 1 Queen Bed, Private En-suite bath, Split Aircon, Main Wing)\n• **Unit 3**: Standard Room (up to 2 guests, 1 Queen Bed, Veranda view, Private En-suite bath, Split Aircon, Main Wing)\n• **Unit 5**: Family Suite (up to 6 guests, 2 Queen Beds + Loft area, Private En-suite bath, Split Aircon, Main Wing)\n\n🏡 **Cottages Category (1 unit)**:\n• **Sunset**: Beachfront Cottage (up to 4 guests, 2 Double Beds, Beachfront & sunset ocean view, Private En-suite bath, Split Aircon, Beachfront Villa)\n\nLahat ay may 24/7 backup generator, libreng Wi-Fi, at swimming pool access! 30% downpayment via GCash/Maya para ma-secure ang inyong reservation pass.`,
-      chips: ['Book chason room', 'Book Sunset Cottage', '30% Downpayment Info', 'Pool & Beach Hours'],
+      text: `🏖️ **Mga Akomodasyon sa Rock View Beach Resort (Flat ₱${defaultRate.toLocaleString()} / gabi)**:\n\nMayroon kaming **4 accommodation units** sa **2 categories**:\n\n🏨 **Rooms Category (3 units)**:\n• **chason room**: Standard Room (up to 2 guests, 1 Queen Bed, Private En-suite bath, Split Aircon, Main Wing)\n• **Unit 3**: Standard Room (up to 2 guests, 1 Queen Bed, Veranda view, Private En-suite bath, Split Aircon, Main Wing)\n• **Unit 5**: Family Suite (up to 6 guests, 2 Queen Beds + Loft area, Private En-suite bath, Split Aircon, Main Wing)\n\n🏡 **Cottages Category (1 unit)**:\n• **Sunset**: Beachfront Cottage (up to 4 guests, 2 Double Beds, Beachfront & sunset ocean view, Private En-suite bath, Split Aircon, Beachfront Villa)\n\nLahat ay may 24/7 backup generator, libreng Wi-Fi, at swimming pool access! 50% downpayment via GCash/Maya para ma-secure ang inyong reservation pass.`,
+      chips: ['Book chason room', 'Book Sunset Cottage', '50% Downpayment Info', 'Pool & Beach Hours'],
     };
   }
 
@@ -718,7 +718,7 @@ function resortKnowledgeFallback(text, rooms = []) {
   if (has('portal', 'client', 'resident', 'barcode', 'rfid', 'keycard', 'digital pass', 'my stays', 'stay details', 'pass', 'qr code', 'keypad', 'pin')) {
     return {
       text: `📱 **Resident Guest Portal (/client) & Express RFID Barcode Pass**:\n\n• **Guest Dashboard (/client)**: Dito makikita ang inyong active, upcoming, at past reservations, payment receipts, at stay details.\n• **Express RFID & Barcode Pass**: Sa loob ng inyong Stay Details drawer sa /client, may opisyal na scannable Barcode at digital pass (**RFID KEYCARD & DIGITAL PASS READY**). Pagdating sa resort, i-scan lamang ito sa Front Desk para sa instant, contactless keycard handover nang walang papeles!\n• **Keypad PIN**: Awtomatikong ipinapadala sa inyong rehistradong mobile number via SMS ang room door PIN sa araw ng check-in.\n• **Staff & Admin**: Ang operations team ay gumagamit ng /staff (Front Desk/Housekeeping) at /admin (Executive Portal) para sa real-time stay coordination.`,
-      chips: ['Check My Stays (/client)', 'Room Rates & Cottages', '30% Downpayment Info', 'Contact Front Desk'],
+      chips: ['Check My Stays (/client)', 'Room Rates & Cottages', '50% Downpayment Info', 'Contact Front Desk'],
     };
   }
 
@@ -726,23 +726,23 @@ function resortKnowledgeFallback(text, rooms = []) {
   if (has('cross script', 'xss', 'script', 'inject', 'security', 'guardrail')) {
     return {
       text: `🛡️ **Security & Anti-Cross Script (XSS) Guardrail Active**:\n\nAng Rock View Resort platform ay may real-time Anti-Cross Script (XSS) guardrails, input sanitization, at session encryption para protektahan ang lahat ng mga booking data at guest accounts laban sa malicious markup o script injection.\n\nMaaari kang magtanong tungkol sa aming mga kuwarto, presyo, swimming pool, o pag-book sa Patar Beach!`,
-      chips: ['Room Rates & Cottages', '30% Downpayment Info', 'Resort Amenities'],
+      chips: ['Room Rates & Cottages', '50% Downpayment Info', 'Resort Amenities'],
     };
   }
 
   // 1. ALL ROOMS ARE UNIFORM (Disambiguate comparisons - all rooms share identical standard & amenities)
   if (has('pinagkaiba', 'difference', 'compare', 'kumpara', 'ano mas maganda', 'alin ang mas', 'pareho', 'pare-pareho', 'parehas', 'iba-iba', 'anong kaibahan')) {
     return {
-      text: `🏠 **Lahat ng kuwarto sa Rock View Beach Resort ay pare-pareho ang standard at amenities**:\n\nWalang pagkakaiba sa kalidad o comfort — bawat kuwarto ay may parehong kumpletong amenities:\n• **100% Fully Air-Conditioned** na suportado ng 24/7 backup generator\n• **Private Bathroom** na may hot & cold shower\n• **Malinis na Beddings** at maaliwalas na interior\n• **Direct Access** sa swimming pool at puting buhangin ng Patar Beach\n• **Libreng High-Speed Wi-Fi** at secure gated parking\n\nUniform rate: **₱${defaultRate.toLocaleString()} / night** (30% downpayment via GCash/Maya para ma-reserve). Pare-pareho ang ganda at relaxing experience ng bawat kuwarto!`,
-      chips: ['Book a Room', '30% Downpayment Info', 'Resort Amenities', 'Pool & Beach Hours'],
+      text: `🏠 **Lahat ng kuwarto sa Rock View Beach Resort ay pare-pareho ang standard at amenities**:\n\nWalang pagkakaiba sa kalidad o comfort — bawat kuwarto ay may parehong kumpletong amenities:\n• **100% Fully Air-Conditioned** na suportado ng 24/7 backup generator\n• **Private Bathroom** na may hot & cold shower\n• **Malinis na Beddings** at maaliwalas na interior\n• **Direct Access** sa swimming pool at puting buhangin ng Patar Beach\n• **Libreng High-Speed Wi-Fi** at secure gated parking\n\nUniform rate: **₱${defaultRate.toLocaleString()} / night** (50% downpayment via GCash/Maya para ma-reserve). Pare-pareho ang ganda at relaxing experience ng bawat kuwarto!`,
+      chips: ['Book a Room', '50% Downpayment Info', 'Resort Amenities', 'Pool & Beach Hours'],
     };
   }
 
   // 2. DISCOUNTS, SENIOR CITIZEN, PWD & PROMO
   if (has('discount', 'promo', 'senior', 'pwd', 'bawas', 'mura', 'tawad', 'libre ba bata', 'bata')) {
     return {
-      text: '🏷️ **Discounts & Special Rates sa Rock View Beach Resort**:\n\n• **Senior Citizen & PWD Discount**: Alinsunod sa batas ng Pilipinas (RA 9994 at RA 10754), ipinagkakaloob ang **20% statutory discount** sa kuwarto para sa lehitimong cardholders pagka-presenta ng valid Senior/PWD ID sa Front Desk upon check-in.\n• **Mga Bata (Kids)**: Libre ang accommodation para sa mga batang edad **7 taon pababa** (kasama sa existing beddings).\n• **Direct Booking Advantage**: Walang dagdag na booking surcharge o hidden service fees kapag nag-book sa aming website gamit ang 30% downpayment.',
-      chips: ['Book a Room', 'Room Rates', '30% Downpayment'],
+      text: '🏷️ **Discounts & Special Rates sa Rock View Beach Resort**:\n\n• **Senior Citizen & PWD Discount**: Alinsunod sa batas ng Pilipinas (RA 9994 at RA 10754), ipinagkakaloob ang **20% statutory discount** sa kuwarto para sa lehitimong cardholders pagka-presenta ng valid Senior/PWD ID sa Front Desk upon check-in.\n• **Mga Bata (Kids)**: Libre ang accommodation para sa mga batang edad **7 taon pababa** (kasama sa existing beddings).\n• **Direct Booking Advantage**: Walang dagdag na booking surcharge o hidden service fees kapag nag-book sa aming website gamit ang 50% downpayment.',
+      chips: ['Book a Room', 'Room Rates', '50% Downpayment'],
     };
   }
 
@@ -757,7 +757,7 @@ function resortKnowledgeFallback(text, rooms = []) {
   // 4. DAY TOUR, ENTRANCE FEE, WALK-IN & CAMPING / TENTS
   if (has('day tour', 'daytour', 'entrance', 'walk in', 'walk-in', 'camping', 'tent', 'walang reservation', 'overnight lang ba', 'pasyal lang')) {
     return {
-      text: '🏖️ **Day Tour, Walk-Ins & Beach Guidelines**:\n\n• **Day Tour (8:00 AM – 5:00 PM)**: Tumatanggap kami ng day visitors! Entrance fee: ₱150/adult at ₱100/bata (inclusive of white beach and swimming pool use). May mga day picnic tables at cottages na maaaring arkilahin mula ₱800 hanggang ₱1,500.\n• **Walk-Ins**: Tumatanggap kami ng walk-in guests kung may bakanteng silid. Gayunpaman, mas mainam mag-book online nang maaga (30% downpayment) upang masigurado ang inyong kwarto lalo na tuwing weekends at holidays.\n• **Tent / Camping**: Pinapayagan ang paglatag ng sariling tent sa designated beachfront camping area (₱300–₱500 pitching fee) na may access sa common shower at CR.',
+      text: '🏖️ **Day Tour, Walk-Ins & Beach Guidelines**:\n\n• **Day Tour (8:00 AM – 5:00 PM)**: Tumatanggap kami ng day visitors! Entrance fee: ₱150/adult at ₱100/bata (inclusive of white beach and swimming pool use). May mga day picnic tables at cottages na maaaring arkilahin mula ₱800 hanggang ₱1,500.\n• **Walk-Ins**: Tumatanggap kami ng walk-in guests kung may bakanteng silid. Gayunpaman, mas mainam mag-book online nang maaga (50% downpayment) upang masigurado ang inyong kwarto lalo na tuwing weekends at holidays.\n• **Tent / Camping**: Pinapayagan ang paglatag ng sariling tent sa designated beachfront camping area (₱300–₱500 pitching fee) na may access sa common shower at CR.',
       chips: ['Book Overnight Room', 'Swimming Pool Hours', 'Directions to Resort'],
     };
   }
@@ -793,7 +793,7 @@ function resortKnowledgeFallback(text, rooms = []) {
   if (has('safe', 'safety', 'guard', 'security', 'bantay', 'atm', 'bangko', 'cash')) {
     return {
       text: '🛡️ **Resort Safety & ATM Advisory**:\n\n• **Resort Safety**: Ligtas at tahimik ang paligid ng Rock View Beach Resort. May gated perimeter, maliwanag na ilaw, at 24/7 roving security guards.\n• **ATM Advisory**: Mahalagang paalala na WALANG ATM sa Patar Beach area. Ang pinakamalapit na mga bangko at ATM (BDO, Landbank, RCBC) ay nasa Bolinao Town Proper (25 mins mula sa resort). Pinapayuhan ang mga bisita na magdala ng sapat na cash o maghanda ng GCash/Maya bago magtungo sa beach.',
-      chips: ['30% Downpayment Info', 'How to Get Here', 'Contact Front Desk'],
+      chips: ['50% Downpayment Info', 'How to Get Here', 'Contact Front Desk'],
     };
   }
 
@@ -833,7 +833,7 @@ function resortKnowledgeFallback(text, rooms = []) {
   if (has('check in', 'check out', 'checkin', 'checkout', 'oras', 'early check', 'late check', 'luggage', 'maaga')) {
     return {
       text: '⏰ **Check-in & Check-out Schedule**:\n\n• **Standard Check-in**: **2:00 PM**\n• **Standard Check-out**: **12:00 NN (Noon)**\n• **Early Arrival**: Kung maagang bakante at malinis na ang inyong silid, pinapayagan namin ang early check-in nang walang dagdag bayad. Pwede rin kayong mag-iwan ng gamit sa reception habang nagpapalipas ng oras sa beach o pool.',
-      chips: ['Directions to Resort', 'Book a Stay', 'Downpayment Info'],
+      chips: ['Directions to Resort', 'Book a Stay', '50% Downpayment Info'],
     };
   }
 
@@ -841,7 +841,7 @@ function resortKnowledgeFallback(text, rooms = []) {
   if (has('commute', 'paano pumunta', 'how to get here', 'directions', 'saan', 'location', 'address', 'route', 'bus', 'tricycle', 'waze', 'maps', 'sakay', 'transport', 'pampanga', 'dau', 'tarlac', 'clark', 'baguio', 'subic', 'la union', 'manila', 'cubao', 'pasay')) {
     return {
       text: '📍 **Paano Pumunta sa Rock View Beach Resort (Patar, Bolinao, Pangasinan)**:\n\n• **Private Vehicle (Mula Manila / Pampanga / Tarlac)**: NLEX → SCTEX → TPLEX (Exit Paniqui o Urdaneta) → Camiling → Alaminos → Bolinao. I-search sa Waze o Google Maps ang "Rock View Beach Resort Patar". May libreng gated parking.\n• **Public Bus**: Sumakay ng Victory Liner o Five Star bus (galing Cubao, Pasay, o Dau Terminal) papuntang Bolinao town proper (5–6 oras, pamasahe humigit-kumulang ₱550–₱650).\n• **Tricycle Mula Town Proper**: Mula sa Bolinao bus terminal, sumakay ng tricycle direkta sa aming resort sa Patar (25–30 mins, ₱250–₱300 kada tricycle para sa 3–4 pax kasama ang bagahe).\n• **Landmark**: Katabi ng Patar Rock Formations at 10 minuto mula sa Cape Bolinao Lighthouse.',
-      chips: ['Check-in Schedule', 'Room Rates', '30% Downpayment'],
+      chips: ['Check-in Schedule', 'Room Rates', '50% Downpayment'],
     };
   }
 
@@ -853,10 +853,10 @@ function resortKnowledgeFallback(text, rooms = []) {
     };
   }
 
-  // 16. 30% DOWNPAYMENT & PAYMENT MECHANICS
-  if (has('downpayment', 'down payment', '30%', 'paano magbayad', 'payment method', 'mode of payment', 'gcash', 'maya', 'bank transfer', 'installment', 'balance', 'balanse', 'paano mag book', 'reserve', 'reservation', 'pila ang bayad', 'per head')) {
+  // 16. 50% DOWNPAYMENT & PAYMENT MECHANICS
+  if (has('downpayment', 'down payment', '50%', '30%', 'paano magbayad', 'payment method', 'mode of payment', 'gcash', 'maya', 'bank transfer', 'installment', 'balance', 'balanse', 'paano mag book', 'reserve', 'reservation', 'pila ang bayad', 'per head')) {
     return {
-      text: '💳 **30% Downpayment & Payment Process**:\n\n• **30% Downpayment**: Kailangan upang ma-secure at ma-guarantee ang inyong reservation slot gamit ang GCash, Maya, o Online Bank Transfer. Pagka-confirm, agad ma-iissue ang inyong opisyal na Digital Voucher at RFID booking pass.\n• **70% Remaining Balance**: Babayaran na lamang pagdating ninyo sa resort Front Desk upon check-in (Cash, GCash, o Card).\n• **Per Room, Hindi Per Head**: Ang aming mga presyo ay flat rate kada kwarto bawat gabi, kaya mas matipid para sa buong pamilya o barkada!',
+      text: '💳 **50% Downpayment & Payment Process**:\n\n• **50% Downpayment**: Kailangan upang ma-secure at ma-guarantee ang inyong reservation slot gamit ang GCash, Maya, o Online Bank Transfer. Pagka-confirm, agad ma-iissue ang inyong opisyal na Digital Voucher at RFID booking pass.\n• **50% Remaining Balance**: Babayaran na lamang pagdating ninyo sa resort Front Desk upon check-in (Cash, GCash, o Card).\n• **Per Room, Hindi Per Head**: Ang aming mga presyo ay flat rate kada kwarto bawat gabi, kaya mas matipid para sa buong pamilya o barkada!',
       chips: ['Book a Room Now', 'Check In & Out Times', 'Refund Policy'],
     };
   }
@@ -881,7 +881,7 @@ function resortKnowledgeFallback(text, rooms = []) {
   if (/^(hi|hello|hey|musta|kamusta|good morning|good afternoon|good evening|magandang umaga|magandang hapon|magandang gabi|magandang araw|uy|hoy|yo)\b/i.test(t) || t === 'hi' || t === 'hello') {
     return {
       text: 'Mabuhay! Ako si Rock View Bot, ang iyong 24/7 AI Concierge dito sa Rock View Beach Resort sa Patar, Bolinao 🌊\n\nPaano kita matutulungan sa iyong beach getaway ngayon? Pwede kitang tulungan sa room rates, booking, swimming pool, in-house dining, o mga magagandang pasyalan dito sa Bolinao!',
-      chips: ['🏠 Room Rates', '🏊 Swimming Pool & Beach', '💳 30% Downpayment Info', '📍 Bolinao Attractions'],
+      chips: ['🏠 Room Rates', '🏊 Swimming Pool & Beach', '💳 50% Downpayment Info', '📍 Bolinao Attractions'],
     };
   }
 
@@ -897,22 +897,22 @@ function resortKnowledgeFallback(text, rooms = []) {
       const roomsNeeded = Math.ceil(count / 4);
       const total = defaultRate * roomsNeeded * nights;
       return {
-        text: `🏠 **Para sa ${count} guests (${nights} night${nights > 1 ? 's' : ''})**:\n\nLahat ng aming kuwarto ay standard at pare-pareho ang amenities. Para sa inyong grupo, inirerekomenda namin ang **${roomsNeeded} rooms**:\n• Rate: ₱${defaultRate.toLocaleString()} / room kada gabi\n• Kabuuang Halaga (${roomsNeeded} rooms × ${nights} nights): **₱${total.toLocaleString()}**\n• 30% Downpayment: **₱${Math.round(total * 0.3).toLocaleString()}** (GCash/Maya)\n• 70% Balanse sa Check-in: **₱${Math.round(total * 0.7).toLocaleString()}**\n\nKasama na ang swimming pool access, white beach, 24/7 generator, at libreng parking!`,
-        chips: ['Book Rooms Now', '30% Downpayment Info', 'Check-in Schedule'],
+        text: `🏠 **Para sa ${count} guests (${nights} night${nights > 1 ? 's' : ''})**:\n\nLahat ng aming kuwarto ay standard at pare-pareho ang amenities. Para sa inyong grupo, inirerekomenda namin ang **${roomsNeeded} rooms**:\n• Rate: ₱${defaultRate.toLocaleString()} / room kada gabi\n• Kabuuang Halaga (${roomsNeeded} rooms × ${nights} nights): **₱${total.toLocaleString()}**\n• 50% Downpayment: **₱${Math.round(total * 0.5).toLocaleString()}** (GCash/Maya)\n• 50% Balanse sa Check-in: **₱${Math.round(total * 0.5).toLocaleString()}**\n\nKasama na ang swimming pool access, white beach, 24/7 generator, at libreng parking!`,
+        chips: ['Book Rooms Now', '50% Downpayment Info', 'Check-in Schedule'],
       };
     }
 
     if (nights > 1 || count > 0) {
       const total = defaultRate * nights;
       return {
-        text: `🏠 **Resort Accommodation Rate (${nights} night${nights > 1 ? 's' : ''}${count > 0 ? `, ${count} guests` : ''})**:\n\nLahat ng kuwarto ay pare-pareho ang standard, ganda, at amenities:\n• Standard Room Rate: **₱${defaultRate.toLocaleString()} / night**\n• Kabuuang Halaga para sa ${nights} night(s): **₱${total.toLocaleString()}**\n• 30% Downpayment: **₱${Math.round(total * 0.3).toLocaleString()}** (via GCash o Maya)\n• 70% Balanse: **₱${Math.round(total * 0.7).toLocaleString()}** (upon check-in)\n\nInclusions: Fully air-conditioned room, private bathroom, swimming pool privileges, direct white beach access, at zero corkage sa pagkain!`,
-        chips: ['Book a Room', '30% Downpayment Info', 'Resort Guidelines'],
+        text: `🏠 **Resort Accommodation Rate (${nights} night${nights > 1 ? 's' : ''}${count > 0 ? `, ${count} guests` : ''})**:\n\nLahat ng kuwarto ay pare-pareho ang standard, ganda, at amenities:\n• Standard Room Rate: **₱${defaultRate.toLocaleString()} / night**\n• Kabuuang Halaga para sa ${nights} night(s): **₱${total.toLocaleString()}**\n• 50% Downpayment: **₱${Math.round(total * 0.5).toLocaleString()}** (via GCash o Maya)\n• 50% Balanse: **₱${Math.round(total * 0.5).toLocaleString()}** (upon check-in)\n\nInclusions: Fully air-conditioned room, private bathroom, swimming pool privileges, direct white beach access, at zero corkage sa pagkain!`,
+        chips: ['Book a Room', '50% Downpayment Info', 'Resort Guidelines'],
       };
     }
 
     return {
-      text: `🏠 **Mga Kuwarto at Presyo sa Rock View Beach Resort**:\n\nLahat ng aming mga silid ay pare-pareho ang standard, disenyo, at amenities:\n• **Standard Room Rate**: **₱${defaultRate.toLocaleString()} / night**\n• **Amenities**: 100% Fully air-conditioned, private bathroom, backup generator, high-speed Wi-Fi\n• **Resort Perks**: Swimming pool access (7 AM–10 PM), white beach, beachfront grilling, at libreng parking\n\nKailangan lamang ng **30% downpayment** via GCash, Maya, o Online Bank Transfer para ma-secure ang inyong reservation pass!`,
-      chips: ['Book a Room', '30% Downpayment Info', 'Pool & Beach Hours', 'Directions to Resort'],
+      text: `🏠 **Mga Kuwarto at Presyo sa Rock View Beach Resort**:\n\nLahat ng aming mga silid ay pare-pareho ang standard, disenyo, at amenities:\n• **Standard Room Rate**: **₱${defaultRate.toLocaleString()} / night**\n• **Amenities**: 100% Fully air-conditioned, private bathroom, backup generator, high-speed Wi-Fi\n• **Resort Perks**: Swimming pool access (7 AM–10 PM), white beach, beachfront grilling, at libreng parking\n\nKailangan lamang ng **50% downpayment** via GCash, Maya, o Online Bank Transfer para ma-secure ang inyong reservation pass!`,
+      chips: ['Book a Room', '50% Downpayment Info', 'Pool & Beach Hours', 'Directions to Resort'],
     };
   }
 
@@ -920,14 +920,14 @@ function resortKnowledgeFallback(text, rooms = []) {
   if (has('relax', 'pahinga', 'bakasyon', 'ganda', 'view', 'tahimik', 'chill')) {
     return {
       text: '🌊 Dito sa Rock View Beach Resort sa Patar, Bolinao, sadyang idinisenyo ang paligid para sa tahimik at unhurried na bakasyon. Ilang hakbang lamang ang puting buhangin, sariwang simoy ng hanging-dagat, at ginintuang paglubog ng araw sa West Philippine Sea.\n\nNais mo bang mag-book ng kuwarto o may iba ka pang nais itanong?',
-      chips: ['🏠 Book a Room', '📍 Bolinao Attractions', '💳 30% Downpayment'],
+      chips: ['🏠 Book a Room', '📍 Bolinao Attractions', '💳 50% Downpayment'],
     };
   }
 
   // Default Warm Helpful Local Concierge Guidance
   return {
-    text: `Salamat sa inyong mensahe! Nandito ako bilang 24/7 AI Concierge ng Rock View Beach Resort sa Patar, Bolinao.\n\nMatutulungan kita sa:\n• **Kuwarto & Presyo**: Standard room rate (₱${defaultRate.toLocaleString()}/night), lahat ng kuwarto ay pare-pareho ang ganda at amenities\n• **30% Downpayment**: GCash, Maya, at Bank Transfer booking process\n• **Resort Guidelines**: Swimming pool (7 AM–10 PM), pet policy, libreng pagkain/corkage, at ihawan\n• **Bolinao Attractions**: Cape Bolinao Lighthouse, Patar Rock Formations, at Enchanted Cave\n\nAno ang nais mong malaman para sa iyong bakasyon?`,
-    chips: ['🏠 Room Rates', '🏊 Pool & Amenities', '💳 30% Downpayment', '📍 Bolinao Attractions'],
+    text: `Salamat sa inyong mensahe! Nandito ako bilang 24/7 AI Concierge ng Rock View Beach Resort sa Patar, Bolinao.\n\nMatutulungan kita sa:\n• **Kuwarto & Presyo**: Standard room rate (₱${defaultRate.toLocaleString()}/night), lahat ng kuwarto ay pare-pareho ang ganda at amenities\n• **50% Downpayment**: GCash, Maya, at Bank Transfer booking process\n• **Resort Guidelines**: Swimming pool (7 AM–10 PM), pet policy, libreng pagkain/corkage, at ihawan\n• **Bolinao Attractions**: Cape Bolinao Lighthouse, Patar Rock Formations, at Enchanted Cave\n\nAno ang nais mong malaman para sa iyong bakasyon?`,
+    chips: ['🏠 Room Rates', '🏊 Pool & Amenities', '💳 50% Downpayment', '📍 Bolinao Attractions'],
   };
 }
 
@@ -999,7 +999,7 @@ async function answer(userId, text) {
 
         return {
           text: sanitizeAntiXSS(responseText),
-          chips: dynamicChips.length > 0 ? dynamicChips : ['Room Rates & Cottages', '30% Downpayment Info', 'Resort Amenities'],
+          chips: dynamicChips.length > 0 ? dynamicChips : ['Room Rates & Cottages', '50% Downpayment Info', 'Resort Amenities'],
           is_ai: true,
         };
       }

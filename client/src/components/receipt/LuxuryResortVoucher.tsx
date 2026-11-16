@@ -235,12 +235,12 @@ export const LuxuryResortVoucher: React.FC<LuxuryResortVoucherProps> = ({
             );
           })()}
 
-          {/* 30% DOWNPAYMENT PAID */}
+          {/* 50% DOWNPAYMENT PAID */}
           <div className="flex items-center justify-between rounded-xl bg-emerald-950/40 border border-emerald-500/30 px-3.5 py-2.5 text-emerald-300">
             <div className="flex items-center gap-2">
               <i className="fas fa-shield-check text-emerald-400" />
               <div>
-                <span className="block font-semibold">30% Downpayment (Verified)</span>
+                <span className="block font-semibold">50% Downpayment (Verified)</span>
                 <span className="text-[10px] opacity-80">Secured via {voucher.paymentMethod}</span>
               </div>
             </div>

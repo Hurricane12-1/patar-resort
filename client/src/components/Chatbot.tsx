@@ -23,7 +23,7 @@ export interface ChatChip {
 const DEFAULT_CHIPS: ChatChip[] = [
   { icon: 'fas fa-house-chimney', label: 'Room Rates & Cottages' },
   { icon: 'fas fa-barcode', label: 'RFID Barcode Digital Pass' },
-  { icon: 'fas fa-credit-card', label: '30% Downpayment Info' },
+  { icon: 'fas fa-credit-card', label: '50% Downpayment Info' },
   { icon: 'fas fa-person-swimming', label: 'Resort Amenities & Pool' },
   { icon: 'fas fa-clock', label: 'Check-in & Check-out Times' },
   { icon: 'fas fa-location-dot', label: 'Cape Bolinao Lighthouse' },
@@ -454,7 +454,7 @@ export default function Chatbot() {
           is_xss: guard.category === 'CROSS_SITE_SCRIPTING',
         },
       ]);
-      setChips(['Room Rates & Cottages', '30% Downpayment Info', 'Resort Amenities']);
+      setChips(['Room Rates & Cottages', '50% Downpayment Info', 'Resort Amenities']);
       setText('');
       return;
     }

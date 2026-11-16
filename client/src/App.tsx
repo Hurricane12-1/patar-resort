@@ -22,6 +22,7 @@ import ClientLayout from './layouts/ClientLayout.tsx';
 import MobileResortApp from './components/MobileResortApp.tsx';
 import Home from './pages/Home.tsx';
 import Rooms from './pages/Rooms.tsx';
+import PolicyPage from './pages/PolicyPage.tsx';
 
 // Namespace 1: /admin Pages (Governance & System Control)
 import Admin from './pages/Admin.tsx';
@@ -80,7 +81,8 @@ function MainAppShell() {
   ].some((p) => path.startsWith(p));
 
   const isGuestHome = path === '/' || path === '/guest';
-  const hideNavbarAndFooter = isDedicatedPortal || isLegacyInternal || isGuestHome;
+  const isPolicy = ['/policy', '/policies', '/terms', '/rules'].some((p) => path.startsWith(p));
+  const hideNavbarAndFooter = isDedicatedPortal || isLegacyInternal || isGuestHome || isPolicy;
 
   // Staff/admin/recovery are the only internal consoles where the public AI
   // concierge should stay hidden. Guests (/client, /user) keep the chat.
@@ -103,6 +105,10 @@ function MainAppShell() {
           <Route path="/guest" element={<MobileResortApp />} />
           <Route path="/classic-home" element={<Home />} />
           <Route path="/rooms" element={<Rooms />} />
+          <Route path="/policy" element={<PolicyPage />} />
+          <Route path="/policies" element={<PolicyPage />} />
+          <Route path="/terms" element={<PolicyPage />} />
+          <Route path="/rules" element={<PolicyPage />} />
 
           {/* ============================================================ */}
           {/* NAMESPACE 1: /admin (Governance & System Control)            */}

@@ -919,8 +919,8 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   }, [selectedRoomIds, rooms, selectedRoom]);
 
   const priceBreakdown = useMemo(
-    () =>
-      pricedRooms.reduce(
+    () => {
+      const summary = pricedRooms.reduce(
         (acc, room) => {
           const p = computeStayPrice(room.rate_php || 3500, checkIn, checkOut);
           return {
@@ -934,7 +934,15 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
           };
         },
         { baseRate: 0, nights: 0, nightsTotal: 0, cleaningFee: 0, coastalFee: 0, taxWaived: 0, grandTotal: 0 }
-      ),
+      );
+      const downpaymentRequired = Math.round(summary.grandTotal * 0.5);
+      const remainingBalance = Math.max(0, summary.grandTotal - downpaymentRequired);
+      return {
+        ...summary,
+        downpaymentRequired,
+        remainingBalance,
+      };
+    },
     [pricedRooms, checkIn, checkOut]
   );
 
@@ -1281,7 +1289,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
         check_out: checkOut,
         guests: partySize,
         total_php: priceBreakdown.grandTotal,
-        downpayment_php: 0,
+        downpayment_php: priceBreakdown.downpaymentRequired,
         payment_method: payment.db,
         payment_status: 'unpaid',
         status: 'confirmed',
@@ -3132,8 +3140,21 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                     <span>Waived (₱0)</span>
                   </div>
                   <div className="pt-3 border-t border-[#DDDDDD] flex justify-between font-bold text-base text-[#222222]">
-                    <span>Total before taxes</span>
+                    <span>Total Stay Amount</span>
                     <span>{formatPHP(priceBreakdown.grandTotal)}</span>
+                  </div>
+                  <div className="pt-2.5 border-t border-dashed border-[#DDDDDD] space-y-1.5 text-xs">
+                    <div className="flex justify-between font-bold text-sky-950 bg-sky-50 px-2.5 py-1.5 rounded-lg border border-sky-200">
+                      <span>50% Downpayment (Required)</span>
+                      <span>{formatPHP(priceBreakdown.downpaymentRequired)}</span>
+                    </div>
+                    <div className="flex justify-between text-[#6A6A6A] px-2.5">
+                      <span>50% Balance on Check-in</span>
+                      <span>{formatPHP(priceBreakdown.remainingBalance)}</span>
+                    </div>
+                    <p className="text-[10px] text-[#6A6A6A] px-2.5 pt-0.5">
+                      🛡️ <Link to="/policy" className="text-[#9E7E46] underline hover:text-[#18222B]">50% Downpayment Policy</Link> applies to lock reservation dates.
+                    </p>
                   </div>
                 </div>
               ) : (
@@ -3211,43 +3232,6 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                 </svg>
               </span>
               <span className="text-xs md:text-sm font-medium text-white/80">Island Tours</span>
-            </div>
-          </div>
-        </section>
-
-        {/* =====================================================================
-             GUEST REFLECTIONS & QUIET SEASON RETREAT (From https://34ed5487.patar-resort.pages.dev/)
-             ===================================================================== */}
-        <section className="mt-16 pt-12 border-t border-white/10 grid gap-5 lg:grid-cols-2">
-          <div className="flex flex-col rounded-3xl bg-[#f4e9d8] p-7 md:p-10 text-[#060b18]">
-            <span className="text-sm tracking-[0.3em] text-[#d9962b]">★★★★★</span>
-            <p className="mt-4 font-serif text-2xl md:text-3xl italic leading-snug">
-              "The sweetest sea breeze and warmest hospitality. Waking up fifty steps from the sand felt like our own private paradise."
-            </p>
-            <div className="mt-auto flex items-center justify-between border-t border-[#060b18]/10 pt-5">
-              <div className="mt-0">
-                <span className="block text-xs font-semibold">Maria &amp; Christian S.</span>
-                <span className="block text-[11px] text-[#060b18]/60">Makati City</span>
-              </div>
-              <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#060b18]/50">
-                Verified guest
-              </span>
-            </div>
-          </div>
-
-          <div className="flex flex-col rounded-3xl bg-gradient-to-br from-cyan to-sky-600 p-7 md:p-10 text-[#060b18] shadow-[0_15px_35px_-10px_rgba(34,195,238,.4)]">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#060b18]/70">
-              Early Bird · Members
-            </span>
-            <h3 className="mt-2 font-serif text-3xl md:text-4xl font-medium leading-tight">
-              Quiet Season Retreat
-            </h3>
-            <p className="mt-3 text-sm leading-relaxed text-[#060b18]/80">
-              Enjoy 20% off three-night weekday stays booked at least 14 days in advance with guaranteed sunset views and morning coastal breakfast.
-            </p>
-            <div className="mt-8 flex items-center justify-between border-t border-[#060b18]/15 pt-5 text-xs font-bold uppercase tracking-wider text-[#060b18]/80">
-              <span>Promo Code: PATAR20</span>
-              <span>✦ Instant Direct Privilege</span>
             </div>
           </div>
         </section>
@@ -3339,10 +3323,19 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
           <Link to="/client/login" className="mt-6 text-xs font-semibold uppercase tracking-wider text-cyan underline underline-offset-4">
             Sign in to account
           </Link>
-          <div className="mt-6 flex flex-wrap justify-center gap-4 text-[10px] text-white/35">
-            <span>Privacy Policy</span>
-            <span>Terms of Stay</span>
-            <span>Cancellation Rules</span>
+          <div className="mt-6 flex flex-wrap justify-center gap-4 text-xs text-white/60">
+            <Link to="/policy" className="hover:text-cyan transition underline underline-offset-4">
+              50% Downpayment Policy &amp; Rules
+            </Link>
+            <Link to="/policy#cancellation" className="hover:text-cyan transition underline underline-offset-4">
+              Cancellation &amp; Rebooking
+            </Link>
+            <Link to="/policy#house-rules" className="hover:text-cyan transition underline underline-offset-4">
+              Resort House Guidelines
+            </Link>
+            <Link to="/policy#privacy" className="hover:text-cyan transition underline underline-offset-4">
+              Privacy &amp; Terms
+            </Link>
           </div>
           <p className="mt-3 max-w-md text-[10px] leading-relaxed text-white/35">
             © 2026 Rock View Beach Resort. All rights reserved. Patar Beach, Bolinao, Pangasinan, Philippines.
@@ -3506,8 +3499,21 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                     <span className="font-semibold text-[#222222]">{formatPHP(priceBreakdown.cleaningFee + priceBreakdown.coastalFee)}</span>
                   </div>
                   <div className="pt-2.5 border-t border-[#DDDDDD] flex justify-between font-bold text-base text-[#222222]">
-                    <span>Total</span>
+                    <span>Total Stay Amount</span>
                     <span className="text-[#1D4ED8]">{formatPHP(priceBreakdown.grandTotal)}</span>
+                  </div>
+                  <div className="mt-2 p-3 bg-sky-50 rounded-xl border border-sky-200 text-xs space-y-1">
+                    <div className="flex justify-between font-bold text-sky-950">
+                      <span>50% Downpayment Required</span>
+                      <span>{formatPHP(priceBreakdown.downpaymentRequired)}</span>
+                    </div>
+                    <div className="flex justify-between text-sky-800 text-[11px]">
+                      <span>50% Remaining Balance (Pay upon check-in)</span>
+                      <span>{formatPHP(priceBreakdown.remainingBalance)}</span>
+                    </div>
+                    <p className="text-[10px] text-sky-700 pt-1 border-t border-sky-200/60">
+                      🛡️ A 50% reservation deposit secures your booking window per <Link to="/policy" target="_blank" className="underline font-bold">Resort Policy</Link>.
+                    </p>
                   </div>
                 </div>
 
@@ -3671,8 +3677,21 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                     <span className="font-semibold text-[#222222] text-right">{guestSummary}</span>
                   </div>
                   <div className="pt-2.5 border-t border-[#DDDDDD] flex justify-between font-bold text-base text-[#222222]">
-                    <span>Total</span>
+                    <span>Total Stay Amount</span>
                     <span className="text-[#1D4ED8]">{formatPHP(priceBreakdown.grandTotal)}</span>
+                  </div>
+                  <div className="mt-2 p-3 bg-sky-50 rounded-xl border border-sky-200 text-xs space-y-1">
+                    <div className="flex justify-between font-bold text-sky-950">
+                      <span>50% Downpayment Required</span>
+                      <span>{formatPHP(priceBreakdown.downpaymentRequired)}</span>
+                    </div>
+                    <div className="flex justify-between text-sky-800 text-[11px]">
+                      <span>50% Remaining Balance (Pay upon check-in)</span>
+                      <span>{formatPHP(priceBreakdown.remainingBalance)}</span>
+                    </div>
+                    <p className="text-[10px] text-sky-700 pt-1 border-t border-sky-200/60">
+                      🛡️ A 50% reservation deposit secures your booking window per <Link to="/policy" target="_blank" className="underline font-bold">Resort Policy</Link>.
+                    </p>
                   </div>
                 </div>
 

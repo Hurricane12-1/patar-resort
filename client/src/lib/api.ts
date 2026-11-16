@@ -858,7 +858,7 @@ export const api = {
       guests: Number(normalizedBody.guests) || 2,
       notes: (normalizedBody.notes || '').trim(),
       total_php,
-      downpayment_php: normalizedBody.downpayment_php !== undefined ? Number(normalizedBody.downpayment_php) : Math.round(total_php * 0.3),
+      downpayment_php: normalizedBody.downpayment_php !== undefined ? Number(normalizedBody.downpayment_php) : Math.round(total_php * 0.5),
       payment_method: normalizedBody.payment_method || 'GCash',
       payment_status: normalizedBody.payment_status || 'confirmed',
       status: normalizedBody.status || 'confirmed',
