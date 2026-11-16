@@ -22,11 +22,11 @@ export interface ChatChip {
 
 const DEFAULT_CHIPS: ChatChip[] = [
   { icon: 'fas fa-house-chimney', label: 'Room Rates & Cottages' },
-  { icon: 'fas fa-clock', label: 'Check-in & Check-out Times' },
-  { icon: 'fas fa-person-swimming', label: 'Resort Amenities & Pool' },
+  { icon: 'fas fa-barcode', label: 'RFID Barcode Digital Pass' },
   { icon: 'fas fa-credit-card', label: '30% Downpayment Info' },
+  { icon: 'fas fa-person-swimming', label: 'Resort Amenities & Pool' },
+  { icon: 'fas fa-clock', label: 'Check-in & Check-out Times' },
   { icon: 'fas fa-location-dot', label: 'Cape Bolinao Lighthouse' },
-  { icon: 'fas fa-users', label: 'Recommend a room for a family' },
 ];
 
 const getChipDetails = (chip: ChatChip | string): ChatChip => {
@@ -41,7 +41,9 @@ const getChipDetails = (chip: ChatChip | string): ChatChip => {
   let icon = 'fas fa-comment-dots';
 
   // Emoji prefix matches & removal
-  if (/^(?:\uD83C\uDFE1|\uD83C\uDFE0)\s*/.test(label) || /room|cottage|villa|suite|rate/i.test(label)) {
+  if (/barcode|rfid|pass|keycard|voucher/i.test(label)) {
+    icon = 'fas fa-barcode';
+  } else if (/^(?:\uD83C\uDFE1|\uD83C\uDFE0)\s*/.test(label) || /room|cottage|villa|suite|rate/i.test(label)) {
     icon = 'fas fa-house-chimney';
     label = label.replace(/^(?:\uD83C\uDFE1|\uD83C\uDFE0)\s*/, '');
   } else if (/^\u23F0\s*/.test(label) || /check-in|check-out|time|hour|schedule/i.test(label)) {
@@ -438,7 +440,7 @@ export default function Chatbot() {
     const clean = (t ?? text).trim();
     if (!clean) return;
 
-    // 1. Client-Side Anti-Hacking & Exfiltration Guardrail Check
+    // 1. Client-Side Anti-Cross Script (XSS) & Security Guardrail Check
     const guard = evaluateClientGuardrails(clean);
     if (guard.blocked) {
       setMsgs((x) => [
@@ -449,9 +451,10 @@ export default function Chatbot() {
           text: guard.safeMessage,
           guardrail: true,
           category: guard.category,
+          is_xss: guard.category === 'CROSS_SITE_SCRIPTING',
         },
       ]);
-      setChips([]);
+      setChips(['Room Rates & Cottages', '30% Downpayment Info', 'Resort Amenities']);
       setText('');
       return;
     }
@@ -629,8 +632,8 @@ export default function Chatbot() {
                       gap: 4,
                       marginBottom: 6,
                       padding: '3px 9px',
-                      background: 'rgba(239, 68, 68, 0.15)',
-                      border: '1px solid rgba(239, 68, 68, 0.4)',
+                      background: m.is_xss || m.category === 'CROSS_SITE_SCRIPTING' ? 'rgba(239, 68, 68, 0.25)' : 'rgba(239, 68, 68, 0.15)',
+                      border: `1px solid ${m.is_xss || m.category === 'CROSS_SITE_SCRIPTING' ? 'rgba(239, 68, 68, 0.6)' : 'rgba(239, 68, 68, 0.4)'}`,
                       borderRadius: 8,
                       fontSize: '0.65rem',
                       fontWeight: 800,
@@ -639,7 +642,9 @@ export default function Chatbot() {
                   >
                     <span>
                       <i className="fas fa-shield-halved" style={{ marginRight: 6 }} />
-                      AI SECURITY GUARDRAIL ENFORCED
+                      {m.is_xss || m.category === 'CROSS_SITE_SCRIPTING'
+                        ? 'ANTI-CROSS SCRIPT (XSS) GUARDRAIL ENFORCED'
+                        : 'AI SECURITY GUARDRAIL ENFORCED'}
                     </span>
                   </div>
                 )}

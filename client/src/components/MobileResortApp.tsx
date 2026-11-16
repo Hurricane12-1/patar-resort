@@ -1363,48 +1363,37 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
       ];
 
   return (
-    <div className="bg-[#FFFFFF] text-[#222222] min-h-screen selection:bg-[#222222] selection:text-[#FFFFFF]">
+    <div className="bg-[#060B18] text-[#E8EEF7] min-h-screen selection:bg-cyan selection:text-[#060B18]">
 
       {/* =====================================================================
-           HEADER: CLEAN SINGLE STICKY WHITE HEADER (76px Height)
+           HEADER: CLEAN SINGLE STICKY DARK LUXURY HEADER (76px Height)
            ===================================================================== */}
       {!embedded && (
-      <header className="sticky top-0 z-40 h-[76px] bg-[#FFFFFF] border-b border-[#EBEBEB]">
+      <header className="sticky top-0 z-40 h-[76px] bg-[#060B18]/90 backdrop-blur-md border-b border-white/10">
         <div className="max-w-[1160px] mx-auto px-4 sm:px-6 h-full flex items-center justify-between gap-4">
           
-          {/* Left: Custom ROCK VIEW Geometric Cliff-and-Wave Emblem + Title */}
-          <Link to="/" className="flex items-center gap-3 group" aria-label="ROCK VIEW Bolinao">
-            <svg viewBox="0 0 40 40" className="w-9 h-9 text-[#9E7E46] shrink-0 transition-transform duration-300 group-hover:scale-105" fill="none">
-              <rect x="2" y="2" width="36" height="36" rx="8" stroke="currentColor" stroke-width="1.6"/>
-              <path d="M7 26L15.5 11.5C16 10.7 17.1 10.7 17.6 11.5L22.2 19.2L25.4 14.5C25.9 13.8 26.9 13.8 27.4 14.5L33 26" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
-              <circle cx="28" cy="10" r="2.2" fill="currentColor" fill-opacity="0.75"/>
-              <path d="M6 30.5C10.5 28.4 15 32.6 20 30.5C25 28.4 29.5 32.6 34 30.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-            <div>
-              <div className="font-serif-luxury text-lg sm:text-xl font-bold tracking-[0.14em] text-[#18222B] leading-none">
-                ROCK VIEW
-              </div>
-              <div className="text-[9px] sm:text-[10px] font-semibold tracking-[0.22em] text-[#9E7E46] uppercase mt-1">
-                BOLINAO, PANGASINAN
-              </div>
+          {/* Left: Custom ROCK VIEW Emblem + Title (matching https://34ed5487.patar-resort.pages.dev/) */}
+          <Link to="/" className="flex items-center gap-3 group" aria-label="Rock View Beach Resort">
+            <div className="w-9 h-9 rounded-xl shrink-0 flex items-center justify-center border border-cyan/30 bg-gradient-to-br from-cyan/20 to-transparent transition-transform duration-300 group-hover:scale-105">
+              <svg viewBox="0 0 24 24" className="w-3/5 h-3/5" fill="none" aria-hidden="true">
+                <circle cx="12" cy="8" r="3" fill="#f6b74a"/>
+                <path d="M4 14C7 12 9 16 12 14C15 12 17 16 20 14" stroke="#22c3ee" strokeWidth="2" strokeLinecap="round"/>
+                <path d="M4 18C7 16 9 20 12 18C15 16 17 20 20 18" stroke="#22c3ee" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.7"/>
+              </svg>
+            </div>
+            <div className="whitespace-nowrap leading-none">
+              <span className="block font-serif text-xl font-medium text-white">Rock View</span>
+              <span className="mt-1 block text-[9px] uppercase tracking-[0.25em] text-cyan/80">Beach Resort</span>
             </div>
           </Link>
 
-          {/* Right: User / Client Access */}
+          {/* Right: Only the Login Button */}
           <div className="flex items-center gap-3">
-            {signedInGuest && (
-              <Link
-                to="/user/bookings"
-                className="text-xs text-[#6A6A6A] hover:text-[#18222B] font-medium transition hidden sm:inline-block"
-              >
-                My Bookings
-              </Link>
-            )}
             <Link
-              to={signedInGuest ? '/user/bookings' : '/client/login'}
-              className="px-5 py-2.5 rounded-lg bg-[#18222B] hover:bg-[#273644] text-white text-xs sm:text-sm font-semibold tracking-wide transition shadow-xs flex items-center gap-2 cursor-pointer"
+              to={signedInGuest ? '/client' : '/client/login'}
+              className="rounded-full border border-white/25 px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur hover:bg-white/10 transition cursor-pointer flex items-center gap-2 shadow-xs"
             >
-              <svg viewBox="0 0 20 20" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.9">
+              <svg viewBox="0 0 20 20" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.9">
                 <circle cx="10" cy="6.5" r="3.2"/>
                 <path d="M4 16.5c1.3-3 10.7-3 12 0" strokeLinecap="round"/>
               </svg>
@@ -1494,17 +1483,6 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/10 backdrop-blur-xs border border-white/20 text-[11px] font-semibold tracking-[0.22em] uppercase text-[#F3D9A4]">
               <span>{heroSlide === 0 && pageMedia.heroKicker ? pageMedia.heroKicker : HERO_SLIDES[heroSlide].kicker}</span>
             </div>
-            {isStaffOrAdmin && (
-              <button
-                type="button"
-                onClick={() => setShowHeroQuickEdit(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#18222B]/85 hover:bg-[#18222B] border border-[#D4B475]/80 text-[#F3D9A4] text-[11px] font-bold backdrop-blur-md transition shadow-md cursor-pointer hover:scale-105 active:scale-95"
-                title="Admin: Change headline and background image upfront"
-              >
-                <i className="fas fa-pen-to-square text-[10px]" />
-                <span>Edit Hero Upfront (Admin)</span>
-              </button>
-            )}
           </div>
 
           <h1 className="font-serif-luxury text-3xl sm:text-5xl lg:text-[54px] font-semibold tracking-tight text-white leading-[1.14] max-w-3xl mx-auto drop-shadow-sm">
@@ -1665,32 +1643,283 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
               </Link>
             </div>
           </div>
+
+          {/* Scroll to Explore Indicator */}
+          <div className="mt-10 flex flex-col items-center text-[11px] uppercase tracking-[0.25em] text-white/50">
+            <span className="text-base text-cyan animate-bounce">↓</span>
+            <span className="mt-1">Scroll to explore</span>
+          </div>
         </div>
       </section>
       )}
 
       {/* =====================================================================
+           SANCTUARY HIGHLIGHTS (From https://34ed5487.patar-resort.pages.dev/)
+           ===================================================================== */}
+      {!embedded && (
+      <>
+        <section className="mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-10 pt-16 md:pt-24">
+          <span className="block text-[11px] font-medium uppercase tracking-[0.28em] text-cyan font-bold">
+            Sanctuary Highlights
+          </span>
+          <h2 className="mt-3 font-serif text-4xl md:text-5xl font-medium leading-tight text-white">
+            Moments built for<br />
+            <em className="font-serif italic text-cyan">stillness.</em>
+          </h2>
+          <div className="mt-8 grid gap-5 md:grid-cols-3">
+            <article className="rounded-3xl border border-white/10 bg-[#0B1426] overflow-hidden group transition duration-300 hover:border-cyan/40">
+              <div className="h-48 md:h-56 overflow-hidden">
+                <img
+                  src="https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=800&q=80"
+                  alt="Quiet Sands of Patar"
+                  loading="lazy"
+                  className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                />
+              </div>
+              <div className="p-6">
+                <div className="flex items-baseline gap-3">
+                  <span className="font-serif text-lg italic text-cyan/70 font-semibold">01</span>
+                  <h3 className="font-serif text-2xl font-medium text-white">Quiet Sands of Patar</h3>
+                </div>
+                <p className="mt-2 text-sm font-light leading-relaxed text-white/60">
+                  Fifty steps from your pillow to the golden shore of Bolinao.
+                </p>
+              </div>
+            </article>
+
+            <article className="rounded-3xl border border-white/10 bg-[#0B1426] overflow-hidden group transition duration-300 hover:border-cyan/40">
+              <div className="h-48 md:h-56 overflow-hidden">
+                <img
+                  src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&q=80"
+                  alt="Lanterns at Dusk"
+                  loading="lazy"
+                  className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                />
+              </div>
+              <div className="p-6">
+                <div className="flex items-baseline gap-3">
+                  <span className="font-serif text-lg italic text-cyan/70 font-semibold">02</span>
+                  <h3 className="font-serif text-2xl font-medium text-white">Lanterns at Dusk</h3>
+                </div>
+                <p className="mt-2 text-sm font-light leading-relaxed text-white/60">
+                  Nightly grilled seafood and unhurried conversations by the water.
+                </p>
+              </div>
+            </article>
+
+            <article className="rounded-3xl border border-white/10 bg-[#0B1426] overflow-hidden group transition duration-300 hover:border-cyan/40">
+              <div className="h-48 md:h-56 overflow-hidden">
+                <img
+                  src="https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=800&q=80"
+                  alt="The Historic Cape"
+                  loading="lazy"
+                  className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                />
+              </div>
+              <div className="p-6">
+                <div className="flex items-baseline gap-3">
+                  <span className="font-serif text-lg italic text-cyan/70 font-semibold">03</span>
+                  <h3 className="font-serif text-2xl font-medium text-white">The Historic Cape</h3>
+                </div>
+                <p className="mt-2 text-sm font-light leading-relaxed text-white/60">
+                  Dramatic coral bluffs and the beacon of Cape Bolinao lighthouse.
+                </p>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        {/* =====================================================================
+             STATS BANNER (From https://34ed5487.patar-resort.pages.dev/)
+             ===================================================================== */}
+        <section className="mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-10 pt-10 md:pt-14">
+          <div className="mx-auto grid max-w-4xl grid-cols-3 divide-x divide-white/10 rounded-3xl border border-white/10 bg-[#0B1426] px-2 py-6 text-center md:py-8 shadow-xl">
+            <div className="px-2">
+              <span className="block font-serif text-3xl md:text-5xl font-medium text-cyan">18</span>
+              <span className="mt-1.5 block text-[10px] md:text-xs uppercase leading-tight tracking-[0.2em] text-white/50">
+                Cottages &amp; Suites
+              </span>
+            </div>
+            <div className="px-2">
+              <span className="block font-serif text-3xl md:text-5xl font-medium text-cyan">50</span>
+              <span className="mt-1.5 block text-[10px] md:text-xs uppercase leading-tight tracking-[0.2em] text-white/50">
+                Steps to the Sand
+              </span>
+            </div>
+            <div className="px-2">
+              <span className="block font-serif text-3xl md:text-5xl font-medium text-cyan">2016</span>
+              <span className="mt-1.5 block text-[10px] md:text-xs uppercase leading-tight tracking-[0.2em] text-white/50">
+                Welcoming Guests
+              </span>
+            </div>
+          </div>
+        </section>
+
+        {/* =====================================================================
+             ROOMS & SUITES SHOWCASE (From https://34ed5487.patar-resort.pages.dev/)
+             ===================================================================== */}
+        <section id="rooms-showcase" className="mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-10 pt-16 md:pt-24 scroll-mt-20">
+          <span className="block text-[11px] font-medium uppercase tracking-[0.28em] text-cyan font-bold">
+            Rooms &amp; Suites
+          </span>
+          <h2 className="mt-3 font-serif text-4xl md:text-5xl font-medium leading-tight text-white">
+            Private Coastal Living
+          </h2>
+          <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory -mx-5 px-5 sm:-mx-8 sm:px-8 pb-2 lg:mx-0 lg:px-0 lg:grid lg:overflow-visible mt-8 lg:grid-cols-4">
+            {/* Chason Room */}
+            <article
+              onClick={() => {
+                const found = rooms.find((r) => r.name.toLowerCase().includes('chason'));
+                if (found) {
+                  chooseRoom(found.id);
+                  handleCategorySwitch('room');
+                }
+                document.getElementById('booking-workspace')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="group relative h-72 w-[78%] shrink-0 snap-start overflow-hidden rounded-3xl border border-white/10 sm:w-[46%] lg:w-auto cursor-pointer transition hover:border-cyan/50 shadow-lg"
+            >
+              <img
+                src="/images/chason_room_generated.jpg"
+                alt="chason room"
+                loading="lazy"
+                className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#060B18] via-[#060B18]/30 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-5">
+                <span className="text-[10px] uppercase font-mono tracking-widest text-cyan font-bold block mb-1">
+                  ✦ Standard
+                </span>
+                <h3 className="font-serif text-2xl font-medium leading-tight text-white">
+                  Chason Room
+                </h3>
+                <p className="mt-1 font-serif text-lg text-cyan">
+                  ₱3,500 <span className="font-sans text-[11px] text-white/60">/ night</span>
+                </p>
+              </div>
+            </article>
+
+            {/* Sunset Cottage */}
+            <article
+              onClick={() => {
+                const found = rooms.find((r) => r.name.toLowerCase().includes('sunset'));
+                if (found) {
+                  chooseRoom(found.id);
+                  handleCategorySwitch('cottage');
+                }
+                document.getElementById('booking-workspace')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="group relative h-72 w-[78%] shrink-0 snap-start overflow-hidden rounded-3xl border border-white/10 sm:w-[46%] lg:w-auto cursor-pointer transition hover:border-cyan/50 shadow-lg"
+            >
+              <img
+                src="/images/sunset_cottage_generated.jpg"
+                alt="Sunset Cottage"
+                loading="lazy"
+                className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#060B18] via-[#060B18]/30 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-5">
+                <span className="text-[10px] uppercase font-mono tracking-widest text-cyan font-bold block mb-1">
+                  ✦ Cottage
+                </span>
+                <h3 className="font-serif text-2xl font-medium leading-tight text-white">
+                  Sunset
+                </h3>
+                <p className="mt-1 font-serif text-lg text-cyan">
+                  ₱3,500 <span className="font-sans text-[11px] text-white/60">/ night</span>
+                </p>
+              </div>
+            </article>
+
+            {/* Unit 3 */}
+            <article
+              onClick={() => {
+                const found = rooms.find((r) => r.name.toLowerCase().includes('unit 3'));
+                if (found) {
+                  chooseRoom(found.id);
+                  handleCategorySwitch('room');
+                }
+                document.getElementById('booking-workspace')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="group relative h-72 w-[78%] shrink-0 snap-start overflow-hidden rounded-3xl border border-white/10 sm:w-[46%] lg:w-auto cursor-pointer transition hover:border-cyan/50 shadow-lg"
+            >
+              <img
+                src="/images/unit3_veranda.jpg"
+                alt="Unit 3"
+                loading="lazy"
+                className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#060B18] via-[#060B18]/30 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-5">
+                <span className="text-[10px] uppercase font-mono tracking-widest text-cyan font-bold block mb-1">
+                  ✦ Standard
+                </span>
+                <h3 className="font-serif text-2xl font-medium leading-tight text-white">
+                  Unit 3
+                </h3>
+                <p className="mt-1 font-serif text-lg text-cyan">
+                  ₱3,500 <span className="font-sans text-[11px] text-white/60">/ night</span>
+                </p>
+              </div>
+            </article>
+
+            {/* Unit 5 */}
+            <article
+              onClick={() => {
+                const found = rooms.find((r) => r.name.toLowerCase().includes('unit 5'));
+                if (found) {
+                  chooseRoom(found.id);
+                  handleCategorySwitch('room');
+                }
+                document.getElementById('booking-workspace')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="group relative h-72 w-[78%] shrink-0 snap-start overflow-hidden rounded-3xl border border-white/10 sm:w-[46%] lg:w-auto cursor-pointer transition hover:border-cyan/50 shadow-lg"
+            >
+              <img
+                src="/images/unit5_suite.jpg"
+                alt="Unit 5"
+                loading="lazy"
+                className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#060B18] via-[#060B18]/30 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-5">
+                <span className="text-[10px] uppercase font-mono tracking-widest text-cyan font-bold block mb-1">
+                  ✦ Room
+                </span>
+                <h3 className="font-serif text-2xl font-medium leading-tight text-white">
+                  Unit 5
+                </h3>
+                <p className="mt-1 font-serif text-lg text-cyan">
+                  ₱3,500 <span className="font-sans text-[11px] text-white/60">/ night</span>
+                </p>
+              </div>
+            </article>
+          </div>
+        </section>
+      </>
+      )}
+
+      {/* =====================================================================
            UNIFIED BOOKING WORKSPACE
            ===================================================================== */}
-      <main id="booking-workspace" className="max-w-[1120px] mx-auto px-4 sm:px-6 pt-8 pb-16">
+      <main id="booking-workspace" className="max-w-[1120px] mx-auto px-4 sm:px-6 pt-12 pb-16">
 
         {/* Accommodation Selection Tabs by Category */}
         <div className="mb-6 space-y-3">
           {/* Two Categories: Room & Cottage */}
           <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-            <div className="inline-flex items-center p-1 bg-[#F5F2EB] rounded-2xl border border-[#E5E0D5]">
+            <div className="inline-flex items-center p-1 bg-[#0B1426] rounded-2xl border border-white/10">
               <button
                 type="button"
                 onClick={() => handleCategorySwitch('room')}
                 className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
                   activeLodgingCategory === 'room'
-                    ? 'bg-[#18222B] text-white shadow-xs'
-                    : 'text-[#6A6A6A] hover:text-[#222222]'
+                    ? 'bg-cyan text-[#060B18] shadow-sm'
+                    : 'text-white/60 hover:text-white'
                 }`}
               >
                 <span>🛏️ Rooms</span>
                 <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${
-                  activeLodgingCategory === 'room' ? 'bg-white/20 text-white' : 'bg-[#EAE6DF] text-[#6A6A6A]'
+                  activeLodgingCategory === 'room' ? 'bg-[#060B18]/20 text-[#060B18]' : 'bg-white/10 text-white/70'
                 }`}>
                   {roomAccommodations.length}
                 </span>
@@ -1701,21 +1930,21 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                 onClick={() => handleCategorySwitch('cottage')}
                 className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
                   activeLodgingCategory === 'cottage'
-                    ? 'bg-[#18222B] text-white shadow-xs'
-                    : 'text-[#6A6A6A] hover:text-[#222222]'
+                    ? 'bg-cyan text-[#060B18] shadow-sm'
+                    : 'text-white/60 hover:text-white'
                 }`}
               >
                 <span>🏡 Cottages</span>
                 <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${
-                  activeLodgingCategory === 'cottage' ? 'bg-white/20 text-white' : 'bg-[#EAE6DF] text-[#6A6A6A]'
+                  activeLodgingCategory === 'cottage' ? 'bg-[#060B18]/20 text-[#060B18]' : 'bg-white/10 text-white/70'
                 }`}>
                   {cottageAccommodations.length}
                 </span>
               </button>
             </div>
 
-            <div className="text-xs text-[#888888] font-medium hidden sm:flex items-center gap-2">
-              <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <div className="text-xs text-white/60 font-medium hidden sm:flex items-center gap-2">
+              <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span>
                 {activeLodgingCategory === 'room'
                   ? 'Air-conditioned rooms & suites for overnight sanctuary stays'
@@ -1725,7 +1954,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
           </div>
 
           {/* Accommodation Selection Sub-Tabs for Active Category */}
-          <div className="border-b border-[#DDDDDD] flex items-stretch gap-6 sm:gap-8 overflow-x-auto no-scrollbar">
+          <div className="border-b border-white/10 flex items-stretch gap-6 sm:gap-8 overflow-x-auto no-scrollbar">
             {displayedAccommodations.map((room) => {
               const isSelected = room.id === selectedRoom.id;
               const option = roomRanking.options.find((o) => o.room.id === room.id);
@@ -1747,26 +1976,26 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                   aria-pressed={isSelected}
                   className={`py-4 text-sm font-semibold whitespace-nowrap transition-all border-b-2 cursor-pointer flex items-center gap-2 ${
                     isBookedOnDates && isSelected
-                      ? 'border-rose-500 text-rose-950 bg-rose-50/70 rounded-t-lg'
+                      ? 'border-rose-500 text-rose-300 bg-rose-950/40 rounded-t-lg'
                       : isSelected
-                      ? 'border-[#222222] text-[#222222]'
+                      ? 'border-cyan text-white'
                       : isBookedOnDates
-                      ? 'border-transparent text-rose-700/80 hover:text-rose-950 hover:bg-rose-50/30'
-                      : 'border-transparent text-[#6A6A6A] hover:text-[#222222]'
+                      ? 'border-transparent text-rose-400/80 hover:text-rose-200 hover:bg-rose-950/20'
+                      : 'border-transparent text-white/50 hover:text-white'
                   }`}
                 >
                   <span>{room.name}</span>
                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                    isSelected ? 'bg-[#18222B] text-white' : 'bg-slate-100 text-slate-600'
+                    isSelected ? 'bg-cyan text-[#060B18]' : 'bg-white/10 text-white/70'
                   }`}>
                     {formatPHP(room.rate_php || 3500)}
                   </span>
                   {isBookedOnDates ? (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-rose-100 text-rose-800 border border-rose-300 flex items-center gap-1 animate-pulse">
-                      <span className="text-rose-600">⚠️</span> Booked
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-1 animate-pulse">
+                      <span className="text-rose-400">⚠️</span> Booked
                     </span>
                   ) : checkIn ? (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800 flex items-center gap-1">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
                       <span>✓</span> Available
                     </span>
                   ) : option ? (
@@ -1783,10 +2012,10 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
         {/* Listing Title Row */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
           <div>
-            <h2 className="text-[22px] sm:text-[26px] font-semibold text-[#222222] tracking-[-0.02em] leading-snug">
+            <h2 className="text-[22px] sm:text-[26px] font-semibold text-white tracking-[-0.02em] leading-snug">
               {selectedRoom.name} · {inferOfferingType(selectedRoom) === 'cottage' ? 'Beachfront Coastal Cottage' : 'Oceanfront Sanctuary Villa'}
             </h2>
-            <div className="text-[11px] font-mono text-[#888888] mt-0.5">
+            <div className="text-[11px] font-mono text-white/50 mt-0.5">
               {inferOfferingType(selectedRoom) === 'cottage' ? 'Cottage' : 'Room'} Code: {selectedRoom.id} · Verified live inventory
             </div>
           </div>
@@ -2041,18 +2270,18 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
             <div id="calendar-section" className="py-7">
               <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-4">
                 <div>
-                  <h4 className="text-[22px] font-semibold text-[#222222]">
+                  <h4 className="text-[22px] font-semibold text-white">
                     Select stay dates
                   </h4>
-                  <p className="text-sm text-[#6A6A6A] mt-0.5">
+                  <p className="text-sm text-white/60 mt-0.5">
                     Rock View Beach Resort · 2-night minimum on coastal weekends
                   </p>
                 </div>
 
                 {/* Step & Selection Indicator */}
                 <div className="flex flex-wrap items-center gap-2">
-                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-[#F8FAFC] border border-[#CBD5E1] text-xs font-semibold text-[#222222]">
-                    <span className="w-2 h-2 rounded-xs bg-[#222222]"></span>
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-[#0B1426] border border-white/10 text-xs font-semibold text-white">
+                    <span className="w-2 h-2 rounded-xs bg-cyan"></span>
                     <span>
                       {!checkIn
                         ? 'Dates: N/A · Select check-in box'
@@ -2065,7 +2294,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                     <button
                       type="button"
                       onClick={clearDates}
-                      className="text-xs font-semibold text-rose-600 hover:text-rose-800 underline cursor-pointer"
+                      className="text-xs font-semibold text-rose-400 hover:text-rose-300 underline cursor-pointer"
                     >
                       Reset to N/A
                     </button>
@@ -2917,26 +3146,140 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
         </div>
 
         {/* =====================================================================
+             RESORT COMFORTS (From https://34ed5487.patar-resort.pages.dev/)
+             ===================================================================== */}
+        <section id="amenities-section" className="mt-16 pt-12 border-t border-white/10">
+          <span className="block text-[11px] font-medium uppercase tracking-[0.28em] text-cyan font-bold">
+            Resort Comforts
+          </span>
+          <h2 className="mt-3 font-serif text-3xl sm:text-4xl md:text-5xl font-medium leading-tight text-white">
+            Thoughtful Simplicity
+          </h2>
+          <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+            <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition hover:border-cyan/30 md:p-5">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-cyan/30 bg-cyan/15 text-cyan">
+                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M2 12c3-3 5 3 8 0s5 3 8 0 3-1 4 0M2 17c3-3 5 3 8 0s5 3 8 0 3-1 4 0" />
+                </svg>
+              </span>
+              <span className="text-xs md:text-sm font-medium text-white/80">Beachfront Access</span>
+            </div>
+
+            <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition hover:border-cyan/30 md:p-5">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-cyan/30 bg-cyan/15 text-cyan">
+                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0" />
+                  <circle cx="12" cy="19" r="1" fill="currentColor" />
+                </svg>
+              </span>
+              <span className="text-xs md:text-sm font-medium text-white/80">High-Speed Wi-Fi</span>
+            </div>
+
+            <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition hover:border-cyan/30 md:p-5">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-cyan/30 bg-cyan/15 text-cyan">
+                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10M17 3c-2 0-3 2-3 5s1 4 3 4v9" />
+                </svg>
+              </span>
+              <span className="text-xs md:text-sm font-medium text-white/80">All-Day Dining</span>
+            </div>
+
+            <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition hover:border-cyan/30 md:p-5">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-cyan/30 bg-cyan/15 text-cyan">
+                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M4 4h16l-8 9-8-9zM12 13v7M8 20h8" />
+                </svg>
+              </span>
+              <span className="text-xs md:text-sm font-medium text-white/80">Sunset Bar</span>
+            </div>
+
+            <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition hover:border-cyan/30 md:p-5">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-cyan/30 bg-cyan/15 text-cyan">
+                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="4" />
+                  <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+                </svg>
+              </span>
+              <span className="text-xs md:text-sm font-medium text-white/80">Shaded Cabanas</span>
+            </div>
+
+            <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition hover:border-cyan/30 md:p-5">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-cyan/30 bg-cyan/15 text-cyan">
+                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M15.5 8.5l-2 5-5 2 2-5 5-2z" />
+                </svg>
+              </span>
+              <span className="text-xs md:text-sm font-medium text-white/80">Island Tours</span>
+            </div>
+          </div>
+        </section>
+
+        {/* =====================================================================
+             GUEST REFLECTIONS & QUIET SEASON RETREAT (From https://34ed5487.patar-resort.pages.dev/)
+             ===================================================================== */}
+        <section className="mt-16 pt-12 border-t border-white/10 grid gap-5 lg:grid-cols-2">
+          <div className="flex flex-col rounded-3xl bg-[#f4e9d8] p-7 md:p-10 text-[#060b18]">
+            <span className="text-sm tracking-[0.3em] text-[#d9962b]">★★★★★</span>
+            <p className="mt-4 font-serif text-2xl md:text-3xl italic leading-snug">
+              "The sweetest sea breeze and warmest hospitality. Waking up fifty steps from the sand felt like our own private paradise."
+            </p>
+            <div className="mt-auto flex items-center justify-between border-t border-[#060b18]/10 pt-5">
+              <div className="mt-0">
+                <span className="block text-xs font-semibold">Maria &amp; Christian S.</span>
+                <span className="block text-[11px] text-[#060b18]/60">Makati City</span>
+              </div>
+              <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#060b18]/50">
+                Verified guest
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-col rounded-3xl bg-gradient-to-br from-cyan to-sky-600 p-7 md:p-10 text-[#060b18] shadow-[0_15px_35px_-10px_rgba(34,195,238,.4)]">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#060b18]/70">
+              Early Bird · Members
+            </span>
+            <h3 className="mt-2 font-serif text-3xl md:text-4xl font-medium leading-tight">
+              Quiet Season Retreat
+            </h3>
+            <p className="mt-3 text-sm leading-relaxed text-[#060b18]/80">
+              Enjoy 20% off three-night weekday stays booked at least 14 days in advance with guaranteed sunset views and morning coastal breakfast.
+            </p>
+            <div className="mt-8 flex items-center justify-between border-t border-[#060b18]/15 pt-5 text-xs font-bold uppercase tracking-wider text-[#060b18]/80">
+              <span>Promo Code: PATAR20</span>
+              <span>✦ Instant Direct Privilege</span>
+            </div>
+          </div>
+        </section>
+
+        {/* =====================================================================
              "WHERE YOU'LL BE" — INTERACTIVE GOOGLE MAPS IFRAME OF BOLINAO
              ===================================================================== */}
-        <section id="location-section" className="mt-12 pt-10 border-t border-[#DDDDDD]">
+        <section id="location-section" className="mt-16 pt-12 border-t border-white/10">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-5">
             <div>
-              <h4 className="text-[22px] font-semibold text-[#222222]">Where you'll be</h4>
-              <p className="text-[15px] text-[#6A6A6A] mt-0.5">Patar Coastal Road, Bolinao, Pangasinan, Philippines</p>
+              <span className="block text-[11px] font-medium uppercase tracking-[0.28em] text-cyan font-bold">
+                Location &amp; Surrounds
+              </span>
+              <h4 className="font-serif text-3xl sm:text-4xl font-medium leading-tight text-white mt-1">
+                Where you'll be
+              </h4>
+              <p className="text-sm text-white/60 mt-1">
+                Patar Coastal Road, Bolinao, Pangasinan, Philippines
+              </p>
             </div>
             <a
               href="https://www.google.com/maps/search/?api=1&query=Rock+View+Beach+Resort,+Patar+Road,+Bolinao,+Pangasinan"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#222222] hover:text-[#9E7E46] transition underline shrink-0"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-cyan hover:underline transition shrink-0"
             >
               <span>Open in Google Maps</span>
               <span>↗</span>
             </a>
           </div>
 
-          <div className="h-[360px] sm:h-[440px] rounded-2xl overflow-hidden border border-[#DDDDDD] bg-[#F4EDE2] relative shadow-sm">
+          <div className="h-[360px] sm:h-[440px] rounded-2xl overflow-hidden border border-white/10 bg-[#0B1426] relative shadow-lg">
             <iframe
               title="Rock View Beach Resort Location Map"
               src="https://maps.google.com/maps?q=Rock+View+Beach+Resort,+Patar+Road,+Bolinao,+Pangasinan&t=&z=15&ie=UTF8&iwloc=&output=embed"
@@ -2948,76 +3291,62 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
           </div>
 
           {/* Surrounding Landmark Distance Pills */}
-          <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs text-[#475569]">
-            <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
-              <span className="font-bold text-[#222222] block">Patar Rock Formations</span>
-              <span className="text-[11px] text-[#64748B]">Direct access · On site</span>
+          <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs text-white/80">
+            <div className="p-3 rounded-xl bg-[#0B1426] border border-white/10">
+              <span className="font-bold text-white block">Patar Rock Formations</span>
+              <span className="text-[11px] text-white/50">Direct access · On site</span>
             </div>
-            <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
-              <span className="font-bold text-[#222222] block">Patar White Beach</span>
-              <span className="text-[11px] text-[#64748B]">4 mins · 1.8 km</span>
+            <div className="p-3 rounded-xl bg-[#0B1426] border border-white/10">
+              <span className="font-bold text-white block">Patar White Beach</span>
+              <span className="text-[11px] text-white/50">4 mins · 1.8 km</span>
             </div>
-            <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
-              <span className="font-bold text-[#222222] block">Cape Bolinao Lighthouse</span>
-              <span className="text-[11px] text-[#64748B]">6 mins · 2.8 km</span>
+            <div className="p-3 rounded-xl bg-[#0B1426] border border-white/10">
+              <span className="font-bold text-white block">Cape Bolinao Lighthouse</span>
+              <span className="text-[11px] text-white/50">6 mins · 2.8 km</span>
             </div>
-            <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
-              <span className="font-bold text-[#222222] block">Enchanted Cave</span>
-              <span className="text-[11px] text-[#64748B]">12 mins · 6.2 km</span>
+            <div className="p-3 rounded-xl bg-[#0B1426] border border-white/10">
+              <span className="font-bold text-white block">Enchanted Cave</span>
+              <span className="text-[11px] text-white/50">12 mins · 6.2 km</span>
             </div>
           </div>
         </section>
       </main>
 
       {/* =====================================================================
-           FOOTER: PURE WHITE LUXURY FOOTER
+           FOOTER: EDITORIAL DARK LUXURY FOOTER (From https://34ed5487.patar-resort.pages.dev/)
            ===================================================================== */}
-      <footer className="border-t border-[#EBEBEB] bg-[#FFFFFF] py-12 text-[#222222]">
-        <div className="max-w-[1120px] mx-auto px-4 sm:px-6 flex flex-col md:flex-row items-start justify-between gap-8">
-          <div className="space-y-3 max-w-sm">
-            <div className="flex items-center gap-3">
-              <svg viewBox="0 0 40 40" className="w-8 h-8 text-[#9E7E46]" fill="none">
-                <rect x="2" y="2" width="36" height="36" rx="8" stroke="currentColor" strokeWidth="1.6"/>
-                <path d="M7 26L15.5 11.5C16 10.7 17.1 10.7 17.6 11.5L22.2 19.2L25.4 14.5C25.9 13.8 26.9 13.8 27.4 14.5L33 26" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"/>
+      <footer className="mt-20 border-t border-white/10 bg-[#03060f]">
+        <div className="mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-10 flex flex-col items-center py-14 text-center pb-[calc(4.5rem+env(safe-area-inset-bottom))]">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl shrink-0 flex items-center justify-center border border-cyan/30 bg-gradient-to-br from-cyan/20 to-transparent">
+              <svg viewBox="0 0 24 24" className="w-3/5 h-3/5" fill="none" aria-hidden="true">
+                <circle cx="12" cy="8" r="3" fill="#f6b74a"/>
+                <path d="M4 14C7 12 9 16 12 14C15 12 17 16 20 14" stroke="#22c3ee" strokeWidth="2" strokeLinecap="round"/>
+                <path d="M4 18C7 16 9 20 12 18C15 16 17 20 20 18" stroke="#22c3ee" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.7"/>
               </svg>
-              <div className="font-serif-luxury text-lg font-bold text-[#18222B]">ROCK VIEW</div>
             </div>
-            <p className="text-xs text-[#6A6A6A] leading-relaxed">
-              Coastal Sanctuary &amp; Perched Oceanfront Villas. Brgy. Patar, Bolinao, Pangasinan, Philippines. Direct booking with SMS confirmation.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-8 text-xs">
-            <div className="space-y-2">
-              <div className="font-bold text-[#18222B] uppercase tracking-wider">Sanctuary</div>
-              <div><a href="#booking-workspace" className="text-[#6A6A6A] hover:underline">Villas</a></div>
-              <div><a href="#calendar-section" className="text-[#6A6A6A] hover:underline">Availability</a></div>
-              <div><a href="#location-section" className="text-[#6A6A6A] hover:underline">Patar Beach</a></div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="font-bold text-[#18222B] uppercase tracking-wider">Hospitality</div>
-              <div><span className="text-[#6A6A6A]">Wi-Fi</span></div>
-              <div><span className="text-[#6A6A6A]">Solar Microgrid</span></div>
-              <div><span className="text-[#6A6A6A]">Keypad Entry</span></div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="font-bold text-[#18222B] uppercase tracking-wider">Portals</div>
-              <div><Link to="/user" className="text-[#6A6A6A] hover:underline">User / Member</Link></div>
-              <div><Link to="/staff/login" className="text-[#6A6A6A] hover:underline">Staff Operations</Link></div>
-              <div><Link to="/admin" className="text-[#6A6A6A] hover:underline">Governance Admin</Link></div>
+            <div className="whitespace-nowrap leading-none">
+              <span className="block font-serif text-xl font-medium text-white">Rock View</span>
+              <span className="mt-1 block text-[9px] uppercase tracking-[0.25em] text-cyan/80">Beach Resort</span>
             </div>
           </div>
-        </div>
-
-        <div className="max-w-[1120px] mx-auto px-4 sm:px-6 pt-8 mt-8 border-t border-[#F0F0F0] flex flex-col sm:flex-row items-center justify-between text-xs text-[#888888]">
-          <div>© 2026–2027 Rock View Beach Resort. All rights reserved.</div>
-          <div className="flex gap-4 mt-2 sm:mt-0">
-            <span>Bolinao, Pangasinan</span>
-            <span>·</span>
-            <span>Direct Reservation System</span>
+          <p className="mt-4 font-serif text-base italic text-white/60">Where days slow to the tide.</p>
+          <div className="mt-5 flex gap-6 text-xs text-white/50">
+            <span className="cursor-pointer transition hover:text-cyan">Instagram</span>
+            <span className="cursor-pointer transition hover:text-cyan">Facebook</span>
+            <span className="cursor-pointer transition hover:text-cyan">TikTok</span>
           </div>
+          <Link to="/client/login" className="mt-6 text-xs font-semibold uppercase tracking-wider text-cyan underline underline-offset-4">
+            Sign in to account
+          </Link>
+          <div className="mt-6 flex flex-wrap justify-center gap-4 text-[10px] text-white/35">
+            <span>Privacy Policy</span>
+            <span>Terms of Stay</span>
+            <span>Cancellation Rules</span>
+          </div>
+          <p className="mt-3 max-w-md text-[10px] leading-relaxed text-white/35">
+            © 2026 Rock View Beach Resort. All rights reserved. Patar Beach, Bolinao, Pangasinan, Philippines.
+          </p>
         </div>
       </footer>
 
