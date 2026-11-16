@@ -230,7 +230,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   const [heroSlide, setHeroSlide] = useState<number>(0);
   // Admin-managed hero image & titles (Page Adjustment).
   const pageMedia = usePageSettings();
-  const heroImageUrl = pageMedia.heroImageUrl || '';
+  const heroImageUrl = pageMedia.heroImageUrl || '/images/cliffside_hero_generated.jpg';
 
   // Upfront Hero & Title Editor State (Admin / Staff)
   const [showHeroQuickEdit, setShowHeroQuickEdit] = useState<boolean>(false);
@@ -1355,11 +1355,11 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   const galleryPhotos = selectedRoom.images && selectedRoom.images.length >= 5
     ? selectedRoom.images
     : [
-        selectedRoom.image_url || '/images/cottage.jpg',
-        '/images/suite.jpg',
-        '/images/villa.jpg',
-        '/images/island.jpg',
-        '/images/garden.jpg'
+        selectedRoom.image_url || '/images/chason_room_generated.jpg',
+        '/images/rockview/03_deluxe_bedroom_swan_towels.jpg',
+        '/images/sunset_cottage_generated.jpg',
+        '/images/cliffside_hero_generated.jpg',
+        '/images/rockview/02_ocean_rock_formation_cliff.jpg'
       ];
 
   return (
