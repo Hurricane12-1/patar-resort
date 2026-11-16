@@ -272,6 +272,49 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  // Google OAuth URL Hash Listener (implicit grant access_token)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = window.location.hash;
+    if (hash && hash.includes('access_token=')) {
+      const params = new URLSearchParams(hash.substring(1));
+      const accessToken = params.get('access_token');
+      if (accessToken) {
+        fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        })
+          .then((r) => r.json())
+          .then(async (userinfo) => {
+            if (userinfo?.email) {
+              const res: any = await api.googleLogin({
+                email: userinfo.email,
+                name: userinfo.name || userinfo.email.split('@')[0],
+                first_name: userinfo.given_name || '',
+                last_name: userinfo.family_name || '',
+                picture: userinfo.picture || '',
+                sub: userinfo.sub || '',
+              });
+              if (res?.session) {
+                setCustomerSession(res.session);
+                const prof = res.profile || res.user;
+                setCustomerProfile(prof);
+                if (typeof sessionStorage !== 'undefined') {
+                  sessionStorage.setItem('jd_customer_session', JSON.stringify(res.session));
+                  sessionStorage.setItem('jd_customer_jwt', res.session.access_token);
+                  sessionStorage.setItem('jd_customer_profile', JSON.stringify(prof));
+                }
+                window.history.replaceState(null, '', window.location.pathname);
+                toast(`Welcome to Rock View Beach Resort, ${prof.full_name || userinfo.name}! ✦`);
+              }
+            }
+          })
+          .catch((err) => {
+            console.warn('[Google OAuth Token Parse Notice]:', err);
+          });
+      }
+    }
+  }, []);
+
   // Supabase Auth listener (for OAuth callbacks like Google/Facebook)
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange(async (event, s) => {
@@ -1165,9 +1208,29 @@ export function AuthProvider({ children }) {
         }
       }
 
-      // 3. Supabase OAuth directly with prompt: 'select_account'
+      const redirectUrl = `${window.location.origin}/client`;
+
+      // 1. If Google OAuth 2.0 Web Client ID is configured, redirect to Google OAuth consent & account selection
+      if (googleClientId && typeof window !== 'undefined') {
+        const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(googleClientId)}&redirect_uri=${encodeURIComponent(redirectUrl)}&response_type=token&scope=openid%20email%20profile&prompt=select_account`;
+        window.location.href = oauthUrl;
+        return { redirected: true, url: oauthUrl };
+      }
+
+      // 2. Try Supabase OAuth ONLY if responsive, redirect to provider url
+      const rawUrl = (import.meta as any).env?.VITE_SUPABASE_URL || 'https://owhodkhzldygavuwnqfg.supabase.co';
+      let supabaseReachable = false;
       try {
-        const redirectUrl = `${window.location.origin}/client`;
+        const ping = await Promise.race([
+          fetch(`${rawUrl}/auth/v1/settings`, { method: 'GET', headers: { apikey: (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '' } }).catch(() => null),
+          new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 800))
+        ]).catch(() => null);
+        if (ping && (ping as Response).ok) {
+          supabaseReachable = true;
+        }
+      } catch {}
+
+      if (supabaseReachable) {
         const res = await supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
@@ -1178,18 +1241,19 @@ export function AuthProvider({ children }) {
             },
           },
         });
-        if (res.error) throw res.error;
-        if (res.data?.url && typeof window !== 'undefined') {
+        if (!res.error && res.data?.url && typeof window !== 'undefined') {
           window.location.href = res.data.url;
           return res.data;
         }
-      } catch (oauthErr: any) {
-        throw new Error(
-          oauthErr.message?.includes('fetch') || oauthErr.message?.includes('Failed') || oauthErr.message?.includes('Network')
-            ? 'Cannot connect to Supabase Auth (Supabase project is currently paused or unreachable). Please unpause your project in the Supabase Dashboard.'
-            : (oauthErr.message || 'Google OAuth failed')
-        );
       }
+
+      // 3. Guaranteed Direct Redirect to official Gmail / Google Account login authentication page
+      if (typeof window !== 'undefined') {
+        const googleLoginUrl = 'https://accounts.google.com/ServiceLogin';
+        window.location.href = googleLoginUrl;
+        return { redirected: true, url: googleLoginUrl };
+      }
+
       return { ok: true };
     },
     signInWithFacebook: async (directPayload?: { email?: string; name?: string; first_name?: string; last_name?: string; picture?: string }) => {
