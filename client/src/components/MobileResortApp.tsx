@@ -2022,39 +2022,8 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
               </p>
             </div>
 
-            {/* Sanctuary Highlight Card */}
-            <div className="my-6 border border-dashed border-[#CBD5E1] bg-[#FAFAFA] rounded-[12px] px-[22px] py-[18px] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-3.5 min-w-0">
-                <div className="w-[44px] h-[44px] rounded-[10px] border border-[#FDE68A] bg-[#FEF3C7] flex items-center justify-center text-[#D97706] shrink-0">
-                  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="#F59E0B" stroke="#D97706" strokeWidth="1.2">
-                    <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
-                <div className="min-w-0 space-y-0.5">
-                  <div className="text-xs sm:text-sm font-bold text-[#18222B]">
-                    Guest Favorite · Highly Rated Stay
-                  </div>
-                  <div className="text-xs text-[#64748B]">
-                    “Breathtaking sea views, immaculate coastal villas, and wonderfully peaceful atmosphere.”
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-5 sm:pl-5 sm:border-l border-[#E2E8F0] shrink-0">
-                <div className="text-center min-w-[52px]">
-                  <div className="text-base font-bold text-[#18222B] leading-none">4.9 ★</div>
-                  <div className="text-[11px] font-medium text-[#64748B] mt-1.5">Rating</div>
-                </div>
-                <div className="h-8 w-px bg-[#E2E8F0]"></div>
-                <div className="text-center min-w-[52px]">
-                  <div className="text-base font-bold text-[#18222B] leading-none">{rooms.length}</div>
-                  <div className="text-[11px] font-medium text-[#64748B] mt-1.5">Villas</div>
-                </div>
-              </div>
-            </div>
-
             {/* 3 Property Highlights */}
-            <div className="py-6 border-t border-b border-[#DDDDDD] space-y-5">
+            <div className="py-6 border-b border-[#DDDDDD] space-y-5">
               <div className="flex items-start gap-4">
                 <svg viewBox="0 0 24 24" className="w-6 h-6 text-[#222222] shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="1.7">
                   <rect x="5" y="3" width="14" height="18" rx="2"/>
