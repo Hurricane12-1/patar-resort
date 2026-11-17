@@ -676,17 +676,19 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   // Nights already taken for the currently selected room
   // A night is flagged red when ANY selected room is taken that night, so the
   // calendar reflects conflicts across every room in a multi-room selection.
+  // When no room has been selected yet by the guest, no night is flagged red.
   const isBookedForSelected = useCallback(
     (isoStr: string) => {
-      const ids = selectedRoomIds.length ? selectedRoomIds : [selectedRoom.id];
+      const ids = selectedRoomIds.length ? selectedRoomIds : (selectedRoomId ? [selectedRoomId] : []);
+      if (ids.length === 0) return false;
       return ids.some((id) => {
         if (!id) return false;
-        const roomObj = rooms.find((r) => r.id === id) || selectedRoom;
+        const roomObj = rooms.find((r) => r.id === id);
         if (!roomObj?.id) return false;
         return !isRoomFree(roomObj.id, isoStr, addDaysISO(isoStr, 1), reservations);
       });
     },
-    [reservations, selectedRoomIds, selectedRoom, rooms]
+    [reservations, selectedRoomIds, selectedRoomId, rooms]
   );
 
   // What the calendars show as booked: Always reflects the currently selected room(s) directly
@@ -701,12 +703,13 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   const isOwnBookedForSelected = useCallback(
     (isoStr: string) => {
       if (!signedInGuest) return false;
-      const ids = selectedRoomIds.length ? selectedRoomIds : [selectedRoom.id];
+      const ids = selectedRoomIds.length ? selectedRoomIds : (selectedRoomId ? [selectedRoomId] : []);
+      if (ids.length === 0) return false;
       const nextIso = addDaysISO(isoStr, 1);
       let anyOwn = false;
       for (const id of ids) {
         if (!id) continue;
-        const roomObj = rooms.find((r) => r.id === id) || selectedRoom;
+        const roomObj = rooms.find((r) => r.id === id);
         if (!roomObj?.id) continue;
         const overlapping = reservations.filter(
           (res) =>
@@ -721,20 +724,21 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
       }
       return anyOwn;
     },
-    [signedInGuest, reservations, selectedRoomIds, selectedRoom, rooms]
+    [signedInGuest, reservations, selectedRoomIds, selectedRoomId, rooms]
   );
 
   // Check if a date is turnaround (checkout morning of another reservation)
   const isDateTurnaround = useCallback(
     (isoStr: string) => {
-      if (!selectedRoom?.id) return false;
+      const activeId = selectedRoomId || (selectedRoomIds.length > 0 ? selectedRoomIds[0] : null);
+      if (!activeId) return false;
       return reservations.some((res) => {
-        if (String(res.room_id) !== String(selectedRoom.id)) return false;
+        if (String(res.room_id) !== String(activeId)) return false;
         if (res.status === 'cancelled') return false;
         return isoStr === res.check_out;
       });
     },
-    [reservations, selectedRoom]
+    [reservations, selectedRoomId, selectedRoomIds]
   );
 
   // Rooms ranked for the party using live capacity. With only a check-in picked,
@@ -780,7 +784,8 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     if (showReserveModal || reserveSubmitting || reserveStep === 'success') return [];
     const activeEnd = checkOut ?? (checkIn ? addDaysISO(checkIn, 1) : null);
     if (!checkIn || !activeEnd) return [];
-    const ids = selectedRoomIds.length ? selectedRoomIds : [selectedRoom.id];
+    const ids = selectedRoomIds.length ? selectedRoomIds : (selectedRoomId ? [selectedRoomId] : []);
+    if (ids.length === 0) return [];
     return ids
       .map((id) => {
         const room = rooms.find((r) => r.id === id);
@@ -805,7 +810,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
         };
       })
       .filter((c): c is { room: Room; conflictingReservations: ReservationWindow[]; formattedRanges: string[] } => c !== null);
-  }, [showReserveModal, reserveSubmitting, reserveStep, checkIn, checkOut, reservations, selectedRoomIds, selectedRoom.id, rooms, formatStayRangeFriendly]);
+  }, [showReserveModal, reserveSubmitting, reserveStep, checkIn, checkOut, reservations, selectedRoomIds, selectedRoomId, rooms, formatStayRangeFriendly]);
 
   const hasRangeConflict = detailedConflicts.length > 0;
   const conflictRooms = useMemo(() => detailedConflicts.map((c) => c.room), [detailedConflicts]);
@@ -897,18 +902,19 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   // Booked nights count for currently active room in the displayed month
   const monthBookedNights = useMemo(() => {
     const daysInMonth = new Date(inlineYM.y, inlineYM.m, 0).getDate();
-    const ids = selectedRoomIds.length ? selectedRoomIds : [selectedRoom.id];
+    const ids = selectedRoomIds.length ? selectedRoomIds : (selectedRoomId ? [selectedRoomId] : []);
+    if (ids.length === 0) return 0;
     let count = 0;
     for (let day = 1; day <= daysInMonth; day++) {
       const isoStr = fmtISO(inlineYM.y, inlineYM.m, day);
       const isTaken = ids.some((id) => {
-        const roomObj = rooms.find((r) => r.id === id) || selectedRoom;
-        return !isRoomFree(roomObj.id, isoStr, addDaysISO(isoStr, 1), reservations);
+        const roomObj = rooms.find((r) => r.id === id);
+        return roomObj ? !isRoomFree(roomObj.id, isoStr, addDaysISO(isoStr, 1), reservations) : false;
       });
       if (isTaken) count++;
     }
     return count;
-  }, [inlineYM, selectedRoomIds, selectedRoom, rooms, reservations]);
+  }, [inlineYM, selectedRoomIds, selectedRoomId, rooms, reservations]);
 
   const selectedCapacity = Number(selectedRoom.capacity) || 0;
   const selectedFits = selectedCapacity > 0 && selectedCapacity >= partySize;
@@ -973,7 +979,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     setActiveLodgingCategory(category);
     setDrawerCategory(category);
     const targetList = category === 'cottage' ? cottageAccommodations : roomAccommodations;
-    if (targetList.length > 0) {
+    if (targetList.length > 0 && selectedRoomId) {
       const isAlreadyInTarget = targetList.some((r) => r.id === selectedRoomId);
       if (!isAlreadyInTarget) {
         const bestInCat = roomRanking.options.find(
@@ -1129,10 +1135,11 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     const start = pickingCheckout ? (checkIn as string) : isoStr;
     const end = pickingCheckout ? isoStr : addDaysISO(isoStr, 1);
 
-    if (!isRoomFree(selectedRoom.id, start, end, reservations)) {
+    const activeRoomId = selectedRoomId || (selectedRoomIds.length > 0 ? selectedRoomIds[0] : null);
+    if (activeRoomId && !isRoomFree(activeRoomId, start, end, reservations)) {
       const conflictingRes = reservations.filter(
         (res) =>
-          String(res.room_id) === String(selectedRoom.id) &&
+          String(res.room_id) === String(activeRoomId) &&
           res.status !== 'cancelled' &&
           rangesOverlap(start, end, res.check_in, res.check_out)
       );
@@ -1142,19 +1149,20 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
 
       const isAllOwn = conflictingRes.length > 0 && conflictingRes.every((r) => r.is_own);
       if (isAllOwn) {
-        setCalendarNotice(`You have already booked ${selectedRoom.name} for ${bookedRange}.`);
+        setCalendarNotice(`You have already booked this accommodation for ${bookedRange}.`);
         return;
       }
 
+      const roomName = rooms.find((r) => r.id === activeRoomId)?.name || 'This accommodation';
       const noticeMsg = pickingCheckout
-        ? `Selected dates overlap an existing booking for ${selectedRoom.name} (${bookedRange}).`
-        : `${formatFullDate(isoStr)} is already booked for ${selectedRoom.name} (${bookedRange}).`;
+        ? `Selected dates overlap an existing booking for ${roomName} (${bookedRange}).`
+        : `${formatFullDate(isoStr)} is already booked for ${roomName} (${bookedRange}).`;
 
       setCalendarNotice(noticeMsg);
       const altCandidate = rooms.find(
-        (r) => r.id !== selectedRoom.id && isRoomFree(r.id, start, end, reservations)
-      ) || (bestFreeRoom && bestFreeRoom.id !== selectedRoom.id ? bestFreeRoom : null);
-      triggerCaution(selectedRoom.name, bookedRange, altCandidate);
+        (r) => r.id !== activeRoomId && isRoomFree(r.id, start, end, reservations)
+      ) || (bestFreeRoom && bestFreeRoom.id !== activeRoomId ? bestFreeRoom : null);
+      triggerCaution(roomName, bookedRange, altCandidate);
       return;
     }
     setCalendarNotice(null);
