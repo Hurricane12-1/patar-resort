@@ -93,51 +93,102 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
   }, [openActionMenu]);
 
   return (
-    <div className="panel" style={{ background: themeCardBg, border: `1px solid ${themeBorder}`, borderRadius: 16, padding: 24, boxShadow: themeShadow }}>
+    <div className="panel" style={{ background: themeCardBg, border: `1px solid ${themeBorder}`, borderRadius: 16, padding: '20px 24px', boxShadow: themeShadow }}>
       {/* Header */}
-      <div className="admin-tab-header">
-        <div>
-          <h3 className="serif" style={{ fontSize: '1.5rem', margin: 0, color: themeText }}>Accounts Directory</h3>
-          <p className="muted small" style={{ margin: '4px 0 0' }}>Manage staff credentials, customer profiles, and account recovery.</p>
+      <div className="admin-tab-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14, marginBottom: 18 }}>
+        <div style={{ borderLeft: '3px solid #0284C7', paddingLeft: 10 }}>
+          <h3 className="serif" style={{ fontSize: '1.4rem', fontWeight: 700, margin: 0, color: themeText, letterSpacing: '-0.01em' }}>Accounts Directory</h3>
+          <p className="muted small" style={{ margin: '3px 0 0', fontSize: '.8rem', color: themeMuted }}>Manage staff credentials, customer profiles, and account recovery.</p>
         </div>
-        <div className="admin-tab-header-actions">
+        <div className="admin-tab-header-actions" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
           <input
             className="search"
             placeholder="Search by name, email, or phone…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ maxWidth: 260, background: isLightMode ? '#FFF' : undefined, color: themeText }}
+            style={{
+              minWidth: 200,
+              maxWidth: 260,
+              padding: '7px 12px',
+              borderRadius: 8,
+              border: `1px solid ${isLightMode ? '#CBD5E1' : themeBorder}`,
+              background: isLightMode ? '#FFF' : 'rgba(255,255,255,0.05)',
+              color: themeText,
+              fontSize: '.8rem',
+              outline: 'none',
+            }}
           />
           <button
-            className="btn btn-sm"
+            type="button"
             title="Reload live accounts from database"
             onClick={() => fetchUsers()}
             disabled={searchingUsers}
-            style={{ border: `1px solid ${themeBorder}`, color: themeText, background: isLightMode ? '#FFF' : 'rgba(255,255,255,0.05)', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+            style={{
+              border: `1px solid ${isLightMode ? '#CBD5E1' : themeBorder}`,
+              color: themeText,
+              background: isLightMode ? '#FFF' : 'rgba(255,255,255,0.05)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '7px 12px',
+              borderRadius: 8,
+              fontSize: '.8rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
           >
-            <i className={`fas fa-rotate ${searchingUsers ? 'fa-spin' : ''}`} /> {searchingUsers ? 'Loading…' : 'Refresh'}
+            <i className={`fas fa-rotate ${searchingUsers ? 'fa-spin' : ''}`} style={{ fontSize: '.75rem' }} /> {searchingUsers ? 'Loading…' : 'Refresh'}
           </button>
           {accountsSubTab === 'staff' && (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button
-                className="btn btn-sky btn-sm"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                type="button"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  background: 'linear-gradient(135deg, #F59E0B, #D97706)',
+                  color: '#FFFFFF',
+                  border: '1px solid rgba(245, 158, 11, 0.4)',
+                  boxShadow: '0 1px 3px rgba(217, 119, 6, 0.25)',
+                  borderRadius: 8,
+                  padding: '7px 14px',
+                  fontSize: '.8rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.18s ease',
+                }}
                 onClick={() => {
                   setNewStaff({ first_name: '', middle_name: '', last_name: '', full_name: '', email: '', password: '', phone: '', role: 'administrator', department: 'management' });
                   setShowCreateModal(true);
                 }}
               >
-                <i className="fas fa-crown" /> Provision Administrator
+                <i className="fas fa-crown" style={{ fontSize: '.75rem' }} /> Provision Administrator
               </button>
               <button
-                className="btn btn-sm"
-                style={{ border: `1px solid ${themeBorder}`, color: themeText, background: isLightMode ? '#FFF' : 'rgba(255,255,255,0.05)', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                type="button"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  border: `1px solid ${isLightMode ? '#CBD5E1' : 'rgba(255,255,255,0.16)'}`,
+                  color: isLightMode ? '#0F172A' : '#F8FAFC',
+                  background: isLightMode ? '#FFF' : 'rgba(255,255,255,0.06)',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                  borderRadius: 8,
+                  padding: '7px 14px',
+                  fontSize: '.8rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.18s ease',
+                }}
                 onClick={() => {
                   setNewStaff({ first_name: '', middle_name: '', last_name: '', full_name: '', email: '', password: '', phone: '', role: 'receptionist', department: 'front_desk' });
                   setShowCreateModal(true);
                 }}
               >
-                <i className="fas fa-shield-halved" /> Provision Staff
+                <i className="fas fa-shield-halved" style={{ fontSize: '.75rem', color: isLightMode ? '#0284C7' : '#38BDF8' }} /> Provision Staff
               </button>
             </div>
           )}
@@ -145,25 +196,26 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
       </div>
 
       {/* SUB-TAB SWITCHER */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.04)', borderRadius: 12, padding: 4 }}>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 16, background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.04)', border: `1px solid ${isLightMode ? '#E2E8F0' : 'rgba(255,255,255,0.08)'}`, borderRadius: 10, padding: 3 }}>
         {[
           { key: 'staff' as const, label: 'Staff & Admins', icon: 'fas fa-shield-halved', count: users.filter((u) => isInternalEmployee(u)).length },
           { key: 'customers' as const, label: 'Customers & Guests', icon: 'fas fa-hotel', count: users.filter((u) => !isInternalEmployee(u)).length },
         ].map((tab) => (
           <button
             key={tab.key}
+            type="button"
             onClick={() => { setAccountsSubTab(tab.key); setRoleFilter(''); setOpenActionMenu(null); }}
             style={{
-              flex: 1, padding: '10px 16px', border: 'none', borderRadius: 10, cursor: 'pointer',
-              fontSize: '.84rem', fontWeight: 700, transition: 'all 0.25s ease',
+              flex: 1, padding: '8px 16px', border: 'none', borderRadius: 8, cursor: 'pointer',
+              fontSize: '.82rem', fontWeight: 700, transition: 'all 0.2s ease',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
               background: accountsSubTab === tab.key ? (tab.key === 'staff' ? 'linear-gradient(135deg, #0284C7, #0EA5E9)' : 'linear-gradient(135deg, #4338CA, #6366F1)') : 'transparent',
-              color: accountsSubTab === tab.key ? '#FFF' : themeMuted,
-              boxShadow: accountsSubTab === tab.key ? '0 4px 12px rgba(14,165,233,0.25)' : 'none',
+              color: accountsSubTab === tab.key ? '#FFF' : (isLightMode ? '#475569' : themeMuted),
+              boxShadow: accountsSubTab === tab.key ? '0 1px 4px rgba(2, 132, 199, 0.2)' : 'none',
             }}
           >
             <i className={tab.icon} />
-            {tab.label} <span style={{ opacity: 0.85, fontSize: '.74rem', marginLeft: 4 }}>({tab.count})</span>
+            {tab.label} <span style={{ opacity: 0.9, fontSize: '.74rem', marginLeft: 4 }}>({tab.count})</span>
           </button>
         ))}
       </div>
@@ -172,24 +224,46 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
       {accountsSubTab === 'staff' && (
         <>
           {/* Staff Role Filter Badges */}
-          <div className="chip-row" style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 6, marginBottom: 14, scrollbarWidth: 'none' }}>
             {[
-              { value: '', label: 'ALL STAFF' },
-              { value: 'administrator', label: 'ADMINISTRATOR' },
-              { value: 'front_desk', label: 'FRONT DESK' },
-              { value: 'accounting', label: 'ACCOUNTING' },
-              { value: 'housekeeping', label: 'HOUSEKEEPING' },
-              { value: 'kitchen', label: 'KITCHEN' },
-              { value: 'tours', label: 'ISLAND HOPPING (GATEKEPT)' },
-            ].map((f) => (
-              <button
-                key={f.value || 'all'}
-                className={`chip ${roleFilter === f.value ? 'sel' : ''}`}
-                onClick={() => setRoleFilter(f.value)}
-              >
-                {f.label}
-              </button>
-            ))}
+              { value: '', label: 'All Staff' },
+              { value: 'administrator', label: 'Administrator' },
+              { value: 'front_desk', label: 'Front Desk' },
+              { value: 'accounting', label: 'Accounting' },
+              { value: 'housekeeping', label: 'Housekeeping' },
+              { value: 'kitchen', label: 'Kitchen' },
+              { value: 'tours', label: 'Island Hopping (Gatekept)' },
+            ].map((f) => {
+              const isSel = roleFilter === f.value;
+              return (
+                <button
+                  key={f.value || 'all'}
+                  type="button"
+                  onClick={() => setRoleFilter(f.value)}
+                  style={{
+                    whiteSpace: 'nowrap',
+                    padding: '5px 12px',
+                    borderRadius: 6,
+                    fontSize: '.75rem',
+                    fontWeight: isSel ? 700 : 600,
+                    border: isSel
+                      ? '1px solid #0284C7'
+                      : `1px solid ${isLightMode ? '#CBD5E1' : 'rgba(255,255,255,0.12)'}`,
+                    background: isSel
+                      ? '#0284C7'
+                      : (isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.04)'),
+                    color: isSel
+                      ? '#FFFFFF'
+                      : (isLightMode ? '#475569' : '#94A3B8'),
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    boxShadow: isSel ? '0 1px 4px rgba(2, 132, 199, 0.25)' : 'none',
+                  }}
+                >
+                  {f.label}
+                </button>
+              );
+            })}
           </div>
 
           {searchingUsers ? (
@@ -201,17 +275,17 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
             return staffUsers.length === 0 ? (
               <p className="muted" style={{ padding: '30px 0' }}>No staff accounts match your filters.</p>
             ) : (
-              <div className="table-wrap" style={{ background: isLightMode ? '#FFFFFF' : 'rgba(15,23,42,0.85)', border: `1px solid ${themeBorder}` }}>
-                <table className="table" style={{ color: themeText }}>
+              <div className="table-wrap" style={{ overflowX: 'auto', borderRadius: 12, border: `1px solid ${isLightMode ? '#E2E8F0' : themeBorder}`, background: isLightMode ? '#FFFFFF' : 'rgba(15,23,42,0.85)', boxShadow: isLightMode ? '0 1px 3px rgba(0,0,0,0.03)' : 'none' }}>
+                <table className="table" style={{ minWidth: 780, width: '100%', borderCollapse: 'separate', borderSpacing: 0, color: themeText }}>
                   <thead>
-                    <tr style={{ background: isLightMode ? '#F1F5F9' : 'rgba(30,41,59,0.8)' }}>
-                      <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Full Name</th>
-                      <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Email</th>
-                      <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Phone</th>
-                      <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Department &amp; Role</th>
-                      <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Status</th>
-                      <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Department Assignment</th>
-                      <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Account Actions</th>
+                    <tr style={{ background: isLightMode ? '#F8FAFC' : 'rgba(30,41,59,0.8)', borderBottom: `1px solid ${isLightMode ? '#E2E8F0' : themeBorder}` }}>
+                      <th style={{ textAlign: 'left', padding: '11px 16px', fontSize: '.72rem', fontWeight: 700, color: isLightMode ? '#475569' : themeMuted, textTransform: 'uppercase', letterSpacing: '.06em' }}>Full Name</th>
+                      <th style={{ textAlign: 'left', padding: '11px 16px', fontSize: '.72rem', fontWeight: 700, color: isLightMode ? '#475569' : themeMuted, textTransform: 'uppercase', letterSpacing: '.06em' }}>Email</th>
+                      <th style={{ textAlign: 'left', padding: '11px 16px', fontSize: '.72rem', fontWeight: 700, color: isLightMode ? '#475569' : themeMuted, textTransform: 'uppercase', letterSpacing: '.06em' }}>Phone</th>
+                      <th style={{ textAlign: 'left', padding: '11px 16px', fontSize: '.72rem', fontWeight: 700, color: isLightMode ? '#475569' : themeMuted, textTransform: 'uppercase', letterSpacing: '.06em' }}>Department &amp; Role</th>
+                      <th style={{ textAlign: 'left', padding: '11px 16px', fontSize: '.72rem', fontWeight: 700, color: isLightMode ? '#475569' : themeMuted, textTransform: 'uppercase', letterSpacing: '.06em' }}>Status</th>
+                      <th style={{ textAlign: 'left', padding: '11px 16px', fontSize: '.72rem', fontWeight: 700, color: isLightMode ? '#475569' : themeMuted, textTransform: 'uppercase', letterSpacing: '.06em' }}>Department Assignment</th>
+                      <th style={{ textAlign: 'right', padding: '11px 16px', fontSize: '.72rem', fontWeight: 700, color: isLightMode ? '#475569' : themeMuted, textTransform: 'uppercase', letterSpacing: '.06em' }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -221,22 +295,76 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
                         EMPLOYEE_ROLE_PRESETS.find((p) => p.department === dept)?.value ||
                         (normalizeRole(u.role) === 'administrator' ? 'administrator' : 'receptionist');
                       return (
-                      <tr key={u.id} style={{ borderBottom: `1px solid ${themeBorder}` }}>
-                        <td><b>{u.full_name || 'Staff User'}</b></td>
-                        <td style={{ fontSize: '.8rem', color: themeMuted }}>{u.email || '—'}</td>
-                        <td>{u.phone || 'N/A'}</td>
-                        <td>
-                          <span className="pill" style={{
-                            background: u.role === 'administrator' ? 'rgba(139,92,246,0.15)' : u.role === 'receptionist' ? 'rgba(14,165,233,0.15)' : 'rgba(245,158,11,0.15)',
-                            color: u.role === 'administrator' ? '#8B5CF6' : u.role === 'receptionist' ? '#0EA5E9' : '#F59E0B',
-                            border: `1px solid ${u.role === 'administrator' ? 'rgba(139,92,246,0.3)' : u.role === 'receptionist' ? 'rgba(14,165,233,0.3)' : 'rgba(245,158,11,0.3)'}`,
+                      <tr key={u.id} style={{ borderBottom: `1px solid ${isLightMode ? '#F1F5F9' : themeBorder}` }}>
+                        <td style={{ padding: '12px 16px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <span style={{
+                              width: 30,
+                              height: 30,
+                              borderRadius: '50%',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '.72rem',
+                              fontWeight: 700,
+                              background: u.role === 'administrator' ? 'rgba(139,92,246,0.12)' : 'rgba(14,165,233,0.12)',
+                              color: u.role === 'administrator' ? '#7C3AED' : '#0284C7',
+                              border: `1px solid ${u.role === 'administrator' ? 'rgba(139,92,246,0.25)' : 'rgba(14,165,233,0.25)'}`,
+                            }}>
+                              {(u.full_name || 'S').slice(0, 2).toUpperCase()}
+                            </span>
+                            <div>
+                              <b style={{ display: 'block', fontSize: '.84rem', color: themeText }}>{u.full_name || 'Staff User'}</b>
+                              {u.employee_id && <span style={{ fontSize: '.7rem', color: themeMuted, display: 'block' }}>ID: {u.employee_id}</span>}
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{ padding: '12px 16px', fontSize: '.78rem', color: isLightMode ? '#475569' : themeMuted }}>{u.email || '—'}</td>
+                        <td style={{ padding: '12px 16px', fontSize: '.78rem', color: themeText, fontFamily: 'monospace' }}>{u.phone || 'N/A'}</td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            padding: '3px 8px',
+                            borderRadius: 6,
+                            fontSize: '.72rem',
+                            fontWeight: 700,
+                            letterSpacing: '.02em',
+                            background: u.role === 'administrator' ? '#F5F3FF' : u.role === 'receptionist' ? '#F0F9FF' : '#FEF3C7',
+                            color: u.role === 'administrator' ? '#6D28D9' : u.role === 'receptionist' ? '#0369A1' : '#B45309',
+                            border: `1px solid ${u.role === 'administrator' ? '#DDD6FE' : u.role === 'receptionist' ? '#BAE6FD' : '#FDE68A'}`,
                           }}>{formatDepartmentBadge(u)}</span>
                         </td>
-                        <td><span style={{ color: "#10B981", fontWeight: 600, fontSize: ".78rem" }}><i className="fas fa-circle" style={{ fontSize: ".6rem", color: "#10B981", marginRight: 4 }} />Active</span></td>
-                        <td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 5,
+                            padding: '2.5px 8px',
+                            borderRadius: 99,
+                            fontSize: '.72rem',
+                            fontWeight: 600,
+                            background: '#ECFDF5',
+                            color: '#047857',
+                            border: '1px solid #A7F3D0',
+                          }}>
+                            <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#10B981' }} />
+                            Active
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
                           <select
                             value={selectVal}
-                            style={{ fontSize: '.75rem', padding: '4px 8px', borderRadius: 6, border: `1px solid ${themeBorder}`, background: isLightMode ? '#FFF' : '#0F172A', color: themeText }}
+                            style={{
+                              fontSize: '.74rem',
+                              fontWeight: 600,
+                              padding: '5px 8px',
+                              borderRadius: 6,
+                              border: `1px solid ${isLightMode ? '#CBD5E1' : themeBorder}`,
+                              background: isLightMode ? '#F8FAFC' : '#0F172A',
+                              color: themeText,
+                              cursor: 'pointer',
+                            }}
                             onChange={(e) => {
                               const preset = EMPLOYEE_ROLE_PRESETS.find((p) => p.value === e.target.value);
                               handleRoleChange(u.id, preset?.role || e.target.value, preset?.department);
@@ -247,11 +375,11 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
                             ))}
                           </select>
                         </td>
-                        <td>
+                        <td style={{ padding: '12px 16px', textAlign: 'right' }}>
                           <button
                             type="button"
                             className="btn btn-sm"
-                            title="Account Actions"
+                            title="Action Menu"
                             onClick={(e) => {
                               e.stopPropagation();
                               if (openActionMenu?.id === u.id) {
@@ -264,24 +392,23 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
                             style={{
                               display: 'inline-flex',
                               alignItems: 'center',
-                              gap: 6,
+                              gap: 5,
                               padding: '5px 12px',
-                              borderRadius: 8,
-                              fontSize: '.78rem',
-                              fontWeight: 700,
+                              borderRadius: 6,
+                              fontSize: '.76rem',
+                              fontWeight: 600,
                               cursor: 'pointer',
                               background: openActionMenu?.id === u.id
                                 ? (isLightMode ? '#E2E8F0' : 'rgba(255,255,255,0.15)')
                                 : (isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.06)'),
-                              border: `1px solid ${openActionMenu?.id === u.id ? '#38BDF8' : themeBorder}`,
+                              border: `1px solid ${openActionMenu?.id === u.id ? '#0284C7' : (isLightMode ? '#CBD5E1' : themeBorder)}`,
                               color: openActionMenu?.id === u.id ? '#0284C7' : themeText,
                               transition: 'all 0.15s ease',
-                              boxShadow: openActionMenu?.id === u.id ? '0 0 0 2px rgba(56, 189, 248, 0.25)' : 'none',
+                              boxShadow: openActionMenu?.id === u.id ? '0 0 0 2px rgba(2, 132, 199, 0.2)' : 'none',
                             }}
                           >
-                            <i className="fas fa-ellipsis-vertical" style={{ fontSize: '.8rem', color: openActionMenu?.id === u.id ? '#0284C7' : themeMuted }} />
-                            <span>Actions</span>
-                            <i className={`fas fa-chevron-${openActionMenu?.id === u.id ? 'up' : 'down'}`} style={{ fontSize: '.65rem', color: themeMuted }} />
+                            <span>Action</span>
+                            <i className={`fas fa-chevron-${openActionMenu?.id === u.id ? 'up' : 'down'}`} style={{ fontSize: '.6rem', color: openActionMenu?.id === u.id ? '#0284C7' : themeMuted }} />
                           </button>
                         </td>
                       </tr>
@@ -310,11 +437,11 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
                 { label: 'WITH ACTIVE STAYS', value: activeStays, icon: 'fas fa-hotel', color: '#10B981' },
                 { label: 'TOTAL REVENUE', value: money(totalRev), icon: 'fas fa-money-bill-wave', color: '#F59E0B' },
               ].map((s, si) => (
-                <div key={si} style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.5)', border: `1px solid ${themeBorder}`, borderRadius: 12, padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ fontSize: "1.6rem" }}><i className={s.icon} style={{ color: s.color }} /></span>
+                <div key={si} style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.5)', border: `1px solid ${isLightMode ? '#E2E8F0' : themeBorder}`, borderRadius: 12, padding: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ fontSize: "1.5rem" }}><i className={s.icon} style={{ color: s.color }} /></span>
                   <div>
                     <span style={{ fontSize: '.68rem', color: themeMuted, fontWeight: 700, letterSpacing: '.08em' }}>{s.label}</span>
-                    <b style={{ display: 'block', fontSize: '1.3rem', color: s.color }}>{s.value}</b>
+                    <b style={{ display: 'block', fontSize: '1.25rem', color: s.color }}>{s.value}</b>
                   </div>
                 </div>
               ));
@@ -328,33 +455,55 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
             return custUsers.length === 0 ? (
               <p className="muted" style={{ padding: '30px 0' }}>No customer accounts found.</p>
             ) : (
-              <div className="table-wrap" style={{ background: isLightMode ? '#FFFFFF' : 'rgba(15,23,42,0.85)', border: `1px solid ${themeBorder}` }}>
-                <table className="table" style={{ color: themeText }}>
+              <div className="table-wrap" style={{ overflowX: 'auto', borderRadius: 12, border: `1px solid ${isLightMode ? '#E2E8F0' : themeBorder}`, background: isLightMode ? '#FFFFFF' : 'rgba(15,23,42,0.85)', boxShadow: isLightMode ? '0 1px 3px rgba(0,0,0,0.03)' : 'none' }}>
+                <table className="table" style={{ minWidth: 780, width: '100%', borderCollapse: 'separate', borderSpacing: 0, color: themeText }}>
                   <thead>
-                    <tr style={{ background: isLightMode ? '#F1F5F9' : 'rgba(30,41,59,0.8)' }}>
-                      <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Full Name</th>
-                      <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Phone</th>
-                      <th style={{ color: isLightMode ? '#475569' : themeMuted }}>City / Address</th>
-                      <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Stays</th>
-                      <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Orders</th>
-                      <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Total Spent (₱)</th>
-                      <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Account Actions</th>
+                    <tr style={{ background: isLightMode ? '#F8FAFC' : 'rgba(30,41,59,0.8)', borderBottom: `1px solid ${isLightMode ? '#E2E8F0' : themeBorder}` }}>
+                      <th style={{ textAlign: 'left', padding: '11px 16px', fontSize: '.72rem', fontWeight: 700, color: isLightMode ? '#475569' : themeMuted, textTransform: 'uppercase', letterSpacing: '.06em' }}>Full Name</th>
+                      <th style={{ textAlign: 'left', padding: '11px 16px', fontSize: '.72rem', fontWeight: 700, color: isLightMode ? '#475569' : themeMuted, textTransform: 'uppercase', letterSpacing: '.06em' }}>Phone</th>
+                      <th style={{ textAlign: 'left', padding: '11px 16px', fontSize: '.72rem', fontWeight: 700, color: isLightMode ? '#475569' : themeMuted, textTransform: 'uppercase', letterSpacing: '.06em' }}>City / Address</th>
+                      <th style={{ textAlign: 'left', padding: '11px 16px', fontSize: '.72rem', fontWeight: 700, color: isLightMode ? '#475569' : themeMuted, textTransform: 'uppercase', letterSpacing: '.06em' }}>Stays</th>
+                      <th style={{ textAlign: 'left', padding: '11px 16px', fontSize: '.72rem', fontWeight: 700, color: isLightMode ? '#475569' : themeMuted, textTransform: 'uppercase', letterSpacing: '.06em' }}>Orders</th>
+                      <th style={{ textAlign: 'left', padding: '11px 16px', fontSize: '.72rem', fontWeight: 700, color: isLightMode ? '#475569' : themeMuted, textTransform: 'uppercase', letterSpacing: '.06em' }}>Total Spent (₱)</th>
+                      <th style={{ textAlign: 'right', padding: '11px 16px', fontSize: '.72rem', fontWeight: 700, color: isLightMode ? '#475569' : themeMuted, textTransform: 'uppercase', letterSpacing: '.06em' }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {custUsers.map((u) => (
-                      <tr key={u.id} style={{ borderBottom: `1px solid ${themeBorder}` }}>
-                        <td><b>{u.full_name || 'Guest'}</b></td>
-                        <td>{u.phone || 'N/A'}</td>
-                        <td>{u.address ? `${u.address}, ${u.city}` : 'N/A'}</td>
-                        <td><b style={{ color: '#0EA5E9' }}>{u.stays_count || 0}</b></td>
-                        <td>{u.orders_count || 0}</td>
-                        <td><b style={{ color: '#F59E0B' }}>{money(u.total_spent_php || 0)}</b></td>
-                        <td>
+                      <tr key={u.id} style={{ borderBottom: `1px solid ${isLightMode ? '#F1F5F9' : themeBorder}` }}>
+                        <td style={{ padding: '12px 16px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <span style={{
+                              width: 30,
+                              height: 30,
+                              borderRadius: '50%',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '.72rem',
+                              fontWeight: 700,
+                              background: 'rgba(14,165,233,0.12)',
+                              color: '#0284C7',
+                              border: '1px solid rgba(14,165,233,0.25)',
+                            }}>
+                              {(u.full_name || 'G').slice(0, 2).toUpperCase()}
+                            </span>
+                            <div>
+                              <b style={{ display: 'block', fontSize: '.84rem', color: themeText }}>{u.full_name || 'Guest'}</b>
+                              {u.email && <span style={{ fontSize: '.7rem', color: themeMuted, display: 'block' }}>{u.email}</span>}
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{ padding: '12px 16px', fontSize: '.78rem', color: themeText, fontFamily: 'monospace' }}>{u.phone || 'N/A'}</td>
+                        <td style={{ padding: '12px 16px', fontSize: '.78rem', color: isLightMode ? '#475569' : themeMuted }}>{u.address ? `${u.address}, ${u.city}` : 'N/A'}</td>
+                        <td style={{ padding: '12px 16px' }}><b style={{ color: '#0EA5E9' }}>{u.stays_count || 0}</b></td>
+                        <td style={{ padding: '12px 16px', fontSize: '.82rem' }}>{u.orders_count || 0}</td>
+                        <td style={{ padding: '12px 16px' }}><b style={{ color: '#F59E0B' }}>{money(u.total_spent_php || 0)}</b></td>
+                        <td style={{ padding: '12px 16px', textAlign: 'right' }}>
                           <button
                             type="button"
                             className="btn btn-sm"
-                            title="Account Actions"
+                            title="Action Menu"
                             onClick={(e) => {
                               e.stopPropagation();
                               if (openActionMenu?.id === u.id) {
@@ -367,24 +516,23 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
                             style={{
                               display: 'inline-flex',
                               alignItems: 'center',
-                              gap: 6,
+                              gap: 5,
                               padding: '5px 12px',
-                              borderRadius: 8,
-                              fontSize: '.78rem',
-                              fontWeight: 700,
+                              borderRadius: 6,
+                              fontSize: '.76rem',
+                              fontWeight: 600,
                               cursor: 'pointer',
                               background: openActionMenu?.id === u.id
                                 ? (isLightMode ? '#E2E8F0' : 'rgba(255,255,255,0.15)')
                                 : (isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.06)'),
-                              border: `1px solid ${openActionMenu?.id === u.id ? '#38BDF8' : themeBorder}`,
+                              border: `1px solid ${openActionMenu?.id === u.id ? '#0284C7' : (isLightMode ? '#CBD5E1' : themeBorder)}`,
                               color: openActionMenu?.id === u.id ? '#0284C7' : themeText,
                               transition: 'all 0.15s ease',
-                              boxShadow: openActionMenu?.id === u.id ? '0 0 0 2px rgba(56, 189, 248, 0.25)' : 'none',
+                              boxShadow: openActionMenu?.id === u.id ? '0 0 0 2px rgba(2, 132, 199, 0.2)' : 'none',
                             }}
                           >
-                            <i className="fas fa-ellipsis-vertical" style={{ fontSize: '.8rem', color: openActionMenu?.id === u.id ? '#0284C7' : themeMuted }} />
-                            <span>Actions</span>
-                            <i className={`fas fa-chevron-${openActionMenu?.id === u.id ? 'up' : 'down'}`} style={{ fontSize: '.65rem', color: themeMuted }} />
+                            <span>Action</span>
+                            <i className={`fas fa-chevron-${openActionMenu?.id === u.id ? 'up' : 'down'}`} style={{ fontSize: '.6rem', color: openActionMenu?.id === u.id ? '#0284C7' : themeMuted }} />
                           </button>
                         </td>
                       </tr>
