@@ -576,13 +576,18 @@ export function AuthProvider({ children }) {
     }
   }, [signOutStaff]);
 
-  // 40-Minute Inactivity Auto-Logout Effect
+  // 40-Minute Inactivity Auto-Logout Effect (Throttled for Performance)
   useEffect(() => {
     if (!customerSession && !adminSession && !staffSession) return;
     const INACTIVITY_LIMIT_MS = 40 * 60 * 1000;
     let timeoutId: any;
+    let lastReset = Date.now();
 
     const resetTimer = () => {
+      const now = Date.now();
+      // Throttle event resets to at most once every 15 seconds
+      if (now - lastReset < 15000 && timeoutId) return;
+      lastReset = now;
       if (timeoutId) clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
         signOut();

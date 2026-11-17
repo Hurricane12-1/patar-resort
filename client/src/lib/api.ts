@@ -40,9 +40,11 @@ export const API_BASE = (
 
 let inMemoryCsrfToken = '';
 let backendApiAvailable: boolean | null = null;
+let lastBackendCheck = 0;
+const BACKEND_COOLDOWN_MS = 60000;
 
 async function getOrFetchCsrfToken(): Promise<string> {
-  if (backendApiAvailable === false) return '';
+  if (backendApiAvailable === false && Date.now() - lastBackendCheck < BACKEND_COOLDOWN_MS) return '';
   if (inMemoryCsrfToken) return inMemoryCsrfToken;
   if (typeof document !== 'undefined') {
     const match = document.cookie.match(/(?:^|; )csrf_token=([^;]*)/);
@@ -53,10 +55,14 @@ async function getOrFetchCsrfToken(): Promise<string> {
   }
   try {
     const endpoint = API_BASE ? `${API_BASE}/api/security/token` : '/api/security/token';
-    const res = await fetch(endpoint, { credentials: 'include' });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
+    const res = await fetch(endpoint, { credentials: 'include', signal: controller.signal });
+    clearTimeout(timeoutId);
     const ct = res.headers.get('content-type') || '';
     if (!res.ok || ct.includes('text/html')) {
       backendApiAvailable = false;
+      lastBackendCheck = Date.now();
       return '';
     }
     const data = await res.json();
@@ -67,6 +73,7 @@ async function getOrFetchCsrfToken(): Promise<string> {
     }
   } catch {
     backendApiAvailable = false;
+    lastBackendCheck = Date.now();
   }
   return '';
 }
@@ -75,9 +82,14 @@ export function resetApiSecurityTokens() {
   inMemoryCsrfToken = '';
 }
 
+let _frontDeskCache: { data: any; expiry: number } | null = null;
+export function invalidateFrontDeskCache() {
+  _frontDeskCache = null;
+}
+
 async function req<T = any>(path: string, { method = 'GET', body }: { method?: string; body?: any } = {}): Promise<T> {
-  if (backendApiAvailable === false && !API_BASE) {
-    throw new ApiError(404, 'Static host mode — using direct Supabase connection');
+  if (backendApiAvailable === false && (!API_BASE || Date.now() - lastBackendCheck < BACKEND_COOLDOWN_MS)) {
+    throw new ApiError(503, 'Backend temporarily unavailable — routing to Supabase');
   }
 
   const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
@@ -130,16 +142,31 @@ async function req<T = any>(path: string, { method = 'GET', body }: { method?: s
   }
 
   const endpoint = API_BASE ? `${API_BASE}/api${path}` : `/api${path}`;
-  const res = await fetch(endpoint, {
-    method,
-    headers,
-    credentials: 'include',
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
+  const controller = new AbortController();
+  // Snappy 2.5s timeout for fast UI fallback so user never feels lag
+  const timeoutId = setTimeout(() => controller.abort(), 2500);
+
+  let res: Response;
+  try {
+    res = await fetch(endpoint, {
+      method,
+      headers,
+      credentials: 'include',
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
+    });
+  } catch (err: any) {
+    backendApiAvailable = false;
+    lastBackendCheck = Date.now();
+    throw new ApiError(504, 'API request timed out or network error — falling back to Supabase', err);
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   const contentType = res.headers.get('content-type') || '';
   if (contentType.includes('text/html')) {
     backendApiAvailable = false;
+    lastBackendCheck = Date.now();
     throw new ApiError(404, 'Static host HTML fallback — routing to Supabase');
   }
 
@@ -149,10 +176,15 @@ async function req<T = any>(path: string, { method = 'GET', body }: { method?: s
   }
 
   if (!res.ok) {
+    if (res.status >= 500) {
+      backendApiAvailable = false;
+      lastBackendCheck = Date.now();
+    }
     if (res.status === 404 || res.status === 405) {
       const errorBody = await res.json().catch(() => ({}));
       if (!errorBody.message && !errorBody.error) {
         backendApiAvailable = false;
+        lastBackendCheck = Date.now();
       }
       throw new ApiError(res.status, errorBody.detail || errorBody.message || errorBody.error || `HTTP ${res.status} error`, errorBody);
     }
@@ -753,6 +785,7 @@ export const api = {
 
   // Reservations Management
   createReservation: async (body: any) => {
+    invalidateFrontDeskCache();
     const guestName = String(body.guest_name || body.guestName || '').trim();
     const phone = String(body.phone || '').trim();
     const missingFields: string[] = [];
@@ -996,6 +1029,7 @@ export const api = {
     return [];
   },
   setReservationStatus: async (id: string, status: string) => {
+    invalidateFrontDeskCache();
     try {
       const res = await req(`/reservations/${id}/status`, { method: 'PATCH', body: { status } });
       if (res && res.id) return res;
@@ -1093,14 +1127,20 @@ export const api = {
 
   // Front Desk Non-Financial Overview
   frontDeskOverview: async () => {
+    if (_frontDeskCache && Date.now() < _frontDeskCache.expiry) {
+      return _frontDeskCache.data;
+    }
     try {
       const res = await req('/analytics/front-desk');
-      if (res && res.overview) return res;
+      if (res && res.overview) {
+        _frontDeskCache = { data: res, expiry: Date.now() + 15000 };
+        return res;
+      }
     } catch {}
     const bookings = await api.allReservations().catch(() => []);
     const activeBookings = (Array.isArray(bookings) ? bookings : []).filter((b: any) => b.status !== 'cancelled');
     const today = new Date().toISOString().slice(0, 10);
-    return {
+    const result = {
       overview: {
         arrivals_today: activeBookings.filter((b: any) => b.check_in === today).length,
         departures_today: activeBookings.filter((b: any) => b.check_out === today).length,
@@ -1109,6 +1149,8 @@ export const api = {
       },
       bookings: Array.isArray(bookings) ? bookings : [],
     };
+    _frontDeskCache = { data: result, expiry: Date.now() + 15000 };
+    return result;
   },
 
   // Financial & Executive Analytics
