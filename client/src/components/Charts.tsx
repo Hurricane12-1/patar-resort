@@ -502,17 +502,50 @@ export function AreaLineChart({
   onPointClick,
   showYAxis = true,
   isLightMode = false,
+  emptyTitle,
+  emptySubtitle,
+  activeMonthLabel,
+  onSelectActiveMonth,
 }: any) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
 
-  const hasData = Array.isArray(data) && data.length > 0 && data.some((d) => (d.revenue > 0 || d.value > 0));
+  const hasData = Array.isArray(data) && data.length > 0 && data.some((d) => (Number(d.revenue) > 0 || Number(d.value) > 0));
   if (!hasData) {
     return (
-      <div style={{ height, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 12 }}>
-        <i className="fas fa-chart-line" style={{ fontSize: '1.5rem', marginBottom: 4, color: '#0EA5E9' }} />
-        <b style={{ fontSize: '.84rem', color: 'var(--theme-text, #0F172A)' }}>Awaiting Live Revenue Records</b>
-        <span style={{ fontSize: '.72rem', color: '#64748B' }}>Daily booking revenue from Supabase will plot here</span>
+      <div style={{ height, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 16 }}>
+        <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'rgba(14, 165, 233, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+          <i className="fas fa-chart-line" style={{ fontSize: '1.25rem', color: '#0EA5E9' }} />
+        </div>
+        <b style={{ fontSize: '.86rem', color: isLightMode ? '#0F172A' : '#F8FAFC', marginBottom: 3 }}>
+          {emptyTitle || 'Awaiting Live Revenue Records'}
+        </b>
+        <span style={{ fontSize: '.74rem', color: '#64748B', maxWidth: 380, marginBottom: onSelectActiveMonth ? 10 : 0 }}>
+          {emptySubtitle || 'Daily booking revenue from Supabase will plot here'}
+        </span>
+        {onSelectActiveMonth && activeMonthLabel && (
+          <button
+            type="button"
+            onClick={onSelectActiveMonth}
+            style={{
+              padding: '6px 14px',
+              borderRadius: 8,
+              background: '#0EA5E9',
+              color: '#FFFFFF',
+              border: 'none',
+              fontSize: '.76rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              boxShadow: '0 2px 6px rgba(14, 165, 233, 0.25)',
+              marginTop: 4,
+            }}
+          >
+            <i className="fas fa-calendar-check" /> View {activeMonthLabel} (Live Bookings)
+          </button>
+        )}
       </div>
     );
   }

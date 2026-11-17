@@ -282,11 +282,13 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                 return;
               }
               const activeRoom = activeRoomsList[0];
+              const todayStr = new Date().toISOString().slice(0, 10);
+              const tmrStr = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
               setNewReservation((prev: any) => ({
                 ...prev,
                 room_id: prev.room_id || activeRoom?.id || '',
-                check_in: prev.check_in || '2026-10-20',
-                check_out: prev.check_out || '2026-10-21',
+                check_in: prev.check_in || todayStr,
+                check_out: prev.check_out || tmrStr,
                 total_php: activeRoom?.rate_php || 3500,
               }));
               setShowAddReservationModal(true);
@@ -1554,11 +1556,13 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                 return;
               }
               const activeRoom = activeRoomsList[0];
+              const todayStr = new Date().toISOString().slice(0, 10);
+              const tmrStr = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
               setNewReservation((prev: any) => ({
                 ...prev,
                 room_id: prev.room_id || activeRoom?.id || '',
-                check_in: prev.check_in || '2026-10-20',
-                check_out: prev.check_out || '2026-10-21',
+                check_in: prev.check_in || todayStr,
+                check_out: prev.check_out || tmrStr,
                 total_php: activeRoom?.rate_php || 3500,
               }));
               setShowAddReservationModal(true);

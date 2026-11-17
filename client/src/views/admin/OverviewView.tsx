@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { AreaLineChart, Sparkline } from '../../components/Charts';
 
 export interface OverviewViewProps {
@@ -72,27 +72,225 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
   });
 
   const totalUnitsCount = Math.max(1, roomsList.reduce((s: number, r: any) => s + (Number(r.units) || 1), 0));
-  const activeBookings = allBookings.filter((b: any) => b.status !== 'cancelled');
-  const octRevenue = activeBookings.reduce((acc: number, b: any) => acc + (Number(b.total_php) || 0), 0) || (Number(data?.overview?.total_revenue_php) || 0);
-  const octBookedUnitNights = activeBookings.reduce((acc: number, b: any) => acc + (Number(b.nights) || 1), 0) || (Number(data?.overview?.nights_sold) || 0);
-  const octOccupancyPct = totalUnitsCount > 0
-    ? Number(((octBookedUnitNights / (totalUnitsCount * 31)) * 100).toFixed(1))
-    : (Number(data?.overview?.occupancy_pct) || 0);
-  const octBookingsCount = activeBookings.length || (Number(data?.overview?.total_stays) || 0);
+  const activeBookings = (allBookings || []).filter((b: any) => b.status !== 'cancelled');
+
+  // Find all calendar months with active bookings plus current month
+  const availableMonths = useMemo(() => {
+    const set = new Set<string>();
+    const now = new Date();
+    const curYm = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    set.add(curYm);
+
+    activeBookings.forEach((b: any) => {
+      const cin = String(b.check_in || '').slice(0, 7);
+      const cout = String(b.check_out || '').slice(0, 7);
+      if (/^\d{4}-\d{2}$/.test(cin)) set.add(cin);
+      if (/^\d{4}-\d{2}$/.test(cout)) set.add(cout);
+    });
+
+    return Array.from(set).sort();
+  }, [activeBookings]);
+
+  // Compute stats per available month to identify populated months
+  const activeMonthStats = useMemo(() => {
+    const stats: Record<string, { revenue: number; bookingsCount: number }> = {};
+    availableMonths.forEach((ym) => {
+      const [y, m] = ym.split('-').map(Number);
+      const daysInM = new Date(y, m, 0).getDate();
+      let rev = 0;
+      let count = 0;
+      activeBookings.forEach((b: any) => {
+        const cin = String(b.check_in || '').slice(0, 10);
+        const cout = String(b.check_out || cin).slice(0, 10);
+        const cinYm = cin.slice(0, 7);
+        const coutYm = cout.slice(0, 7);
+        if (cinYm === ym || coutYm === ym || (cin < `${ym}-31` && cout > `${ym}-01`)) {
+          count += 1;
+          const cinMs = new Date(cin).getTime();
+          const coutMs = new Date(cout).getTime();
+          const totalNights = Math.max(1, Math.round((coutMs - cinMs) / 86400000));
+          const dailyRate = (Number(b.total_php) || 0) / totalNights;
+          // Count days falling in this month
+          for (let d = 1; d <= daysInM; d++) {
+            const dStr = `${ym}-${String(d).padStart(2, '0')}`;
+            const occupies = (cin === cout) ? (cin === dStr) : (cin <= dStr && cout > dStr);
+            if (occupies) rev += dailyRate;
+          }
+        }
+      });
+      stats[ym] = { revenue: Math.round(rev), bookingsCount: count };
+    });
+    return stats;
+  }, [availableMonths, activeBookings]);
+
+  // Smart initial month: selects current month if it has bookings; otherwise picks the month with the most recent live data
+  const bestInitialMonth = useMemo(() => {
+    const now = new Date();
+    const curYm = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    if (activeMonthStats[curYm]?.revenue > 0) return curYm;
+
+    const populated = Object.keys(activeMonthStats)
+      .filter((ym) => activeMonthStats[ym].revenue > 0)
+      .sort();
+    if (populated.length > 0) {
+      return populated[populated.length - 1];
+    }
+    return curYm;
+  }, [activeMonthStats]);
+
+  const [selectedYearMonth, setSelectedYearMonth] = useState<string>(() => {
+    try {
+      if (typeof sessionStorage !== 'undefined') {
+        const saved = sessionStorage.getItem('jd_overview_ym');
+        if (saved && /^\d{4}-\d{2}$/.test(saved)) return saved;
+      }
+    } catch {}
+    return bestInitialMonth;
+  });
+
+  // Automatically sync to best month with data if current selection has no bookings
+  useEffect(() => {
+    if (bestInitialMonth && (!selectedYearMonth || (activeMonthStats[selectedYearMonth]?.revenue === 0 && activeMonthStats[bestInitialMonth]?.revenue > 0))) {
+      setSelectedYearMonth(bestInitialMonth);
+    }
+  }, [bestInitialMonth, activeMonthStats, selectedYearMonth]);
+
+  useEffect(() => {
+    try {
+      if (typeof sessionStorage !== 'undefined' && selectedYearMonth) {
+        sessionStorage.setItem('jd_overview_ym', selectedYearMonth);
+      }
+    } catch {}
+  }, [selectedYearMonth]);
+
+  const handlePrevMonth = () => {
+    const [y, m] = (selectedYearMonth || '2026-11').split('-').map(Number);
+    const prev = new Date(y, m - 2, 1);
+    const nextYm = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`;
+    setSelectedYearMonth(nextYm);
+  };
+
+  const handleNextMonth = () => {
+    const [y, m] = (selectedYearMonth || '2026-11').split('-').map(Number);
+    const next = new Date(y, m, 1);
+    const nextYm = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`;
+    setSelectedYearMonth(nextYm);
+  };
+
+  const activeMonthWithData = useMemo(() => {
+    const populated = Object.keys(activeMonthStats)
+      .filter((ym) => activeMonthStats[ym].revenue > 0)
+      .sort();
+    if (populated.length === 0) return null;
+    const targetYm = populated[populated.length - 1];
+    const [y, m] = targetYm.split('-').map(Number);
+    const dt = new Date(y, m - 1, 1);
+    return {
+      ym: targetYm,
+      name: dt.toLocaleDateString('en-US', { month: 'long' }),
+      year: y,
+    };
+  }, [activeMonthStats]);
+
+  // Dynamic Sales Analytics for Selected Month
+  const {
+    salesData,
+    monthRevenue,
+    monthBookingsCount,
+    monthBookedNights,
+    monthOccupancyPct,
+    monthName,
+    yearStr,
+    daysInMonth,
+  } = useMemo(() => {
+    const [yStr, mStr] = (selectedYearMonth || '2026-11').split('-');
+    const y = parseInt(yStr, 10) || 2026;
+    const m = parseInt(mStr, 10) || 11;
+    const daysInM = new Date(y, m, 0).getDate();
+    const mDate = new Date(y, m - 1, 1);
+    const mName = mDate.toLocaleDateString('en-US', { month: 'long' });
+    const mShort = mDate.toLocaleDateString('en-US', { month: 'short' });
+
+    const days = [];
+    let totRev = 0;
+    let totNights = 0;
+    const monthBookingsSet = new Set<string>();
+
+    for (let day = 1; day <= daysInM; day++) {
+      const dStr = `${yStr}-${mStr}-${String(day).padStart(2, '0')}`;
+      let revOnDay = 0;
+      let bookingsOnDay = 0;
+
+      activeBookings.forEach((b: any) => {
+        const rawCin = String(b.check_in || '').trim();
+        const rawCout = String(b.check_out || rawCin).trim();
+        const cin = rawCin.slice(0, 10);
+        const cout = rawCout.slice(0, 10);
+        if (!cin) return;
+
+        const isSameDay = cin === cout;
+        const occupiesDay = isSameDay ? (cin === dStr) : (cin <= dStr && cout > dStr);
+        if (occupiesDay) {
+          monthBookingsSet.add(b.id || `${cin}-${cout}`);
+          const cinMs = new Date(cin).getTime();
+          const coutMs = new Date(cout).getTime();
+          const nights = Math.max(1, Math.round((coutMs - cinMs) / 86400000));
+          const totalPhp = Number(b.total_php) || 0;
+          const dailyRate = totalPhp / nights;
+          revOnDay += dailyRate;
+          bookingsOnDay += 1;
+          totNights += 1;
+        }
+      });
+
+      // Merge backend daily analytics if available for this specific date
+      const apiDaily = data?.daily?.find((d: any) => d.date === dStr || d.day === dStr);
+      if (apiDaily && Number(apiDaily.revenue_php) > 0) {
+        revOnDay = Math.max(revOnDay, Number(apiDaily.revenue_php));
+        bookingsOnDay = Math.max(bookingsOnDay, Number(apiDaily.bookings));
+      }
+
+      const roundedRev = Math.round(revOnDay);
+      totRev += roundedRev;
+
+      days.push({
+        date: dStr,
+        day,
+        label: `${mShort} ${day}`,
+        revenue: roundedRev,
+        value: bookingsOnDay,
+      });
+    }
+
+    const occupancy = Number(((totNights / (totalUnitsCount * daysInM)) * 100).toFixed(1));
+
+    return {
+      salesData: days,
+      monthRevenue: totRev,
+      monthBookingsCount: monthBookingsSet.size,
+      monthBookedNights: totNights,
+      monthOccupancyPct: occupancy,
+      monthName: mName,
+      yearStr: String(y),
+      daysInMonth: daysInM,
+    };
+  }, [selectedYearMonth, activeBookings, data?.daily, totalUnitsCount]);
+
   const todayIso = new Date().toISOString().slice(0, 10);
   const occupiedTonight = allBookings.filter((b: any) => b.status === 'checked_in' || (b.check_in <= todayIso && b.check_out > todayIso && b.status !== 'cancelled')).length;
 
-  const revenueSparkline = octoberSalesData.map((d: any) => d.revenue);
-  const occupancySparkline = octoberSalesData.map((d: any) => Math.min(100, Math.round((d.value / totalUnitsCount) * 100)));
-  const bookingsSparkline = octoberSalesData.map((d: any) => d.value);
+  const revenueSparkline = salesData.map((d: any) => d.revenue);
+  const occupancySparkline = salesData.map((d: any) => Math.min(100, Math.round((d.value / totalUnitsCount) * 100)));
+  const bookingsSparkline = salesData.map((d: any) => d.value);
 
-  const firstHalfRev = octoberSalesData.slice(0, 15).reduce((s: number, d: any) => s + d.revenue, 0);
-  const secondHalfRev = octoberSalesData.slice(15).reduce((s: number, d: any) => s + d.revenue, 0);
-  const revGrowthPct = firstHalfRev > 0 ? Math.round(((secondHalfRev - firstHalfRev) / firstHalfRev) * 100) : (octRevenue > 0 ? 100 : 0);
+  const halfPoint = Math.floor(salesData.length / 2);
+  const firstHalfRev = salesData.slice(0, halfPoint).reduce((s: number, d: any) => s + d.revenue, 0);
+  const secondHalfRev = salesData.slice(halfPoint).reduce((s: number, d: any) => s + d.revenue, 0);
+  const revGrowthPct = firstHalfRev > 0 ? Math.round(((secondHalfRev - firstHalfRev) / firstHalfRev) * 100) : (monthRevenue > 0 ? 100 : 0);
 
-  const firstHalfBookings = octoberSalesData.slice(0, 15).reduce((s: number, d: any) => s + d.value, 0);
-  const secondHalfBookings = octoberSalesData.slice(15).reduce((s: number, d: any) => s + d.value, 0);
-  const bookingsGrowthPct = firstHalfBookings > 0 ? Math.round(((secondHalfBookings - firstHalfBookings) / firstHalfBookings) * 100) : (octBookingsCount > 0 ? 100 : 0);
+  const firstHalfBookings = salesData.slice(0, halfPoint).reduce((s: number, d: any) => s + d.value, 0);
+  const secondHalfBookings = salesData.slice(halfPoint).reduce((s: number, d: any) => s + d.value, 0);
+  const bookingsGrowthPct = firstHalfBookings > 0 ? Math.round(((secondHalfBookings - firstHalfBookings) / firstHalfBookings) * 100) : (monthBookingsCount > 0 ? 100 : 0);
 
   return (
     <>
@@ -112,18 +310,66 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             justifyContent: 'space-between',
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
             <div>
-              <h3 style={{ fontSize: '1.2rem', margin: '0 0 3px', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800 }}>
-                Sales overview
-              </h3>
-              <span style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 500 }}>
-                Daily room revenue, October 2026
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <h3 style={{ fontSize: '1.2rem', margin: 0, color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800 }}>
+                  Sales overview
+                </h3>
+
+                {/* Dynamic Month Selector */}
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: 10, border: `1px solid ${themeBorder}` }}>
+                  <button
+                    type="button"
+                    onClick={handlePrevMonth}
+                    title="Previous Month"
+                    style={{ background: 'none', border: 'none', color: themeMuted, cursor: 'pointer', padding: '2px 6px', fontSize: '.75rem', fontWeight: 800 }}
+                  >
+                    ‹
+                  </button>
+                  <select
+                    value={selectedYearMonth}
+                    onChange={(e) => setSelectedYearMonth(e.target.value)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: themeText,
+                      fontSize: '.75rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      outline: 'none',
+                      padding: '2px 2px',
+                    }}
+                  >
+                    {availableMonths.map((ym) => {
+                      const [y, m] = ym.split('-').map(Number);
+                      const label = new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                      const hasData = activeMonthStats[ym]?.revenue > 0;
+                      return (
+                        <option key={ym} value={ym} style={{ background: isLightMode ? '#FFFFFF' : '#1E293B', color: themeText }}>
+                          {label} {hasData ? `(₱${(activeMonthStats[ym].revenue / 1000).toFixed(1)}k)` : ''}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={handleNextMonth}
+                    title="Next Month"
+                    style={{ background: 'none', border: 'none', color: themeMuted, cursor: 'pointer', padding: '2px 6px', fontSize: '.75rem', fontWeight: 800 }}
+                  >
+                    ›
+                  </button>
+                </div>
+              </div>
+
+              <span style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 500, display: 'block', marginTop: 4 }}>
+                Daily room revenue, {monthName} {yearStr}
               </span>
             </div>
 
             <span
-              onClick={() => toast(`📈 October Revenue: ₱${octRevenue.toLocaleString()} (${octBookingsCount} active bookings)`)}
+              onClick={() => toast(`📈 ${monthName} Revenue: ₱${monthRevenue.toLocaleString()} (${monthBookingsCount} active bookings)`)}
               style={{
                 fontSize: '.88rem',
                 color: '#10B981',
@@ -140,22 +386,28 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
               }}
               title="Click for revenue status"
             >
-              ₱{octRevenue.toLocaleString()}
+              ₱{monthRevenue.toLocaleString()}
             </span>
           </div>
 
           <AreaLineChart
-            data={octoberSalesData}
+            data={salesData}
             height={210}
             isLightMode={isLightMode}
             showYAxis={true}
+            emptyTitle={`No Room Revenue in ${monthName} ${yearStr}`}
+            emptySubtitle="No active guest stays or checked-in bookings were found in this calendar month."
+            activeMonthLabel={activeMonthWithData && activeMonthWithData.ym !== selectedYearMonth ? `${activeMonthWithData.name} ${activeMonthWithData.year}` : undefined}
+            onSelectActiveMonth={activeMonthWithData && activeMonthWithData.ym !== selectedYearMonth ? () => setSelectedYearMonth(activeMonthWithData.ym) : undefined}
             onPointClick={(item: any) => {
               const rev = item.revenue > 0 ? item.revenue : (item.value * 4500);
               const dynamicInsight = rev > 60000
                 ? `Peak weekend demand: High villa & sea-view suite reservations on Patar beachfront.`
                 : rev > 30000
                   ? `Steady inbound guest volume: Cottage rentals and beachfront dining orders.`
-                  : `Mid-week baseline: Standard room stays and casual tour inquiries.`;
+                  : rev > 0
+                    ? `Active guest stays: Standard room bookings and coastal accommodations.`
+                    : `Zero active guest check-ins recorded on this calendar date.`;
 
               setSelectedSalesItem({
                 ...item,
@@ -188,7 +440,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
         {/* RIGHT: 3 STACKED KPI CARDS */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {/* KPI Card 1: Revenue · October */}
+          {/* KPI Card 1: Revenue · Month */}
           <div
             className="panel-card kpi-card"
             style={{
@@ -220,7 +472,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                   <i className="fas fa-file-invoice-dollar" />
                 </span>
                 <span style={{ fontSize: '.82rem', fontWeight: 700, color: themeMuted }}>
-                  Revenue · October
+                  Revenue · {monthName}
                 </span>
               </div>
               <span style={{
@@ -237,7 +489,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, margin: '2px 0 2px' }}>
               <b style={{ fontSize: '1.85rem', fontWeight: 800, color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", lineHeight: 1.1 }}>
-                ₱{(octRevenue / 1000).toFixed(1)}k
+                ₱{(monthRevenue / 1000).toFixed(1)}k
               </b>
             </div>
 
@@ -248,7 +500,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <Sparkline values={revenueSparkline.length > 0 ? revenueSparkline : [0]} width={280} height={36} />
           </div>
 
-          {/* KPI Card 2: Occupancy · October */}
+          {/* KPI Card 2: Occupancy · Month */}
           <div
             className="panel-card kpi-card"
             style={{
@@ -280,35 +532,35 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                   <i className="fas fa-bed" />
                 </span>
                 <span style={{ fontSize: '.82rem', fontWeight: 700, color: themeMuted }}>
-                  Occupancy · October
+                  Occupancy · {monthName}
                 </span>
               </div>
               <span style={{
                 fontSize: '.72rem',
                 fontWeight: 800,
-                color: octOccupancyPct > 0 ? '#10B981' : '#94A3B8',
-                background: octOccupancyPct > 0 ? 'rgba(16, 185, 129, 0.12)' : 'rgba(148, 163, 184, 0.12)',
+                color: monthOccupancyPct > 0 ? '#10B981' : '#94A3B8',
+                background: monthOccupancyPct > 0 ? 'rgba(16, 185, 129, 0.12)' : 'rgba(148, 163, 184, 0.12)',
                 padding: '2px 8px',
                 borderRadius: 20,
               }}>
-                {octOccupancyPct > 0 ? `▲ ${octOccupancyPct}%` : '• 0%'}
+                {monthOccupancyPct > 0 ? `▲ ${monthOccupancyPct}%` : '• 0%'}
               </span>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, margin: '2px 0 2px' }}>
               <b style={{ fontSize: '1.85rem', fontWeight: 800, color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", lineHeight: 1.1 }}>
-                {octOccupancyPct}%
+                {monthOccupancyPct}%
               </b>
             </div>
 
             <div style={{ fontSize: '.74rem', color: themeMuted, marginBottom: 8 }}>
-              {octBookedUnitNights} of {totalUnitsCount * 31} unit-nights · Real-time
+              {monthBookedNights} of {totalUnitsCount * daysInMonth} unit-nights · Real-time
             </div>
 
             <Sparkline values={occupancySparkline.length > 0 ? occupancySparkline : [0]} width={280} height={36} />
           </div>
 
-          {/* KPI Card 3: Bookings · October */}
+          {/* KPI Card 3: Bookings · Month */}
           <div
             className="panel-card kpi-card"
             style={{
@@ -340,7 +592,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                   <i className="fas fa-calendar-check" />
                 </span>
                 <span style={{ fontSize: '.82rem', fontWeight: 700, color: themeMuted }}>
-                  Bookings · October
+                  Bookings · {monthName}
                 </span>
               </div>
               <span style={{
@@ -357,7 +609,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, margin: '2px 0 2px' }}>
               <b style={{ fontSize: '1.85rem', fontWeight: 800, color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", lineHeight: 1.1 }}>
-                {octBookingsCount}
+                {monthBookingsCount}
               </b>
             </div>
 
@@ -621,11 +873,12 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                         return;
                       }
                       const activeRoom = activeRoomsList[0];
+                      const tmrIso = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
                       setNewReservation((prev: any) => ({
                         ...prev,
                         room_id: prev.room_id || activeRoom?.id || '',
-                        check_in: prev.check_in || '2026-10-20',
-                        check_out: prev.check_out || '2026-10-21',
+                        check_in: prev.check_in || todayIso,
+                        check_out: prev.check_out || tmrIso,
                         total_php: activeRoom?.rate_php || 3500,
                       }));
                       setShowAddReservationModal(true);
@@ -685,11 +938,12 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                   return;
                 }
                 const activeRoom = activeRoomsList[0];
+                const tmrIso = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
                 setNewReservation((prev: any) => ({
                   ...prev,
                   room_id: prev.room_id || activeRoom?.id || '',
-                  check_in: prev.check_in || '2026-10-20',
-                  check_out: prev.check_out || '2026-10-21',
+                  check_in: prev.check_in || todayIso,
+                  check_out: prev.check_out || tmrIso,
                   total_php: activeRoom?.rate_php || 3500,
                 }));
                 setShowAddReservationModal(true);

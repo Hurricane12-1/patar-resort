@@ -361,7 +361,8 @@ export default function AddReservationModal({
       return;
     }
     const targetRoomId = newReservation.room_id || activeWalkInRoom?.id || '';
-    const cin = newReservation.check_in || '2026-10-20';
+    const defaultCin = new Date().toISOString().slice(0, 10);
+    const cin = newReservation.check_in || defaultCin;
     let cout = newReservation.check_out || addDaysYMD(cin, 1);
     if (cout <= cin) {
       cout = addDaysYMD(cin, 1);
@@ -385,7 +386,7 @@ export default function AddReservationModal({
   const themeMuted = propThemeMuted || (isLightMode ? '#64748B' : '#94A3B8');
 
   const activeRoomImage = getRoomImageUrl(activeWalkInRoom);
-  const effectiveCin = String(newReservation.check_in || '2026-10-20').slice(0, 10);
+  const effectiveCin = String(newReservation.check_in || new Date().toISOString().slice(0, 10)).slice(0, 10);
   const rawCout = String(newReservation.check_out || '').slice(0, 10);
   const effectiveCout = rawCout > effectiveCin ? rawCout : addDaysYMD(effectiveCin, 1);
   const targetRoomId = newReservation.room_id || activeWalkInRoom?.id || '';

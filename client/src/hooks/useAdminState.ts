@@ -959,7 +959,7 @@ export function useAdminState() {
         const m = (newReservation.notes || '').match(/\[?(?:Unit\s*|u)(\d+)\]?/i);
         throw new Error(`⚠️ Already Booked: Unit ${m ? m[1] : ''} is already reserved on these dates. Please pick another unit or date.`);
       }
-      const checkIn = newReservation.check_in || '2026-10-20';
+      const checkIn = newReservation.check_in || new Date().toISOString().slice(0, 10);
       const checkOut =
         newReservation.check_out && newReservation.check_out > checkIn
           ? newReservation.check_out
@@ -2115,27 +2115,63 @@ export function useAdminState() {
     roomsList.length,
   ]);
 
-  // October Metrics
+  // Dynamic Monthly Sales Data (defaults to active month with live bookings or current month)
   const octoberSalesData = useMemo(() => {
-    const daysInOct = 31;
+    const now = new Date();
+    const curYm = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    
+    // Check if current month has active bookings
+    const hasCur = (allBookings || []).some((b: any) => {
+      if (b.status === 'cancelled') return false;
+      const cin = String(b.check_in || '').slice(0, 7);
+      const cout = String(b.check_out || '').slice(0, 7);
+      return cin === curYm || cout === curYm;
+    });
+
+    let activeYm = curYm;
+    if (!hasCur) {
+      // Find latest month with bookings
+      const bookingMonths: string[] = [];
+      (allBookings || []).forEach((b: any) => {
+        if (b.status === 'cancelled') return;
+        const cin = String(b.check_in || '').slice(0, 7);
+        if (/^\d{4}-\d{2}$/.test(cin) && !bookingMonths.includes(cin)) bookingMonths.push(cin);
+      });
+      if (bookingMonths.length > 0) {
+        bookingMonths.sort();
+        activeYm = bookingMonths[bookingMonths.length - 1];
+      }
+    }
+
+    const [yStr, mStr] = activeYm.split('-');
+    const y = parseInt(yStr, 10);
+    const m = parseInt(mStr, 10);
+    const daysInMonth = new Date(y, m, 0).getDate();
+    const mShort = new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'short' });
+
     const days = [];
-    for (let day = 1; day <= daysInOct; day++) {
-      const dStr = `2026-10-${String(day).padStart(2, '0')}`;
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dStr = `${yStr}-${mStr}-${String(day).padStart(2, '0')}`;
       let revOnDay = 0;
       let bookingsOnDay = 0;
       allBookings.forEach((b: any) => {
         if (b.status === 'cancelled') return;
-        if (b.check_in <= dStr && b.check_out >= dStr) {
-          const nights = Math.max(
-            1,
-            Math.round((new Date(b.check_out).getTime() - new Date(b.check_in).getTime()) / 86400000)
-          );
+        const cin = String(b.check_in || '').slice(0, 10);
+        const cout = String(b.check_out || cin).slice(0, 10);
+        if (!cin) return;
+
+        const isSameDay = cin === cout;
+        const occupiesDay = isSameDay ? (cin === dStr) : (cin <= dStr && cout > dStr);
+        if (occupiesDay) {
+          const cinMs = new Date(cin).getTime();
+          const coutMs = new Date(cout).getTime();
+          const nights = Math.max(1, Math.round((coutMs - cinMs) / 86400000));
           const dailyRate = (Number(b.total_php) || 0) / nights;
           revOnDay += dailyRate;
           bookingsOnDay += 1;
         }
       });
-      const apiDaily = data?.daily?.find((d: any) => d.date === dStr);
+      const apiDaily = data?.daily?.find((d: any) => d.date === dStr || d.day === dStr);
       if (apiDaily && apiDaily.revenue_php > 0) {
         revOnDay = Math.max(revOnDay, Number(apiDaily.revenue_php));
         bookingsOnDay = Math.max(bookingsOnDay, Number(apiDaily.bookings));
@@ -2143,7 +2179,7 @@ export function useAdminState() {
       days.push({
         date: dStr,
         day,
-        label: `Oct ${day}`,
+        label: `${mShort} ${day}`,
         revenue: Math.round(revOnDay),
         value: bookingsOnDay,
       });
