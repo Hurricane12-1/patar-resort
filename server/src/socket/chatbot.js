@@ -340,12 +340,12 @@ async function queryGeminiWithGuardrails(userId, rawUserText, history = []) {
     },
   ];
 
-  // Verified fast, active models with independent per-model timeouts
+  // Primary: Gemini 3.1 Pro, with automatic fallback if rate-limited on current key tier
   const models = [
+    { name: 'gemini-3.1-pro-preview', supportsThinkingBudget: false },
     { name: 'gemini-3.5-flash', supportsThinkingBudget: true },
     { name: 'gemini-3.1-flash-lite', supportsThinkingBudget: true },
     { name: 'gemini-3-flash-preview', supportsThinkingBudget: true },
-    { name: 'gemini-2.5-pro', supportsThinkingBudget: false },
   ];
 
   for (const modelCfg of models) {
