@@ -513,24 +513,6 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
                   <i className="fas fa-calculator staff-nav-icon staff-nav-icon--indigo" />
                   {!isSidebarCollapsed && <span className="staff-nav-text">Billing &amp; Ledgers</span>}
                 </NavLink>
-              </nav>
-            </div>
-
-            {/* Navigation Section 2: Handoff & Governance */}
-            <div className="staff-nav-group">
-              {!isSidebarCollapsed && <div className="staff-nav-group-title">Handoff &amp; Governance</div>}
-              <nav className="staff-nav-menu">
-                {allowEscalation && (
-                  <button
-                    type="button"
-                    onClick={() => setShowEscalationModal(true)}
-                    className="staff-nav-item staff-nav-item--btn"
-                    title="Escalate Case to /recovery"
-                  >
-                    <i className="fas fa-triangle-exclamation staff-nav-icon staff-nav-icon--amber" />
-                    {!isSidebarCollapsed && <span className="staff-nav-text">Escalate to /recovery</span>}
-                  </button>
-                )}
 
                 {isExecAdmin && (
                   <Link
