@@ -6,19 +6,31 @@ import { toast } from '../components/Toasts.tsx';
 import { to11Digits, formatTime12Hour } from '../lib/format.ts';
 import { getManilaTodayISO } from '../lib/offeringSpecs.ts';
 import AddReservationModal, { NewReservationFormState } from '../components/admin/modals/AddReservationModal.tsx';
+import { RoomEditorModal } from '../components/admin/modals/RoomEditorModal.tsx';
+import { CreateRoomModal } from '../components/admin/modals/CreateRoomModal.tsx';
+import { uploadImageToCloudinary } from '../lib/cloudinary.ts';
 import '../styles/staff-portal.css';
 
 // ── Types & Interfaces ──
 interface RoomItem {
   id: string;
+  rawRoom?: any;
   code: string;
   name: string;
   category: string;
+  offering_type?: string;
   capacity: string;
+  capacityNum?: number;
   rate: number;
   status: 'available' | 'occupied' | 'dirty' | 'maintenance';
   guest: string | null;
+  activeStay?: any;
   note: string;
+  image_url?: string;
+  images?: string[];
+  amenities?: string[];
+  specs?: any;
+  is_active?: boolean;
 }
 
 interface BookingItem {
@@ -135,6 +147,30 @@ export default function ResortDepartment() {
   const [creatingReservation, setCreatingReservation] = useState(false);
   const [walkInPoolAddon, setWalkInPoolAddon] = useState('none');
   const [liveRoomsList, setLiveRoomsList] = useState<any[]>([]);
+
+  // ── Executive Admin-Grade Room & Inventory Editing Suite State ──
+  const [editingRoom, setEditingRoom] = useState<any | null>(null);
+  const [showCreateRoomModal, setShowCreateRoomModal] = useState(false);
+  const [newRoomData, setNewRoomData] = useState<any>({
+    name: '',
+    code: '',
+    category: 'Villa',
+    offering_type: 'room',
+    capacity: 2,
+    units: 1,
+    rate_php: 3500,
+    description: '',
+    amenities: 'Air Conditioning, Free Wi-Fi, Private Bath, Sea View',
+    image_url: '',
+    images: [],
+    specs: {},
+    is_active: true,
+  });
+
+  // Filters for Rooms View
+  const [roomCategoryFilter, setRoomCategoryFilter] = useState<'all' | 'villa' | 'cottage' | 'cabana' | 'suite' | 'tour'>('all');
+  const [roomStatusFilter, setRoomStatusFilter] = useState<'all' | 'available' | 'occupied' | 'dirty' | 'maintenance'>('all');
+  const [roomSearchQuery, setRoomSearchQuery] = useState('');
 
   const [newReservation, setNewReservation] = useState<NewReservationFormState>({
     guest_name: '',
@@ -335,16 +371,26 @@ export default function ResortDepartment() {
           ? cleanAmenities.slice(0, 3).join(' • ')
           : (r.description || 'Verified accommodation unit');
 
+        const primaryImg = r.image_url || (Array.isArray(r.images) && r.images[0]) || '';
         return {
           id: r.id,
+          rawRoom: r,
           code: (r.slug || r.name).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6) || 'UNIT',
           name: r.name,
           category: r.category || (r.offering_type === 'offer' ? 'Island Tour' : 'Standard'),
+          offering_type: r.offering_type || 'room',
           capacity: `${r.capacity || 2} Guests`,
+          capacityNum: Number(r.capacity) || 2,
           rate: Number(r.rate_php) || 0,
           status,
           guest: activeStayToday ? activeStayToday.guest : null,
+          activeStay: activeStayToday || null,
           note,
+          image_url: primaryImg,
+          images: Array.isArray(r.images) ? r.images : (primaryImg ? [primaryImg] : []),
+          amenities: cleanAmenities,
+          specs: r.specs || {},
+          is_active: r.is_active ?? true,
         };
       });
       setRooms(liveRooms);
@@ -517,6 +563,141 @@ export default function ResortDepartment() {
     } else if (target.status === 'maintenance' && nextStatus !== 'maintenance') {
       try { await api.updateRoom(roomId, { is_active: true }); } catch {}
     }
+  };
+
+  // Room Cover Image Fallback Resolver
+  const getRoomCoverImage = (rm: RoomItem) => {
+    if (rm.image_url) return rm.image_url;
+    if (rm.images && rm.images.length > 0 && rm.images[0]) return rm.images[0];
+    const cat = (rm.category || rm.name || '').toLowerCase();
+    if (cat.includes('cottage')) {
+      return 'https://images.unsplash.com/photo-1540541338287-41700207dee6?auto=format&fit=crop&w=800&q=80';
+    }
+    if (cat.includes('cabana')) {
+      return 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80';
+    }
+    if (cat.includes('suite') || cat.includes('loft')) {
+      return 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=800&q=80';
+    }
+    if (cat.includes('tour') || cat.includes('boat')) {
+      return 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80';
+    }
+    return 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80';
+  };
+
+  // ── Admin-Grade Room Editing & Saving Handlers ──
+  const handleSaveEditedRoom = async (updatedRoomData: any) => {
+    if (!updatedRoomData?.id) return;
+    try {
+      const amenitiesArr =
+        typeof updatedRoomData.amenities === 'string'
+          ? updatedRoomData.amenities.split(',').map((s: string) => s.trim()).filter(Boolean)
+          : updatedRoomData.amenities || [];
+      const imagesArr = Array.isArray(updatedRoomData.images)
+        ? updatedRoomData.images.filter(Boolean)
+        : (updatedRoomData.image_url ? [updatedRoomData.image_url] : []);
+      const primaryImg = updatedRoomData.image_url || imagesArr[0] || '';
+
+      await api.updateRoom(updatedRoomData.id, {
+        name: updatedRoomData.name,
+        offering_type: updatedRoomData.offering_type || 'room',
+        specs: updatedRoomData.specs || {},
+        category: updatedRoomData.category,
+        description: updatedRoomData.description,
+        capacity: Number(updatedRoomData.capacity) || 2,
+        units: Number(updatedRoomData.units) || 1,
+        rate_php: Number(updatedRoomData.rate_php) || 0,
+        amenities: amenitiesArr,
+        image_url: primaryImg,
+        images: imagesArr,
+        is_active: updatedRoomData.is_active ?? true,
+      });
+
+      toast(`✦ Unit "${updatedRoomData.name}" updated successfully!`);
+      setEditingRoom(null);
+      await loadLiveOperationsData();
+    } catch (err: any) {
+      toast(err.message || 'Failed to update unit', true);
+    }
+  };
+
+  const handleDeleteRoom = async (roomToDelete: any) => {
+    if (!roomToDelete?.id) return;
+    if (!window.confirm(`Are you sure you want to remove ${roomToDelete.name}?`)) return;
+    try {
+      await api.deleteRoom(roomToDelete.id);
+      toast(`Unit "${roomToDelete.name}" deleted from database.`);
+      setEditingRoom(null);
+      await loadLiveOperationsData();
+    } catch (err: any) {
+      toast(err.message || 'Failed to delete room', true);
+    }
+  };
+
+  const handleCreateRoomSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const amenitiesArr =
+        typeof newRoomData.amenities === 'string'
+          ? newRoomData.amenities.split(',').map((s: string) => s.trim()).filter(Boolean)
+          : newRoomData.amenities || [];
+      const imagesArr = Array.isArray(newRoomData.images)
+        ? newRoomData.images.filter(Boolean)
+        : (newRoomData.image_url ? [newRoomData.image_url] : []);
+
+      await api.createRoom({
+        ...newRoomData,
+        capacity: Number(newRoomData.capacity) || 2,
+        rate_php: Number(newRoomData.rate_php) || 3500,
+        amenities: amenitiesArr,
+        images: imagesArr,
+        image_url: newRoomData.image_url || imagesArr[0] || '',
+      });
+      toast(`✦ Accommodation "${newRoomData.name}" added successfully!`);
+      setShowCreateRoomModal(false);
+      setNewRoomData({
+        name: '',
+        code: '',
+        category: 'Villa',
+        offering_type: 'room',
+        capacity: 2,
+        units: 1,
+        rate_php: 3500,
+        description: '',
+        amenities: 'Air Conditioning, Free Wi-Fi, Private Bath, Sea View',
+        image_url: '',
+        images: [],
+        specs: {},
+        is_active: true,
+      });
+      await loadLiveOperationsData();
+    } catch (err: any) {
+      toast(err.message || 'Failed to create accommodation', true);
+    }
+  };
+
+  const handleToggleMaintenance = async (rm: RoomItem) => {
+    try {
+      const targetActive = rm.status === 'maintenance';
+      await api.updateRoom(rm.id, { is_active: targetActive });
+      toast(targetActive ? `✓ ${rm.name} reactivated and available for stays.` : `⚠ ${rm.name} placed under maintenance.`);
+      await loadLiveOperationsData();
+    } catch (err: any) {
+      toast(err.message || 'Failed to update maintenance status', true);
+    }
+  };
+
+  const handleTriggerEscalation = (target: { id: string; name: string; type: 'reservation' | 'room'; reason?: string }) => {
+    window.dispatchEvent(
+      new CustomEvent('open-staff-escalate', {
+        detail: {
+          reservationId: target.id,
+          category: target.type === 'room' ? 'Security / Property Incident' : 'Inventory Overbooking Clash',
+          reason: target.reason || (target.type === 'room' ? `Critical maintenance/facility breakdown for ${target.name}.` : `Urgent escalation for stay ${target.name}.`),
+          severity: 'urgent',
+        },
+      })
+    );
   };
 
   // Approve Pending Request (Updates status directly in Supabase)
@@ -1094,55 +1275,477 @@ export default function ResortDepartment() {
       )}
 
       {/* =========================================================================
-          VIEW C: ROOMS & COTTAGES INVENTORY VIEW
+          VIEW C: ROOMS & COTTAGES INVENTORY VIEW (ADMIN-GRADE EDITABLE SUITE)
           ========================================================================= */}
       {activeView === 'rooms' && (
         <div className="staff-ops-fullview-card">
-          <div className="staff-ops-col-header" style={{ padding: '18px 24px' }}>
+          {/* Header */}
+          <div className="staff-ops-col-header" style={{ padding: '20px 24px', flexWrap: 'wrap', gap: 14 }}>
             <div>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="staff-ops-badge" style={{ background: '#ECFDF5', color: '#047857', borderColor: '#A7F3D0', fontWeight: 700 }}>
+                  <i className="fas fa-house" style={{ marginRight: 4 }} /> Property Inventory
+                </span>
+                <span className="staff-ops-badge" style={{ background: '#F1F5F9', color: '#475569' }}>
+                  {rooms.length} Total Units
+                </span>
+              </div>
+              <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>
                 Rooms, Cottages &amp; Resort Amenities
               </h2>
               <p style={{ margin: '4px 0 0', fontSize: '.78rem', color: '#64748B' }}>
-                Live property availability, turnover readiness, and nightly rates
+                Admin-synchronized inventory: edit rates, photos, amenities, turnover readiness, and dispatch maintenance
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => setSearchParams({ view: 'dashboard' })}
-              className="staff-ops-action-btn"
-            >
-              &larr; Back to Dashboard
-            </button>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setShowCreateRoomModal(true)}
+                className="staff-btn staff-btn--primary"
+                style={{ padding: '9px 18px', fontSize: '.84rem', fontWeight: 700, borderRadius: 12, display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                title="Add New Accommodation or Tour"
+              >
+                <i className="fas fa-plus" />
+                <span>+ Add Accommodation</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSearchParams({ view: 'dashboard' })}
+                className="staff-ops-action-btn"
+                style={{ padding: '8px 14px', borderRadius: 10 }}
+              >
+                &larr; Back to Dashboard
+              </button>
+            </div>
           </div>
 
-          <div style={{ padding: 24, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
-            {rooms.map((rm) => (
-              <div key={rm.id} className="staff-ops-unit-card" style={{ padding: 18 }}>
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#0F172A', fontWeight: 800 }}>{rm.name}</h3>
-                    <div style={{ fontSize: '.78rem', color: '#64748B', marginTop: 2 }}>{rm.category} • {rm.capacity}</div>
-                  </div>
-                  <span className={`staff-ops-status-pill staff-ops-status-pill--${rm.status}`}>
-                    {rm.status}
-                  </span>
-                </div>
-
-                <p style={{ fontSize: '.82rem', color: '#475569', margin: '8px 0 16px' }}>{rm.note}</p>
-
-                <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                  <span className="staff-ops-unit-price">{formatPHP(rm.rate)}<small>/night</small></span>
+          <div style={{ padding: '20px 24px' }}>
+            {/* Filter Bar */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14, marginBottom: 20 }}>
+              {/* Category Chips */}
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {[
+                  { id: 'all', label: 'All Units' },
+                  { id: 'villa', label: 'Villas' },
+                  { id: 'cottage', label: 'Cottages' },
+                  { id: 'cabana', label: 'Cabanas' },
+                  { id: 'suite', label: 'Suites' },
+                  { id: 'tour', label: 'Island Tours' },
+                ].map((tab) => (
                   <button
+                    key={tab.id}
                     type="button"
-                    onClick={() => cycleRoomStatus(rm.id)}
-                    className="staff-ops-action-btn"
+                    onClick={() => setRoomCategoryFilter(tab.id as any)}
+                    className={`chip ${roomCategoryFilter === tab.id ? 'sel' : ''}`}
+                    style={{ fontSize: '.78rem', padding: '6px 12px', borderRadius: 9999 }}
                   >
-                    Cycle Status
+                    {tab.label}
                   </button>
+                ))}
+              </div>
+
+              {/* Status Filter & Search */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <select
+                  value={roomStatusFilter}
+                  onChange={(e) => setRoomStatusFilter(e.target.value as any)}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: 10,
+                    border: '1px solid #CBD5E1',
+                    fontSize: '.82rem',
+                    background: '#FFFFFF',
+                    color: '#0F172A',
+                    fontWeight: 600,
+                  }}
+                >
+                  <option value="all">All Statuses ({rooms.length})</option>
+                  <option value="available">Available ({rooms.filter((r) => r.status === 'available').length})</option>
+                  <option value="occupied">Occupied ({rooms.filter((r) => r.status === 'occupied').length})</option>
+                  <option value="dirty">Dirty / Turnover ({rooms.filter((r) => r.status === 'dirty').length})</option>
+                  <option value="maintenance">Maintenance ({rooms.filter((r) => r.status === 'maintenance').length})</option>
+                </select>
+
+                <div style={{ position: 'relative', width: 240 }}>
+                  <input
+                    type="text"
+                    placeholder="Search name, code, amenities…"
+                    value={roomSearchQuery}
+                    onChange={(e) => setRoomSearchQuery(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px 8px 32px',
+                      borderRadius: 10,
+                      border: '1px solid #CBD5E1',
+                      fontSize: '.82rem',
+                      background: '#FFFFFF',
+                      color: '#0F172A',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                  <i className="fas fa-search" style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', fontSize: '.75rem' }} />
                 </div>
               </div>
-            ))}
+            </div>
+
+            {/* Room Cards Grid (Admin-grade cards) */}
+            {(() => {
+              const filteredRooms = rooms.filter((rm) => {
+                const catLower = (rm.category || rm.name || '').toLowerCase();
+                const matchesCat =
+                  roomCategoryFilter === 'all' ||
+                  (roomCategoryFilter === 'villa' && catLower.includes('villa')) ||
+                  (roomCategoryFilter === 'cottage' && catLower.includes('cottage')) ||
+                  (roomCategoryFilter === 'cabana' && catLower.includes('cabana')) ||
+                  (roomCategoryFilter === 'suite' && (catLower.includes('suite') || catLower.includes('loft'))) ||
+                  (roomCategoryFilter === 'tour' && (catLower.includes('tour') || catLower.includes('boat')));
+
+                const matchesStatus = roomStatusFilter === 'all' || rm.status === roomStatusFilter;
+
+                const q = roomSearchQuery.trim().toLowerCase();
+                const matchesQuery =
+                  !q ||
+                  rm.name.toLowerCase().includes(q) ||
+                  rm.code.toLowerCase().includes(q) ||
+                  rm.category.toLowerCase().includes(q) ||
+                  (rm.amenities || []).some((a) => a.toLowerCase().includes(q));
+
+                return matchesCat && matchesStatus && matchesQuery;
+              });
+
+              if (filteredRooms.length === 0) {
+                return (
+                  <div style={{ textAlign: 'center', padding: '60px 20px', background: '#F8FAFC', borderRadius: 16, border: '1px dashed #CBD5E1' }}>
+                    <i className="fas fa-hotel" style={{ fontSize: '2.4rem', color: '#94A3B8', marginBottom: 12 }} />
+                    <h3 style={{ margin: 0, fontWeight: 800, color: '#1E293B', fontSize: '1.1rem' }}>No Accommodations Found</h3>
+                    <p style={{ margin: '6px 0 16px', fontSize: '.84rem', color: '#64748B' }}>
+                      No units matched your active filters or search terms.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => { setRoomCategoryFilter('all'); setRoomStatusFilter('all'); setRoomSearchQuery(''); }}
+                      className="staff-btn staff-btn--secondary"
+                      style={{ margin: '0 auto', fontSize: '.82rem' }}
+                    >
+                      Clear Filters
+                    </button>
+                  </div>
+                );
+              }
+
+              return (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 24 }}>
+                  {filteredRooms.map((rm) => {
+                    const coverImg = getRoomCoverImage(rm);
+                    const raw = rm.rawRoom || rm;
+                    return (
+                      <div
+                        key={rm.id}
+                        className="staff-ops-unit-card"
+                        style={{
+                          padding: 0,
+                          borderRadius: 16,
+                          overflow: 'hidden',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          background: '#FFFFFF',
+                          border: '1px solid #E2E8F0',
+                          boxShadow: '0 4px 12px rgba(15,23,42,0.04)',
+                          transition: 'transform 0.2s, box-shadow 0.2s',
+                        }}
+                      >
+                        {/* Visual Image Header */}
+                        <div style={{ position: 'relative', height: 180, width: '100%', overflow: 'hidden', background: '#0F172A' }}>
+                          <img
+                            src={coverImg}
+                            alt={rm.name}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80';
+                            }}
+                          />
+                          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.7) 0%, transparent 60%)' }} />
+
+                          {/* Top-Left Category Badge */}
+                          <span
+                            style={{
+                              position: 'absolute',
+                              top: 12,
+                              left: 12,
+                              background: 'rgba(15,23,42,0.85)',
+                              backdropFilter: 'blur(4px)',
+                              color: '#38BDF8',
+                              fontSize: '11px',
+                              fontWeight: 800,
+                              padding: '4px 10px',
+                              borderRadius: 9999,
+                              letterSpacing: '0.5px',
+                              border: '1px solid rgba(56,189,248,0.3)',
+                            }}
+                          >
+                            {rm.category.toUpperCase()}
+                          </span>
+
+                          {/* Top-Right Status Pill */}
+                          <span
+                            className={`staff-ops-status-pill staff-ops-status-pill--${rm.status}`}
+                            style={{
+                              position: 'absolute',
+                              top: 12,
+                              right: 12,
+                              fontWeight: 800,
+                              fontSize: '11px',
+                              padding: '4px 10px',
+                              boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+                            }}
+                          >
+                            {rm.status}
+                          </span>
+
+                          {/* Bottom-Left Capacity Pill */}
+                          <span
+                            style={{
+                              position: 'absolute',
+                              bottom: 12,
+                              left: 12,
+                              color: '#FFFFFF',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              background: 'rgba(0,0,0,0.5)',
+                              backdropFilter: 'blur(4px)',
+                              padding: '3px 8px',
+                              borderRadius: 6,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 5,
+                            }}
+                          >
+                            <i className="fas fa-users" style={{ fontSize: '10px' }} />
+                            <span>{rm.capacity}</span>
+                          </span>
+
+                          {/* Bottom-Right Unit Code */}
+                          <span
+                            style={{
+                              position: 'absolute',
+                              bottom: 12,
+                              right: 12,
+                              color: 'rgba(255,255,255,0.85)',
+                              fontSize: '10px',
+                              fontWeight: 700,
+                              fontFamily: 'monospace',
+                            }}
+                          >
+                            ID: {rm.code}
+                          </span>
+                        </div>
+
+                        {/* Card Content Body */}
+                        <div style={{ padding: 18, flex: 1, display: 'flex', flexDirection: 'column' }}>
+                          <div className="flex items-start justify-between gap-2 mb-1.5">
+                            <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#0F172A', fontWeight: 800, lineHeight: 1.3 }}>
+                              {rm.name}
+                            </h3>
+                          </div>
+
+                          <p style={{ fontSize: '.8rem', color: '#64748B', margin: '4px 0 12px', lineHeight: 1.45, flex: 1 }}>
+                            {rm.note}
+                          </p>
+
+                          {/* Live Turnover / Stay Status Strip */}
+                          <div
+                            style={{
+                              padding: '8px 12px',
+                              borderRadius: 10,
+                              marginBottom: 12,
+                              background: rm.status === 'occupied'
+                                ? '#F0F9FF'
+                                : rm.status === 'dirty'
+                                ? '#FFFBEB'
+                                : rm.status === 'maintenance'
+                                ? '#FFF1F2'
+                                : '#F0FDF4',
+                              border: `1px solid ${
+                                rm.status === 'occupied'
+                                  ? '#BAE6FD'
+                                  : rm.status === 'dirty'
+                                  ? '#FDE68A'
+                                  : rm.status === 'maintenance'
+                                  ? '#FECDD3'
+                                  : '#BBF7D0'
+                              }`,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              fontSize: '.75rem',
+                            }}
+                          >
+                            <div className="flex items-center gap-2">
+                              <i
+                                className={
+                                  rm.status === 'occupied'
+                                    ? 'fas fa-user-check'
+                                    : rm.status === 'dirty'
+                                    ? 'fas fa-broom'
+                                    : rm.status === 'maintenance'
+                                    ? 'fas fa-wrench'
+                                    : 'fas fa-circle-check'
+                                }
+                                style={{
+                                  color:
+                                    rm.status === 'occupied'
+                                      ? '#0284C7'
+                                      : rm.status === 'dirty'
+                                      ? '#D97706'
+                                      : rm.status === 'maintenance'
+                                      ? '#E11D48'
+                                      : '#10B981',
+                                }}
+                              />
+                              <span style={{ fontWeight: 600, color: '#1E293B' }}>
+                                {rm.status === 'occupied' && rm.guest
+                                  ? `Stay: ${rm.guest}`
+                                  : rm.status === 'dirty'
+                                  ? 'Turnover required (linens & sanitization)'
+                                  : rm.status === 'maintenance'
+                                  ? 'Offline for maintenance / facility repair'
+                                  : 'Inspected & ready for check-in'}
+                              </span>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleToggleMaintenance(rm)}
+                              className="staff-ops-link-btn"
+                              style={{ fontSize: '.72rem', fontWeight: 700 }}
+                              title={rm.status === 'maintenance' ? 'Reactivate unit' : 'Put unit under maintenance'}
+                            >
+                              {rm.status === 'maintenance' ? 'Reactivate' : 'Maint.'}
+                            </button>
+                          </div>
+
+                          {/* Amenity Badges */}
+                          {rm.amenities && rm.amenities.length > 0 && (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 16 }}>
+                              {rm.amenities.slice(0, 3).map((a, i) => (
+                                <span
+                                  key={i}
+                                  style={{
+                                    fontSize: '11px',
+                                    padding: '2px 8px',
+                                    borderRadius: 6,
+                                    background: '#F1F5F9',
+                                    color: '#475569',
+                                    fontWeight: 500,
+                                  }}
+                                >
+                                  {a}
+                                </span>
+                              ))}
+                              {rm.amenities.length > 3 && (
+                                <span style={{ fontSize: '10px', color: '#94A3B8', alignSelf: 'center' }}>
+                                  +{rm.amenities.length - 3} more
+                                </span>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Card Footer: Price & Actions */}
+                          <div
+                            style={{
+                              paddingTop: 14,
+                              borderTop: '1px solid #F1F5F9',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                            }}
+                          >
+                            <div>
+                              <span style={{ fontSize: '10px', color: '#64748B', display: 'block', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 600 }}>Nightly Rate</span>
+                              <span style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0F172A' }}>
+                                {formatPHP(rm.rate)}
+                                <small style={{ fontSize: '.72rem', color: '#64748B', fontWeight: 500 }}>/night</small>
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-1.5">
+                              {/* EDIT BUTTON (Opens RoomEditorModal) */}
+                              <button
+                                type="button"
+                                onClick={() => setEditingRoom(raw)}
+                                className="staff-btn staff-btn--secondary"
+                                style={{
+                                  padding: '6px 12px',
+                                  fontSize: '.75rem',
+                                  fontWeight: 700,
+                                  borderRadius: 8,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 5,
+                                }}
+                                title="Edit Room Details, Rates, Photos & Amenities"
+                              >
+                                <i className="fas fa-pen-to-square" style={{ color: '#0284C7' }} />
+                                <span>Edit</span>
+                              </button>
+
+                              {/* BOOK BUTTON (Opens Manual Booking modal preselected) */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setNewReservation((prev) => ({
+                                    ...prev,
+                                    room_id: rm.id,
+                                    check_in: selectedDate,
+                                    check_out: addDaysISO(selectedDate, 1),
+                                    total_php: rm.rate || 3500,
+                                  }));
+                                  setShowManualBookingModal(true);
+                                }}
+                                className="staff-btn staff-btn--primary"
+                                style={{
+                                  padding: '6px 12px',
+                                  fontSize: '.75rem',
+                                  fontWeight: 700,
+                                  borderRadius: 8,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 5,
+                                }}
+                                title={`Book ${rm.name}`}
+                              >
+                                <i className="fas fa-calendar-plus" />
+                                <span>Book</span>
+                              </button>
+
+                              {/* ESCALATE ISSUE BUTTON */}
+                              <button
+                                type="button"
+                                onClick={() => handleTriggerEscalation({ id: rm.id, name: rm.name, type: 'room' })}
+                                style={{
+                                  background: 'transparent',
+                                  border: '1px solid #CBD5E1',
+                                  borderRadius: 8,
+                                  color: '#D97706',
+                                  padding: '6px 8px',
+                                  fontSize: '.75rem',
+                                  cursor: 'pointer',
+                                }}
+                                title="Escalate Room Incident to /recovery"
+                              >
+                                <i className="fas fa-triangle-exclamation" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
@@ -1644,6 +2247,44 @@ export default function ResortDepartment() {
             (Array.isArray(room?.images) && room.images[0]) ||
             'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80'
           }
+        />
+      )}
+
+      {/* =========================================================================
+          ADMIN-GRADE ROOM EDITOR MODAL
+          ========================================================================= */}
+      {editingRoom && (
+        <RoomEditorModal
+          room={editingRoom}
+          isOpen={Boolean(editingRoom)}
+          onClose={() => setEditingRoom(null)}
+          onSave={handleSaveEditedRoom}
+          onDelete={handleDeleteRoom}
+          isLightMode={true}
+          themeBorder="#E2E8F0"
+          themeText="#1E293B"
+          themeMuted="#64748B"
+          uploadImageToCloudinary={uploadImageToCloudinary}
+          toast={toast}
+        />
+      )}
+
+      {/* =========================================================================
+          ADMIN-GRADE CREATE ROOM / ACCOMMODATION MODAL
+          ========================================================================= */}
+      {showCreateRoomModal && (
+        <CreateRoomModal
+          isOpen={showCreateRoomModal}
+          onClose={() => setShowCreateRoomModal(false)}
+          newRoom={newRoomData}
+          setNewRoom={setNewRoomData}
+          handleCreateRoom={handleCreateRoomSubmit}
+          isLightMode={true}
+          themeBorder="#E2E8F0"
+          themeText="#1E293B"
+          themeMuted="#64748B"
+          uploadImageToCloudinary={uploadImageToCloudinary}
+          toast={toast}
         />
       )}
     </div>

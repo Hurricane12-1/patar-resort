@@ -197,6 +197,21 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
     severity: 'urgent',
   });
 
+  useEffect(() => {
+    const handleEscalateEvent = (e: any) => {
+      const d = e.detail || {};
+      setEscalationForm({
+        reservationId: d.reservationId || '',
+        category: d.category || 'Inventory Overbooking Clash',
+        reason: d.reason || '',
+        severity: d.severity || 'urgent',
+      });
+      setShowEscalationModal(true);
+    };
+    window.addEventListener('open-staff-escalate', handleEscalateEvent);
+    return () => window.removeEventListener('open-staff-escalate', handleEscalateEvent);
+  }, []);
+
   const handleEscalateToRecovery = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!escalationForm.reservationId.trim() || !escalationForm.reason.trim()) {
@@ -207,17 +222,20 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
     setSubmitting(true);
     try {
       const resId = escalationForm.reservationId.trim();
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(resId);
 
-      const { error: updateErr } = await supabase
-        .from('reservations')
-        .update({
-          status: 'disputed',
-          notes: `[STAFF_ESCALATION (${escalationForm.severity.toUpperCase()})]: ${escalationForm.reason.trim()}`,
-        })
-        .eq('id', resId);
+      if (isUUID) {
+        const { error: updateErr } = await supabase
+          .from('reservations')
+          .update({
+            status: 'disputed',
+            notes: `[STAFF_ESCALATION (${escalationForm.severity.toUpperCase()})]: ${escalationForm.reason.trim()}`,
+          })
+          .eq('id', resId);
 
-      if (updateErr) {
-        console.warn('[Staff Escalation] Notice updating reservation:', updateErr.message);
+        if (updateErr) {
+          console.warn('[Staff Escalation] Notice updating reservation:', updateErr.message);
+        }
       }
 
       await supabase.from('audit_logs').insert({
