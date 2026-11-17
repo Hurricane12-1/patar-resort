@@ -7,6 +7,7 @@ import Stars from '../components/Stars.tsx';
 import RoomImageCarousel from '../components/RoomImageCarousel.tsx';
 import AvailabilityCalendar from '../components/AvailabilityCalendar.tsx';
 import { useReveal } from '../hooks/useReveal.ts';
+import { SkeletonCardGrid } from '../components/LoadingAnimations.tsx';
 import {
   inferOfferingType,
   getOfferingLabel,
@@ -195,20 +196,26 @@ export default function Rooms() {
             <button key={c.key} className={`chip ${cat === c.key ? 'sel' : ''}`} onClick={() => setCat(c.key)}>{c.label}</button>
           ))}
         </div>
-        <div className="rooms-grid">
-          {list.map((s, i) => (
-            <RoomCardItem
-              key={s.id || s.slug}
-              s={s}
-              index={i}
-              onOpenCalendar={(roomId) => {
-                setSelectedRoomId(roomId);
-                setShowCalendar(true);
-                window.scrollTo({ top: 120, behavior: 'smooth' });
-              }}
-            />
-          ))}
-        </div>
+        {loading ? (
+          <div style={{ marginTop: 20 }}>
+            <SkeletonCardGrid count={6} />
+          </div>
+        ) : (
+          <div className="rooms-grid">
+            {list.map((s, i) => (
+              <RoomCardItem
+                key={s.id || s.slug}
+                s={s}
+                index={i}
+                onOpenCalendar={(roomId) => {
+                  setSelectedRoomId(roomId);
+                  setShowCalendar(true);
+                  window.scrollTo({ top: 120, behavior: 'smooth' });
+                }}
+              />
+            ))}
+          </div>
+        )}
         {!loading && all.length === 0 && (
           <div className="reveal" style={{ padding: '60px 24px', textAlign: 'center', background: 'rgba(239, 68, 68, 0.05)', borderRadius: 16, border: '1.5px dashed rgba(244, 63, 94, 0.35)', margin: '30px 0 60px' }}>
             <div style={{ fontSize: '3rem', marginBottom: 12, color: '#F43F5E' }}>

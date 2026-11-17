@@ -11,6 +11,7 @@ import StatusPill from '../components/StatusPill.tsx';
 import StatusTimelineModal from '../components/StatusTimelineModal.tsx';
 import { VoucherModal, normalizeVoucherData } from '../components/receipt';
 import { resolveReservationOfferingType, getOfferingLabel, OfferingType } from '../lib/offeringSpecs';
+import { ResortSpinner, SkeletonTable } from '../components/LoadingAnimations.tsx';
 
 function to11Digits(val: string): string {
   if (!val) return '';
@@ -376,7 +377,12 @@ export default function MyBookings() {
 
       {/* BOOKINGS LIST */}
       {loading ? (
-        [...Array(3)].map((_, i) => <div key={i} className="skel" style={{ height: 80, borderRadius: 12, marginBottom: 14 }} />)
+        <div style={{ padding: '32px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
+          <ResortSpinner size="lg" message="Loading your resort bookings…" submessage="Verifying your digital vouchers with the live reservation registry." />
+          <div style={{ width: '100%', maxWidth: 780 }}>
+            <SkeletonTable rows={3} />
+          </div>
+        </div>
       ) : list.length === 0 ? (
         <div style={{
           textAlign: 'center',

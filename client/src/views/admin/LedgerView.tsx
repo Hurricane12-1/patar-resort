@@ -6,6 +6,7 @@ import AvailabilityCalendar from '../../components/AvailabilityCalendar';
 import { exportReservationsCSV } from '../../lib/ledgerUtils';
 import { api } from '../../lib/api';
 import { resolveReservationOfferingType, getOfferingLabel, OfferingType } from '../../lib/offeringSpecs';
+import { ResortSpinner, SkeletonTable } from '../../components/LoadingAnimations';
 
 export interface LedgerViewProps {
   ledgerSubView: 'stay_folios' | 'availability' | 'debit_credit';
@@ -1449,8 +1450,11 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
 
           {/* Reservations Ledger Table */}
           {loadingReservations && allBookings.length === 0 ? (
-            <div style={{ padding: '40px 0', textAlign: 'center', color: themeMuted }}>
-              <p>Loading Guest Reservations Folios…</p>
+            <div style={{ padding: '32px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
+              <ResortSpinner size="lg" message="Loading Guest Reservation Folios…" submessage="Synchronizing active booking records with Supabase database." />
+              <div style={{ width: '100%' }}>
+                <SkeletonTable rows={5} />
+              </div>
             </div>
           ) : filteredBookings.length === 0 ? (
             <div style={{ padding: '40px 16px', textAlign: 'center', background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.02)', borderRadius: 14, border: `1px dashed ${themeBorder}` }}>

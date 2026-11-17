@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabaseClient.ts';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { toast } from '../../components/Toasts.tsx';
 import { money, fmtDate } from '../../lib/format.ts';
+import { ResortSpinner } from '../../components/LoadingAnimations.tsx';
 
 export default function RecoveryPortal() {
   const [searchParams] = useSearchParams();
@@ -420,9 +421,14 @@ export default function RecoveryPortal() {
       {activeTab === 'cases' && (
         <div>
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '40px 0', color: '#94A3B8' }}>
-              <i className="fas fa-circle-notch fa-spin" style={{ fontSize: '1.8rem', color: '#F59E0B', marginBottom: 12 }} />
-              <div>Fetching live records from Supabase...</div>
+            <div style={{ padding: '48px 16px', display: 'flex', justifyContent: 'center' }}>
+              <ResortSpinner
+                size="lg"
+                variant="amber"
+                icon="shield-halved"
+                message="Fetching flagged & disputed cases…"
+                submessage="Querying live reservations with disputed, escalated, or maintenance status."
+              />
             </div>
           ) : disputedBookings.length === 0 ? (
             <div style={{

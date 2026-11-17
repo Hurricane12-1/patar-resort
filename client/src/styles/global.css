@@ -728,6 +728,74 @@ body.light-mode :focus-visible,
   will-change: transform;
 }
 
+/* ============ LUXURY RESORT LOADING ANIMATION SUITE ============ */
+@keyframes resort-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes resort-spin-reverse {
+  0% {
+    transform: rotate(360deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes resort-pulse-glow {
+  0%, 100% {
+    transform: scale(0.92);
+    opacity: 0.35;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.75;
+  }
+}
+
+@keyframes resort-icon-breath {
+  0%, 100% {
+    transform: scale(0.94);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
+
+@keyframes resort-shimmer-sweep {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.resort-shimmer-text {
+  background: linear-gradient(90deg, #94A3B8 0%, #F8FAFC 50%, #94A3B8 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: resort-shimmer-sweep 3s ease-in-out infinite;
+}
+
+.admin-portal.light-mode .resort-shimmer-text,
+.light .resort-shimmer-text,
+[data-theme="light"] .resort-shimmer-text {
+  background: linear-gradient(90deg, #64748B 0%, #0F172A 50%, #64748B 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: resort-shimmer-sweep 3s ease-in-out infinite;
+}
+
 .bc-summary {
   background: rgba(14, 165, 233, 0.1);
   border: 1px dashed rgba(56, 189, 248, 0.4);

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { money, fmtTime } from '../../lib/format';
+import { ResortSpinner, SkeletonTable } from '../../components/LoadingAnimations';
 
 export interface ApprovalRequestsViewProps {
   priceRequests: any[];
@@ -290,7 +291,12 @@ export const ApprovalRequestsView: React.FC<ApprovalRequestsViewProps> = ({
 
       {/* Loading Skeleton */}
       {loadingPriceRequests ? (
-        <div className="skel" style={{ height: 260, borderRadius: 12 }} />
+        <div style={{ padding: '24px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+          <ResortSpinner size="md" variant="amber" icon="tags" message="Loading Price Approval Requests…" submessage="Synchronizing pending managerial discount authorizations." />
+          <div style={{ width: '100%' }}>
+            <SkeletonTable rows={4} />
+          </div>
+        </div>
       ) : filtered.length === 0 ? (
         <div
           style={{

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../lib/api';
+import { ResortSpinner, SkeletonTable } from '../../components/LoadingAnimations';
 
 export interface AuditTrailViewProps {
   auditLogs: any[];
@@ -403,7 +404,12 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({
 
       {/* AUDIT LOG TABLE */}
       {loadingAudit && filteredLogs.length === 0 ? (
-        <div className="skel" style={{ height: 260 }} />
+        <div style={{ padding: '24px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+          <ResortSpinner size="md" variant="indigo" icon="shield-halved" message="Fetching immutable security audit logs…" submessage="Streaming verified access trails and administrative events." />
+          <div style={{ width: '100%' }}>
+            <SkeletonTable rows={5} />
+          </div>
+        </div>
       ) : filteredLogs.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '40px 20px', border: `1px dashed ${themeBorder}`, borderRadius: 12 }}>
           <i className="fas fa-clipboard-list" style={{ fontSize: '2.4rem', color: themeMuted, display: 'block', marginBottom: 10 }} />

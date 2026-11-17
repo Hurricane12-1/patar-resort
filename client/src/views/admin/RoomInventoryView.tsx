@@ -9,6 +9,7 @@ import {
   formatSpecHighlights,
   OfferingType,
 } from '../../lib/offeringSpecs';
+import { ResortSpinner, SkeletonTable } from '../../components/LoadingAnimations';
 
 export interface RoomInventoryViewProps {
   roomsList: any[];
@@ -451,7 +452,12 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
           </div>
 
           {loadingRoomsAndInv ? (
-            <div className="skel" style={{ height: 260 }} />
+            <div style={{ padding: '24px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+              <ResortSpinner size="md" message="Synchronizing accommodations catalog…" submessage="Updating live status and amenity configurations." />
+              <div style={{ width: '100%' }}>
+                <SkeletonTable rows={4} />
+              </div>
+            </div>
           ) : (() => {
             const filteredRooms = roomsList
               .filter((r) => offeringFilter === 'all' || inferOfferingType(r) === offeringFilter)
@@ -895,7 +901,12 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
           </div>
 
           {loadingRoomsAndInv ? (
-            <div className="skel" style={{ height: 260 }} />
+            <div style={{ padding: '24px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+              <ResortSpinner size="md" message="Synchronizing accommodations catalog…" submessage="Updating live status and amenity configurations." />
+              <div style={{ width: '100%' }}>
+                <SkeletonTable rows={4} />
+              </div>
+            </div>
           ) : (() => {
             const filteredSupplies = inventoryList
               .filter((i) => inventoryDeptFilter === 'all' || i.category === inventoryDeptFilter)

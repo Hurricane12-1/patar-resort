@@ -9,6 +9,7 @@ import { VoucherModal, normalizeVoucherData } from '../components/receipt';
 import PriceChangeRequestPanel from '../components/PriceChangeRequestPanel.tsx';
 import AddReservationModal, { NewReservationFormState } from '../components/admin/modals/AddReservationModal.tsx';
 import { canAccessPortal } from '../lib/rbac.ts';
+import { AppPageLoader } from '../components/LoadingAnimations.tsx';
 
 export default function Receptionist() {
   const { staffProfile, adminProfile } = useAuth();
@@ -138,7 +139,12 @@ export default function Receptionist() {
   if (loading || !data) {
     return (
       <div className="container" style={{ padding: '40px 16px' }}>
-        <div className="skel" style={{ height: 380, borderRadius: 18 }} />
+        <AppPageLoader
+          title="Initializing Front Desk Console…"
+          subtitle="Loading real-time room occupancy, pending arrivals, and guest vouchers."
+          variant="primary"
+          layout="table"
+        />
       </div>
     );
   }

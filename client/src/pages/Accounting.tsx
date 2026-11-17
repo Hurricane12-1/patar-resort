@@ -8,6 +8,7 @@ import { money, fmtDate } from '../lib/format.ts';
 import { toast } from '../components/Toasts.tsx';
 import PriceChangeRequestPanel from '../components/PriceChangeRequestPanel.tsx';
 import { canAccessPortal } from '../lib/rbac.ts';
+import { AppPageLoader } from '../components/LoadingAnimations.tsx';
 
 export default function Accounting() {
   const { staffProfile, adminProfile } = useAuth();
@@ -52,8 +53,13 @@ export default function Accounting() {
 
   if (loading || !data) {
     return (
-      <div className="staff-accounting-workspace" style={{ padding: '24px 0' }}>
-        <div className="skel" style={{ height: 380, borderRadius: 18 }} />
+      <div className="staff-accounting-workspace" style={{ padding: '32px 16px' }}>
+        <AppPageLoader
+          title="Loading Accounting Ledger & Folios…"
+          subtitle="Fetching verified revenue disbursements, trial balance, and accounting journals."
+          variant="sky"
+          layout="dashboard"
+        />
       </div>
     );
   }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { money } from '../../lib/format';
 import { EMPLOYEE_ROLE_PRESETS, formatDepartmentBadge, isInternalEmployee, normalizeDepartment, normalizeRole } from '../../lib/rbac';
+import { ResortSpinner, SkeletonTable } from '../../components/LoadingAnimations';
 
 export interface AccountDirectoryViewProps {
   users: any[];
@@ -263,7 +264,12 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
           </div>
 
           {searchingUsers ? (
-            <div className="skel" style={{ height: 200 }} />
+            <div style={{ padding: '24px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+              <ResortSpinner size="md" variant="primary" icon="id-badge" message="Loading Staff Directory…" submessage="Verifying employee accounts and department roles." />
+              <div style={{ width: '100%' }}>
+                <SkeletonTable rows={4} />
+              </div>
+            </div>
           ) : (() => {
             const staffUsers = users
               .filter((u) => isInternalEmployee(u))
@@ -451,7 +457,12 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
           </div>
 
           {searchingUsers ? (
-            <div className="skel" style={{ height: 200 }} />
+            <div style={{ padding: '24px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+              <ResortSpinner size="md" variant="primary" icon="id-badge" message="Loading Staff Directory…" submessage="Verifying employee accounts and department roles." />
+              <div style={{ width: '100%' }}>
+                <SkeletonTable rows={4} />
+              </div>
+            </div>
           ) : (() => {
             const custUsers = users.filter((u) => !u.role || u.role === 'customer');
             return custUsers.length === 0 ? (

@@ -16,6 +16,7 @@ import { AdminSidebar } from '../components/admin/AdminSidebar';
 import { AdminHeader } from '../components/admin/AdminHeader';
 import { AdminModals } from '../components/admin/modals/AdminModals';
 import { toast } from '../components/Toasts';
+import { AppPageLoader } from '../components/LoadingAnimations';
 
 export default function Admin() {
   const state = useAdminState();
@@ -37,9 +38,12 @@ export default function Admin() {
 
   if (state.loading || !state.data) {
     return (
-      <div className="container section">
-        <div className="skel" style={{ height: 120, marginBottom: 20 }} />
-        <div className="skel" style={{ height: 320 }} />
+      <div className={`admin-portal ${state.isLightMode ? 'light-mode' : 'dark-mode'}`} style={{ minHeight: '100vh', padding: '40px 24px' }}>
+        <AppPageLoader
+          title="Synchronizing Executive Dashboard…"
+          subtitle="Connecting to real-time database, fetching verified ledger, folios, and PMS analytics."
+          layout="dashboard"
+        />
       </div>
     );
   }

@@ -947,7 +947,26 @@ export default function BookingFlow({ initialSlug }: { initialSlug?: string }) {
                     ← Rooms
                   </button>
                   <button className="btn btn-sky" disabled={busy} onClick={confirm}>
-                    {busy ? 'Reserving…' : session ? 'Confirm reservation ✦' : 'Sign in to confirm'}
+                    {busy ? (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                        <span
+                          style={{
+                            width: 14,
+                            height: 14,
+                            border: '2px solid rgba(255, 255, 255, 0.3)',
+                            borderTopColor: '#FFFFFF',
+                            borderRadius: '50%',
+                            animation: 'resort-spin 0.8s linear infinite',
+                            display: 'inline-block',
+                          }}
+                        />
+                        <span>Securing reservation…</span>
+                      </span>
+                    ) : session ? (
+                      'Confirm reservation ✦'
+                    ) : (
+                      'Sign in to confirm'
+                    )}
                   </button>
                 </div>
               </div>

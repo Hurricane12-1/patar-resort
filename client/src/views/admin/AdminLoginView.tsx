@@ -114,7 +114,24 @@ export const AdminLoginView: React.FC<AdminLoginViewProps> = ({
             disabled={authenticating}
             className="admin-login-submit"
           >
-            {authenticating ? 'Verifying Clearance…' : 'Sign In to Portal'}
+            {authenticating ? (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <span
+                  style={{
+                    width: 15,
+                    height: 15,
+                    border: '2px solid rgba(255, 255, 255, 0.3)',
+                    borderTopColor: '#FFFFFF',
+                    borderRadius: '50%',
+                    animation: 'resort-spin 0.8s linear infinite',
+                    display: 'inline-block',
+                  }}
+                />
+                <span>Verifying Clearance…</span>
+              </span>
+            ) : (
+              'Sign In to Portal'
+            )}
           </button>
         </form>
 
