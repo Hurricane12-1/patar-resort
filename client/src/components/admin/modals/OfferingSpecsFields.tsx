@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   OfferingType,
   OfferingSpecs,
@@ -47,6 +47,201 @@ export const getCategoryOptionsForType = (type: OfferingType): readonly string[]
   }
 };
 
+const BATHROOM_PRESETS = [
+  'Private En-Suite',
+  'Private Bath (Hot/Cold Shower)',
+  'Private Ocean En-Suite + Tub',
+  'Luxury Marble Bath & Rain Shower',
+  'Shared Bathroom',
+] as const;
+
+const CLIMATE_PRESETS = [
+  'Split Air-Conditioned',
+  'Dual Split Inverter AC',
+  'Silent Inverter Air-Conditioned',
+  'Window Air-Conditioned',
+  'Fan / Coastal Breeze',
+] as const;
+
+const COTTAGE_STYLE_PRESETS = [
+  'Open-Air Nipa Cottage',
+  'Beachfront Kubo Pavilion',
+  'Elevated Cliff Cabana',
+  'Enclosed Family Cottage',
+  'Shaded Poolside / Garden Cabana',
+  'Luxury Daybed Cabana',
+  'Beachfront Covered Function Pavilion',
+] as const;
+
+const USAGE_MODE_PRESETS = [
+  'Day Use & Overnight',
+  'Day Use Only (07:00 AM - 06:00 PM)',
+  'Overnight Cottage',
+  'Day Use & Evening Rental',
+  'Banquet & Group Gathering (Up to 50 pax)',
+] as const;
+
+const SHORELINE_PRESETS = [
+  'Direct Sand / Beachfront',
+  'Steps from Shoreline',
+  'Coconut Grove / Shaded Lawn',
+  'Boardwalk & Poolside Area',
+  'Cliffside Oceanfront Deck',
+] as const;
+
+const TOUR_SUBTYPE_PRESETS = [
+  'Guided Island Hopping Tour',
+  'Private Motorized Bangka Charter',
+  'Coral Reef Snorkeling Tour',
+  'Sunset Coastal Cruise',
+  'Fishing & Caving Excursion',
+] as const;
+
+interface CustomizableDropdownProps {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+  options: readonly string[];
+  placeholder?: string;
+  isLightMode: boolean;
+  themeBorder: string;
+  themeText: string;
+  themeMuted: string;
+}
+
+const CustomizableDropdown: React.FC<CustomizableDropdownProps> = ({
+  id,
+  label,
+  value,
+  onChange,
+  options,
+  placeholder = 'Type custom value…',
+  isLightMode,
+  themeBorder,
+  themeText,
+  themeMuted,
+}) => {
+  const [isCustom, setIsCustom] = useState(() => !options.includes(value) && Boolean(value));
+  const selectBg = isLightMode ? '#F8FAFC' : '#1E293B';
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+        <label htmlFor={id} style={{ fontSize: '.76rem', color: themeMuted, fontWeight: 700 }}>
+          {label}
+        </label>
+        <button
+          type="button"
+          onClick={() => setIsCustom(!isCustom)}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: isCustom ? '#D97706' : '#0284C7',
+            fontSize: '.72rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+            padding: '1px 4px',
+          }}
+        >
+          <i className={isCustom ? 'fas fa-list' : 'fas fa-plus'} />
+          {isCustom ? 'Presets' : '+ Custom'}
+        </button>
+      </div>
+
+      {isCustom ? (
+        <div style={{ display: 'flex', gap: 6 }}>
+          <input
+            id={id}
+            type="text"
+            autoFocus
+            placeholder={placeholder}
+            style={{
+              flex: 1,
+              padding: '9px 12px',
+              borderRadius: 10,
+              border: '1px solid #0284C7',
+              background: selectBg,
+              color: themeText,
+              fontWeight: 600,
+              fontSize: '.84rem',
+            }}
+            value={value || ''}
+            onChange={(e) => onChange(e.target.value)}
+          />
+          <button
+            type="button"
+            title="Switch back to presets"
+            onClick={() => setIsCustom(false)}
+            style={{
+              padding: '9px 12px',
+              borderRadius: 10,
+              border: `1px solid ${themeBorder}`,
+              background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.08)',
+              color: themeText,
+              fontSize: '.76rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <i className="fas fa-list" style={{ marginRight: 4 }} /> Presets
+          </button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', gap: 6 }}>
+          <select
+            id={id}
+            style={{
+              flex: 1,
+              padding: '9px 12px',
+              borderRadius: 10,
+              border: `1px solid ${themeBorder}`,
+              background: selectBg,
+              color: themeText,
+              fontWeight: 600,
+              fontSize: '.84rem',
+              cursor: 'pointer',
+            }}
+            value={options.includes(value) ? value : options[0]}
+            onChange={(e) => onChange(e.target.value)}
+          >
+            {options.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            title="Add a custom value"
+            onClick={() => setIsCustom(true)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: '9px 12px',
+              borderRadius: 10,
+              border: '1px solid #0284C7',
+              background: '#0284C7',
+              color: '#FFFFFF',
+              fontSize: '.76rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <i className="fas fa-plus" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const OfferingSpecsFields: React.FC<OfferingSpecsFieldsProps> = ({
   offeringType,
   onOfferingTypeChange,
@@ -59,8 +254,10 @@ export const OfferingSpecsFields: React.FC<OfferingSpecsFieldsProps> = ({
   idPrefix = 'offer',
 }) => {
   const inputBg = isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.06)';
-  const selectBg = isLightMode ? '#F8FAFC' : '#1E293B';
   const cardBg = isLightMode ? '#F8FAFC' : 'rgba(15,23,42,0.55)';
+
+  const [newSettingKey, setNewSettingKey] = useState('');
+  const [newSettingVal, setNewSettingVal] = useState('');
 
   const fieldStyle: React.CSSProperties = {
     width: '100%',
@@ -70,13 +267,6 @@ export const OfferingSpecsFields: React.FC<OfferingSpecsFieldsProps> = ({
     background: inputBg,
     color: themeText,
     fontSize: '.86rem',
-  };
-
-  const selectStyle: React.CSSProperties = {
-    ...fieldStyle,
-    background: selectBg,
-    fontWeight: 600,
-    cursor: 'pointer',
   };
 
   const labelStyle: React.CSSProperties = {
@@ -91,11 +281,33 @@ export const OfferingSpecsFields: React.FC<OfferingSpecsFieldsProps> = ({
     onSpecsChange({ ...(specs || {}), [key]: value });
   };
 
+  const customSpecsObj: Record<string, string> = (specs?.custom_specs as Record<string, string>) || {};
+  const customSpecsList = Object.entries(customSpecsObj);
+
+  const handleAddCustomSetting = () => {
+    const k = newSettingKey.trim();
+    const v = newSettingVal.trim();
+    if (!k || !v) return;
+    const nextCustom = { ...customSpecsObj, [k]: v };
+    onSpecsChange({ ...(specs || {}), custom_specs: nextCustom });
+    setNewSettingKey('');
+    setNewSettingVal('');
+  };
+
+  const handleRemoveCustomSetting = (keyToRemove: string) => {
+    const nextCustom = { ...customSpecsObj };
+    delete nextCustom[keyToRemove];
+    onSpecsChange({ ...(specs || {}), custom_specs: nextCustom });
+  };
+
+  const isLodgingUnit = ['room', 'villa', 'suite'].includes(offeringType);
+  const isCottageUnit = ['cottage', 'cabana'].includes(offeringType);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Offering Classification Tabs */}
       <div>
-        <span style={labelStyle}>Accommodation Type (Strictly Rooms &amp; Cottages) *</span>
+        <span style={labelStyle}>Accommodation Classification &amp; Category *</span>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
           {TYPE_OPTIONS.map((opt) => {
             const active = offeringType === opt.key;
@@ -141,16 +353,21 @@ export const OfferingSpecsFields: React.FC<OfferingSpecsFieldsProps> = ({
           background: cardBg,
           display: 'flex',
           flexDirection: 'column',
-          gap: 10,
+          gap: 12,
         }}
       >
         <div style={{ fontSize: '.76rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.06em', color: themeText }}>
           {offeringType === 'room' && 'Room Specifications'}
-          {offeringType === 'cottage' && 'Cottage Specifications'}
-          {offeringType === 'offer' && 'Island Tour & Offer Specifications'}
+          {offeringType === 'villa' && 'Villa Specifications (Oceanfront)'}
+          {offeringType === 'suite' && 'Suite Specifications (Loft & Deck)'}
+          {offeringType === 'cottage' && 'Cottage Specifications (Day-Use)'}
+          {offeringType === 'cabana' && 'Cabana Specifications (Pool & Garden)'}
+          {offeringType === 'offer' && 'Island Tour & Charter Specifications'}
+          {offeringType === 'event' && 'Event Pavilion Specifications'}
         </div>
 
-        {offeringType === 'room' && (
+        {/* 1. ROOM / VILLA / SUITE SPECIFICATIONS */}
+        {isLodgingUnit && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div>
               <label htmlFor={`${idPrefix}-bed-config`} style={labelStyle}>Bed Configuration</label>
@@ -159,35 +376,36 @@ export const OfferingSpecsFields: React.FC<OfferingSpecsFieldsProps> = ({
                 style={fieldStyle}
                 value={String(specs?.bed_config || '')}
                 onChange={(e) => updateSpec('bed_config', e.target.value)}
-                placeholder="e.g. 1 Queen Bed, 1 Extra Pull-out"
+                placeholder="e.g. 1 King Bed, 1 Extra Pull-out"
               />
             </div>
-            <div>
-              <label htmlFor={`${idPrefix}-bath-type`} style={labelStyle}>Bathroom Type</label>
-              <select
-                id={`${idPrefix}-bath-type`}
-                style={selectStyle}
-                value={String(specs?.bathroom_type || 'Private En-Suite')}
-                onChange={(e) => updateSpec('bathroom_type', e.target.value)}
-              >
-                <option value="Private En-Suite">Private En-Suite</option>
-                <option value="Private Bath (Hot/Cold Shower)">Private Bath (Hot/Cold Shower)</option>
-                <option value="Shared Bathroom">Shared Bathroom</option>
-              </select>
-            </div>
-            <div>
-              <label htmlFor={`${idPrefix}-climate`} style={labelStyle}>Cooling &amp; Climate</label>
-              <select
-                id={`${idPrefix}-climate`}
-                style={selectStyle}
-                value={String(specs?.climate_control || 'Split Air-Conditioned')}
-                onChange={(e) => updateSpec('climate_control', e.target.value)}
-              >
-                <option value="Split Air-Conditioned">Split Air-Conditioned</option>
-                <option value="Window Air-Conditioned">Window Air-Conditioned</option>
-                <option value="Fan / Coastal Breeze">Fan / Coastal Breeze</option>
-              </select>
-            </div>
+
+            <CustomizableDropdown
+              id={`${idPrefix}-bath-type`}
+              label="Bathroom Type"
+              value={String(specs?.bathroom_type || 'Private En-Suite')}
+              onChange={(val) => updateSpec('bathroom_type', val)}
+              options={BATHROOM_PRESETS}
+              placeholder="e.g. Luxury Rain Shower"
+              isLightMode={isLightMode}
+              themeBorder={themeBorder}
+              themeText={themeText}
+              themeMuted={themeMuted}
+            />
+
+            <CustomizableDropdown
+              id={`${idPrefix}-climate`}
+              label="Cooling & Climate"
+              value={String(specs?.climate_control || 'Split Air-Conditioned')}
+              onChange={(val) => updateSpec('climate_control', val)}
+              options={CLIMATE_PRESETS}
+              placeholder="e.g. Dual Inverter AC"
+              isLightMode={isLightMode}
+              themeBorder={themeBorder}
+              themeText={themeText}
+              themeMuted={themeMuted}
+            />
+
             <div>
               <label htmlFor={`${idPrefix}-wing`} style={labelStyle}>Floor / Wing</label>
               <input
@@ -195,57 +413,68 @@ export const OfferingSpecsFields: React.FC<OfferingSpecsFieldsProps> = ({
                 style={fieldStyle}
                 value={String(specs?.floor_wing || '')}
                 onChange={(e) => updateSpec('floor_wing', e.target.value)}
-                placeholder="e.g. Ground Floor, Sunset Wing"
+                placeholder="e.g. Upper Terrace, Oceanfront Wing"
+              />
+            </div>
+
+            <div style={{ gridColumn: 'span 2' }}>
+              <label htmlFor={`${idPrefix}-view-type`} style={labelStyle}>View &amp; Deck Outlook</label>
+              <input
+                id={`${idPrefix}-view-type`}
+                style={fieldStyle}
+                value={String(specs?.view_type || '')}
+                onChange={(e) => updateSpec('view_type', e.target.value)}
+                placeholder="e.g. Direct Sunset Ocean View, Private Veranda"
               />
             </div>
           </div>
         )}
 
-        {offeringType === 'cottage' && (
+        {/* 2. COTTAGE / CABANA SPECIFICATIONS */}
+        {isCottageUnit && (
           <>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <CustomizableDropdown
+                id={`${idPrefix}-cottage-style`}
+                label="Cottage / Cabana Structure"
+                value={String(specs?.cottage_style || 'Open-Air Nipa Cottage')}
+                onChange={(val) => updateSpec('cottage_style', val)}
+                options={COTTAGE_STYLE_PRESETS}
+                placeholder="e.g. Modern Polynesian Cabana"
+                isLightMode={isLightMode}
+                themeBorder={themeBorder}
+                themeText={themeText}
+                themeMuted={themeMuted}
+              />
+
+              <CustomizableDropdown
+                id={`${idPrefix}-cottage-usage`}
+                label="Usage Mode"
+                value={String(specs?.usage_mode || 'Day Use & Overnight')}
+                onChange={(val) => updateSpec('usage_mode', val)}
+                options={USAGE_MODE_PRESETS}
+                placeholder="e.g. Day Use Only (08:00 AM - 05:00 PM)"
+                isLightMode={isLightMode}
+                themeBorder={themeBorder}
+                themeText={themeText}
+                themeMuted={themeMuted}
+              />
+
+              <CustomizableDropdown
+                id={`${idPrefix}-shoreline`}
+                label="Shoreline Proximity"
+                value={String(specs?.beachfront_proximity || 'Steps from Shoreline')}
+                onChange={(val) => updateSpec('beachfront_proximity', val)}
+                options={SHORELINE_PRESETS}
+                placeholder="e.g. Direct Sandfront"
+                isLightMode={isLightMode}
+                themeBorder={themeBorder}
+                themeText={themeText}
+                themeMuted={themeMuted}
+              />
+
               <div>
-                <label htmlFor={`${idPrefix}-cottage-style`} style={labelStyle}>Cottage Structure</label>
-                <select
-                  id={`${idPrefix}-cottage-style`}
-                  style={selectStyle}
-                  value={String(specs?.cottage_style || 'Open-Air Nipa Cottage')}
-                  onChange={(e) => updateSpec('cottage_style', e.target.value)}
-                >
-                  <option value="Open-Air Nipa Cottage">Open-Air Nipa Cottage</option>
-                  <option value="Beachfront Kubo Pavilion">Beachfront Kubo Pavilion</option>
-                  <option value="Elevated Cliff Cabana">Elevated Cliff Cabana</option>
-                  <option value="Enclosed Family Cottage">Enclosed Family Cottage</option>
-                </select>
-              </div>
-              <div>
-                <label htmlFor={`${idPrefix}-cottage-usage`} style={labelStyle}>Usage Mode</label>
-                <select
-                  id={`${idPrefix}-cottage-usage`}
-                  style={selectStyle}
-                  value={String(specs?.usage_mode || 'Day Use & Overnight')}
-                  onChange={(e) => updateSpec('usage_mode', e.target.value)}
-                >
-                  <option value="Day Use & Overnight">Day Use &amp; Overnight</option>
-                  <option value="Day Use Only (07:00 AM - 06:00 PM)">Day Use Only (07:00 AM - 06:00 PM)</option>
-                  <option value="Overnight Cottage">Overnight Cottage</option>
-                </select>
-              </div>
-              <div>
-                <label htmlFor={`${idPrefix}-shoreline`} style={labelStyle}>Shoreline Proximity</label>
-                <select
-                  id={`${idPrefix}-shoreline`}
-                  style={selectStyle}
-                  value={String(specs?.beachfront_proximity || 'Steps from Shoreline')}
-                  onChange={(e) => updateSpec('beachfront_proximity', e.target.value)}
-                >
-                  <option value="Direct Sand / Beachfront">Direct Sand / Beachfront</option>
-                  <option value="Steps from Shoreline">Steps from Shoreline</option>
-                  <option value="Coconut Grove / Shaded Lawn">Coconut Grove / Shaded Lawn</option>
-                </select>
-              </div>
-              <div>
-                <label htmlFor={`${idPrefix}-seating`} style={labelStyle}>Tables &amp; Seating</label>
+                <label htmlFor={`${idPrefix}-seating`} style={labelStyle}>Tables &amp; Seating Setup</label>
                 <input
                   id={`${idPrefix}-seating`}
                   style={fieldStyle}
@@ -255,6 +484,7 @@ export const OfferingSpecsFields: React.FC<OfferingSpecsFieldsProps> = ({
                 />
               </div>
             </div>
+
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, paddingTop: 4 }}>
               <label htmlFor={`${idPrefix}-grill`} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '.84rem', color: themeText, minHeight: 36 }}>
                 <input
@@ -277,6 +507,223 @@ export const OfferingSpecsFields: React.FC<OfferingSpecsFieldsProps> = ({
             </div>
           </>
         )}
+
+        {/* 3. ISLAND TOUR / CHARTER SPECIFICATIONS */}
+        {offeringType === 'offer' && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <CustomizableDropdown
+              id={`${idPrefix}-tour-subtype`}
+              label="Tour Activity Subtype"
+              value={String(specs?.offer_subtype || 'Guided Island Hopping Tour')}
+              onChange={(val) => updateSpec('offer_subtype', val)}
+              options={TOUR_SUBTYPE_PRESETS}
+              placeholder="e.g. Coral Reef Diving Tour"
+              isLightMode={isLightMode}
+              themeBorder={themeBorder}
+              themeText={themeText}
+              themeMuted={themeMuted}
+            />
+
+            <div>
+              <label htmlFor={`${idPrefix}-duration`} style={labelStyle}>Tour Duration</label>
+              <input
+                id={`${idPrefix}-duration`}
+                style={fieldStyle}
+                value={String(specs?.duration || '4 Hours (Half Day)')}
+                onChange={(e) => updateSpec('duration', e.target.value)}
+                placeholder="e.g. 4 Hours (Half Day)"
+              />
+            </div>
+
+            <div style={{ gridColumn: 'span 2' }}>
+              <label htmlFor={`${idPrefix}-destinations`} style={labelStyle}>Destinations &amp; Key Stops</label>
+              <input
+                id={`${idPrefix}-destinations`}
+                style={fieldStyle}
+                value={String(specs?.destinations || '')}
+                onChange={(e) => updateSpec('destinations', e.target.value)}
+                placeholder="e.g. Patar Reef Sanctuary, Sandbar Cove, Sea Caves"
+              />
+            </div>
+
+            <div style={{ gridColumn: 'span 2' }}>
+              <label htmlFor={`${idPrefix}-inclusions`} style={labelStyle}>Inclusions</label>
+              <input
+                id={`${idPrefix}-inclusions`}
+                style={fieldStyle}
+                value={String(specs?.inclusions || '')}
+                onChange={(e) => updateSpec('inclusions', e.target.value)}
+                placeholder="e.g. Motorized Bangka, Licensed Guide, Life Vests, Snorkels"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* 4. EVENT PAVILION SPECIFICATIONS */}
+        {offeringType === 'event' && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <CustomizableDropdown
+              id={`${idPrefix}-event-style`}
+              label="Pavilion Venue Structure"
+              value={String(specs?.cottage_style || 'Beachfront Covered Function Pavilion')}
+              onChange={(val) => updateSpec('cottage_style', val)}
+              options={COTTAGE_STYLE_PRESETS}
+              placeholder="e.g. Grand Oceanfront Hall"
+              isLightMode={isLightMode}
+              themeBorder={themeBorder}
+              themeText={themeText}
+              themeMuted={themeMuted}
+            />
+
+            <CustomizableDropdown
+              id={`${idPrefix}-event-usage`}
+              label="Event Setup & Capacity"
+              value={String(specs?.usage_mode || 'Banquet & Group Gathering (Up to 50 pax)')}
+              onChange={(val) => updateSpec('usage_mode', val)}
+              options={USAGE_MODE_PRESETS}
+              placeholder="e.g. Wedding Reception & Ceremony"
+              isLightMode={isLightMode}
+              themeBorder={themeBorder}
+              themeText={themeText}
+              themeMuted={themeMuted}
+            />
+
+            <div style={{ gridColumn: 'span 2' }}>
+              <label htmlFor={`${idPrefix}-event-seating`} style={labelStyle}>Seating &amp; AV Setup</label>
+              <input
+                id={`${idPrefix}-event-seating`}
+                style={fieldStyle}
+                value={String(specs?.seating_tables || 'Banquet Dining Tables & Chairs')}
+                onChange={(e) => updateSpec('seating_tables', e.target.value)}
+                placeholder="e.g. Round Tables, Stage, Sound System"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 5. ADDITIONAL CUSTOM SETTINGS (+ ADD SETTING) */}
+      <div
+        style={{
+          padding: 14,
+          borderRadius: 12,
+          border: `1.5px dashed ${themeBorder}`,
+          background: cardBg,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 10,
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: '.76rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.06em', color: themeText }}>
+            <i className="fas fa-sliders" style={{ color: '#0EA5E9', marginRight: 6 }} />
+            Additional Settings &amp; Custom Specs ({customSpecsList.length})
+          </span>
+          <span style={{ fontSize: '.72rem', color: themeMuted }}>Syncs directly with database specs</span>
+        </div>
+
+        {/* Existing Custom Badges */}
+        {customSpecsList.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {customSpecsList.map(([k, v]) => (
+              <span
+                key={k}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '4px 10px',
+                  borderRadius: 9999,
+                  background: isLightMode ? '#E0F2FE' : 'rgba(14, 165, 233, 0.15)',
+                  border: `1px solid ${isLightMode ? '#BAE6FD' : 'rgba(14, 165, 233, 0.35)'}`,
+                  color: isLightMode ? '#0369A1' : '#38BDF8',
+                  fontSize: '.76rem',
+                  fontWeight: 700,
+                }}
+              >
+                <strong>{k}:</strong> {v}
+                <button
+                  type="button"
+                  onClick={() => handleRemoveCustomSetting(k)}
+                  title="Remove this setting"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#EF4444',
+                    cursor: 'pointer',
+                    fontSize: '.82rem',
+                    padding: 0,
+                    lineHeight: 1,
+                  }}
+                >
+                  ✕
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Add Setting Input Row */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <input
+            type="text"
+            placeholder="Setting Name (e.g. Wi-Fi Speed, Backup Power)"
+            value={newSettingKey}
+            onChange={(e) => setNewSettingKey(e.target.value)}
+            style={{
+              flex: '1 1 180px',
+              padding: '8px 12px',
+              borderRadius: 8,
+              border: `1px solid ${themeBorder}`,
+              background: inputBg,
+              color: themeText,
+              fontSize: '.82rem',
+            }}
+          />
+          <input
+            type="text"
+            placeholder="Value (e.g. 200 Mbps, 5kVA Solar)"
+            value={newSettingVal}
+            onChange={(e) => setNewSettingVal(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleAddCustomSetting();
+              }
+            }}
+            style={{
+              flex: '1 1 180px',
+              padding: '8px 12px',
+              borderRadius: 8,
+              border: `1px solid ${themeBorder}`,
+              background: inputBg,
+              color: themeText,
+              fontSize: '.82rem',
+            }}
+          />
+          <button
+            type="button"
+            onClick={handleAddCustomSetting}
+            disabled={!newSettingKey.trim() || !newSettingVal.trim()}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '8px 14px',
+              borderRadius: 8,
+              border: 'none',
+              background: '#0EA5E9',
+              color: '#FFFFFF',
+              fontSize: '.78rem',
+              fontWeight: 700,
+              cursor: newSettingKey.trim() && newSettingVal.trim() ? 'pointer' : 'not-allowed',
+              opacity: newSettingKey.trim() && newSettingVal.trim() ? 1 : 0.5,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <i className="fas fa-plus" /> Add Setting
+          </button>
+        </div>
       </div>
     </div>
   );

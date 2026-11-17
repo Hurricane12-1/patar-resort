@@ -222,7 +222,7 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
     const { data } = await sysClient.from('reservations')
       .select('id, check_in, check_out, notes, status, room_id, guest_name')
       .eq('room_id', targetRoomId)
-      .in('status', ['pending', 'confirmed', 'checked_in'])
+      .in('status', ['pending', 'confirmed', 'checked_in', 'on_hold', 'maintenance'])
       .lt('check_in', searchEnd)
       .gt('check_out', searchStart);
     if (data) candidateRes = [...data];
@@ -231,7 +231,7 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
   // Resilient local store active bookings merge
   const localActive = getLocalReservations().filter((b) =>
     b.room_id === targetRoomId &&
-    ['pending', 'confirmed', 'checked_in'].includes(b.status) &&
+    ['pending', 'confirmed', 'checked_in', 'on_hold', 'maintenance'].includes(b.status) &&
     b.check_in < searchEnd &&
     b.check_out > searchStart
   );
@@ -627,7 +627,7 @@ r.get('/reservations', authenticate, requireReservationDesk, asyncH(async (req, 
 }));
 
 r.patch('/reservations/:id/status', authenticate, requireReservationDesk,
-  validate(z.object({ status: z.enum(['pending','confirmed','checked_in','checked_out','cancelled','no_show']) })),
+  validate(z.object({ status: z.enum(['pending','confirmed','checked_in','checked_out','cancelled','on_hold','maintenance','disputed','escalated','no_show']) })),
   asyncH(async (req, res) => {
     const { status } = req.body;
     const sysClient = await getSystemAdminClient();
@@ -670,6 +670,58 @@ r.patch('/reservations/:id/status', authenticate, requireReservationDesk,
       toPhone, body: msg }).catch(() => {});
     return res.json(data);
   }));
+
+// PATCH /reservations/:id — General administrative folio update
+r.patch('/reservations/:id', authenticate, requireReservationDesk, asyncH(async (req, res) => {
+  const allowedFields = [
+    'room_id', 'check_in', 'check_out', 'check_in_time', 'check_out_time',
+    'guests', 'total_php', 'downpayment_php', 'balance_php', 'payment_method',
+    'payment_status', 'status', 'notes', 'guest_name', 'phone', 'email',
+    'offering_type', 'is_maintenance', 'cancellation_reason'
+  ];
+  const updatePayload = { updated_at: new Date().toISOString() };
+  for (const f of allowedFields) {
+    if (req.body[f] !== undefined) {
+      updatePayload[f] = req.body[f];
+    }
+  }
+
+  const sysClient = await getSystemAdminClient();
+  const client = req.sb || sysClient;
+  let data = null;
+  const { data: dbData, error } = await client.from('reservations')
+    .update(updatePayload)
+    .eq('id', req.params.id)
+    .select('*, profiles(id, phone, full_name, email), rooms(name, slug, category, amenities, rate_php)')
+    .single();
+
+  if (dbData) {
+    data = dbData;
+    updateLocalReservation(data.id, updatePayload);
+  } else {
+    const localUpdated = updateLocalReservation(req.params.id, updatePayload);
+    if (localUpdated) {
+      data = localUpdated;
+    } else if (error) {
+      throw new ApiError(error.code === '42501' ? 403 : 500, error.message);
+    } else {
+      throw new ApiError(404, 'Reservation not found');
+    }
+  }
+
+  await redis.clear();
+
+  await logAuditEvent({
+    actor: req.user,
+    action: 'BOOKING_UPDATE',
+    resourceType: 'reservation',
+    resourceId: data.id,
+    details: { updatePayload },
+    req,
+  });
+
+  return res.json(enrichReservationOffering(data));
+}));
 
 // POST /reservations/:id/refund-request
 r.post('/reservations/:id/refund-request', authenticate,

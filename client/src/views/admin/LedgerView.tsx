@@ -175,8 +175,15 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
 
   const filteredBookings = allBookings.filter((b: any) => {
     if (bookingTypeFilter !== 'all' && resolveReservationOfferingType(b) !== bookingTypeFilter) return false;
-    if (reservationFilter !== 'all' && b.status !== reservationFilter) return false;
-    if (reservationFilter !== 'all' && b.status !== reservationFilter) return false;
+    if (reservationFilter !== 'all') {
+      if (reservationFilter === 'maintenance') {
+        if (b.status !== 'maintenance' && !b.is_maintenance) return false;
+      } else if (reservationFilter === 'disputed') {
+        if (b.status !== 'disputed' && b.status !== 'escalated') return false;
+      } else if (b.status !== reservationFilter) {
+        return false;
+      }
+    }
     if (reservationSearch.trim()) {
       const q = reservationSearch.toLowerCase();
       const guestName = (b.guest_name || b.profiles?.full_name || '').toLowerCase();
@@ -195,8 +202,12 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
     const pending = allBookings.filter((b: any) => b.status === 'pending').length;
     const checkedIn = allBookings.filter((b: any) => b.status === 'checked_in').length;
     const checkedOut = allBookings.filter((b: any) => b.status === 'checked_out').length;
+    const onHold = allBookings.filter((b: any) => b.status === 'on_hold').length;
+    const maintenance = allBookings.filter((b: any) => b.status === 'maintenance' || b.is_maintenance).length;
+    const disputed = allBookings.filter((b: any) => b.status === 'disputed' || b.status === 'escalated').length;
+    const noShow = allBookings.filter((b: any) => b.status === 'no_show').length;
     const cancelled = allBookings.filter((b: any) => b.status === 'cancelled').length;
-    return { all, confirmed, pending, checkedIn, checkedOut, cancelled };
+    return { all, confirmed, pending, checkedIn, checkedOut, onHold, maintenance, disputed, noShow, cancelled };
   }, [allBookings]);
 
   const filterOptions = [
@@ -205,6 +216,10 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
     { key: 'pending', label: 'Pending', count: statusCounts.pending },
     { key: 'checked_in', label: 'Checked in', count: statusCounts.checkedIn },
     { key: 'checked_out', label: 'Checked out', count: statusCounts.checkedOut },
+    { key: 'on_hold', label: 'On Hold', count: statusCounts.onHold },
+    { key: 'maintenance', label: 'Maintenance', count: statusCounts.maintenance },
+    { key: 'disputed', label: 'Disputed', count: statusCounts.disputed },
+    { key: 'no_show', label: 'No Show', count: statusCounts.noShow },
     { key: 'cancelled', label: 'Cancelled', count: statusCounts.cancelled },
   ];
 
@@ -1255,11 +1270,15 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                 }}
               >
                 <option value="all">All Folios ({allBookings.length})</option>
-                <option value="confirmed">Upcoming Confirmed ({allBookings.filter(b => b.status === 'confirmed').length})</option>
-                <option value="checked_in">In-House / Checked In ({allBookings.filter(b => b.status === 'checked_in').length})</option>
-                <option value="checked_out">Checked Out ({allBookings.filter(b => b.status === 'checked_out').length})</option>
-                <option value="pending">Pending Approval ({allBookings.filter(b => b.status === 'pending').length})</option>
-                <option value="cancelled">Cancelled ({allBookings.filter(b => b.status === 'cancelled').length})</option>
+                <option value="confirmed">Upcoming Confirmed ({statusCounts.confirmed})</option>
+                <option value="checked_in">In-House / Checked In ({statusCounts.checkedIn})</option>
+                <option value="checked_out">Checked Out ({statusCounts.checkedOut})</option>
+                <option value="pending">Pending Approval ({statusCounts.pending})</option>
+                <option value="on_hold">On Hold / In Review ({statusCounts.onHold})</option>
+                <option value="maintenance">Under Maintenance ({statusCounts.maintenance})</option>
+                <option value="disputed">Disputed / Escalated ({statusCounts.disputed})</option>
+                <option value="no_show">No Show ({statusCounts.noShow})</option>
+                <option value="cancelled">Cancelled ({statusCounts.cancelled})</option>
               </select>
               <select
                 aria-label="Filter Offering Type"
@@ -1440,6 +1459,12 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                               updateStatus(b.id, 'confirmed');
                             } else if (action === 'pending') {
                               updateStatus(b.id, 'pending');
+                            } else if (action === 'on_hold') {
+                              updateStatus(b.id, 'on_hold');
+                            } else if (action === 'maintenance') {
+                              updateStatus(b.id, 'maintenance');
+                            } else if (action === 'no_show') {
+                              updateStatus(b.id, 'no_show');
                             } else if (action === 'cancelled') {
                               updateStatus(b.id, 'cancelled');
                             } else if (action === 'refund_request') {
@@ -1483,6 +1508,15 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                           </option>
                           <option value="pending">
                             ⏳ Mark Pending{b.status === 'pending' ? ' (Active)' : ''}
+                          </option>
+                          <option value="on_hold">
+                            ⏸️ Put On Hold{b.status === 'on_hold' ? ' (Active)' : ''}
+                          </option>
+                          <option value="maintenance">
+                            🔧 Mark Under Maintenance{b.status === 'maintenance' ? ' (Active)' : ''}
+                          </option>
+                          <option value="no_show">
+                            🚫 Mark No-Show{b.status === 'no_show' ? ' (Active)' : ''}
                           </option>
                           <option value="refund_request">💰 Request Refund</option>
                           <option value="refund_confirm">
