@@ -44,6 +44,7 @@ import GuestPortalLayout from './components/guest/GuestPortalLayout.tsx';
 import GuestStays from './pages/client/GuestStays.tsx';
 import GuestProfile from './pages/client/GuestProfile.tsx';
 import GuestHelp from './pages/client/GuestHelp.tsx';
+import AuthCallback from './components/AuthCallback.tsx';
 
 function StaffPortalLanding() {
   const { adminProfile, profile } = useAuth();
@@ -215,7 +216,7 @@ function MainAppShell() {
           } />
 
           {/* User Route Aliases */}
-          <Route path="/user" element={<Navigate to="/client" replace />} />
+          <Route path="/user" element={<AuthCallback />} />
           <Route path="/user/bookings" element={<Navigate to="/client/bookings" replace />} />
           <Route path="/user/*" element={<Navigate to="/client" replace />} />
           <Route path="/my-bookings" element={<Navigate to="/client/bookings" replace />} />

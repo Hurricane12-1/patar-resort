@@ -777,7 +777,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
 
   // Detailed conflict detection across every selected room for the current range with exact date breakdowns
   const detailedConflicts = useMemo(() => {
-    if (showReserveModal || reserveSubmitting) return [];
+    if (showReserveModal || reserveSubmitting || reserveStep === 'success') return [];
     const activeEnd = checkOut ?? (checkIn ? addDaysISO(checkIn, 1) : null);
     if (!checkIn || !activeEnd) return [];
     const ids = selectedRoomIds.length ? selectedRoomIds : [selectedRoom.id];
@@ -805,7 +805,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
         };
       })
       .filter((c): c is { room: Room; conflictingReservations: ReservationWindow[]; formattedRanges: string[] } => c !== null);
-  }, [showReserveModal, reserveSubmitting, checkIn, checkOut, reservations, selectedRoomIds, selectedRoom.id, rooms, formatStayRangeFriendly]);
+  }, [showReserveModal, reserveSubmitting, reserveStep, checkIn, checkOut, reservations, selectedRoomIds, selectedRoom.id, rooms, formatStayRangeFriendly]);
 
   const hasRangeConflict = detailedConflicts.length > 0;
   const conflictRooms = useMemo(() => detailedConflicts.map((c) => c.room), [detailedConflicts]);
@@ -832,7 +832,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   // Pop a transient notification the moment a selected room clashes with the range.
   const detailedConflictKey = detailedConflicts.map((c) => `${c.room.id}:${c.formattedRanges.join('-')}`).join(';');
   useEffect(() => {
-    if (!detailedConflictKey || detailedConflicts.length === 0) {
+    if (reserveStep === 'success' || showReserveModal || !detailedConflictKey || detailedConflicts.length === 0) {
       setConflictToast(null);
       return;
     }
@@ -2085,7 +2085,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
               </div>
 
               {/* Intelligent Caution Warning Popup Modal / Card */}
-              {conflictToast && (
+              {conflictToast && !showReserveModal && reserveStep !== 'success' && (
                 <div
                   className="fixed inset-x-0 top-5 z-[70] flex justify-center px-4 pointer-events-none animate-in fade-in slide-in-from-top-4 duration-300"
                   role="alert"

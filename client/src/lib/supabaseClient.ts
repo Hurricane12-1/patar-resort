@@ -8,5 +8,8 @@ export const supabase = createClient(url, key, {
   auth: {
     storage: typeof window !== 'undefined' ? window.sessionStorage : undefined,
     persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    flowType: 'pkce',
   },
 });
