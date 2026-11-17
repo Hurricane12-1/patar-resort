@@ -3,6 +3,7 @@ import { optimizeCloudinaryUrl } from '../../lib/cloudinary';
 import { api } from '../../lib/api';
 import { to11Digits } from '../../lib/format';
 import { usePageSettings, savePageSettings } from '../../lib/pageSettings';
+import { PageAdjustmentView } from './PageAdjustmentView';
 
 export interface SettingsViewProps {
   adminProfileState: any;
@@ -45,7 +46,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   themeMuted,
   toast,
 }) => {
-  const [viewMode, setViewMode] = useState<'account' | 'dashboard-layout'>('account');
+  const [viewMode, setViewMode] = useState<'account' | 'dashboard-layout' | 'layout'>('account');
   const [sendingRecoveryEmail, setSendingRecoveryEmail] = useState(false);
   const [recoverySent, setRecoverySent] = useState(false);
 
@@ -138,16 +139,45 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, borderBottom: `1px solid ${themeBorder}`, paddingBottom: 16, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <span style={{ fontSize: '.76rem', color: viewMode === 'account' ? '#0EA5E9' : '#8B5CF6', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em' }}>
-            {viewMode === 'account' ? 'ADMINISTRATIVE PROFILE' : 'PORTAL PRESENTATION & LAYOUT'}
+          <span style={{ fontSize: '.76rem', color: viewMode === 'account' ? '#0EA5E9' : viewMode === 'dashboard-layout' ? '#8B5CF6' : '#6366F1', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', display: 'inline-flex', alignItems: 'center' }}>
+            {viewMode === 'account' ? 'ADMINISTRATIVE PROFILE' : viewMode === 'dashboard-layout' ? 'PORTAL PRESENTATION & LAYOUT' : 'HERO & LANDING LAYOUT'}
+            <span style={{ margin: '0 8px', opacity: 0.25, color: themeMuted }}>•</span>
+            <button
+              type="button"
+              onClick={() => setViewMode(viewMode === 'layout' ? 'account' : 'layout')}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                padding: 0,
+                margin: 0,
+                font: 'inherit',
+                fontSize: '.72rem',
+                color: viewMode === 'layout' ? '#8B5CF6' : themeMuted,
+                textTransform: 'lowercase',
+                letterSpacing: '0.04em',
+                cursor: 'pointer',
+                opacity: viewMode === 'layout' ? 0.9 : 0.35,
+                outline: 'none',
+                transition: 'opacity 0.2s ease',
+              }}
+              title="layout"
+            >
+              layout
+            </button>
           </span>
           <h3 className="serif" style={{ fontSize: '1.6rem', margin: '4px 0 0', color: themeText }}>
-            {viewMode === 'account' ? 'Account Profile & Settings' : 'Guest & Users Dashboard Layout'}
+            {viewMode === 'account'
+              ? 'Account Profile & Settings'
+              : viewMode === 'dashboard-layout'
+              ? 'Guest & Users Dashboard Layout'
+              : 'Hero Titles & Landing Imagery (Secret Layout)'}
           </h3>
           <p className="muted small" style={{ margin: '4px 0 0' }}>
             {viewMode === 'account'
               ? 'Update your administrative credentials, contact information, and security password.'
-              : 'Customize the presentation, headline greetings, and announcement banner for guest & user dashboards.'}
+              : viewMode === 'dashboard-layout'
+              ? 'Customize the presentation, headline greetings, and announcement banner for guest & user dashboards.'
+              : 'Secret layout settings: Customize headline titles, subtitle descriptions, and hero background imagery on the public landing page.'}
           </p>
         </div>
         <span style={{ fontSize: '.76rem', color: '#10B981', fontWeight: 700, background: 'rgba(16, 185, 129, 0.1)', padding: '4px 14px', borderRadius: 20, border: '1px solid rgba(16, 185, 129, 0.25)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
@@ -706,6 +736,91 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </div>
         </form>
       )}
+
+      {/* MODE 3: SECRET LANDING LAYOUT & HERO ADJUSTMENT (Page Adjustment hidden under Settings) */}
+      {viewMode === 'layout' && (
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 18px',
+              background: isLightMode ? '#F8FAFC' : 'rgba(30, 41, 59, 0.4)',
+              borderRadius: 14,
+              border: `1px solid ${themeBorder}`,
+              flexWrap: 'wrap',
+              gap: 10,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <i className="fas fa-sliders" style={{ color: '#8B5CF6', fontSize: 13 }} />
+              <span style={{ fontSize: '.8rem', fontWeight: 700, color: themeText }}>
+                Secret Layout Settings · Landing Page &amp; Hero Adjustment
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setViewMode('account')}
+              style={{
+                background: isLightMode ? '#FFFFFF' : 'rgba(255, 255, 255, 0.08)',
+                border: `1px solid ${themeBorder}`,
+                borderRadius: 8,
+                padding: '6px 14px',
+                fontSize: '.78rem',
+                fontWeight: 600,
+                color: themeText,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              <i className="fas fa-arrow-left" style={{ fontSize: 11 }} /> Back to Account Settings
+            </button>
+          </div>
+
+          <PageAdjustmentView
+            isLightMode={isLightMode}
+            themeCardBg={themeCardBg}
+            themeBorder={themeBorder}
+            themeShadow={themeShadow}
+            themeText={themeText}
+            themeMuted={themeMuted}
+            toast={toast}
+          />
+        </div>
+      )}
+
+      {/* Subtle security & system footer with stealth layout button */}
+      <div style={{ marginTop: 28, paddingTop: 16, borderTop: `1px solid ${themeBorder}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+        <span style={{ fontSize: '.72rem', color: themeMuted, opacity: 0.55 }}>
+          Rock View Resort Administrative Console • RBAC Session Verified
+        </span>
+        <button
+          type="button"
+          onClick={() => setViewMode(viewMode === 'layout' ? 'account' : 'layout')}
+          style={{
+            background: 'none',
+            border: 'none',
+            padding: '2px 4px',
+            margin: 0,
+            font: 'inherit',
+            fontSize: '.72rem',
+            color: viewMode === 'layout' ? '#8B5CF6' : themeMuted,
+            opacity: viewMode === 'layout' ? 0.8 : 0.28,
+            cursor: 'pointer',
+            textDecoration: 'none',
+            outline: 'none',
+            transition: 'opacity 0.2s ease',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.7')}
+          onMouseLeave={(e) => (e.currentTarget.style.opacity = viewMode === 'layout' ? '0.8' : '0.28')}
+          title="layout"
+        >
+          layout
+        </button>
+      </div>
     </div>
   );
 };

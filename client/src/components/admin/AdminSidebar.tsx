@@ -103,11 +103,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       icon: <i className="fas fa-database" style={{ fontSize: 17 }} />,
     },
     {
-      key: 'page-adjustment',
-      label: 'Page Adjustment',
-      icon: <i className="fas fa-image" style={{ fontSize: 17 }} />,
-    },
-    {
       key: 'settings',
       label: 'Profile & Settings',
       icon: <i className="fas fa-sliders" style={{ fontSize: 17 }} />,
@@ -211,7 +206,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           </span>
         )}
         {(isStaffRestricted ? sidebarItems.filter((i) => i.key === 'inventory' || i.key === 'conversations') : sidebarItems).map((item) => {
-          const isActive = activeTab === item.key;
+          const isActive = activeTab === item.key || (item.key === 'settings' && activeTab === 'page-adjustment');
           return (
             <button
               key={item.key}
