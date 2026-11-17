@@ -301,14 +301,6 @@ export default function ResidentLogin({ returnTo = '/user' }: ResidentLoginProps
         <div className="rl-showcase__glow" aria-hidden="true" />
         <div className="rl-showcase__glow-bottom" aria-hidden="true" />
 
-        {/* Top Branding Pill */}
-        <div className="rl-showcase__header">
-          <span className="rl-brand-pill">
-            <i className="fas fa-umbrella-beach" />
-            Rock View Beach Resort · Patar, Bolinao
-          </span>
-        </div>
-
         {/* Middle Editorial Showcase */}
         <div className="rl-showcase__content">
           <h1 className="rl-showcase__title">
@@ -318,46 +310,10 @@ export default function ResidentLogin({ returnTo = '/user' }: ResidentLoginProps
             Welcome to the private Resident Guest Portal. Access your reservations,
             express check-in credentials, and personalized coastal concierge services.
           </p>
-
-          <div className="rl-perks">
-            <div className="rl-perk">
-              <div className="rl-perk__icon">
-                <i className="fas fa-calendar-check" />
-              </div>
-              <div>
-                <h4 className="rl-perk__title">Villa Reservations & Live Rates</h4>
-                <p className="rl-perk__desc">View your confirmed booking dates, guest counts, and official digital room vouchers.</p>
-              </div>
-            </div>
-
-            <div className="rl-perk">
-              <div className="rl-perk__icon">
-                <i className="fas fa-key" />
-              </div>
-              <div>
-                <h4 className="rl-perk__title">Express Digital Room Pass</h4>
-                <p className="rl-perk__desc">Accelerated check-in upon arrival at Patar Road, Bolinao, Pangasinan.</p>
-              </div>
-            </div>
-
-            <div className="rl-perk">
-              <div className="rl-perk__icon">
-                <i className="fas fa-concierge-bell" />
-              </div>
-              <div>
-                <h4 className="rl-perk__title">Tailored Seaside Concierge</h4>
-                <p className="rl-perk__desc">Request in-villa amenities, private dining experiences, and coastal island tours.</p>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Showcase Footer Badges */}
         <div className="rl-showcase__footer">
-          <div className="rl-rating-badge">
-            <span className="rl-stars" style={{ color: '#38bdf8' }}>✦</span>
-            <span><strong>Official</strong> Resident Guest Portal</span>
-          </div>
           <div className="rl-location-badge">
             <i className="fas fa-location-dot" />
             <span>Patar Beach, Bolinao, Pangasinan</span>
