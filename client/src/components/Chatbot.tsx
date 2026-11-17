@@ -5,6 +5,7 @@ import { animateTypewriterPrompt } from '../lib/wordPrompt.ts';
 import { api } from '../lib/api.ts';
 import {
   RESORT_CONTACT_INFO,
+  queryResilientConciergeAI,
 } from '../lib/aiGuardrails.ts';
 
 const DEFAULT_WELCOME = {
@@ -364,6 +365,14 @@ export default function Chatbot() {
     sockRef.current = s;
 
     const handleMessage = (m: any) => {
+      if (typeof m?.text === 'string' && m.text.includes('momentarily reconnecting')) {
+        // Ignore stale reconnect notice if failover is handling or about to handle it
+        return;
+      }
+      if ((window as any).__rvChatFallbackTimer) {
+        clearTimeout((window as any).__rvChatFallbackTimer);
+        (window as any).__rvChatFallbackTimer = null;
+      }
       setMsgs((x) => {
         if (x.length === 1 && x[0].text === m.text) {
           return x;
@@ -424,6 +433,24 @@ export default function Chatbot() {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [msgs, typing]);
 
+  async function runResilientFallback(clean: string, currentHistory: Array<{ role: string; text: string }>) {
+    const fallbackReply = await queryResilientConciergeAI(clean, currentHistory, session?.access_token);
+    if (fallbackReply) {
+      setMsgs((x) => [
+        ...x,
+        {
+          from: 'bot',
+          id: fallbackReply.id || `bot-${Date.now()}`,
+          ...fallbackReply,
+        },
+      ]);
+      if (Array.isArray(fallbackReply.chips) && fallbackReply.chips.length > 0) {
+        setChips(fallbackReply.chips);
+      }
+    }
+    setTyping(false);
+  }
+
   function send(t?: string) {
     if (cancelTypewriterRef.current) {
       cancelTypewriterRef.current();
@@ -433,14 +460,29 @@ export default function Chatbot() {
     const clean = (t ?? text).trim();
     if (!clean) return;
 
+    const historySnapshot = msgs
+      .slice(-8)
+      .map((m) => ({ role: m.from === 'user' ? 'user' : 'model', text: String(m.text || '') }));
+
     setMsgs((x) => [...x, { from: 'user', text: clean }]);
     setChips([]);
     setText('');
     setTyping(true);
 
+    if ((window as any).__rvChatFallbackTimer) {
+      clearTimeout((window as any).__rvChatFallbackTimer);
+      (window as any).__rvChatFallbackTimer = null;
+    }
+
     const s = sockRef.current || getSocket(session?.access_token);
-    if (s) {
+    if (s && s.connected) {
       s.emit('chat:message', { text: clean });
+      (window as any).__rvChatFallbackTimer = setTimeout(() => {
+        (window as any).__rvChatFallbackTimer = null;
+        runResilientFallback(clean, historySnapshot);
+      }, 5500);
+    } else {
+      runResilientFallback(clean, historySnapshot);
     }
   }
 

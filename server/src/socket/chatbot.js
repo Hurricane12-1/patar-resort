@@ -397,6 +397,10 @@ async function queryGeminiWithGuardrails(userId, rawUserText, history = []) {
   return null;
 }
 
+export async function answerChatInquiry(userId, text, history = []) {
+  return answer(userId, text, history);
+}
+
 async function answer(userId, text, history = []) {
   try {
     const aiResult = await queryGeminiWithGuardrails(userId, text, history);

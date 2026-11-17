@@ -7,9 +7,40 @@ import { getSystemAdminClient, admin } from '../lib/supabase.js';
 import { redis } from '../lib/redis.js';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
-import { findAvailableServiceAgent, emitToGuest, broadcastToStaff } from '../socket/chatbot.js';
+import { findAvailableServiceAgent, emitToGuest, broadcastToStaff, answerChatInquiry } from '../socket/chatbot.js';
 
 const r = Router();
+
+/**
+ * POST /api/chat/ask
+ * HTTP endpoint for AI concierge + semantic guardrails (used when WebSocket is handshaking or on serverless/edge clients).
+ */
+r.post('/chat/ask', asyncH(async (req, res) => {
+  const { text, history } = req.body || {};
+  const clean = typeof text === 'string' ? text.trim().slice(0, 600) : '';
+  if (!clean) throw new ApiError(400, 'Message text is required');
+
+  let userId = req.user?.id || null;
+  if (!userId) {
+    const token = req.headers.authorization?.replace(/^Bearer\s+/i, '');
+    if (token) {
+      if (env.SUPABASE_JWT_SECRET) {
+        try {
+          userId = jwt.verify(token, env.SUPABASE_JWT_SECRET).sub;
+        } catch {}
+      }
+      if (!userId) {
+        try {
+          const { data: { user } } = await admin.auth.getUser(token);
+          if (user?.id) userId = user.id;
+        } catch {}
+      }
+    }
+  }
+
+  const reply = await answerChatInquiry(userId, clean, Array.isArray(history) ? history : []);
+  return res.json(reply);
+}));
 
 /**
  * GET /api/chat/conversations
