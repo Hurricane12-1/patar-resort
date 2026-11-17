@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext.tsx';
 import { api, addDaysYMD } from '../lib/api.ts';
 import { toast } from '../components/Toasts.tsx';
 import { to11Digits, formatTime12Hour } from '../lib/format.ts';
+import { getManilaTodayISO } from '../lib/offeringSpecs.ts';
 import AddReservationModal, { NewReservationFormState } from '../components/admin/modals/AddReservationModal.tsx';
 import '../styles/staff-portal.css';
 
@@ -22,6 +23,7 @@ interface RoomItem {
 
 interface BookingItem {
   id: string;
+  rawId?: string;
   guest: string;
   pax: number;
   roomId: string;
@@ -70,81 +72,6 @@ interface OperationalTask {
   status: 'open' | 'completed';
 }
 
-// ── Default Mock State for Full Interactive Experience ──
-const INITIAL_ROOMS: RoomItem[] = [
-  { id: 'rm-101', code: '101', name: 'Cliffside Ocean Villa 101', category: 'Villa', capacity: '4 Guests', rate: 8500, status: 'occupied', guest: 'Marco & Elena Santos', note: 'Panoramic sea deck • Late checkout 1PM' },
-  { id: 'rm-102', code: '102', name: 'Beachfront Family Cottage 102', category: 'Cottage', capacity: '6 Guests', rate: 6200, status: 'available', guest: null, note: 'Direct sand access • Inspected & ready' },
-  { id: 'rm-103', code: '103', name: 'Garden Cabana 103', category: 'Cabana', capacity: '2 Guests', rate: 3800, status: 'dirty', guest: null, note: 'Checkout completed • Needs fresh linens' },
-  { id: 'rm-201', code: '201', name: 'Sunset Loft Suite 201', category: 'Suite', capacity: '3 Guests', rate: 7400, status: 'occupied', guest: 'D. Takahashi', note: 'Upper cliff terrace • Breakfast included' },
-  { id: 'rm-202', code: '202', name: 'Coral Reef Villa 202', category: 'Villa', capacity: '4 Guests', rate: 8900, status: 'maintenance', guest: null, note: 'Split-AC compressor servicing until Nov 19' },
-  { id: 'tour-01', code: 'BOAT', name: 'Patar Island Hopping Boat Tour', category: 'Tour Charter', capacity: '10 Pax', rate: 4500, status: 'available', guest: null, note: 'Outrigger boat #1 • Morning & sunset slots' }
-];
-
-const INITIAL_BOOKINGS: BookingItem[] = [
-  { id: 'BK-9041', guest: 'Marco & Elena Santos', pax: 4, roomId: 'rm-101', checkIn: '2026-11-16', checkOut: '2026-11-19', status: 'checked_in', payment: 'Paid (GCash)', source: 'Direct Web' },
-  { id: 'BK-9042', guest: 'D. Takahashi', pax: 2, roomId: 'rm-201', checkIn: '2026-11-15', checkOut: '2026-11-18', status: 'checked_in', payment: 'Paid (Card)', source: 'Agoda' },
-  { id: 'BK-9045', guest: 'Atty. Clarissa Lim', pax: 5, roomId: 'rm-102', checkIn: '2026-11-19', checkOut: '2026-11-22', status: 'confirmed', payment: '50% Deposit', source: 'Direct Web' },
-  { id: 'BK-9048', guest: 'Reyes Family Outing', pax: 8, roomId: 'tour-01', checkIn: '2026-11-18', checkOut: '2026-11-19', status: 'confirmed', payment: 'Paid (Cash)', source: 'Front Desk' },
-  { id: 'BK-9052', guest: 'Kevin & Bea Mendoza', pax: 2, roomId: 'rm-103', checkIn: '2026-11-20', checkOut: '2026-11-23', status: 'confirmed', payment: '50% Deposit', source: 'Booking.com' }
-];
-
-const INITIAL_PENDING: PendingReservation[] = [
-  { id: 'REQ-301', guest: 'Sofia Vergara-Cruz', pax: 4, requestedRoomId: 'rm-102', checkIn: '2026-11-17', checkOut: '2026-11-19', source: 'Website Direct', payment: 'GCash Receipt Attached', note: 'Arriving around 2:30 PM from Manila. Requesting baby crib.' },
-  { id: 'REQ-302', guest: 'Miguel Alcantara', pax: 2, requestedRoomId: 'rm-103', checkIn: '2026-11-18', checkOut: '2026-11-20', source: 'Airbnb', payment: 'Pre-Authorized', note: 'Anniversary trip, would love sunset dinner table reservation.' },
-  { id: 'REQ-303', guest: 'Bolinao Dive Club (6 Pax)', pax: 6, requestedRoomId: 'tour-01', checkIn: '2026-11-20', checkOut: '2026-11-21', source: 'Instagram DM', payment: 'Pay on Arrival', note: 'Private morning boat charter to Patar Rock Formations.' }
-];
-
-const INITIAL_THREADS: ChatThread[] = [
-  {
-    id: 'th-1',
-    name: 'Sofia Vergara-Cruz',
-    tag: 'Guest Inquiry',
-    unitLabel: 'Req: Beachfront Cottage 102',
-    unread: 2,
-    messages: [
-      { sender: 'Sofia Vergara-Cruz', role: 'guest', text: 'Hi Rock View Resort! We just submitted our booking for Beachfront Family Cottage 102 today (Nov 17–19).', time: '12:42 PM' },
-      { sender: 'Sofia Vergara-Cruz', role: 'guest', text: 'Is early luggage drop-off possible around 1:15 PM before check-in?', time: '12:44 PM' }
-    ]
-  },
-  {
-    id: 'th-2',
-    name: 'Housekeeping Dispatch',
-    tag: 'Internal Ops',
-    unitLabel: 'Staff Channel',
-    unread: 0,
-    messages: [
-      { sender: 'Ate Marites (HK Lead)', role: 'staff', text: 'Beachfront Cottage 102 is sanitized and inspected—ready for afternoon guests.', time: '11:20 AM' },
-      { sender: 'Camille Reyes', role: 'me', text: 'Noted, thank you! Please prioritize Garden Cabana 103 turnover next.', time: '11:25 AM' }
-    ]
-  },
-  {
-    id: 'th-3',
-    name: 'Marco Santos (Villa 101)',
-    tag: 'In-House Guest',
-    unitLabel: 'Cliffside Ocean Villa 101',
-    unread: 0,
-    messages: [
-      { sender: 'Marco Santos', role: 'guest', text: 'Good afternoon! Can we reserve the Patar Island Hopping boat for tomorrow morning?', time: '10:50 AM' }
-    ]
-  },
-  {
-    id: 'th-4',
-    name: 'Capt. Jun (Boat Pier)',
-    tag: 'Boat Tours',
-    unitLabel: 'Outrigger #1',
-    unread: 0,
-    messages: [
-      { sender: 'Capt. Jun', role: 'staff', text: 'Sea condition is calm today. Outrigger #1 fueled and ready at the pier.', time: '09:15 AM' }
-    ]
-  }
-];
-
-const INITIAL_TASKS: OperationalTask[] = [
-  { id: 'TSK-11', dept: 'housekeeping', roomId: 'rm-103', title: 'Full turnover & fresh beach towels after checkout', priority: 'High', assignee: 'Ate Marites', status: 'open' },
-  { id: 'TSK-12', dept: 'housekeeping', roomId: 'rm-101', title: 'Afternoon turndown service & extra bottled water', priority: 'Normal', assignee: 'Jessa D.', status: 'open' },
-  { id: 'TSK-13', dept: 'maintenance', roomId: 'rm-202', title: 'Replace split-type AC capacitor & test cooling', priority: 'High', assignee: 'Kuya Benjie', status: 'open' }
-];
-
 // Helper Date Formatters
 function formatPHP(amount: number) {
   return '₱' + Number(amount || 0).toLocaleString('en-PH');
@@ -180,21 +107,26 @@ export default function ResortDepartment() {
   // Active View Tab: 'dashboard' (3 cols) | 'calendar' | 'rooms' | 'reservations' | 'messages' | 'housekeeping'
   const activeView = (searchParams.get('view') as any) || 'dashboard';
 
-  // State Collections
-  const [rooms, setRooms] = useState<RoomItem[]>(INITIAL_ROOMS);
-  const [bookings, setBookings] = useState<BookingItem[]>(INITIAL_BOOKINGS);
-  const [pendingReservations, setPendingReservations] = useState<PendingReservation[]>(INITIAL_PENDING);
-  const [threads, setThreads] = useState<ChatThread[]>(INITIAL_THREADS);
-  const [activeThreadId, setActiveThreadId] = useState('th-1');
-  const [tasks, setTasks] = useState<OperationalTask[]>(INITIAL_TASKS);
+  // State Collections (Live Supabase Pipeline - No Mock Data)
+  const [rooms, setRooms] = useState<RoomItem[]>([]);
+  const [bookings, setBookings] = useState<BookingItem[]>([]);
+  const [pendingReservations, setPendingReservations] = useState<PendingReservation[]>([]);
+  const [threads, setThreads] = useState<ChatThread[]>([]);
+  const [activeThreadId, setActiveThreadId] = useState('');
+  const [tasks, setTasks] = useState<OperationalTask[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+  const [activeProfile, setActiveProfile] = useState<any>(null);
+
+  // Dynamic Asia/Manila Today ISO
+  const todayISO = useMemo(() => getManilaTodayISO(), []);
 
   // Filters & Sub-states
   const [dashRoomFilter, setDashRoomFilter] = useState<'all' | 'available' | 'occupied' | 'attention'>('all');
   const [dashCalView, setDashCalView] = useState<'month' | 'week' | 'day'>('month');
   const [tapeMode, setTapeMode] = useState<'tape' | 'month'>('tape');
-  const [selectedDate, setSelectedDate] = useState('2026-11-17');
-  const [currentMonthDate, setCurrentMonthDate] = useState(new Date(2026, 10, 1));
-  const [tapeStartDate, setTapeStartDate] = useState('2026-11-15');
+  const [selectedDate, setSelectedDate] = useState(todayISO);
+  const [currentMonthDate, setCurrentMonthDate] = useState(() => new Date(todayISO.slice(0, 4) + '-' + todayISO.slice(5, 7) + '-01'));
+  const [tapeStartDate, setTapeStartDate] = useState(todayISO);
   const [chatReplyText, setChatReplyText] = useState('');
   const [resSearchQuery, setResSearchQuery] = useState('');
   const [resStatusFilter, setResStatusFilter] = useState<'all' | 'pending' | 'confirmed' | 'checked_in' | 'checked_out'>('all');
@@ -210,8 +142,8 @@ export default function ResortDepartment() {
     phone: '',
     guest_email: '',
     room_id: '',
-    check_in: '2026-11-17',
-    check_out: '2026-11-19',
+    check_in: todayISO,
+    check_out: addDaysISO(todayISO, 2),
     check_in_time: '14:00',
     check_out_time: '12:00',
     guests: 2,
@@ -221,27 +153,23 @@ export default function ResortDepartment() {
     notes: '',
   });
 
-  // Active rooms list for AddReservationModal (merging live rooms with fallback)
+  // Active rooms list for AddReservationModal (populated from live Supabase rooms)
   const activeRoomsList = useMemo(() => {
     if (liveRoomsList.length > 0) {
       return liveRoomsList.filter((r) => r && r.is_active !== false);
     }
-    return INITIAL_ROOMS.map((r) => ({
+    return rooms.filter((r) => r.status !== 'maintenance').map((r) => ({
       id: r.id,
       name: r.name,
       rate_php: r.rate,
       units: 1,
-      capacity: parseInt(r.capacity) || 4,
+      capacity: parseInt(r.capacity) || 2,
       category: r.category,
       amenities: [r.note],
-      is_active: r.status !== 'maintenance',
-      image_url: r.category.toLowerCase().includes('cottage')
-        ? 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80'
-        : r.category.toLowerCase().includes('villa')
-        ? 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80'
-        : 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80',
+      is_active: true,
+      image_url: '/images/sunset_cottage_generated.jpg',
     }));
-  }, [liveRoomsList]);
+  }, [liveRoomsList, rooms]);
 
   // Ensure newReservation.room_id default is set
   useEffect(() => {
@@ -299,7 +227,7 @@ export default function ResortDepartment() {
   useEffect(() => {
     const handleOpenWalkIn = (e?: any) => {
       const dt = e?.detail?.date || selectedDate;
-      const rm = e?.detail?.roomId || (activeRoomsList[0]?.id || 'rm-102');
+      const rm = e?.detail?.roomId || (activeRoomsList[0]?.id || '');
       const roomMatch = activeRoomsList.find((r) => r.id === rm) || activeRoomsList[0];
       const rate = Number(roomMatch?.rate_php) || 3500;
       setNewReservation((prev) => ({
@@ -318,53 +246,140 @@ export default function ResortDepartment() {
     return () => window.removeEventListener('open-staff-walkin', handleOpenWalkIn);
   }, [searchParams, selectedDate, activeRoomsList]);
 
-  // Load Live Data from Supabase / API
-  useEffect(() => {
-    let isLive = true;
-    api.frontDeskOverview()
-      .then((res: any) => {
-        if (!isLive || !res) return;
-        if (Array.isArray(res.bookings) && res.bookings.length > 0) {
-          const liveBookings: BookingItem[] = res.bookings.map((b: any) => ({
-            id: b.id,
-            guest: b.guest_name || b.guest || 'Guest',
-            pax: b.pax || 2,
-            roomId: b.room_id || 'rm-101',
-            checkIn: b.check_in || b.checkIn,
-            checkOut: b.check_out || b.checkOut,
-            status: b.status || 'confirmed',
-            payment: b.payment_status || 'Paid',
-            source: b.source || 'Direct Web',
-          }));
-          setBookings(liveBookings);
-        }
-      })
-      .catch(() => {});
+  // ── Unified Live Data Loader (Supabase & REST Pipeline API) ──
+  const loadLiveOperationsData = async () => {
+    try {
+      const [roomsRes, reservationsRes, conversationsRes, tasksRes, meProfile] = await Promise.all([
+        api.rooms(true).catch(() => []),
+        api.allReservations().catch(() => []),
+        api.conversations().catch(() => []),
+        api.departmentTasks().catch(() => []),
+        api.me().catch(() => null),
+      ]);
 
-    api.rooms(false)
-      .then((rList: any) => {
-        if (!isLive || !Array.isArray(rList) || rList.length === 0) return;
-        setLiveRoomsList(rList);
-      })
-      .catch(() => {});
+      if (meProfile) setActiveProfile(meProfile);
 
-    api.departmentTasks()
-      .then((tList: any) => {
-        if (!isLive || !Array.isArray(tList) || tList.length === 0) return;
-        const mapped: OperationalTask[] = tList.map((t: any) => ({
-          id: t.id,
-          dept: t.department === 'maintenance' ? 'maintenance' : 'housekeeping',
-          roomId: t.room_name || 'rm-103',
-          title: t.title || 'Turnover task',
-          priority: t.priority === 'urgent' || t.priority === 'high' ? 'High' : 'Normal',
-          assignee: t.assigned_to || 'Duty Staff',
-          status: t.status === 'completed' ? 'completed' : 'open',
+      const today = getManilaTodayISO();
+
+      // 1. Process Real Bookings
+      const allBookings: BookingItem[] = (Array.isArray(reservationsRes) ? reservationsRes : []).map((b: any) => ({
+        id: b.booking_code || b.id,
+        rawId: b.id,
+        guest: b.guest_name || b.profiles?.full_name || 'Resort Guest',
+        pax: Number(b.guests) || 1,
+        roomId: b.room_id || '',
+        checkIn: b.check_in,
+        checkOut: b.check_out,
+        status: (b.status || 'confirmed') as any,
+        payment: `${b.payment_status || 'Paid'}${b.payment_method ? ` (${b.payment_method})` : ''}`,
+        source: b.is_walk_in ? 'Manual / Walk-In' : 'Online Booking',
+      }));
+      setBookings(allBookings);
+
+      // 2. Process Real Pending Queue
+      const pending: PendingReservation[] = (Array.isArray(reservationsRes) ? reservationsRes : [])
+        .filter((b: any) => b.status === 'pending' || b.payment_status === 'pending')
+        .map((b: any) => ({
+          id: b.id,
+          guest: b.guest_name || b.profiles?.full_name || 'Resort Guest',
+          pax: Number(b.guests) || 1,
+          requestedRoomId: b.room_id || '',
+          checkIn: b.check_in,
+          checkOut: b.check_out,
+          source: b.is_walk_in ? 'Walk-In Desk' : 'Website Direct',
+          payment: `${b.payment_method || 'GCash'} (${b.payment_status || 'Pending'})`,
+          note: b.notes || 'Awaiting front desk verification',
         }));
-        setTasks(mapped);
-      })
-      .catch(() => {});
+      setPendingReservations(pending);
 
-    return () => { isLive = false; };
+      // 3. Process Real Department Tasks
+      const liveTasks: OperationalTask[] = (Array.isArray(tasksRes) ? tasksRes : []).map((t: any) => ({
+        id: t.id,
+        dept: t.department === 'maintenance' ? 'maintenance' : 'housekeeping',
+        roomId: t.room_name || t.rooms?.name || 'General Resort',
+        title: t.title || t.description || 'Turnover task',
+        priority: t.priority === 'urgent' || t.priority === 'high' ? 'High' : 'Normal',
+        assignee: t.assigned_to || 'Duty Staff',
+        status: t.status === 'completed' ? 'completed' : 'open',
+      }));
+      setTasks(liveTasks);
+
+      // 4. Process Real Rooms (Dynamic status: occupied if active booking today, dirty if HK task open, maintenance if inactive)
+      const rawRoomsList = Array.isArray(roomsRes) ? roomsRes : [];
+      setLiveRoomsList(rawRoomsList);
+
+      const liveRooms: RoomItem[] = rawRoomsList.map((r: any) => {
+        const activeStayToday = allBookings.find(
+          (b) => b.roomId === r.id &&
+                 b.status !== 'cancelled' &&
+                 b.status !== 'checked_out' &&
+                 today >= b.checkIn &&
+                 today < b.checkOut
+        );
+
+        let status: RoomItem['status'] = 'available';
+        if (!r.is_active) {
+          status = 'maintenance';
+        } else if (activeStayToday) {
+          status = 'occupied';
+        } else {
+          const hasOpenHk = liveTasks.some(
+            (t) => (t.roomId === r.id || t.roomId === r.name) && t.status !== 'completed' && t.dept === 'housekeeping'
+          );
+          if (hasOpenHk) {
+            status = 'dirty';
+          }
+        }
+
+        const cleanAmenities = (r.amenities || []).filter((a: string) => !a.startsWith('__'));
+        const note = cleanAmenities.length > 0
+          ? cleanAmenities.slice(0, 3).join(' • ')
+          : (r.description || 'Verified accommodation unit');
+
+        return {
+          id: r.id,
+          code: (r.slug || r.name).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6) || 'UNIT',
+          name: r.name,
+          category: r.category || (r.offering_type === 'offer' ? 'Island Tour' : 'Standard'),
+          capacity: `${r.capacity || 2} Guests`,
+          rate: Number(r.rate_php) || 0,
+          status,
+          guest: activeStayToday ? activeStayToday.guest : null,
+          note,
+        };
+      });
+      setRooms(liveRooms);
+
+      // 5. Process Real Conversations
+      const liveThreads: ChatThread[] = (Array.isArray(conversationsRes) ? conversationsRes : []).map((c: any) => ({
+        id: c.id,
+        name: c.name || 'Resort Guest',
+        tag: c.status || 'Guest Inquiry',
+        unitLabel: c.email || c.phone || 'Guest Portal',
+        unread: 0,
+        messages: (c.messages || []).map((m: any) => ({
+          sender: m.sender || (m.role === 'staff' ? 'Duty Staff' : 'Guest'),
+          role: m.role === 'staff' || m.sender === 'staff' ? 'me' : 'guest',
+          text: m.text || m.content || '',
+          time: m.time || '',
+        })),
+      }));
+      setThreads(liveThreads);
+      if (liveThreads.length > 0) {
+        setActiveThreadId((prev) => (prev && liveThreads.some((t) => t.id === prev) ? prev : liveThreads[0].id));
+      } else {
+        setActiveThreadId('');
+      }
+    } catch (err) {
+      console.error('Error fetching live operations data:', err);
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
+  // Load on mount
+  useEffect(() => {
+    loadLiveOperationsData();
   }, []);
 
   // Helper Room Resolver
@@ -396,7 +411,7 @@ export default function ResortDepartment() {
     e.preventDefault();
     setCreatingReservation(true);
     try {
-      const targetRoomId = newReservation.room_id || (activeRoomsList[0]?.id || 'rm-102');
+      const targetRoomId = newReservation.room_id || (activeRoomsList[0]?.id || '');
       const cleanedPhone = to11Digits(newReservation.phone);
       const missingFields: string[] = [];
       if (!String(newReservation.guest_name || '').trim()) missingFields.push('Guest Full Name');
@@ -411,7 +426,7 @@ export default function ResortDepartment() {
         throw new Error(`⚠️ Please fill in required information: ${missingFields.join(', ')}.`);
       }
 
-      const checkIn = newReservation.check_in || '2026-11-17';
+      const checkIn = newReservation.check_in || todayISO;
       const checkOut = newReservation.check_out && newReservation.check_out > checkIn
         ? newReservation.check_out
         : addDaysYMD(checkIn, 1);
@@ -445,41 +460,24 @@ export default function ResortDepartment() {
       let createdId = `BK-${Date.now().toString().slice(-4)}`;
       try {
         const created = await api.createReservation(payload);
-        if (created?.id) createdId = created.id;
+        if (created?.id) createdId = created.booking_code || created.id;
       } catch (apiErr: any) {
         console.warn('Backend reservation save fell back to local store:', apiErr);
       }
 
-      const newBooking: BookingItem = {
-        id: createdId,
-        guest: newReservation.guest_name.trim(),
-        pax: Number(newReservation.guests) || 2,
-        roomId: targetRoomId,
-        checkIn: checkIn,
-        checkOut: checkOut,
-        status: 'confirmed',
-        payment: newReservation.payment_status || 'Paid',
-        source: 'Manual Desk / Walk-In',
-      };
-      setBookings((prev) => [newBooking, ...prev]);
-
-      const today = new Date().toISOString().slice(0, 10);
-      if (checkIn === today) {
-        setRooms((prev) =>
-          prev.map((r) => (r.id === targetRoomId ? { ...r, status: 'occupied', guest: newReservation.guest_name.trim() } : r))
-        );
-      }
-
       toast(`✦ Manual booking confirmed for ${newReservation.guest_name.trim()}! Folio #${createdId.slice(0, 8)}`);
       setShowManualBookingModal(false);
+
+      // Refresh all live data directly from Supabase
+      await loadLiveOperationsData();
 
       setNewReservation({
         guest_name: '',
         phone: '',
         guest_email: '',
         room_id: activeRoomsList[0]?.id || '',
-        check_in: '2026-11-17',
-        check_out: '2026-11-19',
+        check_in: todayISO,
+        check_out: addDaysISO(todayISO, 2),
         check_in_time: '14:00',
         check_out_time: '12:00',
         guests: 2,
@@ -496,60 +494,75 @@ export default function ResortDepartment() {
     }
   };
 
-  // Cycle Status Action
-  const cycleRoomStatus = (roomId: string) => {
+  // Cycle Status Action (Synchronized with Supabase / Room is_active)
+  const cycleRoomStatus = async (roomId: string) => {
+    const target = rooms.find((r) => r.id === roomId);
+    if (!target) return;
     const order: RoomItem['status'][] = ['available', 'occupied', 'dirty', 'maintenance'];
+    const nextStatus = order[(order.indexOf(target.status) + 1) % order.length];
+
     setRooms((prev) =>
       prev.map((r) => {
         if (r.id !== roomId) return r;
-        const nextStatus = order[(order.indexOf(r.status) + 1) % order.length];
-        toast(`${r.name} status updated to ${nextStatus.toUpperCase()}`);
         return {
           ...r,
           status: nextStatus,
-          guest: nextStatus === 'occupied' ? (r.guest || 'Walk-In Guest') : null,
+          guest: nextStatus === 'occupied' ? (r.guest || 'In-House Guest') : null,
         };
       })
     );
+    toast(`${target.name} status updated to ${nextStatus.toUpperCase()}`);
+
+    if (nextStatus === 'maintenance') {
+      try { await api.updateRoom(roomId, { is_active: false }); } catch {}
+    } else if (target.status === 'maintenance' && nextStatus !== 'maintenance') {
+      try { await api.updateRoom(roomId, { is_active: true }); } catch {}
+    }
   };
 
-  // Approve Pending Request
-  const handleApprovePending = (reqId: string) => {
+  // Approve Pending Request (Updates status directly in Supabase)
+  const handleApprovePending = async (reqId: string) => {
     const req = pendingReservations.find((p) => p.id === reqId);
-    if (!req) return;
-    const newBooking: BookingItem = {
-      id: `BK-${Date.now().toString().slice(-4)}`,
-      guest: req.guest,
-      pax: req.pax,
-      roomId: req.requestedRoomId,
-      checkIn: req.checkIn,
-      checkOut: req.checkOut,
-      status: 'confirmed',
-      payment: req.payment,
-      source: req.source,
-    };
-    setBookings((prev) => [newBooking, ...prev]);
-    setPendingReservations((prev) => prev.filter((p) => p.id !== reqId));
-    toast(`✦ Reservation for ${req.guest} approved & assigned!`);
+    try {
+      await api.setReservationStatus(reqId, 'confirmed');
+      toast(`✦ Reservation for ${req?.guest || 'Guest'} approved & confirmed!`);
+      await loadLiveOperationsData();
+    } catch (err: any) {
+      toast(err.message || 'Failed to approve reservation in database', true);
+    }
   };
 
-  // Decline Pending Request
-  const handleDeclinePending = (reqId: string) => {
-    const req = pendingReservations.find((p) => p.id === reqId);
-    setPendingReservations((prev) => prev.filter((p) => p.id !== reqId));
-    toast(`Reservation request ${reqId} declined.`, true);
+  // Decline Pending Request (Updates status directly in Supabase)
+  const handleDeclinePending = async (reqId: string) => {
+    try {
+      await api.setReservationStatus(reqId, 'cancelled');
+      toast(`Reservation request declined.`, true);
+      await loadLiveOperationsData();
+    } catch (err: any) {
+      toast(err.message || 'Failed to decline reservation in database', true);
+    }
   };
 
-  // Quick Chat Send
-  const handleSendChatReply = (e: React.FormEvent) => {
+  // Quick Chat Send (Dispatches to Supabase chat_messages via api.sendStaffChatMessage)
+  const handleSendChatReply = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!chatReplyText.trim()) return;
+    if (!chatReplyText.trim() || !currentThread) return;
+    const textToSend = chatReplyText.trim();
+    setChatReplyText('');
+    const senderName = activeProfile?.full_name ? `${activeProfile.full_name} (Duty)` : 'Duty Staff';
     const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const newMsg: ChatMessage = { sender: 'Camille Reyes (Duty)', role: 'me', text: chatReplyText.trim(), time: now };
+
+    const newMsg: ChatMessage = { sender: senderName, role: 'me', text: textToSend, time: now };
     setThreads((prev) =>
       prev.map((t) => (t.id === activeThreadId ? { ...t, messages: [...t.messages, newMsg] } : t))
     );
-    setChatReplyText('');
+
+    try {
+      await api.sendStaffChatMessage(currentThread.id, textToSend);
+      toast(`Reply sent to ${currentThread.name}!`);
+    } catch (err: any) {
+      toast(err.message || 'Failed to send reply to guest', true);
+    }
   };
 
   // Filtered Rooms
@@ -562,8 +575,8 @@ export default function ResortDepartment() {
     });
   }, [rooms, dashRoomFilter]);
 
-  // Active chat thread
-  const currentThread = threads.find((t) => t.id === activeThreadId) || threads[0];
+  // Active chat thread (Safe check for empty threads)
+  const currentThread = threads.find((t) => t.id === activeThreadId) || threads[0] || null;
 
   return (
     <div className="staff-ops-workspace">
@@ -637,57 +650,67 @@ export default function ResortDepartment() {
 
             {/* Listings Scroll Area */}
             <div className="staff-ops-col-body">
-              {filteredRooms.map((room) => (
-                <div key={room.id} className="staff-ops-unit-card">
-                  <div className="flex items-start justify-between gap-2 mb-1.5">
-                    <div style={{ minWidth: 0 }}>
-                      <div className="staff-ops-unit-name">{room.name}</div>
-                      <div className="staff-ops-unit-cat">{room.category} • {room.capacity}</div>
+              {filteredRooms.length === 0 ? (
+                <div className="staff-ops-cleared-box" style={{ padding: '36px 16px', textAlign: 'center' }}>
+                  <i className="fas fa-bed" style={{ fontSize: '1.8rem', color: '#94A3B8', marginBottom: 8 }} />
+                  <p style={{ fontWeight: 700, color: '#334155', margin: 0 }}>No Units Match Filter</p>
+                  <small style={{ color: '#64748B', display: 'block', marginTop: 4 }}>
+                    Switch filter to &quot;All&quot; to inspect all resort accommodations.
+                  </small>
+                </div>
+              ) : (
+                filteredRooms.map((room) => (
+                  <div key={room.id} className="staff-ops-unit-card">
+                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                      <div style={{ minWidth: 0 }}>
+                        <div className="staff-ops-unit-name">{room.name}</div>
+                        <div className="staff-ops-unit-cat">{room.category} • {room.capacity}</div>
+                      </div>
+                      <span className={`staff-ops-status-pill staff-ops-status-pill--${room.status}`}>
+                        {room.status === 'available' && 'Available'}
+                        {room.status === 'occupied' && 'Occupied'}
+                        {room.status === 'dirty' && 'Dirty / Turnover'}
+                        {room.status === 'maintenance' && 'Maintenance'}
+                      </span>
                     </div>
-                    <span className={`staff-ops-status-pill staff-ops-status-pill--${room.status}`}>
-                      {room.status === 'available' && 'Available'}
-                      {room.status === 'occupied' && 'Occupied'}
-                      {room.status === 'dirty' && 'Dirty / Turnover'}
-                      {room.status === 'maintenance' && 'Maintenance'}
-                    </span>
-                  </div>
 
-                  <div className="staff-ops-unit-note">
-                    {room.guest ? (
-                      <span><strong style={{ color: '#0369A1' }}>Guest:</strong> {room.guest}</span>
-                    ) : (
-                      room.note
-                    )}
-                  </div>
-
-                  <div className="staff-ops-unit-foot">
-                    <span className="staff-ops-unit-price">
-                      {formatPHP(room.rate)}
-                      <small>/night</small>
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => cycleRoomStatus(room.id)}
-                        className="staff-ops-action-btn"
-                        title="Advance room status"
-                      >
-                        Cycle Status
-                      </button>
-                      {room.status === 'available' && (
-                        <button
-                          type="button"
-                          onClick={() => handleBookUnit(room.id)}
-                          className="staff-ops-book-btn"
-                          title="Create Manual Booking for this unit"
-                        >
-                          Manual Book
-                        </button>
+                    <div className="staff-ops-unit-note">
+                      {room.guest ? (
+                        <span><strong style={{ color: '#0369A1' }}>Guest:</strong> {room.guest}</span>
+                      ) : (
+                        room.note
                       )}
                     </div>
+
+                    <div className="staff-ops-unit-foot">
+                      <span className="staff-ops-unit-price">
+                        {formatPHP(room.rate)}
+                        <small>/night</small>
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => cycleRoomStatus(room.id)}
+                          className="staff-ops-action-btn"
+                          title="Advance room status"
+                        >
+                          Cycle Status
+                        </button>
+                        {room.status === 'available' && (
+                          <button
+                            type="button"
+                            onClick={() => handleBookUnit(room.id)}
+                            className="staff-ops-book-btn"
+                            title="Create Manual Booking for this unit"
+                          >
+                            Manual Book
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </section>
 
@@ -1038,53 +1061,65 @@ export default function ResortDepartment() {
                 </button>
               </div>
 
-              {/* Thread Selector Pills */}
-              <div className="staff-ops-threads-bar">
-                {threads.map((t) => {
-                  const isActive = t.id === activeThreadId;
-                  return (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() => setActiveThreadId(t.id)}
-                      className={`staff-ops-thread-tab ${isActive ? 'active' : ''}`}
-                    >
-                      <span className="truncate">{t.name.split(' ')[0]}</span>
-                      {t.unread > 0 && <span className="staff-ops-unread-dot" />}
+              {threads.length === 0 ? (
+                <div className="staff-ops-cleared-box" style={{ padding: '36px 16px', textAlign: 'center' }}>
+                  <i className="fas fa-comments" style={{ fontSize: '1.6rem', color: '#94A3B8', marginBottom: 8 }} />
+                  <p style={{ margin: 0, fontWeight: 700, color: '#0F172A', fontSize: '.86rem' }}>No Active Guest Messages</p>
+                  <small style={{ color: '#64748B', display: 'block', marginTop: 4 }}>
+                    Direct inquiries and concierge requests from guests will appear here in real time.
+                  </small>
+                </div>
+              ) : (
+                <>
+                  {/* Thread Selector Pills */}
+                  <div className="staff-ops-threads-bar">
+                    {threads.map((t) => {
+                      const isActive = t.id === activeThreadId;
+                      return (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => setActiveThreadId(t.id)}
+                          className={`staff-ops-thread-tab ${isActive ? 'active' : ''}`}
+                        >
+                          <span className="truncate">{t.name.split(' ')[0]}</span>
+                          {t.unread > 0 && <span className="staff-ops-unread-dot" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Chat Feed */}
+                  <div className="staff-ops-chat-feed">
+                    {currentThread?.messages.map((m, idx) => {
+                      const isMe = m.role === 'me';
+                      return (
+                        <div key={idx} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                          <div className={`staff-ops-bubble ${isMe ? 'staff-ops-bubble--me' : 'staff-ops-bubble--guest'}`}>
+                            {!isMe && <div className="staff-ops-bubble-sender">{m.sender}</div>}
+                            <p>{m.text}</p>
+                          </div>
+                          <span className="staff-ops-bubble-time">{m.time}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Quick Reply Form */}
+                  <form onSubmit={handleSendChatReply} className="staff-ops-quick-reply-form">
+                    <input
+                      type="text"
+                      placeholder="Reply to thread…"
+                      value={chatReplyText}
+                      onChange={(e) => setChatReplyText(e.target.value)}
+                      className="staff-ops-reply-input"
+                    />
+                    <button type="submit" className="staff-ops-reply-btn" disabled={!currentThread}>
+                      <i className="fas fa-paper-plane" />
                     </button>
-                  );
-                })}
-              </div>
-
-              {/* Chat Feed */}
-              <div className="staff-ops-chat-feed">
-                {currentThread.messages.map((m, idx) => {
-                  const isMe = m.role === 'me';
-                  return (
-                    <div key={idx} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                      <div className={`staff-ops-bubble ${isMe ? 'staff-ops-bubble--me' : 'staff-ops-bubble--guest'}`}>
-                        {!isMe && <div className="staff-ops-bubble-sender">{m.sender}</div>}
-                        <p>{m.text}</p>
-                      </div>
-                      <span className="staff-ops-bubble-time">{m.time}</span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Quick Reply Form */}
-              <form onSubmit={handleSendChatReply} className="staff-ops-quick-reply-form">
-                <input
-                  type="text"
-                  placeholder="Reply to thread…"
-                  value={chatReplyText}
-                  onChange={(e) => setChatReplyText(e.target.value)}
-                  className="staff-ops-reply-input"
-                />
-                <button type="submit" className="staff-ops-reply-btn">
-                  <i className="fas fa-paper-plane" />
-                </button>
-              </form>
+                  </form>
+                </>
+              )}
             </div>
           </section>
         </div>
@@ -1173,8 +1208,15 @@ export default function ResortDepartment() {
                           ) : (
                             <div
                               onClick={() => {
-                                setWalkInForm((p) => ({ ...p, roomId: rm.id, checkIn: iso }));
-                                setShowWalkInModal(true);
+                                const rate = Number(rm.rate) || 3500;
+                                setNewReservation((prev) => ({
+                                  ...prev,
+                                  room_id: rm.id,
+                                  check_in: iso,
+                                  check_out: addDaysISO(iso, 1),
+                                  total_php: rate,
+                                }));
+                                setShowManualBookingModal(true);
                               }}
                               className="staff-ops-tape-empty"
                               title={`Click to book ${rm.name} on ${iso}`}
@@ -1337,8 +1379,8 @@ export default function ResortDepartment() {
                           {req.pax} Guests · {formatDateShort(req.checkIn)} → {formatDateShort(req.checkOut)}
                         </div>
                         <div className="flex items-center justify-between pt-2.5 border-t border-slate-100" style={{ fontSize: '.78rem' }}>
-                          <span style={{ fontWeight: 700, color: conflict.hasConflict ? '#DC2626' : '#0F172A' }}>
-                            {rm.name} {conflict.hasConflict && '(Clash!)'}
+                          <span style={{ fontWeight: 700, color: conflict.conflict ? '#DC2626' : '#0F172A' }}>
+                            {rm.name} {conflict.conflict && '(Clash!)'}
                           </span>
                           <div className="flex items-center gap-1.5">
                             <button
@@ -1526,86 +1568,96 @@ export default function ResortDepartment() {
             </button>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', minHeight: 520 }}>
-            {/* Thread List */}
-            <div style={{ borderRight: '1px solid #E2E8F0', padding: 16, background: '#F8FAFC' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {threads.map((t) => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => setActiveThreadId(t.id)}
-                    className={`staff-ops-unit-card ${t.id === activeThreadId ? 'selected' : ''}`}
-                    style={{ textAlign: 'left', cursor: 'pointer', padding: 12, margin: 0 }}
-                  >
-                    <div style={{ fontWeight: 700, color: '#0F172A', fontSize: '.86rem' }}>{t.name}</div>
-                    <div style={{ fontSize: '.72rem', color: '#0284C7', marginTop: 2 }}>{t.unitLabel}</div>
-                  </button>
-                ))}
-              </div>
+          {threads.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '60px 20px', background: '#F8FAFC', borderRadius: 16, margin: 24, border: '1px dashed #CBD5E1' }}>
+              <i className="fas fa-comments" style={{ fontSize: '2.4rem', color: '#94A3B8', marginBottom: 12 }} />
+              <h3 style={{ margin: 0, fontWeight: 800, color: '#1E293B', fontSize: '1.1rem' }}>No Active Guest Inquiries</h3>
+              <p style={{ margin: '6px 0 0', fontSize: '.84rem', color: '#64748B' }}>
+                When guests send inquiries from the customer portal, their chat threads will appear here for front desk response.
+              </p>
             </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', minHeight: 520 }}>
+              {/* Thread List */}
+              <div style={{ borderRight: '1px solid #E2E8F0', padding: 16, background: '#F8FAFC' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {threads.map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setActiveThreadId(t.id)}
+                      className={`staff-ops-unit-card ${t.id === activeThreadId ? 'selected' : ''}`}
+                      style={{ textAlign: 'left', cursor: 'pointer', padding: 12, margin: 0 }}
+                    >
+                      <div style={{ fontWeight: 700, color: '#0F172A', fontSize: '.86rem' }}>{t.name}</div>
+                      <div style={{ fontSize: '.72rem', color: '#0284C7', marginTop: 2 }}>{t.unitLabel}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-            {/* Conversation Area */}
-            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-              <div style={{ flex: 1, padding: 24, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {currentThread.messages.map((m, idx) => {
-                  const isMe = m.role === 'me';
-                  return (
-                    <div key={idx} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                      <div className={`staff-ops-bubble ${isMe ? 'staff-ops-bubble--me' : 'staff-ops-bubble--guest'}`} style={{ maxWidth: '75%' }}>
-                        {!isMe && <div className="staff-ops-bubble-sender">{m.sender}</div>}
-                        <p>{m.text}</p>
+              {/* Conversation Area */}
+              <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                <div style={{ flex: 1, padding: 24, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {currentThread?.messages.map((m, idx) => {
+                    const isMe = m.role === 'me';
+                    return (
+                      <div key={idx} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                        <div className={`staff-ops-bubble ${isMe ? 'staff-ops-bubble--me' : 'staff-ops-bubble--guest'}`} style={{ maxWidth: '75%' }}>
+                          {!isMe && <div className="staff-ops-bubble-sender">{m.sender}</div>}
+                          <p>{m.text}</p>
+                        </div>
+                        <span className="staff-ops-bubble-time">{m.time}</span>
                       </div>
-                      <span className="staff-ops-bubble-time">{m.time}</span>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
 
-              {/* Quick Template Pills */}
-              <div style={{ padding: '8px 24px', borderTop: '1px solid #E2E8F0', display: 'flex', gap: 8, overflowX: 'auto', background: '#F8FAFC' }}>
-                <button
-                  type="button"
-                  onClick={() => setChatReplyText('Check-in starts at 2:00 PM. Early luggage drop-off at Front Desk is complimentary!')}
-                  className="staff-ops-action-btn"
-                  style={{ fontSize: '.72rem' }}
-                >
-                  Check-in 2PM
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setChatReplyText('Our Patar Beach & Cape Bolinao boat tour departs at 8:30 AM from the resort pier.')}
-                  className="staff-ops-action-btn"
-                  style={{ fontSize: '.72rem' }}
-                >
-                  Boat Tour Info
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setChatReplyText('Housekeeping has been dispatched to your villa and will arrive in 10 minutes.')}
-                  className="staff-ops-action-btn"
-                  style={{ fontSize: '.72rem' }}
-                >
-                  Housekeeping ETA
-                </button>
-              </div>
+                {/* Quick Template Pills */}
+                <div style={{ padding: '8px 24px', borderTop: '1px solid #E2E8F0', display: 'flex', gap: 8, overflowX: 'auto', background: '#F8FAFC' }}>
+                  <button
+                    type="button"
+                    onClick={() => setChatReplyText('Check-in starts at 2:00 PM. Early luggage drop-off at Front Desk is complimentary!')}
+                    className="staff-ops-action-btn"
+                    style={{ fontSize: '.72rem' }}
+                  >
+                    Check-in 2PM
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setChatReplyText('Our Patar Beach & Cape Bolinao boat tour departs at 8:30 AM from the resort pier.')}
+                    className="staff-ops-action-btn"
+                    style={{ fontSize: '.72rem' }}
+                  >
+                    Boat Tour Info
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setChatReplyText('Housekeeping has been dispatched to your villa and will arrive in 10 minutes.')}
+                    className="staff-ops-action-btn"
+                    style={{ fontSize: '.72rem' }}
+                  >
+                    Housekeeping ETA
+                  </button>
+                </div>
 
-              {/* Reply Form */}
-              <form onSubmit={handleSendChatReply} style={{ padding: 16, borderTop: '1px solid #E2E8F0', display: 'flex', gap: 10 }}>
-                <input
-                  type="text"
-                  placeholder="Type a response to guest…"
-                  value={chatReplyText}
-                  onChange={(e) => setChatReplyText(e.target.value)}
-                  className="staff-ops-reply-input"
-                  style={{ flex: 1 }}
-                />
-                <button type="submit" className="staff-ops-reply-btn" style={{ width: 44, height: 44 }}>
-                  <i className="fas fa-paper-plane" />
-                </button>
-              </form>
+                {/* Reply Form */}
+                <form onSubmit={handleSendChatReply} style={{ padding: 16, borderTop: '1px solid #E2E8F0', display: 'flex', gap: 10 }}>
+                  <input
+                    type="text"
+                    placeholder="Type a response to guest…"
+                    value={chatReplyText}
+                    onChange={(e) => setChatReplyText(e.target.value)}
+                    className="staff-ops-reply-input"
+                    style={{ flex: 1 }}
+                  />
+                  <button type="submit" className="staff-ops-reply-btn" style={{ width: 44, height: 44 }} disabled={!currentThread}>
+                    <i className="fas fa-paper-plane" />
+                  </button>
+                </form>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
@@ -1646,14 +1698,22 @@ export default function ResortDepartment() {
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {tasks.filter((t) => t.dept === 'housekeeping').map((t) => (
-                  <div key={t.id} style={{ padding: 12, borderRadius: 10, border: '1px solid #E2E8F0', background: '#F8FAFC' }}>
-                    <div style={{ fontWeight: 700, fontSize: '.84rem', color: '#0F172A' }}>{t.title}</div>
-                    <div style={{ fontSize: '.74rem', color: '#64748B', marginTop: 4 }}>
-                      Unit: {t.roomId} • Assigned to: {t.assignee}
-                    </div>
+                {tasks.filter((t) => t.dept === 'housekeeping').length === 0 ? (
+                  <div style={{ padding: '36px 16px', textAlign: 'center', background: '#F8FAFC', borderRadius: 10, border: '1px dashed #CBD5E1' }}>
+                    <i className="fas fa-check-circle" style={{ color: '#10B981', fontSize: '1.6rem', marginBottom: 8 }} />
+                    <div style={{ fontWeight: 700, color: '#334155', fontSize: '.88rem' }}>All Accommodations Clean &amp; Ready</div>
+                    <small style={{ color: '#64748B', display: 'block', marginTop: 4 }}>No pending room turnover tickets.</small>
                   </div>
-                ))}
+                ) : (
+                  tasks.filter((t) => t.dept === 'housekeeping').map((t) => (
+                    <div key={t.id} style={{ padding: 12, borderRadius: 10, border: '1px solid #E2E8F0', background: '#F8FAFC' }}>
+                      <div style={{ fontWeight: 700, fontSize: '.84rem', color: '#0F172A' }}>{t.title}</div>
+                      <div style={{ fontSize: '.74rem', color: '#64748B', marginTop: 4 }}>
+                        Unit: {t.roomId} • Assigned to: {t.assignee}
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
@@ -1670,14 +1730,22 @@ export default function ResortDepartment() {
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {tasks.filter((t) => t.dept === 'maintenance').map((t) => (
-                  <div key={t.id} style={{ padding: 12, borderRadius: 10, border: '1px solid #E2E8F0', background: '#F8FAFC' }}>
-                    <div style={{ fontWeight: 700, fontSize: '.84rem', color: '#0F172A' }}>{t.title}</div>
-                    <div style={{ fontSize: '.74rem', color: '#64748B', marginTop: 4 }}>
-                      Unit: {t.roomId} • Assigned to: {t.assignee}
-                    </div>
+                {tasks.filter((t) => t.dept === 'maintenance').length === 0 ? (
+                  <div style={{ padding: '36px 16px', textAlign: 'center', background: '#F8FAFC', borderRadius: 10, border: '1px dashed #CBD5E1' }}>
+                    <i className="fas fa-circle-check" style={{ color: '#10B981', fontSize: '1.6rem', marginBottom: 8 }} />
+                    <div style={{ fontWeight: 700, color: '#334155', fontSize: '.88rem' }}>All Equipment Operational</div>
+                    <small style={{ color: '#64748B', display: 'block', marginTop: 4 }}>No active facility or repair tickets.</small>
                   </div>
-                ))}
+                ) : (
+                  tasks.filter((t) => t.dept === 'maintenance').map((t) => (
+                    <div key={t.id} style={{ padding: 12, borderRadius: 10, border: '1px solid #E2E8F0', background: '#F8FAFC' }}>
+                      <div style={{ fontWeight: 700, fontSize: '.84rem', color: '#0F172A' }}>{t.title}</div>
+                      <div style={{ fontSize: '.74rem', color: '#64748B', marginTop: 4 }}>
+                        Unit: {t.roomId} • Assigned to: {t.assignee}
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>

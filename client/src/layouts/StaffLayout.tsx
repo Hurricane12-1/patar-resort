@@ -145,20 +145,43 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
   const allowEscalation = canEscalateToRecovery(activeProfile);
   const deptBadge = formatDepartmentBadge(activeProfile);
 
-  // Live Metrics for Top Bar (Occupancy & Pending Reservations)
-  const [headerMetrics, setHeaderMetrics] = useState<{ occupancyPct: number | null; pendingCount: number | null }>({
+  // Live Metrics for Top Bar & Sidebar Navigation Badges
+  const [headerMetrics, setHeaderMetrics] = useState<{
+    occupancyPct: number | null;
+    pendingCount: number | null;
+    roomsCount: number | null;
+    messagesCount: number | null;
+    tasksCount: number | null;
+  }>({
     occupancyPct: null,
     pendingCount: null,
+    roomsCount: null,
+    messagesCount: null,
+    tasksCount: null,
   });
 
   useEffect(() => {
     let isMounted = true;
-    api.frontDeskOverview()
-      .then((res: any) => {
+    Promise.all([
+      api.frontDeskOverview().catch(() => null),
+      api.rooms(false).catch(() => []),
+      api.conversations().catch(() => []),
+      api.departmentTasks().catch(() => []),
+    ])
+      .then(([res, roomsList, convos, tasksList]) => {
         if (!isMounted) return;
-        const pct = res?.overview?.occupancy_pct ?? null;
-        const pending = (res?.bookings || []).filter((b: any) => b.status === 'pending' || b.status === 'confirmed').length;
-        setHeaderMetrics({ occupancyPct: pct, pendingCount: pending });
+        const pct = res?.overview?.occupancy_pct ?? 0;
+        const pending = (res?.bookings || []).filter((b: any) => b.status === 'pending' || b.payment_status === 'pending').length;
+        const rCount = Array.isArray(roomsList) ? roomsList.length : 0;
+        const mCount = Array.isArray(convos) ? convos.length : 0;
+        const tCount = Array.isArray(tasksList) ? tasksList.filter((t: any) => t.status !== 'completed').length : 0;
+        setHeaderMetrics({
+          occupancyPct: pct,
+          pendingCount: pending,
+          roomsCount: rCount,
+          messagesCount: mCount,
+          tasksCount: tCount,
+        });
       })
       .catch(() => {});
     return () => { isMounted = false; };
@@ -277,13 +300,13 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
             <div className="staff-metric-pill staff-metric-pill--occupancy">
               <span className="staff-metric-label">Occupancy</span>
               <span className="staff-metric-val">
-                {headerMetrics.occupancyPct !== null ? `${headerMetrics.occupancyPct}%` : '50%'}
+                {headerMetrics.occupancyPct !== null ? `${headerMetrics.occupancyPct}%` : '0%'}
               </span>
             </div>
             <div className="staff-metric-pill staff-metric-pill--pending">
               <span className="staff-metric-label">Pending</span>
               <span className="staff-metric-val staff-metric-val--amber">
-                {headerMetrics.pendingCount !== null ? headerMetrics.pendingCount : '3'}
+                {headerMetrics.pendingCount !== null ? headerMetrics.pendingCount : 0}
               </span>
             </div>
           </div>
@@ -394,7 +417,9 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
                   {!isSidebarCollapsed && (
                     <div className="flex items-center justify-between flex-1">
                       <span className="staff-nav-text">Rooms &amp; Cottages</span>
-                      <span className="staff-ops-badge" style={{ fontSize: '10px' }}>6</span>
+                      <span className="staff-ops-badge" style={{ fontSize: '10px' }}>
+                        {headerMetrics.roomsCount !== null ? headerMetrics.roomsCount : 0}
+                      </span>
                     </div>
                   )}
                 </Link>
@@ -409,7 +434,7 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
                     <div className="flex items-center justify-between flex-1">
                       <span className="staff-nav-text">Bookings &amp; Queue</span>
                       <span className="staff-ops-badge" style={{ fontSize: '10px', background: '#FEF3C7', color: '#B45309', borderColor: '#FDE68A' }}>
-                        {headerMetrics.pendingCount !== null ? headerMetrics.pendingCount : '3'}
+                        {headerMetrics.pendingCount !== null ? headerMetrics.pendingCount : 0}
                       </span>
                     </div>
                   )}
@@ -424,7 +449,9 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
                   {!isSidebarCollapsed && (
                     <div className="flex items-center justify-between flex-1">
                       <span className="staff-nav-text">Guest Messages</span>
-                      <span className="staff-ops-badge" style={{ fontSize: '10px', background: '#E0F2FE', color: '#0369A1', borderColor: '#BAE6FD' }}>2</span>
+                      <span className="staff-ops-badge" style={{ fontSize: '10px', background: '#E0F2FE', color: '#0369A1', borderColor: '#BAE6FD' }}>
+                        {headerMetrics.messagesCount !== null ? headerMetrics.messagesCount : 0}
+                      </span>
                     </div>
                   )}
                 </Link>
@@ -453,7 +480,9 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
                   {!isSidebarCollapsed && (
                     <div className="flex items-center justify-between flex-1">
                       <span className="staff-nav-text">Housekeeping &amp; Maint.</span>
-                      <span className="staff-ops-badge" style={{ fontSize: '10px', background: '#FEE2E2', color: '#B91C1C', borderColor: '#FECACA' }}>3</span>
+                      <span className="staff-ops-badge" style={{ fontSize: '10px', background: '#FEE2E2', color: '#B91C1C', borderColor: '#FECACA' }}>
+                        {headerMetrics.tasksCount !== null ? headerMetrics.tasksCount : 0}
+                      </span>
                     </div>
                   )}
                 </Link>
