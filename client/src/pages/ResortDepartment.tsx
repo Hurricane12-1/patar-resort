@@ -8,6 +8,7 @@ import { getManilaTodayISO } from '../lib/offeringSpecs.ts';
 import AddReservationModal, { NewReservationFormState } from '../components/admin/modals/AddReservationModal.tsx';
 import { RoomEditorModal } from '../components/admin/modals/RoomEditorModal.tsx';
 import { CreateRoomModal } from '../components/admin/modals/CreateRoomModal.tsx';
+import { VoucherModal, normalizeVoucherData } from '../components/receipt';
 import { uploadImageToCloudinary } from '../lib/cloudinary.ts';
 import '../styles/staff-portal.css';
 
@@ -44,6 +45,7 @@ interface BookingItem {
   status: 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled';
   payment: string;
   source: string;
+  raw?: any;
 }
 
 interface PendingReservation {
@@ -141,6 +143,9 @@ export default function ResortDepartment() {
   const [chatReplyText, setChatReplyText] = useState('');
   const [resSearchQuery, setResSearchQuery] = useState('');
   const [resStatusFilter, setResStatusFilter] = useState<'all' | 'pending' | 'confirmed' | 'checked_in' | 'checked_out'>('all');
+
+  // ── Official Luxury Guest Voucher / Folio Modal State ──
+  const [inspectedVoucher, setInspectedVoucher] = useState<any>(null);
 
   // ── Executive Admin-Grade Manual / Walk-In Booking Modal State ──
   const [showManualBookingModal, setShowManualBookingModal] = useState(false);
@@ -278,6 +283,10 @@ export default function ResortDepartment() {
     if (searchParams.get('action') === 'walkin' || searchParams.get('action') === 'manual-booking') {
       setShowManualBookingModal(true);
     }
+    const qParam = searchParams.get('q');
+    if (qParam) {
+      setResSearchQuery(qParam);
+    }
     return () => window.removeEventListener('open-staff-walkin', handleOpenWalkIn);
   }, [searchParams, selectedDate, activeRoomsList]);
 
@@ -308,6 +317,7 @@ export default function ResortDepartment() {
         status: (b.status || 'confirmed') as any,
         payment: `${b.payment_status || 'Paid'}${b.payment_method ? ` (${b.payment_method})` : ''}`,
         source: b.is_walk_in ? 'Manual / Walk-In' : 'Online Booking',
+        raw: b,
       }));
       setBookings(allBookings);
 
@@ -536,6 +546,20 @@ export default function ResortDepartment() {
       toast(err.message || 'Failed to record manual booking.', true);
     } finally {
       setCreatingReservation(false);
+    }
+  };
+
+  // Update Reservation Status (Check-in, Check-out, etc.)
+  const handleUpdateBookingStatus = async (id: string, status: string) => {
+    try {
+      await api.setReservationStatus(id, status);
+      toast(`Reservation marked as ${status.replace('_', ' ').toUpperCase()}`);
+      setBookings((prev) =>
+        prev.map((b) => (b.rawId === id || b.id === id ? { ...b, status: status as any } : b))
+      );
+      await loadLiveOperationsData();
+    } catch (e: any) {
+      toast(e.message || 'Failed to update reservation status', true);
     }
   };
 
@@ -929,16 +953,6 @@ export default function ResortDepartment() {
                   <i className="fas fa-table-list" />
                   <span>Tape</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => handleBookOnDate(selectedDate)}
-                  className="staff-btn staff-btn--primary"
-                  style={{ fontSize: '11px', padding: '4px 10px', borderRadius: 8, display: 'inline-flex', alignItems: 'center', gap: 5, fontWeight: 700 }}
-                  title="Create Manual Booking for this date"
-                >
-                  <i className="fas fa-calendar-plus" />
-                  <span>+ Manual Book</span>
-                </button>
               </div>
             </div>
 
@@ -995,15 +1009,30 @@ export default function ResortDepartment() {
                                 return (
                                   <div
                                     key={b.id}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setResStatusFilter('all');
+                                      setSearchParams({ view: 'reservations', q: b.guest, bookingId: b.id });
+                                    }}
                                     className={`staff-ops-day-stay-chip ${isGreen ? 'chip--emerald' : 'chip--sky'}`}
-                                    title={`${b.guest} (${rm.name})`}
+                                    style={{ cursor: 'pointer' }}
+                                    title={`Click to view reservation folio for ${b.guest} (${rm.name})`}
                                   >
                                     {rm.code} • {b.guest.split(' ')[0]}
                                   </div>
                                 );
                               })}
                               {dayBookings.length > 2 && (
-                                <div className="staff-ops-day-more">+{dayBookings.length - 2} more</div>
+                                <div
+                                  className="staff-ops-day-more"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedDate(iso);
+                                  }}
+                                  style={{ cursor: 'pointer' }}
+                                >
+                                  +{dayBookings.length - 2} more
+                                </div>
                               )}
                             </div>
                           </div>
@@ -1033,7 +1062,17 @@ export default function ResortDepartment() {
                           {active.map((b) => {
                             const rm = getRoomById(b.roomId);
                             return (
-                              <div key={b.id} className="staff-ops-day-stay-chip chip--sky" style={{ padding: '3px 6px' }}>
+                              <div
+                                key={b.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setResStatusFilter('all');
+                                  setSearchParams({ view: 'reservations', q: b.guest, bookingId: b.id });
+                                }}
+                                className="staff-ops-day-stay-chip chip--sky"
+                                style={{ padding: '3px 6px', cursor: 'pointer' }}
+                                title={`Click to view reservation folio for ${b.guest} (${rm.name})`}
+                              >
                                 {rm.code}: {b.guest}
                               </div>
                             );
@@ -1061,8 +1100,20 @@ export default function ResortDepartment() {
                       .map((b) => {
                         const rm = getRoomById(b.roomId);
                         return (
-                          <div key={b.id} className="staff-ops-unit-card" style={{ marginBottom: 8 }}>
-                            <div style={{ fontWeight: 700, color: '#0F172A' }}>{b.guest} ({b.pax} Pax)</div>
+                          <div
+                            key={b.id}
+                            onClick={() => {
+                              setResStatusFilter('all');
+                              setSearchParams({ view: 'reservations', q: b.guest, bookingId: b.id });
+                            }}
+                            className="staff-ops-unit-card"
+                            style={{ marginBottom: 8, cursor: 'pointer' }}
+                            title={`Click to view reservation folio for ${b.guest} (${rm.name})`}
+                          >
+                            <div style={{ fontWeight: 700, color: '#0F172A', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <span>{b.guest} ({b.pax} Pax)</span>
+                              <i className="fas fa-arrow-up-right-from-square" style={{ fontSize: '11px', color: '#0284C7' }} />
+                            </div>
                             <div style={{ fontSize: '.76rem', color: '#0284C7' }}>{rm.name} • {formatDateShort(b.checkIn)} &rarr; {formatDateShort(b.checkOut)}</div>
                           </div>
                         );
@@ -1100,11 +1151,21 @@ export default function ResortDepartment() {
                     .map((b) => {
                       const rm = getRoomById(b.roomId);
                       return (
-                        <div key={b.id} className="staff-ops-event-pill">
+                        <div
+                          key={b.id}
+                          onClick={() => {
+                            setResStatusFilter('all');
+                            setSearchParams({ view: 'reservations', q: b.guest, bookingId: b.id });
+                          }}
+                          className="staff-ops-event-pill"
+                          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                          title={`Click to open reservation for ${b.guest}`}
+                        >
                           <span className={`staff-ops-dot ${b.status === 'checked_in' ? 'staff-ops-dot--emerald' : 'staff-ops-dot--sky'}`} />
                           <strong>{rm.code}:</strong>
                           <span>{b.guest}</span>
                           <small>({formatDateShort(b.checkIn)}–{formatDateShort(b.checkOut)})</small>
+                          <i className="fas fa-arrow-up-right-from-square" style={{ fontSize: '10px', marginLeft: 'auto', color: '#0284C7' }} />
                         </div>
                       );
                     })
@@ -1341,7 +1402,15 @@ export default function ResortDepartment() {
                           return (
                             <td key={iso} style={{ padding: 4, textAlign: 'center', borderRight: '1px solid #F1F5F9' }}>
                               {stay ? (
-                                <div className={`staff-ops-tape-block ${stay.status === 'checked_in' ? 'block--emerald' : 'block--sky'}`}>
+                                <div
+                                  onClick={() => {
+                                    setResStatusFilter('all');
+                                    setSearchParams({ view: 'reservations', q: stay.guest, bookingId: stay.id });
+                                  }}
+                                  className={`staff-ops-tape-block ${stay.status === 'checked_in' ? 'block--emerald' : 'block--sky'}`}
+                                  style={{ cursor: 'pointer' }}
+                                  title={`Click to open reservation folio for ${stay.guest}`}
+                                >
                                   {isStart ? stay.guest.split(' ')[0] : '•••'}
                                 </div>
                               ) : (
@@ -1471,8 +1540,14 @@ export default function ResortDepartment() {
                             return (
                               <div
                                 key={b.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setResStatusFilter('all');
+                                  setSearchParams({ view: 'reservations', q: b.guest, bookingId: b.id });
+                                }}
                                 className={`staff-ops-day-stay-chip ${isGreen ? 'chip--emerald' : 'chip--sky'}`}
-                                title={`${b.guest} (${rm.name})`}
+                                style={{ cursor: 'pointer' }}
+                                title={`Click to view reservation folio for ${b.guest} (${rm.name})`}
                               >
                                 {rm.code} • {b.guest}
                               </div>
@@ -2136,7 +2211,7 @@ export default function ResortDepartment() {
                   onChange={(e) => setResSearchQuery(e.target.value)}
                   style={{
                     width: '100%',
-                    padding: '8px 12px 8px 32px',
+                    padding: '8px 28px 8px 32px',
                     borderRadius: 10,
                     border: '1px solid #CBD5E1',
                     fontSize: '.82rem',
@@ -2146,6 +2221,29 @@ export default function ResortDepartment() {
                   }}
                 />
                 <i className="fas fa-search" style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', fontSize: '.75rem' }} />
+                {resSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setResSearchQuery('');
+                      setSearchParams({ view: 'reservations' });
+                    }}
+                    style={{
+                      position: 'absolute',
+                      right: 8,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      color: '#94A3B8',
+                      cursor: 'pointer',
+                      padding: 2,
+                    }}
+                    title="Clear search filter"
+                  >
+                    <i className="fas fa-times-circle" />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -2210,28 +2308,96 @@ export default function ResortDepartment() {
                     <tbody>
                       {filtered.map((b) => {
                         const rm = getRoomById(b.roomId);
+                        const isTarget = searchParams.get('bookingId') === b.id || searchParams.get('bookingId') === b.rawId;
                         return (
-                          <tr key={b.id}>
-                            <td><code>{b.id}</code></td>
+                          <tr
+                            key={b.id}
+                            style={{
+                              background: isTarget ? '#F0F9FF' : undefined,
+                              transition: 'background 0.2s ease',
+                            }}
+                          >
                             <td>
-                              <b>{b.guest}</b>
-                              <div><small>{b.pax} Guests</small></div>
+                              <code style={{ fontWeight: isTarget ? 800 : 500, color: isTarget ? '#0284C7' : undefined }}>{b.id}</code>
+                              {isTarget && (
+                                <span style={{ marginLeft: 6, fontSize: '10px', background: '#0284C7', color: '#FFF', padding: '1px 6px', borderRadius: 6, fontWeight: 700 }}>
+                                  Selected
+                                </span>
+                              )}
                             </td>
-                            <td>{rm.name}</td>
+                            <td>
+                              <b style={{ color: '#0F172A' }}>{b.guest}</b>
+                              <div><small style={{ color: '#64748B' }}>{b.pax} Guests · {b.source}</small></div>
+                            </td>
+                            <td>
+                              <span style={{ fontWeight: 600, color: '#0F172A' }}>{rm.name}</span>
+                            </td>
                             <td>{formatDateShort(b.checkIn)} &rarr; {formatDateShort(b.checkOut)}</td>
                             <td><span className="tag">{b.payment}</span></td>
                             <td>
                               <span className={`pill ${b.status}`}>{b.status.replace('_', ' ')}</span>
                             </td>
                             <td style={{ textAlign: 'right' }}>
-                              <button
-                                type="button"
-                                onClick={() => navigate('/staff/reception')}
-                                className="act-btn"
-                                title="Open guest folio & check-in terminal"
-                              >
-                                Open in Desk
-                              </button>
+                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                {b.status === 'confirmed' && (
+                                  <button
+                                    type="button"
+                                    className="act-btn"
+                                    onClick={() => handleUpdateBookingStatus(b.rawId || b.id, 'checked_in')}
+                                    style={{
+                                      background: 'rgba(16, 185, 129, 0.12)',
+                                      borderColor: 'rgba(52, 211, 153, 0.5)',
+                                      color: '#059669',
+                                      fontWeight: 700,
+                                      padding: '4px 8px',
+                                      borderRadius: 6,
+                                      fontSize: '11px',
+                                      cursor: 'pointer',
+                                    }}
+                                    title="Confirm guest arrival and issue room key"
+                                  >
+                                    <i className="fas fa-bell-concierge" style={{ marginRight: 4 }} /> Check-in
+                                  </button>
+                                )}
+                                {b.status === 'checked_in' && (
+                                  <button
+                                    type="button"
+                                    className="act-btn"
+                                    onClick={() => handleUpdateBookingStatus(b.rawId || b.id, 'checked_out')}
+                                    style={{
+                                      background: 'rgba(99, 102, 241, 0.12)',
+                                      borderColor: 'rgba(129, 140, 248, 0.5)',
+                                      color: '#4F46E5',
+                                      fontWeight: 700,
+                                      padding: '4px 8px',
+                                      borderRadius: 6,
+                                      fontSize: '11px',
+                                      cursor: 'pointer',
+                                    }}
+                                    title="Release room and dispatch housekeeping turnaround"
+                                  >
+                                    <i className="fas fa-key" style={{ marginRight: 4 }} /> Check-out
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  className="act-btn"
+                                  onClick={() => setInspectedVoucher(b.raw || b)}
+                                  style={{
+                                    borderColor: 'rgba(56, 189, 248, 0.5)',
+                                    color: '#0284C7',
+                                    background: 'rgba(56, 189, 248, 0.1)',
+                                    fontWeight: 700,
+                                    padding: '4px 8px',
+                                    borderRadius: 6,
+                                    fontSize: '11px',
+                                    cursor: 'pointer',
+                                  }}
+                                  title="Inspect or print official guest folio voucher"
+                                >
+                                  <i className="fas fa-receipt" style={{ marginRight: 4 }} /> Folio
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         );
@@ -2543,6 +2709,16 @@ export default function ResortDepartment() {
           themeMuted="#64748B"
           uploadImageToCloudinary={uploadImageToCloudinary}
           toast={toast}
+        />
+      )}
+      {/* =========================================================================
+          OFFICIAL LUXURY GUEST VOUCHER / FOLIO MODAL
+          ========================================================================= */}
+      {inspectedVoucher && (
+        <VoucherModal
+          isOpen={Boolean(inspectedVoucher)}
+          voucher={normalizeVoucherData(inspectedVoucher)}
+          onClose={() => setInspectedVoucher(null)}
         />
       )}
     </div>
