@@ -32,6 +32,26 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+.guest-portal *,
+.guest-portal *::before,
+.guest-portal *::after {
+  box-sizing: border-box;
+  border-width: 0;
+  border-style: solid;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.guest-portal :is(ul, ol, li) {
+  list-style: none !important;
+  margin: 0;
+  padding: 0;
+}
+
+.guest-portal :is(dl, dt, dd, figure, blockquote) {
+  margin: 0;
+  padding: 0;
+}
+
 .guest-portal :is(h1, h2, h3, h4, h5, h6) {
   font-family: inherit;
   color: #FFFFFF;

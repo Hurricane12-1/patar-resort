@@ -154,7 +154,7 @@ export default function GuestProfile() {
 function CompletenessCard({ percent, checks }: { percent: number; checks: { section: string; label: string; done: boolean }[] }) {
   const missing = checks.filter((c) => !c.done);
   return (
-    <div className="rounded-[22px] border border-white/10 bg-[#061533]/80 backdrop-blur-md p-5">
+    <div className="rounded-[22px] border border-white/10 bg-[#061533]/80 backdrop-blur-md p-5 shadow-[0_8px_32px_rgba(0,0,0,0.36)]">
       <div className="flex items-center justify-between">
         <p className="text-[14px] font-semibold text-white">Profile {percent === 100 ? 'complete' : 'progress'}</p>
         <p className="text-[14px] font-bold text-[#38BDF8]">{percent}%</p>
@@ -163,12 +163,20 @@ function CompletenessCard({ percent, checks }: { percent: number; checks: { sect
         <div className="h-full rounded-full bg-gradient-to-r from-[#0284C7] to-[#38BDF8] shadow-[0_0_8px_rgba(56,189,248,0.5)] transition-all duration-500" style={{ width: `${percent}%` }} />
       </div>
       {missing.length > 0 ? (
-        <ul className="mt-4 space-y-2">
+        <ul className="mt-4 list-none space-y-2 p-0 m-0">
           {missing.map((item) => (
-            <li key={item.label}>
-              <a href={`#gp-${item.section}`} className="flex items-center gap-2 text-[13px] font-medium text-slate-300 hover:text-white transition">
-                <span className="flex h-4 w-4 items-center justify-center rounded-full border border-dashed border-sky-400/50" />
-                Add {item.label.toLowerCase()}
+            <li key={item.label} className="list-none">
+              <a
+                href={`#gp-${item.section}`}
+                className="group flex items-center justify-between gap-2.5 rounded-xl border border-white/10 bg-[#040e22]/70 px-3 py-2 text-[13px] font-medium text-slate-300 transition hover:border-sky-400/40 hover:bg-sky-500/10 hover:text-white"
+              >
+                <span className="flex items-center gap-2.5 min-w-0">
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-dashed border-sky-400/60 text-[#38BDF8] group-hover:border-[#38BDF8] group-hover:bg-sky-500/20">
+                    <GuestIcon name="plus" className="h-2.5 w-2.5 opacity-80 group-hover:opacity-100" />
+                  </span>
+                  <span className="truncate">Add {item.label.toLowerCase()}</span>
+                </span>
+                <GuestIcon name="chevron-right" className="h-3.5 w-3.5 shrink-0 text-slate-500 transition-transform group-hover:translate-x-0.5 group-hover:text-[#38BDF8]" />
               </a>
             </li>
           ))}
