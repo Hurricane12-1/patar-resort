@@ -113,7 +113,7 @@ export function canAccessPortal(profile: any, portal: PortalKey): boolean {
 export function getDefaultStaffPath(profile: any): string {
   const role = normalizeRole(profile?.role);
   if (role === 'administrator') return '/admin';
-  return '/staff/reception';
+  return '/staff/operations?view=dashboard';
 }
 
 export function getAllowedOperationalDepartments(profile: any): DepartmentOption[] {

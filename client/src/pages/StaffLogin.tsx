@@ -44,7 +44,7 @@ export default function StaffLogin() {
       }
       const deptLabel = formatDepartmentBadge(user);
       toast(`✦ Clearance granted — Welcome, ${user?.full_name || 'Team Member'} (${deptLabel})`);
-      const destination = redirectTarget || (role === 'administrator' ? '/staff/reception' : getDefaultStaffPath(user));
+      const destination = redirectTarget || (role === 'administrator' ? '/staff/operations?view=dashboard' : getDefaultStaffPath(user));
       navigate(destination, { replace: true });
     } catch (err: any) {
       toast(err.message || 'Authentication failed. Please check your credentials.', true);

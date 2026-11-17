@@ -473,15 +473,6 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
                     </div>
                   )}
                 </Link>
-
-                <NavLink
-                  to="/staff/reception"
-                  className={({ isActive }) => `staff-nav-item ${isActive ? 'active' : ''}`}
-                  title="Reception & Check-In"
-                >
-                  <i className="fas fa-bell-concierge staff-nav-icon staff-nav-icon--sky" />
-                  {!isSidebarCollapsed && <span className="staff-nav-text">Reception Desk</span>}
-                </NavLink>
               </nav>
             </div>
 
@@ -489,22 +480,6 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
             <div className="staff-nav-group">
               {!isSidebarCollapsed && <div className="staff-nav-group-title">Property Ops</div>}
               <nav className="staff-nav-menu">
-                <Link
-                  to="/staff/operations?view=housekeeping"
-                  className={`staff-nav-item ${location.search.includes('view=housekeeping') ? 'active' : ''}`}
-                  title="Housekeeping & Maintenance"
-                >
-                  <i className="fas fa-broom staff-nav-icon" style={{ color: '#0D9488' }} />
-                  {!isSidebarCollapsed && (
-                    <div className="flex items-center justify-between flex-1">
-                      <span className="staff-nav-text">Housekeeping &amp; Maint.</span>
-                      <span className="staff-ops-badge" style={{ fontSize: '10px', background: '#FEE2E2', color: '#B91C1C', borderColor: '#FECACA' }}>
-                        {headerMetrics.tasksCount !== null ? headerMetrics.tasksCount : 0}
-                      </span>
-                    </div>
-                  )}
-                </Link>
-
                 <NavLink
                   to="/staff/accounting"
                   className={({ isActive }) => `staff-nav-item ${isActive ? 'active' : ''}`}
