@@ -335,11 +335,10 @@ export const requireStaffOrAdmin = requireRole('administrator', 'admin', 'staff'
 export const requireFrontDeskOrAdmin = (req, res, next) => {
   if (!req.user) return next(new ApiError(401, 'Authentication required'));
   const role = normalizeEmployeeRole(req.user.role);
-  const dept = resolveEmployeeDepartment(req.user);
-  if (role === 'administrator' || role === 'receptionist' || (role === 'staff' && dept === 'front_desk')) {
+  if (role === 'administrator' || role === 'receptionist' || role === 'staff') {
     return next();
   }
-  return requireRole('administrator', 'receptionist')(req, res, next);
+  return requireRole('administrator', 'receptionist', 'staff')(req, res, next);
 };
 
 export const requireCustomerService = requireFrontDeskOrAdmin;
@@ -347,11 +346,10 @@ export const requireCustomerService = requireFrontDeskOrAdmin;
 export const requireReservationDesk = (req, res, next) => {
   if (!req.user) return next(new ApiError(401, 'Authentication required'));
   const role = normalizeEmployeeRole(req.user.role);
-  const dept = resolveEmployeeDepartment(req.user);
-  if (role === 'administrator' || role === 'receptionist' || role === 'accounting' || (role === 'staff' && dept === 'front_desk')) {
+  if (role === 'administrator' || role === 'receptionist' || role === 'accounting' || role === 'staff') {
     return next();
   }
-  return requireRole('administrator', 'receptionist', 'accounting')(req, res, next);
+  return requireRole('administrator', 'receptionist', 'accounting', 'staff')(req, res, next);
 };
 
 export const requireOperationalStaffOrAdmin = (req, res, next) => {

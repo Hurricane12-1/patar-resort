@@ -1404,7 +1404,7 @@ export function useAdminState() {
       const resolvedDept = explicitDept || preset?.department || normalizeDepartment({ role: resolvedRole });
       await api.updateUserRole(userId, resolvedRole, resolvedDept);
       setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: resolvedRole, department: resolvedDept } : u)));
-      toast(`Employee updated to ${preset?.shortLabel || resolvedRole} (${resolvedDept.replace('_', ' ')}) ✦`);
+      toast(`Employee role updated to ${resolvedRole === 'administrator' ? 'Administrator' : 'Staff'} ✦`);
     } catch (err: any) {
       toast(err.message, true);
     }

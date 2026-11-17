@@ -17,50 +17,18 @@ export const OPERATIONAL_DEPARTMENTS: DepartmentOption[] = [
 
 export const EMPLOYEE_ROLE_PRESETS = [
   {
-    value: 'receptionist',
-    role: 'receptionist',
+    value: 'staff',
+    role: 'staff',
     department: 'front_desk' as EmployeeDepartmentId,
-    label: 'Front Desk / Receptionist (Check-In, Chat & Front Desk Tasks)',
-    shortLabel: 'Front Desk',
+    label: 'Staff (Operations, Reception & Execution)',
+    shortLabel: 'Staff',
     portalPath: '/staff/reception',
-  },
-  {
-    value: 'accounting',
-    role: 'accounting',
-    department: 'accounting' as EmployeeDepartmentId,
-    label: 'Accounting & Finance (Ledger, Audit & Rate Requests)',
-    shortLabel: 'Accounting & Finance',
-    portalPath: '/staff/accounting',
-  },
-  {
-    value: 'housekeeping',
-    role: 'housekeeping',
-    department: 'housekeeping' as EmployeeDepartmentId,
-    label: 'Housekeeping (Room Readiness, Turn-down & Linen Stock)',
-    shortLabel: 'Housekeeping',
-    portalPath: '/staff/operations',
-  },
-  {
-    value: 'kitchen',
-    role: 'kitchen',
-    department: 'kitchen' as EmployeeDepartmentId,
-    label: 'Kitchen & Dining (Kitchen Queue & Culinary Supplies)',
-    shortLabel: 'Kitchen & Dining',
-    portalPath: '/staff/operations',
-  },
-  {
-    value: 'tours',
-    role: 'tours',
-    department: 'tours' as EmployeeDepartmentId,
-    label: 'Tours & Island Hopping [Gatekept] (Admin-Restricted Dispatch)',
-    shortLabel: 'Island Hopping (Gatekept)',
-    portalPath: '/staff/operations',
   },
   {
     value: 'administrator',
     role: 'administrator',
     department: 'management' as EmployeeDepartmentId,
-    label: 'Administrator (Full Governance, Pricing & Approvals)',
+    label: 'Administrator (Executive Governance & Approvals)',
     shortLabel: 'Administrator',
     portalPath: '/admin',
   },
@@ -121,19 +89,20 @@ export function canAccessPortal(profile: any, portal: PortalKey): boolean {
     case 'admin':
       return role === 'administrator';
     case 'reception':
-      return role === 'administrator' || dept === 'front_desk';
+      return role === 'administrator' || role === 'staff' || dept === 'front_desk';
     case 'accounting':
-      return role === 'administrator' || dept === 'accounting';
+      return role === 'administrator' || role === 'staff' || dept === 'accounting';
     case 'operations':
       return (
         role === 'administrator' ||
+        role === 'staff' ||
         dept === 'front_desk' ||
         dept === 'housekeeping' ||
         dept === 'kitchen' ||
         dept === 'tours'
       );
     case 'recovery':
-      return role === 'administrator' || dept === 'front_desk' || dept === 'accounting';
+      return role === 'administrator' || role === 'staff' || dept === 'front_desk' || dept === 'accounting';
     case 'client':
       return role === 'customer';
     default:
@@ -143,45 +112,41 @@ export function canAccessPortal(profile: any, portal: PortalKey): boolean {
 
 export function getDefaultStaffPath(profile: any): string {
   const role = normalizeRole(profile?.role);
-  const dept = normalizeDepartment(profile);
   if (role === 'administrator') return '/admin';
-  if (dept === 'accounting') return '/staff/accounting';
-  if (dept === 'front_desk') return '/staff/reception';
-  return '/staff/operations';
+  return '/staff/reception';
 }
 
 export function getAllowedOperationalDepartments(profile: any): DepartmentOption[] {
   const role = normalizeRole(profile?.role);
   const dept = normalizeDepartment(profile);
-  if (role === 'administrator') return OPERATIONAL_DEPARTMENTS;
+  if (role === 'administrator' || role === 'staff') return OPERATIONAL_DEPARTMENTS;
   return OPERATIONAL_DEPARTMENTS.filter((d) => d.id === dept);
 }
 
 export function canUseRoomReadiness(profile: any): boolean {
   const role = normalizeRole(profile?.role);
   const dept = normalizeDepartment(profile);
-  return role === 'administrator' || dept === 'front_desk' || dept === 'housekeeping';
+  return role === 'administrator' || role === 'staff' || dept === 'front_desk' || dept === 'housekeeping';
 }
 
 export function canRequestPriceChange(profile: any): boolean {
   const role = normalizeRole(profile?.role);
   const dept = normalizeDepartment(profile);
-  return role === 'administrator' || dept === 'accounting' || dept === 'front_desk';
+  return role === 'administrator' || role === 'staff' || dept === 'accounting' || dept === 'front_desk';
 }
 
 export function canEscalateToRecovery(profile: any): boolean {
   const role = normalizeRole(profile?.role);
   const dept = normalizeDepartment(profile);
-  return role === 'administrator' || dept === 'front_desk' || dept === 'accounting';
+  return role === 'administrator' || role === 'staff' || dept === 'front_desk' || dept === 'accounting';
 }
 
 export function formatDepartmentBadge(profile: any): string {
+  const role = normalizeRole(profile?.role);
+  if (role === 'administrator') return 'Administrator';
+  if (role === 'staff') return 'Staff';
   const dept = normalizeDepartment(profile);
-  if (dept === 'management') return 'Executive Admin';
-  if (dept === 'front_desk') return 'Front Desk';
-  if (dept === 'accounting') return 'Accounting & Finance';
-  if (dept === 'housekeeping') return 'Housekeeping';
-  if (dept === 'kitchen') return 'Kitchen & Dining';
-  if (dept === 'tours') return 'Island Hopping (Gatekept)';
+  if (dept === 'management') return 'Administrator';
+  if (['front_desk', 'accounting', 'housekeeping', 'kitchen', 'tours'].includes(dept)) return 'Staff';
   return 'Guest';
 }

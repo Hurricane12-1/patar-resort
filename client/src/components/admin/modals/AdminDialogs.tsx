@@ -466,7 +466,7 @@ export const AdminDialogs: React.FC<AdminDialogsProps> = ({
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', color: '#0D9488', fontWeight: 700 }}>
                     <span>Badge ID: {generateEmployeeId(1)}</span>
-                    <span>Role: {newStaff.role || 'receptionist'}</span>
+                    <span>Role: {newStaff.role === 'administrator' ? 'Administrator' : 'Staff'}</span>
                   </div>
                   <div style={{ color: themeText, fontFamily: 'monospace' }}>
                     Email: {generateAccountEmail(newStaff.first_name, newStaff.middle_name, newStaff.last_name, 1, true, newStaff.role)}
@@ -521,7 +521,7 @@ export const AdminDialogs: React.FC<AdminDialogsProps> = ({
                 </div>
                 <div>
                   <label style={{ fontSize: '.75rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>
-                    Department &amp; Role
+                    Role / Entity *
                   </label>
                   <select
                     style={{
@@ -532,23 +532,18 @@ export const AdminDialogs: React.FC<AdminDialogsProps> = ({
                       background: isLightMode ? '#F8FAFC' : '#1E293B',
                       color: themeText,
                     }}
-                    value={
-                      EMPLOYEE_ROLE_PRESETS.find((p) => p.role === newStaff.role && (!newStaff.department || p.department === newStaff.department))?.value ||
-                      newStaff.role ||
-                      'receptionist'
-                    }
+                    value={normalizeRole(newStaff.role) === 'administrator' ? 'administrator' : 'staff'}
                     onChange={(e) => {
-                      const preset = EMPLOYEE_ROLE_PRESETS.find((p) => p.value === e.target.value);
+                      const sel = e.target.value;
                       setNewStaff({
                         ...newStaff,
-                        role: preset ? preset.role : e.target.value,
-                        department: preset ? preset.department : normalizeDepartment({ role: e.target.value }),
+                        role: sel,
+                        department: sel === 'administrator' ? 'management' : 'front_desk',
                       });
                     }}
                   >
-                    {EMPLOYEE_ROLE_PRESETS.map((p) => (
-                      <option key={p.value} value={p.value}>{p.label}</option>
-                    ))}
+                    <option value="staff">Staff (Operational Team Member)</option>
+                    <option value="administrator">Administrator (Executive Management)</option>
                   </select>
                 </div>
               </div>
@@ -905,22 +900,18 @@ export const AdminDialogs: React.FC<AdminDialogsProps> = ({
                         background: isLightMode ? '#F8FAFC' : '#1E293B',
                         color: themeText,
                       }}
-                      value={
-                        EMPLOYEE_ROLE_PRESETS.find((p) => p.department === editingUser.department)?.value ||
-                        (normalizeRole(editingUser.role) === 'administrator' ? 'administrator' : normalizeDepartment(editingUser))
-                      }
+                      value={normalizeRole(editingUser.role) === 'administrator' ? 'administrator' : 'staff'}
                       onChange={(e) => {
-                        const preset = EMPLOYEE_ROLE_PRESETS.find((p) => p.value === e.target.value);
+                        const sel = e.target.value;
                         setEditingUser({
                           ...editingUser,
-                          role: preset ? preset.role : e.target.value,
-                          department: preset ? preset.department : normalizeDepartment({ role: e.target.value }),
+                          role: sel,
+                          department: sel === 'administrator' ? 'management' : 'front_desk',
                         });
                       }}
                     >
-                      {EMPLOYEE_ROLE_PRESETS.map((p) => (
-                        <option key={p.value} value={p.value}>{p.label}</option>
-                      ))}
+                      <option value="staff">Staff (Operational Team Member)</option>
+                      <option value="administrator">Administrator (Executive Management)</option>
                     </select>
                   )}
                 </div>

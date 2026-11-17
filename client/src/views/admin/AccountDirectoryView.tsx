@@ -184,7 +184,7 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
                   transition: 'all 0.18s ease',
                 }}
                 onClick={() => {
-                  setNewStaff({ first_name: '', middle_name: '', last_name: '', full_name: '', email: '', password: '', phone: '', role: 'receptionist', department: 'front_desk' });
+                  setNewStaff({ first_name: '', middle_name: '', last_name: '', full_name: '', email: '', password: '', phone: '', role: 'staff', department: 'front_desk' });
                   setShowCreateModal(true);
                 }}
               >
@@ -226,13 +226,9 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
           {/* Staff Role Filter Badges */}
           <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 6, marginBottom: 14, scrollbarWidth: 'none' }}>
             {[
-              { value: '', label: 'All Staff' },
+              { value: '', label: 'All Staff & Admins' },
               { value: 'administrator', label: 'Administrator' },
-              { value: 'front_desk', label: 'Front Desk' },
-              { value: 'accounting', label: 'Accounting' },
-              { value: 'housekeeping', label: 'Housekeeping' },
-              { value: 'kitchen', label: 'Kitchen' },
-              { value: 'tours', label: 'Island Hopping (Gatekept)' },
+              { value: 'staff', label: 'Staff' },
             ].map((f) => {
               const isSel = roleFilter === f.value;
               return (
@@ -242,7 +238,7 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
                   onClick={() => setRoleFilter(f.value)}
                   style={{
                     whiteSpace: 'nowrap',
-                    padding: '5px 12px',
+                    padding: '5px 14px',
                     borderRadius: 6,
                     fontSize: '.75rem',
                     fontWeight: isSel ? 700 : 600,
@@ -271,7 +267,13 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
           ) : (() => {
             const staffUsers = users
               .filter((u) => isInternalEmployee(u))
-              .filter((u) => !roleFilter || normalizeRole(u.role) === roleFilter || normalizeDepartment(u) === roleFilter);
+              .filter((u) => {
+                if (!roleFilter) return true;
+                const r = normalizeRole(u.role);
+                if (roleFilter === 'administrator') return r === 'administrator';
+                if (roleFilter === 'staff') return r === 'staff';
+                return r === roleFilter;
+              });
             return staffUsers.length === 0 ? (
               <p className="muted" style={{ padding: '30px 0' }}>No staff accounts match your filters.</p>
             ) : (
@@ -282,18 +284,15 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
                       <th style={{ textAlign: 'left', padding: '11px 16px', fontSize: '.72rem', fontWeight: 700, color: isLightMode ? '#475569' : themeMuted, textTransform: 'uppercase', letterSpacing: '.06em' }}>Full Name</th>
                       <th style={{ textAlign: 'left', padding: '11px 16px', fontSize: '.72rem', fontWeight: 700, color: isLightMode ? '#475569' : themeMuted, textTransform: 'uppercase', letterSpacing: '.06em' }}>Email</th>
                       <th style={{ textAlign: 'left', padding: '11px 16px', fontSize: '.72rem', fontWeight: 700, color: isLightMode ? '#475569' : themeMuted, textTransform: 'uppercase', letterSpacing: '.06em' }}>Phone</th>
-                      <th style={{ textAlign: 'left', padding: '11px 16px', fontSize: '.72rem', fontWeight: 700, color: isLightMode ? '#475569' : themeMuted, textTransform: 'uppercase', letterSpacing: '.06em' }}>Department &amp; Role</th>
+                      <th style={{ textAlign: 'left', padding: '11px 16px', fontSize: '.72rem', fontWeight: 700, color: isLightMode ? '#475569' : themeMuted, textTransform: 'uppercase', letterSpacing: '.06em' }}>Role / Entity</th>
                       <th style={{ textAlign: 'left', padding: '11px 16px', fontSize: '.72rem', fontWeight: 700, color: isLightMode ? '#475569' : themeMuted, textTransform: 'uppercase', letterSpacing: '.06em' }}>Status</th>
-                      <th style={{ textAlign: 'left', padding: '11px 16px', fontSize: '.72rem', fontWeight: 700, color: isLightMode ? '#475569' : themeMuted, textTransform: 'uppercase', letterSpacing: '.06em' }}>Department Assignment</th>
+                      <th style={{ textAlign: 'left', padding: '11px 16px', fontSize: '.72rem', fontWeight: 700, color: isLightMode ? '#475569' : themeMuted, textTransform: 'uppercase', letterSpacing: '.06em' }}>Role Assignment</th>
                       <th style={{ textAlign: 'right', padding: '11px 16px', fontSize: '.72rem', fontWeight: 700, color: isLightMode ? '#475569' : themeMuted, textTransform: 'uppercase', letterSpacing: '.06em' }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {staffUsers.map((u) => {
-                      const dept = normalizeDepartment(u);
-                      const selectVal =
-                        EMPLOYEE_ROLE_PRESETS.find((p) => p.department === dept)?.value ||
-                        (normalizeRole(u.role) === 'administrator' ? 'administrator' : 'receptionist');
+                      const isAdmin = normalizeRole(u.role) === 'administrator';
                       return (
                       <tr key={u.id} style={{ borderBottom: `1px solid ${isLightMode ? '#F1F5F9' : themeBorder}` }}>
                         <td style={{ padding: '12px 16px' }}>
@@ -307,9 +306,9 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
                               justifyContent: 'center',
                               fontSize: '.72rem',
                               fontWeight: 700,
-                              background: u.role === 'administrator' ? 'rgba(139,92,246,0.12)' : 'rgba(14,165,233,0.12)',
-                              color: u.role === 'administrator' ? '#7C3AED' : '#0284C7',
-                              border: `1px solid ${u.role === 'administrator' ? 'rgba(139,92,246,0.25)' : 'rgba(14,165,233,0.25)'}`,
+                              background: isAdmin ? 'rgba(139,92,246,0.12)' : 'rgba(14,165,233,0.12)',
+                              color: isAdmin ? '#7C3AED' : '#0284C7',
+                              border: `1px solid ${isAdmin ? 'rgba(139,92,246,0.25)' : 'rgba(14,165,233,0.25)'}`,
                             }}>
                               {(u.full_name || 'S').slice(0, 2).toUpperCase()}
                             </span>
@@ -325,15 +324,19 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
                           <span style={{
                             display: 'inline-flex',
                             alignItems: 'center',
-                            padding: '3px 8px',
+                            gap: 5,
+                            padding: '3px 9px',
                             borderRadius: 6,
                             fontSize: '.72rem',
                             fontWeight: 700,
                             letterSpacing: '.02em',
-                            background: u.role === 'administrator' ? '#F5F3FF' : u.role === 'receptionist' ? '#F0F9FF' : '#FEF3C7',
-                            color: u.role === 'administrator' ? '#6D28D9' : u.role === 'receptionist' ? '#0369A1' : '#B45309',
-                            border: `1px solid ${u.role === 'administrator' ? '#DDD6FE' : u.role === 'receptionist' ? '#BAE6FD' : '#FDE68A'}`,
-                          }}>{formatDepartmentBadge(u)}</span>
+                            background: isAdmin ? (isLightMode ? '#F5F3FF' : 'rgba(139,92,246,0.15)') : (isLightMode ? '#F0F9FF' : 'rgba(14,165,233,0.15)'),
+                            color: isAdmin ? '#6D28D9' : '#0284C7',
+                            border: `1px solid ${isAdmin ? (isLightMode ? '#DDD6FE' : 'rgba(139,92,246,0.3)') : (isLightMode ? '#BAE6FD' : 'rgba(14,165,233,0.3)')}`,
+                          }}>
+                            <i className={isAdmin ? 'fas fa-crown' : 'fas fa-shield-halved'} style={{ fontSize: '.68rem' }} />
+                            {isAdmin ? 'Administrator' : 'Staff'}
+                          </span>
                         </td>
                         <td style={{ padding: '12px 16px' }}>
                           <span style={{
@@ -354,11 +357,11 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
                         </td>
                         <td style={{ padding: '12px 16px' }}>
                           <select
-                            value={selectVal}
+                            value={isAdmin ? 'administrator' : 'staff'}
                             style={{
-                              fontSize: '.74rem',
+                              fontSize: '.75rem',
                               fontWeight: 600,
-                              padding: '5px 8px',
+                              padding: '5px 10px',
                               borderRadius: 6,
                               border: `1px solid ${isLightMode ? '#CBD5E1' : themeBorder}`,
                               background: isLightMode ? '#F8FAFC' : '#0F172A',
@@ -366,13 +369,12 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
                               cursor: 'pointer',
                             }}
                             onChange={(e) => {
-                              const preset = EMPLOYEE_ROLE_PRESETS.find((p) => p.value === e.target.value);
-                              handleRoleChange(u.id, preset?.role || e.target.value, preset?.department);
+                              const newRole = e.target.value;
+                              handleRoleChange(u.id, newRole, newRole === 'administrator' ? 'management' : 'front_desk');
                             }}
                           >
-                            {EMPLOYEE_ROLE_PRESETS.map((p) => (
-                              <option key={p.value} value={p.value}>{p.shortLabel}</option>
-                            ))}
+                            <option value="administrator">Administrator</option>
+                            <option value="staff">Staff</option>
                           </select>
                         </td>
                         <td style={{ padding: '12px 16px', textAlign: 'right' }}>
