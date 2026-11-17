@@ -913,24 +913,13 @@ export default function ResortDepartment() {
                   {pendingReservations.length} Pending
                 </span>
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowManualBookingModal(true)}
-                  className="staff-btn staff-btn--primary"
-                  style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '6px' }}
-                  title="Manual Booking Entry"
-                >
-                  <i className="fas fa-plus" /> Manual Book
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSearchParams({ view: 'reservations' })}
-                  className="staff-ops-link-btn"
-                >
-                  All Queue &rarr;
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setSearchParams({ view: 'reservations' })}
+                className="staff-ops-link-btn"
+              >
+                View All &rarr;
+              </button>
             </div>
 
             <div className="staff-ops-col-body">
