@@ -1,16 +1,16 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { toast } from './Toasts.tsx';
-import { money, fmtDate } from '../lib/format.ts';
+import { fmtDate } from '../lib/format.ts';
 import { supabase } from '../lib/supabaseClient.ts';
 import {
   api,
   addDaysYMD,
   extractBookingTimes,
-  normalizeTo24Hour,
   parseBookingTimeMs,
   isBookingCollisionWithGap,
   TWO_HOURS_MS,
 } from '../lib/api.ts';
+import { getManilaTodayISO } from '../lib/offeringSpecs';
 import '../styles/availability-calendar.css';
 
 export interface CalendarStay {
@@ -74,10 +74,7 @@ interface AvailabilityCalendarProps {
   allowSameDay?: boolean;
 }
 
-const DEFAULT_NUM_DAYS = 14; // Default 14-day spacious window matching modern PMS calendar
-
-// Helper to get local date string YYYY-MM-DD
-import { getManilaTodayISO } from '../lib/offeringSpecs';
+const DEFAULT_NUM_DAYS = 14;
 
 const getLocalDateString = (d: Date = new Date()): string => {
   return getManilaTodayISO(d);
@@ -91,7 +88,6 @@ export default function AvailabilityCalendar({
   initialCheckOut,
   onSelectDates,
   onReset,
-  onRoomChange,
   onSelectBooking,
   onNewBooking,
   isLightMode = true,
@@ -104,17 +100,12 @@ export default function AvailabilityCalendar({
 }: AvailabilityCalendarProps) {
   const daysCount = numDays || DEFAULT_NUM_DAYS;
 
-  // Live states fetched directly from Supabase
   const [liveRooms, setLiveRooms] = useState<any[]>([]);
   const [liveBookings, setLiveBookings] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [, setLoading] = useState(false);
 
-  // Dynamic today's date in local system time (literal live day)
-  const todayStr = useMemo(() => {
-    return getLocalDateString();
-  }, []);
+  const todayStr = useMemo(() => getLocalDateString(), []);
 
-  // 14-day rolling window starting directly on today's live date
   const [windowStartDateStr, setWindowStartDateStr] = useState<string>(() => {
     return getLocalDateString();
   });
@@ -123,12 +114,12 @@ export default function AvailabilityCalendar({
   const [activeDetailStay, setActiveDetailStay] = useState<CalendarStay | null>(null);
   const [savingBookingEdit, setSavingBookingEdit] = useState(false);
 
-  // Real-Time Supabase & Resilient API Fetcher
+  // Real-Time Supabase & Public Calendar API Fetcher
   const fetchRealtimeData = useCallback(async () => {
     try {
       setLoading(true);
 
-      // 1. Fetch Rooms directly from Supabase / API fallback (strictly active, open rooms)
+      // 1. Fetch active rooms from Supabase with API fallback
       let currentRooms: any[] = [];
       try {
         const { data: dbRooms, error: rErr } = await supabase
@@ -137,7 +128,7 @@ export default function AvailabilityCalendar({
           .eq('is_active', true)
           .order('created_at', { ascending: true });
 
-        if (!rErr && dbRooms && dbRooms.length > 0) {
+        if (!rErr && Array.isArray(dbRooms)) {
           currentRooms = dbRooms;
           setLiveRooms(dbRooms);
         }
@@ -146,53 +137,60 @@ export default function AvailabilityCalendar({
       if (currentRooms.length === 0) {
         try {
           const apiRooms = await api.rooms();
-          if (Array.isArray(apiRooms) && apiRooms.length > 0) {
+          if (Array.isArray(apiRooms)) {
             currentRooms = apiRooms;
             setLiveRooms(apiRooms);
           }
         } catch {}
       }
 
-      // 2. Fetch Reservations:
-      // A. Public calendar endpoint (bypasses RLS safely via backend sysClient)
-      let bookingsFromApi: any[] = [];
+      // 2. Fetch ALL active booked ranges across all users (bypasses RLS via backend sysClient)
+      const bookingsMap = new Map<string, any>();
+
       try {
         const calData = await api.availabilityCalendar();
         if (calData && Array.isArray(calData.booked_ranges)) {
-          bookingsFromApi = calData.booked_ranges.map((b: any) => ({
-            id: b.id,
-            room_id: b.room_id,
-            check_in: (b.check_in || '').slice(0, 10),
-            check_out: (b.check_out || '').slice(0, 10),
-            status: b.status || 'confirmed',
-            notes: b.notes || '',
-            guest_name: 'Reserved Resident',
-            rooms: { id: b.room_id, name: b.room_name || 'Villa' },
-          }));
+          calData.booked_ranges.forEach((b: any) => {
+            if (!b?.id) return;
+            bookingsMap.set(String(b.id), {
+              id: String(b.id),
+              room_id: b.room_id,
+              check_in: (b.check_in || '').slice(0, 10),
+              check_out: (b.check_out || '').slice(0, 10),
+              status: b.status || 'confirmed',
+              notes: b.notes || '',
+              guest_name: b.guest_name || 'Reserved',
+              rooms: { id: b.room_id, name: b.room_name || 'Villa' },
+            });
+          });
         }
       } catch {}
 
-      // B. If authenticated or staff session available, fetch enriched reservation metadata
-      const bookingsMap = new Map<string, any>();
-      bookingsFromApi.forEach((b) => bookingsMap.set(b.id, b));
-
+      // 3. Enrich with direct Supabase reservations (for staff/admin or own user records)
       try {
         const { data: dbReservations, error: bErr } = await supabase
           .from('reservations')
           .select('*, rooms(id, name, rate_php), profiles(id, full_name, email, phone)')
           .order('check_in', { ascending: true });
 
-        if (!bErr && Array.isArray(dbReservations) && dbReservations.length > 0) {
-          dbReservations.forEach((b) => {
-            bookingsMap.set(b.id, { ...bookingsMap.get(b.id), ...b });
+        if (!bErr && Array.isArray(dbReservations)) {
+          dbReservations.forEach((b: any) => {
+            if (!b?.id) return;
+            const idStr = String(b.id);
+            const existing = bookingsMap.get(idStr) || {};
+            bookingsMap.set(idStr, {
+              ...existing,
+              ...b,
+              id: idStr,
+              check_in: (b.check_in || existing.check_in || '').slice(0, 10),
+              check_out: (b.check_out || existing.check_out || '').slice(0, 10),
+            });
           });
         }
       } catch {}
 
-      const merged = Array.from(bookingsMap.values());
-      if (merged.length > 0) {
-        setLiveBookings(merged);
-      }
+      // Always set merged array (even if empty) so cancelled/deleted stays clear immediately
+      setLiveBookings(Array.from(bookingsMap.values()));
     } catch (err: any) {
       console.warn('[Realtime Calendar Notice]:', err?.message || err);
     } finally {
@@ -200,12 +198,11 @@ export default function AvailabilityCalendar({
     }
   }, []);
 
-  // Subscribe to real-time postgres changes with unique channel per instance
+  // Subscribe to real-time Postgres changes
   useEffect(() => {
     let active = true;
     fetchRealtimeData();
 
-    // Use unique channel topic to prevent "Cannot add postgres_changes callbacks after subscribe()" when multiple calendars mount
     const channelName = `pms_calendar_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const channel = supabase
       .channel(channelName)
@@ -223,54 +220,57 @@ export default function AvailabilityCalendar({
     };
   }, [fetchRealtimeData]);
 
-  // Re-sync whenever parent rooms or bookings props change
+  // Re-sync whenever parent rooms, bookings, or selectedRoomId changes
   useEffect(() => {
     fetchRealtimeData();
-  }, [rooms?.length, bookings?.length, fetchRealtimeData]);
+  }, [rooms?.length, bookings?.length, selectedRoomId, fetchRealtimeData]);
 
-  // Merge prop rooms and live rooms by id (strictly active, open rooms)
+  // Merge prop rooms and live rooms by id (strictly active rooms, filtered by selectedRoomId if set)
   const effectiveRooms = useMemo(() => {
     const map = new Map<string, any>();
     for (const r of liveRooms) {
-      if (r && r.id) map.set(r.id, r);
+      if (r && r.id) map.set(String(r.id), r);
     }
     for (const r of rooms || []) {
-      if (r && r.id) map.set(r.id, { ...map.get(r.id), ...r });
+      if (r && r.id) map.set(String(r.id), { ...map.get(String(r.id)), ...r });
     }
     const all = Array.from(map.values()).filter((r) => r && r.is_active !== false);
     if (selectedRoomId && selectedRoomId !== 'all') {
-      const filtered = all.filter((r) => r.id === selectedRoomId);
+      const filtered = all.filter((r) => String(r.id) === String(selectedRoomId));
       if (filtered.length > 0) return filtered;
     }
     return all;
   }, [liveRooms, rooms, selectedRoomId]);
 
-  // Merge prop bookings and live bookings by id so newly created/edited bookings appear immediately
+  // Merge prop bookings and live bookings by id, scoped to selectedRoomId when filtering a single room
   const effectiveBookings = useMemo(() => {
     const map = new Map<string, any>();
     for (const b of liveBookings) {
-      if (b && b.id) map.set(b.id, b);
+      if (b && b.id) map.set(String(b.id), b);
     }
     for (const b of bookings || []) {
-      if (b && b.id) map.set(b.id, { ...map.get(b.id), ...b });
+      if (b && b.id) map.set(String(b.id), { ...map.get(String(b.id)), ...b });
     }
-    return Array.from(map.values());
-  }, [liveBookings, bookings]);
+    const all = Array.from(map.values());
+    if (selectedRoomId && selectedRoomId !== 'all') {
+      return all.filter((b) => String(b.room_id) === String(selectedRoomId));
+    }
+    return all;
+  }, [liveBookings, bookings, selectedRoomId]);
 
-  // Total physical units count dynamically derived from open rooms and their units count
+  // Physical units dynamically derived from open rooms and their units count
   const units: UnitInfo[] = useMemo(() => {
     const list: UnitInfo[] = [];
     let unitCounter = 1;
 
-    // Expand physical units from active open rooms based strictly on each room's configured units count
     effectiveRooms.forEach((r) => {
       const numUnits = Math.max(1, Number(r.units) || 1);
       for (let u = 1; u <= numUnits; u++) {
         list.push({
           id: `unit_${unitCounter}`,
-          roomId: r.id,
+          roomId: String(r.id),
           unitNumber: unitCounter,
-          name: numUnits > 1 ? `Unit ${u}` : (effectiveRooms.length === 1 ? `Unit 1` : `Unit ${unitCounter}`),
+          name: numUnits > 1 ? `Unit ${u}` : effectiveRooms.length === 1 ? `Unit 1` : `Unit ${unitCounter}`,
           label: numUnits > 1 ? `${r.name} (Unit ${u})` : `${r.name} (Unit ${unitCounter})`,
           ratePhp: r.rate_php || 3500,
         });
@@ -281,7 +281,7 @@ export default function AvailabilityCalendar({
     return list;
   }, [effectiveRooms]);
 
-  // Generate days array starting from windowStartDateStr (Timezone-safe UTC noon math)
+  // Generate days array starting from windowStartDateStr
   const daysArray = useMemo(() => {
     const days: { dateStr: string; dayNum: number; dayOfWeek: string; isToday: boolean }[] = [];
 
@@ -302,7 +302,6 @@ export default function AvailabilityCalendar({
     return daysArray[daysArray.length - 1].dateStr;
   }, [daysArray, todayStr]);
 
-  // Date Range Display Label: "Oct 17 – Oct 30, 2026"
   const dateRangeLabel = useMemo(() => {
     if (daysArray.length === 0) return '';
     const startD = new Date(`${daysArray[0].dateStr}T12:00:00Z`);
@@ -315,25 +314,23 @@ export default function AvailabilityCalendar({
     return `${startMonth} ${startD.getUTCDate()} – ${endMonth} ${endD.getUTCDate()}, ${year}`;
   }, [daysArray]);
 
-  // Parse check-in & check-out time annotations
   const parseTimes = (b: any) => {
     const notes = b.notes || '';
     const inMatch = notes.match(/In\s*(\d{1,2}:\d{2}\s*(?:AM|PM)?)/i);
     const outMatch = notes.match(/Out\s*(\d{1,2}:\d{2}\s*(?:AM|PM)?)/i);
     const timeMatch = notes.match(/(\d{1,2}:\d{2}\s*(?:AM|PM))/i);
 
-    const checkInTime = inMatch ? `In ${inMatch[1]}` : (timeMatch ? timeMatch[1] : 'In 2:00 PM');
+    const checkInTime = inMatch ? `In ${inMatch[1]}` : timeMatch ? timeMatch[1] : 'In 2:00 PM';
     const checkOutTime = outMatch ? `Out ${outMatch[1]}` : 'Out 12:00 PM';
 
     return { checkInTime, checkOutTime };
   };
 
-  // Stays & Unassigned Allocation
+  // Stays & Unassigned Allocation (excludes cancelled/checked_out from blocking units)
   const { assignedStays, unassignedStays, unassignedTracksCount } = useMemo(() => {
     const assigned: CalendarStay[] = [];
     const unassigned: CalendarStay[] = [];
 
-    // Track active timelines for physical units
     const unitTimelines: Map<number, { checkIn: string; checkOut: string; startMs: number; endMs: number; id: string }[]> = new Map();
     units.forEach((u) => unitTimelines.set(u.unitNumber, []));
 
@@ -342,16 +339,17 @@ export default function AvailabilityCalendar({
       const cout = (b.check_out || '').slice(0, 10);
       if (!cin || !cout) return;
 
+      const normalizedStatus = String(b.status || 'confirmed').toLowerCase() as CalendarStay['status'];
+      const isBlocking = !['cancelled', 'checked_out'].includes(normalizedStatus);
+
       const { checkInTime, checkOutTime } = parseTimes(b);
       const bTimes = extractBookingTimes(b);
       const bStartMs = parseBookingTimeMs(cin, bTimes.check_in_time);
       const bEndMs = parseBookingTimeMs(cout, bTimes.check_out_time);
 
-      // Scope unit assignment strictly to physical units belonging to this booking's room
-      const roomUnits = units.filter((u) => u.roomId === b.room_id);
+      const roomUnits = units.filter((u) => String(u.roomId) === String(b.room_id));
       const candidateUnits = roomUnits.length > 0 ? roomUnits : units;
 
-      // Check for explicit unit tag: "[Unit 5]" or "Unit 5"
       const noteUnitMatch = (b.notes || '').match(/\[?(?:Unit\s*|u)(\d+)\]?/i);
       let targetUnitNum: number | null = noteUnitMatch ? parseInt(noteUnitMatch[1], 10) : null;
 
@@ -360,22 +358,29 @@ export default function AvailabilityCalendar({
         const matched = candidateUnits.find((u) => u.unitNumber === targetUnitNum) || candidateUnits[targetUnitNum - 1];
         if (matched) {
           const timeline = unitTimelines.get(matched.unitNumber) || [];
-          const hasCollision = timeline.some((t) => isBookingCollisionWithGap(bStartMs, bEndMs, t.startMs, t.endMs, TWO_HOURS_MS));
+          const hasCollision = isBlocking
+            ? timeline.some((t) => isBookingCollisionWithGap(bStartMs, bEndMs, t.startMs, t.endMs, TWO_HOURS_MS))
+            : false;
           if (!hasCollision) {
-            timeline.push({ checkIn: cin, checkOut: cout, startMs: bStartMs, endMs: bEndMs, id: b.id });
+            if (isBlocking) {
+              timeline.push({ checkIn: cin, checkOut: cout, startMs: bStartMs, endMs: bEndMs, id: b.id });
+            }
             targetUnitNum = matched.unitNumber;
             hasAssignedUnit = true;
           }
         }
       }
 
-      // If no explicit unit specified or collision, assign first collision-free unit in this room
       if (!hasAssignedUnit) {
         for (const u of candidateUnits) {
           const timeline = unitTimelines.get(u.unitNumber) || [];
-          const hasCollision = timeline.some((t) => isBookingCollisionWithGap(bStartMs, bEndMs, t.startMs, t.endMs, TWO_HOURS_MS));
+          const hasCollision = isBlocking
+            ? timeline.some((t) => isBookingCollisionWithGap(bStartMs, bEndMs, t.startMs, t.endMs, TWO_HOURS_MS))
+            : false;
           if (!hasCollision) {
-            timeline.push({ checkIn: cin, checkOut: cout, startMs: bStartMs, endMs: bEndMs, id: b.id });
+            if (isBlocking) {
+              timeline.push({ checkIn: cin, checkOut: cout, startMs: bStartMs, endMs: bEndMs, id: b.id });
+            }
             targetUnitNum = u.unitNumber;
             hasAssignedUnit = true;
             break;
@@ -391,12 +396,12 @@ export default function AvailabilityCalendar({
         assignedUnitNumber: hasAssignedUnit && targetUnitNum ? targetUnitNum : undefined,
         isUnassigned: !hasAssignedUnit,
         unitName: hasAssignedUnit && targetUnitNum ? `Unit ${targetUnitNum}` : 'Unassigned',
-        guestName: b.guest_name || b.profiles?.full_name || 'Guest',
+        guestName: b.guest_name || b.profiles?.full_name || 'Reserved',
         checkIn: cin,
         checkOut: cout,
         checkInTime,
         checkOutTime,
-        status: (b.status || 'confirmed') as CalendarStay['status'],
+        status: normalizedStatus,
         totalPhp: b.total_php || b.rooms?.rate_php || 3500,
         phone: b.phone || b.profiles?.phone || '',
         email: b.email || b.guest_email || b.profiles?.email || '',
@@ -412,7 +417,6 @@ export default function AvailabilityCalendar({
       }
     });
 
-    // Layout unassigned stays onto separate non-colliding unassigned tracks
     const unassignedTracks: { checkIn: string; checkOut: string }[][] = [];
     unassigned.forEach((stay) => {
       let placedTrack = -1;
@@ -431,12 +435,13 @@ export default function AvailabilityCalendar({
       stay.unassignedRowIndex = placedTrack;
     });
 
-    const unassignedTracksCount = unassignedTracks.length;
-
-    return { assignedStays: assigned, unassignedStays: unassigned, unassignedTracksCount };
+    return {
+      assignedStays: assigned,
+      unassignedStays: unassigned,
+      unassignedTracksCount: unassignedTracks.length,
+    };
   }, [effectiveBookings, units]);
 
-  // Filter stays by statusFilter if specified
   const visibleAssignedStays = useMemo(() => {
     if (!statusFilter || statusFilter === 'all') return assignedStays;
     return assignedStays.filter((s) => s.status === statusFilter);
@@ -447,20 +452,23 @@ export default function AvailabilityCalendar({
     return unassignedStays.filter((s) => s.status === statusFilter);
   }, [unassignedStays, statusFilter]);
 
-  // Combined stays in view
   const allStays = useMemo(() => {
     return [...assignedStays, ...unassignedStays];
   }, [assignedStays, unassignedStays]);
 
-  // Real-time summary metrics calculated directly from records in view
+  // Active (blocking) stays only
+  const activeBlockingStays = useMemo(() => {
+    return allStays.filter((s) => !['cancelled', 'checked_out'].includes(s.status));
+  }, [allStays]);
+
   const metrics = useMemo(() => {
-    const arriving = allStays.filter((s) => s.checkIn === todayStr && s.status !== 'cancelled').length;
-    const departing = allStays.filter((s) => s.checkOut === todayStr && s.status !== 'cancelled').length;
-    const staysInView = allStays.filter(
-      (s) => s.checkIn <= windowEndDateStr && s.checkOut >= windowStartDateStr && s.status !== 'cancelled'
+    const arriving = activeBlockingStays.filter((s) => s.checkIn === todayStr).length;
+    const departing = activeBlockingStays.filter((s) => s.checkOut === todayStr).length;
+    const staysInView = activeBlockingStays.filter(
+      (s) => s.checkIn <= windowEndDateStr && s.checkOut >= windowStartDateStr
     ).length;
-    const occupiedToday = allStays.filter(
-      (s) => s.checkIn <= todayStr && s.checkOut > todayStr && s.status !== 'cancelled'
+    const occupiedToday = activeBlockingStays.filter(
+      (s) => s.checkIn <= todayStr && s.checkOut > todayStr
     ).length;
     const availableToday = Math.max(0, units.length - occupiedToday);
 
@@ -471,9 +479,8 @@ export default function AvailabilityCalendar({
       availableToday,
       totalUnits: units.length,
     };
-  }, [allStays, todayStr, windowEndDateStr, windowStartDateStr, units.length]);
+  }, [activeBlockingStays, todayStr, windowEndDateStr, windowStartDateStr, units.length]);
 
-  // Stay duration nights count
   const stayNightsCount = useMemo(() => {
     if (!initialCheckIn || !initialCheckOut) return 1;
     const cin = new Date(`${initialCheckIn}T12:00:00Z`);
@@ -482,13 +489,12 @@ export default function AvailabilityCalendar({
     return Math.max(1, diffDays);
   }, [initialCheckIn, initialCheckOut]);
 
-  // Identify which unit is actively selected for the continuous stay ribbon
   const activeUnitId = useMemo(() => {
     if (selectedCell?.unitId && selectedCell.unitId !== 'unassigned') {
       return selectedCell.unitId;
     }
     if (selectedRoomId && selectedRoomId !== 'all') {
-      const roomUnits = units.filter((u) => u.roomId === selectedRoomId);
+      const roomUnits = units.filter((u) => String(u.roomId) === String(selectedRoomId));
       if (roomUnits.length > 0) return roomUnits[0].id;
     }
     if (units.length > 0) {
@@ -497,7 +503,6 @@ export default function AvailabilityCalendar({
     return null;
   }, [selectedCell, selectedRoomId, units]);
 
-  // Master reset selection queue
   const handleReset = useCallback(() => {
     setSelectedCell(null);
     if (onReset) {
@@ -508,7 +513,6 @@ export default function AvailabilityCalendar({
     toast('✦ Stay selection cleared. Pick an available date to start fresh.');
   }, [onReset, onSelectDates]);
 
-  // Navigation handlers: shift by daysCount
   const handlePrevWindow = () => {
     setWindowStartDateStr(addDaysYMD(windowStartDateStr, -daysCount));
   };
@@ -521,7 +525,6 @@ export default function AvailabilityCalendar({
     setWindowStartDateStr(todayStr);
   };
 
-  // Determine stay badge color variant matching PMS palette
   const getStayColorClass = (stay: CalendarStay) => {
     if (stay.status === 'cancelled') return 'pms-stay-cancelled';
     if (stay.status === 'checked_out' || stay.checkOut < todayStr) return 'pms-stay-checked_out';
@@ -539,7 +542,6 @@ export default function AvailabilityCalendar({
     return 'pms-stay-confirmed';
   };
 
-  // Cell click handler: selects single day or toggles unselect if already chosen
   const handleCellClick = (unitId: string, dateStr: string) => {
     if (dateStr < todayStr) {
       toast('⚠️ That date has already passed. Please select an upcoming date for your stay.', true);
@@ -551,25 +553,23 @@ export default function AvailabilityCalendar({
     }
     const matchedUnit = units.find((u) => u.id === unitId);
 
-    // Check if this specific cell is reserved
-    const unitReserved = allStays.some(
-      (s) => s.unitId === unitId &&
-             !['cancelled', 'checked_out'].includes(String(s.status || '').toLowerCase()) &&
-             dateStr >= s.checkIn && dateStr < s.checkOut
+    // Block clicking any date already reserved by an active booking
+    const unitReserved = activeBlockingStays.some(
+      (s) =>
+        (s.unitId === unitId || (matchedUnit && String(s.roomId) === String(matchedUnit.roomId) && s.isUnassigned)) &&
+        dateStr >= s.checkIn &&
+        dateStr < s.checkOut
     );
     if (unitReserved) {
       toast(`⚠️ ${matchedUnit?.name || 'Unit'} is already reserved on ${fmtDate(dateStr)}. Please pick an open date.`, true);
       return;
     }
 
-    // ==========================================
-    // SELECT / UNSELECT TOGGLE LOGIC
-    // ==========================================
+    // Select / Unselect Toggle Logic
     const isSameCheckOut = initialCheckOut && dateStr === initialCheckOut;
     const isSameCheckIn = initialCheckIn && dateStr === initialCheckIn;
     const isSameCell = selectedCell?.unitId === unitId && selectedCell?.dateStr === dateStr;
 
-    // 1. Tapping the already-selected Check-Out date -> UNSELECT Check-Out
     if (isSameCheckOut) {
       setSelectedCell(null);
       if (onSelectDates && initialCheckIn) {
@@ -581,7 +581,6 @@ export default function AvailabilityCalendar({
       return;
     }
 
-    // 2. Tapping the already-selected Check-In date or the active selected cell -> UNSELECT Check-In / clear
     if (isSameCheckIn || isSameCell) {
       handleReset();
       return;
@@ -592,8 +591,11 @@ export default function AvailabilityCalendar({
     let newInStr = dateStr;
     let newOutStr = addDaysYMD(dateStr, 1);
 
-    // If Check-In is already set and user clicked a later date -> extend stay to that date
-    if (initialCheckIn && dateStr > initialCheckIn && (!initialCheckOut || initialCheckOut === addDaysYMD(initialCheckIn, 1) || selectionTarget === 'checkOut')) {
+    if (
+      initialCheckIn &&
+      dateStr > initialCheckIn &&
+      (!initialCheckOut || initialCheckOut === addDaysYMD(initialCheckIn, 1) || selectionTarget === 'checkOut')
+    ) {
       newInStr = initialCheckIn;
       newOutStr = dateStr;
     } else if (selectionTarget === 'checkOut') {
@@ -612,27 +614,23 @@ export default function AvailabilityCalendar({
         newInStr = dateStr;
         newOutStr = addDaysYMD(dateStr, 1);
       }
-    } else {
-      newInStr = dateStr;
-      newOutStr = addDaysYMD(dateStr, 1);
     }
 
     const reqStartMs = parseBookingTimeMs(newInStr, '14:00');
     const reqEndMs = parseBookingTimeMs(newOutStr, '12:00');
 
-    const activeStaysOnDate = allStays.filter((s) => {
-      if (['cancelled', 'checked_out'].includes(String(s.status || '').toLowerCase())) return false;
+    const activeStaysOnRange = activeBlockingStays.filter((s) => {
       const sTimes = extractBookingTimes(s);
       const sStartMs = parseBookingTimeMs(s.checkIn, sTimes.check_in_time);
       const sEndMs = parseBookingTimeMs(s.checkOut, sTimes.check_out_time);
       return isBookingCollisionWithGap(reqStartMs, reqEndMs, sStartMs, sEndMs, TWO_HOURS_MS);
     });
 
-    const unitConflict = activeStaysOnDate.find((s) => s.unitId === unitId);
-    const roomObj = effectiveRooms.find((r) => r.id === matchedUnit?.roomId);
+    const unitConflict = activeStaysOnRange.find((s) => s.unitId === unitId);
+    const roomObj = effectiveRooms.find((r) => String(r.id) === String(matchedUnit?.roomId));
     const roomCapacityUnits = Math.max(1, Number(roomObj?.units) || 1);
-    const roomStaysOnDate = activeStaysOnDate.filter(
-      (s) => s.roomId === matchedUnit?.roomId || effectiveRooms.length <= 1
+    const roomStaysOnRange = activeStaysOnRange.filter(
+      (s) => String(s.roomId) === String(matchedUnit?.roomId) || effectiveRooms.length <= 1
     );
 
     if (unitConflict) {
@@ -648,19 +646,22 @@ export default function AvailabilityCalendar({
         );
       } else {
         toast(
-          `⚠️ Already Booked: ${matchedUnit?.name || 'Unit'} is reserved between ${fmtDate(newInStr)} and ${fmtDate(newOutStr)} by ${unitConflict.guestName}!`,
+          `⚠️ Already Booked: ${matchedUnit?.name || 'Unit'} is reserved between ${fmtDate(unitConflict.checkIn)} and ${fmtDate(unitConflict.checkOut)}.`,
           true
         );
       }
-    } else if (roomStaysOnDate.length >= roomCapacityUnits) {
-      const names = roomStaysOnDate.map((s) => s.guestName).join(', ');
+      return;
+    }
+
+    if (roomStaysOnRange.length >= roomCapacityUnits) {
       toast(
-        `⚠️ Fully Booked (${fmtDate(newInStr)} → ${fmtDate(newOutStr)}): ${roomObj?.name || 'Room'} is occupied by ${names}!`,
+        `⚠️ Fully Booked (${fmtDate(newInStr)} → ${fmtDate(newOutStr)}): ${roomObj?.name || 'Room'} has no remaining units on those dates.`,
         true
       );
-    } else {
-      toast(`✦ Stay Range: ${fmtDate(newInStr)} → ${fmtDate(newOutStr)} (${matchedUnit?.name || 'Unit'}).`);
+      return;
     }
+
+    toast(`✦ Stay Range: ${fmtDate(newInStr)} → ${fmtDate(newOutStr)} (${matchedUnit?.name || 'Unit'}).`);
 
     if (onSelectDates) {
       onSelectDates(newInStr, newOutStr, matchedUnit?.roomId, matchedUnit);
@@ -674,7 +675,6 @@ export default function AvailabilityCalendar({
     }
   };
 
-  // Calculate stay bar coordinates directly within .pms-days-track (0% to 100%)
   const getStayBarStyle = (stay: CalendarStay) => {
     const startIdx = daysArray.findIndex((d) => d.dateStr === stay.checkIn);
     const endIdx = daysArray.findIndex((d) => d.dateStr === stay.checkOut);
@@ -698,9 +698,8 @@ export default function AvailabilityCalendar({
 
   return (
     <div className={`pms-calendar-card ${!isLightMode ? 'dark' : ''}`}>
-      {/* 1. TOP HEADER: Navigation, Date Range, Inline Metrics & Optional New Booking */}
+      {/* 1. TOP HEADER */}
       <div className="pms-top-bar">
-        {/* Left: < Today > Segmented Control + Clean Date Range Heading */}
         <div className="pms-nav-group">
           <div className="pms-segmented-nav">
             <button
@@ -734,7 +733,7 @@ export default function AvailabilityCalendar({
           <h2 className="pms-date-title">{dateRangeLabel}</h2>
         </div>
 
-        {/* Right: Legend + Luxury Reset Button (or Metrics in staff view) */}
+        {/* Right: Metrics (Staff) OR Clean 3-Color Legend (White = Available, Red = Reserved, Blue = Selected) */}
         {showMetrics ? (
           <div className="pms-metrics-group">
             <div>
@@ -777,7 +776,7 @@ export default function AvailabilityCalendar({
                     onSelectDates(startD, nextDay, units[0]?.roomId);
                   }
                 }}
-                title={units.length === 0 ? "There's no present room around" : "New booking"}
+                title={units.length === 0 ? "There's no present room around" : 'New booking'}
                 style={units.length === 0 ? { opacity: 0.65, cursor: 'not-allowed' } : undefined}
               >
                 <i className="fas fa-plus" />
@@ -789,19 +788,35 @@ export default function AvailabilityCalendar({
           <div className="pms-calendar-actions-right">
             <div className="pms-calendar-legend">
               <span className="pms-legend-item">
-                <span className="pms-legend-dot open" />
+                <span
+                  className="pms-legend-dot open"
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    border: '1.5px solid #CBD5E1',
+                  }}
+                />
                 Available
               </span>
               <span className="pms-legend-item">
-                <span className="pms-legend-dot reserved" />
+                <span
+                  className="pms-legend-dot reserved"
+                  style={{
+                    backgroundColor: '#EF4444',
+                    border: '1.5px solid #DC2626',
+                  }}
+                />
                 Reserved
               </span>
-              {(initialCheckIn || selectedCell) && (
-                <span className="pms-legend-item">
-                  <span className="pms-legend-dot selected" />
-                  Selected
-                </span>
-              )}
+              <span className="pms-legend-item">
+                <span
+                  className="pms-legend-dot selected"
+                  style={{
+                    backgroundColor: '#3B82F6',
+                    border: '1.5px solid #2563EB',
+                  }}
+                />
+                Selected
+              </span>
             </div>
 
             <button
@@ -817,10 +832,10 @@ export default function AvailabilityCalendar({
         )}
       </div>
 
-      {/* 2. CALENDAR MATRIX: 14 Days & Physical Units + Unassigned Rows */}
+      {/* 2. CALENDAR MATRIX */}
       <div className="pms-grid-container">
         <div className="pms-grid-table">
-          {/* HEADER ROW: UNIT + 14 DAYS */}
+          {/* HEADER ROW */}
           <div className="pms-grid-header">
             <div className="pms-col-unit-header">
               <i className="fas fa-door-open" style={{ marginRight: 6, fontSize: '0.72rem', opacity: 0.7 }} />
@@ -840,9 +855,7 @@ export default function AvailabilityCalendar({
                     key={day.dateStr}
                     className={`pms-day-header-cell ${day.isToday ? 'is-today' : ''} ${isWeekend ? 'is-weekend' : ''}`}
                   >
-                    {isFirstOfMonth && (
-                      <span className="pms-month-badge">{monthName}</span>
-                    )}
+                    {isFirstOfMonth && <span className="pms-month-badge">{monthName}</span>}
                     <div className="pms-day-name">{day.dayOfWeek}</div>
                     {day.isToday ? (
                       <div className="pms-day-num-today-badge" title="Today">
@@ -857,7 +870,7 @@ export default function AvailabilityCalendar({
             </div>
           </div>
 
-          {/* PHYSICAL UNIT ROWS (Dynamically generated based on open rooms count) */}
+          {/* PHYSICAL UNIT ROWS */}
           {units.length === 0 ? (
             <div style={{ padding: '40px 20px', textAlign: 'center', color: '#F43F5E', fontSize: '.88rem' }}>
               <i className="fas fa-triangle-exclamation" style={{ fontSize: '1.8rem', display: 'block', marginBottom: 10, color: '#F43F5E' }} />
@@ -871,15 +884,20 @@ export default function AvailabilityCalendar({
           ) : (
             units.map((unit) => {
               const isCurrentActiveUnit = unit.id === activeUnitId;
-              // Visible stays allocated to this unit filtered by status
+
+              // Stays rendered as pills on this unit row
               const unitStays = visibleAssignedStays.filter((s) => {
                 if (s.assignedUnitNumber !== unit.unitNumber) return false;
                 return s.checkIn <= windowEndDateStr && s.checkOut >= windowStartDateStr;
               });
 
+              // Active blocking stays for this specific unit (so User 2 sees User 1's 10-15 dates as Reserved)
+              const blockingUnitStays = activeBlockingStays.filter(
+                (s) => s.assignedUnitNumber === unit.unitNumber
+              );
+
               return (
                 <div key={unit.id} className="pms-row">
-                  {/* Sticky Unit Label */}
                   <div className="pms-unit-label-cell" title={unit.label}>
                     <div className="pms-unit-chip">
                       <span className="pms-unit-title">{unit.name}</span>
@@ -887,7 +905,6 @@ export default function AvailabilityCalendar({
                     </div>
                   </div>
 
-                  {/* Days Slots & Floating Stay Pills */}
                   <div
                     className="pms-days-track"
                     style={{ gridTemplateColumns: `repeat(${daysCount}, 1fr)` }}
@@ -901,25 +918,44 @@ export default function AvailabilityCalendar({
                       const isDateBlocked = isPast || isSameDayLocked;
                       const isWeekend = day.dayOfWeek === 'SAT' || day.dayOfWeek === 'SUN';
 
-                      // Check if reserved (either mapped directly to this unit or belonging to this room)
-                      const isReserved = unitStays.some((s) => day.dateStr >= s.checkIn && day.dateStr < s.checkOut)
-                        || unassignedStays.some((s) => s.roomId === unit.roomId && day.dateStr >= s.checkIn && day.dateStr < s.checkOut);
+                      // Check against ALL active blocking stays for this unit or unassigned stays for this room
+                      const isReserved =
+                        blockingUnitStays.some((s) => day.dateStr >= s.checkIn && day.dateStr < s.checkOut) ||
+                        activeBlockingStays.some(
+                          (s) => s.isUnassigned && String(s.roomId) === String(unit.roomId) && day.dateStr >= s.checkIn && day.dateStr < s.checkOut
+                        );
 
-                      // Is this cell part of the selected stay ribbon on the active chosen unit?
-                      const showStayRibbon = isCurrentActiveUnit && (isInStayRange || isCheckInDay);
+                      const showStayRibbon = !isReserved && isCurrentActiveUnit && (isInStayRange || isCheckInDay);
                       const isLastNightOfStay = initialCheckOut && day.dateStr === addDaysYMD(initialCheckOut, -1);
 
                       return (
                         <div
                           key={day.dateStr}
                           className={`pms-cell ${day.isToday ? 'is-today' : ''} ${isWeekend ? 'is-weekend' : ''} ${isDateBlocked ? 'is-past' : ''} ${isReserved ? 'is-reserved' : 'is-open'}`}
+                          style={
+                            isReserved
+                              ? {
+                                  backgroundColor: isLightMode ? '#FEE2E2' : 'rgba(239, 68, 68, 0.25)',
+                                  borderColor: isLightMode ? '#FCA5A5' : 'rgba(239, 68, 68, 0.45)',
+                                  cursor: 'not-allowed',
+                                }
+                              : showStayRibbon
+                              ? {
+                                  backgroundColor: isLightMode ? '#DBEAFE' : 'rgba(59, 130, 246, 0.3)',
+                                }
+                              : !isDateBlocked
+                              ? {
+                                  backgroundColor: isLightMode ? '#FFFFFF' : undefined,
+                                }
+                              : undefined
+                          }
                           onClick={() => !isDateBlocked && !isReserved && handleCellClick(unit.id, day.dateStr)}
-                          title={`${day.dateStr}: ${isReserved ? 'Reserved' : isCheckInDay ? 'Check-In' : isCheckOutDay ? 'Check-Out' : isInStayRange ? 'Selected Stay' : isPast ? 'Past Date' : isSameDayLocked ? 'Walk-In Only (Unavailable Online)' : 'Click to select / unselect'}`}
+                          title={`${day.dateStr}: ${isReserved ? 'Reserved' : isCheckInDay ? 'Check-In' : isCheckOutDay ? 'Check-Out' : isInStayRange ? 'Selected Stay' : isPast ? 'Past Date' : isSameDayLocked ? 'Walk-In Only (Unavailable Online)' : 'Available — Click to select'}`}
                         >
-                          {/* Beautiful Luminous Stay Ribbon */}
                           {showStayRibbon && (
                             <div
                               className={`pms-selection-ribbon ${isCheckInDay ? 'is-checkin' : ''} ${isLastNightOfStay ? 'is-last-night' : ''}`}
+                              style={{ backgroundColor: '#3B82F6', color: '#FFFFFF' }}
                             >
                               {isCheckInDay && (
                                 <span className="pms-ribbon-badge">
@@ -930,26 +966,98 @@ export default function AvailabilityCalendar({
                             </div>
                           )}
 
-                          {/* Checkout Indicator Badge */}
-                          {isCurrentActiveUnit && isCheckOutDay && (
+                          {!isReserved && isCurrentActiveUnit && isCheckOutDay && (
                             <div className="pms-checkout-indicator">
-                              <span className="pms-checkout-badge">
+                              <span className="pms-checkout-badge" style={{ backgroundColor: '#2563EB', color: '#FFFFFF' }}>
                                 <i className="fas fa-arrow-right-from-bracket" />
                                 <span>OUT</span>
                               </span>
                             </div>
                           )}
 
-                          {/* Subtle center indicator for open date */}
-                          {!isPast && !isReserved && !showStayRibbon && (
+                          {!isDateBlocked && !isReserved && !showStayRibbon && (
                             <span className="pms-open-dot" />
                           )}
                         </div>
                       );
                     })}
 
-                    {/* Overlaid Stay Pills */}
-                    {unitStays.map((stay) => {
+                    {/* Overlaid Stay Pills (Red for Reserved) */}
+                    {unitStays
+                      .filter((s) => !['cancelled', 'checked_out'].includes(s.status))
+                      .map((stay) => {
+                        const { left, width, spanDays } = getStayBarStyle(stay);
+                        const colorClass = getStayColorClass(stay);
+
+                        return (
+                          <div
+                            key={stay.id}
+                            className={`pms-stay-pill ${colorClass}`}
+                            style={{
+                              left,
+                              width,
+                              backgroundColor: '#EF4444',
+                              borderColor: '#DC2626',
+                              color: '#FFFFFF',
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (showMetrics) {
+                                handleBookingClick(stay);
+                              } else {
+                                toast(`⚠️ Reserved (${fmtDate(stay.checkIn)} → ${fmtDate(stay.checkOut)}). Please choose open white dates.`, true);
+                              }
+                            }}
+                            title={`Reserved (${stay.checkIn} to ${stay.checkOut})`}
+                          >
+                            <span className="pms-stay-name">{showMetrics ? stay.guestName : 'Reserved'}</span>
+                            {spanDays >= 2 ? (
+                              <span className="pms-stay-time">
+                                {stay.checkInTime} — {stay.checkOutTime}
+                              </span>
+                            ) : (
+                              <span className="pms-stay-time">
+                                {stay.checkInTime ? stay.checkInTime.replace(/^In\s*/i, '') : ''}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              );
+            })
+          )}
+
+          {/* UNASSIGNED ROWS */}
+          {visibleUnassignedStays.length > 0 &&
+            Array.from({ length: unassignedTracksCount }).map((_, rowIndex) => {
+              const rowStays = visibleUnassignedStays.filter((s) => {
+                if (s.unassignedRowIndex !== rowIndex) return false;
+                return s.checkIn <= windowEndDateStr && s.checkOut >= windowStartDateStr;
+              });
+
+              return (
+                <div key={`unassigned_${rowIndex}`} className="pms-row pms-row-unassigned">
+                  <div className="pms-unit-label-cell">
+                    <span className="pms-unit-label-unassigned">
+                      <i className="fas fa-triangle-exclamation" /> Unassigned
+                    </span>
+                  </div>
+
+                  <div
+                    className="pms-days-track"
+                    style={{ gridTemplateColumns: `repeat(${daysCount}, 1fr)` }}
+                  >
+                    {daysArray.map((day) => (
+                      <div
+                        key={day.dateStr}
+                        className={`pms-cell ${day.isToday ? 'is-today' : ''}`}
+                        onClick={() => handleCellClick('unassigned', day.dateStr)}
+                      />
+                    ))}
+
+                    {rowStays.map((stay) => {
                       const { left, width, spanDays } = getStayBarStyle(stay);
                       const colorClass = getStayColorClass(stay);
 
@@ -957,14 +1065,24 @@ export default function AvailabilityCalendar({
                         <div
                           key={stay.id}
                           className={`pms-stay-pill ${colorClass}`}
-                          style={{ left, width }}
+                          style={{
+                            left,
+                            width,
+                            backgroundColor: '#EF4444',
+                            borderColor: '#DC2626',
+                            color: '#FFFFFF',
+                          }}
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleBookingClick(stay);
+                            if (showMetrics) {
+                              handleBookingClick(stay);
+                            } else {
+                              toast(`⚠️ Reserved (${fmtDate(stay.checkIn)} → ${fmtDate(stay.checkOut)}). Please choose open white dates.`, true);
+                            }
                           }}
-                          title={`${stay.guestName} (${stay.checkIn} to ${stay.checkOut}) · Status: ${stay.status}`}
+                          title={`[Unassigned] Reserved (${stay.checkIn} to ${stay.checkOut})`}
                         >
-                          <span className="pms-stay-name">{stay.guestName}</span>
+                          <span className="pms-stay-name">{showMetrics ? stay.guestName : 'Reserved'}</span>
                           {spanDays >= 2 ? (
                             <span className="pms-stay-time">
                               {stay.checkInTime} — {stay.checkOutTime}
@@ -980,71 +1098,7 @@ export default function AvailabilityCalendar({
                   </div>
                 </div>
               );
-            })
-          )}
-
-          {/* UNASSIGNED ROWS (Render ONLY if there are visible unassigned stays) */}
-          {visibleUnassignedStays.length > 0 && Array.from({ length: unassignedTracksCount }).map((_, rowIndex) => {
-            const rowStays = visibleUnassignedStays.filter((s) => {
-              if (s.unassignedRowIndex !== rowIndex) return false;
-              return s.checkIn <= windowEndDateStr && s.checkOut >= windowStartDateStr;
-            });
-
-            return (
-              <div key={`unassigned_${rowIndex}`} className="pms-row pms-row-unassigned">
-                {/* Left Label with Warning Icon */}
-                <div className="pms-unit-label-cell">
-                  <span className="pms-unit-label-unassigned">
-                    <i className="fas fa-triangle-exclamation" /> Unassigned
-                  </span>
-                </div>
-
-                {/* Days Slots & Floating Stay Pills */}
-                <div
-                  className="pms-days-track"
-                  style={{ gridTemplateColumns: `repeat(${daysCount}, 1fr)` }}
-                >
-                  {daysArray.map((day) => (
-                    <div
-                      key={day.dateStr}
-                      className={`pms-cell ${day.isToday ? 'is-today' : ''}`}
-                      onClick={() => handleCellClick('unassigned', day.dateStr)}
-                    />
-                  ))}
-
-                  {/* Overlaid Unassigned Stay Pills */}
-                  {rowStays.map((stay) => {
-                    const { left, width, spanDays } = getStayBarStyle(stay);
-                    const colorClass = getStayColorClass(stay);
-
-                    return (
-                      <div
-                        key={stay.id}
-                        className={`pms-stay-pill ${colorClass}`}
-                        style={{ left, width }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleBookingClick(stay);
-                        }}
-                        title={`[Unassigned] ${stay.guestName} (${stay.checkIn} to ${stay.checkOut}) · Status: ${stay.status}`}
-                      >
-                        <span className="pms-stay-name">{stay.guestName}</span>
-                        {spanDays >= 2 ? (
-                          <span className="pms-stay-time">
-                            {stay.checkInTime} — {stay.checkOutTime}
-                          </span>
-                        ) : (
-                          <span className="pms-stay-time">
-                            {stay.checkInTime ? stay.checkInTime.replace(/^In\s*/i, '') : ''}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
+            })}
         </div>
       </div>
 
@@ -1077,8 +1131,8 @@ export default function AvailabilityCalendar({
         </div>
       )}
 
-      {/* 4. INTERACTIVE STAY DETAILS & EDIT BOOKING MODAL */}
-      {activeDetailStay && (
+      {/* 4. INTERACTIVE STAY DETAILS & EDIT BOOKING MODAL (Staff/Admin only) */}
+      {activeDetailStay && showMetrics && (
         <div
           onClick={() => setActiveDetailStay(null)}
           style={{
