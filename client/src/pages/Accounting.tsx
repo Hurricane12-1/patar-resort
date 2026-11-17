@@ -43,7 +43,7 @@ export default function Accounting() {
           </p>
           <Link to="/staff/login" className="btn btn-sky" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: 'linear-gradient(135deg, #0284C7, #0369A1)', color: '#FFFFFF', borderRadius: 12, textDecoration: 'none', fontWeight: 700 }}>
             <i className="fas fa-right-to-bracket" />
-            <span>Go to Staff Station Sign In</span>
+            <span>Go to Staff Sign In</span>
           </Link>
         </div>
       </div>

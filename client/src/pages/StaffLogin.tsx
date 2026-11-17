@@ -39,7 +39,7 @@ export default function StaffLogin() {
       const user = res?.data?.profile || res?.data?.user;
       const role = normalizeRole(user?.role);
       if (role === 'customer') {
-        toast('Access denied: Guest accounts cannot access the operational station.', true);
+        toast('Access denied: Guest accounts cannot access the staff portal.', true);
         return;
       }
       const deptLabel = formatDepartmentBadge(user);
@@ -67,7 +67,7 @@ export default function StaffLogin() {
         <div className="sl-topbar">
           <span className="sl-topbar__badge">
             <i className="fas fa-shield-halved" />
-            Operational Portal
+            Staff Portal
           </span>
           <span className="sl-topbar__brand">
             ✦ ROCK VIEW RESORT
@@ -80,11 +80,11 @@ export default function StaffLogin() {
             <i className="fas fa-clipboard-user" />
           </div>
           <h1 className="sl-hero__title">
-            Station Sign In
+            Staff Sign In
           </h1>
           <p className="sl-hero__subtitle">
             Operational clearance required. Authenticate with your&nbsp;employee
-            credentials to access your department station.
+            credentials to access the staff portal.
           </p>
         </div>
 
@@ -150,7 +150,7 @@ export default function StaffLogin() {
             ) : (
               <>
                 <i className="fas fa-right-to-bracket" />
-                <span>Sign In to Station</span>
+                <span>Sign In to Staff Portal</span>
               </>
             )}
           </button>
