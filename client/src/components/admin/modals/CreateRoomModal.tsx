@@ -28,18 +28,6 @@ export interface CreateRoomModalProps {
   toast?: (msg: string, isError?: boolean) => void;
 }
 
-const POPULAR_AMENITIES = [
-  'Air Conditioning',
-  'Free Wi-Fi',
-  'Private Bath',
-  'Sea View',
-  'Rock View',
-  'Balcony',
-  'Kitchenette',
-  'Garden Access',
-  'Private Veranda',
-];
-
 export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   isOpen,
   onClose,
@@ -57,6 +45,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isCustomCategory, setIsCustomCategory] = useState(false);
+  const [newAmenityInput, setNewAmenityInput] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
@@ -77,21 +66,34 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
 
   const isCloudinaryFeatured = Boolean(featuredImageUrl && featuredImageUrl.includes('cloudinary.com'));
 
-  const currentAmenities =
+  const currentAmenities: string[] =
     typeof newRoom.amenities === 'string'
       ? newRoom.amenities
           .split(',')
           .map((s: string) => s.trim())
-          .filter(Boolean)
+          .filter((s: string) => s && !s.startsWith('__'))
       : Array.isArray(newRoom.amenities)
-      ? newRoom.amenities
+      ? newRoom.amenities.filter((a: any) => typeof a === 'string' && a.trim() && !a.startsWith('__'))
       : [];
 
-  const handleToggleAmenity = (amenity: string) => {
-    const isSelected = currentAmenities.some((a: string) => a.toLowerCase() === amenity.toLowerCase());
-    const nextList = isSelected
-      ? currentAmenities.filter((a: string) => a.toLowerCase() !== amenity.toLowerCase())
-      : [...currentAmenities, amenity];
+  const handleAddAmenity = () => {
+    const trimmed = newAmenityInput.trim();
+    if (!trimmed) return;
+    const toAdd = trimmed.split(',').map((s) => s.trim()).filter(Boolean);
+    const existingLower = currentAmenities.map((a) => a.toLowerCase());
+    const nextList = [...currentAmenities];
+    for (const item of toAdd) {
+      if (!existingLower.includes(item.toLowerCase())) {
+        nextList.push(item);
+        existingLower.push(item.toLowerCase());
+      }
+    }
+    setNewRoom({ ...newRoom, amenities: nextList.join(', ') });
+    setNewAmenityInput('');
+  };
+
+  const handleRemoveAmenity = (indexToRemove: number) => {
+    const nextList = currentAmenities.filter((_, idx) => idx !== indexToRemove);
     setNewRoom({ ...newRoom, amenities: nextList.join(', ') });
   };
 
@@ -682,64 +684,134 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
               />
             </div>
 
-            {/* AMENITIES CHIPS + INPUT */}
+            {/* AMENITIES: DYNAMIC MANUAL ADD & TAGS */}
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700 }}>
-                  Amenities (comma separated)
+                  Amenities ({currentAmenities.length})
                 </label>
-                <span style={{ fontSize: '.7rem', color: themeMuted }}>Click chips to toggle</span>
+                {currentAmenities.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setNewRoom({ ...newRoom, amenities: '' })}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#EF4444',
+                      fontSize: '.72rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      padding: 0,
+                    }}
+                  >
+                    Clear All
+                  </button>
+                )}
               </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
-                {POPULAR_AMENITIES.map((amenity) => {
-                  const isSelected = currentAmenities.some(
-                    (a: string) => a.toLowerCase() === amenity.toLowerCase()
-                  );
-                  return (
-                    <button
-                      key={amenity}
-                      type="button"
-                      onClick={() => handleToggleAmenity(amenity)}
+
+              {/* Input row with + Add button */}
+              <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+                <input
+                  type="text"
+                  placeholder="Type an amenity name (e.g. Hot Jacuzzi, Beach Umbrella)…"
+                  value={newAmenityInput}
+                  onChange={(e) => setNewAmenityInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddAmenity();
+                    }
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: '9px 12px',
+                    borderRadius: 10,
+                    border: `1px solid ${themeBorder}`,
+                    background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)',
+                    color: themeText,
+                    fontSize: '.84rem',
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={handleAddAmenity}
+                  disabled={!newAmenityInput.trim()}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '9px 16px',
+                    borderRadius: 10,
+                    border: '1px solid #0284C7',
+                    background: newAmenityInput.trim() ? '#0284C7' : (isLightMode ? '#E2E8F0' : 'rgba(255,255,255,0.1)'),
+                    color: newAmenityInput.trim() ? '#FFFFFF' : (isLightMode ? '#94A3B8' : '#64748B'),
+                    fontWeight: 700,
+                    fontSize: '.82rem',
+                    cursor: newAmenityInput.trim() ? 'pointer' : 'not-allowed',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <i className="fas fa-plus" /> Add
+                </button>
+              </div>
+
+              {/* Tag Chips of currently added amenities with remove buttons */}
+              {currentAmenities.length === 0 ? (
+                <div style={{
+                  padding: '12px 14px',
+                  borderRadius: 10,
+                  border: `1px dashed ${themeBorder}`,
+                  background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.02)',
+                  color: themeMuted,
+                  fontSize: '.78rem',
+                  textAlign: 'center',
+                }}>
+                  No amenities added yet. Type an amenity name above and click <b>+ Add</b>.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {currentAmenities.map((amenity, idx) => (
+                    <span
+                      key={`${amenity}-${idx}`}
                       style={{
-                        fontSize: '.72rem',
-                        padding: '3px 9px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '4px 10px',
                         borderRadius: 8,
-                        border: isSelected ? '1px solid #0EA5E9' : `1px solid ${themeBorder}`,
-                        background: isSelected
-                          ? 'rgba(14,165,233,0.16)'
-                          : isLightMode
-                          ? '#F1F5F9'
-                          : 'rgba(255,255,255,0.05)',
-                        color: isSelected ? '#0EA5E9' : themeText,
-                        cursor: 'pointer',
-                        fontWeight: isSelected ? 700 : 500,
+                        fontSize: '.76rem',
+                        fontWeight: 600,
+                        background: isLightMode ? '#E0F2FE' : 'rgba(14,165,233,0.15)',
+                        color: isLightMode ? '#0369A1' : '#38BDF8',
+                        border: `1px solid ${isLightMode ? '#BAE6FD' : 'rgba(56,189,248,0.3)'}`,
                       }}
                     >
-                      {isSelected ? (
-                        <>
-                          <i className="fas fa-check" style={{ marginRight: 4 }} />
-                        </>
-                      ) : (
-                        '+ '
-                      )}
-                      {amenity}
-                    </button>
-                  );
-                })}
-              </div>
-              <input
-                style={{
-                  width: '100%',
-                  padding: '9px 12px',
-                  borderRadius: 10,
-                  border: `1px solid ${themeBorder}`,
-                  background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)',
-                  color: themeText,
-                }}
-                value={newRoom.amenities}
-                onChange={(e) => setNewRoom({ ...newRoom, amenities: e.target.value })}
-                placeholder="Air Conditioning, Free Wi-Fi, Private Bath, Sea View"
-              />
+                      <i className="fas fa-check" style={{ fontSize: '.68rem' }} />
+                      <span>{amenity}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveAmenity(idx)}
+                        title={`Remove ${amenity}`}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: isLightMode ? '#0369A1' : '#38BDF8',
+                          cursor: 'pointer',
+                          padding: '0 2px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          opacity: 0.7,
+                          transition: 'opacity 0.15s ease',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                        onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.7')}
+                      >
+                        <i className="fas fa-xmark" style={{ fontSize: '.75rem' }} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* CLOUDINARY IMAGE BACKGROUND DETAIL & UPLOAD SECTION */}
