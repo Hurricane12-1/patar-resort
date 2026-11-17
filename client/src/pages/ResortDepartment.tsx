@@ -121,7 +121,6 @@ export default function ResortDepartment() {
   const todayISO = useMemo(() => getManilaTodayISO(), []);
 
   // Filters & Sub-states
-  const [dashRoomFilter, setDashRoomFilter] = useState<'all' | 'available' | 'occupied' | 'attention'>('all');
   const [dashCalView, setDashCalView] = useState<'month' | 'week' | 'day'>('month');
   const [tapeMode, setTapeMode] = useState<'tape' | 'month'>('tape');
   const [selectedDate, setSelectedDate] = useState(todayISO);
@@ -565,16 +564,6 @@ export default function ResortDepartment() {
     }
   };
 
-  // Filtered Rooms
-  const filteredRooms = useMemo(() => {
-    return rooms.filter((r) => {
-      if (dashRoomFilter === 'available') return r.status === 'available';
-      if (dashRoomFilter === 'occupied') return r.status === 'occupied';
-      if (dashRoomFilter === 'attention') return r.status === 'dirty' || r.status === 'maintenance';
-      return true;
-    });
-  }, [rooms, dashRoomFilter]);
-
   // Active chat thread (Safe check for empty threads)
   const currentThread = threads.find((t) => t.id === activeThreadId) || threads[0] || null;
 
@@ -586,132 +575,85 @@ export default function ResortDepartment() {
       {activeView === 'dashboard' && (
         <div className="staff-ops-3col">
           {/* ─────────────────────────────────────────────────────────────
-              COLUMN 1: UNITS & TOURS QUICK STATUS PANEL
+              COLUMN 1: LIVE GUEST MESSAGES & CONCIERGE CHAT
               ───────────────────────────────────────────────────────────── */}
           <section className="staff-ops-col">
             <div className="staff-ops-col-header">
               <div className="flex items-center gap-2">
-                <span className="staff-ops-col-title">Units &amp; Tours</span>
-                <span className="staff-ops-badge">{filteredRooms.length}</span>
+                <i className="fas fa-comment-dots" style={{ color: '#0284C7', fontSize: '.84rem' }} />
+                <span className="staff-ops-col-title">Live Messages</span>
+                <span className="staff-ops-badge">{threads.length}</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setShowManualBookingModal(true)}
-                  className="staff-btn staff-btn--primary"
-                  style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '6px' }}
-                  title="Create Manual Booking similar to Admin"
-                >
-                  <i className="fas fa-plus" /> Manual Book
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSearchParams({ view: 'rooms' })}
-                  className="staff-ops-link-btn"
-                >
-                  Manage All &rarr;
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setSearchParams({ view: 'messages' })}
+                className="staff-ops-link-btn"
+              >
+                Full Inbox &rarr;
+              </button>
             </div>
 
-            {/* Filter Pills */}
-            <div style={{ padding: '12px 14px 4px' }}>
-              <div className="staff-ops-filter-bar">
-                <button
-                  type="button"
-                  className={`staff-ops-pill-btn ${dashRoomFilter === 'all' ? 'active' : ''}`}
-                  onClick={() => setDashRoomFilter('all')}
-                >
-                  All
-                </button>
-                <button
-                  type="button"
-                  className={`staff-ops-pill-btn ${dashRoomFilter === 'available' ? 'active' : ''}`}
-                  onClick={() => setDashRoomFilter('available')}
-                >
-                  Ready
-                </button>
-                <button
-                  type="button"
-                  className={`staff-ops-pill-btn ${dashRoomFilter === 'occupied' ? 'active' : ''}`}
-                  onClick={() => setDashRoomFilter('occupied')}
-                >
-                  In-Use
-                </button>
-                <button
-                  type="button"
-                  className={`staff-ops-pill-btn ${dashRoomFilter === 'attention' ? 'active' : ''}`}
-                  onClick={() => setDashRoomFilter('attention')}
-                >
-                  Alert
-                </button>
-              </div>
-            </div>
-
-            {/* Listings Scroll Area */}
-            <div className="staff-ops-col-body">
-              {filteredRooms.length === 0 ? (
-                <div className="staff-ops-cleared-box" style={{ padding: '36px 16px', textAlign: 'center' }}>
-                  <i className="fas fa-bed" style={{ fontSize: '1.8rem', color: '#94A3B8', marginBottom: 8 }} />
-                  <p style={{ fontWeight: 700, color: '#334155', margin: 0 }}>No Units Match Filter</p>
+            {threads.length === 0 ? (
+              <div className="staff-ops-col-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <div className="staff-ops-cleared-box" style={{ padding: '36px 16px', textAlign: 'center', width: '100%', boxSizing: 'border-box' }}>
+                  <i className="fas fa-comments" style={{ fontSize: '1.8rem', color: '#94A3B8', marginBottom: 8 }} />
+                  <p style={{ margin: 0, fontWeight: 700, color: '#0F172A', fontSize: '.86rem' }}>No Active Guest Messages</p>
                   <small style={{ color: '#64748B', display: 'block', marginTop: 4 }}>
-                    Switch filter to &quot;All&quot; to inspect all resort accommodations.
+                    Direct inquiries and concierge requests from guests will appear here in real time.
                   </small>
                 </div>
-              ) : (
-                filteredRooms.map((room) => (
-                  <div key={room.id} className="staff-ops-unit-card">
-                    <div className="flex items-start justify-between gap-2 mb-1.5">
-                      <div style={{ minWidth: 0 }}>
-                        <div className="staff-ops-unit-name">{room.name}</div>
-                        <div className="staff-ops-unit-cat">{room.category} • {room.capacity}</div>
-                      </div>
-                      <span className={`staff-ops-status-pill staff-ops-status-pill--${room.status}`}>
-                        {room.status === 'available' && 'Available'}
-                        {room.status === 'occupied' && 'Occupied'}
-                        {room.status === 'dirty' && 'Dirty / Turnover'}
-                        {room.status === 'maintenance' && 'Maintenance'}
-                      </span>
-                    </div>
+              </div>
+            ) : (
+              <>
+                {/* Thread Selector Pills */}
+                <div className="staff-ops-threads-bar">
+                  {threads.map((t) => {
+                    const isActive = t.id === activeThreadId;
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => setActiveThreadId(t.id)}
+                        className={`staff-ops-thread-tab ${isActive ? 'active' : ''}`}
+                      >
+                        <span className="truncate">{t.name.split(' ')[0]}</span>
+                        {t.unread > 0 && <span className="staff-ops-unread-dot" />}
+                      </button>
+                    );
+                  })}
+                </div>
 
-                    <div className="staff-ops-unit-note">
-                      {room.guest ? (
-                        <span><strong style={{ color: '#0369A1' }}>Guest:</strong> {room.guest}</span>
-                      ) : (
-                        room.note
-                      )}
-                    </div>
-
-                    <div className="staff-ops-unit-foot">
-                      <span className="staff-ops-unit-price">
-                        {formatPHP(room.rate)}
-                        <small>/night</small>
-                      </span>
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => cycleRoomStatus(room.id)}
-                          className="staff-ops-action-btn"
-                          title="Advance room status"
-                        >
-                          Cycle Status
-                        </button>
-                        {room.status === 'available' && (
-                          <button
-                            type="button"
-                            onClick={() => handleBookUnit(room.id)}
-                            className="staff-ops-book-btn"
-                            title="Create Manual Booking for this unit"
-                          >
-                            Manual Book
-                          </button>
-                        )}
+                {/* Chat Feed */}
+                <div className="staff-ops-chat-feed">
+                  {currentThread?.messages.map((m, idx) => {
+                    const isMe = m.role === 'me';
+                    return (
+                      <div key={idx} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                        <div className={`staff-ops-bubble ${isMe ? 'staff-ops-bubble--me' : 'staff-ops-bubble--guest'}`}>
+                          {!isMe && <div className="staff-ops-bubble-sender">{m.sender}</div>}
+                          <p>{m.text}</p>
+                        </div>
+                        <span className="staff-ops-bubble-time">{m.time}</span>
                       </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+                    );
+                  })}
+                </div>
+
+                {/* Quick Reply Form */}
+                <form onSubmit={handleSendChatReply} className="staff-ops-quick-reply-form">
+                  <input
+                    type="text"
+                    placeholder="Reply to thread…"
+                    value={chatReplyText}
+                    onChange={(e) => setChatReplyText(e.target.value)}
+                    className="staff-ops-reply-input"
+                  />
+                  <button type="submit" className="staff-ops-reply-btn" disabled={!currentThread}>
+                    <i className="fas fa-paper-plane" />
+                  </button>
+                </form>
+              </>
+            )}
           </section>
 
           {/* ─────────────────────────────────────────────────────────────
@@ -960,165 +902,92 @@ export default function ResortDepartment() {
           </section>
 
           {/* ─────────────────────────────────────────────────────────────
-              COLUMN 3: SPLIT STACK (INCOMING QUEUE + LIVE MESSAGES)
+              COLUMN 3: INCOMING RESERVATIONS QUEUE
               ───────────────────────────────────────────────────────────── */}
-          <section className="staff-ops-stack-col">
-            {/* TOP CARD: Incoming Reservations Queue */}
-            <div className="staff-ops-stack-card" style={{ minHeight: 280 }}>
-              <div className="staff-ops-col-header">
-                <div className="flex items-center gap-2">
-                  <span className="staff-ops-dot staff-ops-dot--amber" style={{ animation: 'pulse 1.5s infinite' }} />
-                  <span className="staff-ops-col-title">Incoming Queue</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowManualBookingModal(true)}
-                    className="staff-ops-link-btn"
-                    style={{ fontSize: '11px', fontWeight: 700, color: '#0284C7' }}
-                    title="Manual Booking Entry"
-                  >
-                    + Manual Book
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSearchParams({ view: 'reservations' })}
-                    className="staff-ops-pending-btn"
-                  >
-                    {pendingReservations.length} Pending &rarr;
-                  </button>
-                </div>
+          <section className="staff-ops-col">
+            <div className="staff-ops-col-header">
+              <div className="flex items-center gap-2">
+                <span className="staff-ops-dot staff-ops-dot--amber" style={{ animation: 'pulse 1.5s infinite' }} />
+                <span className="staff-ops-col-title">Incoming Queue</span>
+                <span className="staff-ops-badge" style={{ background: '#FEF3C7', color: '#B45309', borderColor: '#FDE68A' }}>
+                  {pendingReservations.length} Pending
+                </span>
               </div>
-
-              <div className="staff-ops-col-body">
-                {pendingReservations.length === 0 ? (
-                  <div className="staff-ops-cleared-box">
-                    <p>All incoming requests cleared!</p>
-                    <small>New direct &amp; OTA bookings appear here.</small>
-                  </div>
-                ) : (
-                  pendingReservations.map((req) => {
-                    const rm = getRoomById(req.requestedRoomId);
-                    const conflict = checkRoomConflict(req.requestedRoomId, req.checkIn, req.checkOut);
-
-                    return (
-                      <div key={req.id} className="staff-ops-pending-card">
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <div className="staff-ops-pending-guest">{req.guest}</div>
-                            <div className="staff-ops-pending-meta">{req.pax} Pax • {req.source}</div>
-                          </div>
-                          <span className="staff-ops-date-badge">
-                            {formatDateShort(req.checkIn)}–{formatDateShort(req.checkOut)}
-                          </span>
-                        </div>
-
-                        <div className="staff-ops-conflict-row">
-                          <span className="truncate">{rm.name}</span>
-                          {conflict.conflict ? (
-                            <span className="staff-ops-badge--conflict">Conflict</span>
-                          ) : (
-                            <span className="staff-ops-badge--clear">Clear</span>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-2 pt-1">
-                          <button
-                            type="button"
-                            onClick={() => handleApprovePending(req.id)}
-                            className="staff-ops-approve-btn"
-                          >
-                            Approve &amp; Assign
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeclinePending(req.id)}
-                            className="staff-ops-decline-btn"
-                          >
-                            Decline
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowManualBookingModal(true)}
+                  className="staff-btn staff-btn--primary"
+                  style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '6px' }}
+                  title="Manual Booking Entry"
+                >
+                  <i className="fas fa-plus" /> Manual Book
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSearchParams({ view: 'reservations' })}
+                  className="staff-ops-link-btn"
+                >
+                  All Queue &rarr;
+                </button>
               </div>
             </div>
 
-            {/* BOTTOM CARD: Live Messages & Guest Feed */}
-            <div className="staff-ops-stack-card" style={{ minHeight: 290 }}>
-              <div className="staff-ops-col-header">
-                <div className="flex items-center gap-2">
-                  <i className="fas fa-comment-dots" style={{ color: '#0284C7', fontSize: '.84rem' }} />
-                  <span className="staff-ops-col-title">Live Messages</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSearchParams({ view: 'messages' })}
-                  className="staff-ops-link-btn"
-                >
-                  Full Inbox &rarr;
-                </button>
-              </div>
-
-              {threads.length === 0 ? (
-                <div className="staff-ops-cleared-box" style={{ padding: '36px 16px', textAlign: 'center' }}>
-                  <i className="fas fa-comments" style={{ fontSize: '1.6rem', color: '#94A3B8', marginBottom: 8 }} />
-                  <p style={{ margin: 0, fontWeight: 700, color: '#0F172A', fontSize: '.86rem' }}>No Active Guest Messages</p>
-                  <small style={{ color: '#64748B', display: 'block', marginTop: 4 }}>
-                    Direct inquiries and concierge requests from guests will appear here in real time.
-                  </small>
+            <div className="staff-ops-col-body">
+              {pendingReservations.length === 0 ? (
+                <div className="staff-ops-cleared-box" style={{ padding: '40px 16px', textAlign: 'center' }}>
+                  <div className="flex items-center justify-center gap-2 mb-1.5">
+                    <i className="fas fa-circle-check" style={{ color: '#10B981', fontSize: '1.2rem' }} />
+                    <p style={{ margin: 0, fontWeight: 700, color: '#0F172A', fontSize: '.88rem' }}>Queue is Clear</p>
+                  </div>
+                  <small style={{ color: '#64748B', display: 'block' }}>All incoming requests cleared!</small>
+                  <small style={{ color: '#94A3B8', display: 'block', marginTop: 4 }}>New direct &amp; OTA bookings appear here.</small>
                 </div>
               ) : (
-                <>
-                  {/* Thread Selector Pills */}
-                  <div className="staff-ops-threads-bar">
-                    {threads.map((t) => {
-                      const isActive = t.id === activeThreadId;
-                      return (
-                        <button
-                          key={t.id}
-                          type="button"
-                          onClick={() => setActiveThreadId(t.id)}
-                          className={`staff-ops-thread-tab ${isActive ? 'active' : ''}`}
-                        >
-                          <span className="truncate">{t.name.split(' ')[0]}</span>
-                          {t.unread > 0 && <span className="staff-ops-unread-dot" />}
-                        </button>
-                      );
-                    })}
-                  </div>
+                pendingReservations.map((req) => {
+                  const rm = getRoomById(req.requestedRoomId);
+                  const conflict = checkRoomConflict(req.requestedRoomId, req.checkIn, req.checkOut);
 
-                  {/* Chat Feed */}
-                  <div className="staff-ops-chat-feed">
-                    {currentThread?.messages.map((m, idx) => {
-                      const isMe = m.role === 'me';
-                      return (
-                        <div key={idx} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                          <div className={`staff-ops-bubble ${isMe ? 'staff-ops-bubble--me' : 'staff-ops-bubble--guest'}`}>
-                            {!isMe && <div className="staff-ops-bubble-sender">{m.sender}</div>}
-                            <p>{m.text}</p>
-                          </div>
-                          <span className="staff-ops-bubble-time">{m.time}</span>
+                  return (
+                    <div key={req.id} className="staff-ops-pending-card">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="staff-ops-pending-guest">{req.guest}</div>
+                          <div className="staff-ops-pending-meta">{req.pax} Pax • {req.source}</div>
                         </div>
-                      );
-                    })}
-                  </div>
+                        <span className="staff-ops-date-badge">
+                          {formatDateShort(req.checkIn)}–{formatDateShort(req.checkOut)}
+                        </span>
+                      </div>
 
-                  {/* Quick Reply Form */}
-                  <form onSubmit={handleSendChatReply} className="staff-ops-quick-reply-form">
-                    <input
-                      type="text"
-                      placeholder="Reply to thread…"
-                      value={chatReplyText}
-                      onChange={(e) => setChatReplyText(e.target.value)}
-                      className="staff-ops-reply-input"
-                    />
-                    <button type="submit" className="staff-ops-reply-btn" disabled={!currentThread}>
-                      <i className="fas fa-paper-plane" />
-                    </button>
-                  </form>
-                </>
+                      <div className="staff-ops-conflict-row">
+                        <span className="truncate">{rm.name}</span>
+                        {conflict.conflict ? (
+                          <span className="staff-ops-badge--conflict">Conflict</span>
+                        ) : (
+                          <span className="staff-ops-badge--clear">Clear</span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => handleApprovePending(req.id)}
+                          className="staff-ops-approve-btn"
+                        >
+                          Approve &amp; Assign
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeclinePending(req.id)}
+                          className="staff-ops-decline-btn"
+                        >
+                          Decline
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
               )}
             </div>
           </section>
