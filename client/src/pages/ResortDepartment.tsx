@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.tsx';
-import { api } from '../lib/api.ts';
+import { api, addDaysYMD } from '../lib/api.ts';
 import { toast } from '../components/Toasts.tsx';
+import { to11Digits, formatTime12Hour } from '../lib/format.ts';
+import AddReservationModal, { NewReservationFormState } from '../components/admin/modals/AddReservationModal.tsx';
 import '../styles/staff-portal.css';
 
 // ── Types & Interfaces ──
@@ -195,32 +197,124 @@ export default function ResortDepartment() {
   const [tapeStartDate, setTapeStartDate] = useState('2026-11-15');
   const [chatReplyText, setChatReplyText] = useState('');
 
-  // Walk-in Modal State
-  const [showWalkInModal, setShowWalkInModal] = useState(false);
-  const [walkInForm, setWalkInForm] = useState({
-    guest: '',
-    pax: 2,
+  // ── Executive Admin-Grade Manual / Walk-In Booking Modal State ──
+  const [showManualBookingModal, setShowManualBookingModal] = useState(false);
+  const [creatingReservation, setCreatingReservation] = useState(false);
+  const [walkInPoolAddon, setWalkInPoolAddon] = useState('none');
+  const [liveRoomsList, setLiveRoomsList] = useState<any[]>([]);
+
+  const [newReservation, setNewReservation] = useState<NewReservationFormState>({
+    guest_name: '',
     phone: '',
-    checkIn: '2026-11-17',
-    checkOut: '2026-11-19',
-    roomId: 'rm-102',
+    guest_email: '',
+    room_id: '',
+    check_in: '2026-11-17',
+    check_out: '2026-11-19',
+    check_in_time: '14:00',
+    check_out_time: '12:00',
+    guests: 2,
+    total_php: 3500,
+    payment_method: 'Cash',
+    payment_status: 'Paid',
     notes: '',
   });
 
-  // Listen to Global Walk-In Modal Trigger
+  // Active rooms list for AddReservationModal (merging live rooms with fallback)
+  const activeRoomsList = useMemo(() => {
+    if (liveRoomsList.length > 0) {
+      return liveRoomsList.filter((r) => r && r.is_active !== false);
+    }
+    return INITIAL_ROOMS.map((r) => ({
+      id: r.id,
+      name: r.name,
+      rate_php: r.rate,
+      units: 1,
+      capacity: parseInt(r.capacity) || 4,
+      category: r.category,
+      amenities: [r.note],
+      is_active: r.status !== 'maintenance',
+      image_url: r.category.toLowerCase().includes('cottage')
+        ? 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80'
+        : r.category.toLowerCase().includes('villa')
+        ? 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80'
+        : 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80',
+    }));
+  }, [liveRoomsList]);
+
+  // Ensure newReservation.room_id default is set
+  useEffect(() => {
+    if (!newReservation.room_id && activeRoomsList.length > 0) {
+      setNewReservation((prev) => ({
+        ...prev,
+        room_id: activeRoomsList[0].id,
+        total_php: Number(activeRoomsList[0].rate_php) || 3500,
+      }));
+    }
+  }, [activeRoomsList, newReservation.room_id]);
+
+  // All reservations formatted for AddReservationModal collision & buffer detector
+  const allReservationsList = useMemo(() => {
+    return bookings.map((b) => ({
+      id: b.id,
+      guest_name: b.guest,
+      room_id: b.roomId,
+      check_in: b.checkIn,
+      check_out: b.checkOut,
+      status: b.status,
+      total_php: 3500,
+      rooms: { name: (rooms.find((r) => r.id === b.roomId)?.name) || 'Room' },
+    }));
+  }, [bookings, rooms]);
+
+  // Quick Action: Book specific unit
+  const handleBookUnit = (rmId: string) => {
+    const targetRoom = activeRoomsList.find((r) => r.id === rmId) || activeRoomsList[0];
+    const rate = Number(targetRoom?.rate_php) || 3500;
+    setNewReservation((prev) => ({
+      ...prev,
+      room_id: rmId,
+      check_in: selectedDate,
+      check_out: addDaysISO(selectedDate, 2),
+      total_php: rate * 2,
+    }));
+    setShowManualBookingModal(true);
+  };
+
+  // Quick Action: Book on selected date
+  const handleBookOnDate = (dateStr: string) => {
+    const targetRoom = activeRoomsList[0];
+    const rate = Number(targetRoom?.rate_php) || 3500;
+    setNewReservation((prev) => ({
+      ...prev,
+      check_in: dateStr,
+      check_out: addDaysISO(dateStr, 2),
+      total_php: rate * 2,
+    }));
+    setShowManualBookingModal(true);
+  };
+
+  // Listen to Global Walk-In / Manual Booking Modal Trigger
   useEffect(() => {
     const handleOpenWalkIn = (e?: any) => {
       const dt = e?.detail?.date || selectedDate;
-      const rm = e?.detail?.roomId || 'rm-102';
-      setWalkInForm((prev) => ({ ...prev, checkIn: dt, checkOut: addDaysISO(dt, 2), roomId: rm }));
-      setShowWalkInModal(true);
+      const rm = e?.detail?.roomId || (activeRoomsList[0]?.id || 'rm-102');
+      const roomMatch = activeRoomsList.find((r) => r.id === rm) || activeRoomsList[0];
+      const rate = Number(roomMatch?.rate_php) || 3500;
+      setNewReservation((prev) => ({
+        ...prev,
+        check_in: dt,
+        check_out: addDaysISO(dt, 2),
+        room_id: rm,
+        total_php: rate * 2,
+      }));
+      setShowManualBookingModal(true);
     };
     window.addEventListener('open-staff-walkin', handleOpenWalkIn);
-    if (searchParams.get('action') === 'walkin') {
-      setShowWalkInModal(true);
+    if (searchParams.get('action') === 'walkin' || searchParams.get('action') === 'manual-booking') {
+      setShowManualBookingModal(true);
     }
     return () => window.removeEventListener('open-staff-walkin', handleOpenWalkIn);
-  }, [searchParams, selectedDate]);
+  }, [searchParams, selectedDate, activeRoomsList]);
 
   // Load Live Data from Supabase / API
   useEffect(() => {
@@ -229,7 +323,6 @@ export default function ResortDepartment() {
       .then((res: any) => {
         if (!isLive || !res) return;
         if (Array.isArray(res.bookings) && res.bookings.length > 0) {
-          // Merge active bookings
           const liveBookings: BookingItem[] = res.bookings.map((b: any) => ({
             id: b.id,
             guest: b.guest_name || b.guest || 'Guest',
@@ -243,6 +336,13 @@ export default function ResortDepartment() {
           }));
           setBookings(liveBookings);
         }
+      })
+      .catch(() => {});
+
+    api.rooms(false)
+      .then((rList: any) => {
+        if (!isLive || !Array.isArray(rList) || rList.length === 0) return;
+        setLiveRoomsList(rList);
       })
       .catch(() => {});
 
@@ -287,6 +387,111 @@ export default function ResortDepartment() {
       };
     }
     return { conflict: false, reason: 'Unit is clear and ready for stay.' };
+  };
+
+  // ── Executive Admin-Grade Create Reservation Handler ──
+  const handleCreateReservation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreatingReservation(true);
+    try {
+      const targetRoomId = newReservation.room_id || (activeRoomsList[0]?.id || 'rm-102');
+      const cleanedPhone = to11Digits(newReservation.phone);
+      const missingFields: string[] = [];
+      if (!String(newReservation.guest_name || '').trim()) missingFields.push('Guest Full Name');
+      if (!cleanedPhone) missingFields.push('Contact / Phone Number');
+      else if (cleanedPhone.length !== 11 || !cleanedPhone.startsWith('0')) {
+        missingFields.push('Valid 11-digit Phone (starts with 0, e.g. 0917xxxxxxx)');
+      }
+      if (!targetRoomId) missingFields.push('Accommodation Room');
+      if (!newReservation.check_in || !newReservation.check_out) missingFields.push('Check-In & Check-Out Dates');
+
+      if (missingFields.length > 0) {
+        throw new Error(`⚠️ Please fill in required information: ${missingFields.join(', ')}.`);
+      }
+
+      const checkIn = newReservation.check_in || '2026-11-17';
+      const checkOut = newReservation.check_out && newReservation.check_out > checkIn
+        ? newReservation.check_out
+        : addDaysYMD(checkIn, 1);
+      const checkInTime = newReservation.check_in_time || '14:00';
+      const checkOutTime = newReservation.check_out_time || '12:00';
+      const timeTag = `[Check-In: ${formatTime12Hour(checkInTime)}, Check-Out: ${formatTime12Hour(checkOutTime)}]`;
+      let finalNotes = (newReservation.notes || '').trim();
+      if (!finalNotes.includes('[Check-In:')) {
+        finalNotes = finalNotes ? `${finalNotes} ${timeTag}` : timeTag;
+      }
+
+      const roomMatch = activeRoomsList.find((r) => r.id === targetRoomId) || activeRoomsList[0];
+
+      const payload = {
+        ...newReservation,
+        room_id: targetRoomId,
+        is_walk_in: true,
+        check_in: checkIn,
+        check_out: checkOut,
+        check_in_time: checkInTime,
+        check_out_time: checkOutTime,
+        notes: finalNotes,
+        guest_name: newReservation.guest_name.trim(),
+        phone: cleanedPhone,
+        total_php: Number(newReservation.total_php) || Number(roomMatch?.rate_php) || 3500,
+        guests: Number(newReservation.guests) || 2,
+        payment_method: newReservation.payment_method || 'Cash',
+        payment_status: newReservation.payment_status || 'Paid',
+      };
+
+      let createdId = `BK-${Date.now().toString().slice(-4)}`;
+      try {
+        const created = await api.createReservation(payload);
+        if (created?.id) createdId = created.id;
+      } catch (apiErr: any) {
+        console.warn('Backend reservation save fell back to local store:', apiErr);
+      }
+
+      const newBooking: BookingItem = {
+        id: createdId,
+        guest: newReservation.guest_name.trim(),
+        pax: Number(newReservation.guests) || 2,
+        roomId: targetRoomId,
+        checkIn: checkIn,
+        checkOut: checkOut,
+        status: 'confirmed',
+        payment: newReservation.payment_status || 'Paid',
+        source: 'Manual Desk / Walk-In',
+      };
+      setBookings((prev) => [newBooking, ...prev]);
+
+      const today = new Date().toISOString().slice(0, 10);
+      if (checkIn === today) {
+        setRooms((prev) =>
+          prev.map((r) => (r.id === targetRoomId ? { ...r, status: 'occupied', guest: newReservation.guest_name.trim() } : r))
+        );
+      }
+
+      toast(`✦ Manual booking confirmed for ${newReservation.guest_name.trim()}! Folio #${createdId.slice(0, 8)}`);
+      setShowManualBookingModal(false);
+
+      setNewReservation({
+        guest_name: '',
+        phone: '',
+        guest_email: '',
+        room_id: activeRoomsList[0]?.id || '',
+        check_in: '2026-11-17',
+        check_out: '2026-11-19',
+        check_in_time: '14:00',
+        check_out_time: '12:00',
+        guests: 2,
+        total_php: Number(activeRoomsList[0]?.rate_php) || 3500,
+        payment_method: 'Cash',
+        payment_status: 'Paid',
+        notes: '',
+      });
+      setWalkInPoolAddon('none');
+    } catch (err: any) {
+      toast(err.message || 'Failed to record manual booking.', true);
+    } finally {
+      setCreatingReservation(false);
+    }
   };
 
   // Cycle Status Action
@@ -345,34 +550,6 @@ export default function ResortDepartment() {
     setChatReplyText('');
   };
 
-  // Create Walk-in Booking
-  const handleCreateWalkIn = (e: React.FormEvent) => {
-    e.preventDefault();
-    const conflict = checkRoomConflict(walkInForm.roomId, walkInForm.checkIn, walkInForm.checkOut);
-    if (conflict.conflict) {
-      toast(`Cannot book: ${conflict.reason}`, true);
-      return;
-    }
-    const newBooking: BookingItem = {
-      id: `BK-${Date.now().toString().slice(-4)}`,
-      guest: walkInForm.guest,
-      pax: Number(walkInForm.pax),
-      roomId: walkInForm.roomId,
-      checkIn: walkInForm.checkIn,
-      checkOut: walkInForm.checkOut,
-      status: 'checked_in',
-      payment: 'Paid (Front Desk)',
-      source: 'Walk-In',
-    };
-    setBookings((prev) => [newBooking, ...prev]);
-    // Set room to occupied
-    setRooms((prev) =>
-      prev.map((r) => (r.id === walkInForm.roomId ? { ...r, status: 'occupied', guest: walkInForm.guest } : r))
-    );
-    setShowWalkInModal(false);
-    toast(`✦ Walk-In check-in confirmed for ${walkInForm.guest}!`);
-  };
-
   // Filtered Rooms
   const filteredRooms = useMemo(() => {
     return rooms.filter((r) => {
@@ -402,13 +579,24 @@ export default function ResortDepartment() {
                 <span className="staff-ops-col-title">Units &amp; Tours</span>
                 <span className="staff-ops-badge">{filteredRooms.length}</span>
               </div>
-              <button
-                type="button"
-                onClick={() => setSearchParams({ view: 'rooms' })}
-                className="staff-ops-link-btn"
-              >
-                Manage All &rarr;
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setShowManualBookingModal(true)}
+                  className="staff-btn staff-btn--primary"
+                  style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '6px' }}
+                  title="Create Manual Booking similar to Admin"
+                >
+                  <i className="fas fa-plus" /> Manual Book
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSearchParams({ view: 'rooms' })}
+                  className="staff-ops-link-btn"
+                >
+                  Manage All &rarr;
+                </button>
+              </div>
             </div>
 
             {/* Filter Pills */}
@@ -487,13 +675,11 @@ export default function ResortDepartment() {
                       {room.status === 'available' && (
                         <button
                           type="button"
-                          onClick={() => {
-                            setWalkInForm((p) => ({ ...p, roomId: room.id, checkIn: selectedDate }));
-                            setShowWalkInModal(true);
-                          }}
+                          onClick={() => handleBookUnit(room.id)}
                           className="staff-ops-book-btn"
+                          title="Create Manual Booking for this unit"
                         >
-                          Book
+                          Manual Book
                         </button>
                       )}
                     </div>
@@ -718,13 +904,11 @@ export default function ResortDepartment() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => {
-                    setWalkInForm((p) => ({ ...p, checkIn: selectedDate, checkOut: addDaysISO(selectedDate, 2) }));
-                    setShowWalkInModal(true);
-                  }}
+                  onClick={() => handleBookOnDate(selectedDate)}
                   className="staff-ops-book-date-btn"
+                  title="Create Manual Booking for this date"
                 >
-                  + Book on Date
+                  + Manual Book on {formatDateShort(selectedDate)}
                 </button>
               </div>
 
@@ -761,13 +945,24 @@ export default function ResortDepartment() {
                   <span className="staff-ops-dot staff-ops-dot--amber" style={{ animation: 'pulse 1.5s infinite' }} />
                   <span className="staff-ops-col-title">Incoming Queue</span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setSearchParams({ view: 'reservations' })}
-                  className="staff-ops-pending-btn"
-                >
-                  {pendingReservations.length} Pending &rarr;
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowManualBookingModal(true)}
+                    className="staff-ops-link-btn"
+                    style={{ fontSize: '11px', fontWeight: 700, color: '#0284C7' }}
+                    title="Manual Booking Entry"
+                  >
+                    + Manual Book
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSearchParams({ view: 'reservations' })}
+                    className="staff-ops-pending-btn"
+                  >
+                    {pendingReservations.length} Pending &rarr;
+                  </button>
+                </div>
               </div>
 
               <div className="staff-ops-col-body">
@@ -1307,117 +1502,31 @@ export default function ResortDepartment() {
       )}
 
       {/* =========================================================================
-          MODAL: + WALK-IN BOOKING (WITH REAL-TIME CONFLICT ENGINE)
+          EXECUTIVE ADMIN-GRADE MANUAL BOOKING & WALK-IN MODAL
           ========================================================================= */}
-      {showWalkInModal && (
-        <div className="modal-overlay" onClick={() => setShowWalkInModal(false)}>
-          <div className="modal" style={{ maxWidth: 540 }} onClick={(e) => e.stopPropagation()}>
-            <div className="modal-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <span className="label" style={{ color: '#0284C7', fontWeight: 700 }}>Direct Reception Walk-In</span>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '2px 0 0', color: '#0F172A' }}>
-                  New Walk-In Booking
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowWalkInModal(false)}
-                style={{ background: 'none', border: 'none', fontSize: '1.4rem', color: '#64748B', cursor: 'pointer' }}
-              >
-                &times;
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateWalkIn} style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div className="field">
-                <label>GUEST FULL NAME</label>
-                <input
-                  required
-                  placeholder="e.g. Maria Santos"
-                  value={walkInForm.guest}
-                  onChange={(e) => setWalkInForm({ ...walkInForm, guest: e.target.value })}
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div className="field">
-                  <label>PARTY SIZE (PAX)</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="12"
-                    required
-                    value={walkInForm.pax}
-                    onChange={(e) => setWalkInForm({ ...walkInForm, pax: Number(e.target.value) })}
-                  />
-                </div>
-                <div className="field">
-                  <label>PHONE / CONTACT</label>
-                  <input
-                    placeholder="0917-000-0000"
-                    value={walkInForm.phone}
-                    onChange={(e) => setWalkInForm({ ...walkInForm, phone: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div className="field">
-                  <label>CHECK-IN DATE</label>
-                  <input
-                    type="date"
-                    required
-                    value={walkInForm.checkIn}
-                    onChange={(e) => setWalkInForm({ ...walkInForm, checkIn: e.target.value })}
-                  />
-                </div>
-                <div className="field">
-                  <label>CHECK-OUT DATE</label>
-                  <input
-                    type="date"
-                    required
-                    value={walkInForm.checkOut}
-                    onChange={(e) => setWalkInForm({ ...walkInForm, checkOut: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="field">
-                <label>ASSIGN ACCOMMODATION / TOUR</label>
-                <select
-                  value={walkInForm.roomId}
-                  onChange={(e) => setWalkInForm({ ...walkInForm, roomId: e.target.value })}
-                >
-                  {rooms.map((rm) => {
-                    const check = checkRoomConflict(rm.id, walkInForm.checkIn, walkInForm.checkOut);
-                    return (
-                      <option key={rm.id} value={rm.id} disabled={check.conflict}>
-                        {rm.name} ({formatPHP(rm.rate)}/night) {check.conflict ? `— [CONFLICT]` : '— [AVAILABLE]'}
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
-                <button
-                  type="button"
-                  onClick={() => setShowWalkInModal(false)}
-                  className="staff-ops-action-btn"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="staff-btn staff-btn--primary"
-                  style={{ padding: '8px 20px', borderRadius: 8, fontWeight: 700 }}
-                >
-                  Confirm Walk-In &amp; Assign &rarr;
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {showManualBookingModal && (
+        <AddReservationModal
+          isOpen={showManualBookingModal}
+          onClose={() => setShowManualBookingModal(false)}
+          activeRoomsList={activeRoomsList}
+          roomsList={activeRoomsList}
+          reservationsList={allReservationsList}
+          isLightMode={true}
+          themeBorder="#E2E8F0"
+          themeText="#1E293B"
+          themeMuted="#64748B"
+          newReservation={newReservation}
+          setNewReservation={setNewReservation}
+          walkInPoolAddon={walkInPoolAddon}
+          setWalkInPoolAddon={setWalkInPoolAddon}
+          creatingReservation={creatingReservation}
+          onSubmit={handleCreateReservation}
+          getRoomImageUrl={(room: any) =>
+            room?.image_url ||
+            (Array.isArray(room?.images) && room.images[0]) ||
+            'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80'
+          }
+        />
       )}
     </div>
   );

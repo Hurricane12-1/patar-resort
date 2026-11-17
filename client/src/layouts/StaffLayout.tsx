@@ -298,10 +298,10 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
               }
             }}
             className="staff-btn staff-btn--primary staff-header-cta"
-            title="Go to Check-In & Walk-In Desk"
+            title="Create Manual Booking (Walk-In / Phone / Direct Desk)"
           >
             <i className="fas fa-plus" />
-            <span>Walk-In Booking</span>
+            <span>Manual Booking</span>
           </button>
 
           {allowEscalation && (
@@ -375,6 +375,28 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
                   <i className="fas fa-table-columns staff-nav-icon" />
                   {!isSidebarCollapsed && <span className="staff-nav-text">Operations Terminal</span>}
                 </Link>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (location.pathname.startsWith('/staff/operations')) {
+                      window.dispatchEvent(new CustomEvent('open-staff-walkin'));
+                    } else {
+                      navigate('/staff/operations?action=walkin');
+                    }
+                  }}
+                  className="staff-nav-item"
+                  style={{ width: '100%', background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', font: 'inherit' }}
+                  title="Open Manual Booking Modal"
+                >
+                  <i className="fas fa-calendar-plus staff-nav-icon staff-nav-icon--sky" />
+                  {!isSidebarCollapsed && (
+                    <div className="flex items-center justify-between flex-1">
+                      <span className="staff-nav-text">Manual Booking</span>
+                      <span className="staff-ops-badge" style={{ fontSize: '10px', background: '#E0F2FE', color: '#0369A1', borderColor: '#BAE6FD' }}>Desk</span>
+                    </div>
+                  )}
+                </button>
 
                 <Link
                   to="/staff/operations?view=calendar"
