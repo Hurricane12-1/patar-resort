@@ -1579,7 +1579,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
            HEADER: CLEAN SINGLE FIXED/STICKY DARK LUXURY HEADER (76px Height)
            ===================================================================== */}
       {!embedded && (
-      <header className={`fixed top-0 inset-x-0 z-40 h-[76px] transition-all duration-300 ${isScrolled ? 'bg-[#060B18]/90 backdrop-blur-md border-b border-white/10 shadow-lg' : 'bg-transparent border-b border-transparent'}`}>
+      <header className={`fixed top-0 inset-x-0 z-[100] h-[76px] transition-all duration-300 ${isScrolled ? 'bg-[#060B18]/90 backdrop-blur-md border-b border-white/10 shadow-lg' : 'bg-transparent border-b border-transparent'}`}>
         <div className="max-w-6xl mx-auto px-5 sm:px-8 lg:px-10 h-full flex items-center justify-between gap-4">
           
           {/* Left: Custom ROCK VIEW Emblem + Title (matching https://34ed5487.patar-resort.pages.dev/) */}
@@ -2456,8 +2456,8 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
           {showBookingTools && (
           <aside
             id="reserve-card"
-            className="lg:col-span-5 xl:col-span-4 self-start lg:sticky lg:top-24 scroll-mt-24 relative z-40"
-            style={{ position: 'sticky', top: '96px', alignSelf: 'flex-start' }}
+            className="lg:col-span-5 xl:col-span-4 self-start lg:sticky lg:top-24 scroll-mt-24 relative z-10"
+            style={{ position: 'sticky', top: '96px', alignSelf: 'flex-start', zIndex: 10 }}
           >
             <div className="bg-[#0B1426] border border-white/15 rounded-3xl p-6 sm:p-7 shadow-2xl text-white">
               

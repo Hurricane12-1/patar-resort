@@ -114,7 +114,7 @@ function PortalFrame() {
         </div>
       )}
 
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#040e22]/90 backdrop-blur-md supports-[backdrop-filter]:bg-[#040e22]/80 shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+      <header className="sticky top-0 z-[100] border-b border-white/10 bg-[#040e22]/90 backdrop-blur-md supports-[backdrop-filter]:bg-[#040e22]/80 shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
         <div className="mx-auto flex h-16 max-w-[1200px] items-center gap-4 px-4 sm:h-[72px] sm:px-6 lg:px-8">
           <Link to="/" className="group flex items-center gap-3" aria-label="Rock View Beach Resort home">
             <RockViewMark className="h-8 w-8 transition-transform duration-300 group-hover:scale-105 sm:h-9 sm:w-9" />
@@ -278,7 +278,7 @@ function AccountMenu() {
       </button>
 
       {open && (
-        <div role="menu" className="gp-menu absolute right-0 top-[calc(100%+8px)] z-50 w-[272px] rounded-2xl border border-white/15 bg-[#040e22]/95 p-2 shadow-[0_18px_50px_rgba(0,0,0,0.7)] backdrop-blur-xl">
+        <div role="menu" className="gp-menu absolute right-0 top-[calc(100%+8px)] z-[110] w-[272px] rounded-2xl border border-white/15 bg-[#040e22]/95 p-2 shadow-[0_18px_50px_rgba(0,0,0,0.7)] backdrop-blur-xl">
           <div className="flex items-center gap-3 px-3 pb-3 pt-2">
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#0EA5E9] to-[#2563EB] text-[13px] font-bold text-white shadow-[0_0_8px_rgba(56,189,248,0.4)]">{portal.initials}</span>
             <div className="min-w-0">

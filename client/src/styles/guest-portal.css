@@ -172,6 +172,7 @@
 }
 
 .gp-menu {
+  z-index: 110 !important;
   animation: gp-pop 0.16s ease-out both;
 }
 
