@@ -50,6 +50,7 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
   const [formData, setFormData] = useState<any>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [isCustomCategory, setIsCustomCategory] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -498,21 +499,107 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
-              <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Category</label>
-              <select
-                style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : '#1E293B', color: themeText }}
-                value={formData.category || 'Cottage'}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              >
-                {(() => {
-                  const activeOpts = getCategoryOptionsForType((formData.offering_type || 'room') as OfferingType);
-                  const currentCat = formData.category || activeOpts[0];
-                  const mergedOpts = activeOpts.includes(currentCat) ? activeOpts : [currentCat, ...activeOpts];
-                  return mergedOpts.map((opt) => (
-                    <option key={opt} value={opt}>{opt}</option>
-                  ));
-                })()}
-              </select>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700 }}>Category</label>
+                <button
+                  type="button"
+                  onClick={() => setIsCustomCategory(!isCustomCategory)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: isCustomCategory ? '#D97706' : '#0284C7',
+                    fontSize: '.72rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    padding: '1px 4px',
+                  }}
+                >
+                  <i className={isCustomCategory ? "fas fa-list" : "fas fa-plus"} />
+                  {isCustomCategory ? 'Presets' : '+ Type Custom'}
+                </button>
+              </div>
+
+              {isCustomCategory ? (
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <input
+                    type="text"
+                    required
+                    autoFocus
+                    placeholder="Type custom category name…"
+                    style={{
+                      flex: 1,
+                      padding: '8px 12px',
+                      borderRadius: 8,
+                      border: '1px solid #0284C7',
+                      background: isLightMode ? '#F8FAFC' : '#1E293B',
+                      color: themeText,
+                      fontWeight: 600,
+                    }}
+                    value={formData.category || ''}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  />
+                  <button
+                    type="button"
+                    title="Switch back to preset list"
+                    onClick={() => setIsCustomCategory(false)}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: 8,
+                      border: `1px solid ${themeBorder}`,
+                      background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.08)',
+                      color: themeText,
+                      fontSize: '.78rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    <i className="fas fa-list" style={{ marginRight: 4 }} /> Presets
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <select
+                    style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : '#1E293B', color: themeText, fontWeight: 600 }}
+                    value={formData.category || 'Cottage'}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  >
+                    {(() => {
+                      const activeOpts = getCategoryOptionsForType((formData.offering_type || 'room') as OfferingType);
+                      const currentCat = formData.category || activeOpts[0];
+                      const mergedOpts = activeOpts.includes(currentCat) ? activeOpts : [currentCat, ...activeOpts];
+                      return mergedOpts.map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ));
+                    })()}
+                  </select>
+                  <button
+                    type="button"
+                    title="Add a custom category name"
+                    onClick={() => setIsCustomCategory(true)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      padding: '8px 12px',
+                      borderRadius: 8,
+                      border: '1px solid #0284C7',
+                      background: '#0284C7',
+                      color: '#FFFFFF',
+                      fontSize: '.78rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      boxShadow: '0 1px 3px rgba(2, 132, 199, 0.25)',
+                    }}
+                  >
+                    <i className="fas fa-plus" /> Add
+                  </button>
+                </div>
+              )}
             </div>
             <div>
               <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Sleeps Capacity (Guests)</label>
