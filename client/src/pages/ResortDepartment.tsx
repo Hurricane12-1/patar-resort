@@ -357,10 +357,10 @@ export default function ResortDepartment() {
         unitLabel: c.email || c.phone || 'Guest Portal',
         unread: 0,
         messages: (c.messages || []).map((m: any) => ({
-          sender: m.sender || (m.role === 'staff' ? 'Duty Staff' : 'Guest'),
-          role: m.role === 'staff' || m.sender === 'staff' ? 'me' : 'guest',
+          sender: (m.role === 'user' || m.sender === 'guest') ? (c.name || 'Resort Guest') : (m.senderName || 'Duty Staff'),
+          role: (m.role === 'staff' || m.role === 'admin' || m.role === 'assistant' || m.sender === 'staff' || m.sender === 'admin' || m.sender === 'service_agent') ? 'me' : 'guest',
           text: m.text || m.content || '',
-          time: m.time || '',
+          time: m.time || (m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''),
         })),
       }));
       setThreads(liveThreads);
@@ -1430,9 +1430,18 @@ export default function ResortDepartment() {
             <div style={{ textAlign: 'center', padding: '60px 20px', background: '#F8FAFC', borderRadius: 16, margin: 24, border: '1px dashed #CBD5E1' }}>
               <i className="fas fa-comments" style={{ fontSize: '2.4rem', color: '#94A3B8', marginBottom: 12 }} />
               <h3 style={{ margin: 0, fontWeight: 800, color: '#1E293B', fontSize: '1.1rem' }}>No Active Guest Inquiries</h3>
-              <p style={{ margin: '6px 0 0', fontSize: '.84rem', color: '#64748B' }}>
+              <p style={{ margin: '6px 0 16px', fontSize: '.84rem', color: '#64748B' }}>
                 When guests send inquiries from the customer portal, their chat threads will appear here for front desk response.
               </p>
+              <button
+                type="button"
+                onClick={loadLiveOperationsData}
+                className="staff-btn staff-btn--secondary"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, margin: '0 auto', fontSize: '.82rem' }}
+              >
+                <i className="fas fa-arrows-rotate" />
+                <span>Check for New Inquiries</span>
+              </button>
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', minHeight: 520 }}>
