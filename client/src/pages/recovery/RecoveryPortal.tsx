@@ -9,7 +9,8 @@ export default function RecoveryPortal() {
   const [searchParams] = useSearchParams();
   const filterRef = searchParams.get('ref');
   const { adminProfile, staffProfile, adminSession, staffSession, setAuthOpen } = useAuth();
-  const isAuthenticated = Boolean(adminSession || staffSession);
+  const activeSession = adminSession || staffSession;
+  const isAuthenticated = Boolean(activeSession);
   const activeProfile = adminProfile || staffProfile;
 
   const [activeTab, setActiveTab] = useState<'cases' | 'audit'>('cases');
@@ -238,7 +239,7 @@ export default function RecoveryPortal() {
                 {activeProfile?.full_name || activeProfile?.username || activeProfile?.email || 'Authenticated User'}
               </h3>
               <div style={{ fontSize: '.82rem', color: '#CBD5E1' }}>
-                Role: <strong style={{ color: '#FBBF24', textTransform: 'capitalize' }}>{activeProfile?.role || 'Authenticated Member'}</strong> · Email: <span style={{ color: '#E2E8F0' }}>{activeProfile?.email || session?.user?.email || 'Active Verified'}</span> · Database: <span style={{ color: '#34D399' }}>Live Supabase Connected</span>
+                Role: <strong style={{ color: '#FBBF24', textTransform: 'capitalize' }}>{activeProfile?.role || 'Authenticated Member'}</strong> · Email: <span style={{ color: '#E2E8F0' }}>{activeProfile?.email || activeSession?.user?.email || 'Active Verified'}</span> · Database: <span style={{ color: '#34D399' }}>Live Supabase Connected</span>
               </div>
             </div>
           </div>

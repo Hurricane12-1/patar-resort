@@ -22,8 +22,11 @@ let inMemoryLogs = [];
 function loadPersistedLogs() {
   try {
     if (fs.existsSync(auditLogFile)) {
-      const raw = fs.readFileSync(auditLogFile, 'utf8');
-      const parsed = JSON.parse(raw);
+      let raw = fs.readFileSync(auditLogFile, 'utf8');
+      if (raw.charCodeAt(0) === 0xFEFF) {
+        raw = raw.slice(1);
+      }
+      const parsed = JSON.parse(raw.trim() || '[]');
       if (Array.isArray(parsed)) {
         inMemoryLogs = parsed;
       }

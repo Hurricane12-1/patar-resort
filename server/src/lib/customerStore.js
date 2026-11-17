@@ -20,8 +20,11 @@ let inMemoryCustomers = [];
 function loadCustomers() {
   try {
     if (fs.existsSync(customersFile)) {
-      const raw = fs.readFileSync(customersFile, 'utf8');
-      const parsed = JSON.parse(raw);
+      let raw = fs.readFileSync(customersFile, 'utf8');
+      if (raw.charCodeAt(0) === 0xFEFF) {
+        raw = raw.slice(1);
+      }
+      const parsed = JSON.parse(raw.trim() || '[]');
       if (Array.isArray(parsed)) {
         inMemoryCustomers = parsed;
       }

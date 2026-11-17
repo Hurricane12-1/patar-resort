@@ -23,19 +23,37 @@ export default function Receptionist() {
   const [showManualModal, setShowManualModal] = useState(false);
   const [liveRooms, setLiveRooms] = useState<any[]>([]);
 
+  const [walkInPoolAddon, setWalkInPoolAddon] = useState('none');
+  const [creatingReservation, setCreatingReservation] = useState(false);
+
   const [newReservation, setNewReservation] = useState<NewReservationFormState>({
     room_id: '',
     guest_name: '',
     guest_email: '',
-    guest_phone: '',
+    phone: '',
     check_in: '2026-11-17',
     check_out: '2026-11-18',
-    guests_count: 2,
+    guests: 2,
     total_php: 3500,
     payment_method: 'Cash',
     payment_status: 'Paid',
     notes: '',
   });
+
+  const handleCreateReservation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreatingReservation(true);
+    try {
+      await api.createReservation(newReservation);
+      toast('Reservation created successfully!');
+      loadData();
+      setShowManualModal(false);
+    } catch (err: any) {
+      toast(err.message, true);
+    } finally {
+      setCreatingReservation(false);
+    }
+  };
 
   const loadData = useCallback(() => {
     if (isAuthorized) {
@@ -412,10 +430,10 @@ export default function Receptionist() {
           themeMuted="#64748B"
           newReservation={newReservation}
           setNewReservation={setNewReservation}
-          onCreated={() => {
-            loadData();
-            setShowManualModal(false);
-          }}
+          walkInPoolAddon={walkInPoolAddon}
+          setWalkInPoolAddon={setWalkInPoolAddon}
+          creatingReservation={creatingReservation}
+          onSubmit={handleCreateReservation}
         />
       )}
     </div>

@@ -20,7 +20,11 @@ if (!fs.existsSync(dbDir)) {
 function readLocalRequests() {
   try {
     if (!fs.existsSync(requestsFile)) return [];
-    const parsed = JSON.parse(fs.readFileSync(requestsFile, 'utf8'));
+    let raw = fs.readFileSync(requestsFile, 'utf8');
+    if (raw.charCodeAt(0) === 0xFEFF) {
+      raw = raw.slice(1);
+    }
+    const parsed = JSON.parse(raw.trim() || '[]');
     return Array.isArray(parsed) ? parsed : [];
   } catch (err) {
     console.warn('[PriceRequestStore] Failed reading local price requests:', err.message);

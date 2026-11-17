@@ -6,7 +6,8 @@
   "scripts": {
     "build": "echo 'Server ready'",
     "dev": "node --watch src/index.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node test/verify-all.test.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",

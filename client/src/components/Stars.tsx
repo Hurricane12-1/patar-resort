@@ -1,4 +1,10 @@
-export default function Stars({ value = 0, onChange, size = 15 }) {
+interface StarsProps {
+  value?: number;
+  onChange?: (val: number) => void;
+  size?: number;
+}
+
+export default function Stars({ value = 0, onChange, size = 15 }: StarsProps) {
   return (
     <span className={`stars ${onChange ? 'interactive' : ''}`} style={{ display: 'inline-flex', gap: 3, alignItems: 'center' }}>
       {[1, 2, 3, 4, 5].map((n) => (

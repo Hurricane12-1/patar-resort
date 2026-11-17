@@ -342,11 +342,11 @@ export default function Home() {
       <section className="stats-band">
         <div className="container">
           {[
-            [<Counter to={18240} />, 'guests hosted'],
-            [<Counter to={4.8} decimals={1} />, 'average rating'],
-            [<Counter to={41} suffix="%" />, 'returning guests'],
-            [<Counter to={26900} />, 'SMS pings sent'],
-          ].map(([n, l], i) => (
+            { n: <Counter to={18240} />, l: 'guests hosted' },
+            { n: <Counter to={4.8} decimals={1} />, l: 'average rating' },
+            { n: <Counter to={41} suffix="%" />, l: 'returning guests' },
+            { n: <Counter to={26900} />, l: 'SMS pings sent' },
+          ].map(({ n, l }, i) => (
             <div className="stat reveal" key={l} style={{ transitionDelay: `${i * 100}ms` }}>
               <b>{n}</b><span>{l.toUpperCase()}</span>
             </div>

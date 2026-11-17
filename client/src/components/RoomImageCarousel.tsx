@@ -32,7 +32,7 @@ export default function RoomImageCarousel({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Use only the room's uploaded / provided images
   const carouselImages = useMemo(() => {

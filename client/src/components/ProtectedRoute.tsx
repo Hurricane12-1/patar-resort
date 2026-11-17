@@ -62,6 +62,8 @@ export default function ProtectedRoute({
     staffSession, staffProfile,
     customerSignIn, adminSignIn, staffSignIn,
   } = useAuth();
+  const activeProfile = adminProfile || staffProfile || customerProfile;
+  const isAuthenticated = Boolean(adminSession || staffSession || customerSession);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);

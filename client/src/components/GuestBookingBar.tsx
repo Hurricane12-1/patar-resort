@@ -19,11 +19,13 @@ interface GuestBookingBarProps {
   catalog?: any[];
   today: string;
   disabledSearch?: boolean;
+  selectedRoomId?: string;
 }
 
 export default function GuestBookingBar({
   checkIn,
   checkOut,
+  selectedRoomId,
   onSelectDates,
   adults,
   onAdultsChange,

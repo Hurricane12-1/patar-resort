@@ -7,13 +7,13 @@ export function toast(msg, isErr = false) {
 export default function Toasts() {
   const [items, setItems] = useState([]);
   useEffect(() => {
-    const activeTimers = new Set();
-    const on = (e) => {
+    const activeTimers = new Set<ReturnType<typeof setTimeout>>();
+    const on = (e: any) => {
       const id = Date.now() + Math.random();
-      setItems((x) => [...x, { id, ...e.detail }]);
+      setItems((x: any) => [...x, { id, ...e.detail }]);
       const timer = setTimeout(() => {
         activeTimers.delete(timer);
-        setItems((x) => x.filter((t) => t.id !== id));
+        setItems((x: any) => x.filter((t: any) => t.id !== id));
       }, 4200);
       activeTimers.add(timer);
     };

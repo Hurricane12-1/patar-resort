@@ -360,7 +360,7 @@ export function AuthProvider({ children }) {
 
           // Automatically synchronize new Google / Facebook / OAuth customer with Supabase database
           if (!prof && s.user?.id) {
-            supabase.from('profiles').upsert({
+            Promise.resolve(supabase.from('profiles').upsert({
               id: s.user.id,
               email: s.user.email,
               full_name: finalProfile.full_name,
@@ -368,13 +368,13 @@ export function AuthProvider({ children }) {
               last_name: finalProfile.last_name,
               avatar_url: finalProfile.avatar_url,
               role: 'customer',
-            }, { onConflict: 'id' }).then(() => {}).catch(() => {});
+            }, { onConflict: 'id' }));
 
-            supabase.from('customers').upsert({
+            Promise.resolve(supabase.from('customers').upsert({
               id: s.user.id,
               email: s.user.email,
               full_name: finalProfile.full_name,
-            }, { onConflict: 'id' }).then(() => {}).catch(() => {});
+            }, { onConflict: 'id' }));
           }
 
           setAuthOpen(false);

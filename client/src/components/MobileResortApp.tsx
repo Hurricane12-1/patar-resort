@@ -479,7 +479,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
       const chosen = rooms.find((r) => r.id === selectedRoomId);
       if (chosen) {
         const type = inferOfferingType(chosen);
-        setActiveLodgingCategory(type);
+        setActiveLodgingCategory(type === 'cottage' ? 'cottage' : 'room');
       }
     }
   }, [selectedRoomId, rooms]);
@@ -2470,7 +2470,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                   <span className="text-sm text-white/60 ml-1.5 font-light">/ night</span>
                 </div>
                 <span className="text-xs font-semibold text-[#F3D9A4] bg-white/5 border border-white/10 px-2.5 py-1 rounded-full">
-                  {selectedRoom.reviews_count ? `★ ${selectedRoom.rating_avg || '5.0'} · ${selectedRoom.reviews_count} reviews` : '★ Direct Verified'}
+                  {(selectedRoom as any).reviews_count ? `★ ${(selectedRoom as any).rating_avg || '5.0'} · ${(selectedRoom as any).reviews_count} reviews` : '★ Direct Verified'}
                 </span>
               </div>
 

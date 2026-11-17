@@ -582,9 +582,10 @@ export default function ResortDepartment() {
     );
     toast(`${target.name} status updated to ${nextStatus.toUpperCase()}`);
 
+    const prevStatus = String(target.status);
     if (nextStatus === 'maintenance') {
       try { await api.updateRoom(roomId, { is_active: false }); } catch {}
-    } else if (target.status === 'maintenance' && nextStatus !== 'maintenance') {
+    } else if (prevStatus === 'maintenance') {
       try { await api.updateRoom(roomId, { is_active: true }); } catch {}
     }
   };

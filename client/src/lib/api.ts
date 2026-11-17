@@ -1257,7 +1257,7 @@ export const api = {
       const [profilesRes, empRes, custRes] = await Promise.all([
         sb.from('profiles').select('*').order('created_at', { ascending: false }),
         sb.from('employee_accounts').select('*').order('created_at', { ascending: false }),
-        sb.from('customers').select('*').order('created_at', { ascending: false }).catch(() => ({ data: [] })),
+        Promise.resolve(sb.from('customers').select('*').order('created_at', { ascending: false })).catch(() => ({ data: [] })),
       ]);
       const combined = new Map<string, any>();
       for (const emp of empRes.data || []) {

@@ -147,8 +147,8 @@ export default function RecoveryLayout({ children }: RecoveryLayoutProps) {
               Sign Out
             </button>
           ) : (
-            <button
-              onClick={() => setAuthOpen(true)}
+            <Link
+              to="/admin/login"
               style={{
                 fontSize: '.74rem',
                 fontWeight: 700,
@@ -162,11 +162,12 @@ export default function RecoveryLayout({ children }: RecoveryLayoutProps) {
                 alignItems: 'center',
                 gap: 6,
                 transition: 'all 0.2s ease',
+                textDecoration: 'none',
               }}
             >
               <i className="fas fa-sign-in-alt" />
               Sign In
-            </button>
+            </Link>
           )}
         </div>
       </header>
