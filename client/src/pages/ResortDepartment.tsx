@@ -196,6 +196,8 @@ export default function ResortDepartment() {
   const [currentMonthDate, setCurrentMonthDate] = useState(new Date(2026, 10, 1));
   const [tapeStartDate, setTapeStartDate] = useState('2026-11-15');
   const [chatReplyText, setChatReplyText] = useState('');
+  const [resSearchQuery, setResSearchQuery] = useState('');
+  const [resStatusFilter, setResStatusFilter] = useState<'all' | 'pending' | 'confirmed' | 'checked_in' | 'checked_out'>('all');
 
   // ── Executive Admin-Grade Manual / Walk-In Booking Modal State ──
   const [showManualBookingModal, setShowManualBookingModal] = useState(false);
@@ -1246,76 +1248,257 @@ export default function ResortDepartment() {
       )}
 
       {/* =========================================================================
-          VIEW D: RESERVATIONS QUEUE VIEW
+          VIEW D: UNIFIED BOOKINGS & RESERVATIONS HUB
           ========================================================================= */}
       {activeView === 'reservations' && (
         <div className="staff-ops-fullview-card">
-          <div className="staff-ops-col-header" style={{ padding: '18px 24px' }}>
+          <div className="staff-ops-col-header" style={{ padding: '18px 24px', flexWrap: 'wrap', gap: 14 }}>
             <div>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>
-                Reservations Queue &amp; Check-In Ledger
+              <div className="flex items-center gap-2 mb-1">
+                <span className="staff-ops-badge" style={{ background: '#E0F2FE', color: '#0369A1', borderColor: '#BAE6FD', fontWeight: 700 }}>
+                  <i className="fas fa-calendar-check" style={{ marginRight: 4 }} /> Front Desk Bookings
+                </span>
+                {pendingReservations.length > 0 && (
+                  <span className="staff-ops-badge" style={{ background: '#FEF3C7', color: '#B45309', borderColor: '#FDE68A', fontWeight: 700 }}>
+                    {pendingReservations.length} Pending Approval
+                  </span>
+                )}
+              </div>
+              <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+                Bookings &amp; Reservations Hub
               </h2>
               <p style={{ margin: '4px 0 0', fontSize: '.78rem', color: '#64748B' }}>
-                Incoming bookings, confirmed allocations, and payment verification
+                Create manual bookings, review incoming queue allocations, and inspect verified guest stays
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => setSearchParams({ view: 'dashboard' })}
-              className="staff-ops-action-btn"
-            >
-              &larr; Back to Dashboard
-            </button>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  const firstRoom = activeRoomsList[0];
+                  const rate = Number(firstRoom?.rate_php) || 3500;
+                  setNewReservation((prev) => ({
+                    ...prev,
+                    room_id: prev.room_id || firstRoom?.id || '',
+                    check_in: selectedDate,
+                    check_out: addDaysISO(selectedDate, 1),
+                    total_php: rate,
+                  }));
+                  setShowManualBookingModal(true);
+                }}
+                className="staff-btn staff-btn--primary"
+                style={{ padding: '9px 18px', fontSize: '.84rem', fontWeight: 700, borderRadius: 12, display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                title="Create Walk-In / Phone / Direct Manual Booking"
+              >
+                <i className="fas fa-calendar-plus" />
+                <span>+ Manual Booking</span>
+                <span style={{ fontSize: '10px', background: 'rgba(255,255,255,0.25)', padding: '1px 6px', borderRadius: 6 }}>Desk</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSearchParams({ view: 'dashboard' })}
+                className="staff-ops-action-btn"
+                style={{ padding: '8px 14px', borderRadius: 10 }}
+              >
+                &larr; Back to Dashboard
+              </button>
+            </div>
           </div>
 
           <div style={{ padding: 24 }}>
-            {/* Table */}
-            <div className="table-wrap">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Booking ID</th>
-                    <th>Guest &amp; Pax</th>
-                    <th>Assigned Unit</th>
-                    <th>Check-In / Out</th>
-                    <th>Payment</th>
-                    <th>Status</th>
-                    <th style={{ textAlign: 'right' }}>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {bookings.map((b) => {
-                    const rm = getRoomById(b.roomId);
+            {/* 1. INCOMING PENDING QUEUE SECTION (Integrated into Booking Page) */}
+            {pendingReservations.length > 0 && (
+              <div style={{ marginBottom: 24, padding: 18, background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 16 }}>
+                <div className="flex items-center justify-between mb-3.5">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
+                    <h3 style={{ fontSize: '.95rem', fontWeight: 800, color: '#92400E', margin: 0 }}>
+                      Incoming Booking Requests Awaiting Approval ({pendingReservations.length})
+                    </h3>
+                  </div>
+                  <span style={{ fontSize: '.75rem', fontWeight: 600, color: '#B45309' }}>
+                    Requires Unit Assignment &amp; Payment Verification
+                  </span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 14 }}>
+                  {pendingReservations.map((req) => {
+                    const rm = getRoomById(req.requestedRoomId);
+                    const conflict = checkRoomConflict(req.requestedRoomId, req.checkIn, req.checkOut);
                     return (
-                      <tr key={b.id}>
-                        <td><code>{b.id}</code></td>
-                        <td>
-                          <b>{b.guest}</b>
-                          <div><small>{b.pax} Guests</small></div>
-                        </td>
-                        <td>{rm.name}</td>
-                        <td>{formatDateShort(b.checkIn)} &rarr; {formatDateShort(b.checkOut)}</td>
-                        <td><span className="tag">{b.payment}</span></td>
-                        <td>
-                          <span className={`pill ${b.status}`}>{b.status.replace('_', ' ')}</span>
-                        </td>
-                        <td style={{ textAlign: 'right' }}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              navigate('/staff/reception');
-                            }}
-                            className="act-btn"
-                          >
-                            Open in Desk
-                          </button>
-                        </td>
-                      </tr>
+                      <div key={req.id} style={{ background: '#FFFFFF', border: '1px solid #FDE68A', borderRadius: 12, padding: 14, boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span style={{ fontWeight: 800, color: '#0F172A', fontSize: '.92rem' }}>{req.guest}</span>
+                          <span className="staff-ops-badge" style={{ background: '#F1F5F9', color: '#475569', fontSize: '10px' }}>{req.source}</span>
+                        </div>
+                        <div style={{ fontSize: '.78rem', color: '#64748B', marginBottom: 10 }}>
+                          {req.pax} Guests · {formatDateShort(req.checkIn)} → {formatDateShort(req.checkOut)}
+                        </div>
+                        <div className="flex items-center justify-between pt-2.5 border-t border-slate-100" style={{ fontSize: '.78rem' }}>
+                          <span style={{ fontWeight: 700, color: conflict.hasConflict ? '#DC2626' : '#0F172A' }}>
+                            {rm.name} {conflict.hasConflict && '(Clash!)'}
+                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleApprovePending(req.id)}
+                              style={{ padding: '5px 12px', fontSize: '.75rem', fontWeight: 700, borderRadius: 8, background: '#0F172A', color: '#FFFFFF', border: 'none', cursor: 'pointer' }}
+                            >
+                              Approve &amp; Assign
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeclinePending(req.id)}
+                              style={{ padding: '5px 10px', fontSize: '.75rem', fontWeight: 600, borderRadius: 8, background: 'transparent', color: '#64748B', border: '1px solid #CBD5E1', cursor: 'pointer' }}
+                            >
+                              Decline
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     );
                   })}
-                </tbody>
-              </table>
+                </div>
+              </div>
+            )}
+
+            {/* 2. SEARCH & FILTER CONTROLS BAR */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => setResStatusFilter('all')}
+                  className={`chip ${resStatusFilter === 'all' ? 'sel' : ''}`}
+                >
+                  All Stays ({bookings.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setResStatusFilter('confirmed')}
+                  className={`chip ${resStatusFilter === 'confirmed' ? 'sel' : ''}`}
+                >
+                  Confirmed ({bookings.filter((b) => b.status === 'confirmed').length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setResStatusFilter('checked_in')}
+                  className={`chip ${resStatusFilter === 'checked_in' ? 'sel' : ''}`}
+                >
+                  Checked-In ({bookings.filter((b) => b.status === 'checked_in').length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setResStatusFilter('checked_out')}
+                  className={`chip ${resStatusFilter === 'checked_out' ? 'sel' : ''}`}
+                >
+                  Checked-Out ({bookings.filter((b) => b.status === 'checked_out').length})
+                </button>
+              </div>
+
+              <div style={{ position: 'relative', width: 280 }}>
+                <input
+                  type="text"
+                  placeholder="Search guest or unit…"
+                  value={resSearchQuery}
+                  onChange={(e) => setResSearchQuery(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px 8px 32px',
+                    borderRadius: 10,
+                    border: '1px solid #CBD5E1',
+                    fontSize: '.82rem',
+                    background: '#FFFFFF',
+                    color: '#0F172A',
+                    boxSizing: 'border-box',
+                  }}
+                />
+                <i className="fas fa-search" style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', fontSize: '.75rem' }} />
+              </div>
             </div>
+
+            {/* 3. CONFIRMED BOOKINGS TABLE */}
+            {(() => {
+              const filtered = bookings.filter((b) => {
+                const matchesStatus = resStatusFilter === 'all' || b.status === resStatusFilter;
+                const query = resSearchQuery.trim().toLowerCase();
+                if (!query) return matchesStatus;
+                const rm = getRoomById(b.roomId);
+                return matchesStatus && (
+                  b.guest.toLowerCase().includes(query) ||
+                  b.id.toLowerCase().includes(query) ||
+                  rm.name.toLowerCase().includes(query)
+                );
+              });
+
+              if (filtered.length === 0) {
+                return (
+                  <div style={{ textAlign: 'center', padding: '48px 20px', background: '#F8FAFC', borderRadius: 16, border: '1px dashed #CBD5E1' }}>
+                    <i className="fas fa-calendar-xmark" style={{ fontSize: '2rem', color: '#94A3B8', marginBottom: 12 }} />
+                    <p style={{ margin: 0, fontWeight: 700, color: '#334155', fontSize: '.95rem' }}>No reservations found</p>
+                    <p style={{ margin: '4px 0 16px', fontSize: '.82rem', color: '#64748B' }}>Try clearing your search or status filter.</p>
+                    <button
+                      type="button"
+                      onClick={() => setShowManualBookingModal(true)}
+                      className="staff-btn staff-btn--primary"
+                      style={{ padding: '8px 16px', borderRadius: 10, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6, margin: '0 auto' }}
+                    >
+                      <i className="fas fa-plus" />
+                      <span>Create New Manual Booking</span>
+                    </button>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="table-wrap">
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>Booking ID</th>
+                        <th>Guest &amp; Pax</th>
+                        <th>Assigned Unit</th>
+                        <th>Check-In / Out</th>
+                        <th>Payment</th>
+                        <th>Status</th>
+                        <th style={{ textAlign: 'right' }}>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filtered.map((b) => {
+                        const rm = getRoomById(b.roomId);
+                        return (
+                          <tr key={b.id}>
+                            <td><code>{b.id}</code></td>
+                            <td>
+                              <b>{b.guest}</b>
+                              <div><small>{b.pax} Guests</small></div>
+                            </td>
+                            <td>{rm.name}</td>
+                            <td>{formatDateShort(b.checkIn)} &rarr; {formatDateShort(b.checkOut)}</td>
+                            <td><span className="tag">{b.payment}</span></td>
+                            <td>
+                              <span className={`pill ${b.status}`}>{b.status.replace('_', ' ')}</span>
+                            </td>
+                            <td style={{ textAlign: 'right' }}>
+                              <button
+                                type="button"
+                                onClick={() => navigate('/staff/reception')}
+                                className="act-btn"
+                                title="Open guest folio & check-in terminal"
+                              >
+                                Open in Desk
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}

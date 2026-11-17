@@ -116,8 +116,8 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
     if (location.search.includes('view=reservations')) {
       return {
         section: 'Front Desk Ledger',
-        title: 'Reservations Queue',
-        subtitle: 'Incoming requests & active stay ledger',
+        title: 'Bookings & Reservations Hub',
+        subtitle: 'Manual bookings, pending queue allocations & stay ledger',
       };
     }
     if (location.search.includes('view=messages')) {
@@ -376,28 +376,6 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
                   {!isSidebarCollapsed && <span className="staff-nav-text">Operations Terminal</span>}
                 </Link>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (location.pathname.startsWith('/staff/operations')) {
-                      window.dispatchEvent(new CustomEvent('open-staff-walkin'));
-                    } else {
-                      navigate('/staff/operations?action=walkin');
-                    }
-                  }}
-                  className="staff-nav-item"
-                  style={{ width: '100%', background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', font: 'inherit' }}
-                  title="Open Manual Booking Modal"
-                >
-                  <i className="fas fa-calendar-plus staff-nav-icon staff-nav-icon--sky" />
-                  {!isSidebarCollapsed && (
-                    <div className="flex items-center justify-between flex-1">
-                      <span className="staff-nav-text">Manual Booking</span>
-                      <span className="staff-ops-badge" style={{ fontSize: '10px', background: '#E0F2FE', color: '#0369A1', borderColor: '#BAE6FD' }}>Desk</span>
-                    </div>
-                  )}
-                </button>
-
                 <Link
                   to="/staff/operations?view=calendar"
                   className={`staff-nav-item ${location.search.includes('view=calendar') ? 'active' : ''}`}
@@ -424,13 +402,15 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
                 <Link
                   to="/staff/operations?view=reservations"
                   className={`staff-nav-item ${location.search.includes('view=reservations') ? 'active' : ''}`}
-                  title="Reservations Queue"
+                  title="Bookings & Reservations Queue"
                 >
-                  <i className="fas fa-inbox staff-nav-icon staff-nav-icon--amber" />
+                  <i className="fas fa-calendar-check staff-nav-icon staff-nav-icon--amber" />
                   {!isSidebarCollapsed && (
                     <div className="flex items-center justify-between flex-1">
-                      <span className="staff-nav-text">Reservations Queue</span>
-                      <span className="staff-ops-badge" style={{ fontSize: '10px', background: '#FEF3C7', color: '#B45309', borderColor: '#FDE68A' }}>3</span>
+                      <span className="staff-nav-text">Bookings &amp; Queue</span>
+                      <span className="staff-ops-badge" style={{ fontSize: '10px', background: '#FEF3C7', color: '#B45309', borderColor: '#FDE68A' }}>
+                        {headerMetrics.pendingCount !== null ? headerMetrics.pendingCount : '3'}
+                      </span>
                     </div>
                   )}
                 </Link>

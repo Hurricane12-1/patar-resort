@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.tsx';
 import '../styles/receptionist.css';
@@ -7,6 +7,7 @@ import { fmtDate } from '../lib/format.ts';
 import { toast } from '../components/Toasts.tsx';
 import { VoucherModal, normalizeVoucherData } from '../components/receipt';
 import PriceChangeRequestPanel from '../components/PriceChangeRequestPanel.tsx';
+import AddReservationModal, { NewReservationFormState } from '../components/admin/modals/AddReservationModal.tsx';
 import { canAccessPortal } from '../lib/rbac.ts';
 
 export default function Receptionist() {
@@ -19,17 +20,42 @@ export default function Receptionist() {
   const [inspectedVoucher, setInspectedVoucher] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'confirmed' | 'checked_in' | 'checked_out'>('all');
+  const [showManualModal, setShowManualModal] = useState(false);
+  const [liveRooms, setLiveRooms] = useState<any[]>([]);
 
-  useEffect(() => {
+  const [newReservation, setNewReservation] = useState<NewReservationFormState>({
+    room_id: '',
+    guest_name: '',
+    guest_email: '',
+    guest_phone: '',
+    check_in: '2026-11-17',
+    check_out: '2026-11-18',
+    guests_count: 2,
+    total_php: 3500,
+    payment_method: 'Cash',
+    payment_status: 'Paid',
+    notes: '',
+  });
+
+  const loadData = useCallback(() => {
     if (isAuthorized) {
+      setLoading(true);
       api.frontDeskOverview()
         .then(setData)
         .catch((e) => toast(e.message, true))
         .finally(() => setLoading(false));
+
+      api.rooms(false)
+        .then((r) => setLiveRooms(Array.isArray(r) ? r : []))
+        .catch(() => {});
     } else {
       setLoading(false);
     }
   }, [isAuthorized]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   async function updateStatus(id: string, status: string) {
     try {
@@ -75,14 +101,14 @@ export default function Receptionist() {
           <div className="staff-denied-icon">
             <i className="fas fa-shield-halved" />
           </div>
-          <span className="label" style={{ color: '#FB7185' }}>Front Desk Boundary</span>
-          <h2 className="serif" style={{ fontSize: '1.8rem', margin: '8px 0 12px', color: '#FFFFFF' }}>
+          <span className="label" style={{ color: '#E11D48', fontWeight: 700 }}>Front Desk Boundary</span>
+          <h2 className="serif" style={{ fontSize: '1.6rem', margin: '8px 0 12px', color: '#0F172A', fontWeight: 800 }}>
             Front Desk Clearance Required
           </h2>
-          <p className="muted" style={{ marginBottom: 24, fontSize: '.88rem', lineHeight: 1.6 }}>
+          <p style={{ marginBottom: 24, fontSize: '.88rem', lineHeight: 1.6, color: '#64748B' }}>
             You do not have active Front Desk clearance to access the guest check-in terminal. Please sign in with receptionist credentials.
           </p>
-          <Link to="/staff/login" className="btn btn-sky" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 20px' }}>
+          <Link to="/staff/login" className="btn btn-sky" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: 'linear-gradient(135deg, #0284C7, #0369A1)', color: '#FFFFFF', borderRadius: 12, textDecoration: 'none', fontWeight: 700 }}>
             <i className="fas fa-right-to-bracket" />
             <span>Go to Staff Station Sign In</span>
           </Link>
@@ -104,28 +130,48 @@ export default function Receptionist() {
       {/* Page Header */}
       <div className="sec-head">
         <div>
-          <span className="label">
-            <i className="fas fa-bell-concierge" /> Front Desk Operations Desk
+          <span className="label" style={{ color: '#0284C7', fontWeight: 700, fontSize: '11px', letterSpacing: '.08em', textTransform: 'uppercase' }}>
+            <i className="fas fa-bell-concierge" style={{ marginRight: 6 }} /> Front Desk Operations Desk
           </span>
-          <h2 className="serif" style={{ fontSize: 'clamp(2rem, 3.8vw, 3.2rem)' }}>
-            Guest Arrivals <em style={{ fontStyle: 'italic', color: '#38BDF8' }}>&amp; Check-In Terminal</em>
+          <h2 className="serif" style={{ fontSize: 'clamp(2rem, 3.8vw, 3.2rem)', color: '#0F172A', fontWeight: 800 }}>
+            Guest Arrivals <em style={{ fontStyle: 'italic', color: '#0284C7' }}>&amp; Check-In Terminal</em>
           </h2>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={() => {
+              const firstRm = liveRooms[0];
+              setNewReservation((prev) => ({
+                ...prev,
+                room_id: prev.room_id || firstRm?.id || '',
+                total_php: Number(firstRm?.rate_php) || 3500,
+              }));
+              setShowManualModal(true);
+            }}
+            className="btn btn-sky"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '9px 18px', fontSize: '.84rem', fontWeight: 700, borderRadius: 12 }}
+            title="Create Walk-In or Phone Reservation"
+          >
+            <i className="fas fa-calendar-plus" />
+            <span>+ Manual Booking</span>
+            <span style={{ fontSize: '10px', background: 'rgba(255,255,255,0.25)', padding: '1px 6px', borderRadius: 6 }}>Desk</span>
+          </button>
+
           <span style={{
             fontSize: '.78rem',
-            color: '#38BDF8',
-            background: 'rgba(14, 165, 233, 0.12)',
-            border: '1px solid rgba(56, 189, 248, 0.35)',
-            padding: '6px 14px',
+            color: '#0284C7',
+            background: '#E0F2FE',
+            border: '1px solid #BAE6FD',
+            padding: '7px 14px',
             borderRadius: 9999,
             display: 'inline-flex',
             alignItems: 'center',
             gap: 8,
-            boxShadow: '0 0 12px rgba(14, 165, 233, 0.15)',
+            fontWeight: 600,
           }}>
-            <i className="fas fa-tower-broadcast" style={{ color: '#38BDF8' }} />
-            <span>SMS Alerts Active for Check-ins</span>
+            <i className="fas fa-tower-broadcast" style={{ color: '#0284C7' }} />
+            <span>SMS Alerts Active</span>
           </span>
         </div>
       </div>
@@ -344,6 +390,34 @@ export default function Receptionist() {
         voucher={inspectedVoucher ? normalizeVoucherData(inspectedVoucher) : null}
         onClose={() => setInspectedVoucher(null)}
       />
+
+      {/* EXECUTIVE FRONT-DESK MANUAL & WALK-IN BOOKING MODAL */}
+      {showManualModal && (
+        <AddReservationModal
+          isOpen={showManualModal}
+          onClose={() => setShowManualModal(false)}
+          activeRoomsList={liveRooms}
+          roomsList={liveRooms}
+          reservationsList={(data?.bookings || []).map((b: any) => ({
+            id: b.id,
+            guest_name: b.profiles?.full_name || b.guest_name,
+            room_id: b.room_id || b.rooms?.id,
+            check_in: b.check_in,
+            check_out: b.check_out,
+            status: b.status,
+          }))}
+          isLightMode={true}
+          themeBorder="#E2E8F0"
+          themeText="#1E293B"
+          themeMuted="#64748B"
+          newReservation={newReservation}
+          setNewReservation={setNewReservation}
+          onCreated={() => {
+            loadData();
+            setShowManualModal(false);
+          }}
+        />
+      )}
     </div>
   );
 }
