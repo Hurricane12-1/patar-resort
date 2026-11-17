@@ -860,8 +860,9 @@ export default function ResortDepartment() {
                   <button
                     type="button"
                     onClick={() => {
-                      setCurrentMonthDate(new Date(2026, 10, 1));
-                      setSelectedDate('2026-11-17');
+                      const [y, m] = todayISO.split('-').map(Number);
+                      setCurrentMonthDate(new Date(y, m - 1, 1));
+                      setSelectedDate(todayISO);
                     }}
                     className="staff-ops-today-btn"
                   >
@@ -888,7 +889,7 @@ export default function ResortDepartment() {
                 </div>
               </div>
 
-              {/* View Mode Switcher */}
+              {/* View Mode Switcher & In-Calendar Manual Booking */}
               <div className="flex items-center gap-2">
                 <div className="staff-ops-btn-group">
                   <button
@@ -922,66 +923,90 @@ export default function ResortDepartment() {
                   <i className="fas fa-table-list" />
                   <span>Tape</span>
                 </button>
+                <button
+                  type="button"
+                  onClick={() => handleBookOnDate(selectedDate)}
+                  className="staff-btn staff-btn--primary"
+                  style={{ fontSize: '11px', padding: '4px 10px', borderRadius: 8, display: 'inline-flex', alignItems: 'center', gap: 5, fontWeight: 700 }}
+                  title="Create Manual Booking for this date"
+                >
+                  <i className="fas fa-calendar-plus" />
+                  <span>+ Manual Book</span>
+                </button>
               </div>
             </div>
 
             {/* Calendar Grid Body */}
             <div className="staff-ops-col-body" style={{ background: '#F8FAFC' }}>
-              {dashCalView === 'month' && (
-                <div>
-                  {/* Day Headers */}
-                  <div className="staff-ops-cal-header-row">
-                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-                      <div key={d} className="staff-ops-cal-day-label">{d}</div>
-                    ))}
-                  </div>
+              {dashCalView === 'month' && (() => {
+                const year = currentMonthDate.getFullYear();
+                const month = currentMonthDate.getMonth();
+                const firstDayOfWeek = new Date(year, month, 1).getDay();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-                  {/* Day Grid */}
-                  <div className="staff-ops-cal-grid">
-                    {/* Leading blanks for Nov 2026 (Starts on Sunday = 0 blanks) */}
-                    {Array.from({ length: 30 }, (_, idx) => {
-                      const d = idx + 1;
-                      const iso = `2026-11-${String(d).padStart(2, '0')}`;
-                      const isToday = iso === '2026-11-17';
-                      const isSelected = iso === selectedDate;
-                      const dayBookings = bookings.filter((b) => iso >= b.checkIn && iso < b.checkOut && b.status !== 'cancelled');
+                return (
+                  <div>
+                    {/* Day Headers */}
+                    <div className="staff-ops-cal-header-row">
+                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+                        <div key={d} className="staff-ops-cal-day-label">{d}</div>
+                      ))}
+                    </div>
 
-                      return (
-                        <div
-                          key={d}
-                          onClick={() => setSelectedDate(iso)}
-                          className={`staff-ops-cal-day ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''}`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className={`staff-ops-day-num ${isToday ? 'staff-ops-day-num--today' : ''}`}>{d}</span>
-                            {dayBookings.length > 0 && (
-                              <span className="staff-ops-day-count">{dayBookings.length}</span>
-                            )}
+                    {/* Dynamic Day Grid (100% Calculated Month Geometry) */}
+                    <div className="staff-ops-cal-grid">
+                      {/* Leading empty day cells */}
+                      {Array.from({ length: firstDayOfWeek }).map((_, idx) => (
+                        <div key={`blank-${idx}`} className="staff-ops-cal-day empty" style={{ opacity: 0.25, pointerEvents: 'none', background: '#F1F5F9' }} />
+                      ))}
+
+                      {/* Actual Days in Current Selected Month */}
+                      {Array.from({ length: daysInMonth }, (_, idx) => {
+                        const d = idx + 1;
+                        const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                        const isToday = iso === todayISO;
+                        const isSelected = iso === selectedDate;
+                        const dayBookings = bookings.filter((b) => iso >= b.checkIn && iso < b.checkOut && b.status !== 'cancelled');
+
+                        return (
+                          <div
+                            key={iso}
+                            onClick={() => setSelectedDate(iso)}
+                            onDoubleClick={() => handleBookOnDate(iso)}
+                            className={`staff-ops-cal-day ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''}`}
+                            title={`Click to view schedule or double-click to manual book on ${formatDateReadable(iso)}`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className={`staff-ops-day-num ${isToday ? 'staff-ops-day-num--today' : ''}`}>{d}</span>
+                              {dayBookings.length > 0 && (
+                                <span className="staff-ops-day-count">{dayBookings.length}</span>
+                              )}
+                            </div>
+                            <div className="staff-ops-day-stays">
+                              {dayBookings.slice(0, 2).map((b) => {
+                                const rm = getRoomById(b.roomId);
+                                const isGreen = b.status === 'checked_in';
+                                return (
+                                  <div
+                                    key={b.id}
+                                    className={`staff-ops-day-stay-chip ${isGreen ? 'chip--emerald' : 'chip--sky'}`}
+                                    title={`${b.guest} (${rm.name})`}
+                                  >
+                                    {rm.code} • {b.guest.split(' ')[0]}
+                                  </div>
+                                );
+                              })}
+                              {dayBookings.length > 2 && (
+                                <div className="staff-ops-day-more">+{dayBookings.length - 2} more</div>
+                              )}
+                            </div>
                           </div>
-                          <div className="staff-ops-day-stays">
-                            {dayBookings.slice(0, 2).map((b) => {
-                              const rm = getRoomById(b.roomId);
-                              const isGreen = b.status === 'checked_in';
-                              return (
-                                <div
-                                  key={b.id}
-                                  className={`staff-ops-day-stay-chip ${isGreen ? 'chip--emerald' : 'chip--sky'}`}
-                                  title={`${b.guest} (${rm.name})`}
-                                >
-                                  {rm.code} • {b.guest.split(' ')[0]}
-                                </div>
-                              );
-                            })}
-                            {dayBookings.length > 2 && (
-                              <div className="staff-ops-day-more">+{dayBookings.length - 2} more</div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {dashCalView === 'week' && (
                 <div className="grid grid-cols-7 gap-2">
@@ -1165,7 +1190,7 @@ export default function ResortDepartment() {
       )}
 
       {/* =========================================================================
-          VIEW B: 14-DAY ROOM TAPE CHART VIEW
+          VIEW B: RESORT CALENDAR & 14-DAY ROOM TAPE CHART VIEW
           ========================================================================= */}
       {activeView === 'calendar' && (
         <div className="staff-ops-fullview-card">
@@ -1197,6 +1222,29 @@ export default function ResortDepartment() {
                 </button>
               </div>
 
+              {/* In-Calendar Manual Booking Action */}
+              <button
+                type="button"
+                onClick={() => {
+                  const firstRoom = activeRoomsList[0];
+                  const rate = Number(firstRoom?.rate_php) || 3500;
+                  setNewReservation((prev) => ({
+                    ...prev,
+                    room_id: prev.room_id || firstRoom?.id || '',
+                    check_in: selectedDate,
+                    check_out: addDaysISO(selectedDate, 1),
+                    total_php: rate,
+                  }));
+                  setShowManualBookingModal(true);
+                }}
+                className="staff-btn staff-btn--primary"
+                style={{ padding: '8px 16px', fontSize: '.84rem', fontWeight: 700, borderRadius: 10, display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                title="Create Manual Booking for this date"
+              >
+                <i className="fas fa-calendar-plus" />
+                <span>+ Manual Booking</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => setSearchParams({ view: 'dashboard' })}
@@ -1207,70 +1255,219 @@ export default function ResortDepartment() {
             </div>
           </div>
 
-          <div style={{ padding: 24, overflowX: 'auto' }}>
-            {/* Legend Bar */}
-            <div style={{ display: 'flex', gap: 20, marginBottom: 16, fontSize: '.75rem', color: '#475569' }}>
-              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-sky-500 inline-block" /> Confirmed Stay</span>
-              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-emerald-500 inline-block" /> Checked-In / Active</span>
-              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-amber-400 inline-block" /> Pending Hold</span>
-              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-rose-400 inline-block" /> Maintenance Block</span>
-            </div>
+          {/* Mode 1: 14-Day Tape Chart */}
+          {tapeMode === 'tape' && (
+            <div style={{ padding: 24, overflowX: 'auto' }}>
+              {/* Tape Navigator Bar & Legend */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14, marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => setTapeStartDate(addDaysISO(tapeStartDate, -7))}
+                    className="staff-ops-action-btn"
+                    style={{ fontSize: '.76rem', padding: '5px 12px' }}
+                  >
+                    &larr; Prev 7 Days
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTapeStartDate(todayISO)}
+                    className="staff-ops-action-btn"
+                    style={{ fontSize: '.76rem', padding: '5px 12px', fontWeight: 700 }}
+                  >
+                    Current (Today)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTapeStartDate(addDaysISO(tapeStartDate, 7))}
+                    className="staff-ops-action-btn"
+                    style={{ fontSize: '.76rem', padding: '5px 12px' }}
+                  >
+                    Next 7 Days &rarr;
+                  </button>
+                </div>
 
-            {/* Tape Chart Table */}
-            <table className="staff-ops-tape-table">
-              <thead>
-                <tr>
-                  <th style={{ width: 220, textAlign: 'left', padding: '10px 14px' }}>Unit &amp; Category</th>
-                  {Array.from({ length: 14 }, (_, i) => addDaysISO(tapeStartDate, i)).map((iso) => (
-                    <th key={iso} style={{ textAlign: 'center', padding: '8px 6px', minWidth: 64 }}>
-                      <div style={{ fontSize: '10px', color: '#64748B' }}>{formatDateShort(iso)}</div>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rooms.map((rm) => (
-                  <tr key={rm.id}>
-                    <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0F172A', borderRight: '1px solid #E2E8F0' }}>
-                      <div>{rm.name}</div>
-                      <small style={{ color: '#64748B', fontWeight: 500 }}>{formatPHP(rm.rate)}/night</small>
-                    </td>
-                    {Array.from({ length: 14 }, (_, i) => addDaysISO(tapeStartDate, i)).map((iso) => {
-                      const stay = bookings.find((b) => b.roomId === rm.id && iso >= b.checkIn && iso < b.checkOut && b.status !== 'cancelled');
-                      const isStart = stay && stay.checkIn === iso;
-                      return (
-                        <td key={iso} style={{ padding: 4, textAlign: 'center', borderRight: '1px solid #F1F5F9' }}>
-                          {stay ? (
-                            <div className={`staff-ops-tape-block ${stay.status === 'checked_in' ? 'block--emerald' : 'block--sky'}`}>
-                              {isStart ? stay.guest.split(' ')[0] : '•••'}
-                            </div>
-                          ) : (
-                            <div
-                              onClick={() => {
-                                const rate = Number(rm.rate) || 3500;
-                                setNewReservation((prev) => ({
-                                  ...prev,
-                                  room_id: rm.id,
-                                  check_in: iso,
-                                  check_out: addDaysISO(iso, 1),
-                                  total_php: rate,
-                                }));
-                                setShowManualBookingModal(true);
-                              }}
-                              className="staff-ops-tape-empty"
-                              title={`Click to book ${rm.name} on ${iso}`}
-                            >
-                              +
-                            </div>
-                          )}
-                        </td>
-                      );
-                    })}
+                {/* Legend Bar */}
+                <div style={{ display: 'flex', gap: 18, fontSize: '.75rem', color: '#475569' }}>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-sky-500 inline-block" /> Confirmed Stay</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-emerald-500 inline-block" /> Checked-In / Active</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-amber-400 inline-block" /> Pending Hold</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-rose-400 inline-block" /> Maintenance Block</span>
+                </div>
+              </div>
+
+              {/* Tape Chart Table */}
+              <table className="staff-ops-tape-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: 220, textAlign: 'left', padding: '10px 14px' }}>Unit &amp; Category</th>
+                    {Array.from({ length: 14 }, (_, i) => addDaysISO(tapeStartDate, i)).map((iso) => (
+                      <th key={iso} style={{ textAlign: 'center', padding: '8px 6px', minWidth: 64 }}>
+                        <div style={{ fontSize: '10px', color: '#64748B' }}>{formatDateShort(iso)}</div>
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {rooms.map((rm) => (
+                    <tr key={rm.id}>
+                      <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0F172A', borderRight: '1px solid #E2E8F0' }}>
+                        <div>{rm.name}</div>
+                        <small style={{ color: '#64748B', fontWeight: 500 }}>{formatPHP(rm.rate)}/night</small>
+                      </td>
+                      {Array.from({ length: 14 }, (_, i) => addDaysISO(tapeStartDate, i)).map((iso) => {
+                        const stay = bookings.find((b) => b.roomId === rm.id && iso >= b.checkIn && iso < b.checkOut && b.status !== 'cancelled');
+                        const isStart = stay && stay.checkIn === iso;
+                        return (
+                          <td key={iso} style={{ padding: 4, textAlign: 'center', borderRight: '1px solid #F1F5F9' }}>
+                            {stay ? (
+                              <div className={`staff-ops-tape-block ${stay.status === 'checked_in' ? 'block--emerald' : 'block--sky'}`}>
+                                {isStart ? stay.guest.split(' ')[0] : '•••'}
+                              </div>
+                            ) : (
+                              <div
+                                onClick={() => {
+                                  const rate = Number(rm.rate) || 3500;
+                                  setNewReservation((prev) => ({
+                                    ...prev,
+                                    room_id: rm.id,
+                                    check_in: iso,
+                                    check_out: addDaysISO(iso, 1),
+                                    total_php: rate,
+                                  }));
+                                  setShowManualBookingModal(true);
+                                }}
+                                className="staff-ops-tape-empty"
+                                title={`Click to book ${rm.name} on ${iso}`}
+                              >
+                                +
+                              </div>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Mode 2: Full Monthly Calendar Grid */}
+          {tapeMode === 'month' && (() => {
+            const year = currentMonthDate.getFullYear();
+            const month = currentMonthDate.getMonth();
+            const firstDayOfWeek = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            return (
+              <div style={{ padding: 24 }}>
+                {/* Month Navigator Bar */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const dt = new Date(currentMonthDate);
+                        dt.setMonth(dt.getMonth() - 1);
+                        setCurrentMonthDate(dt);
+                      }}
+                      className="staff-ops-icon-btn"
+                    >
+                      <i className="fas fa-chevron-left" />
+                    </button>
+                    <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#0F172A' }}>
+                      {currentMonthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const dt = new Date(currentMonthDate);
+                        dt.setMonth(dt.getMonth() + 1);
+                        setCurrentMonthDate(dt);
+                      }}
+                      className="staff-ops-icon-btn"
+                    >
+                      <i className="fas fa-chevron-right" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const [y, m] = todayISO.split('-').map(Number);
+                        setCurrentMonthDate(new Date(y, m - 1, 1));
+                        setSelectedDate(todayISO);
+                      }}
+                      className="staff-ops-today-btn"
+                    >
+                      Today
+                    </button>
+                  </div>
+
+                  <span style={{ fontSize: '.82rem', color: '#64748B' }}>
+                    Double-click any date to create a manual booking
+                  </span>
+                </div>
+
+                {/* Day Headers */}
+                <div className="staff-ops-cal-header-row" style={{ gridTemplateColumns: 'repeat(7, 1fr)' }}>
+                  {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((d) => (
+                    <div key={d} className="staff-ops-cal-day-label" style={{ padding: '8px 12px' }}>{d}</div>
+                  ))}
+                </div>
+
+                {/* Day Grid */}
+                <div className="staff-ops-cal-grid" style={{ gridTemplateColumns: 'repeat(7, 1fr)', gap: 8 }}>
+                  {Array.from({ length: firstDayOfWeek }).map((_, idx) => (
+                    <div key={`blank-${idx}`} className="staff-ops-cal-day empty" style={{ minHeight: 120, opacity: 0.25, background: '#F1F5F9' }} />
+                  ))}
+
+                  {Array.from({ length: daysInMonth }, (_, idx) => {
+                    const d = idx + 1;
+                    const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    const isToday = iso === todayISO;
+                    const isSelected = iso === selectedDate;
+                    const dayBookings = bookings.filter((b) => iso >= b.checkIn && iso < b.checkOut && b.status !== 'cancelled');
+
+                    return (
+                      <div
+                        key={iso}
+                        onClick={() => setSelectedDate(iso)}
+                        onDoubleClick={() => handleBookOnDate(iso)}
+                        className={`staff-ops-cal-day ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''}`}
+                        style={{ minHeight: 120, cursor: 'pointer' }}
+                        title={`Click to inspect or double-click to book on ${formatDateReadable(iso)}`}
+                      >
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className={`staff-ops-day-num ${isToday ? 'staff-ops-day-num--today' : ''}`}>{d}</span>
+                          {dayBookings.length > 0 && (
+                            <span className="staff-ops-day-count">{dayBookings.length} stays</span>
+                          )}
+                        </div>
+                        <div className="staff-ops-day-stays">
+                          {dayBookings.slice(0, 3).map((b) => {
+                            const rm = getRoomById(b.roomId);
+                            const isGreen = b.status === 'checked_in';
+                            return (
+                              <div
+                                key={b.id}
+                                className={`staff-ops-day-stay-chip ${isGreen ? 'chip--emerald' : 'chip--sky'}`}
+                                title={`${b.guest} (${rm.name})`}
+                              >
+                                {rm.code} • {b.guest}
+                              </div>
+                            );
+                          })}
+                          {dayBookings.length > 3 && (
+                            <div className="staff-ops-day-more">+{dayBookings.length - 3} more</div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
 
