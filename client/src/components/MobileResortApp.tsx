@@ -1747,32 +1747,6 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
         </section>
 
         {/* =====================================================================
-             STATS BANNER (From https://34ed5487.patar-resort.pages.dev/)
-             ===================================================================== */}
-        <section className="mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-10 pt-10 md:pt-14">
-          <div className="mx-auto grid max-w-4xl grid-cols-3 divide-x divide-white/10 rounded-3xl border border-white/10 bg-[#0B1426] px-2 py-6 text-center md:py-8 shadow-xl">
-            <div className="px-2">
-              <span className="block font-serif text-3xl md:text-5xl font-medium text-cyan">18</span>
-              <span className="mt-1.5 block text-[10px] md:text-xs uppercase leading-tight tracking-[0.2em] text-white/50">
-                Cottages &amp; Suites
-              </span>
-            </div>
-            <div className="px-2">
-              <span className="block font-serif text-3xl md:text-5xl font-medium text-cyan">50</span>
-              <span className="mt-1.5 block text-[10px] md:text-xs uppercase leading-tight tracking-[0.2em] text-white/50">
-                Steps to the Sand
-              </span>
-            </div>
-            <div className="px-2">
-              <span className="block font-serif text-3xl md:text-5xl font-medium text-cyan">2016</span>
-              <span className="mt-1.5 block text-[10px] md:text-xs uppercase leading-tight tracking-[0.2em] text-white/50">
-                Welcoming Guests
-              </span>
-            </div>
-          </div>
-        </section>
-
-        {/* =====================================================================
              ROOMS & SUITES SHOWCASE (Auto-Scrolling Accommodations Strip)
              ===================================================================== */}
         <section id="rooms-showcase" className="mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-10 pt-16 md:pt-24 scroll-mt-20">
@@ -1786,12 +1760,8 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
               </h2>
             </div>
             
-            {/* Auto-scroll Status & Navigation Controls */}
+            {/* Navigation Controls */}
             <div className="flex items-center gap-3">
-              <div className="hidden sm:inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan/10 border border-cyan/30 text-[11px] font-mono text-cyan">
-                <span className="w-2 h-2 rounded-full bg-cyan animate-pulse" />
-                <span>Auto-scrolling showcase</span>
-              </div>
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
@@ -2014,241 +1984,6 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
            ===================================================================== */}
       <main id="booking-workspace" className="max-w-[1120px] mx-auto px-4 sm:px-6 pt-12 pb-16">
 
-        {/* Accommodation Selection Tabs by Category */}
-        <div className="mb-6 space-y-3">
-          {/* Two Categories: Room & Cottage */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-            <div className="inline-flex items-center p-1 bg-[#0B1426] rounded-2xl border border-white/10">
-              <button
-                type="button"
-                onClick={() => handleCategorySwitch('room')}
-                className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                  activeLodgingCategory === 'room'
-                    ? 'bg-cyan text-[#060B18] shadow-sm'
-                    : 'text-white/60 hover:text-white'
-                }`}
-              >
-                <span>🛏️ Rooms</span>
-                <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${
-                  activeLodgingCategory === 'room' ? 'bg-[#060B18]/20 text-[#060B18]' : 'bg-white/10 text-white/70'
-                }`}>
-                  {roomAccommodations.length}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleCategorySwitch('cottage')}
-                className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                  activeLodgingCategory === 'cottage'
-                    ? 'bg-cyan text-[#060B18] shadow-sm'
-                    : 'text-white/60 hover:text-white'
-                }`}
-              >
-                <span>🏡 Cottages</span>
-                <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${
-                  activeLodgingCategory === 'cottage' ? 'bg-[#060B18]/20 text-[#060B18]' : 'bg-white/10 text-white/70'
-                }`}>
-                  {cottageAccommodations.length}
-                </span>
-              </button>
-            </div>
-
-            <div className="text-xs text-white/60 font-medium hidden sm:flex items-center gap-2">
-              <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>
-                {activeLodgingCategory === 'room'
-                  ? 'Air-conditioned rooms & suites for overnight sanctuary stays'
-                  : 'Open-air beachfront nipa cottages for day use & coastal relaxation'}
-              </span>
-            </div>
-          </div>
-
-          {/* Accommodation Selection Sub-Tabs for Active Category */}
-          <div className="border-b border-white/10 flex items-stretch gap-6 sm:gap-8 overflow-x-auto no-scrollbar">
-            {displayedAccommodations.map((room) => {
-              const isSelected = room.id === selectedRoom.id;
-              const option = roomRanking.options.find((o) => o.room.id === room.id);
-              const activeRangeEnd = checkOut ?? (checkIn ? addDaysISO(checkIn, 1) : null);
-              const roomConflicts = (checkIn && activeRangeEnd)
-                ? reservations.filter(
-                    (res) =>
-                      String(res.room_id) === String(room.id) &&
-                      res.status !== 'cancelled' &&
-                      rangesOverlap(checkIn, activeRangeEnd, res.check_in, res.check_out)
-                  )
-                : [];
-              const isBookedOnDates = roomConflicts.length > 0;
-              return (
-                <button
-                  key={room.id}
-                  type="button"
-                  onClick={() => chooseRoom(room.id)}
-                  aria-pressed={isSelected}
-                  className={`py-4 text-sm font-semibold whitespace-nowrap transition-all border-b-2 cursor-pointer flex items-center gap-2 ${
-                    isBookedOnDates && isSelected
-                      ? 'border-rose-500 text-rose-300 bg-rose-950/40 rounded-t-lg'
-                      : isSelected
-                      ? 'border-cyan text-white'
-                      : isBookedOnDates
-                      ? 'border-transparent text-rose-400/80 hover:text-rose-200 hover:bg-rose-950/20'
-                      : 'border-transparent text-white/50 hover:text-white'
-                  }`}
-                >
-                  <span>{room.name}</span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                    isSelected ? 'bg-cyan text-[#060B18]' : 'bg-white/10 text-white/70'
-                  }`}>
-                    {formatPHP(room.rate_php || 3500)}
-                  </span>
-                  {isBookedOnDates ? (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-1 animate-pulse">
-                      <span className="text-rose-400">⚠️</span> Booked
-                    </span>
-                  ) : checkIn ? (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                      <span>✓</span> Available
-                    </span>
-                  ) : option ? (
-                    <span className={`text-[11px] font-semibold ${FIT_TONE[option.fit]}`}>
-                      {fitLabel(option.fit, option.capacity, partySize, true)}
-                    </span>
-                  ) : null}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Listing Title Row */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
-          <div>
-            <h2 className="text-[22px] sm:text-[26px] font-semibold text-white tracking-[-0.02em] leading-snug">
-              {selectedRoom.name} · {inferOfferingType(selectedRoom) === 'cottage' ? 'Beachfront Coastal Cottage' : 'Oceanfront Sanctuary Villa'}
-            </h2>
-            <div className="text-[11px] font-mono text-white/50 mt-0.5">
-              {inferOfferingType(selectedRoom) === 'cottage' ? 'Cottage' : 'Room'} Code: {selectedRoom.id} · Verified live inventory
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={() => {
-                if (navigator.clipboard) {
-                  navigator.clipboard.writeText(window.location.href);
-                  alert('Link copied to clipboard!');
-                }
-              }}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-xs font-semibold text-white/90 transition cursor-pointer"
-            >
-              <svg viewBox="0 0 20 20" className="w-4 h-4 text-cyan" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <path d="M10 3v9.5M6.5 6.5L10 3l3.5 3.5M4 12v4a1 1 0 001 1h10a1 1 0 001-1v-4" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              Share
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsSaved(!isSaved)}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-xs font-semibold text-white/90 transition cursor-pointer"
-            >
-              <svg viewBox="0 0 20 20" className={`w-4 h-4 transition-colors ${isSaved ? 'text-rose-500 fill-rose-500' : 'text-cyan'}`} fill="none" stroke="currentColor" strokeWidth="1.8">
-                <path d="M10 17.2s-6.2-4-6.2-8.7A3.6 3.6 0 0110 5.8a3.6 3.6 0 016.2 2.7c0 4.7-6.2 8.7-6.2 8.7z" strokeLinejoin="round"/>
-              </svg>
-              <span>{isSaved ? 'Saved' : 'Save'}</span>
-            </button>
-          </div>
-        </div>
-
-        {/* 1+4 Bento Media Grid */}
-        <section className="relative mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 h-[280px] sm:h-[360px] md:h-[420px] rounded-[16px] overflow-hidden border border-white/10">
-            
-            {/* Slot 0 (Hero Image - Auto-cycling through room views) */}
-            <div
-              onClick={() => {
-                setTourIndex(bentoPhotoIdx % (galleryPhotos.length || 1));
-                setShowPhotoTour(true);
-              }}
-              className="coastal-slot slot-sky-sunset h-full p-5 flex flex-col justify-between cursor-pointer group relative overflow-hidden"
-            >
-              <img
-                key={bentoPhotoIdx}
-                src={galleryPhotos[bentoPhotoIdx % (galleryPhotos.length || 1)] || galleryPhotos[0]}
-                alt="Primary Oceanfront View"
-                className="absolute inset-0 w-full h-full object-cover z-0 transition-all duration-700 ease-in-out group-hover:scale-105 animate-fade-in"
-                onError={(e) => {
-                  (e.target as HTMLElement).style.display = 'none';
-                }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30 z-0 pointer-events-none" />
-              <div className="relative z-10 flex items-center justify-between">
-                <span className="px-3 py-1 rounded-full bg-black/50 backdrop-blur-xs text-white text-xs font-medium border border-white/15">
-                  Oceanfront Living Deck
-                </span>
-                <span className="px-2.5 py-1 rounded-full bg-cyan/20 border border-cyan/40 text-cyan text-[11px] font-mono font-bold flex items-center gap-1.5 backdrop-blur-xs">
-                  <span className="w-1.5 h-1.5 rounded-full bg-cyan animate-pulse" />
-                  Auto-view · {((bentoPhotoIdx % (galleryPhotos.length || 1)) + 1)}/{galleryPhotos.length}
-                </span>
-              </div>
-              <div className="relative z-10 text-white">
-                <p className="text-sm font-medium drop-shadow-xs">
-                  Direct coastal sanctuary view in Bolinao, Pangasinan
-                </p>
-              </div>
-            </div>
-
-            {/* 2x2 Secondary Grid */}
-            <div className="hidden md:grid grid-cols-2 grid-rows-2 gap-2 h-full">
-              {galleryPhotos.slice(1, 5).map((imgUrl, idx) => (
-                <div
-                  key={idx}
-                  onClick={() => {
-                    setTourIndex(idx + 1);
-                    setShowPhotoTour(true);
-                  }}
-                  className="coastal-slot slot-lagoon-teal p-3.5 flex flex-col justify-between cursor-pointer group"
-                >
-                  <img
-                    src={imgUrl}
-                    alt={`Resort View ${idx + 2}`}
-                    className="absolute inset-0 w-full h-full object-cover z-0 transition-transform duration-500 group-hover:scale-105"
-                    onError={(e) => {
-                      (e.target as HTMLElement).style.display = 'none';
-                    }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/15 z-0" />
-                  <span className="relative z-10 self-start px-2.5 py-0.5 rounded-full bg-black/40 backdrop-blur-xs text-white text-[11px] font-medium border border-white/10">
-                    {idx === 0 ? 'Sunset Veranda' : idx === 1 ? 'Sanctuary Suite' : idx === 2 ? 'Horizon Vantage' : 'Coral Steps'}
-                  </span>
-                  <span className="relative z-10 text-white text-xs font-medium truncate">
-                    {selectedRoom.name} Interior &amp; Grounds
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Bottom Right Floating Action */}
-          <div className="absolute bottom-4 right-4 z-20 flex items-center gap-2">
-            <button
-              onClick={() => {
-                setTourIndex(0);
-                setShowPhotoTour(true);
-              }}
-              type="button"
-              className="px-4 py-2 rounded-xl bg-[#0B1426]/90 hover:bg-[#0B1426] text-white text-xs font-semibold border border-white/20 shadow-lg backdrop-blur-md flex items-center gap-2 transition cursor-pointer"
-            >
-              <svg viewBox="0 0 16 16" className="w-3.5 h-3.5 text-cyan" fill="currentColor">
-                <circle cx="3" cy="3" r="1.3"/><circle cx="8" cy="3" r="1.3"/><circle cx="13" cy="3" r="1.3"/>
-                <circle cx="3" cy="8" r="1.3"/><circle cx="8" cy="8" r="1.3"/><circle cx="13" cy="8" r="1.3"/>
-                <circle cx="3" cy="13" r="1.3"/><circle cx="8" cy="13" r="1.3"/><circle cx="13" cy="13" r="1.3"/>
-              </svg>
-              Show all photos
-            </button>
-          </div>
-        </section>
-
         {/* =====================================================================
              ROOM OVERVIEW WORKSPACE (Centered on Landing, 2-Col in Embedded/Logged-in)
              ===================================================================== */}
@@ -2256,19 +1991,9 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
           
           {/* LEFT / MAIN COLUMN */}
           <div className={showBookingTools ? "lg:col-span-7 xl:col-span-8" : "w-full"}>
-            
-            {/* Specs Header */}
-            <div className="pb-6 border-b border-white/10">
-              <h3 className="font-serif text-2xl sm:text-3xl font-medium text-white leading-snug">
-                Coastal Accommodation in Bolinao, Pangasinan
-              </h3>
-              <p className="text-sm sm:text-base text-white/70 mt-1.5 font-light">
-                Up to {selectedCapacity} guests · {selectedRoom.beds_count || 2} bedrooms · {selectedRoom.beds_count || 2} beds · {selectedRoom.baths_count || 1} private bath
-              </p>
-            </div>
 
             {/* 3 Property Highlights */}
-            <div className="py-6 border-b border-white/10 space-y-5">
+            <div className="pb-6 border-b border-white/10 space-y-5">
               <div className="flex items-start gap-4">
                 <div className="w-9 h-9 rounded-xl bg-cyan/15 border border-cyan/30 flex items-center justify-center text-cyan shrink-0 mt-0.5">
                   <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -2317,41 +2042,6 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                 <p className="text-xs sm:text-sm text-white/60">
                   Equipped with high-speed Wi-Fi, solar microgrid power backup, and complimentary tropical breakfast prepared daily by our local staff.
                 </p>
-              </div>
-            </div>
-
-            {/* Bedroom Cards */}
-            <div className="py-7 border-b border-white/10">
-              <h4 className="font-serif text-2xl font-medium text-white mb-5">Where you'll sleep</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="p-5 rounded-2xl border border-white/10 bg-[#0B1426] space-y-2.5 hover:border-cyan/40 transition shadow-lg">
-                  <div className="text-2xl">🛏️</div>
-                  <div className="text-sm font-semibold text-white">Primary Bedroom</div>
-                  <div className="text-xs text-white/60 font-light">1 Queen Bed · Ocean View</div>
-                </div>
-                <div className="p-5 rounded-2xl border border-white/10 bg-[#0B1426] space-y-2.5 hover:border-cyan/40 transition shadow-lg">
-                  <div className="text-2xl">🛋️</div>
-                  <div className="text-sm font-semibold text-white">Living Suite</div>
-                  <div className="text-xs text-white/60 font-light">1 Daybed · Private Veranda</div>
-                </div>
-                <div className="p-5 rounded-2xl border border-white/10 bg-[#0B1426] space-y-2.5 hover:border-cyan/40 transition shadow-lg">
-                  <div className="text-2xl">🌅</div>
-                  <div className="text-sm font-semibold text-white">Viewing Deck</div>
-                  <div className="text-xs text-white/60 font-light">2 Teak Loungers · Sunset Vantage</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Amenities Grid */}
-            <div className="py-7 border-b border-white/10">
-              <h4 className="font-serif text-2xl font-medium text-white mb-5">What this place offers</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-8 text-sm sm:text-base text-white/85">
-                {(selectedRoom.amenities || ['Wi-Fi', 'Ocean View', 'Air Conditioning', 'Private Bath']).map((amenity, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <span className="w-5 h-5 text-cyan font-serif font-bold text-sm">✦</span>
-                    <span>{amenity}</span>
-                  </div>
-                ))}
               </div>
             </div>
 
@@ -3386,66 +3076,8 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
         </section>
       </main>
 
-      {/* =====================================================================
-           CURATED MOMENTS (From https://34ed5487.patar-resort.pages.dev/)
-           ===================================================================== */}
       {!embedded && (
       <>
-        <section id="experiences-section" className="mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-10 pt-16">
-          <div className="rounded-3xl bg-[#f4e9d8] text-[#060b18] p-8 sm:p-10 border border-[#e8d8be] shadow-xl">
-            <span className="block text-[11px] font-medium uppercase tracking-[0.28em] text-[#060b18]/60 font-bold">
-              Curated Moments
-            </span>
-            <h3 className="font-serif text-3xl sm:text-4xl font-medium text-[#060b18] mt-2">
-              Bolinao Unhurried
-            </h3>
-
-            <div className="mt-8 grid sm:grid-cols-2 gap-6 divide-y sm:divide-y-0 sm:divide-x divide-[#060b18]/10">
-              <div className="space-y-6">
-                <div className="pt-2">
-                  <div className="flex items-baseline gap-3">
-                    <span className="font-serif italic text-sky-800 text-xl font-bold">01</span>
-                    <h4 className="font-serif text-xl font-medium text-[#060b18]">Sunset Outrigger Sail</h4>
-                  </div>
-                  <p className="text-sm text-[#060b18]/75 leading-relaxed mt-2 font-light">
-                    Glide through calm Lingayen waters on a traditional wooden bangka as the golden sun sets over the West Philippine Sea.
-                  </p>
-                </div>
-                <div className="pt-6 border-t border-[#060b18]/10">
-                  <div className="flex items-baseline gap-3">
-                    <span className="font-serif italic text-sky-800 text-xl font-bold">02</span>
-                    <h4 className="font-serif text-xl font-medium text-[#060b18]">Lighthouse Lantern Walk</h4>
-                  </div>
-                  <p className="text-sm text-[#060b18]/75 leading-relaxed mt-2 font-light">
-                    Evening stroll to the historic 1905 Cape Bolinao Lighthouse, carrying warm woven bamboo lanterns along the breezy cliffside.
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-6 sm:pl-6 pt-6 sm:pt-0">
-                <div className="pt-2">
-                  <div className="flex items-baseline gap-3">
-                    <span className="font-serif italic text-sky-800 text-xl font-bold">03</span>
-                    <h4 className="font-serif text-xl font-medium text-[#060b18]">Balingasay River Cruise</h4>
-                  </div>
-                  <p className="text-sm text-[#060b18]/75 leading-relaxed mt-2 font-light">
-                    Gentle drift through one of Luzon’s cleanest river ecosystems surrounded by lush centuries-old mangroves and native birdlife.
-                  </p>
-                </div>
-                <div className="pt-6 border-t border-[#060b18]/10">
-                  <div className="flex items-baseline gap-3">
-                    <span className="font-serif italic text-sky-800 text-xl font-bold">04</span>
-                    <h4 className="font-serif text-xl font-medium text-[#060b18]">Fresh Coral Reef Snorkeling</h4>
-                  </div>
-                  <p className="text-sm text-[#060b18]/75 leading-relaxed mt-2 font-light">
-                    Guided morning snorkel right along the preserved giant clam sanctuaries and living coral reef gardens of Patar cove.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
         {/* =====================================================================
              VISUAL JOURNAL: SHORE SCENES GALLERY (From https://34ed5487.patar-resort.pages.dev/)
              ===================================================================== */}
@@ -3520,42 +3152,6 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
               <span className="absolute bottom-3 left-3 text-[11px] font-medium text-white">Evening Lanterns</span>
             </div>
-          </div>
-        </section>
-
-        {/* =====================================================================
-             RESORT AMENITIES (From https://34ed5487.patar-resort.pages.dev/)
-             ===================================================================== */}
-        <section className="mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-10 pt-16">
-          <span className="block text-[11px] font-medium uppercase tracking-[0.28em] text-cyan font-bold">
-            Sanctuary Amenities
-          </span>
-          <h3 className="mt-2 font-serif text-3xl sm:text-4xl font-medium leading-tight text-white">
-            Every Comfort for Unhurried Stays
-          </h3>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 mt-8">
-            {[
-              { title: 'Oceanview Swimming Pool', desc: 'Overlooking the coral reef and sunset horizon' },
-              { title: 'Direct Limestone Cove Access', desc: 'Private carved coral steps straight to snorkeling' },
-              { title: 'Solar 24/7 Backup Power', desc: 'Continuous lights and cooling during island outages' },
-              { title: 'High-Speed Wi-Fi', desc: 'Reliable wireless internet across rooms and dining' },
-              { title: 'Beachfront Grilling Stations', desc: 'Complimentary outdoor BBQ setups for guests' },
-              { title: 'Free Secure Parking', desc: 'Spacious on-site gated parking for cars and vans' }
-            ].map((item, idx) => (
-              <div
-                key={idx}
-                className="rounded-2xl border border-white/10 bg-[#0B1426] p-4 sm:p-5 flex items-start gap-3.5 hover:border-cyan/40 transition"
-              >
-                <div className="w-9 h-9 rounded-xl bg-cyan/15 border border-cyan/30 flex items-center justify-center text-cyan shrink-0 font-serif font-bold text-sm">
-                  ✦
-                </div>
-                <div>
-                  <h5 className="text-sm font-semibold text-white">{item.title}</h5>
-                  <p className="text-xs text-white/60 mt-1 leading-relaxed">{item.desc}</p>
-                </div>
-              </div>
-            ))}
           </div>
         </section>
 
