@@ -4,14 +4,13 @@ import { getSocket } from '../lib/socket.ts';
 import { animateTypewriterPrompt } from '../lib/wordPrompt.ts';
 import { api } from '../lib/api.ts';
 import {
-  evaluateClientGuardrails,
   RESORT_CONTACT_INFO,
 } from '../lib/aiGuardrails.ts';
 
 const DEFAULT_WELCOME = {
   id: 'welcome-0',
   from: 'bot',
-  text: "Mabuhay! I'm Rock View Bot 🌊 How can I help you plan your stay, recommend rooms for your family or group, or answer questions about Rock View Beach Resort?",
+  text: "Mabuhay! I'm Rock View Bot 🌊 How can I help you plan your stay, check live room availability, or answer questions about Rock View Beach Resort?",
   is_ai: true,
 };
 
@@ -20,14 +19,7 @@ export interface ChatChip {
   label: string;
 }
 
-const DEFAULT_CHIPS: ChatChip[] = [
-  { icon: 'fas fa-house-chimney', label: 'Room Rates & Cottages' },
-  { icon: 'fas fa-barcode', label: 'RFID Barcode Digital Pass' },
-  { icon: 'fas fa-credit-card', label: '50% Downpayment Info' },
-  { icon: 'fas fa-person-swimming', label: 'Resort Amenities & Pool' },
-  { icon: 'fas fa-clock', label: 'Check-in & Check-out Times' },
-  { icon: 'fas fa-location-dot', label: 'Cape Bolinao Lighthouse' },
-];
+const DEFAULT_CHIPS: ChatChip[] = [];
 
 const getChipDetails = (chip: ChatChip | string): ChatChip => {
   if (typeof chip !== 'string') {
@@ -77,7 +69,8 @@ const getChipDetails = (chip: ChatChip | string): ChatChip => {
 };
 
 export default function Chatbot() {
-  const { session } = useAuth();
+  const { customerSession } = useAuth();
+  const session = customerSession;
   const [open, setOpen] = useState(false);
   const accountId = session?.user?.id || 'guest';
   const storageKey = `jd_chat_msgs_${accountId}`;
@@ -439,25 +432,6 @@ export default function Chatbot() {
     }
     const clean = (t ?? text).trim();
     if (!clean) return;
-
-    // 1. Client-Side Anti-Cross Script (XSS) & Security Guardrail Check
-    const guard = evaluateClientGuardrails(clean);
-    if (guard.blocked) {
-      setMsgs((x) => [
-        ...x,
-        { from: 'user', text: clean },
-        {
-          from: 'bot',
-          text: guard.safeMessage,
-          guardrail: true,
-          category: guard.category,
-          is_xss: guard.category === 'CROSS_SITE_SCRIPTING',
-        },
-      ]);
-      setChips(['Room Rates & Cottages', '50% Downpayment Info', 'Resort Amenities']);
-      setText('');
-      return;
-    }
 
     setMsgs((x) => [...x, { from: 'user', text: clean }]);
     setChips([]);
