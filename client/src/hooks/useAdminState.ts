@@ -495,18 +495,39 @@ export function useAdminState() {
   const openCreateOfferingModal = useCallback((offeringType: OfferingType) => {
     const presets: Record<OfferingType, { category: string; capacity: number; units: number; rate_php: number; amenities: string }> = {
       room: {
-        category: 'Room',
+        category: 'Standard Room',
         capacity: 2,
         units: 1,
         rate_php: 3500,
         amenities: 'Split Air-Conditioned, Free Wi-Fi, Private En-Suite Bath, Hot Shower',
       },
+      villa: {
+        category: 'Oceanfront Villa',
+        capacity: 4,
+        units: 1,
+        rate_php: 8500,
+        amenities: 'Panoramic Sea Deck, Private En-Suite, Split AC, Living Room, Kitchenette',
+      },
+      suite: {
+        category: 'Sunset Loft Suite',
+        capacity: 3,
+        units: 1,
+        rate_php: 7400,
+        amenities: 'Upper Cliff Terrace, Breakfast Included, Smart TV, Inverter AC, Marble Bath',
+      },
       cottage: {
-        category: 'Cottage',
+        category: 'Beachfront Cottage',
         capacity: 8,
         units: 1,
         rate_php: 2500,
         amenities: 'Beachfront Access, Grilling Area, Hardwood Table & Benches, Power Outlet',
+      },
+      cabana: {
+        category: 'Garden Cabana',
+        capacity: 2,
+        units: 1,
+        rate_php: 3800,
+        amenities: 'Plush Lounge Daybed, Cocktail Table, Shaded Garden Canopy, Pool Access',
       },
       offer: {
         category: 'Island Tour',
@@ -514,6 +535,13 @@ export function useAdminState() {
         units: 5,
         rate_php: 2800,
         amenities: 'Motorized Bangka Boat, Local Boatman Guide, Life Vests, Snorkel Mask',
+      },
+      event: {
+        category: 'Event Pavilion',
+        capacity: 50,
+        units: 1,
+        rate_php: 15000,
+        amenities: 'Direct Oceanfront Lawn, Banquet Tables & Chairs, Sound System Outlets, Buffet Area',
       },
     };
     const preset = presets[offeringType] || presets.room;

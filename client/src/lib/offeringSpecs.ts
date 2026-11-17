@@ -6,26 +6,31 @@
  * Island Tours and non-lodging activities are decoupled into the separate AddOnService entity.
  */
 
-export const ALLOWED_LODGING_CATEGORIES = ['Rooms', 'Cottages'] as const;
+export const ALLOWED_LODGING_CATEGORIES = ['Rooms', 'Villas', 'Suites', 'Cottages', 'Cabanas', 'Offers', 'Events'] as const;
 export type LodgingCategory = (typeof ALLOWED_LODGING_CATEGORIES)[number];
 
-export type OfferingType = 'room' | 'cottage';
+export type OfferingType = 'room' | 'villa' | 'suite' | 'cottage' | 'cabana' | 'offer' | 'event';
 
 export interface OfferingSpecs {
-  // Room specifications
+  // Room / Villa / Suite specifications
   bed_config?: string;
   bathroom_type?: string;
   climate_control?: string;
   floor_wing?: string;
   view_type?: string;
   check_in_out?: string;
-  // Cottage specifications
+  // Cottage / Cabana / Event specifications
   cottage_style?: string;
   usage_mode?: string;
   beachfront_proximity?: string;
   seating_tables?: string;
   grilling_area?: boolean;
   power_outlet?: boolean;
+  // Tour / Offer specifications
+  duration?: string;
+  offer_subtype?: string;
+  destinations?: string;
+  inclusions?: string;
   // Shared rate semantics
   pricing_mode?: 'per_night' | 'per_stay' | 'per_group' | 'per_pax';
   [key: string]: unknown;
@@ -67,16 +72,21 @@ export const RESORT_ACTIVITIES_AND_TOURS: AddOnService[] = [
   },
 ];
 
-export const OFFERING_TYPES: OfferingType[] = ['room', 'cottage'];
+export const OFFERING_TYPES: OfferingType[] = ['room', 'villa', 'suite', 'cottage', 'cabana', 'offer', 'event'];
 
 export const DB_SAFE_CATEGORIES = ['Standard', 'Cottage'] as const;
 
-export const ROOM_CATEGORIES = ['Room', 'Rooms'] as const;
-export const COTTAGE_CATEGORIES = ['Cottage', 'Cottages'] as const;
+export const ROOM_CATEGORIES = ['Room', 'Standard Room', 'Deluxe Room', 'Family Room'] as const;
+export const VILLA_CATEGORIES = ['Villa', 'Oceanfront Villa', 'Cliffside Villa', 'Grand Villa'] as const;
+export const SUITE_CATEGORIES = ['Suite', 'Sunset Loft Suite', 'Seaview Suite', 'Executive Penthouse'] as const;
+export const COTTAGE_CATEGORIES = ['Cottage', 'Beachfront Cottage', 'Family Cottage', 'Open-Air Kubo'] as const;
+export const CABANA_CATEGORIES = ['Cabana', 'Garden Cabana', 'Poolside Cabana', 'Shaded Daybed Cabana'] as const;
+export const OFFER_CATEGORIES = ['Island Tour', 'Boat Charter', 'Snorkeling Excursion', 'Water Activity'] as const;
+export const EVENT_CATEGORIES = ['Event Pavilion', 'Sunset Function Hall', 'Beach Gazebo Venue'] as const;
 
-export function toDbSafeCategory(displayCategory: string, offeringType: OfferingType = 'room'): string {
+export function toDbSafeCategory(displayCategory: string, offeringType: string = 'room'): string {
   const clean = String(displayCategory || '').trim().toLowerCase();
-  if (clean === 'cottage' || clean === 'cottages' || offeringType === 'cottage') {
+  if (clean === 'cottage' || clean === 'cottages' || clean === 'cabana' || offeringType === 'cottage' || offeringType === 'cabana') {
     return 'Cottage';
   }
   return 'Standard';
@@ -92,6 +102,24 @@ export const DEFAULT_SPECS_BY_TYPE: Record<OfferingType, OfferingSpecs> = {
     check_in_out: '02:00 PM / 12:00 PM',
     pricing_mode: 'per_night',
   },
+  villa: {
+    bed_config: '2 King Beds + Living Area',
+    bathroom_type: 'Private Ocean En-Suite + Tub',
+    climate_control: 'Dual Split Inverter AC',
+    floor_wing: 'Cliffside Oceanfront Wing',
+    view_type: 'Panoramic Sunset & Ocean View',
+    check_in_out: '02:00 PM / 12:00 PM',
+    pricing_mode: 'per_night',
+  },
+  suite: {
+    bed_config: '1 King Bed + Lounge Suite',
+    bathroom_type: 'Luxury Marble Bath & Rain Shower',
+    climate_control: 'Silent Inverter Air-Conditioned',
+    floor_wing: 'Upper Terrace Wing',
+    view_type: 'Unobstructed Sea View Deck',
+    check_in_out: '02:00 PM / 12:00 PM',
+    pricing_mode: 'per_night',
+  },
   cottage: {
     cottage_style: 'Open-Air Nipa Cottage',
     usage_mode: 'Day Use & Overnight',
@@ -100,6 +128,32 @@ export const DEFAULT_SPECS_BY_TYPE: Record<OfferingType, OfferingSpecs> = {
     grilling_area: true,
     power_outlet: true,
     pricing_mode: 'per_night',
+  },
+  cabana: {
+    cottage_style: 'Shaded Poolside / Garden Cabana',
+    usage_mode: 'Day Use & Evening Rental',
+    beachfront_proximity: 'Boardwalk & Poolside Area',
+    seating_tables: 'Lounge Daybeds & Cocktail Table',
+    grilling_area: false,
+    power_outlet: true,
+    pricing_mode: 'per_night',
+  },
+  offer: {
+    duration: '4 Hours (Half Day)',
+    offer_subtype: 'Guided Island Hopping Tour',
+    destinations: 'Patar Reef Sanctuary, Sandbar Cove, Sea Caves',
+    inclusions: 'Private Bangka Boat, Licensed Boatman, Life Vests, Snorkels',
+    beachfront_proximity: 'Direct Outrigger Boat Pier',
+    pricing_mode: 'per_group',
+  },
+  event: {
+    cottage_style: 'Beachfront Covered Function Pavilion',
+    usage_mode: 'Banquet & Group Gathering (Up to 50 pax)',
+    beachfront_proximity: 'Direct Oceanfront Lawn',
+    seating_tables: 'Banquet Dining Tables & Chairs',
+    grilling_area: true,
+    power_outlet: true,
+    pricing_mode: 'per_stay',
   },
 };
 
@@ -124,29 +178,50 @@ export function getMinGuestCheckInISO(now = new Date()): string {
 
 export function inferOfferingType(item: any = {}): OfferingType {
   const rawType = String(item?.offering_type || '').toLowerCase().trim();
+  if (rawType === 'villa') return 'villa';
+  if (rawType === 'suite') return 'suite';
+  if (rawType === 'cabana') return 'cabana';
   if (rawType === 'cottage') return 'cottage';
+  if (rawType === 'offer' || rawType === 'tour') return 'offer';
+  if (rawType === 'event') return 'event';
   if (rawType === 'room') return 'room';
 
   const rawAmenities = Array.isArray(item?.amenities) ? item.amenities : [];
   for (const tag of rawAmenities) {
     if (typeof tag === 'string' && tag.startsWith('__type__:')) {
       const parsed = tag.slice('__type__:'.length).toLowerCase().trim();
-      if (parsed === 'cottage') return 'cottage';
-      if (parsed === 'room') return 'room';
+      if (parsed === 'tour') return 'offer';
+      if (OFFERING_TYPES.includes(parsed as OfferingType)) return parsed as OfferingType;
     }
   }
 
   const cat = String(item?.category || '').toLowerCase();
-  const name = String(item?.name || '').toLowerCase();
+  const name = String(item?.name || item?.room_name || '').toLowerCase();
 
-  if (/\b(cottage|kubo|cabana|pavilion|nipa)\b/i.test(cat) || /\b(cottage|kubo|cabana|pavilion|nipa)\b/i.test(name)) {
+  if (/\b(villa)\b/i.test(cat) || /\b(villa)\b/i.test(name)) {
+    return 'villa';
+  }
+  if (/\b(suite|loft|penthouse)\b/i.test(cat) || /\b(suite|loft|penthouse)\b/i.test(name)) {
+    return 'suite';
+  }
+  if (/\b(cabana)\b/i.test(cat) || /\b(cabana)\b/i.test(name)) {
+    return 'cabana';
+  }
+  if (/\b(cottage|kubo|nipa|bamboo)\b/i.test(cat) || /\b(cottage|kubo|nipa|bamboo)\b/i.test(name)) {
     return 'cottage';
   }
+  if (/\b(tour|island|boat|charter|hopping|snorkeling|dive|excursion|offer|bangka)\b/i.test(cat) || /\b(tour|island|boat|charter|hopping|snorkeling|dive|excursion|offer|bangka)\b/i.test(name)) {
+    return 'offer';
+  }
+  if (/\b(event|pavilion|hall|function)\b/i.test(cat) || /\b(event|pavilion|hall|function)\b/i.test(name)) {
+    return 'event';
+  }
+
   return 'room';
 }
 
 export function getDefaultSpecs(type: OfferingType): OfferingSpecs {
-  return { ...DEFAULT_SPECS_BY_TYPE[type === 'cottage' ? 'cottage' : 'room'] };
+  return { ...(DEFAULT_SPECS_BY_TYPE[type] || DEFAULT_SPECS_BY_TYPE.room) };
 }
 
 export function sanitizeSpecsForType(type: OfferingType, rawSpecs: Record<string, any> = {}): OfferingSpecs {
@@ -266,8 +341,17 @@ export function packOfferingAmenities({
 }
 
 export function getOfferingLabel(type: string): string {
-  if (type === 'cottage') return 'Cottage';
-  return 'Room';
+  switch (String(type || '').toLowerCase()) {
+    case 'villa': return 'Villa';
+    case 'suite': return 'Suite';
+    case 'cottage': return 'Cottage';
+    case 'cabana': return 'Cabana';
+    case 'offer':
+    case 'tour': return 'Island Tour & Offer';
+    case 'event': return 'Event Pavilion';
+    case 'room':
+    default: return 'Room';
+  }
 }
 
 export function formatOfferingBadge(type: string, category?: string): string {
@@ -280,7 +364,10 @@ export function formatOfferingBadge(type: string, category?: string): string {
 }
 
 export function getRateUnitSuffix(type: string, specs: OfferingSpecs = {}): string {
-  if (type === 'cottage') {
+  const t = String(type || '').toLowerCase();
+  if (t === 'offer' || t === 'tour') return '/ charter';
+  if (t === 'event') return '/ event';
+  if (t === 'cottage' || t === 'cabana') {
     return String(specs?.usage_mode || '').toLowerCase().includes('day use only') ? '/ day' : '/ night';
   }
   return '/ night';
@@ -303,12 +390,36 @@ export function calculateOfferingTotal({
 export function formatSpecHighlights(item: any): { label: string; value: string }[] {
   const type = inferOfferingType(item);
   const specs: OfferingSpecs = sanitizeSpecsForType(type, item?.specs || {});
-  if (type === 'cottage') {
+  if (type === 'villa' || type === 'suite') {
     return [
-      { label: 'Style', value: String(specs.cottage_style || 'Open-Air Nipa Cottage') },
+      { label: 'Beds', value: String(specs.bed_config || '1 King Bed') },
+      { label: 'Bath', value: String(specs.bathroom_type || 'Luxury En-Suite') },
+      { label: 'Cooling', value: String(specs.climate_control || 'Split Air-Conditioned') },
+      { label: 'View', value: String(specs.view_type || 'Panoramic Ocean View') },
+    ];
+  }
+  if (type === 'cottage' || type === 'cabana') {
+    return [
+      { label: 'Style', value: String(specs.cottage_style || (type === 'cabana' ? 'Shaded Cabana' : 'Open-Air Nipa Cottage')) },
       { label: 'Usage', value: String(specs.usage_mode || 'Day Use & Overnight') },
       { label: 'Shoreline', value: String(specs.beachfront_proximity || 'Steps from Shoreline') },
       { label: 'Amenities', value: specs.grilling_area ? 'Grill & Table Ready' : String(specs.seating_tables || 'Shaded Seating') },
+    ];
+  }
+  if (type === 'offer') {
+    return [
+      { label: 'Duration', value: String(specs.duration || '4 Hours (Half Day)') },
+      { label: 'Pier', value: String(specs.beachfront_proximity || 'Boat Pier #1') },
+      { label: 'Gear', value: 'Life Vests & Snorkels' },
+      { label: 'Guide', value: 'Licensed Local Boatman' },
+    ];
+  }
+  if (type === 'event') {
+    return [
+      { label: 'Capacity', value: 'Up to 50 Guests' },
+      { label: 'Location', value: String(specs.beachfront_proximity || 'Beachfront Lawn') },
+      { label: 'Seating', value: 'Banquet Ready' },
+      { label: 'Outlets', value: 'Sound & Lighting Ready' },
     ];
   }
   return [
@@ -321,11 +432,18 @@ export function formatSpecHighlights(item: any): { label: string; value: string 
 
 export function resolveReservationOfferingType(reservation: any): OfferingType {
   const notes = String(reservation?.notes || '');
-  const tagMatch = notes.match(/\[BookingType:\s*(room|cottage)\]/i);
-  if (tagMatch) return tagMatch[1].toLowerCase() as OfferingType;
+  const tagMatch = notes.match(/\[BookingType:\s*(room|villa|suite|cottage|cabana|offer|tour|event)\]/i);
+  if (tagMatch) {
+    const matched = tagMatch[1].toLowerCase();
+    if (matched === 'tour') return 'offer';
+    return matched as OfferingType;
+  }
 
   const direct = String(reservation?.offering_type || '').toLowerCase();
-  if (OFFERING_TYPES.includes(direct as OfferingType)) return direct as OfferingType;
+  if (direct) {
+    if (direct === 'tour') return 'offer';
+    if (OFFERING_TYPES.includes(direct as OfferingType)) return direct as OfferingType;
+  }
 
   if (reservation?.rooms) {
     return inferOfferingType(reservation.rooms);

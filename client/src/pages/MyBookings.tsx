@@ -10,7 +10,7 @@ import { toast } from '../components/Toasts.tsx';
 import StatusPill from '../components/StatusPill.tsx';
 import StatusTimelineModal from '../components/StatusTimelineModal.tsx';
 import { VoucherModal, normalizeVoucherData } from '../components/receipt';
-import { resolveReservationOfferingType, getOfferingLabel } from '../lib/offeringSpecs';
+import { resolveReservationOfferingType, getOfferingLabel, OfferingType } from '../lib/offeringSpecs';
 
 function to11Digits(val: string): string {
   if (!val) return '';
@@ -31,7 +31,7 @@ export default function MyBookings() {
   const [timelineBooking, setTimelineBooking] = useState<any>(null);
   const [selectedVoucher, setSelectedVoucher] = useState<any>(null);
   const [revModal, setRevModal] = useState(null);
-  const [typeFilter, setTypeFilter] = useState<'all' | 'room' | 'cottage' | 'offer'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | OfferingType>('all');
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
 
@@ -404,11 +404,15 @@ export default function MyBookings() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}>
             {([
-              { key: 'all', label: `All (${list.length})` },
-              { key: 'room', label: `Rooms (${list.filter((b: any) => resolveReservationOfferingType(b) === 'room').length})` },
-              { key: 'cottage', label: `Cottages (${list.filter((b: any) => resolveReservationOfferingType(b) === 'cottage').length})` },
-              { key: 'offer', label: `Island Tours & Offers (${list.filter((b: any) => resolveReservationOfferingType(b) === 'offer').length})` },
-            ] as const).map((tab) => (
+              { key: 'all' as const, label: `All (${list.length})` },
+              { key: 'room' as const, label: `Rooms (${list.filter((b: any) => resolveReservationOfferingType(b) === 'room').length})` },
+              { key: 'villa' as const, label: `Villas (${list.filter((b: any) => resolveReservationOfferingType(b) === 'villa').length})` },
+              { key: 'suite' as const, label: `Suites (${list.filter((b: any) => resolveReservationOfferingType(b) === 'suite').length})` },
+              { key: 'cottage' as const, label: `Cottages (${list.filter((b: any) => resolveReservationOfferingType(b) === 'cottage').length})` },
+              { key: 'cabana' as const, label: `Cabanas (${list.filter((b: any) => resolveReservationOfferingType(b) === 'cabana').length})` },
+              { key: 'offer' as const, label: `Island Tours & Offers (${list.filter((b: any) => resolveReservationOfferingType(b) === 'offer').length})` },
+              { key: 'event' as const, label: `Event Pavilions (${list.filter((b: any) => resolveReservationOfferingType(b) === 'event').length})` },
+            ]).map((tab) => (
               <button
                 key={tab.key}
                 type="button"
@@ -432,6 +436,17 @@ export default function MyBookings() {
           {list.filter((b: any) => typeFilter === 'all' || resolveReservationOfferingType(b) === typeFilter).map((b) => {
 
             const d = new Date(b.check_in + 'T00:00:00');
+            const oType = resolveReservationOfferingType(b);
+            const badgeStyles: Record<string, { bg: string; color: string }> = {
+              room: { bg: '#E0F2FE', color: '#00517A' },
+              villa: { bg: '#EDE9FE', color: '#5B21B6' },
+              suite: { bg: '#FEF3C7', color: '#92400E' },
+              cottage: { bg: '#D1FAE5', color: '#065F46' },
+              cabana: { bg: '#CCFBF1', color: '#115E59' },
+              offer: { bg: '#FFEDD5', color: '#9A3412' },
+              event: { bg: '#F3E8FF', color: '#6B21A8' },
+            };
+            const currentBadge = badgeStyles[oType] || badgeStyles.room;
             return (
               <div className="bk-row" key={b.id} style={{
                 background: 'rgba(15, 23, 42, 0.7)',
@@ -457,8 +472,8 @@ export default function MyBookings() {
                     <small style={{ fontSize: '.7rem', color: '#38BDF8', fontWeight: 700 }}>{d.toLocaleDateString([], { month: 'short' }).toUpperCase()}</small>
                   </div>
                   <div className="bk-main">
-                    <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 9999, background: resolveReservationOfferingType(b) === 'offer' ? '#FEF3C7' : resolveReservationOfferingType(b) === 'cottage' ? '#D1FAE5' : '#E0F2FE', color: resolveReservationOfferingType(b) === 'offer' ? '#78350F' : resolveReservationOfferingType(b) === 'cottage' ? '#065F46' : '#00517A', fontSize: '.7rem', fontWeight: 700, marginBottom: 4 }}>
-                      {getOfferingLabel(resolveReservationOfferingType(b))}
+                    <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 9999, background: currentBadge.bg, color: currentBadge.color, fontSize: '.7rem', fontWeight: 700, marginBottom: 4 }}>
+                      {getOfferingLabel(oType)}
                     </span>
                     <h4 style={{ margin: 0, fontSize: '1.05rem', color: '#FFFFFF' }}>{b.rooms?.name || 'Room'}</h4>
                     <p style={{ margin: '4px 0 0', fontSize: '.84rem', color: '#94A3B8' }}>

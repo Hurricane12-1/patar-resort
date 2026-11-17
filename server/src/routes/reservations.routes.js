@@ -183,12 +183,13 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
     throw new ApiError(404, "There's no present room around. This accommodation is absent or inactive.");
   }
 
-  // Strict Accommodation Taxonomy & Duration Validation (ERR_STAFF_ALLOC_422)
+  // Accommodation Taxonomy & Duration Validation
   const parsedRoom = parseOfferingTags(room.amenities, room);
   const resolvedOfferingType = req.body?.offering_type || parsedRoom.offering_type;
+  const ALLOWED_OFFERING_TYPES = ['room', 'villa', 'suite', 'cottage', 'cabana', 'offer', 'event'];
 
-  if (resolvedOfferingType !== 'room' && resolvedOfferingType !== 'cottage') {
-    throw new ApiError(422, 'Desk Unit Allocation Failure: Allowed categories are strictly "Rooms" and "Cottages". Non-lodging activities cannot be allocated as accommodation units.', { code: 'ERR_STAFF_ALLOC_422' });
+  if (!ALLOWED_OFFERING_TYPES.includes(resolvedOfferingType)) {
+    throw new ApiError(422, `Desk Unit Allocation Failure: Unknown or unsupported category "${resolvedOfferingType}".`, { code: 'ERR_STAFF_ALLOC_422' });
   }
 
   if (req.body?.offering_type && req.body.offering_type !== parsedRoom.offering_type) {
@@ -197,13 +198,9 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
 
   const stayNights = Math.max(0, Math.round((new Date(check_out) - new Date(check_in)) / 86400000));
 
-  // Stay-duration enforcement: Rooms (overnight) vs Cottages (day-use)
-  if (resolvedOfferingType === 'room' && stayNights < 1) {
-    throw new ApiError(422, 'Desk Unit Allocation Failure: Rooms are designated strictly for overnight stays (minimum 1 night). Day-use allocations must be assigned to Cottages.', { code: 'ERR_STAFF_ALLOC_422' });
-  }
-
-  if (resolvedOfferingType === 'cottage' && stayNights > 1) {
-    throw new ApiError(422, 'Desk Unit Allocation Failure: Cottages are designated strictly for day-use rentals. Multi-night overnight stays require a Room accommodation.', { code: 'ERR_STAFF_ALLOC_422' });
+  // Stay-duration enforcement: Overnight accommodations require minimum 1 night
+  if (['room', 'villa', 'suite'].includes(resolvedOfferingType) && stayNights < 1) {
+    throw new ApiError(422, `Desk Unit Allocation Failure: Overnight accommodations (${resolvedOfferingType}s) require a minimum 1 night stay.`, { code: 'ERR_STAFF_ALLOC_422' });
   }
 
   // 1. Resolve exact requested check-in and check-out timestamps with specific times
