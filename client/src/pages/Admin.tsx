@@ -10,7 +10,6 @@ import { AccountDirectoryView } from '../views/admin/AccountDirectoryView';
 import { AuditTrailView } from '../views/admin/AuditTrailView';
 import { NotificationsView } from '../views/admin/NotificationsView';
 import { SettingsView } from '../views/admin/SettingsView';
-import { PageAdjustmentView } from '../views/admin/PageAdjustmentView';
 import { ExecutiveGuestConversationsPanel } from '../components/ExecutiveGuestConversationsPanel';
 import CsvTableViewer from '../components/CsvTableViewer';
 import { AdminSidebar } from '../components/admin/AdminSidebar';
@@ -179,11 +178,7 @@ export default function Admin() {
             />
           )}
 
-          {state.isFullAdmin && state.activeTab === 'page-adjustment' && (
-            <PageAdjustmentView {...themeProps} toast={toast} />
-          )}
-
-          {state.isFullAdmin && state.activeTab === 'settings' && (
+          {state.isFullAdmin && (state.activeTab === 'settings' || state.activeTab === 'page-adjustment') && (
             <SettingsView
               {...themeProps} toast={toast}
               adminProfileState={state.adminProfileState}
@@ -194,6 +189,7 @@ export default function Admin() {
               handleRemoveAvatar={state.handleRemoveAvatar}
               deleteAccount={state.deleteAccount} updatePassword={state.updatePassword}
               setActiveTab={state.setActiveTab}
+              initialViewMode={state.activeTab === 'page-adjustment' ? 'layout' : 'account'}
             />
           )}
 

@@ -17,6 +17,7 @@ export interface SettingsViewProps {
   deleteAccount?: () => Promise<void>;
   updatePassword?: (pwd: string) => Promise<void>;
   setActiveTab: (tab: string) => void;
+  initialViewMode?: 'account' | 'dashboard-layout' | 'layout';
   isLightMode: boolean;
   themeCardBg: string;
   themeBorder: string;
@@ -38,6 +39,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   deleteAccount,
   updatePassword,
   setActiveTab,
+  initialViewMode,
   isLightMode,
   themeCardBg,
   themeBorder,
@@ -46,7 +48,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   themeMuted,
   toast,
 }) => {
-  const [viewMode, setViewMode] = useState<'account' | 'dashboard-layout' | 'layout'>('account');
+  const [viewMode, setViewMode] = useState<'account' | 'dashboard-layout' | 'layout'>(initialViewMode || 'account');
   const [sendingRecoveryEmail, setSendingRecoveryEmail] = useState(false);
   const [recoverySent, setRecoverySent] = useState(false);
 
@@ -140,44 +142,21 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, borderBottom: `1px solid ${themeBorder}`, paddingBottom: 16, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <span style={{ fontSize: '.76rem', color: viewMode === 'account' ? '#0EA5E9' : viewMode === 'dashboard-layout' ? '#8B5CF6' : '#6366F1', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', display: 'inline-flex', alignItems: 'center' }}>
-            {viewMode === 'account' ? 'ADMINISTRATIVE PROFILE' : viewMode === 'dashboard-layout' ? 'PORTAL PRESENTATION & LAYOUT' : 'HERO & LANDING LAYOUT'}
-            <span style={{ margin: '0 8px', opacity: 0.25, color: themeMuted }}>•</span>
-            <button
-              type="button"
-              onClick={() => setViewMode(viewMode === 'layout' ? 'account' : 'layout')}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                padding: 0,
-                margin: 0,
-                font: 'inherit',
-                fontSize: '.72rem',
-                color: viewMode === 'layout' ? '#8B5CF6' : themeMuted,
-                textTransform: 'lowercase',
-                letterSpacing: '0.04em',
-                cursor: 'pointer',
-                opacity: viewMode === 'layout' ? 0.9 : 0.35,
-                outline: 'none',
-                transition: 'opacity 0.2s ease',
-              }}
-              title="layout"
-            >
-              layout
-            </button>
+            {viewMode === 'account' ? 'ADMINISTRATIVE PROFILE' : viewMode === 'dashboard-layout' ? 'PORTAL PRESENTATION & LAYOUT' : 'LANDING PAGE & HERO ADJUSTMENT'}
           </span>
           <h3 className="serif" style={{ fontSize: '1.6rem', margin: '4px 0 0', color: themeText }}>
             {viewMode === 'account'
               ? 'Account Profile & Settings'
               : viewMode === 'dashboard-layout'
               ? 'Guest & Users Dashboard Layout'
-              : 'Hero Titles & Landing Imagery (Secret Layout)'}
+              : 'Hero Titles & Landing Imagery (Page Adjustment)'}
           </h3>
           <p className="muted small" style={{ margin: '4px 0 0' }}>
             {viewMode === 'account'
               ? 'Update your administrative credentials, contact information, and security password.'
               : viewMode === 'dashboard-layout'
               ? 'Customize the presentation, headline greetings, and announcement banner for guest & user dashboards.'
-              : 'Secret layout settings: Customize headline titles, subtitle descriptions, and hero background imagery on the public landing page.'}
+              : 'Customize headline titles, subtitle descriptions, and hero background imagery on the public landing page.'}
           </p>
         </div>
         <span style={{ fontSize: '.76rem', color: '#10B981', fontWeight: 700, background: 'rgba(16, 185, 129, 0.1)', padding: '4px 14px', borderRadius: 20, border: '1px solid rgba(16, 185, 129, 0.25)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
@@ -226,6 +205,26 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           }}
         >
           <i className="fas fa-palette" /> Change Layout of Guest & Users Dashboard
+        </button>
+        <button
+          type="button"
+          onClick={() => setViewMode('layout')}
+          style={{
+            padding: '9px 18px',
+            borderRadius: 12,
+            border: `1.5px solid ${viewMode === 'layout' ? '#6366F1' : themeBorder}`,
+            background: viewMode === 'layout' ? (isLightMode ? '#EEF2FF' : 'rgba(99, 102, 241, 0.2)') : 'transparent',
+            color: viewMode === 'layout' ? (isLightMode ? '#4338CA' : '#818CF8') : themeMuted,
+            fontWeight: 700,
+            fontSize: '.85rem',
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            transition: 'all 0.2s ease',
+          }}
+        >
+          <i className="fas fa-image" /> Page Adjustment
         </button>
       </div>
 
@@ -754,9 +753,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <i className="fas fa-sliders" style={{ color: '#8B5CF6', fontSize: 13 }} />
-              <span style={{ fontSize: '.8rem', fontWeight: 700, color: themeText }}>
-                Secret Layout Settings · Landing Page &amp; Hero Adjustment
+              <i className="fas fa-image" style={{ color: '#6366F1', fontSize: 13 }} />
+              <span style={{ fontSize: '.84rem', fontWeight: 700, color: themeText }}>
+                Page Adjustment · Landing Page &amp; Hero Imagery
               </span>
             </div>
             <button
@@ -792,34 +791,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
       )}
 
-      {/* Subtle security & system footer with stealth layout button */}
+      {/* Subtle security & system footer */}
       <div style={{ marginTop: 28, paddingTop: 16, borderTop: `1px solid ${themeBorder}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
         <span style={{ fontSize: '.72rem', color: themeMuted, opacity: 0.55 }}>
           Rock View Resort Administrative Console • RBAC Session Verified
         </span>
-        <button
-          type="button"
-          onClick={() => setViewMode(viewMode === 'layout' ? 'account' : 'layout')}
-          style={{
-            background: 'none',
-            border: 'none',
-            padding: '2px 4px',
-            margin: 0,
-            font: 'inherit',
-            fontSize: '.72rem',
-            color: viewMode === 'layout' ? '#8B5CF6' : themeMuted,
-            opacity: viewMode === 'layout' ? 0.8 : 0.28,
-            cursor: 'pointer',
-            textDecoration: 'none',
-            outline: 'none',
-            transition: 'opacity 0.2s ease',
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.7')}
-          onMouseLeave={(e) => (e.currentTarget.style.opacity = viewMode === 'layout' ? '0.8' : '0.28')}
-          title="layout"
-        >
-          layout
-        </button>
       </div>
     </div>
   );
