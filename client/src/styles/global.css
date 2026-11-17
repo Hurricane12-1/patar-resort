@@ -662,8 +662,8 @@ body.light-mode :focus-visible,
 /* Dark mode & Dark console skeletons */
 .dark .skel,
 .dark .skeleton,
-.admin-portal .skel,
-.admin-portal .skeleton,
+.admin-portal.dark-mode .skel,
+.admin-portal.dark-mode .skeleton,
 .staff-denied-container .skel,
 .sl-viewport .skel,
 .recovery-console .skel,
@@ -671,6 +671,19 @@ body.light-mode :focus-visible,
 [data-theme="dark"] .skel,
 [data-theme="dark"] .skeleton {
   background: linear-gradient(90deg, rgba(30, 41, 59, 0.7) 0%, rgba(51, 65, 85, 0.95) 50%, rgba(30, 41, 59, 0.7) 100%) !important;
+  background-size: 200% 100% !important;
+}
+
+/* Light mode explicit guarantee for Admin and Staff */
+.admin-portal.light-mode .skel,
+.admin-portal.light-mode .skeleton,
+.admin-portal:not(.dark-mode) .skel,
+.admin-portal:not(.dark-mode) .skeleton,
+.light .skel,
+.light .skeleton,
+[data-theme="light"] .skel,
+[data-theme="light"] .skeleton {
+  background: linear-gradient(90deg, #F1F5F9 0%, #E2E8F0 50%, #F1F5F9 100%) !important;
   background-size: 200% 100% !important;
 }
 
@@ -2405,10 +2418,18 @@ input[type="date"] {
 
   .dark .skel,
   .dark .skeleton,
-  .admin-portal .skel,
+  .admin-portal.dark-mode .skel,
+  .admin-portal.dark-mode .skeleton,
   .sl-viewport .skel,
   [data-theme="dark"] .skel {
     background: rgba(30, 41, 59, 0.8) !important;
+  }
+
+  .admin-portal.light-mode .skel,
+  .admin-portal.light-mode .skeleton,
+  .admin-portal:not(.dark-mode) .skel,
+  .admin-portal:not(.dark-mode) .skeleton {
+    background: #E2E8F0 !important;
   }
 }
 

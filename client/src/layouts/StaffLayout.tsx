@@ -312,51 +312,8 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
           </form>
         </div>
 
-        {/* Right: Live Metrics + Walk-In CTA + Profile */}
+        {/* Right: Duty Profile & Navigation Actions */}
         <div className="staff-header-right">
-          <div className="staff-header-metrics">
-            <div className="staff-metric-pill staff-metric-pill--occupancy">
-              <span className="staff-metric-label">Occupancy</span>
-              <span className="staff-metric-val">
-                {headerMetrics.occupancyPct !== null ? `${headerMetrics.occupancyPct}%` : '0%'}
-              </span>
-            </div>
-            <div className="staff-metric-pill staff-metric-pill--pending">
-              <span className="staff-metric-label">Pending</span>
-              <span className="staff-metric-val staff-metric-val--amber">
-                {headerMetrics.pendingCount !== null ? headerMetrics.pendingCount : 0}
-              </span>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => {
-              if (location.pathname.startsWith('/staff/operations')) {
-                window.dispatchEvent(new CustomEvent('open-staff-walkin'));
-              } else {
-                navigate('/staff/operations?action=walkin');
-              }
-            }}
-            className="staff-btn staff-btn--primary staff-header-cta"
-            title="Create Manual Booking (Walk-In / Phone / Direct Desk)"
-          >
-            <i className="fas fa-plus" />
-            <span>Manual Booking</span>
-          </button>
-
-          {allowEscalation && (
-            <button
-              type="button"
-              onClick={() => setShowEscalationModal(true)}
-              className="staff-btn staff-btn--amber staff-header-escalate"
-              title="Escalate a disputed case to /recovery"
-            >
-              <i className="fas fa-triangle-exclamation" />
-              <span className="staff-header-btn-text">Escalate</span>
-            </button>
-          )}
-
           <div className="staff-duty-pill-box" title={`Logged in as ${activeProfile?.email || 'Staff'}`}>
             <div className="staff-duty-avatar">{userInitials || 'ST'}</div>
             <div className="staff-duty-info">
