@@ -337,32 +337,28 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     [reservations, selectedRoomIds, selectedRoom.id]
   );
 
-  // What the calendars show as booked. With auto-match on, the room follows the dates,
-  // so a night is only unavailable when no room that fits the party is free.
+  // The calendar greys out a night only for a room the guest has actually chosen.
+  // While auto-match is on (no manual pick yet), it stays clean — the booked dates
+  // reflect the guest's own selection, not a room the system picked for them.
   const isDateBooked = useCallback(
     (isoStr: string) => {
-      if (roomMode === 'auto') {
-        const fitting = rooms.filter((r) => (Number(r.capacity) || 0) >= partySize);
-        if (fitting.length > 0) {
-          return fitting.every((r) => !isRoomFree(r.id, isoStr, addDaysISO(isoStr, 1), reservations));
-        }
-      }
+      if (roomMode !== 'manual') return false;
       return isBookedForSelected(isoStr);
     },
-    [roomMode, rooms, partySize, reservations, isBookedForSelected]
+    [roomMode, isBookedForSelected]
   );
 
   // Check if a date is turnaround (checkout morning of another reservation)
   const isDateTurnaround = useCallback(
     (isoStr: string) => {
-      if (!selectedRoom?.id) return false;
+      if (roomMode !== 'manual' || !selectedRoom?.id) return false;
       return reservations.some((res) => {
         if (String(res.room_id) !== String(selectedRoom.id)) return false;
         if (res.status === 'cancelled') return false;
         return isoStr === res.check_out;
       });
     },
-    [reservations, selectedRoom]
+    [roomMode, reservations, selectedRoom]
   );
 
   // Conflict detection across every selected room for the current range.
