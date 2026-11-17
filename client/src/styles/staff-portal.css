@@ -621,9 +621,12 @@
   }
 }
 
-/* Collapsible Left Sidebar */
+/* Collapsible Left Sidebar (Pinned Sticky Navigation Rail) */
 .staff-sidebar {
   width: 240px;
+  height: calc(100vh - 64px);
+  position: sticky;
+  top: 64px;
   background: #FFFFFF;
   border-right: 1px solid #E2E8F0;
   display: flex;
@@ -632,6 +635,8 @@
   transition: width 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.22s ease;
   flex-shrink: 0;
   box-sizing: border-box;
+  overflow: hidden;
+  z-index: 20;
 }
 
 @media (max-width: 1023px) {
@@ -640,6 +645,7 @@
     top: 0;
     bottom: 0;
     left: 0;
+    height: 100vh;
     z-index: 50;
     transform: translateX(-100%);
     box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
@@ -657,6 +663,10 @@
 .staff-sidebar-top {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* Sidebar Brand Header */
@@ -790,6 +800,7 @@
   padding: 12px;
   border-top: 1px solid #F1F5F9;
   background: #F8FAFC;
+  flex-shrink: 0;
 }
 
 .staff-footer-card {
@@ -851,10 +862,58 @@
   box-sizing: border-box;
 }
 
+/* Dedicated Sub-View Viewports — Separated from 3-Column Middle View */
+.staff-main-viewport--accounting,
+.staff-main-viewport--reception {
+  background-color: #F8FAFC;
+  background-image: none !important;
+}
+
 .staff-page-container {
   max-width: 1650px;
   margin: 0 auto;
   width: 100%;
+}
+
+.staff-page-container--accounting,
+.staff-page-container--reception {
+  max-width: 1440px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 24px 28px 60px;
+  box-sizing: border-box;
+}
+
+/* Clearance Restricted Boundary Card */
+.staff-denied-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 180px);
+  padding: 40px 20px;
+  box-sizing: border-box;
+}
+
+.staff-denied-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 20px;
+  padding: 40px 32px;
+  max-width: 500px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+}
+
+.staff-denied-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  margin: 0 auto 16px;
 }
 
 /* ──────────────────────────────────────────────────────────────────────────

@@ -533,9 +533,13 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
           </div>
         </aside>
 
-        {/* 3. MAIN WORKSPACE VIEWPORT */}
-        <main className="staff-main-viewport">
-          <div className="staff-page-container">
+        {/* 3. MAIN WORKSPACE VIEWPORT (Separated Layout: Full-Width for Ledgers & Reception, Grid for Dashboard) */}
+        <main
+          className={`staff-main-viewport ${location.pathname.startsWith('/staff/accounting') ? 'staff-main-viewport--accounting' : ''} ${location.pathname.startsWith('/staff/reception') ? 'staff-main-viewport--reception' : ''}`}
+        >
+          <div
+            className={`staff-page-container ${location.pathname.startsWith('/staff/accounting') ? 'staff-page-container--accounting' : ''} ${location.pathname.startsWith('/staff/reception') ? 'staff-page-container--reception' : ''}`}
+          >
             {children}
           </div>
         </main>
