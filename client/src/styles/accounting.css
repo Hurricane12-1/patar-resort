@@ -153,3 +153,22 @@
   font-weight: 800 !important;
   white-space: nowrap !important;
 }
+
+/* ── Light-Mode Table & Ledger Overrides ── */
+.table th,
+.table thead th {
+  background: #F1F5F9 !important;
+  color: #475569 !important;
+  border-bottom: 2px solid #E2E8F0 !important;
+  font-weight: 700 !important;
+}
+
+.table td {
+  background: #FFFFFF !important;
+  color: #0F172A !important;
+  border-bottom: 1px solid #F1F5F9 !important;
+}
+
+.table tbody tr:hover td {
+  background: #F8FAFC !important;
+}
