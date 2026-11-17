@@ -282,14 +282,15 @@
 
 /* App Shell Wrapper */
 .staff-app-shell {
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   background-color: #F8FAFC;
   color: #1E293B;
   font-family: 'Inter', 'Plus Jakarta Sans', -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
+  overflow: hidden;
 }
 
 /* 1. TOP CLEAN HEADER BAR */
@@ -602,7 +603,8 @@
 .staff-body-wrap {
   display: flex;
   flex: 1;
-  min-height: calc(100vh - 64px);
+  height: calc(100vh - 64px);
+  max-height: calc(100vh - 64px);
   position: relative;
   overflow: hidden;
 }
@@ -621,12 +623,10 @@
   }
 }
 
-/* Collapsible Left Sidebar (Pinned Sticky Navigation Rail) */
+/* Collapsible Left Sidebar (Pinned Fixed-Height Navigation Rail) */
 .staff-sidebar {
   width: 240px;
-  height: calc(100vh - 64px);
-  position: sticky;
-  top: 64px;
+  height: 100%;
   background: #FFFFFF;
   border-right: 1px solid #E2E8F0;
   display: flex;
@@ -854,6 +854,7 @@
 .staff-main-viewport {
   flex: 1;
   min-width: 0;
+  height: 100%;
   background-color: #F8FAFC;
   background-image: radial-gradient(#E2E8F0 1px, transparent 1px);
   background-size: 20px 20px;
