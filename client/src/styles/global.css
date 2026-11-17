@@ -645,18 +645,74 @@ body.light-mode :focus-visible,
   box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
 }
 
-.skel {
+/* ============ UNIVERSAL ULTRA-SMOOTH SKELETON LOADER ============ */
+.skel,
+.skeleton {
+  position: relative;
+  overflow: hidden;
   height: 36px;
-  border-radius: 8px;
-  background: linear-gradient(90deg, rgba(30, 41, 59, 0.6) 25%, rgba(51, 65, 85, 0.8) 50%, rgba(30, 41, 59, 0.6) 75%);
+  border-radius: 12px;
+  background: linear-gradient(90deg, #F1F5F9 0%, #E2E8F0 50%, #F1F5F9 100%);
   background-size: 200% 100%;
-  animation: shimmer 1.2s infinite;
+  animation: skel-shimmer 1.5s linear infinite !important;
+  will-change: background-position;
+  transform: translateZ(0);
 }
 
-@keyframes shimmer {
-  to {
+/* Dark mode & Dark console skeletons */
+.dark .skel,
+.dark .skeleton,
+.admin-portal .skel,
+.admin-portal .skeleton,
+.staff-denied-container .skel,
+.sl-viewport .skel,
+.recovery-console .skel,
+.resident-login-pane .skel,
+[data-theme="dark"] .skel,
+[data-theme="dark"] .skeleton {
+  background: linear-gradient(90deg, rgba(30, 41, 59, 0.7) 0%, rgba(51, 65, 85, 0.95) 50%, rgba(30, 41, 59, 0.7) 100%) !important;
+  background-size: 200% 100% !important;
+}
+
+@keyframes skel-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
     background-position: -200% 0;
   }
+}
+
+/* Backward-compatibility for any components referencing @keyframes shimmer */
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ============ UNIVERSAL GUARANTEED SPINNER ANIMATION ============ */
+@keyframes fa-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.fa-spin,
+.fa-spinner,
+[class*="fa-spin"],
+.spin-anim,
+.rl-spinner,
+.gate-spin {
+  display: inline-block;
+  animation: fa-spin 1s linear infinite !important;
+  transform-origin: center center;
+  will-change: transform;
 }
 
 .bc-summary {
@@ -2314,10 +2370,54 @@ input[type="date"] {
   }
 }
 
+/* ============ ACCESSIBLE REDUCED MOTION (WCAG 2.2 COMPLIANT) ============ */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
+  /* Suppress non-essential layout shifts, decorative zooms and hero scrolls */
+  .reveal,
+  .kenburns,
+  .jd-stage,
+  .scroll-cue::after,
+  .cine-bg,
+  .mask > span,
+  .animate-ticker,
+  .animate-kenburns {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* Essential loading indicators retain smooth, gentle feedback rather than crashing into 0.01ms strobes */
+  .fa-spin,
+  .fa-spinner,
+  [class*="fa-spin"],
+  .spin-anim,
+  .gate-spin,
+  .rl-spinner,
+  .rv-auth-spin {
+    animation: fa-spin 1.5s linear infinite !important;
+  }
+
+  .skel,
+  .skeleton {
+    animation: skel-pulse 1.8s ease-in-out infinite !important;
+    background: #E2E8F0 !important;
+    background-size: 100% 100% !important;
+  }
+
+  .dark .skel,
+  .dark .skeleton,
+  .admin-portal .skel,
+  .sl-viewport .skel,
+  [data-theme="dark"] .skel {
+    background: rgba(30, 41, 59, 0.8) !important;
+  }
+}
+
+@keyframes skel-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
   }
 }
 

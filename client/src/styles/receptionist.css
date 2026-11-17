@@ -270,12 +270,13 @@
 /* ── Loading skeleton ── */
 .skel {
   border-radius: 16px;
-  background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
+  background: linear-gradient(90deg, #F1F5F9 0%, #E2E8F0 50%, #F1F5F9 100%);
   background-size: 200% 100%;
-  animation: skel-shimmer 1.4s infinite;
+  animation: skel-shimmer 1.5s linear infinite;
+  will-change: background-position;
 }
 
 @keyframes skel-shimmer {
-  0%   { background-position: 200% center; }
-  100% { background-position: -200% center; }
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }

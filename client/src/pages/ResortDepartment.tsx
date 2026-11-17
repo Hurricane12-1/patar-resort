@@ -774,7 +774,13 @@ export default function ResortDepartment() {
               </button>
             </div>
 
-            {threads.length === 0 ? (
+            {loadingData ? (
+              <div className="staff-ops-col-body" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div className="skel" style={{ height: 62, borderRadius: 12 }} />
+                <div className="skel" style={{ height: 62, borderRadius: 12 }} />
+                <div className="skel" style={{ height: 62, borderRadius: 12 }} />
+              </div>
+            ) : threads.length === 0 ? (
               <div className="staff-ops-col-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                 <div className="staff-ops-cleared-box" style={{ padding: '36px 16px', textAlign: 'center', width: '100%', boxSizing: 'border-box' }}>
                   <i className="fas fa-comments" style={{ fontSize: '1.8rem', color: '#94A3B8', marginBottom: 8 }} />
@@ -1129,7 +1135,12 @@ export default function ResortDepartment() {
             </div>
 
             <div className="staff-ops-col-body">
-              {pendingReservations.length === 0 ? (
+              {loadingData ? (
+                <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div className="skel" style={{ height: 110, borderRadius: 14 }} />
+                  <div className="skel" style={{ height: 110, borderRadius: 14 }} />
+                </div>
+              ) : pendingReservations.length === 0 ? (
                 <div className="staff-ops-cleared-box" style={{ padding: '40px 16px', textAlign: 'center' }}>
                   <div className="flex items-center justify-center gap-2 mb-1.5">
                     <i className="fas fa-circle-check" style={{ color: '#10B981', fontSize: '1.2rem' }} />
@@ -1309,45 +1320,55 @@ export default function ResortDepartment() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rooms.map((rm) => (
-                    <tr key={rm.id}>
-                      <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0F172A', borderRight: '1px solid #E2E8F0' }}>
-                        <div>{rm.name}</div>
-                        <small style={{ color: '#64748B', fontWeight: 500 }}>{formatPHP(rm.rate)}/night</small>
-                      </td>
-                      {Array.from({ length: 14 }, (_, i) => addDaysISO(tapeStartDate, i)).map((iso) => {
-                        const stay = bookings.find((b) => b.roomId === rm.id && iso >= b.checkIn && iso < b.checkOut && b.status !== 'cancelled');
-                        const isStart = stay && stay.checkIn === iso;
-                        return (
-                          <td key={iso} style={{ padding: 4, textAlign: 'center', borderRight: '1px solid #F1F5F9' }}>
-                            {stay ? (
-                              <div className={`staff-ops-tape-block ${stay.status === 'checked_in' ? 'block--emerald' : 'block--sky'}`}>
-                                {isStart ? stay.guest.split(' ')[0] : '•••'}
-                              </div>
-                            ) : (
-                              <div
-                                onClick={() => {
-                                  const rate = Number(rm.rate) || 3500;
-                                  setNewReservation((prev) => ({
-                                    ...prev,
-                                    room_id: rm.id,
-                                    check_in: iso,
-                                    check_out: addDaysISO(iso, 1),
-                                    total_php: rate,
-                                  }));
-                                  setShowManualBookingModal(true);
-                                }}
-                                className="staff-ops-tape-empty"
-                                title={`Click to book ${rm.name} on ${iso}`}
-                              >
-                                +
-                              </div>
-                            )}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
+                  {loadingData ? (
+                    Array.from({ length: 4 }).map((_, idx) => (
+                      <tr key={idx}>
+                        <td colSpan={15} style={{ padding: '8px 14px' }}>
+                          <div className="skel" style={{ height: 42, borderRadius: 8 }} />
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    rooms.map((rm) => (
+                      <tr key={rm.id}>
+                        <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0F172A', borderRight: '1px solid #E2E8F0' }}>
+                          <div>{rm.name}</div>
+                          <small style={{ color: '#64748B', fontWeight: 500 }}>{formatPHP(rm.rate)}/night</small>
+                        </td>
+                        {Array.from({ length: 14 }, (_, i) => addDaysISO(tapeStartDate, i)).map((iso) => {
+                          const stay = bookings.find((b) => b.roomId === rm.id && iso >= b.checkIn && iso < b.checkOut && b.status !== 'cancelled');
+                          const isStart = stay && stay.checkIn === iso;
+                          return (
+                            <td key={iso} style={{ padding: 4, textAlign: 'center', borderRight: '1px solid #F1F5F9' }}>
+                              {stay ? (
+                                <div className={`staff-ops-tape-block ${stay.status === 'checked_in' ? 'block--emerald' : 'block--sky'}`}>
+                                  {isStart ? stay.guest.split(' ')[0] : '•••'}
+                                </div>
+                              ) : (
+                                <div
+                                  onClick={() => {
+                                    const rate = Number(rm.rate) || 3500;
+                                    setNewReservation((prev) => ({
+                                      ...prev,
+                                      room_id: rm.id,
+                                      check_in: iso,
+                                      check_out: addDaysISO(iso, 1),
+                                      total_php: rate,
+                                    }));
+                                    setShowManualBookingModal(true);
+                                  }}
+                                  className="staff-ops-tape-empty"
+                                  title={`Click to book ${rm.name} on ${iso}`}
+                                >
+                                  +
+                                </div>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -1611,6 +1632,16 @@ export default function ResortDepartment() {
 
                 return matchesCat && matchesStatus && matchesQuery;
               });
+
+              if (loadingData) {
+                return (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 24 }}>
+                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                      <div key={i} className="skel" style={{ height: 320, borderRadius: 16 }} />
+                    ))}
+                  </div>
+                );
+              }
 
               if (filteredRooms.length === 0) {
                 return (
@@ -2132,6 +2163,17 @@ export default function ResortDepartment() {
                 );
               });
 
+              if (loadingData) {
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    <div className="skel" style={{ height: 56, borderRadius: 12 }} />
+                    <div className="skel" style={{ height: 56, borderRadius: 12 }} />
+                    <div className="skel" style={{ height: 56, borderRadius: 12 }} />
+                    <div className="skel" style={{ height: 56, borderRadius: 12 }} />
+                  </div>
+                );
+              }
+
               if (filtered.length === 0) {
                 return (
                   <div style={{ textAlign: 'center', padding: '48px 20px', background: '#F8FAFC', borderRadius: 16, border: '1px dashed #CBD5E1' }}>
@@ -2226,7 +2268,16 @@ export default function ResortDepartment() {
             </button>
           </div>
 
-          {threads.length === 0 ? (
+          {loadingData ? (
+            <div style={{ padding: 24, display: 'grid', gridTemplateColumns: '320px 1fr', gap: 24, minHeight: 520 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div className="skel" style={{ height: 64, borderRadius: 12 }} />
+                <div className="skel" style={{ height: 64, borderRadius: 12 }} />
+                <div className="skel" style={{ height: 64, borderRadius: 12 }} />
+              </div>
+              <div className="skel" style={{ height: 480, borderRadius: 16 }} />
+            </div>
+          ) : threads.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 20px', background: '#F8FAFC', borderRadius: 16, margin: 24, border: '1px dashed #CBD5E1' }}>
               <i className="fas fa-comments" style={{ fontSize: '2.4rem', color: '#94A3B8', marginBottom: 12 }} />
               <h3 style={{ margin: 0, fontWeight: 800, color: '#1E293B', fontSize: '1.1rem' }}>No Active Guest Inquiries</h3>
@@ -2365,7 +2416,12 @@ export default function ResortDepartment() {
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {tasks.filter((t) => t.dept === 'housekeeping').length === 0 ? (
+                {loadingData ? (
+                  <>
+                    <div className="skel" style={{ height: 60, borderRadius: 10 }} />
+                    <div className="skel" style={{ height: 60, borderRadius: 10 }} />
+                  </>
+                ) : tasks.filter((t) => t.dept === 'housekeeping').length === 0 ? (
                   <div style={{ padding: '36px 16px', textAlign: 'center', background: '#F8FAFC', borderRadius: 10, border: '1px dashed #CBD5E1' }}>
                     <i className="fas fa-check-circle" style={{ color: '#10B981', fontSize: '1.6rem', marginBottom: 8 }} />
                     <div style={{ fontWeight: 700, color: '#334155', fontSize: '.88rem' }}>All Accommodations Clean &amp; Ready</div>
@@ -2397,7 +2453,12 @@ export default function ResortDepartment() {
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {tasks.filter((t) => t.dept === 'maintenance').length === 0 ? (
+                {loadingData ? (
+                  <>
+                    <div className="skel" style={{ height: 60, borderRadius: 10 }} />
+                    <div className="skel" style={{ height: 60, borderRadius: 10 }} />
+                  </>
+                ) : tasks.filter((t) => t.dept === 'maintenance').length === 0 ? (
                   <div style={{ padding: '36px 16px', textAlign: 'center', background: '#F8FAFC', borderRadius: 10, border: '1px dashed #CBD5E1' }}>
                     <i className="fas fa-circle-check" style={{ color: '#10B981', fontSize: '1.6rem', marginBottom: 8 }} />
                     <div style={{ fontWeight: 700, color: '#334155', fontSize: '.88rem' }}>All Equipment Operational</div>
