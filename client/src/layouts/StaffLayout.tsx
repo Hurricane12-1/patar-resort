@@ -99,10 +99,45 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
         subtitle: 'Folio billing, audits & revenue control',
       };
     }
+    if (location.search.includes('view=calendar')) {
+      return {
+        section: 'Schedule & Availability',
+        title: 'Calendar & 14-Day Room Tape Chart',
+        subtitle: 'Visual occupancy timeline across all villas & cottages',
+      };
+    }
+    if (location.search.includes('view=rooms')) {
+      return {
+        section: 'Property Inventory',
+        title: 'Rooms & Cottages',
+        subtitle: 'Manage unit readiness & nightly rates',
+      };
+    }
+    if (location.search.includes('view=reservations')) {
+      return {
+        section: 'Front Desk Ledger',
+        title: 'Reservations Queue',
+        subtitle: 'Incoming requests & active stay ledger',
+      };
+    }
+    if (location.search.includes('view=messages')) {
+      return {
+        section: 'Guest Communications',
+        title: 'Guest Messages Inbox',
+        subtitle: 'Direct front desk & tour dispatch inquiries',
+      };
+    }
+    if (location.search.includes('view=housekeeping')) {
+      return {
+        section: 'Property Operations',
+        title: 'Housekeeping & Maintenance',
+        subtitle: 'Turnovers, linen refresh & room repair dispatch',
+      };
+    }
     return {
-      section: 'Front Desk',
+      section: 'Command Center',
       title: 'Operations Terminal',
-      subtitle: 'Room readiness, department queues & task dispatch',
+      subtitle: 'Room readiness, interactive calendar & queue dispatch',
     };
   };
 
@@ -256,10 +291,10 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
           <button
             type="button"
             onClick={() => {
-              if (location.pathname.startsWith('/staff/reception')) {
-                document.querySelector('.staff-input-control')?.scrollIntoView({ behavior: 'smooth' });
+              if (location.pathname.startsWith('/staff/operations')) {
+                window.dispatchEvent(new CustomEvent('open-staff-walkin'));
               } else {
-                navigate('/staff/reception');
+                navigate('/staff/operations?action=walkin');
               }
             }}
             className="staff-btn staff-btn--primary staff-header-cta"
@@ -332,14 +367,65 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
             <div className="staff-nav-group">
               {!isSidebarCollapsed && <div className="staff-nav-group-title">Front Desk</div>}
               <nav className="staff-nav-menu">
-                <NavLink
-                  to="/staff/operations"
-                  className={({ isActive }) => `staff-nav-item ${isActive ? 'active' : ''}`}
+                <Link
+                  to="/staff/operations?view=dashboard"
+                  className={`staff-nav-item ${location.pathname.startsWith('/staff/operations') && (!location.search || location.search.includes('view=dashboard')) ? 'active' : ''}`}
                   title="Operations Terminal"
                 >
                   <i className="fas fa-table-columns staff-nav-icon" />
                   {!isSidebarCollapsed && <span className="staff-nav-text">Operations Terminal</span>}
-                </NavLink>
+                </Link>
+
+                <Link
+                  to="/staff/operations?view=calendar"
+                  className={`staff-nav-item ${location.search.includes('view=calendar') ? 'active' : ''}`}
+                  title="Calendar & Tape Chart"
+                >
+                  <i className="fas fa-calendar-days staff-nav-icon staff-nav-icon--sky" />
+                  {!isSidebarCollapsed && <span className="staff-nav-text">Calendar &amp; Tape Chart</span>}
+                </Link>
+
+                <Link
+                  to="/staff/operations?view=rooms"
+                  className={`staff-nav-item ${location.search.includes('view=rooms') ? 'active' : ''}`}
+                  title="Rooms & Cottages"
+                >
+                  <i className="fas fa-house staff-nav-icon" style={{ color: '#10B981' }} />
+                  {!isSidebarCollapsed && (
+                    <div className="flex items-center justify-between flex-1">
+                      <span className="staff-nav-text">Rooms &amp; Cottages</span>
+                      <span className="staff-ops-badge" style={{ fontSize: '10px' }}>6</span>
+                    </div>
+                  )}
+                </Link>
+
+                <Link
+                  to="/staff/operations?view=reservations"
+                  className={`staff-nav-item ${location.search.includes('view=reservations') ? 'active' : ''}`}
+                  title="Reservations Queue"
+                >
+                  <i className="fas fa-inbox staff-nav-icon staff-nav-icon--amber" />
+                  {!isSidebarCollapsed && (
+                    <div className="flex items-center justify-between flex-1">
+                      <span className="staff-nav-text">Reservations Queue</span>
+                      <span className="staff-ops-badge" style={{ fontSize: '10px', background: '#FEF3C7', color: '#B45309', borderColor: '#FDE68A' }}>3</span>
+                    </div>
+                  )}
+                </Link>
+
+                <Link
+                  to="/staff/operations?view=messages"
+                  className={`staff-nav-item ${location.search.includes('view=messages') ? 'active' : ''}`}
+                  title="Guest Messages"
+                >
+                  <i className="fas fa-comments staff-nav-icon staff-nav-icon--indigo" />
+                  {!isSidebarCollapsed && (
+                    <div className="flex items-center justify-between flex-1">
+                      <span className="staff-nav-text">Guest Messages</span>
+                      <span className="staff-ops-badge" style={{ fontSize: '10px', background: '#E0F2FE', color: '#0369A1', borderColor: '#BAE6FD' }}>2</span>
+                    </div>
+                  )}
+                </Link>
 
                 <NavLink
                   to="/staff/reception"
@@ -347,8 +433,28 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
                   title="Reception & Check-In"
                 >
                   <i className="fas fa-bell-concierge staff-nav-icon staff-nav-icon--sky" />
-                  {!isSidebarCollapsed && <span className="staff-nav-text">Reception &amp; Check-In</span>}
+                  {!isSidebarCollapsed && <span className="staff-nav-text">Reception Desk</span>}
                 </NavLink>
+              </nav>
+            </div>
+
+            {/* Navigation Section 2: Property Ops */}
+            <div className="staff-nav-group">
+              {!isSidebarCollapsed && <div className="staff-nav-group-title">Property Ops</div>}
+              <nav className="staff-nav-menu">
+                <Link
+                  to="/staff/operations?view=housekeeping"
+                  className={`staff-nav-item ${location.search.includes('view=housekeeping') ? 'active' : ''}`}
+                  title="Housekeeping & Maintenance"
+                >
+                  <i className="fas fa-broom staff-nav-icon" style={{ color: '#0D9488' }} />
+                  {!isSidebarCollapsed && (
+                    <div className="flex items-center justify-between flex-1">
+                      <span className="staff-nav-text">Housekeeping &amp; Maint.</span>
+                      <span className="staff-ops-badge" style={{ fontSize: '10px', background: '#FEE2E2', color: '#B91C1C', borderColor: '#FECACA' }}>3</span>
+                    </div>
+                  )}
+                </Link>
 
                 <NavLink
                   to="/staff/accounting"
