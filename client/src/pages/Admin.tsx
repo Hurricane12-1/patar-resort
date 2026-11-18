@@ -58,7 +58,7 @@ export default function Admin() {
   };
 
   return (
-    <div className={`admin-portal ${state.isLightMode ? 'light-mode' : 'dark-mode'}`}>
+    <div className={`admin-portal ${state.isLightMode ? 'light-mode' : 'dark-mode'} resort-fade-enter`}>
       {state.sidebarMobileOpen && (
         <div
           onClick={() => state.setSidebarMobileOpen(false)}

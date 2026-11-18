@@ -201,7 +201,7 @@ export default function Rooms() {
             <SkeletonCardGrid count={6} />
           </div>
         ) : (
-          <div className="rooms-grid">
+          <div className="rooms-grid resort-fade-enter">
             {list.map((s, i) => (
               <RoomCardItem
                 key={s.id || s.slug}

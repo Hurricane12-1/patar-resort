@@ -645,18 +645,38 @@ body.light-mode :focus-visible,
   box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
 }
 
-/* ============ UNIVERSAL ULTRA-SMOOTH SKELETON LOADER ============ */
+/* ============ UNIVERSAL ULTRA-SMOOTH SKELETON LOADER (ZERO-FLICKER GPU ACCELERATED) ============ */
 .skel,
 .skeleton {
   position: relative;
   overflow: hidden;
   height: 36px;
   border-radius: 12px;
-  background: linear-gradient(90deg, #F1F5F9 0%, #E2E8F0 50%, #F1F5F9 100%);
-  background-size: 200% 100%;
-  animation: skel-shimmer 1.5s linear infinite !important;
-  will-change: background-position;
+  background-color: #E2E8F0;
+  contain: paint layout;
   transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+.skel::after,
+.skeleton::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.45) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: skel-gpu-shimmer 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite !important;
+  will-change: transform;
+  pointer-events: none;
 }
 
 /* Dark mode & Dark console skeletons */
@@ -670,8 +690,25 @@ body.light-mode :focus-visible,
 .resident-login-pane .skel,
 [data-theme="dark"] .skel,
 [data-theme="dark"] .skeleton {
-  background: linear-gradient(90deg, rgba(30, 41, 59, 0.7) 0%, rgba(51, 65, 85, 0.95) 50%, rgba(30, 41, 59, 0.7) 100%) !important;
-  background-size: 200% 100% !important;
+  background-color: rgba(30, 41, 59, 0.8) !important;
+}
+
+.dark .skel::after,
+.dark .skeleton::after,
+.admin-portal.dark-mode .skel::after,
+.admin-portal.dark-mode .skeleton::after,
+.staff-denied-container .skel::after,
+.sl-viewport .skel::after,
+.recovery-console .skel::after,
+.resident-login-pane .skel::after,
+[data-theme="dark"] .skel::after,
+[data-theme="dark"] .skeleton::after {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0) 100%
+  ) !important;
 }
 
 /* Light mode explicit guarantee for Admin and Staff */
@@ -683,26 +720,50 @@ body.light-mode :focus-visible,
 .light .skeleton,
 [data-theme="light"] .skel,
 [data-theme="light"] .skeleton {
-  background: linear-gradient(90deg, #F1F5F9 0%, #E2E8F0 50%, #F1F5F9 100%) !important;
-  background-size: 200% 100% !important;
+  background-color: #E2E8F0 !important;
 }
 
+.admin-portal.light-mode .skel::after,
+.admin-portal.light-mode .skeleton::after,
+.admin-portal:not(.dark-mode) .skel::after,
+.admin-portal:not(.dark-mode) .skeleton::after,
+.light .skel::after,
+.light .skeleton::after,
+[data-theme="light"] .skel::after,
+[data-theme="light"] .skeleton::after {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.5) 50%,
+    rgba(255, 255, 255, 0) 100%
+  ) !important;
+}
+
+@keyframes skel-gpu-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Backward-compatibility for any components referencing @keyframes shimmer or skel-shimmer */
 @keyframes skel-shimmer {
   0% {
-    background-position: 200% 0;
+    transform: translateX(-100%);
   }
   100% {
-    background-position: -200% 0;
+    transform: translateX(100%);
   }
 }
 
-/* Backward-compatibility for any components referencing @keyframes shimmer */
 @keyframes shimmer {
   0% {
-    background-position: 200% 0;
+    transform: translateX(-100%);
   }
   100% {
-    background-position: -200% 0;
+    transform: translateX(100%);
   }
 }
 
@@ -749,24 +810,40 @@ body.light-mode :focus-visible,
 
 @keyframes resort-pulse-glow {
   0%, 100% {
-    transform: scale(0.92);
+    transform: scale(0.92) translateZ(0);
     opacity: 0.35;
   }
   50% {
-    transform: scale(1.15);
+    transform: scale(1.15) translateZ(0);
     opacity: 0.75;
   }
 }
 
 @keyframes resort-icon-breath {
   0%, 100% {
-    transform: scale(0.94);
+    transform: scale(0.94) translateZ(0);
     opacity: 0.85;
   }
   50% {
-    transform: scale(1.08);
+    transform: scale(1.08) translateZ(0);
     opacity: 1;
   }
+}
+
+@keyframes resort-fade-in {
+  from {
+    opacity: 0;
+    transform: translateZ(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateZ(0);
+  }
+}
+
+.resort-fade-enter {
+  animation: resort-fade-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: opacity, transform;
 }
 
 @keyframes resort-shimmer-sweep {
@@ -2481,7 +2558,11 @@ input[type="date"] {
   .skeleton {
     animation: skel-pulse 1.8s ease-in-out infinite !important;
     background: #E2E8F0 !important;
-    background-size: 100% 100% !important;
+  }
+
+  .skel::after,
+  .skeleton::after {
+    display: none !important;
   }
 
   .dark .skel,

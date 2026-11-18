@@ -290,7 +290,7 @@ export const ApprovalRequestsView: React.FC<ApprovalRequestsViewProps> = ({
       </div>
 
       {/* Loading Skeleton */}
-      {loadingPriceRequests ? (
+      {loadingPriceRequests && priceRequests.length === 0 ? (
         <div style={{ padding: '24px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
           <ResortSpinner size="md" variant="amber" icon="tags" message="Loading Price Approval Requests…" submessage="Synchronizing pending managerial discount authorizations." />
           <div style={{ width: '100%' }}>

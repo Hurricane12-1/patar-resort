@@ -376,7 +376,7 @@ export default function MyBookings() {
       )}
 
       {/* BOOKINGS LIST */}
-      {loading ? (
+      {loading && list.length === 0 ? (
         <div style={{ padding: '32px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
           <ResortSpinner size="lg" message="Loading your resort bookings…" submessage="Verifying your digital vouchers with the live reservation registry." />
           <div style={{ width: '100%', maxWidth: 780 }}>
@@ -407,7 +407,7 @@ export default function MyBookings() {
           </Link>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="resort-fade-enter" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}>
             {([
               { key: 'all' as const, label: `All (${list.length})` },

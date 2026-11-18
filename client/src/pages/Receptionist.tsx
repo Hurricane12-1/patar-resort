@@ -150,7 +150,7 @@ export default function Receptionist() {
   }
 
   return (
-    <div className="container" style={{ maxWidth: 1280, margin: '0 auto', padding: '0 20px 60px' }}>
+    <div className="container resort-fade-enter" style={{ maxWidth: 1280, margin: '0 auto', padding: '0 20px 60px' }}>
       {/* Page Header */}
       <div className="sec-head">
         <div>

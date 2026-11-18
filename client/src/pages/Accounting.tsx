@@ -67,7 +67,7 @@ export default function Accounting() {
   const { overview: ov = {} } = data;
 
   return (
-    <div className="staff-accounting-workspace">
+    <div className="staff-accounting-workspace resort-fade-enter">
       {/* Executive Header Banner */}
       <div className="accounting-header-banner">
         <div>

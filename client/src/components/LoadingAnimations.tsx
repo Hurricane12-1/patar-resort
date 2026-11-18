@@ -43,7 +43,7 @@ export const ResortSpinner: React.FC<ResortSpinnerProps> = ({
 
   return (
     <div
-      className={`resort-spinner-wrapper ${className}`}
+      className={`resort-spinner-wrapper resort-fade-enter ${className}`}
       style={{
         display: 'inline-flex',
         flexDirection: 'column',
@@ -51,6 +51,9 @@ export const ResortSpinner: React.FC<ResortSpinnerProps> = ({
         justifyContent: 'center',
         gap: 12,
         padding: 8,
+        contain: 'layout paint',
+        transform: 'translateZ(0)',
+        willChange: 'opacity, transform',
         ...style,
       }}
     >
@@ -65,17 +68,19 @@ export const ResortSpinner: React.FC<ResortSpinnerProps> = ({
           justifyContent: 'center',
         }}
       >
-        {/* Outer ambient wave ripple */}
+        {/* Outer ambient wave ripple (GPU-composited glow) */}
         <div
           className="resort-ripple-ring"
           style={{
             position: 'absolute',
-            inset: -8,
+            inset: -6,
             borderRadius: '50%',
             background: c.glow,
-            filter: 'blur(8px)',
+            boxShadow: `0 0 14px ${c.glow}`,
             opacity: 0.6,
             animation: 'resort-pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            transform: 'translateZ(0)',
+            willChange: 'transform, opacity',
           }}
         />
 
@@ -89,7 +94,7 @@ export const ResortSpinner: React.FC<ResortSpinnerProps> = ({
           }}
         />
 
-        {/* Rotating gradient progress ring */}
+        {/* Rotating gradient progress ring (GPU-composited zero-paint) */}
         <div
           className="resort-spinning-ring"
           style={{
@@ -100,7 +105,9 @@ export const ResortSpinner: React.FC<ResortSpinnerProps> = ({
             borderTopColor: c.mid,
             borderRightColor: c.start,
             animation: 'resort-spin 0.9s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite',
-            filter: `drop-shadow(0 0 6px ${c.glow})`,
+            boxShadow: `0 0 8px ${c.glow}`,
+            transform: 'translateZ(0)',
+            willChange: 'transform',
           }}
         />
 
@@ -116,6 +123,8 @@ export const ResortSpinner: React.FC<ResortSpinnerProps> = ({
               borderLeftColor: c.mid,
               animation: 'resort-spin-reverse 1.4s linear infinite',
               opacity: 0.7,
+              transform: 'translateZ(0)',
+              willChange: 'transform',
             }}
           />
         )}
@@ -129,6 +138,8 @@ export const ResortSpinner: React.FC<ResortSpinnerProps> = ({
               color: c.mid,
               animation: 'resort-icon-breath 2s ease-in-out infinite',
               zIndex: 2,
+              transform: 'translateZ(0)',
+              willChange: 'transform, opacity',
             }}
           />
         )}
@@ -181,7 +192,7 @@ export const AppPageLoader: React.FC<{
 }) => {
   return (
     <div
-      className="resort-page-loader-container"
+      className="resort-page-loader-container resort-fade-enter"
       style={{
         minHeight: '60vh',
         display: 'flex',
@@ -193,6 +204,7 @@ export const AppPageLoader: React.FC<{
         maxWidth: 1200,
         margin: '0 auto',
         boxSizing: 'border-box',
+        contain: 'layout style',
       }}
     >
       {/* Top Resort Spinner Hero */}
@@ -264,11 +276,13 @@ export const AppPageLoader: React.FC<{
 export const SkeletonCardGrid: React.FC<{ count?: number }> = ({ count = 6 }) => {
   return (
     <div
+      className="resort-fade-enter"
       style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))',
         gap: 24,
         width: '100%',
+        contain: 'layout paint',
       }}
     >
       {Array.from({ length: count }).map((_, i) => (
@@ -306,12 +320,14 @@ export const SkeletonCardGrid: React.FC<{ count?: number }> = ({ count = 6 }) =>
 export const SkeletonTable: React.FC<{ rows?: number }> = ({ rows = 5 }) => {
   return (
     <div
+      className="resort-fade-enter"
       style={{
         width: '100%',
         borderRadius: 16,
         overflow: 'hidden',
         border: '1px solid rgba(255, 255, 255, 0.08)',
         background: 'rgba(255, 255, 255, 0.02)',
+        contain: 'layout paint',
       }}
     >
       <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>

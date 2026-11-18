@@ -263,7 +263,7 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
             })}
           </div>
 
-          {searchingUsers ? (
+          {searchingUsers && users.length === 0 ? (
             <div style={{ padding: '24px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
               <ResortSpinner size="md" variant="primary" icon="id-badge" message="Loading Staff Directory…" submessage="Verifying employee accounts and department roles." />
               <div style={{ width: '100%' }}>
@@ -456,7 +456,7 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
             })()}
           </div>
 
-          {searchingUsers ? (
+          {searchingUsers && users.length === 0 ? (
             <div style={{ padding: '24px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
               <ResortSpinner size="md" variant="primary" icon="id-badge" message="Loading Staff Directory…" submessage="Verifying employee accounts and department roles." />
               <div style={{ width: '100%' }}>

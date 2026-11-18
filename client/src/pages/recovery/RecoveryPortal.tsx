@@ -420,7 +420,7 @@ export default function RecoveryPortal() {
       {/* TAB 1: DISPUTED RESERVATIONS (100% LIVE SUPABASE DATA) */}
       {activeTab === 'cases' && (
         <div>
-          {loading ? (
+          {loading && disputedBookings.length === 0 ? (
             <div style={{ padding: '48px 16px', display: 'flex', justifyContent: 'center' }}>
               <ResortSpinner
                 size="lg"
