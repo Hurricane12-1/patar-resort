@@ -348,7 +348,7 @@ export default function AddReservationModal({
 }: AddReservationModalProps) {
   const [showWalkInCalendar, setShowWalkInCalendar] = useState(false);
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
-  const [walkInTypeFilter, setWalkInTypeFilter] = useState<'all' | 'room' | 'cottage'>('all');
+  const [walkInTypeFilter, setWalkInTypeFilter] = useState<'all' | OfferingType>('all');
   const guestNameInputRef = useRef<HTMLInputElement | null>(null);
   const phoneInputRef = useRef<HTMLInputElement | null>(null);
   const topWarningRef = useRef<HTMLDivElement | null>(null);
@@ -1060,12 +1060,17 @@ export default function AddReservationModal({
                 </span>
               </div>
 
-              {/* Quick Two-Tier Accommodation Filter */}
-              <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+              {/* Quick Accommodation Type Filters */}
+              <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
                 {([
                   { key: 'all' as const, label: 'All Units' },
                   { key: 'room' as const, label: 'Rooms (Overnight)' },
+                  { key: 'villa' as const, label: 'Villas' },
+                  { key: 'suite' as const, label: 'Suites' },
                   { key: 'cottage' as const, label: 'Cottages (Day-Use)' },
+                  { key: 'cabana' as const, label: 'Cabanas' },
+                  { key: 'offer' as const, label: 'Tours & Offers' },
+                  { key: 'event' as const, label: 'Events' },
                 ]).map((f) => (
                   <button
                     key={f.key}

@@ -35,16 +35,18 @@ const TYPE_OPTIONS: { key: OfferingType; label: string; icon: string; badgeBg: s
 ];
 
 export const getCategoryOptionsForType = (type: OfferingType): readonly string[] => {
+  let list: readonly string[];
   switch (type) {
-    case 'villa': return VILLA_CATEGORIES;
-    case 'suite': return SUITE_CATEGORIES;
-    case 'cottage': return COTTAGE_CATEGORIES;
-    case 'cabana': return CABANA_CATEGORIES;
-    case 'offer': return OFFER_CATEGORIES;
-    case 'event': return EVENT_CATEGORIES;
+    case 'villa': list = VILLA_CATEGORIES; break;
+    case 'suite': list = SUITE_CATEGORIES; break;
+    case 'cottage': list = COTTAGE_CATEGORIES; break;
+    case 'cabana': list = CABANA_CATEGORIES; break;
+    case 'offer': list = OFFER_CATEGORIES; break;
+    case 'event': list = EVENT_CATEGORIES; break;
     case 'room':
-    default: return ROOM_CATEGORIES;
+    default: list = ROOM_CATEGORIES; break;
   }
+  return list.filter((item) => item !== 'Rooms' && item !== 'Villas' && item !== 'Suites' && item !== 'Cottages' && item !== 'Cabanas');
 };
 
 const BATHROOM_PRESETS = [

@@ -10,6 +10,7 @@ import {
   getRateUnitLabel,
   calculateOfferingTotal,
   extractBookingTimes,
+  normalizeCategoryName,
 } from '../lib/offeringSpecs.js';
 import { redis } from '../lib/redis.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
@@ -29,9 +30,11 @@ export function normalizeRoom(room) {
   ].filter((u, idx, arr) => typeof u === 'string' && u.trim() && arr.indexOf(u) === idx);
   const primaryImage = mergedImages[0] || '';
 
+  const cleanCategory = normalizeCategoryName(parsed.displayCategory || room.category);
+
   return {
     ...room,
-    category: parsed.displayCategory || room.category,
+    category: cleanCategory,
     offering_type: parsed.offering_type,
     specs: parsed.specs,
     rate_unit: getRateUnitLabel(parsed.offering_type, parsed.specs),
@@ -462,7 +465,7 @@ r.post('/rooms', authenticate, requireAdmin,
   validate(z.object({
     name: z.string().min(2).max(100),
     slug: z.string().min(2).max(100).optional(),
-    offering_type: z.enum(['room', 'cottage']).optional(),
+    offering_type: z.enum(['room', 'villa', 'suite', 'cottage', 'cabana', 'offer', 'event']).optional(),
     category: z.string().default('Room'),
     description: z.string().default(''),
     capacity: z.coerce.number().int().min(1).default(2),
@@ -475,9 +478,8 @@ r.post('/rooms', authenticate, requireAdmin,
     is_active: z.boolean().default(true),
   })),
   asyncH(async (req, res) => {
-    const cat = String(req.body.category || '').trim().toLowerCase();
-    if (req.body.category && !['room', 'rooms', 'cottage', 'cottages'].includes(cat)) {
-      throw new ApiError(422, 'Category Integrity Violation: Only "Rooms" and "Cottages" are valid accommodation categories. Deprecated classes (Villas, Suites, Garden Rooms, Dormitories) and Island Tours are prohibited.', { code: 'ERR_ADMIN_INV_SCHEMA' });
+    if (req.body.category) {
+      req.body.category = normalizeCategoryName(req.body.category);
     }
     let slug = req.body.slug;
     if (!slug) {
@@ -508,7 +510,7 @@ r.patch('/rooms/:id', authenticate, requireAdmin,
   validate(z.object({
     name: z.string().min(2).max(100).optional(),
     slug: z.string().min(2).max(100).optional(),
-    offering_type: z.enum(['room', 'cottage']).optional(),
+    offering_type: z.enum(['room', 'villa', 'suite', 'cottage', 'cabana', 'offer', 'event']).optional(),
     category: z.string().optional(),
     description: z.string().optional(),
     capacity: z.coerce.number().int().min(1).optional(),
@@ -522,10 +524,7 @@ r.patch('/rooms/:id', authenticate, requireAdmin,
   })),
   asyncH(async (req, res) => {
     if (req.body.category) {
-      const cat = String(req.body.category || '').trim().toLowerCase();
-      if (!['room', 'rooms', 'cottage', 'cottages'].includes(cat)) {
-        throw new ApiError(422, 'Category Integrity Violation: Only "Rooms" and "Cottages" are valid accommodation categories. Deprecated classes (Villas, Suites, Garden Rooms, Dormitories) and Island Tours are prohibited.', { code: 'ERR_ADMIN_INV_SCHEMA' });
-      }
+      req.body.category = normalizeCategoryName(req.body.category);
     }
     const client = (await getSystemAdminClient().catch(() => null)) || admin;
 

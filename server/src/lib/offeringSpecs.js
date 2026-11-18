@@ -6,19 +6,33 @@
  * Island Tours and non-lodging activities are decoupled into the separate AddOnService entity.
  */
 
-export const ALLOWED_LODGING_CATEGORIES = ['Rooms', 'Villas', 'Suites', 'Cottages', 'Cabanas', 'Offers', 'Events'];
+export const ALLOWED_LODGING_CATEGORIES = ['Room', 'Villa', 'Suite', 'Cottage', 'Cabana', 'Offer', 'Event'];
 
 export const OFFERING_TYPES = ['room', 'villa', 'suite', 'cottage', 'cabana', 'offer', 'event'];
 
 export const DB_SAFE_CATEGORIES = ['Standard', 'Cottage'];
 
-export const ROOM_CATEGORIES = ['Room', 'Rooms'];
-export const VILLA_CATEGORIES = ['Villa', 'Villas'];
-export const SUITE_CATEGORIES = ['Suite', 'Suites'];
-export const COTTAGE_CATEGORIES = ['Cottage', 'Cottages'];
-export const CABANA_CATEGORIES = ['Cabana', 'Cabanas'];
-export const OFFER_CATEGORIES = ['Island Tour', 'Island Tours'];
-export const EVENT_CATEGORIES = ['Event Pavilion', 'Event Pavilions'];
+export function normalizeCategoryName(raw) {
+  const s = String(raw || '').trim();
+  if (!s) return 'Room';
+  const lower = s.toLowerCase();
+  if (lower === 'rooms') return 'Room';
+  if (lower === 'villas') return 'Villa';
+  if (lower === 'suites') return 'Suite';
+  if (lower === 'cottages') return 'Cottage';
+  if (lower === 'cabanas') return 'Cabana';
+  if (lower === 'offers') return 'Offer';
+  if (lower === 'events') return 'Event';
+  return s;
+}
+
+export const ROOM_CATEGORIES = ['Room', 'Standard Room', 'Deluxe Room', 'Family Room'];
+export const VILLA_CATEGORIES = ['Villa', 'Oceanfront Villa', 'Cliffside Villa', 'Grand Villa'];
+export const SUITE_CATEGORIES = ['Suite', 'Sunset Loft Suite', 'Seaview Suite', 'Executive Penthouse'];
+export const COTTAGE_CATEGORIES = ['Cottage', 'Beachfront Cottage', 'Family Cottage', 'Open-Air Kubo'];
+export const CABANA_CATEGORIES = ['Cabana', 'Garden Cabana', 'Poolside Cabana', 'Shaded Daybed Cabana'];
+export const OFFER_CATEGORIES = ['Island Tour', 'Boat Charter', 'Snorkeling Excursion', 'Water Activity'];
+export const EVENT_CATEGORIES = ['Event Pavilion', 'Sunset Function Hall', 'Beach Gazebo Venue'];
 
 export function toDbSafeCategory(displayCategory, offeringType = 'room') {
   const clean = String(displayCategory || '').trim().toLowerCase();
@@ -249,13 +263,15 @@ export function parseOfferingTags(rawAmenities = [], itemMeta = {}) {
     }
   }
 
-  const effectiveMeta = { ...itemMeta, category: displayCategory || itemMeta?.category };
+  const rawCategory = displayCategory || itemMeta?.category || '';
+  const effectiveCategory = normalizeCategoryName(rawCategory);
+  const effectiveMeta = { ...itemMeta, category: effectiveCategory };
   const offering_type = explicitType || inferOfferingType({ ...effectiveMeta, amenities: arr });
   const specs = sanitizeSpecsForType(offering_type, { ...(parsedSpecs || {}), ...(itemMeta?.specs || {}) });
 
   return {
     offering_type,
-    displayCategory: displayCategory || itemMeta?.category || '',
+    displayCategory: effectiveCategory,
     specs,
     imgList,
     cleanAmenities,
@@ -267,7 +283,7 @@ export function packOfferingAmenities({ offering_type, category, specs, amenitie
   const resolvedType = OFFERING_TYPES.includes(String(offering_type || '').toLowerCase())
     ? String(offering_type).toLowerCase()
     : (existingParsed.offering_type || 'room');
-  const resolvedCategory = String(category || existingParsed.displayCategory || '').trim();
+  const resolvedCategory = normalizeCategoryName(String(category || existingParsed.displayCategory || 'Room').trim());
 
   const baseClean = Array.isArray(amenities)
     ? amenities.filter((a) => typeof a === 'string' && !a.startsWith('__'))

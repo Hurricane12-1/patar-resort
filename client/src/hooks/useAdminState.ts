@@ -415,6 +415,7 @@ export function useAdminState() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === 'object') {
+          if (parsed.category === 'Rooms') parsed.category = 'Room';
           return { ...defaultRoomDraft, ...parsed };
         }
       }

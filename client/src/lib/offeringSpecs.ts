@@ -6,8 +6,22 @@
  * Island Tours and non-lodging activities are decoupled into the separate AddOnService entity.
  */
 
-export const ALLOWED_LODGING_CATEGORIES = ['Rooms', 'Villas', 'Suites', 'Cottages', 'Cabanas', 'Offers', 'Events'] as const;
+export const ALLOWED_LODGING_CATEGORIES = ['Room', 'Villa', 'Suite', 'Cottage', 'Cabana', 'Offer', 'Event'] as const;
 export type LodgingCategory = (typeof ALLOWED_LODGING_CATEGORIES)[number];
+
+export function normalizeCategoryName(raw: string): string {
+  const s = String(raw || '').trim();
+  if (!s) return 'Room';
+  const lower = s.toLowerCase();
+  if (lower === 'rooms') return 'Room';
+  if (lower === 'villas') return 'Villa';
+  if (lower === 'suites') return 'Suite';
+  if (lower === 'cottages') return 'Cottage';
+  if (lower === 'cabanas') return 'Cabana';
+  if (lower === 'offers') return 'Offer';
+  if (lower === 'events') return 'Event';
+  return s;
+}
 
 export type OfferingType = 'room' | 'villa' | 'suite' | 'cottage' | 'cabana' | 'offer' | 'event';
 
@@ -280,11 +294,13 @@ export function parseOfferingTags(rawAmenities: any[] = [], itemMeta: any = {}) 
     }
   }
 
-  const effectiveMeta = { ...itemMeta, category: displayCategory || itemMeta?.category };
+  const rawCategory = displayCategory || itemMeta?.category || '';
+  const effectiveCategory = normalizeCategoryName(rawCategory);
+  const effectiveMeta = { ...itemMeta, category: effectiveCategory };
   const offering_type: OfferingType = explicitType || inferOfferingType({ ...effectiveMeta, amenities: arr });
   const specs = sanitizeSpecsForType(offering_type, { ...(parsedSpecs || {}), ...(itemMeta?.specs || {}) });
 
-  return { offering_type, displayCategory: displayCategory || itemMeta?.category || '', specs, imgList, cleanAmenities };
+  return { offering_type, displayCategory: effectiveCategory, specs, imgList, cleanAmenities };
 }
 
 export function packOfferingAmenities({
@@ -308,7 +324,7 @@ export function packOfferingAmenities({
   const resolvedType: OfferingType = offering_type && OFFERING_TYPES.includes(offering_type)
     ? offering_type
     : existingParsed.offering_type;
-  const resolvedCategory = String(category || existingParsed.displayCategory || '').trim();
+  const resolvedCategory = normalizeCategoryName(String(category || existingParsed.displayCategory || 'Room').trim());
 
   const baseClean = Array.isArray(amenities)
     ? amenities.filter((a) => typeof a === 'string' && !a.startsWith('__'))
