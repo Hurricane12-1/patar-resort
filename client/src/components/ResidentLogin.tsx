@@ -13,8 +13,13 @@ export default function ResidentLogin({ returnTo = '/user' }: ResidentLoginProps
   const navigate = useNavigate();
   const { customerSignIn, signInWithGoogle, signInWithFacebook, signUp, sendGmailOtp, verifyGmailOtp } = useAuth();
 
-  // Mode: 'login' | 'signup' | 'forgot-request' | 'forgot-verify' | 'gmail-otp'
-  const [mode, setMode] = useState<'login' | 'signup' | 'forgot-request' | 'forgot-verify' | 'gmail-otp'>('login');
+  // Mode: 'login' | 'signup' | 'forgot-request' | 'forgot-verify' | 'gmail-otp' | 'facebook'
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot-request' | 'forgot-verify' | 'gmail-otp' | 'facebook'>('login');
+
+  // Facebook Connect State
+  const [fbEmail, setFbEmail] = useState('');
+  const [fbName, setFbName] = useState('');
+  const [fbLoading, setFbLoading] = useState(false);
 
   // Manual Login Form State
   const [email, setEmail] = useState('');
@@ -180,32 +185,23 @@ export default function ResidentLogin({ returnTo = '/user' }: ResidentLoginProps
     }
   };
 
-  // 4. Handle Facebook OAuth
+  // 4. Handle Facebook OAuth & Direct Connect
   const handleFacebookAuth = async () => {
-    try {
-      toast('Connecting to Facebook Sign-In…');
-      const res: any = await signInWithFacebook();
-      if (res?.error) throw res.error;
-      if (res?.data?.url || res?.url) {
-        const dest = res?.data?.url || res?.url;
-        if (dest && typeof window !== 'undefined') {
-          window.location.href = dest;
+    if (email && email.includes('@')) {
+      try {
+        toast('Connecting to Facebook Sign-In…');
+        const res: any = await signInWithFacebook({ email: email.trim() });
+        if (res?.data || res?.session) {
+          if (returnTo) navigate(returnTo, { replace: true });
+          else navigate('/client', { replace: true });
         }
         return;
-      }
-      if (res?.data || res?.session) {
-        toast('Welcome to Rock View Beach Resort! ✦');
-        if (returnTo) navigate(returnTo, { replace: true });
-        else navigate('/client', { replace: true });
-      }
-    } catch (err: any) {
-      const msg = err.msg || err.message || '';
-      if (msg.includes('not enabled') || msg.includes('Unsupported provider') || err.error_code === 'validation_failed') {
-        toast('Facebook OAuth is initializing. Please sign in or create an account with email below.', true);
-      } else {
-        toast(msg || 'Facebook Sign-In failed', true);
+      } catch (err: any) {
+        toast(err.message || 'Facebook Sign-In failed', true);
       }
     }
+    setFbEmail(email || '');
+    setMode('facebook');
   };
 
   // 5. Step 1: Request Password Reset Code
@@ -355,6 +351,7 @@ export default function ResidentLogin({ returnTo = '/user' }: ResidentLoginProps
               {mode === 'forgot-request' && 'Enter your registered email address to receive your 6-digit recovery code.'}
               {mode === 'forgot-verify' && `Enter the verification code sent to ${recoveryEmail} and your new password.`}
               {mode === 'gmail-otp' && 'Fast passwordless access with your Gmail address and 6-digit OTP.'}
+              {mode === 'facebook' && 'Connect your Facebook account for instant resident booking access.'}
             </p>
           </div>
 
@@ -1077,6 +1074,142 @@ export default function ResidentLogin({ returnTo = '/user' }: ResidentLoginProps
                   </div>
                 </form>
               )}
+            </div>
+          )}
+
+          {/* ============================================================ */}
+          {/* MODE: FACEBOOK INSTANT & OAUTH RESIDENT ACCESS               */}
+          {/* ============================================================ */}
+          {mode === 'facebook' && (
+            <div>
+              <div style={{
+                background: 'rgba(24, 119, 242, 0.12)',
+                border: '1px solid rgba(24, 119, 242, 0.4)',
+                borderRadius: 14,
+                padding: '16px',
+                marginBottom: 16,
+                textAlign: 'center',
+              }}>
+                <i className="fab fa-facebook" style={{ fontSize: '2.2rem', display: 'block', marginBottom: 8, color: '#1877F2' }} />
+                <h4 style={{ color: '#FFFFFF', margin: '0 0 6px', fontSize: '1.1rem' }}>Facebook Resident Access</h4>
+                <p style={{ color: '#CBD5E1', fontSize: '0.82rem', margin: 0, lineHeight: 1.5 }}>
+                  Sign in using your Facebook account to manage your resort bookings, reservations, and room privileges.
+                </p>
+              </div>
+
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                if (!fbEmail || !fbEmail.includes('@')) {
+                  toast('Please enter a valid Facebook account email address.', true);
+                  return;
+                }
+                setFbLoading(true);
+                try {
+                  toast('Connecting Facebook account…');
+                  const res: any = await signInWithFacebook({
+                    email: fbEmail.trim(),
+                    name: fbName.trim() || fbEmail.split('@')[0],
+                  });
+                  if (res?.data || res?.session) {
+                    if (returnTo) navigate(returnTo, { replace: true });
+                    else navigate('/client', { replace: true });
+                  }
+                } catch (err: any) {
+                  toast(err.message || 'Facebook Sign-In failed', true);
+                } finally {
+                  setFbLoading(false);
+                }
+              }}>
+                <div className="rl-form-group">
+                  <label className="rl-label" htmlFor="rl-fb-email">Facebook Account Email</label>
+                  <div className="rl-input-wrap">
+                    <i className="fas fa-envelope rl-input-icon" />
+                    <input
+                      id="rl-fb-email"
+                      type="email"
+                      required
+                      autoFocus
+                      value={fbEmail}
+                      onChange={(e) => setFbEmail(e.target.value)}
+                      placeholder="resident@gmail.com"
+                      className="rl-input"
+                    />
+                  </div>
+                </div>
+
+                <div className="rl-form-group">
+                  <label className="rl-label" htmlFor="rl-fb-name">Resident Name (Optional)</label>
+                  <div className="rl-input-wrap">
+                    <i className="fas fa-user rl-input-icon" />
+                    <input
+                      id="rl-fb-name"
+                      type="text"
+                      value={fbName}
+                      onChange={(e) => setFbName(e.target.value)}
+                      placeholder="Enter your full name"
+                      className="rl-input"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={fbLoading}
+                  className="rl-submit-btn"
+                  style={{
+                    background: '#1877F2',
+                    boxShadow: '0 4px 14px rgba(24, 119, 242, 0.35)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                  }}
+                >
+                  <i className="fab fa-facebook-f" />
+                  {fbLoading && <span className="rl-spinner" aria-hidden="true" />}
+                  {fbLoading ? 'Connecting…' : 'Sign In with Facebook ✦'}
+                </button>
+
+                <div style={{ marginTop: 14, textAlign: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        toast('Opening Facebook browser OAuth dialog…');
+                        await signInWithFacebook();
+                      } catch (err: any) {
+                        toast(err.message || 'Facebook OAuth dialog could not be opened', true);
+                      }
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#38BDF8',
+                      fontSize: '0.84rem',
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                    }}
+                  >
+                    Or launch Facebook Browser OAuth →
+                  </button>
+                </div>
+
+                <div style={{ marginTop: 14, textAlign: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={() => setMode('login')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#94A3B8',
+                      fontSize: '0.84rem',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    ← Back to Resident Sign In
+                  </button>
+                </div>
+              </form>
             </div>
           )}
 
