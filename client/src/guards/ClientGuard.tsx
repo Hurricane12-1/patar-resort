@@ -37,7 +37,7 @@ export default function ClientGuard({ children, allowPreview = false }: ClientGu
 
     if (errorParam) {
       const cleanDesc = errorDesc ? decodeURIComponent(errorDesc).replace(/\+/g, ' ') : '';
-      toast(cleanDesc || 'OAuth sign-in could not be completed. Please use direct Facebook or Google sign-in.', true);
+      toast(cleanDesc || 'Sign-in could not be completed. Please try again.', true);
       window.history.replaceState(null, '', window.location.pathname);
       setResolvingAuth(false);
       return;

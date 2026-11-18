@@ -1268,8 +1268,8 @@ export function AuthProvider({ children }) {
         return { data: { session: sessionObj, profile: prof }, error: null };
       }
 
-      // 2. Facebook OAuth via Supabase (matches Facebook App ID 2637066290063213 configured in Supabase)
-      const redirectUrl = `${window.location.origin}/auth/callback`;
+      // 2. Facebook 1-click auto-login OAuth via Supabase (identical flow to Google OAuth)
+      const redirectUrl = `${window.location.origin}/client`;
       const res = await supabase.auth.signInWithOAuth({
         provider: 'facebook',
         options: {
@@ -1282,7 +1282,7 @@ export function AuthProvider({ children }) {
         window.location.href = res.data.url;
         return res.data;
       }
-      return { ok: true, data: res?.data };
+      return { ok: true };
     },
     sendGmailOtp: async (email: string, name?: string) => {
       const cleanEmail = email.trim().toLowerCase();

@@ -11,14 +11,9 @@ export default function AuthModal() {
     sendGmailOtp, verifyGmailOtp,
   } = useAuth();
 
-  const [mode, setMode] = useState<'in' | 'up' | '2fa' | 'recovery' | 'gmail-otp' | 'facebook'>('in');
+  const [mode, setMode] = useState<'in' | 'up' | '2fa' | 'recovery' | 'gmail-otp'>('in');
   const [signupProvider, setSignupProvider] = useState<'gmail' | 'facebook' | 'email'>('gmail');
   const [termsAccepted, setTermsAccepted] = useState(false);
-
-  // Facebook Connect State
-  const [fbEmail, setFbEmail] = useState('');
-  const [fbName, setFbName] = useState('');
-  const [fbLoading, setFbLoading] = useState(false);
 
   const [f, setF] = useState({
     first_name: '', middle_name: '', last_name: '', full_name: '',
@@ -155,22 +150,19 @@ export default function AuthModal() {
   }
 
   async function handleFacebookLogin() {
-    // If the guest already typed an email into the input, connect directly!
-    if (f.email && f.email.includes('@')) {
-      try {
-        toast('Connecting with Facebook…');
-        const res: any = await signInWithFacebook({
-          email: f.email.trim(),
-          name: [f.first_name, f.last_name].filter(Boolean).join(' ') || f.email.split('@')[0],
-        });
-        if (res?.data?.session) return;
-      } catch (err: any) {
-        toast(err.message || 'Facebook Sign-In failed', true);
+    try {
+      toast('Connecting to Facebook Sign-In…');
+      const res: any = await signInWithFacebook();
+      if (res?.error) throw res.error;
+      if (res?.data?.url) return;
+      if (res?.data || res?.session) {
+        setAuthOpen(false);
+        toast('Welcome to Rock View Beach Resort! ✦');
       }
+    } catch (err: any) {
+      const msg = err.msg || err.message || '';
+      toast(msg || 'Facebook Sign-In failed', true);
     }
-    setFbEmail(f.email || recoveryEmail || '');
-    setFbName([f.first_name, f.last_name].filter(Boolean).join(' '));
-    setMode('facebook');
   }
 
   // Intelligent user name inferrer from Google / Gmail address
@@ -534,10 +526,10 @@ export default function AuthModal() {
         <div className="modal-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <span className="label light">
-              {mode === 'in' ? 'Guest Access' : mode === 'up' ? 'Client Sign-Up' : mode === '2fa' ? '2FA Confirmation' : mode === 'gmail-otp' ? 'Gmail OTP Access' : mode === 'facebook' ? 'Facebook Connect' : 'Account Recovery'}
+              {mode === 'in' ? 'Guest Access' : mode === 'up' ? 'Client Sign-Up' : mode === '2fa' ? '2FA Confirmation' : mode === 'gmail-otp' ? 'Gmail OTP Access' : 'Account Recovery'}
             </span>
             <h3 className="serif" style={{ fontSize: '1.7rem', marginTop: 2 }}>
-              {mode === 'in' ? 'Welcome Back' : mode === 'up' ? 'Join Resort' : mode === '2fa' ? 'Verify & Finalize' : mode === 'gmail-otp' ? 'Instant Sign In' : mode === 'facebook' ? 'Facebook Access' : 'Reset Password'}
+              {mode === 'in' ? 'Welcome Back' : mode === 'up' ? 'Join Resort' : mode === '2fa' ? 'Verify & Finalize' : mode === 'gmail-otp' ? 'Instant Sign In' : 'Reset Password'}
             </h3>
           </div>
           <button
@@ -553,7 +545,7 @@ export default function AuthModal() {
           {/* ============================================================ */}
           {/* MODE: SIGN IN / SIGN UP MAIN VIEW */}
           {/* ============================================================ */}
-          {mode !== 'recovery' && mode !== '2fa' && mode !== 'gmail-otp' && mode !== 'facebook' && (
+          {mode !== 'recovery' && mode !== '2fa' && mode !== 'gmail-otp' && (
             <>
               {/* SOCIAL AUTH BUTTONS: GOOGLE & FACEBOOK */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
@@ -1628,126 +1620,6 @@ export default function AuthModal() {
             </div>
           )}
 
-          {/* ============================================================ */}
-          {/* MODE: FACEBOOK INSTANT & OAUTH RESIDENT ACCESS               */}
-          {/* ============================================================ */}
-          {mode === 'facebook' && (
-            <div style={{ marginTop: 6 }}>
-              <div style={{
-                background: 'rgba(24, 119, 242, 0.12)',
-                border: '1px solid rgba(24, 119, 242, 0.4)',
-                borderRadius: 12,
-                padding: '16px',
-                marginBottom: 16,
-                textAlign: 'center',
-              }}>
-                <i className="fab fa-facebook" style={{ fontSize: '2.2rem', display: 'block', marginBottom: 8, color: '#1877F2' }} />
-                <h4 style={{ color: '#FFFFFF', margin: '0 0 6px', fontSize: '1.1rem' }}>Facebook Resident Access</h4>
-                <p style={{ color: '#CBD5E1', fontSize: '0.82rem', margin: 0, lineHeight: 1.5 }}>
-                  Connect your Facebook account to access your resident bookings, reservations, and room privileges instantly.
-                </p>
-              </div>
-
-              <form onSubmit={async (e) => {
-                e.preventDefault();
-                if (!fbEmail || !fbEmail.includes('@')) {
-                  toast('Please enter a valid Facebook account email address.', true);
-                  return;
-                }
-                setFbLoading(true);
-                try {
-                  toast('Connecting Facebook account…');
-                  await signInWithFacebook({
-                    email: fbEmail.trim(),
-                    name: fbName.trim() || fbEmail.split('@')[0],
-                  });
-                } catch (err: any) {
-                  toast(err.message || 'Facebook Sign-In failed', true);
-                } finally {
-                  setFbLoading(false);
-                }
-              }}>
-                <div className="field">
-                  <label>FACEBOOK ACCOUNT EMAIL *</label>
-                  <input
-                    type="email"
-                    required
-                    autoFocus
-                    value={fbEmail}
-                    placeholder="resident@gmail.com"
-                    onChange={(e) => setFbEmail(e.target.value)}
-                  />
-                </div>
-
-                <div className="field" style={{ marginTop: 10 }}>
-                  <label>RESIDENT NAME (OPTIONAL)</label>
-                  <input
-                    type="text"
-                    value={fbName}
-                    placeholder="Enter your full name"
-                    onChange={(e) => setFbName(e.target.value)}
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="btn"
-                  style={{
-                    width: '100%',
-                    justifyContent: 'center',
-                    marginTop: 14,
-                    padding: '12px',
-                    background: '#1877F2',
-                    color: '#FFFFFF',
-                    fontWeight: 700,
-                    borderRadius: 10,
-                    border: 'none',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 12px rgba(24, 119, 242, 0.35)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                  }}
-                  disabled={fbLoading}
-                >
-                  <i className="fab fa-facebook-f" />
-                  {fbLoading ? 'Connecting…' : 'Sign In with Facebook ✦'}
-                </button>
-
-                <div style={{ marginTop: 12, textAlign: 'center' }}>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      try {
-                        toast('Opening Facebook browser OAuth dialog…');
-                        await signInWithFacebook();
-                      } catch (err: any) {
-                        toast(err.message || 'Facebook OAuth dialog could not be opened', true);
-                      }
-                    }}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#38BDF8',
-                      fontSize: '0.8rem',
-                      cursor: 'pointer',
-                      textDecoration: 'underline',
-                    }}
-                  >
-                    Or launch Facebook Browser OAuth →
-                  </button>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setMode('in')}
-                  style={{ width: '100%', background: 'none', border: 'none', color: 'var(--muted)', fontSize: '0.82rem', marginTop: 14, cursor: 'pointer', textAlign: 'center' }}
-                >
-                  ← Back to Standard Sign In
-                </button>
-              </form>
-            </div>
-          )}
         </div>
       </div>
     </div>
