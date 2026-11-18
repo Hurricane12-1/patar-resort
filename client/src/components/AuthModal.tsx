@@ -153,15 +153,11 @@ export default function AuthModal() {
     try {
       toast('Connecting to Facebook Sign-In…');
       const res: any = await signInWithFacebook();
-      if (res?.needsPrompt) {
-        let initialEmail = f.email || recoveryEmail || '';
-        let initialName = [f.first_name, f.last_name].filter(Boolean).join(' ');
-        const emailInput = window.prompt('Enter your Facebook account email to connect:', initialEmail);
-        if (emailInput && emailInput.includes('@')) {
-          await signInWithFacebook({
-            email: emailInput.trim(),
-            name: initialName || emailInput.split('@')[0],
-          });
+      if (res?.error) throw res.error;
+      if (res?.data?.url || res?.url) {
+        const dest = res?.data?.url || res?.url;
+        if (dest && typeof window !== 'undefined') {
+          window.location.href = dest;
         }
       }
     } catch (err: any) {

@@ -56,11 +56,27 @@ export default function ResortFooter({
             </div>
             <p className="mt-5 max-w-sm text-sm font-light leading-relaxed text-white/60">{about}</p>
             <div className="mt-5 flex gap-5 text-xs text-white/50">
-              {socials.map((s) => (
-                <span key={s} className="cursor-pointer transition hover:text-cyan">
-                  {s}
-                </span>
-              ))}
+              {socials.map((s) => {
+                const sLower = s.toLowerCase();
+                let href = '#';
+                if (sLower.includes('facebook')) href = 'https://www.facebook.com/rockviewbeachresort';
+                else if (sLower.includes('instagram')) href = 'https://www.instagram.com/rockviewbeachresort';
+                else if (sLower.includes('tiktok')) href = 'https://www.tiktok.com/@rockviewbeachresort';
+                else if (sLower.includes('map')) href = 'https://maps.google.com/?q=Rock+View+Beach+Resort+Patar+Bolinao+Pangasinan';
+
+                return (
+                  <a
+                    key={s}
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="cursor-pointer transition hover:text-cyan"
+                    aria-label={`Rock View Beach Resort on ${s}`}
+                  >
+                    {s}
+                  </a>
+                );
+              })}
             </div>
           </div>
 

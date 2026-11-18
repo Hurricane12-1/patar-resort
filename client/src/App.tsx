@@ -215,7 +215,8 @@ function MainAppShell() {
             </ClientGuard>
           } />
 
-          {/* User Route Aliases */}
+          {/* User Route Aliases & OAuth Callback */}
+          <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/user" element={<AuthCallback />} />
           <Route path="/user/bookings" element={<Navigate to="/client/bookings" replace />} />
           <Route path="/user/*" element={<Navigate to="/client" replace />} />

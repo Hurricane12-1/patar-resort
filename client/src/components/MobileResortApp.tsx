@@ -3247,9 +3247,30 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
           </div>
           <p className="mt-4 font-serif text-base italic text-white/60">Where days slow to the tide.</p>
           <div className="mt-5 flex gap-6 text-xs text-white/50">
-            <span className="cursor-pointer transition hover:text-cyan">Instagram</span>
-            <span className="cursor-pointer transition hover:text-cyan">Facebook</span>
-            <span className="cursor-pointer transition hover:text-cyan">TikTok</span>
+            <a
+              href="https://www.instagram.com/rockviewbeachresort"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="cursor-pointer transition hover:text-cyan"
+            >
+              Instagram
+            </a>
+            <a
+              href="https://www.facebook.com/rockviewbeachresort"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="cursor-pointer transition hover:text-cyan"
+            >
+              Facebook
+            </a>
+            <a
+              href="https://www.tiktok.com/@rockviewbeachresort"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="cursor-pointer transition hover:text-cyan"
+            >
+              TikTok
+            </a>
           </div>
           <Link to="/client/login" className="mt-6 text-xs font-semibold uppercase tracking-wider text-cyan underline underline-offset-4">
             Sign in to account

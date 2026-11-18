@@ -184,7 +184,20 @@ export default function ResidentLogin({ returnTo = '/user' }: ResidentLoginProps
   const handleFacebookAuth = async () => {
     try {
       toast('Connecting to Facebook Sign-In…');
-      await signInWithFacebook();
+      const res: any = await signInWithFacebook();
+      if (res?.error) throw res.error;
+      if (res?.data?.url || res?.url) {
+        const dest = res?.data?.url || res?.url;
+        if (dest && typeof window !== 'undefined') {
+          window.location.href = dest;
+        }
+        return;
+      }
+      if (res?.data || res?.session) {
+        toast('Welcome to Rock View Beach Resort! ✦');
+        if (returnTo) navigate(returnTo, { replace: true });
+        else navigate('/client', { replace: true });
+      }
     } catch (err: any) {
       const msg = err.msg || err.message || '';
       if (msg.includes('not enabled') || msg.includes('Unsupported provider') || err.error_code === 'validation_failed') {

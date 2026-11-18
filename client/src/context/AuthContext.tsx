@@ -1230,7 +1230,22 @@ export function AuthProvider({ children }) {
           return { data: res, error: null };
         }
       }
-      return { needsPrompt: true };
+
+      // Facebook OAuth via Supabase (matches Facebook App ID 2637066290063213 configured in Supabase)
+      const redirectUrl = `${window.location.origin}/client`;
+      const res = await supabase.auth.signInWithOAuth({
+        provider: 'facebook',
+        options: {
+          redirectTo: redirectUrl,
+          scopes: 'email,public_profile',
+        },
+      });
+      if (res?.error) throw res.error;
+      if (res?.data?.url && typeof window !== 'undefined') {
+        window.location.href = res.data.url;
+        return res.data;
+      }
+      return { ok: true, data: res?.data };
     },
     sendGmailOtp: async (email: string, name?: string) => {
       const cleanEmail = email.trim().toLowerCase();

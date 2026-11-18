@@ -23,6 +23,16 @@ export default function Footer() {
         <div>
           <h4>Find us</h4>
           <p style={{ fontSize: '.88rem', color: '#94A3B8' }}>Brgy. Patar<br />Bolinao, Pangasinan 2406<br />+63 900 555 0123 · hello@jdbeachhouse.ph</p>
+          <div style={{ marginTop: 8 }}>
+            <a
+              href="https://www.facebook.com/rockviewbeachresort"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: '#38BDF8', fontSize: '.84rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+            >
+              <i className="fab fa-facebook" /> Facebook Page
+            </a>
+          </div>
         </div>
       </div>
       <div className="foot-bottom">
