@@ -24,12 +24,12 @@ export default function Navbar() {
   const isExecAdmin = Boolean(adminSession && adminProfile && isAdministrator(adminProfile));
   const isStaff = Boolean((staffSession && staffProfile && isInternalEmployee(staffProfile)) || (adminSession && adminProfile && isInternalEmployee(adminProfile)));
   const employeeBadge = formatDepartmentBadge(staffProfile || adminProfile);
-  const staffHome = staffProfile ? getDefaultStaffPath(staffProfile) : (adminProfile ? getDefaultStaffPath(adminProfile) : '/staff/operations');
+  const staffHome = staffProfile ? getDefaultStaffPath(staffProfile) : (adminProfile ? getDefaultStaffPath(adminProfile) : '/staff/reception');
   const links = [
     ['/', 'Home'],
     ['/rooms', 'Rooms'],
     ['/client/bookings', 'My Bookings'],
-    ...(isExecAdmin ? [['/admin', 'Admin Console'], ['/staff/operations', 'Operations']] : isStaff ? [[staffHome, employeeBadge]] : []),
+    ...(isExecAdmin ? [['/admin', 'Admin Console']] : isStaff ? [[staffHome, employeeBadge]] : []),
   ];
 
   return (

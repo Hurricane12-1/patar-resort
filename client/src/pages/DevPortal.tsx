@@ -101,7 +101,7 @@ export default function DevPortal() {
   const activeGlow = themeGlows[activeTheme];
 
   // Role simulator handlers
-  const simulateRole = (role: 'admin' | 'receptionist' | 'accounting' | 'operations' | 'client' | 'clear') => {
+  const simulateRole = (role: 'admin' | 'receptionist' | 'accounting' | 'client' | 'clear') => {
     if (role === 'clear') {
       sessionStorage.removeItem('jd_admin_session');
       sessionStorage.removeItem('jd_staff_session');
@@ -676,7 +676,6 @@ export default function DevPortal() {
               { title: 'Resident Sign-In', path: '/client/login', icon: 'fa-right-to-bracket', color: '#06B6D4', desc: 'Google & Facebook OAuth' },
               { title: 'Front Desk Reception', path: '/staff/reception', icon: 'fa-bell-concierge', color: '#F59E0B', desc: 'Arrivals, check-in, keycards' },
               { title: 'Accounting & Folios', path: '/staff/accounting', icon: 'fa-calculator', color: '#8B5CF6', desc: 'Ledger, invoices, payments' },
-              { title: 'Department Operations', path: '/staff/operations', icon: 'fa-screwdriver-wrench', color: '#EC4899', desc: 'Housekeeping & maintenance' },
               { title: 'Executive Admin Console', path: '/admin', icon: 'fa-gauge-high', color: '#6366F1', desc: 'Governance, analytics, settings' },
               { title: 'Dispute & Recovery Hub', path: '/recovery', icon: 'fa-scale-balanced', color: '#EF4444', desc: 'Audit, refund resolution' },
             ].map((dest) => (
@@ -790,21 +789,6 @@ export default function DevPortal() {
               }}
             >
               Simulate: Accounting
-            </button>
-            <button
-              onClick={() => simulateRole('operations')}
-              style={{
-                padding: '8px 14px',
-                borderRadius: 10,
-                background: 'rgba(236, 72, 153, 0.15)',
-                border: '1px solid rgba(236, 72, 153, 0.35)',
-                color: '#F472B6',
-                fontWeight: 600,
-                fontSize: '0.8rem',
-                cursor: 'pointer',
-              }}
-            >
-              Simulate: Operations
             </button>
             <button
               onClick={() => simulateRole('client')}
