@@ -314,7 +314,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
         })}
       </nav>
 
-      {/* SIDEBAR FOOTER: HELP BUTTON & SIGN OUT */}
+      {/* SIDEBAR FOOTER: DEV SANDBOX, HELP BUTTON & SIGN OUT */}
       <div
         style={{
           padding: 14,
@@ -324,6 +324,34 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           gap: 10,
         }}
       >
+        <a
+          href="/dev"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Open Developer Sandbox & Feature Planting Ground (/dev)"
+          style={{
+            width: '100%',
+            height: 38,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+            gap: 10,
+            padding: sidebarCollapsed ? 0 : '0 14px',
+            borderRadius: 12,
+            border: '1px solid rgba(56, 189, 248, 0.25)',
+            background: 'rgba(56, 189, 248, 0.08)',
+            color: '#38BDF8',
+            fontWeight: 600,
+            fontSize: '.82rem',
+            textDecoration: 'none',
+            boxSizing: 'border-box',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          <i className="fas fa-terminal" style={{ fontSize: 16, color: '#38BDF8' }} />
+          {!sidebarCollapsed && 'Dev Sandbox (/dev)'}
+        </a>
+
         <button
           onClick={signOut}
           style={{

@@ -15,6 +15,7 @@ export default function Footer() {
           <Link to="/">Book a stay</Link>
           <Link to="/rooms">Rooms & rates</Link>
           <Link to="/my-bookings">My bookings</Link>
+          <Link to="/dev" style={{ opacity: 0.55, fontSize: '.78rem' }}>Developer Sandbox</Link>
         </div>
         <div>
           <h4>Front desk</h4>
