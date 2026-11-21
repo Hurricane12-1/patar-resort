@@ -3,6 +3,7 @@ import { env } from '../config/env.js';
 import { admin, userClient, getSystemAdminClient } from '../lib/supabase.js';
 import { ApiError } from './errors.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
+import { isBenchmarkRequest } from '../lib/benchmarkMode.js';
 
 const VALID_DEPARTMENTS = new Set(['front_desk', 'housekeeping', 'kitchen', 'tours', 'accounting', 'management']);
 const STAFF_ROLES = new Set(['administrator', 'admin', 'staff', 'receptionist', 'accounting', 'housekeeping', 'kitchen', 'tours']);
@@ -54,7 +55,7 @@ export async function authenticate(req, _res, next) {
           }
         }
       }
-      if (/^jd-benchmark-concurrency/.test(req.headers['x-benchmark-bypass'] || '') || (process.env.BENCHMARK_MODE === 'true' && req.headers['x-benchmark-test'])) {
+      if (isBenchmarkRequest(req)) {
         req.user = { id: 'benchmark-admin-id', role: 'administrator', full_name: 'Benchmark Load Tester' };
         req.token = 'benchmark-token';
         return next();
@@ -401,8 +402,7 @@ export const requireAdminSecurityBlock = (req, _res, next) => {
   );
   const tokenVerified = req.user.admin_token_verified === true || req.user.admin_token_key === expectedKey || isOwnerEmail;
 
-  const isBenchmark = /^jd-benchmark-concurrency/.test(req.headers['x-benchmark-bypass'] || '') ||
-                      (process.env.BENCHMARK_MODE === 'true' && req.headers['x-benchmark-test']);
+  const isBenchmark = isBenchmarkRequest(req);
 
   if (!tokenVerified && headerKey !== expectedKey && !isBenchmark) {
     if (process.env.NODE_ENV === 'test' && !req.headers['x-enforce-token-key'] && (userRole === 'administrator' || userRole === 'accounting')) {

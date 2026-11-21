@@ -3,6 +3,7 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import crypto from 'crypto';
 import { env } from '../config/env.js';
+import { isBenchmarkMode } from '../lib/benchmarkMode.js';
 
 const supabaseHost = new URL(env.SUPABASE_URL).host;
 
@@ -257,9 +258,7 @@ export const corsPolicy = cors({
 export const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 300,
-  skip: (req) => process.env.NODE_ENV === 'test' ||
-                 process.env.BENCHMARK_MODE === 'true' ||
-                 String(req.headers['x-benchmark-bypass'] || '').startsWith('jd-benchmark-concurrency'),
+  skip: () => process.env.NODE_ENV === 'test' || isBenchmarkMode(),
   standardHeaders: 'draft-7',
   legacyHeaders: false,
 });

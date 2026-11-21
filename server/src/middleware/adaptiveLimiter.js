@@ -17,6 +17,8 @@
  *    - /api/limiter/reset
  */
 
+import { isBenchmarkRequest } from '../lib/benchmarkMode.js';
+
 // ============================================================================
 // 1. ADAPTIVE DYNAMIC CONCURRENCY CONTROL (TCP Vegas / Little's Law / AIMD)
 // ============================================================================
@@ -75,11 +77,7 @@ function recordCompletedRtt(rttMs) {
  */
 export function concurrencyLimiter(explicitMaxConcurrent = null) {
   return (req, res, next) => {
-    // Skip for automated benchmarks or bypass headers
-    if (
-      process.env.NODE_ENV === 'test' ||
-      String(req.headers['x-benchmark-bypass'] || '').startsWith('jd-benchmark-concurrency')
-    ) {
+    if (process.env.NODE_ENV === 'test' || isBenchmarkRequest(req)) {
       return next();
     }
 
@@ -207,11 +205,7 @@ export function createRateLimiter({
   message = 'Too many requests. Please slow down and try again later.',
 }) {
   return (req, res, next) => {
-    // Skip for benchmark bypass
-    if (
-      process.env.NODE_ENV === 'test' ||
-      String(req.headers['x-benchmark-bypass'] || '').startsWith('jd-benchmark-concurrency')
-    ) {
+    if (process.env.NODE_ENV === 'test' || isBenchmarkRequest(req)) {
       return next();
     }
 
