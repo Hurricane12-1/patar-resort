@@ -1,5 +1,5 @@
 import { io } from 'socket.io-client';
-import { API_BASE } from './api';
+import { API_BASE } from './apiBase';
 
 const metaEnv = typeof import.meta !== 'undefined' ? (import.meta as any).env : null;
 const rawSocketBase = (
