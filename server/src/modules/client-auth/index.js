@@ -456,39 +456,43 @@ export const handleGoogleAuth = asyncH(async (req, res) => {
 });
 
 export const handleFacebookAuth = asyncH(async (req, res) => {
-  const { email, name, first_name, last_name, picture, sub, facebookId } = req.body || {};
-  let targetEmail = (email || '').trim().toLowerCase();
-  let targetName = (name || '').trim();
-  let targetFirst = (first_name || '').trim();
-  let targetLast = (last_name || '').trim();
-  let targetPicture = picture || '';
-  let targetSub = sub || facebookId || '';
-
-  if (!targetEmail || !targetEmail.includes('@')) {
-    throw new ApiError(400, 'Valid Facebook email address is required.');
+  const accessToken = (req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
+  if (!accessToken) {
+    throw new ApiError(401, 'Sign in with Facebook first.');
   }
 
-  if (!targetFirst && !targetLast && targetName) {
-    const parts = targetName.split(' ');
-    targetFirst = parts[0] || 'Guest';
-    targetLast = parts.slice(1).join(' ') || '';
-  } else if (!targetName) {
-    targetFirst = targetFirst || targetEmail.split('@')[0];
-    targetLast = targetLast || '';
-    targetName = [targetFirst, targetLast].filter(Boolean).join(' ');
+  // Identity comes from the Supabase session, never the request body, so a caller cannot claim another guest's email.
+  const { data, error } = await admin.auth.getUser(accessToken);
+  if (error?.name === 'AuthRetryableFetchError') {
+    throw new ApiError(503, 'Could not reach the sign-in service. Try again in a moment.');
+  }
+  const fbUser = data?.user;
+  if (error || !fbUser) {
+    throw new ApiError(401, 'Your Facebook sign-in has expired. Sign in again.');
   }
 
-  const local = findCustomerByEmail(targetEmail);
-  let userId = local?.id || (targetSub ? `facebook_${targetSub}` : crypto.randomUUID());
-  let existingCust = local;
+  const providers = fbUser.app_metadata?.providers || [fbUser.app_metadata?.provider];
+  if (!providers.includes('facebook')) {
+    throw new ApiError(403, 'This session was not created with Facebook sign-in.');
+  }
+
+  const targetEmail = (fbUser.email || '').trim().toLowerCase();
+  if (!targetEmail) {
+    throw new ApiError(400, 'Facebook did not share an email address for this account.');
+  }
+
+  const meta = fbUser.user_metadata || {};
+  const targetName = String(meta.full_name || meta.name || targetEmail.split('@')[0]).trim();
+  const [targetFirst, ...lastNameParts] = targetName.split(/\s+/);
+  const existingCust = findCustomerByEmail(targetEmail);
 
   const customerProfile = {
-    id: userId,
+    id: existingCust?.id || fbUser.id,
     email: targetEmail,
     full_name: targetName,
-    first_name: targetFirst,
-    last_name: targetLast,
-    avatar_url: targetPicture || existingCust?.avatar_url || '',
+    first_name: targetFirst || 'Guest',
+    last_name: lastNameParts.join(' '),
+    avatar_url: meta.avatar_url || meta.picture || existingCust?.avatar_url || '',
     phone: existingCust?.phone || '',
     role: 'customer',
     position: 'Customer',
@@ -498,41 +502,23 @@ export const handleFacebookAuth = asyncH(async (req, res) => {
     password_status: 'OAuth Managed',
   };
 
+  // saveCustomer blanks the stored password unless it is passed back in.
   saveCustomer({
     ...customerProfile,
-    updated_at: new Date().toISOString(),
+    password: existingCust?.password,
+    created_at: existingCust?.created_at,
   });
 
   Promise.resolve().then(async () => {
-    try {
-      await admin.from('profiles').upsert(customerProfile, { onConflict: 'id' });
-      await admin.from('customers').upsert(customerProfile, { onConflict: 'id' });
-    } catch {}
-  });
-
-  const sessionToken = jwt.sign(
-    {
-      id: userId,
-      email: targetEmail,
-      role: 'customer',
-      persona: 'customer',
-      aud: 'authenticated',
-      provider: 'facebook',
-    },
-    env.SUPABASE_JWT_SECRET || 'rockview-customer-secret-key-2026',
-    { expiresIn: '7d' }
-  );
+    for (const table of ['profiles', 'customers']) {
+      const { error: syncErr } = await admin.from(table).upsert(customerProfile, { onConflict: 'id' });
+      if (syncErr) console.warn(`[Facebook sign-in] ${table} sync failed:`, syncErr.message);
+    }
+  }).catch((err) => console.warn('[Facebook sign-in] profile sync failed:', err.message));
 
   return res.json({
     success: true,
     message: `Welcome to Rock View Beach Resort, ${targetName}!`,
-    session: {
-      access_token: sessionToken,
-      token_type: 'bearer',
-      expires_in: 7 * 24 * 3600,
-      refresh_token: sessionToken,
-      user: { id: userId, email: targetEmail, role: 'customer' },
-    },
     user: customerProfile,
     profile: customerProfile,
   });

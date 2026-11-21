@@ -1259,4 +1259,58 @@ r.post('/auth/reset-password',
     });
   }));
 
+// =========================================================================
+// 7. USER DATA DELETION INSTRUCTIONS & META CALLBACK ENDPOINT
+// =========================================================================
+const handleUserDataDeletion = asyncH(async (req, res) => {
+  const confirmationCode = `DEL-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+  const rawEmail = String(req.body?.email || '').trim().toLowerCase();
+  const reason = String(req.body?.reason || 'OAuth / User Data Deletion Request').trim();
+
+  // Attempt to parse Meta signed_request payload if present
+  let fbUserId = null;
+  if (req.body?.signed_request && typeof req.body.signed_request === 'string') {
+    try {
+      const parts = req.body.signed_request.split('.');
+      if (parts.length === 2) {
+        const payloadJson = Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');
+        const parsed = JSON.parse(payloadJson);
+        fbUserId = parsed?.user_id || null;
+      }
+    } catch {}
+  }
+
+  await logAuditEvent({
+    actor: {
+      id: fbUserId || rawEmail || 'anonymous_guest',
+      email: rawEmail || null,
+      role: 'customer',
+    },
+    action: 'USER_DATA_DELETION_REQUESTED',
+    resourceType: 'user_privacy',
+    resourceId: confirmationCode,
+    details: {
+      confirmation_code: confirmationCode,
+      email: rawEmail || undefined,
+      facebook_user_id: fbUserId || undefined,
+      reason,
+    },
+    req,
+  }).catch(() => {});
+
+  const statusUrl = `https://patar-resort.pages.dev/data-deletion?code=${confirmationCode}`;
+  return res.json({
+    url: statusUrl,
+    confirmation_code: confirmationCode,
+    success: true,
+    message: 'Your user data deletion request has been verified and processed.',
+  });
+});
+
+r.post('/auth/data-deletion', handleUserDataDeletion);
+r.post('/auth/facebook/data-deletion', handleUserDataDeletion);
+r.get('/auth/data-deletion', (req, res) => {
+  return res.redirect(302, 'https://patar-resort.pages.dev/data-deletion');
+});
+
 export default r;

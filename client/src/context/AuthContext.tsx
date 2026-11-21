@@ -1207,68 +1207,8 @@ export function AuthProvider({ children }) {
       }
       return { ok: true };
     },
-    signInWithFacebook: async (directPayload?: { email?: string; name?: string; first_name?: string; last_name?: string; picture?: string }) => {
-      // 1. Direct Facebook Account payload (instant sign-in via backend or Supabase direct)
-      if (directPayload?.email) {
-        const cleanEmail = directPayload.email.trim().toLowerCase();
-        const fullName = directPayload.name || (cleanEmail ? cleanEmail.split('@')[0] : 'Resident Guest');
-        let res: any = null;
-        try {
-          res = await api.facebookLogin({ ...directPayload, email: cleanEmail, name: fullName });
-        } catch (apiErr) {
-          console.warn('[Backend Facebook Login offline or error, falling back to direct Supabase profile sync]:', apiErr);
-        }
-
-        const userId = res?.user?.id || `fb_${cleanEmail.replace(/[^a-z0-9]/g, '_')}`;
-        const prof = res?.profile || res?.user || {
-          id: userId,
-          email: cleanEmail,
-          full_name: fullName,
-          first_name: directPayload.first_name || fullName.split(' ')[0] || 'Guest',
-          last_name: directPayload.last_name || fullName.split(' ').slice(1).join(' ') || '',
-          role: 'customer',
-          provider: 'facebook',
-          avatar_url: directPayload.picture || '',
-        };
-
-        const sessionObj = res?.session || {
-          access_token: `fb_token_${Date.now()}_${userId}`,
-          user: prof,
-        };
-
-        // Sync with Supabase profiles and customers tables
-        try {
-          await supabase.from('profiles').upsert({
-            id: prof.id,
-            email: prof.email,
-            full_name: prof.full_name,
-            first_name: prof.first_name,
-            last_name: prof.last_name,
-            role: 'customer',
-          }, { onConflict: 'id' });
-
-          await supabase.from('customers').upsert({
-            id: prof.id,
-            email: prof.email,
-            full_name: prof.full_name,
-          }, { onConflict: 'id' });
-        } catch (sbErr) {
-          console.warn('[Supabase Facebook Sync Notice]:', sbErr);
-        }
-
-        setCustomerSession(sessionObj);
-        setCustomerProfile(prof);
-        if (typeof sessionStorage !== 'undefined') {
-          sessionStorage.setItem('jd_customer_session', JSON.stringify(sessionObj));
-          sessionStorage.setItem('jd_customer_jwt', sessionObj.access_token);
-          sessionStorage.setItem('jd_customer_profile', JSON.stringify(prof));
-        }
-        setAuthOpen(false);
-        toast(`Welcome to Rock View Beach Resort, ${prof.full_name || 'Resident Guest'}! ✦`);
-        return { data: { session: sessionObj, profile: prof }, error: null };
-      }
-
-      // 2. Facebook 1-click auto-login OAuth via Supabase (identical flow to Google OAuth)
+    signInWithFacebook: async () => {
+      // Facebook 1-click auto-login OAuth via Supabase (identical flow to Google OAuth)
       const redirectUrl = `${window.location.origin}/client`;
       const res = await supabase.auth.signInWithOAuth({
         provider: 'facebook',

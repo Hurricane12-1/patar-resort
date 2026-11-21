@@ -58,3 +58,6 @@ server/uploads/*
 
 # Version Control offline copies
 Version Control/
+
+_backups/
+

@@ -67,7 +67,7 @@ export function saveCustomer(cust) {
   const record = {
     id: cust.id || crypto.randomUUID(),
     email: cleanEmail,
-    password: cust.password ? (cust.password.startsWith('$2') || cust.password.startsWith('pbkdf2$') || cust.password.startsWith('sha256$') ? cust.password : hashPassword(cust.password)) : '',
+    password: cust.password ? (cust.password.startsWith('scrypt:') || cust.password.startsWith('$2') || cust.password.startsWith('pbkdf2$') || cust.password.startsWith('sha256$') ? cust.password : hashPassword(cust.password)) : '',
     full_name: cust.full_name || [cust.first_name, cust.last_name].filter(Boolean).join(' ') || cleanEmail.split('@')[0],
     first_name: cust.first_name || '',
     last_name: cust.last_name || '',

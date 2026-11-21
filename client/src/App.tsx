@@ -83,7 +83,7 @@ function MainAppShell() {
   ].some((p) => path.startsWith(p));
 
   const isGuestHome = path === '/' || path === '/guest';
-  const isPolicy = ['/policy', '/policies', '/terms', '/rules'].some((p) => path.startsWith(p));
+  const isPolicy = ['/policy', '/policies', '/terms', '/rules', '/privacy', '/data-deletion'].some((p) => path.startsWith(p));
   const hideNavbarAndFooter = isDedicatedPortal || isLegacyInternal || isGuestHome || isPolicy;
 
   // Staff/admin/recovery/dev are the internal consoles where the public AI
@@ -111,6 +111,8 @@ function MainAppShell() {
           <Route path="/policies" element={<PolicyPage />} />
           <Route path="/terms" element={<PolicyPage />} />
           <Route path="/rules" element={<PolicyPage />} />
+          <Route path="/privacy" element={<PolicyPage />} />
+          <Route path="/data-deletion" element={<PolicyPage />} />
 
           {/* ============================================================ */}
           {/* NAMESPACE 1: /admin (Governance & System Control)            */}

@@ -422,8 +422,9 @@ export const api = {
     req('/auth/login', { method: 'POST', body: credentials }),
   googleLogin: (payload: { credential?: string; email?: string; name?: string; first_name?: string; last_name?: string; picture?: string; sub?: string; googleId?: string }) =>
     req('/auth/google', { method: 'POST', body: payload }),
-  facebookLogin: (payload: { credential?: string; email?: string; name?: string; first_name?: string; last_name?: string; picture?: string; sub?: string; facebookId?: string }) =>
-    req('/auth/facebook', { method: 'POST', body: payload }),
+  // req() attaches the Supabase session from Facebook OAuth; the server reads identity from it, not a body.
+  facebookLogin: () =>
+    req('/auth/facebook', { method: 'POST' }),
   sendOtp: (email: string, name?: string) =>
     req<{ success: boolean; message: string; otp_preview?: string; provider?: string }>('/auth/otp/send', { method: 'POST', body: { email, name } }),
   verifyOtp: (email: string, code: string, name?: string) =>

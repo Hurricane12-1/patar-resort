@@ -1,5 +1,4 @@
 import { io } from 'socket.io-client';
-import { API_BASE } from './api';
 
 const metaEnv = typeof import.meta !== 'undefined' ? (import.meta as any).env : null;
 const rawSocketBase = (
@@ -7,7 +6,6 @@ const rawSocketBase = (
   metaEnv?.PUBLIC_API_URL ||
   metaEnv?.VITE_PUBLIC_API_URL ||
   metaEnv?.VITE_BACKEND_URL ||
-  API_BASE ||
   '/'
 );
 
