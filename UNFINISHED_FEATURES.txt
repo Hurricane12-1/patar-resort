@@ -196,16 +196,30 @@ TABLE OF CONTENTS
 ================================================================================
 10. DATABASE BACKUP RESTORE / IMPORT FUNCTIONALITY
 ================================================================================
-• Current State:
-  - In client/src/pages/Admin.tsx, there is an "Export System Backup (JSON)" button
-    that serializes and downloads current client state and records into a JSON file.
-• Missing Components:
-  - There is no "Import / Restore Backup" button or file uploader.
-  - If the database is wiped or migrated, there is no UI mechanism to upload the JSON
-    backup to restore the system state.
+• Current State (partially implemented):
+  - The Admin "Backup & Migration" modal has Export (SQL, JSON, CSV) and an
+    "Adaptive Import & Restore" tab with file upload, paste, dry-run preview, and
+    append or overwrite modes. Routes: POST /api/ledger/backup/import (dry_run flag).
+  - Scope is the ledger only (public.ledger_entries). Rooms, reservations, and users
+    are not included in export or restore.
+  - Overwrite saves a snapshot of the current ledger to server/src/db/ledger_snapshots/
+    before writing. Append skips rows that already exist, so re-importing is safe.
+  - A failed Supabase sync is reported as an error (HTTP 502) and leaves the local
+    ledger unchanged. Supabase sync runs only when SUPABASE_SERVICE_ROLE_KEY or the
+    admin login is configured.
+• Remaining Gaps:
+  - No full-database backup (see scope above).
+  - Snapshots are server-side files. Restoring one requires importing its file manually.
+  - Logbook imports are not idempotent, because each parse generates new reference IDs.
+  - Other ledger functions (createLedgerEntry, journal and reconcile paths) still use
+    the un-awaited getSystemAdminClient() pattern and swallow Supabase errors.
 • Affected Files:
-  - client/src/pages/Admin.tsx
-  - server/src/routes/me.routes.js
+  - client/src/components/admin/modals/BackupMigrationModal.tsx
+  - client/src/hooks/useAdminState.ts
+  - client/src/lib/api.ts
+  - server/src/lib/ledgerService.js
+  - server/src/routes/ledger.routes.js
+  - server/test/ledger-import.test.js
 
 ================================================================================
 11. EMAIL SERVICE & TRANSACTIONAL EMAIL RECEIPTS

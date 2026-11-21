@@ -21,6 +21,8 @@ interface BackupMigrationModalProps {
   importMode: 'append' | 'overwrite';
   setImportMode: (mode: 'append' | 'overwrite') => void;
   importingBackup: boolean;
+  importPreview: any;
+  handlePreviewImport: () => Promise<void>;
   handleExecuteImport: () => Promise<void>;
   onFetchBackupText?: (format: 'sql' | 'json' | 'csv') => Promise<string>;
 }
@@ -45,10 +47,15 @@ export default function BackupMigrationModal({
   importMode,
   setImportMode,
   importingBackup,
+  importPreview,
+  handlePreviewImport,
   handleExecuteImport,
   onFetchBackupText,
 }: BackupMigrationModalProps) {
   if (!isOpen) return null;
+
+  const accent = isLightMode ? '#006699' : '#5AB8E6';
+  const warning = isLightMode ? '#92400E' : '#FBBF24';
 
   const detectFormat = (text: string) => {
     const t = text.trim();
@@ -124,7 +131,7 @@ export default function BackupMigrationModal({
             <span
               style={{
                 fontSize: '.72rem',
-                color: '#6366F1',
+                color: accent,
                 fontWeight: 800,
                 textTransform: 'uppercase',
                 letterSpacing: '.08em',
@@ -148,6 +155,7 @@ export default function BackupMigrationModal({
             </h3>
           </div>
           <button
+            data-button-id="b1_system_close_modal_001"
             onClick={onClose}
             style={{
               background: 'transparent',
@@ -165,13 +173,14 @@ export default function BackupMigrationModal({
         {/* Sub-Tabs: Export vs Import */}
         <div style={{ display: 'flex', borderBottom: `1px solid ${themeBorder}`, padding: '0 24px', gap: 16 }}>
           <button
+            data-button-id="b1_system_tab_export_002"
             onClick={() => setBackupTab('export')}
             style={{
               padding: '12px 14px',
               border: 'none',
-              borderBottom: `2px solid ${backupTab === 'export' ? '#6366F1' : 'transparent'}`,
+              borderBottom: `2px solid ${backupTab === 'export' ? accent : 'transparent'}`,
               background: 'transparent',
-              color: backupTab === 'export' ? (isLightMode ? '#4338CA' : '#818CF8') : themeMuted,
+              color: backupTab === 'export' ? accent : themeMuted,
               fontWeight: 700,
               fontSize: '.84rem',
               cursor: 'pointer',
@@ -181,13 +190,14 @@ export default function BackupMigrationModal({
             Export PostgreSQL Backup
           </button>
           <button
+            data-button-id="b1_system_tab_import_003"
             onClick={() => setBackupTab('import')}
             style={{
               padding: '12px 14px',
               border: 'none',
-              borderBottom: `2px solid ${backupTab === 'import' ? '#6366F1' : 'transparent'}`,
+              borderBottom: `2px solid ${backupTab === 'import' ? accent : 'transparent'}`,
               background: 'transparent',
-              color: backupTab === 'import' ? (isLightMode ? '#4338CA' : '#818CF8') : themeMuted,
+              color: backupTab === 'import' ? accent : themeMuted,
               fontWeight: 700,
               fontSize: '.84rem',
               cursor: 'pointer',
@@ -237,6 +247,7 @@ export default function BackupMigrationModal({
                   </p>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     <button
+                      data-button-id="b1_system_download_sql_004"
                       type="button"
                       onClick={() => handleDownloadExport('sql')}
                       disabled={downloadingExport === 'sql'}
@@ -247,6 +258,7 @@ export default function BackupMigrationModal({
                     </button>
                     {onFetchBackupText && (
                       <button
+                        data-button-id="b1_system_preview_sql_005"
                         type="button"
                         className="btn btn-ghost btn-sm"
                         style={{ fontSize: '.74rem', color: themeText, border: `1px solid ${themeBorder}` }}
@@ -296,6 +308,7 @@ export default function BackupMigrationModal({
                     catalog.
                   </p>
                   <button
+                    data-button-id="b1_system_download_json_006"
                     type="button"
                     onClick={() => handleDownloadExport('json')}
                     disabled={downloadingExport === 'json'}
@@ -325,6 +338,7 @@ export default function BackupMigrationModal({
                     balance.
                   </p>
                   <button
+                    data-button-id="b1_system_download_csv_007"
                     type="button"
                     onClick={() => handleDownloadExport('csv')}
                     disabled={downloadingExport === 'csv'}
@@ -351,6 +365,7 @@ export default function BackupMigrationModal({
                       POSTGRESQL DUMP PREVIEW
                     </span>
                     <button
+                      data-button-id="b1_system_copy_sql_008"
                       className="btn btn-sm btn-ghost"
                       style={{ fontSize: '.72rem', color: '#0EA5E9' }}
                       onClick={() => {
@@ -524,9 +539,64 @@ export default function BackupMigrationModal({
                 </div>
               </div>
 
+              {/* Import Preview */}
+              <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 12 }}>
+                <button
+                  data-button-id="b1_system_preview_import_009"
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  disabled={importingBackup || !importContent.trim()}
+                  onClick={handlePreviewImport}
+                  style={{ color: accent, border: `1px solid ${accent}` }}
+                >
+                  <i className="fas fa-eye" style={{ marginRight: 6 }} />
+                  Preview Import
+                </button>
+              </div>
+
+              {importPreview && (
+                <div
+                  role="status"
+                  style={{
+                    border: `1px solid ${themeBorder}`,
+                    borderRadius: 10,
+                    padding: 12,
+                    marginBottom: 14,
+                    color: themeText,
+                    fontSize: '.84rem',
+                    lineHeight: 1.6,
+                  }}
+                >
+                  <div>
+                    <strong>Format:</strong> {String(importPreview.detected_format).toUpperCase()} ·{' '}
+                    <strong>Parsed:</strong> {importPreview.parsed_count}
+                  </div>
+                  <div>
+                    <strong>Will insert:</strong> {importPreview.would_insert_count} ·{' '}
+                    <strong>Duplicates skipped:</strong> {importPreview.skipped_duplicates} ·{' '}
+                    <strong>Renumbered:</strong> {importPreview.renumbered_count}
+                  </div>
+                  {importMode === 'overwrite' && (
+                    <div style={{ color: warning, fontWeight: 700 }}>
+                      Replaces {importPreview.would_replace_count} current records. A snapshot of the current ledger is saved first.
+                    </div>
+                  )}
+                  {importPreview.sample?.length > 0 && (
+                    <ul style={{ margin: '8px 0 0', paddingLeft: 18, color: themeMuted, fontFamily: 'monospace', fontSize: '.76rem' }}>
+                      {importPreview.sample.map((row: any) => (
+                        <li key={row.entry_number}>
+                          {row.entry_number} · {row.account_code} · {row.entry_type} · Dr {Number(row.debit_php).toFixed(2)} / Cr {Number(row.credit_php).toFixed(2)}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+
               {/* Execute Button */}
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
                 <button
+                  data-button-id="b1_system_cancel_import_010"
                   type="button"
                   className="btn btn-ghost btn-sm"
                   onClick={onClose}
@@ -535,9 +605,10 @@ export default function BackupMigrationModal({
                   Cancel
                 </button>
                 <button
+                  data-button-id="b1_system_execute_import_011"
                   type="button"
                   className="btn btn-sky btn-sm"
-                  disabled={importingBackup || !importContent.trim()}
+                  disabled={importingBackup || !importContent.trim() || !importPreview}
                   onClick={handleExecuteImport}
                   style={{ fontWeight: 700 }}
                 >

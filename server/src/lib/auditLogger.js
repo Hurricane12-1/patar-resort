@@ -6,7 +6,9 @@ import { admin, getSystemAdminClient } from './supabase.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const dbDir = path.resolve(__dirname, '../db');
+const dbDir = process.env.SERVER_DB_DIR
+  ? path.resolve(process.env.SERVER_DB_DIR)
+  : path.resolve(__dirname, '../db');
 const auditLogFile = path.join(dbDir, 'audit_logs.json');
 
 // Ensure directory exists

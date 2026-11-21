@@ -1196,7 +1196,12 @@ export function useAdminState() {
   const [importContent, setImportContent] = useState('');
   const [importMode, setImportMode] = useState<'append' | 'overwrite'>('append');
   const [importingBackup, setImportingBackup] = useState(false);
+  const [importPreview, setImportPreview] = useState<any>(null);
   const [reconcilingLedger, setReconcilingLedger] = useState(false);
+
+  useEffect(() => {
+    setImportPreview(null);
+  }, [importContent, importMode]);
 
   const refreshLedgerEntries = useCallback(async () => {
     setLoadingLedger(true);
@@ -1295,18 +1300,45 @@ export function useAdminState() {
     }
   };
 
-  const handleExecuteImport = async () => {
+  const handlePreviewImport = async () => {
     if (!importContent.trim()) {
       toast('Please upload a file or paste content to import.', true);
       return;
     }
     setImportingBackup(true);
     try {
+      const res = await api.importLedgerBackup(importContent, importMode, true);
+      setImportPreview(res?.data ?? res);
+    } catch (err: any) {
+      setImportPreview(null);
+      toast(`Preview failed: ${err.message}`, true);
+    } finally {
+      setImportingBackup(false);
+    }
+  };
+
+  const handleExecuteImport = async () => {
+    if (!importContent.trim()) {
+      toast('Please upload a file or paste content to import.', true);
+      return;
+    }
+    if (!importPreview) {
+      toast('Preview the import before restoring.', true);
+      return;
+    }
+    if (importMode === 'overwrite' && !window.confirm(`Overwrite the current ledger with ${importPreview.would_insert_count ?? 0} records? The current ledger is saved to a snapshot first.`)) {
+      return;
+    }
+    setImportingBackup(true);
+    try {
       const res = await api.importLedgerBackup(importContent, importMode);
-      const count = res?.data?.imported_count ?? res?.imported_count ?? 0;
-      const fmt = res?.data?.detected_format ?? res?.detected_format ?? 'adaptive';
-      toast(`✦ Successfully imported ${count} records via adaptive ${String(fmt).toUpperCase()} engine!`);
+      const data = res?.data ?? res;
+      const count = data?.imported_count ?? 0;
+      const skipped = data?.skipped_duplicates ?? 0;
+      const fmt = data?.detected_format ?? 'adaptive';
+      toast(`✦ Imported ${count} records (${skipped} duplicates skipped) via ${String(fmt).toUpperCase()} engine.`);
       setImportContent('');
+      setImportPreview(null);
       setShowBackupModal(false);
       await Promise.all([refreshLedgerEntries(), refreshReservations()]);
     } catch (err: any) {
@@ -2306,6 +2338,8 @@ export function useAdminState() {
     setImportMode,
     importingBackup,
     handleDownloadExport,
+    importPreview,
+    handlePreviewImport,
     handleExecuteImport,
 
     // Rooms & Inventory

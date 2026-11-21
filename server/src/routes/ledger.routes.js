@@ -292,7 +292,7 @@ router.get('/ledger/backup/export', authenticate, requireAdmin, async (req, res)
  */
 router.post('/ledger/backup/import', authenticate, requireAdmin, async (req, res) => {
   try {
-    const { content, mode } = req.body || {};
+    const { content, mode, dry_run } = req.body || {};
     if (!content) {
       return res.status(400).json({
         status: 'error',
@@ -300,13 +300,17 @@ router.post('/ledger/backup/import', authenticate, requireAdmin, async (req, res
       });
     }
 
-    const result = await importAdaptiveBackup(content, { mode: mode || 'append' }, req.user);
+    const result = await importAdaptiveBackup(
+      content,
+      { mode: mode || 'append', dryRun: dry_run === true },
+      req.user,
+    );
     res.json({
       status: 'success',
       data: result,
     });
   } catch (err) {
-    res.status(400).json({
+    res.status(err.code === 'SYNC_FAILED' ? 502 : 400).json({
       status: 'error',
       message: err.message,
     });
@@ -319,10 +323,10 @@ router.post('/ledger/backup/import', authenticate, requireAdmin, async (req, res
  */
 router.post('/ledger/clear', authenticate, requireAdmin, async (req, res) => {
   try {
-    await clearLedgerEntries(req.user);
-    res.json({ status: 'success', message: 'All ledger entries cleared.' });
+    const result = await clearLedgerEntries(req.user);
+    res.json({ status: 'success', message: 'All ledger entries cleared.', data: result });
   } catch (err) {
-    res.status(500).json({ status: 'error', message: err.message });
+    res.status(err.code === 'SYNC_FAILED' ? 502 : 500).json({ status: 'error', message: err.message });
   }
 });
 

@@ -80,6 +80,8 @@ export const AdminModals: React.FC<AdminModalsProps> = ({ state }) => {
           setImportMode={state.setImportMode}
           importingBackup={state.importingBackup}
           handleDownloadExport={state.handleDownloadExport}
+          importPreview={state.importPreview}
+          handlePreviewImport={state.handlePreviewImport}
           handleExecuteImport={state.handleExecuteImport}
           onFetchBackupText={(fmt) => api.fetchLedgerBackupText(fmt)}
           isLightMode={state.isLightMode}

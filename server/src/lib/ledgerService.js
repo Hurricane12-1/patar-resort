@@ -3,13 +3,16 @@ import path from 'path';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import { admin, getSystemAdminClient } from './supabase.js';
+import { env } from '../config/env.js';
 import { logAuditEvent } from './auditLogger.js';
 import { parseFinancialEquation, resolveRoomSlug } from '../agents/ledgerIngestionAgent.js';
 import { getLocalReservations } from './reservationStore.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const dbDir = path.resolve(__dirname, '../db');
+const dbDir = process.env.SERVER_DB_DIR
+  ? path.resolve(process.env.SERVER_DB_DIR)
+  : path.resolve(__dirname, '../db');
 const ledgerFile = path.join(dbDir, 'ledger_entries.json');
 
 // Ensure database directory exists
@@ -600,18 +603,12 @@ export function exportCSV(entries = inMemoryEntries) {
   return [headers.join(','), ...rows].join('\r\n');
 }
 
-/**
- * -------------------------------------------------------------------------------------
- * ADAPTIVE IMPORT ENGINE
- * Detects payload format automatically:
- * 1. PostgreSQL SQL Dump (CREATE TABLE / INSERT INTO / VALUES / BEGIN)
- * 2. JSON (Array or Wrapped records object)
- * 3. CSV (Comma, tab, or semicolon separated with headers)
- * 4. Physical Logbook Notation (Pipe-delimited text with financial equations)
- * -------------------------------------------------------------------------------------
- */
-export async function importAdaptiveBackup(rawContent, options = {}, user = {}) {
-  const { mode = 'append' } = options; // 'append' or 'overwrite'
+const IMPORT_MODES = ['append', 'overwrite'];
+const SYNC_FAILED = 'SYNC_FAILED';
+const SYNC_PAGE_SIZE = 1000;
+const ZERO_UUID = '00000000-0000-0000-0000-000000000000';
+
+export function parseAdaptiveBackup(rawContent) {
   if (!rawContent || typeof rawContent !== 'string') {
     throw new Error('Import content must be a non-empty string or file buffer.');
   }
@@ -620,7 +617,6 @@ export async function importAdaptiveBackup(rawContent, options = {}, user = {}) 
   let detectedFormat = 'unknown';
   let parsedRecords = [];
 
-  // 1. Check for PostgreSQL SQL Dump
   if (
     trimmed.includes('INSERT INTO public.ledger_entries') ||
     trimmed.includes('CREATE TABLE') ||
@@ -629,9 +625,7 @@ export async function importAdaptiveBackup(rawContent, options = {}, user = {}) 
   ) {
     detectedFormat = 'sql';
     parsedRecords = parsePostgresDump(trimmed);
-  }
-  // 2. Check for JSON format
-  else if (
+  } else if (
     (trimmed.startsWith('[') && trimmed.endsWith(']')) ||
     (trimmed.startsWith('{') && trimmed.endsWith('}'))
   ) {
@@ -645,9 +639,7 @@ export async function importAdaptiveBackup(rawContent, options = {}, user = {}) 
     } catch (e) {
       throw new Error(`Invalid JSON format: ${e.message}`);
     }
-  }
-  // 3. Check for CSV format
-  else if (
+  } else if (
     trimmed.includes(',') &&
     (trimmed.toLowerCase().includes('debit') ||
      trimmed.toLowerCase().includes('credit') ||
@@ -656,9 +648,7 @@ export async function importAdaptiveBackup(rawContent, options = {}, user = {}) 
   ) {
     detectedFormat = 'csv';
     parsedRecords = parseCsvFormat(trimmed);
-  }
-  // 4. Fallback: Physical Logbook Notation / Raw text lines
-  else {
+  } else {
     detectedFormat = 'logbook';
     parsedRecords = parseLogbookLines(trimmed);
   }
@@ -667,52 +657,189 @@ export async function importAdaptiveBackup(rawContent, options = {}, user = {}) 
     throw new Error(`Failed to extract any valid ledger entries from the provided ${detectedFormat.toUpperCase()} input.`);
   }
 
-  // Handle overwrite vs append
-  if (mode === 'overwrite') {
-    inMemoryEntries = [];
-  }
+  return { detectedFormat, parsedRecords };
+}
 
-  const existingEntryNums = new Set(inMemoryEntries.map((e) => e.entry_number));
-  let importedCount = 0;
+function syncFailure(step, error) {
+  const err = new Error(`Supabase ${step} failed: ${error.message}`);
+  err.code = SYNC_FAILED;
+  return err;
+}
+
+async function resolveSyncClient(override) {
+  if (override !== undefined) return override;
+  const configured = Boolean(env.SUPABASE_SERVICE_ROLE_KEY) ||
+    Boolean(env.SUPABASE_ADMIN_EMAIL && env.SUPABASE_ADMIN_PASSWORD);
+  if (!configured) return null;
+  return (await getSystemAdminClient()) || null;
+}
+
+function writeLedgerSnapshot(mode) {
+  const dir = path.join(dbDir, 'ledger_snapshots');
+  fs.mkdirSync(dir, { recursive: true });
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const file = path.join(dir, `ledger_before_${mode}_${stamp}.json`);
+  fs.writeFileSync(file, JSON.stringify(exportJSON(), null, 2), 'utf8');
+  return file;
+}
+
+function recordFingerprint(record) {
+  return [
+    record.entry_number,
+    record.account_code,
+    record.entry_type,
+    Number(record.debit_php) || 0,
+    Number(record.credit_php) || 0,
+    record.posted_at,
+    record.reference_id,
+  ].join('|');
+}
+
+function planImport(parsedRecords, mode, user) {
+  const base = mode === 'overwrite' ? [] : inMemoryEntries;
+  const knownFingerprints = new Set(base.map(recordFingerprint));
+  const usedNumbers = new Set(base.map((e) => e.entry_number));
+  const usedIds = new Set(base.map((e) => e.id));
+  const year = new Date().getFullYear();
+  let sequence = base.length;
+
+  const nextFreeNumber = () => {
+    let candidate;
+    do {
+      sequence += 1;
+      candidate = `LED-${year}-${String(sequence).padStart(4, '0')}`;
+    } while (usedNumbers.has(candidate));
+    usedNumbers.add(candidate);
+    return candidate;
+  };
+
+  const toInsert = [];
+  let skippedDuplicates = 0;
+  let renumberedCount = 0;
 
   for (const record of parsedRecords) {
-    let entryNum = record.entry_number;
-    if (!entryNum || (mode === 'append' && existingEntryNums.has(entryNum))) {
-      entryNum = generateEntryNumber(importedCount);
+    const fingerprint = recordFingerprint(record);
+    if (knownFingerprints.has(fingerprint)) {
+      skippedDuplicates += 1;
+      continue;
     }
-    existingEntryNums.add(entryNum);
+    knownFingerprints.add(fingerprint);
 
-    const safeRecord = {
+    let entryNumber = record.entry_number;
+    if (!entryNumber || usedNumbers.has(entryNumber)) {
+      entryNumber = nextFreeNumber();
+      renumberedCount += 1;
+    } else {
+      usedNumbers.add(entryNumber);
+    }
+
+    let id = record.id;
+    if (!id || usedIds.has(id)) {
+      id = crypto.randomUUID();
+    }
+    usedIds.add(id);
+
+    toInsert.push({
       ...record,
-      id: record.id || crypto.randomUUID(),
-      entry_number: entryNum,
+      id,
+      entry_number: entryNumber,
       posted_at: record.posted_at || new Date().toISOString(),
       debit_php: Number(record.debit_php) || 0,
       credit_php: Number(record.credit_php) || 0,
       created_by: record.created_by || user.email || 'import_agent@rockviewresort.ph',
       status: record.status || 'POSTED',
-    };
-
-    inMemoryEntries.push(safeRecord);
-    importedCount++;
+    });
   }
 
-  // Recalculate running balances
-  inMemoryEntries = recalculateRunningBalances(inMemoryEntries);
+  return { base, toInsert, skippedDuplicates, renumberedCount };
+}
+
+async function deleteStaleLedgerRows(sb, keepNumbers) {
+  const staleIds = [];
+  for (let from = 0; ; from += SYNC_PAGE_SIZE) {
+    const { data, error } = await sb
+      .from('ledger_entries')
+      .select('id, entry_number')
+      .order('id', { ascending: true })
+      .range(from, from + SYNC_PAGE_SIZE - 1);
+    if (error) throw syncFailure('select', error);
+    staleIds.push(...(data || []).filter((row) => !keepNumbers.has(row.entry_number)).map((row) => row.id));
+    if (!data || data.length < SYNC_PAGE_SIZE) break;
+  }
+
+  for (let i = 0; i < staleIds.length; i += SYNC_PAGE_SIZE) {
+    const { error } = await sb.from('ledger_entries').delete().in('id', staleIds.slice(i, i + SYNC_PAGE_SIZE));
+    if (error) throw syncFailure('delete', error);
+  }
+}
+
+async function syncLedgerEntries(sb, nextEntries, mode) {
+  if (!sb) return 'local_only';
+  const { error } = await sb.from('ledger_entries').upsert(nextEntries, { onConflict: 'entry_number' });
+  if (error) throw syncFailure('upsert', error);
+  if (mode === 'overwrite') {
+    await deleteStaleLedgerRows(sb, new Set(nextEntries.map((e) => e.entry_number)));
+  }
+  return 'supabase';
+}
+
+/**
+ * -------------------------------------------------------------------------------------
+ * ADAPTIVE IMPORT ENGINE
+ * Detects payload format automatically:
+ * 1. PostgreSQL SQL Dump (CREATE TABLE / INSERT INTO / VALUES / BEGIN)
+ * 2. JSON (Array or Wrapped records object)
+ * 3. CSV (Comma, tab, or semicolon separated with headers)
+ * 4. Physical Logbook Notation (Pipe-delimited text with financial equations)
+ *
+ * Order of operations: parse and plan (no writes), snapshot the current ledger,
+ * sync to Supabase when configured, then commit locally. A failed sync leaves the
+ * local ledger untouched and throws with code SYNC_FAILED.
+ * Options: mode ('append' | 'overwrite'), dryRun (preview only), syncClient
+ * (explicit client, or null to keep the import local).
+ * -------------------------------------------------------------------------------------
+ */
+export async function importAdaptiveBackup(rawContent, options = {}, user = {}) {
+  const mode = options.mode || 'append';
+  if (!IMPORT_MODES.includes(mode)) {
+    throw new Error(`Unknown import mode "${mode}". Use "append" or "overwrite".`);
+  }
+
+  const { detectedFormat, parsedRecords } = parseAdaptiveBackup(rawContent);
+  const plan = planImport(parsedRecords, mode, user);
+  const nextEntries = recalculateRunningBalances([...plan.base, ...plan.toInsert]);
+
+  if (options.dryRun) {
+    return {
+      success: true,
+      dry_run: true,
+      detected_format: detectedFormat,
+      imported_count: 0,
+      parsed_count: parsedRecords.length,
+      would_insert_count: plan.toInsert.length,
+      skipped_duplicates: plan.skippedDuplicates,
+      renumbered_count: plan.renumberedCount,
+      would_replace_count: mode === 'overwrite' ? inMemoryEntries.length : 0,
+      sample: plan.toInsert.slice(0, 5).map((e) => ({
+        entry_number: e.entry_number,
+        posted_at: e.posted_at,
+        account_code: e.account_code,
+        entry_type: e.entry_type,
+        debit_php: e.debit_php,
+        credit_php: e.credit_php,
+        particulars: e.particulars,
+      })),
+    };
+  }
+
+  const sb = await resolveSyncClient(options.syncClient);
+  const snapshotFile = inMemoryEntries.length > 0 ? writeLedgerSnapshot(mode) : null;
+  const sync = await syncLedgerEntries(sb, nextEntries, mode);
+
+  inMemoryEntries = nextEntries;
   savePersistedEntries();
 
-  // Dual sync to Supabase if available
-  try {
-    const sb = getSystemAdminClient() || admin;
-    if (sb) {
-      if (mode === 'overwrite') {
-        await sb.from('ledger_entries').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      }
-      await sb.from('ledger_entries').upsert(inMemoryEntries, { onConflict: 'entry_number' });
-    }
-  } catch {}
-
-  // Log audit event
+  let auditLogged = true;
   try {
     await logAuditEvent({
       actor: user,
@@ -722,17 +849,28 @@ export async function importAdaptiveBackup(rawContent, options = {}, user = {}) 
       details: {
         mode,
         detected_format: detectedFormat,
-        imported_count: importedCount,
+        imported_count: plan.toInsert.length,
+        skipped_duplicates: plan.skippedDuplicates,
         total_records: inMemoryEntries.length,
+        sync,
       },
     });
-  } catch {}
+  } catch (err) {
+    auditLogged = false;
+    console.warn('[LedgerService] Audit log failed after import:', err.message);
+  }
 
   return {
     success: true,
+    dry_run: false,
     detected_format: detectedFormat,
-    imported_count: importedCount,
+    imported_count: plan.toInsert.length,
+    skipped_duplicates: plan.skippedDuplicates,
+    renumbered_count: plan.renumberedCount,
     total_records: inMemoryEntries.length,
+    sync,
+    snapshot_file: snapshotFile ? path.basename(snapshotFile) : null,
+    audit_logged: auditLogged,
     trial_balance: calculateTrialBalance(),
   };
 }
@@ -746,20 +884,16 @@ export async function importAdaptiveBackup(rawContent, options = {}, user = {}) 
 /** Parse SQL VALUES clauses from PostgreSQL dump */
 function parsePostgresDump(sqlText) {
   const records = [];
-  // Find INSERT INTO ... VALUES (...)
-  const insertRegex = /INSERT\s+INTO\s+[a-z0-9_.]*ledger_entries[^(]*\(([^)]+)\)\s+VALUES\s*([\s\S]+?);/gi;
+  const insertHead = /INSERT\s+INTO\s+[^(]*?ledger_entries[^(]*\(([^)]+)\)\s*VALUES\s*/gi;
   let match;
 
-  while ((match = insertRegex.exec(sqlText)) !== null) {
+  while ((match = insertHead.exec(sqlText)) !== null) {
     const columns = match[1].split(',').map((c) => c.trim().toLowerCase());
-    const valuesBlock = match[2];
+    const { tuples, end } = scanValueTuples(sqlText, insertHead.lastIndex);
+    insertHead.lastIndex = end;
 
-    // Match each tuple ( ... )
-    const tupleRegex = /\(([\s\S]+?)\)(?:,\s*|\s*$)/g;
-    let tupleMatch;
-
-    while ((tupleMatch = tupleRegex.exec(valuesBlock)) !== null) {
-      const rawVals = parseSqlTupleValues(tupleMatch[1]);
+    for (const tuple of tuples) {
+      const rawVals = parseSqlTupleValues(tuple);
       if (rawVals.length === columns.length) {
         const row = {};
         columns.forEach((col, idx) => {
@@ -771,6 +905,45 @@ function parsePostgresDump(sqlText) {
   }
 
   return normalizeParsedRecords(records);
+}
+
+/**
+ * Walks a VALUES list starting at startIndex. Quote-aware, so ';' or ')' inside
+ * a string literal do not end a tuple. Stops at the first token that is not part
+ * of the VALUES list (for example ON CONFLICT or the statement terminator).
+ */
+function scanValueTuples(text, startIndex) {
+  const tuples = [];
+  let depth = 0;
+  let inString = false;
+  let tupleStart = -1;
+  let i = startIndex;
+
+  for (; i < text.length; i++) {
+    const ch = text[i];
+
+    if (inString) {
+      if (ch === "'") {
+        if (text[i + 1] === "'") i++;
+        else inString = false;
+      }
+      continue;
+    }
+
+    if (ch === "'") {
+      inString = true;
+    } else if (ch === '(') {
+      if (depth === 0) tupleStart = i + 1;
+      depth += 1;
+    } else if (ch === ')') {
+      depth -= 1;
+      if (depth === 0) tuples.push(text.slice(tupleStart, i));
+    } else if (depth === 0 && !/[\s,]/.test(ch)) {
+      break;
+    }
+  }
+
+  return { tuples, end: i };
 }
 
 /** Helper to split SQL tuple respecting quoted strings */
@@ -958,25 +1131,27 @@ function normalizeParsedRecords(rawList) {
   });
 }
 
-/** Clear all ledger entries (admin maintenance) */
-export async function clearLedgerEntries(user = {}) {
+/** Clear all ledger entries (admin maintenance). Remote is cleared first so a failure leaves the local ledger intact. */
+export async function clearLedgerEntries(user = {}, options = {}) {
+  const sb = await resolveSyncClient(options.syncClient);
+  if (sb) {
+    const { error } = await sb.from('ledger_entries').delete().neq('id', ZERO_UUID);
+    if (error) throw syncFailure('delete', error);
+  }
+
   inMemoryEntries = [];
   savePersistedEntries();
-  try {
-    const sb = getSystemAdminClient() || admin;
-    if (sb) {
-      await sb.from('ledger_entries').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    }
-  } catch {}
 
   try {
     await logAuditEvent({
       actor: user,
       action: 'LEDGER_RESET_CLEARED',
       resourceType: 'ledger',
-      details: { message: 'All ledger entries cleared by administrator' },
+      details: { message: 'All ledger entries cleared by administrator', sync: sb ? 'supabase' : 'local_only' },
     });
-  } catch {}
+  } catch (err) {
+    console.warn('[LedgerService] Audit log failed after clear:', err.message);
+  }
 
-  return { success: true };
+  return { success: true, sync: sb ? 'supabase' : 'local_only' };
 }

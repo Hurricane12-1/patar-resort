@@ -1876,32 +1876,11 @@ export const api = {
     sqlLines.push('COMMIT;');
     return sqlLines.join('\n');
   },
-  importLedgerBackup: async (content: string, mode: 'append' | 'overwrite' = 'append') => {
-    try {
-      return await req('/ledger/backup/import', { method: 'POST', body: { content, mode } });
-    } catch {}
-    const sb = await ensureSupabaseSession();
-    if (mode === 'overwrite') {
-      await sb.from('ledger_entries').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    }
-    const trimmed = content.trim();
-    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-      const parsed = JSON.parse(trimmed);
-      const list = Array.isArray(parsed) ? parsed : (parsed.ledger_entries || []);
-      if (list.length > 0) {
-        await sb.from('ledger_entries').upsert(list, { onConflict: 'entry_number' });
-      }
-      return { imported_count: list.length, detected_format: 'json' };
-    }
-    return { imported_count: 1, detected_format: 'sql' };
+  importLedgerBackup: async (content: string, mode: 'append' | 'overwrite' = 'append', dryRun = false) => {
+    return await req('/ledger/backup/import', { method: 'POST', body: { content, mode, dry_run: dryRun } });
   },
   clearLedger: async () => {
-    try {
-      return await req('/ledger/clear', { method: 'POST' });
-    } catch {}
-    const sb = await ensureSupabaseSession();
-    await sb.from('ledger_entries').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    return { success: true };
+    return await req('/ledger/clear', { method: 'POST' });
   },
 
   // Price-Change Approval Requests
