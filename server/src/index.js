@@ -29,7 +29,7 @@ app.use(concurrencyLimiter(250));
 app.use(cookieTokenizer);
 app.use(ngwfFirewall);
 
-app.use('/api/webhooks', express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 app.use(express.json({ limit: '5mb' }));
 app.use(antiXssSanitizer);
 

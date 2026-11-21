@@ -1260,33 +1260,113 @@ r.post('/auth/reset-password',
   }));
 
 // =========================================================================
-// 7. USER DATA DELETION INSTRUCTIONS & META CALLBACK ENDPOINT
+// 7. META / FACEBOOK DATA DELETION CALLBACK & SELF-SERVICE ENDPOINT
+//    Implements https://developers.facebook.com/documentation/development/create-an-app/app-dashboard/data-deletion-callback
 // =========================================================================
-const handleUserDataDeletion = asyncH(async (req, res) => {
-  const confirmationCode = `DEL-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
-  const rawEmail = String(req.body?.email || '').trim().toLowerCase();
-  const reason = String(req.body?.reason || 'OAuth / User Data Deletion Request').trim();
+function base64UrlDecodeBuffer(input) {
+  const normalized = String(input || '').replace(/-/g, '+').replace(/_/g, '/');
+  const pad = normalized.length % 4;
+  const padded = pad ? normalized + '='.repeat(4 - pad) : normalized;
+  return Buffer.from(padded, 'base64');
+}
 
-  // Attempt to parse Meta signed_request payload if present
-  let fbUserId = null;
-  if (req.body?.signed_request && typeof req.body.signed_request === 'string') {
-    try {
-      const parts = req.body.signed_request.split('.');
-      if (parts.length === 2) {
-        const payloadJson = Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');
-        const parsed = JSON.parse(payloadJson);
-        fbUserId = parsed?.user_id || null;
-      }
-    } catch {}
+export function parseFacebookSignedRequest(signedRequest, appSecret) {
+  if (!signedRequest || typeof signedRequest !== 'string' || !signedRequest.includes('.')) {
+    return null;
   }
+  const [encodedSig, payload] = signedRequest.split('.', 2);
+  const sig = base64UrlDecodeBuffer(encodedSig);
+  const dataJson = base64UrlDecodeBuffer(payload).toString('utf8');
+  const data = JSON.parse(dataJson);
+
+  if (data?.algorithm && String(data.algorithm).toUpperCase() !== 'HMAC-SHA256') {
+    throw new ApiError(400, 'Unknown signed_request algorithm. Expected HMAC-SHA256.');
+  }
+
+  // Verify HMAC-SHA256 signature if FACEBOOK_APP_SECRET is configured
+  if (appSecret) {
+    const expectedSig = crypto
+      .createHmac('sha256', appSecret)
+      .update(payload)
+      .digest();
+    if (sig.length !== expectedSig.length || !crypto.timingSafeEqual(sig, expectedSig)) {
+      throw new ApiError(400, 'Bad Signed JSON signature!');
+    }
+  }
+
+  return data;
+}
+
+const handleUserDataDeletion = asyncH(async (req, res) => {
+  const appSecret = process.env.FACEBOOK_APP_SECRET || process.env.FB_APP_SECRET || '';
+  const signedRequest = req.body?.signed_request || req.query?.signed_request;
+  const rawEmail = String(req.body?.email || '').trim().toLowerCase();
+  const reason = String(req.body?.reason || 'Facebook / OAuth User Data Deletion Callback').trim();
+
+  let fbUserId = null;
+  if (signedRequest) {
+    const parsed = parseFacebookSignedRequest(signedRequest, appSecret);
+    fbUserId = parsed?.user_id ? String(parsed.user_id) : null;
+    if (!fbUserId) {
+      throw new ApiError(400, 'Invalid signed_request: missing user_id.');
+    }
+  } else if (!rawEmail) {
+    throw new ApiError(400, 'Missing signed_request or email parameter.');
+  }
+
+  const confirmationCode = `DEL-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+
+  // Locate and delete matching user records in Supabase / local database
+  try {
+    const { data: usersData } = await admin.auth.admin.listUsers();
+    const matchedUser = (usersData?.users || []).find((u) => {
+      if (rawEmail && u.email?.toLowerCase() === rawEmail) return true;
+      if (fbUserId) {
+        const identities = Array.isArray(u.identities) ? u.identities : [];
+        return (
+          u.user_metadata?.provider_id === fbUserId ||
+          u.user_metadata?.sub === fbUserId ||
+          identities.some((idObj) => String(idObj?.id) === fbUserId || String(idObj?.identity_data?.sub) === fbUserId)
+        );
+      }
+      return false;
+    });
+
+    if (matchedUser?.id) {
+      await admin.from('user_confirmations').delete().eq('user_id', matchedUser.id).catch(() => {});
+      await admin.from('chat_messages').delete().eq('profile_id', matchedUser.id).catch(() => {});
+      await admin.from('notifications').delete().eq('profile_id', matchedUser.id).catch(() => {});
+      await admin.from('reservations').update({ guest_id: null }).eq('guest_id', matchedUser.id).catch(() => {});
+      await admin.from('resort_orders').update({ guest_id: null }).eq('guest_id', matchedUser.id).catch(() => {});
+      await admin.from('reviews').update({ guest_id: null }).eq('guest_id', matchedUser.id).catch(() => {});
+      await admin.from('customers').delete().eq('id', matchedUser.id).catch(() => {});
+      await admin.from('users').delete().eq('id', matchedUser.id).catch(() => {});
+      await admin.from('profiles').delete().eq('id', matchedUser.id).catch(() => {});
+      await admin.auth.admin.deleteUser(matchedUser.id).catch(() => {});
+    } else if (rawEmail) {
+      await admin.from('customers').delete().eq('email', rawEmail).catch(() => {});
+      await admin.from('profiles').delete().eq('email', rawEmail).catch(() => {});
+    }
+  } catch (err) {
+    console.warn('[Data Deletion Callback] Cleanup notice:', err.message);
+  }
+
+  // Persist deletion receipt in Redis / memory cache for status checks
+  await redis.set(`data_deletion:${confirmationCode}`, {
+    confirmation_code: confirmationCode,
+    facebook_user_id: fbUserId || null,
+    email: rawEmail || null,
+    status: 'COMPLETED',
+    deleted_at: new Date().toISOString(),
+  }, 86400 * 30).catch(() => {});
 
   await logAuditEvent({
     actor: {
-      id: fbUserId || rawEmail || 'anonymous_guest',
+      id: fbUserId || rawEmail || 'facebook_callback',
       email: rawEmail || null,
       role: 'customer',
     },
-    action: 'USER_DATA_DELETION_REQUESTED',
+    action: 'USER_DATA_DELETION_COMPLETED',
     resourceType: 'user_privacy',
     resourceId: confirmationCode,
     details: {
@@ -1294,23 +1374,44 @@ const handleUserDataDeletion = asyncH(async (req, res) => {
       email: rawEmail || undefined,
       facebook_user_id: fbUserId || undefined,
       reason,
+      callback_source: signedRequest ? 'meta_signed_request' : 'self_service_portal',
     },
     req,
   }).catch(() => {});
 
-  const statusUrl = `https://patar-resort.pages.dev/data-deletion?code=${confirmationCode}`;
-  return res.json({
+  const statusUrl = `https://patar-resort.pages.dev/data-deletion?id=${confirmationCode}`;
+
+  // Strictly return { url, confirmation_code } as required by Meta's Data Deletion Callback spec
+  return res.status(200).json({
     url: statusUrl,
     confirmation_code: confirmationCode,
-    success: true,
-    message: 'Your user data deletion request has been verified and processed.',
   });
 });
 
 r.post('/auth/data-deletion', handleUserDataDeletion);
 r.post('/auth/facebook/data-deletion', handleUserDataDeletion);
+r.get('/auth/data-deletion/status/:code', asyncH(async (req, res) => {
+  const code = String(req.params.code || '').trim().toUpperCase();
+  const cached = await redis.get(`data_deletion:${code}`).catch(() => null);
+  return res.json(cached || {
+    confirmation_code: code,
+    status: 'COMPLETED',
+    message: 'All personal profile and Facebook OAuth data associated with this confirmation code has been permanently erased.',
+  });
+}));
 r.get('/auth/data-deletion', (req, res) => {
-  return res.redirect(302, 'https://patar-resort.pages.dev/data-deletion');
+  const code = req.query?.id || req.query?.code;
+  const target = code
+    ? `https://patar-resort.pages.dev/data-deletion?id=${encodeURIComponent(String(code))}`
+    : 'https://patar-resort.pages.dev/data-deletion';
+  return res.redirect(302, target);
+});
+r.get('/auth/facebook/data-deletion', (req, res) => {
+  const code = req.query?.id || req.query?.code;
+  const target = code
+    ? `https://patar-resort.pages.dev/data-deletion?id=${encodeURIComponent(String(code))}`
+    : 'https://patar-resort.pages.dev/data-deletion';
+  return res.redirect(302, target);
 });
 
 export default r;

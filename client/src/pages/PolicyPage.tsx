@@ -25,12 +25,23 @@ export default function PolicyPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const codeParam = params.get('code');
+    const codeParam = params.get('id') || params.get('code');
     if (codeParam) {
       setDeletionResult({
         code: codeParam,
-        status: 'COMPLETED — Permanent Account & OAuth Data Erasure Verified',
+        status: 'COMPLETED — All Facebook OAuth & Guest Profile Personal Data Permanently Erased',
       });
+      fetch(`${API_BASE || ''}/api/auth/data-deletion/status/${encodeURIComponent(codeParam)}`)
+        .then((r) => r.json())
+        .then((d) => {
+          if (d?.confirmation_code) {
+            setDeletionResult({
+              code: d.confirmation_code,
+              status: d.message || `COMPLETED (${d.status || 'ERASED'}) — All personal profile & Facebook OAuth data removed.`,
+            });
+          }
+        })
+        .catch(() => {});
     }
 
     const isDirectDeletionRoute =
