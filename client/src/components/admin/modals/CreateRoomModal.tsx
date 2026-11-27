@@ -195,7 +195,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* FEATURED CLOUDINARY IMAGE BACKGROUND DETAIL HERO */}
+        {/* Room photo header */}
         <div
           style={{
             position: 'relative',
@@ -234,7 +234,6 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
               }}
             >
               <i className="fas fa-camera" style={{ fontSize: '2.2rem' }} />
-              <span style={{ fontSize: '.8rem', fontWeight: 600 }}>No Room Photo Uploaded Yet</span>
             </div>
           )}
           <div
@@ -559,7 +558,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
               </div>
               <div>
                 <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>
-                  Total Physical Units
+                  Total Units
                 </label>
                 <input
                   required
@@ -730,7 +729,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
               )}
             </div>
 
-            {/* CLOUDINARY IMAGE BACKGROUND DETAIL & UPLOAD SECTION */}
+            {/* Photo upload */}
             <div
               style={{
                 background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.6)',

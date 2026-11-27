@@ -230,7 +230,7 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* FEATURED CLOUDINARY IMAGE BACKGROUND DETAIL HERO */}
+        {/* Room photo header */}
         <div
           style={{
             position: 'relative',
@@ -396,7 +396,7 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
                 <span>•</span>
                 <span>
                   <i className="fas fa-door-open" style={{ marginRight: 4 }} />
-                  {formData.units || 1} Physical Unit{Number(formData.units || 1) > 1 ? 's' : ''}
+                  {formData.units || 1} Unit{Number(formData.units || 1) > 1 ? 's' : ''}
                 </span>
               </div>
             </div>
@@ -480,7 +480,7 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
               )}
             </div>
             <div>
-              <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Available Physical Units *</label>
+              <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Available Units *</label>
               <input
                 required
                 type="number"
