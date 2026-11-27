@@ -485,15 +485,19 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                       <label
                         htmlFor="settings-avatar-upload"
-                        className="btn btn-sky btn-sm"
                         style={{
-                          cursor: 'pointer',
+                          cursor: uploadingAvatar ? 'wait' : 'pointer',
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: 6,
-                          borderRadius: 9999,
-                          fontWeight: 700,
-                          padding: '6px 16px',
+                          borderRadius: 8,
+                          background: '#006699',
+                          color: '#FFFFFF',
+                          border: '1px solid #006699',
+                          boxShadow: 'none',
+                          fontSize: '.82rem',
+                          fontWeight: 600,
+                          padding: '8px 16px',
                         }}
                       >
                         {uploadingAvatar ? <i className="fas fa-spinner fa-spin" /> : <i className="fas fa-cloud-arrow-up" />}
@@ -512,13 +516,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                           type="button"
                           onClick={handleRemoveAvatar}
                           disabled={uploadingAvatar}
-                          className="btn btn-ghost btn-sm"
                           style={{
-                            borderRadius: 9999,
-                            color: '#EF4444',
-                            borderColor: 'rgba(239, 68, 68, 0.4)',
-                            fontWeight: 700,
-                            padding: '6px 16px',
+                            borderRadius: 8,
+                            background: '#FFFFFF',
+                            color: '#006699',
+                            border: '1px solid #006699',
+                            boxShadow: 'none',
+                            fontSize: '.82rem',
+                            fontWeight: 600,
+                            padding: '8px 16px',
+                            cursor: 'pointer',
                           }}
                         >
                           Remove Photo
