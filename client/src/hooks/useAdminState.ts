@@ -249,7 +249,7 @@ export function useAdminState() {
     guests: 2,
     total_php: 3500,
     payment_method: 'GCash',
-    payment_status: 'confirmed',
+    payment_status: 'unpaid',
     notes: 'Direct Front Desk walk-in entry',
   };
 

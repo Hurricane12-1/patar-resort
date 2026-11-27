@@ -33,6 +33,7 @@ import { logAuditEvent } from '../lib/auditLogger.js';
 import { sendRefundRequestedEmail, sendRefundConfirmedEmail } from '../lib/mailer.js';
 import { broadcastPayload1 } from '../socket/chatbot.js';
 import { getLocalReservations, addLocalReservation, updateLocalReservation, deleteLocalReservation } from '../lib/reservationStore.js';
+import { normalizePaymentStatus } from '../lib/paymentStatus.js';
 
 const r = Router();
 const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -397,7 +398,7 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
     total_php,
     downpayment_php,
     payment_method: finalPaymentMethod,
-    payment_status: (isDeskStaff && payment_status) ? payment_status : 'unpaid',
+    payment_status: (isDeskStaff && payment_status) ? normalizePaymentStatus(payment_status) : 'unpaid',
     status: (isDeskStaff && customStatus) ? customStatus : 'confirmed',
     guest_name: finalGuestName,
     email: finalGuestEmail,
@@ -432,7 +433,7 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
         total_php,
         downpayment_php,
         payment_method: finalPaymentMethod,
-        payment_status: payment_status || 'unpaid',
+        payment_status: normalizePaymentStatus(payment_status),
         status: customStatus || 'confirmed',
         guest_name: finalGuestName,
         email: finalGuestEmail,
@@ -683,7 +684,7 @@ r.patch('/reservations/:id', authenticate, requireReservationDesk, asyncH(async 
   const updatePayload = { updated_at: new Date().toISOString() };
   for (const f of allowedFields) {
     if (req.body[f] !== undefined) {
-      updatePayload[f] = req.body[f];
+      updatePayload[f] = f === 'payment_status' ? normalizePaymentStatus(req.body[f]) : req.body[f];
     }
   }
 

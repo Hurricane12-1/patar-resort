@@ -974,7 +974,9 @@ export const api = {
       total_php,
       downpayment_php: normalizedBody.downpayment_php !== undefined ? Number(normalizedBody.downpayment_php) : Math.round(total_php * 0.5),
       payment_method: normalizedBody.payment_method || 'GCash',
-      payment_status: normalizedBody.payment_status || 'confirmed',
+      payment_status: ['unpaid', 'partially_paid', 'paid', 'refund_pending', 'refunded'].includes(String(normalizedBody.payment_status || '').toLowerCase())
+        ? String(normalizedBody.payment_status).toLowerCase()
+        : 'unpaid',
       status: normalizedBody.status || 'confirmed',
       guest_name: guestName,
       email: finalGuestEmail,
