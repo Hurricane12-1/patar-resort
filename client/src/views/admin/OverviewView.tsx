@@ -990,9 +990,12 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                   OPEN CONVERSATIONS
                 </span>
                 <h3 style={{ fontSize: '1.25rem', margin: 0, color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800 }}>
-                  {guestConversations.length > 0 ? `${guestConversations.length} conversations to resolve` : '5 conversations to resolve'}
+                  {guestConversations.length === 0
+                    ? 'No conversations to resolve'
+                    : `${guestConversations.length} ${guestConversations.length === 1 ? 'conversation' : 'conversations'} to resolve`}
                 </h3>
               </div>
+              {guestConversations.length > 0 && (
               <span style={{
                 fontSize: '.72rem',
                 color: '#10B981',
@@ -1005,8 +1008,9 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 alignItems: 'center',
                 gap: 5,
               }}>
-                ● {guestConversations.length || 3} unread
+                ● {guestConversations.length} open
               </span>
+              )}
             </div>
 
             <p style={{ margin: '0 0 16px', fontSize: '.78rem', color: themeMuted, lineHeight: 1.4 }}>
