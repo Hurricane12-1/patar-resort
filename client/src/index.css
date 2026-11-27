@@ -412,6 +412,15 @@
 .cal-box-booked:hover {
   border-color: #F43F5E !important;
 }
+.cal-box-partial {
+  background-color: rgba(217, 119, 6, 0.14) !important;
+  border: 1px solid rgba(245, 158, 11, 0.45) !important;
+  border-radius: 8px !important;
+  color: #FCD34D !important;
+}
+.cal-box-partial:hover {
+  border-color: #F59E0B !important;
+}
 .cal-box-conflict {
   background-color: rgba(225, 29, 72, 0.3) !important;
   border: 2px solid #E11D48 !important;
@@ -457,7 +466,7 @@ html, body {
 /* Big Month Box for Single Large Calendar */
 .cal-cell-big {
   min-height: 70px;
-  padding: 8px 10px;
+  padding: 6px 7px;
 }
 @media (min-width: 640px) {
   .cal-cell-big {

@@ -33,6 +33,8 @@ import {
   type GuestBooking,
   type GuestPaymentMethod,
 } from '../lib/guestPortal';
+import { describeNights, nightLevel, openRoomsForRange, roomNights, type RoomNight } from '../lib/stayCalendar';
+import { AvailableRoomsPanel, CalendarRoomChips, NightDots, roomDotClass } from './guest/StayCalendarRooms';
 
 // =============================================================================
 // TYPES & INTERFACES
@@ -156,6 +158,11 @@ function formatFullDate(isoStr: string | null): string {
   if (!isoStr) return 'N/A';
   const [y, m, d] = isoStr.split('-').map(Number);
   return `${SHORT_MONTH_NAMES[m]} ${d}, ${y}`;
+}
+
+function formatWeekdayDate(isoStr: string): string {
+  const weekday = parseLocal(isoStr).toLocaleDateString('en-US', { weekday: 'short' });
+  return `${weekday}, ${formatShortDate(isoStr)}`;
 }
 
 function isWeekendNight(isoStr: string): boolean {
@@ -399,6 +406,14 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   const [checkIn, setCheckIn] = useState<string | null>(null);
   const [checkOut, setCheckOut] = useState<string | null>(null);
   const [hoverDate, setHoverDate] = useState<string | null>(null);
+  // Kept with the stay as it was when the date was tapped, so any other change to the stay hides the room list.
+  const [dateLookup, setDateLookup] = useState<{
+    anchor: string;
+    start: string;
+    end: string;
+    checkIn: string | null;
+    checkOut: string | null;
+  } | null>(null);
   const [activeField, setActiveField] = useState<'checkin' | 'checkout'>('checkin');
   const [cardDrawer, setCardDrawer] = useState<'none' | 'calendar' | 'guests'>('none');
   const [drawerCategory, setDrawerCategory] = useState<'all' | 'room' | 'cottage'>('all');
@@ -918,6 +933,45 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     return count;
   }, [inlineYM, selectedRoomIds, selectedRoomId, rooms, reservations]);
 
+  // The calendar follows the rooms picked in the room list, in the order they were picked.
+  const calendarRooms = useMemo(() => {
+    const ids = selectedRoomIds.length ? selectedRoomIds : selectedRoomId ? [selectedRoomId] : [];
+    return ids.map((id) => rooms.find((r) => r.id === id)).filter((r): r is Room => Boolean(r));
+  }, [selectedRoomIds, selectedRoomId, rooms]);
+
+  const monthNights = useMemo(() => {
+    const byDay = new Map<string, RoomNight[]>();
+    if (calendarRooms.length === 0) return byDay;
+    const daysInMonth = new Date(inlineYM.y, inlineYM.m, 0).getDate();
+    for (let day = 1; day <= daysInMonth; day++) {
+      const iso = fmtISO(inlineYM.y, inlineYM.m, day);
+      byDay.set(iso, roomNights(calendarRooms, iso, reservations));
+    }
+    return byDay;
+  }, [calendarRooms, inlineYM, reservations]);
+
+  const activeLookup =
+    dateLookup && dateLookup.checkIn === checkIn && dateLookup.checkOut === checkOut ? dateLookup : null;
+  const lookupOpenRooms = useMemo(
+    () => (activeLookup ? openRoomsForRange(rooms, activeLookup.start, activeLookup.end, reservations) : []),
+    [activeLookup, rooms, reservations]
+  );
+  const lookupBookedPicked = useMemo(
+    () => (activeLookup ? calendarRooms.filter((room) => !lookupOpenRooms.some((open) => open.id === room.id)) : []),
+    [activeLookup, calendarRooms, lookupOpenRooms]
+  );
+  const lookupNights = activeLookup ? diffNights(activeLookup.start, activeLookup.end) : 0;
+  const lookupHeading = !activeLookup
+    ? ''
+    : lookupNights === 1
+    ? `Rooms for ${formatWeekdayDate(activeLookup.start)}`
+    : `Rooms for ${formatShortDate(activeLookup.start)} – ${formatShortDate(activeLookup.end)}`;
+  const lookupSummary = !activeLookup
+    ? ''
+    : `${lookupNights} ${lookupNights === 1 ? 'night' : 'nights'} · ${lookupOpenRooms.length} of ${rooms.length} ${
+        rooms.length === 1 ? 'room' : 'rooms'
+      } available`;
+
   const selectedCapacity = Number(selectedRoom.capacity) || 0;
   const selectedFits = selectedCapacity > 0 && selectedCapacity >= partySize;
   const reserveBlock: 'capacity' | 'dates' | null = !selectedFits ? 'capacity' : hasRangeConflict ? 'dates' : null;
@@ -1052,6 +1106,12 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
       }
     }
   };
+  const clearRoomSelection = () => {
+    setRoomMode('manual');
+    setSelectedRoomIds([]);
+    setSelectedRoomId(null);
+    setConflictToast(null);
+  };
   const enableAutoMatch = () => {
     setRoomMode('auto');
     const best = roomRanking.best;
@@ -1139,6 +1199,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
 
     const activeRoomId = selectedRoomId || (selectedRoomIds.length > 0 ? selectedRoomIds[0] : null);
     if (activeRoomId && !isRoomFree(activeRoomId, start, end, reservations)) {
+      setDateLookup({ anchor: isoStr, start, end, checkIn, checkOut });
       const conflictingRes = reservations.filter(
         (res) =>
           String(res.room_id) === String(activeRoomId) &&
@@ -1170,12 +1231,14 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     setCalendarNotice(null);
 
     if (pickingCheckout) {
+      setDateLookup({ anchor: isoStr, start, end, checkIn, checkOut: isoStr });
       setCheckOut(isoStr);
       setActiveField('checkin');
       setCardDrawer('none');
       return;
     }
 
+    setDateLookup({ anchor: isoStr, start, end, checkIn: isoStr, checkOut: null });
     setCheckIn(isoStr);
     setCheckOut(null);
     setActiveField('checkout');
@@ -1187,9 +1250,11 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     setHoverDate(null);
     setActiveField('checkin');
     setCalendarNotice(null);
+    setDateLookup(null);
   };
 
   const applyQuickPreset = (preset: 'weekend' | 'stay3' | 'stay5') => {
+    setDateLookup(null);
     // Find next available span
     let start = todayISO < '2026-11-01' ? '2026-11-06' : todayISO;
     if (preset === 'weekend') {
@@ -1219,6 +1284,10 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     const firstDow = new Date(ym.y, ym.m - 1, 1).getDay(); // 0..6
     const daysInMonth = new Date(ym.y, ym.m, 0).getDate();
     const cells = [];
+    const weekOf = (day: number) => Math.floor((firstDow + day - 1) / 7);
+    // The room list opens under the week of the date the guest tapped, so the answer appears where they are looking.
+    const lookupDay =
+      activeLookup && activeLookup.anchor.startsWith(fmtYM(ym)) ? Number(activeLookup.anchor.slice(8, 10)) : 0;
 
     // Leading blanks
     for (let i = 0; i < firstDow; i++) {
@@ -1232,6 +1301,9 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
       const isBooked = isDateBooked(isoStr);
       const isOwnBooked = isBooked && isOwnBookedForSelected(isoStr);
       const isTurnaround = isDateTurnaround(isoStr);
+      const nights = monthNights.get(isoStr);
+      const level = nights ? nightLevel(nights) : 'open';
+      const nightNote = nights && level !== 'open' ? describeNights(nights) : '';
       const isSelectedIn = isoStr === checkIn;
       const isSelectedOut = isoStr === checkOut;
       const isInRange = checkIn && checkOut && isoStr > checkIn && isoStr < checkOut;
@@ -1247,19 +1319,27 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
       else if (isInRange) cellClass = 'cal-box-range';
       else if (isHoverRange) cellClass = 'cal-box-hover';
       else if (isOwnBooked) cellClass = 'cal-box-own-booked';
+      else if (level === 'partial') cellClass = 'cal-box-partial';
       else if (isBooked) cellClass = 'cal-box-booked';
       else if (isTurnaround) cellClass = 'cal-box-turnaround';
 
       cells.push(
         <button
           key={isoStr}
+          id={`cal-day-${isoStr}`}
           type="button"
           disabled={isPast}
           onClick={() => handleDateClick(isoStr)}
           onMouseEnter={() => !checkOut && setHoverDate(isoStr)}
+          title={nightNote || undefined}
+          aria-label={
+            nightNote
+              ? `${formatFullDate(isoStr)}${isSelectedIn ? ', check-in' : ''}${isSelectedOut ? ', check-out' : ''}. ${nightNote}.`
+              : undefined
+          }
           className={`cal-cell-big rounded-[8px] flex flex-col justify-between text-left transition ${cellClass}`}
         >
-          <div className="flex items-center justify-between w-full">
+          <div className="flex flex-wrap items-center justify-between w-full gap-x-1 gap-y-0.5">
             <span className="text-sm sm:text-base font-bold leading-none">{day}</span>
             {isSelectedIn && (
               <span className="text-[10px] font-black uppercase bg-white text-black px-1.5 py-0.5 rounded-[4px] tracking-wider">
@@ -1271,21 +1351,45 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                 OUT
               </span>
             )}
-            {isBooked && !isSelectedIn && !isSelectedOut && (
+            {isBooked && level !== 'partial' && !isSelectedIn && !isSelectedOut && (
               isOwnBooked ? (
-                <span className="text-[9px] font-extrabold text-white bg-white/20 border border-white/50 px-1.5 py-0.5 rounded-[4px] uppercase tracking-wider">
+                <span className="hidden sm:inline-block text-[9px] font-extrabold text-white bg-white/20 border border-white/50 px-1.5 py-0.5 rounded-[4px] uppercase tracking-wider">
                   Booked
                 </span>
               ) : (
-                <span className="text-[9px] font-bold text-rose-400 uppercase">Booked</span>
+                <span className="hidden sm:inline-block text-[9px] font-bold text-rose-400 uppercase">Booked</span>
               )
             )}
           </div>
+          {nights && level !== 'open' && !isPast && <NightDots nights={nights} />}
           <span className="text-[11px] sm:text-xs font-semibold opacity-85 leading-none mt-1">
             {formatCompactRate(rate)}
           </span>
         </button>
       );
+
+      if (lookupDay > 0 && weekOf(day) === weekOf(lookupDay) && ((firstDow + day - 1) % 7 === 6 || day === daysInMonth)) {
+        cells.push(
+          <div key="available-rooms" className="col-span-7">
+            <AvailableRoomsPanel
+              heading={lookupHeading}
+              summary={lookupSummary}
+              status={dbStatus}
+              totalRooms={rooms.length}
+              openRooms={lookupOpenRooms}
+              bookedPicked={lookupBookedPicked}
+              pickedIds={calendarRooms.map((r) => r.id)}
+              partySize={partySize}
+              formatRate={formatPHP}
+              onToggle={toggleRoomSelect}
+              onClose={() => {
+                setDateLookup(null);
+                document.getElementById(`cal-day-${activeLookup?.anchor}`)?.focus();
+              }}
+            />
+          </div>
+        );
+      }
     }
 
     return cells;
@@ -1890,9 +1994,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                   aria-checked={roomMode === 'auto'}
                   onClick={() => {
                     if (roomMode === 'auto') {
-                      setRoomMode('manual');
-                      setSelectedRoomIds([]);
-                      setSelectedRoomId(null);
+                      clearRoomSelection();
                     } else {
                       enableAutoMatch();
                     }
@@ -2441,6 +2543,8 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                     </span>
                   </div>
 
+                  <CalendarRoomChips rooms={calendarRooms} onRemove={toggleRoomSelect} onClear={clearRoomSelection} />
+
                   {/* Weekday Labels (Sun - Sat) */}
                   <div className="grid grid-cols-7 gap-1.5 sm:gap-2.5 mb-2 text-center">
                     {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((w, i) => (
@@ -2469,7 +2573,16 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
                       <span className="font-bold text-white">
-                        Live status for: <span className="underline decoration-cyan font-extrabold text-cyan">{selectedRoom.name}</span>
+                        {calendarRooms.length > 0 ? (
+                          <>
+                            Live status for:{' '}
+                            <span className="underline decoration-cyan font-extrabold text-cyan">
+                              {calendarRooms.map((room) => room.name).join(', ')}
+                            </span>
+                          </>
+                        ) : (
+                          'Live status: no room picked yet'
+                        )}
                       </span>
                     </div>
 
@@ -2478,14 +2591,16 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                         <span className="w-2 h-2 rounded-full bg-rose-400"></span>
                         Selected stay conflicts with booked reservation
                       </span>
-                    ) : checkIn && checkOut ? (
+                    ) : checkIn && checkOut && calendarRooms.length > 0 ? (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40">
                         <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
                         Fully available for {formatShortDate(checkIn)} – {formatShortDate(checkOut)}
                       </span>
                     ) : (
                       <span className="text-[11px] font-semibold text-white/60">
-                        {monthBookedNights > 0
+                        {calendarRooms.length === 0
+                          ? 'Pick a room above to see which nights it is booked.'
+                          : monthBookedNights > 0
                           ? `${monthBookedNights} booked ${monthBookedNights === 1 ? 'night' : 'nights'} in ${MONTH_NAMES[inlineYM.m]} · ${Math.max(0, new Date(inlineYM.y, inlineYM.m, 0).getDate() - monthBookedNights)} nights open`
                           : `100% available in ${MONTH_NAMES[inlineYM.m]} ${inlineYM.y}`}
                       </span>
@@ -2507,8 +2622,17 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                       <span className="inline-flex items-center gap-1.5 font-semibold text-white">
                         <span className="w-4 h-4 rounded-[4px] cal-box-own-booked inline-block"></span> Your Booked Stay
                       </span>
+                      <span className="inline-flex items-center gap-1.5 font-medium text-amber-300">
+                        <span className="w-4 h-4 rounded-[4px] cal-box-partial inline-block"></span> Some picked rooms booked
+                      </span>
                       <span className="inline-flex items-center gap-1.5 font-medium text-rose-400">
-                        <span className="w-4 h-4 rounded-[4px] cal-box-booked inline-block"></span> Booked Box
+                        <span className="w-4 h-4 rounded-[4px] cal-box-booked inline-block"></span> All picked rooms booked
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 font-medium text-white/90">
+                        <span className={roomDotClass(true)}></span> Room booked
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 font-medium text-white/90">
+                        <span className={roomDotClass(false)}></span> Room available
                       </span>
                       {hasRangeConflict && (
                         <span className="inline-flex items-center gap-1.5 font-bold text-rose-400">
@@ -2516,7 +2640,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                         </span>
                       )}
                     </div>
-                    <span className="text-[11px] text-[#64748B]">Tap any open date to set stay range</span>
+                    <span className="text-[11px] text-white/60">Tap a date to set your stay and see which rooms are available</span>
                   </div>
                 </div>
               </div>
