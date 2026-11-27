@@ -117,7 +117,7 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
 
     try {
       setUploadingPhoto(true);
-      toast('Uploading photo to Cloudinary…');
+      toast('Uploading photo…');
       const uploaded = await uploadImageToCloudinary(file);
       const url = uploaded.url;
       const currentList = Array.isArray(formData.images) ? [...formData.images] : [];
@@ -129,11 +129,7 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
         images: currentList,
       });
 
-      if (uploaded.source === 'cloudinary' || (uploaded.url && uploaded.url.includes('cloudinary.com'))) {
-        toast('☁️ Room photo uploaded to Cloudinary CDN & synchronized!');
-      } else {
-        toast('✅ Room photo uploaded & saved successfully!');
-      }
+      toast('Photo uploaded.');
     } catch (err: any) {
       toast(err.message || 'Failed to upload photo', true);
     } finally {
@@ -792,11 +788,11 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
               <i className="fas fa-cloud-arrow-up" style={{ fontSize: "1.8rem", display: "block", marginBottom: 2, color: "#0EA5E9" }} />
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ fontSize: '.86rem', fontWeight: 700, color: '#0EA5E9' }}>
-                  {uploadingPhoto ? 'Uploading to Cloudinary CDN...' : <><i className="fas fa-folder-open" style={{ marginRight: 6 }} />Choose Image to Upload</>}
+                  {uploadingPhoto ? 'Uploading…' : <><i className="fas fa-folder-open" style={{ marginRight: 6 }} />Choose Image to Upload</>}
                 </span>
               </div>
               <span style={{ fontSize: '.74rem', color: themeMuted }}>
-                Cloudinary CDN delivery • JPG, PNG, WebP up to 5MB
+                JPG, PNG or WebP, up to 5MB
               </span>
             </div>
 
@@ -828,11 +824,6 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
                           onError={(e) => { e.currentTarget.src = 'https://res.cloudinary.com/juynm9ab/image/upload/jd_beach_house_accommodations/room.jpg'; }}
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
-                        {imgUrl.includes('cloudinary.com') && (
-                          <span style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(56, 189, 248, 0.9)', color: '#0F172A', fontSize: '.58rem', fontWeight: 800, padding: '2px 5px', borderRadius: 4 }}>
-                            <i className="fas fa-cloud" style={{ marginRight: 3 }} />CDN
-                          </span>
-                        )}
                         {isPrimary && (
                           <span style={{ position: 'absolute', top: 4, left: 4, background: '#0EA5E9', color: '#FFF', fontSize: '.6rem', fontWeight: 800, padding: '2px 6px', borderRadius: 4 }}>
                             <i className="fas fa-star" style={{ marginRight: 3 }} />Primary

@@ -500,7 +500,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       Executive Profile Picture
                     </b>
                     <p style={{ margin: '4px 0 8px', fontSize: '.8rem', color: themeMuted }}>
-                      Hosted on Cloudinary High-Performance CDN with auto-formatting &amp; facial focus.
+                      Shown next to your name across the admin pages.
                     </p>
                     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                       <label
@@ -517,7 +517,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                         }}
                       >
                         {uploadingAvatar ? <i className="fas fa-spinner fa-spin" /> : <i className="fas fa-cloud-arrow-up" />}
-                        {uploadingAvatar ? 'Uploading to Cloudinary…' : 'Upload Photo'}
+                        {uploadingAvatar ? 'Uploading…' : 'Upload Photo'}
                         <input
                           id="settings-avatar-upload"
                           type="file"

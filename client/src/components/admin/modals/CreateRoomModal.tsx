@@ -65,7 +65,6 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
     imagesList[0] ||
     '';
 
-  const isCloudinaryFeatured = Boolean(featuredImageUrl && featuredImageUrl.includes('cloudinary.com'));
 
   const currentAmenities: string[] =
     typeof newRoom.amenities === 'string'
@@ -114,7 +113,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
 
     try {
       setUploadingPhoto(true);
-      toast('Uploading room photo to Cloudinary CDN…');
+      toast('Uploading photo…');
       const uploaded = await uploadImageToCloudinary(file);
       const url = uploaded.url;
       const nextImages = [...imagesList];
@@ -126,11 +125,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
         images: nextImages,
       });
 
-      if (uploaded.source === 'cloudinary' || (url && url.includes('cloudinary.com'))) {
-        toast('☁️ Photo uploaded to Cloudinary CDN & featured as room background detail!');
-      } else {
-        toast('✅ Room photo uploaded & set as featured background!');
-      }
+      toast('Photo uploaded.');
     } catch (err: any) {
       toast(err.message || 'Failed to upload photo', true);
     } finally {
@@ -265,53 +260,6 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <span
-                style={{
-                  padding: '4px 10px',
-                  borderRadius: 20,
-                  background: 'rgba(14, 165, 233, 0.95)',
-                  color: '#FFFFFF',
-                  fontSize: '.68rem',
-                  fontWeight: 800,
-                  letterSpacing: '.06em',
-                  textTransform: 'uppercase',
-                  boxShadow: '0 2px 8px rgba(14, 165, 233, 0.4)',
-                }}
-              >
-                ✦ ROOM CATALOG
-              </span>
-              <span
-                style={{
-                  padding: '4px 10px',
-                  borderRadius: 20,
-                  background: 'rgba(15, 23, 42, 0.78)',
-                  color: '#F8FAFC',
-                  fontSize: '.68rem',
-                  fontWeight: 700,
-                  backdropFilter: 'blur(6px)',
-                  border: '1px solid rgba(255,255,255,0.22)',
-                }}
-              >
-                {newRoom.category || 'Cottage'}
-              </span>
-              {isCloudinaryFeatured && (
-                <span
-                  style={{
-                    padding: '4px 10px',
-                    borderRadius: 20,
-                    background: 'rgba(16, 185, 129, 0.9)',
-                    color: '#FFFFFF',
-                    fontSize: '.66rem',
-                    fontWeight: 800,
-                    letterSpacing: '.04em',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 5,
-                  }}
-                >
-                  <i className="fas fa-cloud" /> CLOUDINARY CDN FEATURED
-                </span>
-              )}
             </div>
 
             <button
@@ -351,18 +299,6 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
             }}
           >
             <div>
-              <div
-                style={{
-                  fontSize: '.68rem',
-                  color: '#38BDF8',
-                  fontWeight: 800,
-                  textTransform: 'uppercase',
-                  letterSpacing: '.06em',
-                }}
-              >
-                <i className="fas fa-image" style={{ marginRight: 5 }} />
-                Cloudinary Image Background Detail
-              </div>
               <h3
                 style={{
                   margin: '2px 0 0',
@@ -397,7 +333,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                 <span>•</span>
                 <span>
                   <i className="fas fa-door-open" style={{ marginRight: 4 }} />
-                  {newRoom.units || 1} Physical Unit{Number(newRoom.units || 1) > 1 ? 's' : ''}
+                  {newRoom.units || 1} Unit{Number(newRoom.units || 1) > 1 ? 's' : ''}
                 </span>
               </div>
             </div>
@@ -807,26 +743,12 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                 <div>
                   <b style={{ fontSize: '.88rem', color: themeText, display: 'block' }}>
                     <i className="fas fa-camera" style={{ marginRight: 6, color: '#0EA5E9' }} />
-                    Room Photo & Background Detail
+                    Room Photos
                   </b>
                   <span style={{ fontSize: '.73rem', color: themeMuted }}>
-                    Upload your custom room photos directly. You decide the featured room photo and gallery.
+                    Add photos of this room. The newest photo becomes the main one.
                   </span>
                 </div>
-                <span
-                  style={{
-                    fontSize: '.68rem',
-                    fontWeight: 800,
-                    padding: '3px 8px',
-                    borderRadius: 6,
-                    background: 'rgba(14,165,233,0.12)',
-                    color: '#0EA5E9',
-                    border: '1px solid rgba(14,165,233,0.3)',
-                  }}
-                >
-                  <i className="fas fa-bolt" style={{ marginRight: 4 }} />
-                  Live Header Preview
-                </span>
               </div>
 
               <input
@@ -858,16 +780,16 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                 />
                 <span style={{ fontSize: '.84rem', fontWeight: 700, color: '#0EA5E9', display: 'block' }}>
                   {uploadingPhoto ? (
-                    'Uploading to Cloudinary CDN...'
+                    'Uploading…'
                   ) : (
                     <>
                       <i className="fas fa-folder-open" style={{ marginRight: 6 }} />
-                      Upload Room Photo to Cloudinary CDN
+                      Upload Room Photo
                     </>
                   )}
                 </span>
                 <span style={{ fontSize: '.71rem', color: themeMuted }}>
-                  Automatically sets as featured room background • JPG, PNG, WebP up to 5MB
+                  JPG, PNG or WebP, up to 5MB
                 </span>
               </div>
 

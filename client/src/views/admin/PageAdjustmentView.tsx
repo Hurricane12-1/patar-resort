@@ -360,7 +360,7 @@ export const PageAdjustmentView: React.FC<PageAdjustmentViewProps> = ({
                 type="text"
                 value={heroUrl}
                 onChange={(e) => setHeroUrl(e.target.value)}
-                placeholder="https://... (Cloudinary, Supabase, Unsplash, Google, /uploads/...)"
+                placeholder="Paste the image link here"
                 style={{ ...input, flex: 1, minWidth: 260 }}
               />
             </div>
