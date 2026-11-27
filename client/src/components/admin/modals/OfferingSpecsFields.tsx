@@ -100,7 +100,6 @@ interface CustomizableDropdownProps {
   value: string;
   onChange: (val: string) => void;
   options: readonly string[];
-  placeholder?: string;
   isLightMode: boolean;
   themeBorder: string;
   themeText: string;
@@ -113,133 +112,43 @@ const CustomizableDropdown: React.FC<CustomizableDropdownProps> = ({
   value,
   onChange,
   options,
-  placeholder = 'Type custom value…',
   isLightMode,
   themeBorder,
   themeText,
   themeMuted,
 }) => {
-  const [isCustom, setIsCustom] = useState(() => !options.includes(value) && Boolean(value));
   const selectBg = isLightMode ? '#F8FAFC' : '#1E293B';
+  const choices: readonly string[] = value && !options.includes(value) ? [value, ...options] : options;
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-        <label htmlFor={id} style={{ fontSize: '.76rem', color: themeMuted, fontWeight: 700 }}>
-          {label}
-        </label>
-        <button
-          type="button"
-          onClick={() => setIsCustom(!isCustom)}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: isCustom ? '#D97706' : '#0284C7',
-            fontSize: '.72rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 4,
-            padding: '1px 4px',
-          }}
-        >
-          <i className={isCustom ? 'fas fa-list' : 'fas fa-plus'} />
-          {isCustom ? 'Presets' : '+ Custom'}
-        </button>
-      </div>
-
-      {isCustom ? (
-        <div style={{ display: 'flex', gap: 6 }}>
-          <input
-            id={id}
-            type="text"
-            autoFocus
-            placeholder={placeholder}
-            style={{
-              flex: 1,
-              minWidth: 0,
-              boxSizing: 'border-box',
-              padding: '9px 12px',
-              borderRadius: 10,
-              border: '1px solid #0284C7',
-              background: selectBg,
-              color: themeText,
-              fontWeight: 600,
-              fontSize: '.84rem',
-            }}
-            value={value || ''}
-            onChange={(e) => onChange(e.target.value)}
-          />
-          <button
-            type="button"
-            title="Switch back to presets"
-            onClick={() => setIsCustom(false)}
-            style={{
-              padding: '9px 12px',
-              borderRadius: 10,
-              border: `1px solid ${themeBorder}`,
-              background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.08)',
-              color: themeText,
-              fontSize: '.76rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            <i className="fas fa-list" style={{ marginRight: 4 }} /> Presets
-          </button>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', gap: 6 }}>
-          <select
-            id={id}
-            style={{
-              flex: 1,
-              minWidth: 0,
-              boxSizing: 'border-box',
-              padding: '9px 12px',
-              borderRadius: 10,
-              border: `1px solid ${themeBorder}`,
-              background: selectBg,
-              color: themeText,
-              fontWeight: 600,
-              fontSize: '.84rem',
-              cursor: 'pointer',
-            }}
-            value={options.includes(value) ? value : options[0]}
-            onChange={(e) => onChange(e.target.value)}
-          >
-            {options.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            title="Add a custom value"
-            onClick={() => setIsCustom(true)}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 4,
-              flexShrink: 0,
-              padding: '9px 12px',
-              borderRadius: 10,
-              border: '1px solid #0284C7',
-              background: '#0284C7',
-              color: '#FFFFFF',
-              fontSize: '.76rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            <i className="fas fa-plus" />
-          </button>
-        </div>
-      )}
+      <label htmlFor={id} style={{ display: 'block', fontSize: '.76rem', color: themeMuted, fontWeight: 700, marginBottom: 4 }}>
+        {label}
+      </label>
+      <select
+        id={id}
+        style={{
+          width: '100%',
+          minWidth: 0,
+          boxSizing: 'border-box',
+          padding: '9px 12px',
+          borderRadius: 10,
+          border: `1px solid ${themeBorder}`,
+          background: selectBg,
+          color: themeText,
+          fontWeight: 600,
+          fontSize: '.84rem',
+          cursor: 'pointer',
+        }}
+        value={choices.includes(value) ? value : choices[0]}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        {choices.map((opt) => (
+          <option key={opt} value={opt}>
+            {opt}
+          </option>
+        ))}
+      </select>
     </div>
   );
 };
@@ -390,7 +299,6 @@ export const OfferingSpecsFields: React.FC<OfferingSpecsFieldsProps> = ({
               value={String(specs?.bathroom_type || 'Private En-Suite')}
               onChange={(val) => updateSpec('bathroom_type', val)}
               options={BATHROOM_PRESETS}
-              placeholder="e.g. Luxury Rain Shower"
               isLightMode={isLightMode}
               themeBorder={themeBorder}
               themeText={themeText}
@@ -403,7 +311,6 @@ export const OfferingSpecsFields: React.FC<OfferingSpecsFieldsProps> = ({
               value={String(specs?.climate_control || 'Split Air-Conditioned')}
               onChange={(val) => updateSpec('climate_control', val)}
               options={CLIMATE_PRESETS}
-              placeholder="e.g. Dual Inverter AC"
               isLightMode={isLightMode}
               themeBorder={themeBorder}
               themeText={themeText}
@@ -444,7 +351,6 @@ export const OfferingSpecsFields: React.FC<OfferingSpecsFieldsProps> = ({
                 value={String(specs?.cottage_style || 'Open-Air Nipa Cottage')}
                 onChange={(val) => updateSpec('cottage_style', val)}
                 options={COTTAGE_STYLE_PRESETS}
-                placeholder="e.g. Modern Polynesian Cabana"
                 isLightMode={isLightMode}
                 themeBorder={themeBorder}
                 themeText={themeText}
@@ -457,7 +363,6 @@ export const OfferingSpecsFields: React.FC<OfferingSpecsFieldsProps> = ({
                 value={String(specs?.usage_mode || 'Day Use & Overnight')}
                 onChange={(val) => updateSpec('usage_mode', val)}
                 options={USAGE_MODE_PRESETS}
-                placeholder="e.g. Day Use Only (08:00 AM - 05:00 PM)"
                 isLightMode={isLightMode}
                 themeBorder={themeBorder}
                 themeText={themeText}
@@ -470,7 +375,6 @@ export const OfferingSpecsFields: React.FC<OfferingSpecsFieldsProps> = ({
                 value={String(specs?.beachfront_proximity || 'Steps from Shoreline')}
                 onChange={(val) => updateSpec('beachfront_proximity', val)}
                 options={SHORELINE_PRESETS}
-                placeholder="e.g. Direct Sandfront"
                 isLightMode={isLightMode}
                 themeBorder={themeBorder}
                 themeText={themeText}
@@ -521,7 +425,6 @@ export const OfferingSpecsFields: React.FC<OfferingSpecsFieldsProps> = ({
               value={String(specs?.offer_subtype || 'Guided Island Hopping Tour')}
               onChange={(val) => updateSpec('offer_subtype', val)}
               options={TOUR_SUBTYPE_PRESETS}
-              placeholder="e.g. Coral Reef Diving Tour"
               isLightMode={isLightMode}
               themeBorder={themeBorder}
               themeText={themeText}
@@ -572,7 +475,6 @@ export const OfferingSpecsFields: React.FC<OfferingSpecsFieldsProps> = ({
               value={String(specs?.cottage_style || 'Beachfront Covered Function Pavilion')}
               onChange={(val) => updateSpec('cottage_style', val)}
               options={COTTAGE_STYLE_PRESETS}
-              placeholder="e.g. Grand Oceanfront Hall"
               isLightMode={isLightMode}
               themeBorder={themeBorder}
               themeText={themeText}
@@ -585,7 +487,6 @@ export const OfferingSpecsFields: React.FC<OfferingSpecsFieldsProps> = ({
               value={String(specs?.usage_mode || 'Banquet & Group Gathering (Up to 50 pax)')}
               onChange={(val) => updateSpec('usage_mode', val)}
               options={USAGE_MODE_PRESETS}
-              placeholder="e.g. Wedding Reception & Ceremony"
               isLightMode={isLightMode}
               themeBorder={themeBorder}
               themeText={themeText}
