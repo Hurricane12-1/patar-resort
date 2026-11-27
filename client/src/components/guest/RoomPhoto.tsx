@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { RESORT_STAND_IN, isCottageLike, roomPhotoFor } from '../../lib/images';
+import { isCottageLike, roomPhotoFor, standInFor } from '../../lib/images';
 
 interface RoomPhotoProps {
   room: { image_url?: string; offering_type?: string; category?: string; name?: string };
@@ -10,7 +10,7 @@ interface RoomPhotoProps {
 /** A room's photo that never leaves an empty box: a missing or broken photo link shows the stand-in for its kind. */
 export default function RoomPhoto({ room, className, alt = '' }: RoomPhotoProps) {
   const wanted = roomPhotoFor(room);
-  const standIn = RESORT_STAND_IN[isCottageLike(room) ? 'cottage' : 'room'];
+  const standIn = standInFor(isCottageLike(room), room.name || '');
   const [src, setSrc] = useState(wanted);
 
   useEffect(() => {

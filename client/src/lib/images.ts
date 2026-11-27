@@ -117,10 +117,34 @@ export const getRoomImageUrl = (room: any): string => {
   return roomImg(room.slug || room.name, room.category || room.offering_type);
 };
 
-/** Shown when a room or cottage has no photo of its own yet. A cottage gets a resort scene, never a hotel bedroom. */
-export const RESORT_STAND_IN = {
-  room: IMG.room,
-  cottage: '/images/rockview/18_outdoor_cottage_seating.jpg',
+/**
+ * Real Rock View photos used when a room or cottage has no photo of its own yet. The list for each
+ * kind is walked in order by the number in the name (Room 1, Room 2, ...), so neighbours differ.
+ * The file names in this folder do not match what the pictures show; these were picked by looking at them.
+ */
+const ROCKVIEW = '/images/rockview/';
+export const ROOM_STAND_INS = [
+  '03_deluxe_bedroom_swan_towels.jpg',
+  '13_rockview_landscape_panoramic.jpg',
+  '08_sunset_seashore_horizon.jpg',
+  '16_coastal_cove_clear_water.jpg',
+  '06_modern_tiled_bathroom_shower.jpg',
+].map((file) => ROCKVIEW + file);
+export const COTTAGE_STAND_INS = [
+  '10_coastal_waves_and_cliff_view.jpg',
+  '20_resort_coastal_viewpoint.jpg',
+  '19_beachfront_sunbed_view.jpg',
+  '11_beachside_cottage_porch.jpg',
+  '01_aerial_resort_pool_building.jpg',
+].map((file) => ROCKVIEW + file);
+
+export const standInFor = (isCottage: boolean, name: string): string => {
+  const list = isCottage ? COTTAGE_STAND_INS : ROOM_STAND_INS;
+  const number = Number(String(name).match(/(\d+)\s*$/)?.[1]);
+  if (number > 0) return list[(number - 1) % list.length];
+  let hash = 0;
+  for (const ch of String(name)) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+  return list[hash % list.length];
 };
 
 export const isCottageLike = (room: { offering_type?: string; category?: string; name?: string }): boolean =>
@@ -130,10 +154,14 @@ export const isCottageLike = (room: { offering_type?: string; category?: string;
 export const roomPhotoFor = (room: { image_url?: string; offering_type?: string; category?: string; name?: string }): string =>
   roomPhotoOrStandIn(room.image_url, room.name || '', room.category || '', isCottageLike(room));
 
+/** The generic photos the site shipped with (the Cloudinary demo folder and the files copied from it). They are not pictures of Rock View. */
+export const isStockPhoto = (url: string): boolean =>
+  /jd_beach_house_accommodations/i.test(url) || /^\/images\/(hero|suite|cottage|villa|garden|bunk|island|room)\.jpg$/i.test(url.trim());
+
 export const roomPhotoOrStandIn = (stored: string | undefined, name: string, category: string, isCottage: boolean): string =>
-  stored && stored.trim()
+  stored && stored.trim() && !isStockPhoto(stored)
     ? getRoomImageUrl({ image_url: stored, name, category })
-    : RESORT_STAND_IN[isCottage ? 'cottage' : 'room'];
+    : standInFor(isCottage, name);
 
 /**
  * Handles broken images gracefully by falling back to verified resort photography.
