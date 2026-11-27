@@ -529,7 +529,10 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700 }}>
-                  Amenities ({currentAmenities.length})
+                  Extra Amenities ({currentAmenities.length})
+                  <span style={{ display: 'block', fontWeight: 500, fontSize: '.72rem', marginTop: 2 }}>
+                    Only extras such as Wi-Fi or a jacuzzi. Beds, bath, cooling and view are set in the specifications above.
+                  </span>
                 </label>
                 {currentAmenities.length > 0 && (
                   <button
