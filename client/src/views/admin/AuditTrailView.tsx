@@ -219,43 +219,6 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({
         </div>
       </div>
 
-      {/* Active Defense Telemetry & Perimeter Hardening Sentinel */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '10px 16px',
-        borderRadius: 10,
-        background: isLightMode ? '#F0FDF4' : 'rgba(16,185,129,0.06)',
-        border: '1px solid rgba(16,185,129,0.25)',
-        marginBottom: 16,
-        flexWrap: 'wrap',
-        gap: 8,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <i className="fas fa-shield-halved" style={{ color: '#10B981', fontSize: '.9rem' }} />
-          <span style={{ fontSize: '.78rem', fontWeight: 700, color: themeText }}>
-            Active Defense Telemetry & Perimeter Hardening
-          </span>
-          <span style={{ fontSize: '.7rem', color: '#10B981', background: 'rgba(16,185,129,0.12)', padding: '2px 8px', borderRadius: 10, fontWeight: 800 }}>
-            LAYER 7 SENTINEL OPTIMAL
-          </span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <small style={{ fontSize: '.72rem', color: themeMuted }}>
-            Status: {securityPosture?.status || 'Active & Valid'} • 0 Quarantined IPs
-          </small>
-          {securityPosture?.firewall?.quarantined_ips?.length > 0 && (
-            <button
-              onClick={() => handleUnbanIp(securityPosture.firewall.quarantined_ips[0].ip)}
-              style={{ fontSize: '.7rem', padding: '2px 8px', background: 'rgba(244,63,94,0.1)', color: '#F43F5E', border: '1px solid rgba(244,63,94,0.3)', borderRadius: 6, cursor: 'pointer', fontWeight: 700 }}
-            >
-              Pardon IP
-            </button>
-          )}
-        </div>
-      </div>
-
       {/* LOG FILTER CONTROLS BAR: USER DROPDOWN, DAY SELECTOR, SEARCH */}
       <div style={{
         background: isLightMode ? '#F8FAFC' : 'rgba(15,23,42,0.6)',
