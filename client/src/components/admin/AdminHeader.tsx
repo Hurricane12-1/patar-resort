@@ -53,6 +53,8 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
   isStaffRestricted = false,
 }) => {
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notifFilter, setNotifFilter] = useState<'all' | 'unread'>('all');
+  const visibleNotifications = notifFilter === 'unread' ? notifications.filter((n: any) => !n.is_read) : notifications;
 
   const getTabLabel = (key: string) => {
     switch (key) {
@@ -229,11 +231,11 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
           <button
             onClick={() => setShowNotifications(!showNotifications)}
             className={`admin-header-btn admin-header-notif-btn ${unreadNotifsCount > 0 ? 'has-alerts' : ''}`}
-            title="Executive Notifications & SMS Alerts"
+            title="Notifications"
             style={{
               width: 38,
               height: 38,
-              borderRadius: 12,
+              borderRadius: 8,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -292,8 +294,8 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
                   background: isLightMode ? '#FFFFFF' : '#0F172A',
                   color: isLightMode ? '#0F172A' : '#F8FAFC',
                   border: `1px solid ${isLightMode ? '#CBD5E1' : 'rgba(255,255,255,0.18)'}`,
-                  borderRadius: 16,
-                  boxShadow: isLightMode ? '0 20px 48px rgba(0,0,0,0.16)' : '0 25px 60px rgba(0,0,0,0.85)',
+                  borderRadius: 8,
+                  boxShadow: isLightMode ? '0 12px 28px rgba(0,0,0,0.12)' : '0 16px 36px rgba(0,0,0,0.6)',
                   padding: '16px 16px 14px 16px',
                   zIndex: 9999,
                   overflow: 'hidden',
@@ -312,10 +314,26 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
                   }}
                 >
                   <div>
-                    <b style={{ fontSize: '.9rem', color: themeText, letterSpacing: '.01em' }}>Executive Notifications</b>
-                    <small style={{ color: '#0EA5E9', fontSize: '.72rem', display: 'block', fontWeight: 600 }}>
-                      SMS &amp; Live System Alerts
-                    </small>
+                    <b style={{ fontSize: '.95rem', color: themeText }}>Notifications</b>
+                    <select
+                      aria-label="Filter notifications"
+                      value={notifFilter}
+                      onChange={(e) => setNotifFilter(e.target.value as 'all' | 'unread')}
+                      style={{
+                        display: 'block',
+                        marginTop: 4,
+                        padding: '4px 10px',
+                        border: `1px solid ${themeBorder}`,
+                        background: isLightMode ? '#FFFFFF' : '#0F172A',
+                        color: themeText,
+                        fontSize: '.76rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <option value="all">All ({notifications.length})</option>
+                      <option value="unread">Unread ({unreadNotifsCount})</option>
+                    </select>
                   </div>
                   {unreadNotifsCount > 0 && (
                     <button
@@ -333,9 +351,9 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
                     </button>
                   )}
                 </div>
-                {notifications.length === 0 ? (
+                {visibleNotifications.length === 0 ? (
                   <p className="muted small" style={{ margin: 0, padding: '24px 16px', textAlign: 'center' }}>
-                    No new notifications.
+                    {notifFilter === 'unread' ? 'No unread notifications.' : 'No notifications yet.'}
                   </p>
                 ) : (
                   <div
@@ -352,12 +370,12 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
                       paddingRight: 1,
                     }}
                   >
-                    {notifications.slice(0, 6).map((n: any) => (
+                    {visibleNotifications.slice(0, 6).map((n: any) => (
                       <div
                         key={n.id}
                         style={{
                           padding: '10px 12px',
-                          borderRadius: 10,
+                          borderRadius: 8,
                           background: !n.is_read
                             ? isLightMode
                               ? '#F1F5F9'
@@ -466,16 +484,23 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
                       setActiveTab('notifications');
                       setShowNotifications(false);
                     }}
-                    className="btn btn-sky btn-sm"
                     style={{
                       width: '100%',
+                      display: 'inline-flex',
                       justifyContent: 'center',
+                      alignItems: 'center',
+                      gap: 6,
                       padding: '9px 16px',
-                      fontWeight: 700,
-                      fontSize: '.8rem',
+                      background: '#006699',
+                      color: '#FFFFFF',
+                      border: '1px solid #006699',
+                      boxShadow: 'none',
+                      fontWeight: 600,
+                      fontSize: '.82rem',
+                      cursor: 'pointer',
                     }}
                   >
-                    Open Full Alerts Center <i className="fas fa-arrow-right" style={{ marginLeft: 6 }} />
+                    View all notifications <i className="fas fa-arrow-right" />
                   </button>
                 </div>
               </div>
