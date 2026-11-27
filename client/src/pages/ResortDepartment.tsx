@@ -5,7 +5,7 @@ import { api, addDaysYMD } from '../lib/api.ts';
 import { toast } from '../components/Toasts.tsx';
 import { to11Digits, formatTime12Hour } from '../lib/format.ts';
 import { getManilaTodayISO } from '../lib/offeringSpecs.ts';
-import { isAdministrator } from '../lib/rbac.ts';
+import { canSwitchRoomAvailability, isAdministrator } from '../lib/rbac.ts';
 import AddReservationModal, { NewReservationFormState } from '../components/admin/modals/AddReservationModal.tsx';
 import { RoomEditorModal } from '../components/admin/modals/RoomEditorModal.tsx';
 import { CreateRoomModal } from '../components/admin/modals/CreateRoomModal.tsx';
@@ -133,6 +133,7 @@ export default function ResortDepartment() {
   const [activeProfile, setActiveProfile] = useState<any>(null);
   const { staffProfile, adminProfile } = useAuth();
   const canManageRooms = isAdministrator(staffProfile || adminProfile);
+  const canSwitchAvailability = canSwitchRoomAvailability(staffProfile || adminProfile);
 
   // Dynamic Asia/Manila Today ISO
   const todayISO = useMemo(() => getManilaTodayISO(), []);
@@ -240,19 +241,6 @@ export default function ResortDepartment() {
   }, [bookings, rooms]);
 
   // Quick Action: Book specific unit
-  const handleBookUnit = (rmId: string) => {
-    const targetRoom = activeRoomsList.find((r) => r.id === rmId) || activeRoomsList[0];
-    const rate = Number(targetRoom?.rate_php) || 3500;
-    setNewReservation((prev) => ({
-      ...prev,
-      room_id: rmId,
-      check_in: selectedDate,
-      check_out: addDaysISO(selectedDate, 2),
-      total_php: rate * 2,
-    }));
-    setShowManualBookingModal(true);
-  };
-
   // Quick Action: Book on selected date
   const handleBookOnDate = (dateStr: string) => {
     const targetRoom = activeRoomsList[0];
@@ -680,7 +668,7 @@ export default function ResortDepartment() {
   const handleToggleMaintenance = async (rm: RoomItem) => {
     try {
       const targetActive = rm.status === 'maintenance';
-      await api.updateRoom(rm.id, { is_active: targetActive });
+      await api.setRoomAvailability(rm.id, targetActive);
       toast(targetActive ? `✓ ${rm.name} reactivated and available for stays.` : `⚠ ${rm.name} placed under maintenance.`);
       await loadLiveOperationsData();
     } catch (err: any) {
@@ -1569,7 +1557,7 @@ export default function ResortDepartment() {
               <p style={{ margin: '4px 0 0', fontSize: '.78rem', color: '#64748B' }}>
                 {canManageRooms
                   ? 'Admin-synchronized inventory: edit rates, photos, amenities, turnover readiness, and dispatch maintenance'
-                  : 'Turnover readiness for your shift. Report a problem with Escalate. Administrators add rooms and change rates.'}
+                  : 'Turnover readiness for your shift. Take a unit offline or back online, or report a problem with Escalate. Administrators add rooms and change rates.'}
               </p>
             </div>
 
@@ -1902,7 +1890,7 @@ export default function ResortDepartment() {
                               </span>
                             </div>
 
-                            {canManageRooms && (
+                            {canSwitchAvailability && (
                             <button
                               type="button"
                               onClick={() => handleToggleMaintenance(rm)}
@@ -2005,7 +1993,8 @@ export default function ResortDepartment() {
                                   alignItems: 'center',
                                   gap: 5,
                                 }}
-                                title={`Book ${rm.name}`}
+                                title={rm.status === 'maintenance' ? `${rm.name} is offline for maintenance` : `Book ${rm.name}`}
+                                disabled={rm.status === 'maintenance'}
                               >
                                 <i className="fas fa-calendar-plus" />
                                 <span>Book</span>

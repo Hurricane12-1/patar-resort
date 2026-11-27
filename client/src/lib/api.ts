@@ -740,6 +740,8 @@ export const api = {
     if (error) throw new Error(error.message || 'Could not create room in database');
     return normalizeRoom(data);
   },
+  setRoomAvailability: (id: string, isActive: boolean) =>
+    req<{ id: string; name: string; is_active: boolean; previous_is_active: boolean }>(`/rooms/${id}/availability`, { method: 'PATCH', body: { is_active: isActive } }),
   updateRoom: async (id: string, body: any) => {
     const cleanBody = sanitizeRoomPatch(body);
     try {
@@ -877,7 +879,7 @@ export const api = {
       const res = await req('/reservations', { method: 'POST', body: normalizedBody });
       if (res && res.id) return res;
     } catch (err: any) {
-      if (err?.status && err.status !== 401 && err.status !== 404 && err.status !== 405 && err.status < 500) {
+      if (!isBackendUnreachable(err) && err?.status !== 401) {
         throw err;
       }
     }
@@ -889,7 +891,10 @@ export const api = {
       targetRoomId = firstRoom?.id;
       roomUnits = Math.max(1, Number(firstRoom?.units) || 1);
     } else {
-      const { data: roomRow } = await sb.from('rooms').select('id, units').eq('id', targetRoomId).maybeSingle();
+      const { data: roomRow } = await sb.from('rooms').select('id, units, is_active').eq('id', targetRoomId).maybeSingle();
+      if (roomRow?.is_active === false) {
+        throw new Error('This unit is offline for maintenance. Choose another unit or ask staff to reactivate it.');
+      }
       roomUnits = Math.max(1, Number(roomRow?.units) || 1);
     }
 

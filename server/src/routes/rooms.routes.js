@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { asyncH, ApiError } from '../middleware/errors.js';
 import { validate } from '../middleware/validate.js';
 import { admin, getSystemAdminClient } from '../lib/supabase.js';
-import { authenticate, optionalAuth, requireAdmin } from '../middleware/auth.js';
+import { authenticate, optionalAuth, requireAdmin, requireFrontDeskOrAdmin } from '../middleware/auth.js';
 import {
   parseOfferingTags,
   packOfferingAmenities,
@@ -15,6 +15,7 @@ import {
 import { redis } from '../lib/redis.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
 import { getLocalReservations } from '../lib/reservationStore.js';
+import { setRoomAvailability } from '../lib/roomAvailability.js';
 
 const r = Router();
 
@@ -555,6 +556,25 @@ r.patch('/rooms/:id', authenticate, requireAdmin,
     });
 
     return res.json(normalized);
+  }));
+
+r.patch('/rooms/:id/availability', authenticate, requireFrontDeskOrAdmin,
+  validate(z.object({ is_active: z.boolean() })),
+  asyncH(async (req, res) => {
+    const client = (await getSystemAdminClient().catch(() => null)) || admin;
+    const room = await setRoomAvailability(client, req.params.id, req.body.is_active);
+    await redis.clear();
+
+    await logAuditEvent({
+      actor: req.user,
+      action: 'ROOM_AVAILABILITY_UPDATE',
+      resourceType: 'room',
+      resourceId: room.id,
+      details: { name: room.name, is_active: room.is_active, previous_is_active: room.previous_is_active },
+      req,
+    });
+
+    return res.json(room);
   }));
 
 r.delete('/rooms/:id', authenticate, requireAdmin, asyncH(async (req, res) => {

@@ -179,8 +179,9 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
     const { data } = await sysClient.from('rooms').select('*').eq('id', targetRoomId).single();
     if (data) room = data;
   } catch {}
-  if (!room || room.is_active === false) {
-    throw new ApiError(404, "There's no present room around. This accommodation is absent or inactive.");
+  if (!room) throw new ApiError(404, 'This unit was not found.');
+  if (room.is_active === false) {
+    throw new ApiError(409, 'This unit is offline for maintenance. Choose another unit or ask staff to reactivate it.');
   }
 
   // Accommodation Taxonomy & Duration Validation
