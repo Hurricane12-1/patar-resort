@@ -405,6 +405,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
               idPrefix="create-room"
             />
 
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
               <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>
                 {newRoom.offering_type === 'cottage'
@@ -431,8 +432,6 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                 }
               />
             </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div>
                 <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>
                   {newRoom.offering_type === 'cottage'
@@ -456,9 +455,6 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                   onChange={(e) => setNewRoom({ ...newRoom, rate_php: Number(e.target.value) || 0 })}
                 />
               </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div>
                 <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>
                   Sleeps Capacity (Guests)

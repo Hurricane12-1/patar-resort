@@ -437,6 +437,7 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
             idPrefix="edit-room"
           />
 
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div>
             <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>
               {formData.offering_type === 'cottage'
@@ -450,8 +451,6 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             />
           </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
               <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>
                 {formData.offering_type === 'cottage'
@@ -486,9 +485,6 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
                 onChange={(e) => setFormData({ ...formData, units: e.target.value })}
               />
             </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
               <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Sleeps Capacity (Guests)</label>
               <input
