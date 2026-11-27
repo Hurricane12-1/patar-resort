@@ -11,6 +11,7 @@ import {
   TWO_HOURS_MS,
 } from '../lib/api.ts';
 import { getManilaTodayISO } from '../lib/offeringSpecs';
+import { unitDisplayNames } from '../lib/unitNames';
 import '../styles/availability-calendar.css';
 
 export interface CalendarStay {
@@ -226,7 +227,7 @@ export default function AvailabilityCalendar({
   }, [rooms?.length, bookings?.length, selectedRoomId, fetchRealtimeData]);
 
   // Merge prop rooms and live rooms by id (strictly active rooms, filtered by selectedRoomId if set)
-  const effectiveRooms = useMemo(() => {
+  const activeRooms = useMemo(() => {
     const map = new Map<string, any>();
     for (const r of liveRooms) {
       if (r && r.id) map.set(String(r.id), r);
@@ -234,13 +235,18 @@ export default function AvailabilityCalendar({
     for (const r of rooms || []) {
       if (r && r.id) map.set(String(r.id), { ...map.get(String(r.id)), ...r });
     }
-    const all = Array.from(map.values()).filter((r) => r && r.is_active !== false);
+    return Array.from(map.values()).filter((r) => r && r.is_active !== false);
+  }, [liveRooms, rooms]);
+
+  const effectiveRooms = useMemo(() => {
     if (selectedRoomId && selectedRoomId !== 'all') {
-      const filtered = all.filter((r) => String(r.id) === String(selectedRoomId));
+      const filtered = activeRooms.filter((r) => String(r.id) === String(selectedRoomId));
       if (filtered.length > 0) return filtered;
     }
-    return all;
-  }, [liveRooms, rooms, selectedRoomId]);
+    return activeRooms;
+  }, [activeRooms, selectedRoomId]);
+
+  const unitNames = useMemo(() => unitDisplayNames(activeRooms), [activeRooms]);
 
   // Merge prop bookings and live bookings by id, scoped to selectedRoomId when filtering a single room
   const effectiveBookings = useMemo(() => {
@@ -266,12 +272,13 @@ export default function AvailabilityCalendar({
     effectiveRooms.forEach((r) => {
       const numUnits = Math.max(1, Number(r.units) || 1);
       for (let u = 1; u <= numUnits; u++) {
+        const name = unitNames.get(`${r.id}:${u}`) || `Unit ${unitCounter}`;
         list.push({
           id: `unit_${unitCounter}`,
           roomId: String(r.id),
           unitNumber: unitCounter,
-          name: numUnits > 1 ? `Unit ${u}` : effectiveRooms.length === 1 ? `Unit 1` : `Unit ${unitCounter}`,
-          label: numUnits > 1 ? `${r.name} (Unit ${u})` : `${r.name} (Unit ${unitCounter})`,
+          name,
+          label: `${r.name} (${name})`,
           ratePhp: r.rate_php || 3500,
         });
         unitCounter++;
@@ -279,7 +286,7 @@ export default function AvailabilityCalendar({
     });
 
     return list;
-  }, [effectiveRooms]);
+  }, [effectiveRooms, unitNames]);
 
   // Generate days array starting from windowStartDateStr
   const daysArray = useMemo(() => {
@@ -395,7 +402,9 @@ export default function AvailabilityCalendar({
         assignedUnitId: hasAssignedUnit ? `unit_${targetUnitNum}` : undefined,
         assignedUnitNumber: hasAssignedUnit && targetUnitNum ? targetUnitNum : undefined,
         isUnassigned: !hasAssignedUnit,
-        unitName: hasAssignedUnit && targetUnitNum ? `Unit ${targetUnitNum}` : 'Unassigned',
+        unitName: hasAssignedUnit && targetUnitNum
+          ? units.find((u) => u.unitNumber === targetUnitNum)?.name || `Unit ${targetUnitNum}`
+          : 'Unassigned',
         guestName: b.guest_name || b.profiles?.full_name || 'Reserved',
         checkIn: cin,
         checkOut: cout,
@@ -1233,7 +1242,7 @@ export default function AvailabilityCalendar({
                       setActiveDetailStay({
                         ...activeDetailStay,
                         assignedUnitNumber: uNum,
-                        unitName: uNum ? `Unit ${uNum}` : 'Unassigned',
+                        unitName: uNum ? matchedUnit?.name || `Unit ${uNum}` : 'Unassigned',
                         roomId: matchedUnit?.roomId || activeDetailStay.roomId,
                         notes: nextNotes,
                       });
