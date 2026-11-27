@@ -113,6 +113,7 @@ export default function Admin() {
               roomsList={state.roomsList} activeRoomsList={state.activeRoomsList}
               allBookings={state.allBookings} data={state.data}
               octoberSalesData={state.octoberSalesData} setActiveTab={state.setActiveTab}
+              loading={state.loadingReservations}
               newReservation={state.newReservation} setNewReservation={state.setNewReservation}
               setShowAddReservationModal={state.setShowAddReservationModal}
               guestConversations={state.guestConversations}

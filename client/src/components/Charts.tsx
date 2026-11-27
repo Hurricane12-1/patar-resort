@@ -506,12 +506,20 @@ export function AreaLineChart({
   emptySubtitle,
   activeMonthLabel,
   onSelectActiveMonth,
+  loading = false,
 }: any) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
 
-  const hasData = Array.isArray(data) && data.length > 0 && data.some((d) => (Number(d.revenue) > 0 || Number(d.value) > 0));
-  if (!hasData) {
+  if (loading) {
+    return (
+      <div role="status" aria-label="Loading" style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span className="loading-ring" />
+      </div>
+    );
+  }
+
+  if (!Array.isArray(data) || data.length === 0) {
     return (
       <div style={{ height, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 16 }}>
         <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'rgba(14, 165, 233, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>

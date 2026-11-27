@@ -21,6 +21,7 @@ export interface OverviewViewProps {
   guestConversations: any[];
   setSelectedPanelGuest: (guest: any) => void;
   setActiveChatGuest: (guest: any) => void;
+  loading?: boolean;
 }
 
 export const OverviewView: React.FC<OverviewViewProps> = ({
@@ -43,6 +44,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
   guestConversations,
   setSelectedPanelGuest,
   setActiveChatGuest,
+  loading = false,
 }) => {
   const [selectedSalesItem, setSelectedSalesItem] = useState<any>(null);
   const [bookingStatusFilter, setBookingStatusFilter] = useState<'all' | 'confirmed' | 'checked_in' | 'pending' | 'cancelled'>('all');
@@ -177,20 +179,9 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
     setSelectedYearMonth(nextYm);
   };
 
-  const activeMonthWithData = useMemo(() => {
-    const populated = Object.keys(activeMonthStats)
-      .filter((ym) => activeMonthStats[ym].revenue > 0)
-      .sort();
-    if (populated.length === 0) return null;
-    const targetYm = populated[populated.length - 1];
-    const [y, m] = targetYm.split('-').map(Number);
-    const dt = new Date(y, m - 1, 1);
-    return {
-      ym: targetYm,
-      name: dt.toLocaleDateString('en-US', { month: 'long' }),
-      year: y,
-    };
-  }, [activeMonthStats]);
+  const monthOptions = availableMonths.includes(selectedYearMonth)
+    ? availableMonths
+    : [...availableMonths, selectedYearMonth].sort();
 
   // Dynamic Sales Analytics for Selected Month
   const {
@@ -341,7 +332,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                       padding: '2px 2px',
                     }}
                   >
-                    {availableMonths.map((ym) => {
+                    {monthOptions.map((ym) => {
                       const [y, m] = ym.split('-').map(Number);
                       const label = new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
                       const hasData = activeMonthStats[ym]?.revenue > 0;
@@ -395,10 +386,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             height={210}
             isLightMode={isLightMode}
             showYAxis={true}
-            emptyTitle={`No Room Revenue in ${monthName} ${yearStr}`}
-            emptySubtitle="No active guest stays or checked-in bookings were found in this calendar month."
-            activeMonthLabel={activeMonthWithData && activeMonthWithData.ym !== selectedYearMonth ? `${activeMonthWithData.name} ${activeMonthWithData.year}` : undefined}
-            onSelectActiveMonth={activeMonthWithData && activeMonthWithData.ym !== selectedYearMonth ? () => setSelectedYearMonth(activeMonthWithData.ym) : undefined}
+            loading={loading}
             onPointClick={(item: any) => {
               const rev = item.revenue > 0 ? item.revenue : (item.value * 4500);
               const dynamicInsight = rev > 60000
