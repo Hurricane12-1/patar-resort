@@ -1213,6 +1213,23 @@
   border-radius: 6px !important;
 }
 
+.photo-upload-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2.5px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #FFFFFF;
+  border-radius: 50%;
+  animation: photo-upload-spin 0.8s linear infinite;
+}
+
+@keyframes photo-upload-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .photo-upload-spinner { animation-duration: 2.4s; }
+}
+
 .admin-portal .room-add-btn {
   border-radius: 8px !important;
   box-shadow: none !important;

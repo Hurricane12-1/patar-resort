@@ -235,33 +235,31 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
             }}
           />
 
-          <button
-            type="button"
-            onClick={() => !uploadingPhoto && fileInputRef.current?.click()}
-            disabled={uploadingPhoto}
-            aria-label={featuredImageUrl ? 'Change photo' : 'Add photo'}
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              zIndex: 4,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '10px 18px',
-              background: 'rgba(15, 23, 42, 0.78)',
-              color: '#FFFFFF',
-              border: '1px solid rgba(255, 255, 255, 0.5)',
-              backdropFilter: 'blur(4px)',
-              fontSize: '.82rem',
-              fontWeight: 700,
-              cursor: uploadingPhoto ? 'wait' : 'pointer',
-            }}
-          >
-            <i className={uploadingPhoto ? 'fas fa-spinner fa-spin' : 'fas fa-camera'} />
-            {uploadingPhoto ? 'Uploading…' : featuredImageUrl ? 'Change photo' : 'Add photo'}
-          </button>
+          <div style={{ position: 'absolute', inset: 0, zIndex: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+            <button
+              type="button"
+              onClick={() => !uploadingPhoto && fileInputRef.current?.click()}
+              disabled={uploadingPhoto}
+              aria-label={featuredImageUrl ? 'Change photo' : 'Add photo'}
+              style={{
+                pointerEvents: 'auto',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '10px 18px',
+                background: 'rgba(15, 23, 42, 0.78)',
+                color: '#FFFFFF',
+                border: '1px solid rgba(255, 255, 255, 0.5)',
+                backdropFilter: 'blur(4px)',
+                fontSize: '.82rem',
+                fontWeight: 700,
+                cursor: uploadingPhoto ? 'wait' : 'pointer',
+              }}
+            >
+              {uploadingPhoto ? <span className="photo-upload-spinner" aria-hidden="true" /> : <i className="fas fa-camera" />}
+              {uploadingPhoto ? 'Uploading…' : featuredImageUrl ? 'Change photo' : 'Add photo'}
+            </button>
+          </div>
 
           {/* Top Bar Over Featured Image */}
           <div
