@@ -5,7 +5,8 @@ import StatusPill from '../../components/StatusPill';
 import AvailabilityCalendar from '../../components/AvailabilityCalendar';
 import { exportReservationsCSV } from '../../lib/ledgerUtils';
 import { api } from '../../lib/api';
-import { resolveReservationOfferingType, getOfferingLabel, OfferingType } from '../../lib/offeringSpecs';
+import { resolveReservationOfferingType, OfferingType } from '../../lib/offeringSpecs';
+import { reservationRoomName, roomNameLookup } from '../../lib/reservationRoom';
 import { ResortSpinner, SkeletonTable } from '../../components/LoadingAnimations';
 
 export interface LedgerViewProps {
@@ -174,6 +175,8 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
     setAnalyticsYearMonth(`${yyyy}-${mm}`);
   };
 
+  const roomNames = useMemo(() => roomNameLookup(roomsList, activeRoomsList), [roomsList, activeRoomsList]);
+
   const filteredBookings = allBookings.filter((b: any) => {
     if (bookingTypeFilter !== 'all' && resolveReservationOfferingType(b) !== bookingTypeFilter) return false;
     if (reservationFilter !== 'all') {
@@ -189,7 +192,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
       const q = reservationSearch.toLowerCase();
       const guestName = (b.guest_name || b.profiles?.full_name || '').toLowerCase();
       const phone = (b.phone || b.profiles?.phone || '').toLowerCase();
-      const room = (b.rooms?.name || '').toLowerCase();
+      const room = reservationRoomName(b, roomNames).toLowerCase();
       const id = (b.id || '').toLowerCase();
       const code = (b.booking_code || '').toLowerCase();
       if (!guestName.includes(q) && !phone.includes(q) && !room.includes(q) && !id.includes(q) && !code.includes(q)) return false;
@@ -1493,34 +1496,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                         </div>
                       </td>
                       <td>
-                        {(() => {
-                          const oType = resolveReservationOfferingType(b);
-                          const badgeStyles: Record<string, { bg: string; color: string }> = {
-                            room: { bg: '#E0F2FE', color: '#00517A' },
-                            villa: { bg: '#EDE9FE', color: '#5B21B6' },
-                            suite: { bg: '#FEF3C7', color: '#92400E' },
-                            cottage: { bg: '#D1FAE5', color: '#065F46' },
-                            cabana: { bg: '#CCFBF1', color: '#115E59' },
-                            offer: { bg: '#FFEDD5', color: '#9A3412' },
-                            event: { bg: '#F3E8FF', color: '#6B21A8' },
-                          };
-                          const currentBadge = badgeStyles[oType] || badgeStyles.room;
-                          return (
-                            <span style={{ display: 'inline-block', padding: '1px 7px', borderRadius: 9999, fontSize: '.68rem', fontWeight: 700, marginBottom: 3, marginRight: 6, background: currentBadge.bg, color: currentBadge.color }}>
-                              {getOfferingLabel(oType)}
-                            </span>
-                          );
-                        })()}
-                        <b>{b.rooms?.name || 'Assigned Room'}</b>
-                        {b.notes && (b.notes.toLowerCase().includes('pool') || b.notes.toLowerCase().includes('swimming')) ? (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 4, fontSize: '.7rem', background: 'rgba(56,189,248,0.15)', color: '#0EA5E9', border: '1px solid rgba(56,189,248,0.35)', padding: '1px 6px', borderRadius: 8, fontWeight: 700 }}>
-                            <i className="fas fa-person-swimming" style={{ marginRight: 4 }} />Pool Pass
-                          </span>
-                        ) : (
-                          <span style={{ display: 'block', marginTop: 2, fontSize: '.68rem', color: themeMuted }}>
-                            Room Only
-                          </span>
-                        )}
+                        <b>{reservationRoomName(b, roomNames) || <span style={{ fontWeight: 400, color: themeMuted }}>No room assigned</span>}</b>
                       </td>
                       <td>
                         <div>
