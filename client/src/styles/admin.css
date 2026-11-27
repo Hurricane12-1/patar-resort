@@ -1185,8 +1185,8 @@
   }
 }
 
-/* 17. ROUNDED PILL BUTTON & CURVED CONTROLS ARCHITECTURE */
-.admin-portal button,
+/* 17. CONTROL CORNERS: buttons, dropdowns and search boxes share one small radius. Round icon buttons keep their circle. */
+.admin-portal button:not([style*="border-radius: 50%"]),
 .admin-portal .btn,
 .admin-portal .btn-sm,
 .admin-portal .btn-sky,
@@ -1195,7 +1195,7 @@
 .admin-portal .chip,
 .admin-portal select,
 .admin-portal input.search {
-  border-radius: 9999px !important;
+  border-radius: 8px !important;
 }
 
 /* The Accounts Directory toolbar uses squarer controls than the pill rule above. */
