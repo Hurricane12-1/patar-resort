@@ -604,8 +604,14 @@ export default function BookingFlow({ initialSlug }: { initialSlug?: string }) {
                         <h3 className="serif">{r.name}</h3>
                         <p className="muted small">
                           <i className="fas fa-users" style={{ marginRight: 4 }} />
-                          {r.capacity} person · <i className="fas fa-star" style={{ color: '#F59E0B', margin: '0 4px' }} />
-                          {Number(r.rating_avg).toFixed(1)}
+                          {r.capacity} person
+                          {Number(r.rating_count) > 0 && (
+                            <>
+                              {' · '}
+                              <i className="fas fa-star" style={{ color: '#F59E0B', margin: '0 4px' }} />
+                              {Number(r.rating_avg).toFixed(1)}
+                            </>
+                          )}
                         </p>
                       </div>
                       <div className="ro-right">

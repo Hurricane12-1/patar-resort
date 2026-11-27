@@ -247,7 +247,9 @@ export default function Home() {
                   </div>
                   <div className="sp-meta">
                     <span>Capacity<b>{s.capacity} person</b></span>
-                    <span>Rating<b><i className="fas fa-star" style={{ color: '#F59E0B', marginRight: 4 }} />{Number(s.rating_avg).toFixed(1)}</b></span>
+                    {Number(s.rating_count) > 0 && (
+                      <span>Rating<b><i className="fas fa-star" style={{ color: '#F59E0B', marginRight: 4 }} />{Number(s.rating_avg).toFixed(1)}</b></span>
+                    )}
                     <span>Units<b>{s.units}</b></span>
                   </div>
                   <div style={{ display: 'flex', gap: 10 }}>

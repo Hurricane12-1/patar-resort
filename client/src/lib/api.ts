@@ -735,7 +735,7 @@ export const api = {
       },
       null
     );
-    const payload = { ...packed, slug };
+    const payload = { ...packed, slug, rating_avg: null, rating_count: 0 };
     const { data, error } = await sb.from('rooms').insert(payload).select().single();
     if (error) throw new Error(error.message || 'Could not create room in database');
     return normalizeRoom(data);

@@ -460,7 +460,7 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
               <input
                 required
                 type="number"
-                min={50}
+                min={50} max={99999999}
                 style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
                 value={formData.rate_php ?? ''}
                 onChange={(e) => setFormData({ ...formData, rate_php: e.target.value })}

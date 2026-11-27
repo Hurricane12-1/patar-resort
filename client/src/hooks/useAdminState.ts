@@ -573,7 +573,7 @@ export function useAdminState() {
       const primaryImg = newRoom.image_url || imagesArr[0] || '';
 
       const created = await api.createRoom({
-        name: newRoom.name,
+        name: newRoom.name.trim(),
         offering_type: newRoom.offering_type || 'room',
         specs: newRoom.specs || getDefaultSpecs(newRoom.offering_type || 'room'),
         category: newRoom.category,

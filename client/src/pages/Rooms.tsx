@@ -64,10 +64,12 @@ function RoomCardItem({ s, index, onOpenCalendar }) {
               </span>
             )}
           </div>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Stars value={Number(s.rating_avg)} size={13} />
-            <small className="muted">{Number(s.rating_avg).toFixed(1)} ({s.rating_count || 12})</small>
-          </span>
+          {Number(s.rating_count) > 0 && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Stars value={Number(s.rating_avg)} size={13} />
+              <small className="muted">{Number(s.rating_avg).toFixed(1)} ({s.rating_count})</small>
+            </span>
+          )}
         </div>
         <div style={{ marginBottom: 6 }}>
           <span className="pill" style={{ background: inferOfferingType(s) === 'cottage' ? '#D1FAE5' : '#E0F2FE', color: inferOfferingType(s) === 'cottage' ? '#065F46' : '#00517A', fontSize: '.72rem', fontWeight: 700, padding: '2px 8px', borderRadius: 9999 }}>

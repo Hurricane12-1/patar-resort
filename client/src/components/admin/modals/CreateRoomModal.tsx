@@ -441,7 +441,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                 <input
                   required
                   type="number"
-                  min={50}
+                  min={50} max={99999999}
                   style={{
                     width: '100%',
                     padding: '9px 12px',

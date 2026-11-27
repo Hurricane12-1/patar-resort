@@ -18,6 +18,7 @@ import { getLocalReservations } from '../lib/reservationStore.js';
 import { setRoomAvailability } from '../lib/roomAvailability.js';
 import { assertRoomEditAllowed } from '../lib/roomEditRules.js';
 import { removeRoom, roomSnapshot } from '../lib/roomRemoval.js';
+import { planNewRoomName } from '../lib/roomSlug.js';
 
 const r = Router();
 
@@ -466,14 +467,14 @@ r.get('/availability/calendar', optionalAuth, asyncH(async (req, res) => {
 
 r.post('/rooms', authenticate, requireFrontDeskOrAdmin,
   validate(z.object({
-    name: z.string().min(2).max(100),
+    name: z.string().trim().min(2).max(100),
     slug: z.string().min(2).max(100).optional(),
     offering_type: z.enum(['room', 'villa', 'suite', 'cottage', 'cabana', 'offer', 'event']).optional(),
     category: z.string().default('Room'),
     description: z.string().default(''),
     capacity: z.coerce.number().int().min(1).default(2),
     units: z.coerce.number().int().min(1).default(1),
-    rate_php: z.coerce.number().int().min(50),
+    rate_php: z.coerce.number().int().min(50).max(99999999),
     amenities: z.array(z.string()).default([]),
     specs: z.record(z.any()).optional(),
     image_url: z.string().nullable().optional(),
@@ -484,13 +485,18 @@ r.post('/rooms', authenticate, requireFrontDeskOrAdmin,
     if (req.body.category) {
       req.body.category = normalizeCategoryName(req.body.category);
     }
-    let slug = req.body.slug;
-    if (!slug) {
-      slug = req.body.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `room-${Date.now()}`;
-    }
-    const packed = packRoomPayload(req.body, null);
-    const payload = { ...packed, slug };
     const client = (await getSystemAdminClient().catch(() => null)) || admin;
+
+    const { data: existingRooms } = await client.from('rooms').select('name, slug').limit(2000);
+    const plan = planNewRoomName(req.body.name, req.body.slug, existingRooms);
+    if (plan.nameTaken) {
+      throw new ApiError(409, `There is already a room or cottage called "${req.body.name.trim()}". Please use a different name.`, { code: 'ROOM_NAME_TAKEN' });
+    }
+    const slug = plan.slug;
+
+    // The table fills rating_avg with 4.90 when it is left out, which would show a rating no guest gave.
+    const packed = { ...packRoomPayload(req.body, null), rating_avg: null, rating_count: 0 };
+    const payload = { ...packed, slug };
     const { data, error } = await client.from('rooms').insert(payload).select().single();
     if (error) throw new ApiError(500, error.message);
     await redis.clear();
