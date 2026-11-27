@@ -51,6 +51,31 @@ function isBackendUnreachable(err: unknown): boolean {
   return err instanceof ApiError && err.unreachable;
 }
 
+const ROOM_NUMBER_LIMITS: Record<string, { label: string; min: number }> = {
+  capacity: { label: 'capacity', min: 1 },
+  units: { label: 'number of units', min: 1 },
+  rate_php: { label: 'rate', min: 50 },
+};
+
+function sanitizeRoomPatch(body: Record<string, any>): Record<string, any> {
+  const clean: Record<string, any> = { ...body };
+  if (clean.description === null) clean.description = '';
+  if (clean.category === null) clean.category = '';
+  for (const [key, { label, min }] of Object.entries(ROOM_NUMBER_LIMITS)) {
+    if (!(key in clean) || clean[key] === undefined) continue;
+    if (clean[key] === null) {
+      delete clean[key];
+      continue;
+    }
+    const value = Number(clean[key]);
+    if (clean[key] === '' || !Number.isInteger(value) || value < min) {
+      throw new Error(`Enter a valid ${label} (at least ${min}).`);
+    }
+    clean[key] = value;
+  }
+  return clean;
+}
+
 function requireDirectWrite(
   res: { error: { message?: string } | null; data?: any },
   action: string,
@@ -697,8 +722,9 @@ export const api = {
     return normalizeRoom(data);
   },
   updateRoom: async (id: string, body: any) => {
+    const cleanBody = sanitizeRoomPatch(body);
     try {
-      const res = await req(`/rooms/${id}`, { method: 'PATCH', body });
+      const res = await req(`/rooms/${id}`, { method: 'PATCH', body: cleanBody, slowWrite: true });
       return res?.id ? normalizeRoom(res) : res;
     } catch (err) {
       if (!isBackendUnreachable(err)) throw err;
@@ -709,7 +735,7 @@ export const api = {
       const { data: ex } = await sb.from('rooms').select('*').eq('id', id).maybeSingle();
       existingRoom = ex;
     } catch {}
-    const payload = packRoomPayload(body, existingRoom);
+    const payload = packRoomPayload(cleanBody, existingRoom);
     const { data, error } = await sb.from('rooms').update(payload).eq('id', id).select().single();
     if (error) throw new Error(error.message || 'Could not update room in database');
     return normalizeRoom(data);

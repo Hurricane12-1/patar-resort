@@ -26,12 +26,7 @@ interface OfferingSpecsFieldsProps {
 
 const TYPE_OPTIONS: { key: OfferingType; label: string; icon: string; badgeBg: string; badgeFg: string; border: string }[] = [
   { key: 'room', label: 'Room (Overnight)', icon: 'fas fa-bed', badgeBg: '#E0F2FE', badgeFg: '#00517A', border: '#006699' },
-  { key: 'villa', label: 'Villa (Oceanfront)', icon: 'fas fa-house-chimney-window', badgeBg: '#EDE9FE', badgeFg: '#5B21B6', border: '#7C3AED' },
-  { key: 'suite', label: 'Suite (Terrace & Loft)', icon: 'fas fa-crown', badgeBg: '#FEF3C7', badgeFg: '#92400E', border: '#D97706' },
   { key: 'cottage', label: 'Cottage (Beachfront Day-Use)', icon: 'fas fa-umbrella-beach', badgeBg: '#D1FAE5', badgeFg: '#065F46', border: '#047857' },
-  { key: 'cabana', label: 'Cabana (Poolside / Shaded)', icon: 'fas fa-campground', badgeBg: '#CCFBF1', badgeFg: '#115E59', border: '#0D9488' },
-  { key: 'offer', label: 'Island Tour / Charter', icon: 'fas fa-ship', badgeBg: '#FFEDD5', badgeFg: '#9A3412', border: '#EA580C' },
-  { key: 'event', label: 'Event Pavilion', icon: 'fas fa-champagne-glasses', badgeBg: '#F3E8FF', badgeFg: '#6B21A8', border: '#9333EA' },
 ];
 
 export const getCategoryOptionsForType = (type: OfferingType): readonly string[] => {
