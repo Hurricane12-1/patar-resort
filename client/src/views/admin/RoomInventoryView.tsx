@@ -222,7 +222,7 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
       </div>
 
       {/* STAT SUMMARY BAND (CLICKABLE INTERACTIVE TELEMETRY CARDS) */}
-      <div className="admin-grid-4-col" style={{ gap: 12, marginBottom: 20 }}>
+      <div className="admin-grid-4-col" style={{ gap: 12, marginBottom: 20, gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
         <div
           className="kpi-card-clickable"
           onClick={() => {
@@ -272,81 +272,27 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
           </div>
         </div>
 
-        <div
-          className="kpi-card-clickable"
-          onClick={() => {
-            setInventorySubTab('supplies');
-            toast('Switched view to Resort Supplies Ledger');
-          }}
-          style={{
-            background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)',
-            border: `1px solid ${inventorySubTab === 'supplies' ? '#10B981' : themeBorder}`,
-            borderRadius: 16,
-            padding: 14,
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-          }}
-          title="Click to view resort department supplies"
-        >
-          <span style={{ fontSize: '.72rem', color: themeMuted, textTransform: 'uppercase', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span>Resort Supplies</span>
-            <i className="fas fa-boxes-stacked" style={{ fontSize: '.68rem', color: '#10B981' }} />
-          </span>
-          <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#10B981', marginTop: 4 }}>
-            {inventoryList.length} Tracked Items
-          </div>
-        </div>
-
-        <div
-          className="kpi-card-clickable"
-          onClick={() => {
-            setInventorySubTab('supplies');
-            toast('Filtered view to low stock and reorder supply items');
-          }}
-          style={{
-            background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)',
-            border: `1px solid ${inventoryList.filter(i => (i.stock_qty || 0) <= (i.reorder_at || 10)).length > 0 ? 'rgba(244, 63, 94, 0.4)' : themeBorder}`,
-            borderRadius: 16,
-            padding: 14,
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-          }}
-          title="Click to inspect reorder alerts"
-        >
-          <span style={{ fontSize: '.72rem', color: themeMuted, textTransform: 'uppercase', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span>Reorder Alerts</span>
-            <i className="fas fa-bell" style={{ fontSize: '.68rem', color: inventoryList.filter(i => (i.stock_qty || 0) <= (i.reorder_at || 10)).length > 0 ? '#F43F5E' : '#10B981' }} />
-          </span>
-          <div style={{ fontSize: '1.4rem', fontWeight: 800, color: inventoryList.filter(i => (i.stock_qty || 0) <= (i.reorder_at || 10)).length > 0 ? '#F43F5E' : '#10B981', marginTop: 4 }}>
-            {inventoryList.filter(i => (i.stock_qty || 0) <= (i.reorder_at || 10)).length} Items Low
-          </div>
-        </div>
       </div>
 
-      {/* SUBTAB SWITCHER */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: isLightMode ? '#F1F5F9' : 'rgba(255,255,255,0.04)', borderRadius: 12, padding: 4 }}>
-        {[
-          { key: 'accommodations' as const, label: 'Rooms & Rates', icon: 'fas fa-hotel', count: roomsList.filter((r) => r.is_active !== false).length },
-          { key: 'supplies' as const, label: 'Room Supplies & Amenities', icon: 'fas fa-box', count: inventoryList.length },
-        ].map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setInventorySubTab(tab.key)}
-            style={{
-              flex: 1, padding: '10px 16px', border: 'none', borderRadius: 10, cursor: 'pointer',
-              fontSize: '.84rem', fontWeight: 700, transition: 'all 0.25s ease',
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              background: inventorySubTab === tab.key
-                ? (tab.key === 'accommodations' ? 'linear-gradient(135deg, #0284C7, #0EA5E9)' : 'linear-gradient(135deg, #4338CA, #6366F1)')
-                : 'transparent',
-              color: inventorySubTab === tab.key ? '#FFF' : themeMuted,
-              boxShadow: inventorySubTab === tab.key ? '0 4px 12px rgba(14,165,233,0.25)' : 'none',
-            }}
-          >
-            <i className={tab.icon} />
-            {tab.label} <span style={{ opacity: 0.85, fontSize: '.74rem', marginLeft: 4 }}>({tab.count})</span>
-          </button>
-        ))}
+      <div style={{ marginBottom: 20 }}>
+        <select
+          aria-label="Inventory section"
+          value={inventorySubTab}
+          onChange={(e) => setInventorySubTab(e.target.value as 'accommodations' | 'supplies')}
+          style={{
+            padding: '9px 18px',
+            border: `1px solid ${themeBorder}`,
+            background: isLightMode ? '#FFFFFF' : '#0F172A',
+            color: themeText,
+            fontSize: '.84rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            minWidth: 260,
+          }}
+        >
+          <option value="accommodations">Rooms &amp; Rates ({roomsList.filter((r) => r.is_active !== false).length})</option>
+          <option value="supplies">Room Supplies &amp; Amenities ({inventoryList.length})</option>
+        </select>
       </div>
 
       {/* SUBTAB 1: ROOMS & RATES */}
