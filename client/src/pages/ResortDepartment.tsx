@@ -5,10 +5,11 @@ import { api, addDaysYMD } from '../lib/api.ts';
 import { toast } from '../components/Toasts.tsx';
 import { to11Digits, formatTime12Hour } from '../lib/format.ts';
 import { getManilaTodayISO } from '../lib/offeringSpecs.ts';
-import { canEditRoomDetails, canSwitchRoomAvailability, isAdministrator } from '../lib/rbac.ts';
+import { canEditRoomDetails, canRemoveRoom, canSwitchRoomAvailability, isAdministrator } from '../lib/rbac.ts';
 import type { UnitStatus } from '../lib/unitStatus.ts';
 import AddReservationModal, { NewReservationFormState } from '../components/admin/modals/AddReservationModal.tsx';
 import { RoomEditorModal } from '../components/admin/modals/RoomEditorModal.tsx';
+import { RemoveRoomDialog } from '../components/admin/modals/RemoveRoomDialog.tsx';
 import { CreateRoomModal } from '../components/admin/modals/CreateRoomModal.tsx';
 import { VoucherModal, normalizeVoucherData } from '../components/receipt';
 import { uploadImageToCloudinary } from '../lib/cloudinary.ts';
@@ -136,6 +137,7 @@ export default function ResortDepartment() {
   const canManageRooms = isAdministrator(staffProfile || adminProfile);
   const canSwitchAvailability = canSwitchRoomAvailability(staffProfile || adminProfile);
   const canEditRooms = canEditRoomDetails(staffProfile || adminProfile);
+  const canRemove = canRemoveRoom(staffProfile || adminProfile);
   const unitStatusFor = (roomId: string): UnitStatus => {
     const unit = rooms.find((r) => r.id === roomId);
     if (unit?.status === 'occupied') return 'booked';
@@ -167,6 +169,7 @@ export default function ResortDepartment() {
 
   // ── Executive Admin-Grade Room & Inventory Editing Suite State ──
   const [editingRoom, setEditingRoom] = useState<any | null>(null);
+  const [roomToRemove, setRoomToRemove] = useState<any | null>(null);
   const [showCreateRoomModal, setShowCreateRoomModal] = useState(false);
   const [newRoomData, setNewRoomData] = useState<any>({
     name: '',
@@ -618,17 +621,11 @@ export default function ResortDepartment() {
     }
   };
 
-  const handleDeleteRoom = async (roomToDelete: any) => {
-    if (!roomToDelete?.id) return;
-    if (!window.confirm(`Are you sure you want to remove ${roomToDelete.name}?`)) return;
-    try {
-      await api.deleteRoom(roomToDelete.id);
-      toast(`Unit "${roomToDelete.name}" deleted from database.`);
-      setEditingRoom(null);
-      await loadLiveOperationsData();
-    } catch (err: any) {
-      toast(err.message || 'Failed to delete room', true);
-    }
+  const handleConfirmRemoveRoom = async (room: { id: string; name: string }) => {
+    await api.removeRoom(room.id);
+    setEditingRoom(null);
+    toast(`Unit "${room.name}" was removed.`);
+    loadLiveOperationsData().catch(() => {});
   };
 
   const handleCreateRoomSubmit = async (e: React.FormEvent) => {
@@ -1569,7 +1566,7 @@ export default function ResortDepartment() {
               <p style={{ margin: '4px 0 0', fontSize: '.78rem', color: '#64748B' }}>
                 {canManageRooms
                   ? 'Admin-synchronized inventory: edit rates, photos, amenities, turnover readiness, and dispatch maintenance'
-                  : 'Turnover readiness for your shift. Add and edit units, take a unit offline or back online, or report a problem with Escalate. Only administrators change rates or delete units.'}
+                  : 'Turnover readiness for your shift. Add and edit units, take a unit offline or back online, or report a problem with Escalate. Only administrators change rates. You can remove a unit that has never been booked.'}
               </p>
             </div>
 
@@ -1694,7 +1691,7 @@ export default function ResortDepartment() {
 
               if (loadingData) {
                 return (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 24 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(340px, 100%), 1fr))', gap: 24 }}>
                     {[1, 2, 3, 4, 5, 6].map((i) => (
                       <div key={i} className="skel" style={{ height: 320, borderRadius: 16 }} />
                     ))}
@@ -1723,7 +1720,7 @@ export default function ResortDepartment() {
               }
 
               return (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 24 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(340px, 100%), 1fr))', gap: 24 }}>
                   {filteredRooms.map((rm) => {
                     const coverImg = getRoomCoverImage(rm);
                     const raw = rm.rawRoom || rm;
@@ -1962,7 +1959,7 @@ export default function ResortDepartment() {
                               </span>
                             </div>
 
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex flex-wrap items-center justify-end gap-1.5">
                               {/* EDIT BUTTON (Opens RoomEditorModal) */}
                               {canEditRooms && (
                               <button
@@ -2014,6 +2011,31 @@ export default function ResortDepartment() {
                                 <i className="fas fa-calendar-plus" />
                                 <span>Book</span>
                               </button>
+
+                              {/* REMOVE BUTTON (Are you sure? popup, then the server removes and audits) */}
+                              {canRemove && (
+                              <button
+                                type="button"
+                                onClick={() => setRoomToRemove(raw)}
+                                disabled={rm.status === 'occupied'}
+                                className="staff-btn staff-btn--secondary"
+                                style={{
+                                  padding: '6px 12px',
+                                  fontSize: '.75rem',
+                                  fontWeight: 700,
+                                  borderRadius: 8,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 5,
+                                  color: '#B91C1C',
+                                  borderColor: '#FECACA',
+                                }}
+                                title={rm.status === 'occupied' ? 'A guest is in this unit. Check them out before removing it.' : `Remove ${rm.name}`}
+                              >
+                                <i className="fas fa-trash-can" aria-hidden="true" />
+                                <span>Remove</span>
+                              </button>
+                              )}
 
                               {/* ESCALATE ISSUE BUTTON */}
                               <button
@@ -2675,7 +2697,7 @@ export default function ResortDepartment() {
           isOpen={Boolean(editingRoom)}
           onClose={() => setEditingRoom(null)}
           onSave={handleSaveEditedRoom}
-          onDelete={canManageRooms ? handleDeleteRoom : undefined}
+          onDelete={canRemove ? (room) => setRoomToRemove(room) : undefined}
           rateLocked={!canManageRooms}
           unitStatus={unitStatusFor(editingRoom.id)}
           isLightMode={true}
@@ -2684,6 +2706,14 @@ export default function ResortDepartment() {
           themeMuted="#64748B"
           uploadImageToCloudinary={uploadImageToCloudinary}
           toast={toast}
+        />
+      )}
+
+      {roomToRemove && (
+        <RemoveRoomDialog
+          room={roomToRemove}
+          onConfirm={handleConfirmRemoveRoom}
+          onClose={() => setRoomToRemove(null)}
         />
       )}
 

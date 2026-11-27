@@ -198,7 +198,6 @@ export const AdminModals: React.FC<AdminModalsProps> = ({ state }) => {
         roomToRemove={state.roomToRemove}
         setRoomToRemove={state.setRoomToRemove}
         handleConfirmRemoveRoom={state.handleConfirmRemoveRoom}
-        removingRoom={state.removingRoom}
         supplyToRemove={state.supplyToRemove}
         setSupplyToRemove={state.setSupplyToRemove}
         handleConfirmRemoveSupply={state.handleConfirmRemoveSupply}

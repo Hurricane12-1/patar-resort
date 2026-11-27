@@ -17,6 +17,7 @@ import { logAuditEvent } from '../lib/auditLogger.js';
 import { getLocalReservations } from '../lib/reservationStore.js';
 import { setRoomAvailability } from '../lib/roomAvailability.js';
 import { assertRoomEditAllowed } from '../lib/roomEditRules.js';
+import { removeRoom, roomSnapshot } from '../lib/roomRemoval.js';
 
 const r = Router();
 
@@ -584,9 +585,61 @@ r.patch('/rooms/:id/availability', authenticate, requireFrontDeskOrAdmin,
     return res.json(room);
   }));
 
+r.post('/rooms/:id/remove', authenticate, requireFrontDeskOrAdmin, asyncH(async (req, res) => {
+  const client = (await getSystemAdminClient().catch(() => null)) || admin;
+  const isAdministrator = normalizeEmployeeRole(req.user?.role) === 'administrator';
+
+  let removed;
+  try {
+    removed = await removeRoom(client, req.params.id, { isAdministrator });
+  } catch (err) {
+    if (err instanceof ApiError && String(err.code || '').startsWith('ROOM_')) {
+      await logAuditEvent({
+        actor: req.user,
+        action: 'ROOM_REMOVE_BLOCKED',
+        resourceType: 'room',
+        resourceId: req.params.id,
+        details: { reason: err.code, message: err.message, ...(err.details || {}) },
+        req,
+      });
+    }
+    throw err;
+  }
+  await redis.clear();
+
+  await logAuditEvent({
+    actor: req.user,
+    action: 'ROOM_REMOVE',
+    resourceType: 'room',
+    resourceId: removed.id,
+    details: {
+      name: removed.name,
+      category: removed.category,
+      rate_php: removed.rate_php,
+      capacity: removed.capacity,
+      units: removed.units,
+      was_active: removed.is_active,
+      bookings_on_record: removed.bookings_on_record,
+    },
+    req,
+  });
+
+  return res.json({ success: true, removed_id: removed.id, name: removed.name, bookings_on_record: removed.bookings_on_record });
+}));
+
 r.delete('/rooms/:id', authenticate, requireAdmin, asyncH(async (req, res) => {
   const sysClient = (await getSystemAdminClient().catch(() => null)) || admin;
   const isHard = req.query.hard === 'true';
+
+  let snapshot = {};
+  try {
+    const { data: existing } = await sysClient
+      .from('rooms')
+      .select('name, category, rate_php, capacity, units, is_active')
+      .eq('id', req.params.id)
+      .maybeSingle();
+    if (existing) snapshot = roomSnapshot(existing);
+  } catch {}
 
   if (isHard) {
     try {
@@ -611,7 +664,7 @@ r.delete('/rooms/:id', authenticate, requireAdmin, asyncH(async (req, res) => {
           action: 'ROOM_DELETE_PERMANENT',
           resourceType: 'room',
           resourceId: req.params.id,
-          details: { permanent: true },
+          details: { ...snapshot, permanent: true },
           req,
         });
         return res.json({ success: true, deleted_id: req.params.id, permanent: true });
@@ -634,7 +687,7 @@ r.delete('/rooms/:id', authenticate, requireAdmin, asyncH(async (req, res) => {
     action: 'ROOM_DEACTIVATE',
     resourceType: 'room',
     resourceId: req.params.id,
-    details: { is_active: false },
+    details: { ...snapshot, is_active: false },
     req,
   });
 

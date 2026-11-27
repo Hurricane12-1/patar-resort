@@ -764,6 +764,19 @@ export const api = {
   deleteRoom: async (id: string, hard = false) => {
     return await req(`/rooms/${id}${hard ? '?hard=true' : ''}`, { method: 'DELETE' });
   },
+  removeRoom: async (id: string) => {
+    try {
+      return await req<{ success: boolean; removed_id: string; name: string; bookings_on_record: number }>(`/rooms/${id}/remove`, {
+        method: 'POST',
+        body: {},
+        slowWrite: true,
+      });
+    } catch (err) {
+      // No direct-database fallback: only the server writes the audit entry.
+      if (isBackendUnreachable(err)) throw new Error("Can't reach the server, so nothing was removed. Check the connection and try again.");
+      throw err;
+    }
+  },
   uploadImage: (image_data: string, filename?: string, extra?: Record<string, any>) =>
     req('/upload/image', { method: 'POST', body: { image_data, filename, ...(extra || {}) } }),
   // Public page media (admin-managed images) — Page Adjustment

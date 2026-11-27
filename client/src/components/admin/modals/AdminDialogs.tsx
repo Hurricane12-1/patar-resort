@@ -3,6 +3,7 @@ import { fmtDate, to11Digits } from '../../../lib/format';
 import { dispatchWordPrompt } from '../../../lib/wordPrompt';
 import { generateAccountEmail, generateEmployeeId } from '../../../context/AuthContext';
 import { EMPLOYEE_ROLE_PRESETS, normalizeDepartment, normalizeRole } from '../../../lib/rbac';
+import { RemoveRoomDialog } from './RemoveRoomDialog';
 
 export interface AdminDialogsProps {
   isLightMode: boolean;
@@ -39,8 +40,7 @@ export interface AdminDialogsProps {
   // Confirmation modals
   roomToRemove: any;
   setRoomToRemove: (room: any) => void;
-  handleConfirmRemoveRoom: () => void;
-  removingRoom: boolean;
+  handleConfirmRemoveRoom: (room: any) => Promise<void>;
 
   supplyToRemove: any;
   setSupplyToRemove: (supply: any) => void;
@@ -121,7 +121,6 @@ export const AdminDialogs: React.FC<AdminDialogsProps> = ({
   roomToRemove,
   setRoomToRemove,
   handleConfirmRemoveRoom,
-  removingRoom,
   supplyToRemove,
   setSupplyToRemove,
   handleConfirmRemoveSupply,
@@ -942,87 +941,13 @@ export const AdminDialogs: React.FC<AdminDialogsProps> = ({
         </div>
       )}
 
-      {/* 5. REMOVE ROOM CONFIRMATION MODAL */}
+      {/* 5. REMOVE ROOM: Are you sure? popup, then a processing state while the server removes and audits it */}
       {roomToRemove && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(2, 6, 23, 0.75)',
-            backdropFilter: 'blur(8px)',
-            zIndex: 1000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 20,
-          }}
-          onClick={() => setRoomToRemove(null)}
-        >
-          <div
-            style={{
-              width: '100%',
-              maxWidth: 440,
-              background: isLightMode ? '#FFFFFF' : '#0F172A',
-              borderRadius: 20,
-              border: '1px solid rgba(239, 68, 68, 0.4)',
-              padding: 24,
-              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-              <span
-                style={{
-                  fontSize: '.74rem',
-                  color: '#EF4444',
-                  fontWeight: 800,
-                  textTransform: 'uppercase',
-                  letterSpacing: '.08em',
-                }}
-              >
-                REMOVE ROOM
-              </span>
-              <button
-                onClick={() => setRoomToRemove(null)}
-                style={{ background: 'none', border: 'none', color: themeMuted, fontSize: '1.2rem', cursor: 'pointer' }}
-              >
-                <i className="fas fa-xmark" />
-              </button>
-            </div>
-            <h3
-              style={{
-                margin: '0 0 10px',
-                fontSize: '1.25rem',
-                color: '#EF4444',
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
-              }}
-            >
-              Remove &quot;{roomToRemove.name}&quot;?
-            </h3>
-            <p style={{ fontSize: '.86rem', color: themeText, lineHeight: 1.5, margin: '0 0 16px' }}>
-              Are you sure you want to remove room <strong>{roomToRemove.name}</strong> ({roomToRemove.category || 'Cottage'})? This will permanently remove it from the resort catalog and inventory.
-            </p>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-              <button
-                type="button"
-                className="btn btn-sm"
-                onClick={() => setRoomToRemove(null)}
-                style={{ border: `1px solid ${themeBorder}`, color: themeText }}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="btn btn-sm"
-                onClick={handleConfirmRemoveRoom}
-                disabled={removingRoom}
-                style={{ background: '#EF4444', color: '#FFF', fontWeight: 700 }}
-              >
-                {removingRoom ? 'Removing…' : 'Remove Room'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <RemoveRoomDialog
+          room={roomToRemove}
+          onConfirm={handleConfirmRemoveRoom}
+          onClose={() => setRoomToRemove(null)}
+        />
       )}
 
       {/* 6. REMOVE SUPPLY ITEM CONFIRMATION MODAL */}

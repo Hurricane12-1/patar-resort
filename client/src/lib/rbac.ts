@@ -132,6 +132,12 @@ export function canEditRoomDetails(profile: any): boolean {
   return role === 'administrator' || role === 'staff' || role === 'receptionist';
 }
 
+/** Who sees Remove. The server decides each removal: staff only for units with no bookings, never with a live stay. */
+export function canRemoveRoom(profile: any): boolean {
+  const role = normalizeRole(profile?.role);
+  return role === 'administrator' || role === 'staff' || role === 'receptionist';
+}
+
 export function getAllowedOperationalDepartments(profile: any): DepartmentOption[] {
   const role = normalizeRole(profile?.role);
   const dept = normalizeDepartment(profile);

@@ -498,6 +498,24 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({
                   processBorder = 'rgba(244,63,94,0.35)';
                   processFaIcon = 'fa-ban';
                   processSummary = 'Room marked inactive and hidden from booking';
+                } else if (act === 'ROOM_REMOVE' || act === 'ROOM_DELETE_PERMANENT') {
+                  const d = log.details || {};
+                  const facts = [d.category, Number(d.rate_php) > 0 ? `₱${Number(d.rate_php).toLocaleString()}/night` : ''].filter(Boolean).join(', ');
+                  const kept = Number(d.bookings_on_record);
+                  const history = kept > 0 ? `. ${kept} past booking${kept === 1 ? '' : 's'} kept without a room` : '';
+                  processTitle = 'Removed Room';
+                  processColor = '#F43F5E';
+                  processBg = 'rgba(244,63,94,0.15)';
+                  processBorder = 'rgba(244,63,94,0.35)';
+                  processFaIcon = 'fa-trash-can';
+                  processSummary = d.name ? `Removed ${d.name}${facts ? ` (${facts})` : ''}${history}` : 'Room permanently removed from the resort';
+                } else if (act === 'ROOM_REMOVE_BLOCKED') {
+                  processTitle = 'Room Removal Blocked';
+                  processColor = '#F59E0B';
+                  processBg = 'rgba(245,158,11,0.15)';
+                  processBorder = 'rgba(245,158,11,0.35)';
+                  processFaIcon = 'fa-ban';
+                  processSummary = log.details?.message || 'A room removal was refused';
                 } else if (act === 'BOOKING_CREATE') {
                   processTitle = 'Created Reservation';
                   processColor = '#10B981';

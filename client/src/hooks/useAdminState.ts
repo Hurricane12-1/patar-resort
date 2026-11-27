@@ -433,7 +433,6 @@ export function useAdminState() {
   const [editingRoom, setEditingRoom] = useState<any>(null);
   const [uploadingRoomPhoto, setUploadingRoomPhoto] = useState(false);
   const [roomToRemove, setRoomToRemove] = useState<any>(null);
-  const [removingRoom, setRemovingRoom] = useState(false);
 
   const defaultSupplyDraft = {
     item_name: '',
@@ -744,22 +743,12 @@ export function useAdminState() {
     }
   };
 
-  const handleConfirmRemoveRoom = async () => {
-    if (!roomToRemove?.id) return;
-    const targetRoom = roomToRemove;
-    setRemovingRoom(true);
-    try {
-      await api.deleteRoom(targetRoom.id, true);
-      setRoomsList((prev) => prev.filter((r) => r.id !== targetRoom.id));
-      if (editingRoom?.id === targetRoom.id) setEditingRoom(null);
-      toast(`Room "${targetRoom.name}" removed successfully`);
-      setRoomToRemove(null);
-      refreshRoomsAndInventory();
-    } catch (err: any) {
-      toast(`Remove failed: ${err.message || 'Error removing room'}`, true);
-    } finally {
-      setRemovingRoom(false);
-    }
+  const handleConfirmRemoveRoom = async (targetRoom: { id: string; name: string }) => {
+    await api.removeRoom(targetRoom.id);
+    setRoomsList((prev) => prev.filter((r) => r.id !== targetRoom.id));
+    if (editingRoom?.id === targetRoom.id) setEditingRoom(null);
+    toast(`Room "${targetRoom.name}" removed successfully`);
+    refreshRoomsAndInventory();
   };
 
   const handleCreateSupply = async (e: React.FormEvent) => {
@@ -2333,7 +2322,6 @@ export function useAdminState() {
     handleToggleRoomActive,
     roomToRemove,
     setRoomToRemove,
-    removingRoom,
     handleConfirmRemoveRoom,
     showCreateSupplyModal,
     setShowCreateSupplyModal,
