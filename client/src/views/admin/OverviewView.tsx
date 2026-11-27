@@ -642,9 +642,6 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
               <div>
-                <span style={{ fontSize: '.72rem', color: '#0EA5E9', fontWeight: 800, letterSpacing: '.12em', textTransform: 'uppercase', display: 'block', marginBottom: 2 }}>
-                  LIVE BOOKING LEDGER
-                </span>
                 <h3 style={{ fontSize: '1.25rem', margin: 0, color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800 }}>
                   List of Booked Stays
                 </h3>
