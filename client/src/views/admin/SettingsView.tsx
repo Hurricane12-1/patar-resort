@@ -206,26 +206,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         >
           <i className="fas fa-palette" /> Change Layout of Guest & Users Dashboard
         </button>
-        <button
-          type="button"
-          onClick={() => setViewMode('layout')}
-          style={{
-            padding: '9px 18px',
-            borderRadius: 12,
-            border: `1.5px solid ${viewMode === 'layout' ? '#6366F1' : themeBorder}`,
-            background: viewMode === 'layout' ? (isLightMode ? '#EEF2FF' : 'rgba(99, 102, 241, 0.2)') : 'transparent',
-            color: viewMode === 'layout' ? (isLightMode ? '#4338CA' : '#818CF8') : themeMuted,
-            fontWeight: 700,
-            fontSize: '.85rem',
-            cursor: 'pointer',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            transition: 'all 0.2s ease',
-          }}
-        >
-          <i className="fas fa-image" /> Page Adjustment
-        </button>
       </div>
 
       {/* MODE 1: GUEST & USER DASHBOARD LAYOUT (Hides account settings when clicked) */}
@@ -608,11 +588,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 <i className="fas fa-lock" /> Password Security
               </b>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                {currentAdminProfile?.employee_id && (
-                  <span style={{ fontSize: '0.72rem', padding: '3px 8px', borderRadius: 12, background: 'rgba(56, 189, 248, 0.15)', color: '#38BDF8', border: '1px solid rgba(56, 189, 248, 0.35)', fontWeight: 600 }}>
-                    ID: {currentAdminProfile.employee_id} {currentAdminProfile.department ? `(${currentAdminProfile.department})` : ''}
-                  </span>
-                )}
                 <span style={{
                   fontSize: '0.72rem',
                   fontWeight: 700,
