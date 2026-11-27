@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.tsx';
 import { summarizeNight, stayBlocksNight } from '../lib/dayAvailability';
-import { DayAvailabilityPanel } from '../components/admin/DayAvailabilityPanel';
 import { api, addDaysYMD } from '../lib/api.ts';
 import { toast } from '../components/Toasts.tsx';
 import { to11Digits, formatTime12Hour } from '../lib/format.ts';
@@ -448,38 +447,6 @@ export default function ResortDepartment() {
       rm.status === 'maintenance' ||
       bookings.some((b) => b.roomId === rm.id && stayBlocksNight({ checkIn: b.checkIn, checkOut: b.checkOut, status: b.status }, iso))
     );
-
-  const bookRoomOnDate = (roomId: string, iso: string) => {
-    const room = rooms.find((r) => r.id === roomId);
-    setNewReservation((prev) => ({
-      ...prev,
-      room_id: roomId,
-      check_in: iso,
-      check_out: addDaysISO(iso, 1),
-      total_php: Number(room?.rate) || 3500,
-    }));
-    setShowManualBookingModal(true);
-  };
-
-  const renderDatePanel = (iso: string) => {
-    const night = nightFor(iso);
-    return (
-      <DayAvailabilityPanel
-        heading={formatDateReadable(iso)}
-        summary={`${night.open.length} of ${rooms.length} open`}
-        open={night.open.map((rm) => ({ id: rm.id, name: rm.name, detail: `${formatPHP(rm.rate)}/night` }))}
-        booked={night.booked.map((rm) => {
-          const guests = bookings
-            .filter((b) => b.roomId === rm.id && stayBlocksNight({ checkIn: b.checkIn, checkOut: b.checkOut, status: b.status }, iso))
-            .map((b) => b.guest);
-          return { id: rm.id, name: rm.name, detail: guests.length > 0 ? guests.join(', ') : 'Under maintenance' };
-        })}
-        onBook={iso >= todayISO ? (roomId) => bookRoomOnDate(roomId, iso) : undefined}
-        onClose={() => setSelectedDate(todayISO)}
-        isLightMode
-      />
-    );
-  };
 
   const getRoomById = (roomId: string) => {
     return rooms.find((r) => r.id === roomId) || { id: roomId, code: '—', name: 'Unassigned Unit', category: 'Standard', capacity: '—', rate: 0, status: 'available' as const, guest: null, note: '' };
@@ -1430,7 +1397,7 @@ export default function ResortDepartment() {
                           const stay = bookings.find((b) => b.roomId === rm.id && iso >= b.checkIn && iso < b.checkOut && b.status !== 'cancelled');
                           const isStart = stay && stay.checkIn === iso;
                           return (
-                            <td key={iso} style={{ padding: 4, textAlign: 'center', borderRight: '1px solid #F1F5F9' }}>
+                            <td key={iso} style={{ padding: 4, textAlign: 'center', borderRight: '1px solid #F1F5F9', background: iso === selectedDate ? 'rgba(0, 102, 153, 0.07)' : undefined }}>
                               {stay ? (
                                 <div
                                   onClick={() => {
@@ -1470,7 +1437,6 @@ export default function ResortDepartment() {
                   )}
                 </tbody>
               </table>
-              <div style={{ margin: '16px -18px 0' }}>{renderDatePanel(selectedDate)}</div>
             </div>
           )}
 
@@ -1621,7 +1587,6 @@ export default function ResortDepartment() {
                     );
                   })}
                 </div>
-                <div style={{ margin: '16px -18px 0' }}>{renderDatePanel(selectedDate)}</div>
               </div>
             );
           })()}

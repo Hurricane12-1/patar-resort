@@ -628,6 +628,13 @@
 .pms-day-header-cell.has-open-count:hover {
   background: rgba(0, 102, 153, 0.06);
 }
+.pms-day-header-cell.is-focused {
+  background: rgba(0, 102, 153, 0.12);
+  box-shadow: inset 0 -3px 0 #006699;
+}
+.pms-cell.is-focused {
+  box-shadow: inset 0 0 0 999px rgba(0, 102, 153, 0.07);
+}
 .pms-day-open {
   margin-top: 2px;
   font-size: 0.62rem;

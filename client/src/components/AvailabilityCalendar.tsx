@@ -13,7 +13,6 @@ import {
 import { getManilaTodayISO, inferOfferingType, isRoomOrCottage } from '../lib/offeringSpecs';
 import { unitDisplayNames } from '../lib/unitNames';
 import { summarizeNight } from '../lib/dayAvailability';
-import { DayAvailabilityPanel } from './admin/DayAvailabilityPanel';
 import '../styles/availability-calendar.css';
 
 const MIN_CALENDAR_ROWS = 11;
@@ -889,37 +888,6 @@ export default function AvailabilityCalendar({
         )}
       </div>
 
-      {showMetrics && focusedDate && nightsByDate.get(focusedDate) && (() => {
-        const night = nightsByDate.get(focusedDate)!;
-        const dateLabel = new Date(`${focusedDate}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' });
-        const canBook = !!onSelectDates && focusedDate >= todayStr;
-        const guestFor = (unit: UnitInfo) =>
-          activeBlockingStays.find(
-            (s) =>
-              focusedDate >= s.checkIn &&
-              focusedDate < s.checkOut &&
-              (s.assignedUnitNumber === unit.unitNumber || (s.isUnassigned && String(s.roomId) === String(unit.roomId)))
-          )?.guestName;
-        return (
-          <DayAvailabilityPanel
-            heading={dateLabel}
-            summary={`${night.open.length} of ${visibleUnits.length} open`}
-            open={night.open.map((unit) => ({ id: unit.id, name: unit.name, detail: `₱${unit.ratePhp.toLocaleString()}/night` }))}
-            booked={night.booked.map((unit) => ({ id: unit.id, name: unit.name, detail: guestFor(unit) }))}
-            onBook={
-              canBook
-                ? (unitId) => {
-                    const unit = units.find((u) => u.id === unitId);
-                    if (unit) onSelectDates?.(focusedDate, addDaysYMD(focusedDate, 1), unit.roomId, unit);
-                  }
-                : undefined
-            }
-            onClose={() => setFocusedDate(null)}
-            isLightMode={isLightMode}
-          />
-        );
-      })()}
-
       {/* 2. CALENDAR MATRIX */}
       <div className="pms-grid-container">
         <div className="pms-grid-table">
@@ -941,12 +909,12 @@ export default function AvailabilityCalendar({
                 return (
                   <div
                     key={day.dateStr}
-                    className={`pms-day-header-cell ${day.isToday ? 'is-today' : ''} ${isWeekend ? 'is-weekend' : ''} ${showMetrics ? 'has-open-count' : ''}`}
+                    className={`pms-day-header-cell ${day.isToday ? 'is-today' : ''} ${isWeekend ? 'is-weekend' : ''} ${showMetrics ? 'has-open-count' : ''} ${showMetrics && focusedDate === day.dateStr ? 'is-focused' : ''}`}
                     onClick={showMetrics ? () => setFocusedDate(focusedDate === day.dateStr ? null : day.dateStr) : undefined}
                     role={showMetrics ? 'button' : undefined}
                     tabIndex={showMetrics ? 0 : undefined}
                     onKeyDown={showMetrics ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setFocusedDate(focusedDate === day.dateStr ? null : day.dateStr); } } : undefined}
-                    title={showMetrics ? 'Click to see which rooms are open on this date' : undefined}
+                    title={showMetrics ? 'Click to highlight this date. Click again to clear.' : undefined}
                   >
                     <div className="pms-day-name">{day.dayOfWeek}</div>
                     {day.isToday ? (
@@ -1017,7 +985,7 @@ export default function AvailabilityCalendar({
                       return (
                         <div
                           key={day.dateStr}
-                          className={`pms-cell ${day.isToday ? 'is-today' : ''} ${isWeekend ? 'is-weekend' : ''} ${isDateBlocked ? 'is-past' : ''} ${isReserved ? 'is-reserved' : 'is-open'}`}
+                          className={`pms-cell ${day.isToday ? 'is-today' : ''} ${isWeekend ? 'is-weekend' : ''} ${isDateBlocked ? 'is-past' : ''} ${isReserved ? 'is-reserved' : 'is-open'} ${showMetrics && focusedDate === day.dateStr ? 'is-focused' : ''}`}
                           style={
                             isReserved
                               ? {
