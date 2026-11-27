@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { parseOfferingTags } from './offeringSpecs';
 
 /** A bookable stay as shown on the landing page and in the guest dashboard. */
 export interface Room {
@@ -39,50 +40,44 @@ export const FALLBACK_ROOMS: Room[] = [];
 
 const NON_STAY_CATEGORY = /\b(tours?|activit(y|ies)|excursions?)\b/i;
 
+/** Offering type as the admin console stores it: the column when present, otherwise the `__type__` tag. */
+export function offeringTypeOfRow(row: any): string {
+  return String(row?.offering_type || parseOfferingTags(Array.isArray(row?.amenities) ? row.amenities : [], row || {}).offering_type);
+}
+
 /**
  * The rooms table also stores day tours and offers (tagged `__type__:offer` by the
  * admin console). Only active overnight accommodations can be booked as rooms.
  */
 export function isBookableRoomRow(row: any): boolean {
   if (!row || row.is_active === false) return false;
-  const tags: unknown[] = Array.isArray(row.amenities) ? row.amenities : [];
-  const isOffer = tags.some((tag) => typeof tag === 'string' && tag.trim().toLowerCase() === '__type__:offer');
-  if (isOffer) return false;
+  const type = offeringTypeOfRow(row);
+  if (type !== 'room' && type !== 'cottage') return false;
   return !NON_STAY_CATEGORY.test(String(row.category || ''));
 }
 
-function resolveRoomImage(rawUrl: string, idx: number): string {
-  const url = rawUrl || '';
-  if (url.includes('cottage')) return '/images/cottage.jpg';
-  if (url.includes('suite')) return '/images/suite.jpg';
-  if (url.includes('villa')) return '/images/villa.jpg';
-  if (url.includes('island')) return '/images/island.jpg';
-  if (url) return url;
-  return idx % 2 === 0 ? '/images/cottage.jpg' : '/images/suite.jpg';
-}
-
-/** Maps a `rooms` row to the shape the guest UI uses. Capacity is taken as-is from the row. */
+/** Maps a `rooms` row to the shape the guest UI uses. Photos, type, and category come from the tags the admin stores. */
 export function mapLiveRoom(row: any, idx: number): Room {
-  const primaryImg = resolveRoomImage(String(row.image_url || ''), idx);
+  const parsed = parseOfferingTags(Array.isArray(row.amenities) ? row.amenities : [], row);
+  const storedImages: string[] = Array.isArray(row.images)
+    ? row.images.filter((u: any) => typeof u === 'string' && u.trim())
+    : [];
+  const images: string[] = parsed.imgList.length > 0 ? parsed.imgList : storedImages;
   const capacity = Math.floor(Number(row.capacity));
   return {
     id: String(row.id),
-    name: String(row.name || `Villa ${idx + 1}`).trim(),
-    category: row.category || 'Oceanfront Sanctuary',
-    offering_type: row.offering_type || (/\bcottage\b/i.test(row.category || '') ? 'cottage' : 'room'),
+    name: String(row.name || `Room ${idx + 1}`).trim(),
+    category: parsed.displayCategory || row.category || '',
+    offering_type: offeringTypeOfRow(row),
     rate_php: Number(row.rate_php) || 3500,
     // A missing or invalid capacity stays 0 so the room is never auto-assigned to a party it may not fit.
     capacity: capacity > 0 ? capacity : 0,
     beds_count: Number(row.beds_count) || 2,
     baths_count: Number(row.baths_count) || 1,
-    description: row.description || 'Private oceanfront villa perched above Bolinao limestone coves.',
-    amenities: Array.isArray(row.amenities) && row.amenities.length > 0
-      ? row.amenities.filter((a: any) => typeof a === 'string' && !a.startsWith('__'))
-      : ['Oceanfront Balcony', 'Wi-Fi', 'Air Conditioning', 'Solar Microgrid Backup'],
-    image_url: primaryImg,
-    images: Array.isArray(row.images) && row.images.length > 0
-      ? row.images
-      : [primaryImg, '/images/suite.jpg', '/images/villa.jpg', '/images/island.jpg', '/images/garden.jpg']
+    description: row.description || '',
+    amenities: parsed.cleanAmenities,
+    image_url: images[0] || '',
+    images,
   };
 }
 

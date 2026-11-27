@@ -5,7 +5,8 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
 import { usePageSettings, savePageSettings } from '../lib/pageSettings';
 import { isValidPHMobile, to11Digits } from '../lib/format';
-import { getManilaTodayISO, inferOfferingType, type OfferingType } from '../lib/offeringSpecs';
+import { formatOfferingBadge, getManilaTodayISO, inferOfferingType, type OfferingType } from '../lib/offeringSpecs';
+import { getRoomImageUrl, handleImageError } from '../lib/images';
 import { VoucherBarcode } from './receipt/VoucherBarcode';
 import { toast } from './Toasts';
 import {
@@ -1795,193 +1796,47 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
             ref={roomScrollRef}
             className="flex gap-5 overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory py-6 -mx-5 px-5 sm:-mx-8 sm:px-8 lg:mx-0 lg:px-0"
           >
-            {/* Chason Room */}
-            <article
-              onClick={() => {
-                const found = rooms.find((r) => r.name.toLowerCase().includes('chason'));
-                if (found) {
-                  chooseRoom(found.id);
-                  handleCategorySwitch('room');
-                }
-                document.getElementById('booking-workspace')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="group relative h-80 w-[280px] sm:w-[320px] shrink-0 snap-start overflow-hidden rounded-3xl border border-white/10 cursor-pointer transition hover:border-cyan/50 shadow-xl"
-            >
-              <img
-                src="/images/chason_room_generated.jpg"
-                alt="Chason Room"
-                loading="lazy"
-                className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#060B18] via-[#060B18]/35 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 p-5">
-                <span className="text-[10px] uppercase font-mono tracking-widest text-cyan font-bold block mb-1">
-                  ✦ Air-Conditioned Room
-                </span>
-                <h3 className="font-serif text-2xl font-medium leading-tight text-white">
-                  Chason Room
-                </h3>
-                <p className="mt-1 font-serif text-lg text-cyan">
-                  ₱3,500 <span className="font-sans text-[11px] text-white/60">/ night</span>
+            {rooms.length === 0 && (
+              <div className="w-full rounded-3xl border border-white/10 bg-white/[0.02] p-8 text-center text-white/60">
+                <p className="font-serif text-lg text-white">
+                  {dbStatus === 'connecting' ? 'Loading rooms…' : dbStatus === 'offline' ? 'Rooms are unavailable right now' : 'No rooms are published yet'}
+                </p>
+                <p className="mt-1 text-sm font-light">
+                  {dbStatus === 'offline' ? 'Please check back shortly.' : 'Rooms appear here as soon as the front desk publishes them.'}
                 </p>
               </div>
-            </article>
-
-            {/* Sunset Cottage */}
-            <article
-              onClick={() => {
-                const found = rooms.find((r) => r.name.toLowerCase().includes('sunset'));
-                if (found) {
-                  chooseRoom(found.id);
-                  handleCategorySwitch('cottage');
-                }
-                document.getElementById('booking-workspace')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="group relative h-80 w-[280px] sm:w-[320px] shrink-0 snap-start overflow-hidden rounded-3xl border border-white/10 cursor-pointer transition hover:border-cyan/50 shadow-xl"
-            >
-              <img
-                src="/images/sunset_cottage_generated.jpg"
-                alt="Sunset Cottage"
-                loading="lazy"
-                className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#060B18] via-[#060B18]/35 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 p-5">
-                <span className="text-[10px] uppercase font-mono tracking-widest text-cyan font-bold block mb-1">
-                  ✦ Beachfront Cottage
-                </span>
-                <h3 className="font-serif text-2xl font-medium leading-tight text-white">
-                  Sunset Cottage
-                </h3>
-                <p className="mt-1 font-serif text-lg text-cyan">
-                  ₱3,500 <span className="font-sans text-[11px] text-white/60">/ night</span>
-                </p>
-              </div>
-            </article>
-
-            {/* Unit 3 */}
-            <article
-              onClick={() => {
-                const found = rooms.find((r) => r.name.toLowerCase().includes('unit 3'));
-                if (found) {
-                  chooseRoom(found.id);
-                  handleCategorySwitch('room');
-                }
-                document.getElementById('booking-workspace')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="group relative h-80 w-[280px] sm:w-[320px] shrink-0 snap-start overflow-hidden rounded-3xl border border-white/10 cursor-pointer transition hover:border-cyan/50 shadow-xl"
-            >
-              <img
-                src="/images/unit3_veranda.jpg"
-                alt="Unit 3"
-                loading="lazy"
-                className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#060B18] via-[#060B18]/35 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 p-5">
-                <span className="text-[10px] uppercase font-mono tracking-widest text-cyan font-bold block mb-1">
-                  ✦ Veranda Suite
-                </span>
-                <h3 className="font-serif text-2xl font-medium leading-tight text-white">
-                  Unit 3
-                </h3>
-                <p className="mt-1 font-serif text-lg text-cyan">
-                  ₱3,500 <span className="font-sans text-[11px] text-white/60">/ night</span>
-                </p>
-              </div>
-            </article>
-
-            {/* Unit 5 */}
-            <article
-              onClick={() => {
-                const found = rooms.find((r) => r.name.toLowerCase().includes('unit 5'));
-                if (found) {
-                  chooseRoom(found.id);
-                  handleCategorySwitch('room');
-                }
-                document.getElementById('booking-workspace')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="group relative h-80 w-[280px] sm:w-[320px] shrink-0 snap-start overflow-hidden rounded-3xl border border-white/10 cursor-pointer transition hover:border-cyan/50 shadow-xl"
-            >
-              <img
-                src="/images/unit5_suite.jpg"
-                alt="Unit 5"
-                loading="lazy"
-                className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#060B18] via-[#060B18]/35 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 p-5">
-                <span className="text-[10px] uppercase font-mono tracking-widest text-cyan font-bold block mb-1">
-                  ✦ Oceanfront Room
-                </span>
-                <h3 className="font-serif text-2xl font-medium leading-tight text-white">
-                  Unit 5
-                </h3>
-                <p className="mt-1 font-serif text-lg text-cyan">
-                  ₱3,500 <span className="font-sans text-[11px] text-white/60">/ night</span>
-                </p>
-              </div>
-            </article>
-
-            {/* Family Suite */}
-            <article
-              onClick={() => {
-                const found = rooms.find((r) => r.name.toLowerCase().includes('family') || r.name.toLowerCase().includes('suite'));
-                if (found) {
-                  chooseRoom(found.id);
-                  handleCategorySwitch('room');
-                }
-                document.getElementById('booking-workspace')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="group relative h-80 w-[280px] sm:w-[320px] shrink-0 snap-start overflow-hidden rounded-3xl border border-white/10 cursor-pointer transition hover:border-cyan/50 shadow-xl"
-            >
-              <img
-                src="/images/rockview/15_family_suite_bedroom_view.jpg"
-                alt="Family Suite"
-                loading="lazy"
-                className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#060B18] via-[#060B18]/35 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 p-5">
-                <span className="text-[10px] uppercase font-mono tracking-widest text-cyan font-bold block mb-1">
-                  ✦ Family Living
-                </span>
-                <h3 className="font-serif text-2xl font-medium leading-tight text-white">
-                  Family Suite
-                </h3>
-                <p className="mt-1 font-serif text-lg text-cyan">
-                  ₱4,500 <span className="font-sans text-[11px] text-white/60">/ night</span>
-                </p>
-              </div>
-            </article>
-
-            {/* Beachside Cottage Deck */}
-            <article
-              onClick={() => {
-                handleCategorySwitch('cottage');
-                document.getElementById('booking-workspace')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="group relative h-80 w-[280px] sm:w-[320px] shrink-0 snap-start overflow-hidden rounded-3xl border border-white/10 cursor-pointer transition hover:border-cyan/50 shadow-xl"
-            >
-              <img
-                src="/images/rockview/11_beachside_cottage_porch.jpg"
-                alt="Beachside Cottage"
-                loading="lazy"
-                className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#060B18] via-[#060B18]/35 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 p-5">
-                <span className="text-[10px] uppercase font-mono tracking-widest text-cyan font-bold block mb-1">
-                  ✦ Coastal Porch
-                </span>
-                <h3 className="font-serif text-2xl font-medium leading-tight text-white">
-                  Seaside Cottage Porch
-                </h3>
-                <p className="mt-1 font-serif text-lg text-cyan">
-                  ₱3,500 <span className="font-sans text-[11px] text-white/60">/ night</span>
-                </p>
-              </div>
-            </article>
+            )}
+            {rooms.map((room) => (
+              <article
+                key={room.id}
+                onClick={() => {
+                  chooseRoom(room.id);
+                  handleCategorySwitch(room.offering_type === 'cottage' ? 'cottage' : 'room');
+                  document.getElementById('booking-workspace')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="group relative h-80 w-[280px] sm:w-[320px] shrink-0 snap-start overflow-hidden rounded-3xl border border-white/10 cursor-pointer transition hover:border-cyan/50 shadow-xl"
+              >
+                <img
+                  src={getRoomImageUrl(room)}
+                  alt={room.name}
+                  loading="lazy"
+                  onError={handleImageError}
+                  className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#060B18] via-[#060B18]/35 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 p-5">
+                  <span className="text-[10px] uppercase font-mono tracking-widest text-cyan font-bold block mb-1">
+                    ✦ {formatOfferingBadge(room.offering_type || 'room', room.category)}
+                  </span>
+                  <h3 className="font-serif text-2xl font-medium leading-tight text-white">
+                    {room.name}
+                  </h3>
+                  <p className="mt-1 font-serif text-lg text-cyan">
+                    ₱{Number(room.rate_php || 0).toLocaleString()} <span className="font-sans text-[11px] text-white/60">/ night</span>
+                  </p>
+                </div>
+              </article>
+            ))}
           </div>
         </section>
       </>
