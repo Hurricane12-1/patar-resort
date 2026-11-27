@@ -496,9 +496,10 @@ export const api = {
   },
   updateMe: async (body: any) => {
     try {
-      const res = await req('/me', { method: 'PATCH', body });
-      if (res && res.id) return res;
-    } catch {}
+      return await req('/me', { method: 'PATCH', body });
+    } catch (err) {
+      if (!isBackendUnreachable(err)) throw err;
+    }
     const sb = await ensureSupabaseSession();
     const { data: { session } } = await sb.auth.getSession();
     let userId = session?.user?.id;
@@ -523,14 +524,17 @@ export const api = {
         position: body.title || body.position,
         updated_at: new Date().toISOString(),
       }).eq('id', userId).select().maybeSingle();
-      if (!error && data) return data;
+      if (error) throw new Error(error.message);
+      if (data) return data;
     }
-    return { ...body, id: userId || 'admin' };
+    throw new Error('Could not save your profile while the server is unreachable. Try again shortly.');
   },
   updatePassword: async (password: string) => {
     try {
       return await req('/me/password', { method: 'PATCH', body: { password } });
-    } catch {}
+    } catch (err) {
+      if (!isBackendUnreachable(err)) throw err;
+    }
     const sb = await ensureSupabaseSession();
     const { error } = await sb.auth.updateUser({ password });
     if (error) throw new Error(error.message);
@@ -618,7 +622,9 @@ export const api = {
   sendStaffChatMessage: async (profileId: string, content: string) => {
     try {
       return await req(`/chat/conversations/${profileId}/messages`, { method: 'POST', body: { content } });
-    } catch {}
+    } catch (err) {
+      if (!isBackendUnreachable(err)) throw err;
+    }
     const sb = await ensureSupabaseSession();
     const { data, error } = await sb
       .from('chat_messages')
@@ -634,16 +640,10 @@ export const api = {
     return data;
   },
   submitChatFeedback: async (data: { messageId?: string; feedback: 'thumbs_up' | 'thumbs_down'; reason?: string; details?: string }) => {
-    try {
-      return await req('/chat/feedback', { method: 'POST', body: data });
-    } catch {}
-    return { success: true };
+    return await req('/chat/feedback', { method: 'POST', body: data });
   },
   requestStaffAssistance: async (data: { message?: string }) => {
-    try {
-      return await req('/chat/request-staff', { method: 'POST', body: data });
-    } catch {}
-    return { success: true };
+    return await req('/chat/request-staff', { method: 'POST', body: data });
   },
 
   // Accommodations Catalog & Availability (Multi-Tier Resilient Architecture)
@@ -664,11 +664,9 @@ export const api = {
   createRoom: async (body: any) => {
     try {
       const res = await req('/rooms', { method: 'POST', body });
-      if (res && res.id) return normalizeRoom(res);
-    } catch (err: any) {
-      if (err.status && err.status !== 404) {
-        throw new Error(err.message || 'Could not create room in database');
-      }
+      return res?.id ? normalizeRoom(res) : res;
+    } catch (err) {
+      if (!isBackendUnreachable(err)) throw err;
     }
     const sb = await ensureSupabaseSession();
     const baseSlug = String(body.slug || body.name || 'room')
@@ -701,8 +699,10 @@ export const api = {
   updateRoom: async (id: string, body: any) => {
     try {
       const res = await req(`/rooms/${id}`, { method: 'PATCH', body });
-      if (res && res.id) return normalizeRoom(res);
-    } catch {}
+      return res?.id ? normalizeRoom(res) : res;
+    } catch (err) {
+      if (!isBackendUnreachable(err)) throw err;
+    }
     const sb = await ensureSupabaseSession();
     let existingRoom = null;
     try {
@@ -715,26 +715,7 @@ export const api = {
     return normalizeRoom(data);
   },
   deleteRoom: async (id: string, hard = false) => {
-    try {
-      const res = await req(`/rooms/${id}${hard ? '?hard=true' : ''}`, { method: 'DELETE' });
-      if (res && (res.success || res.deleted_id)) return res;
-    } catch {}
-
-    try {
-      const sb = await ensureSupabaseSession();
-      try { await sb.from('reservations').update({ room_id: null }).eq('room_id', id); } catch {}
-      try { await sb.from('reviews').delete().eq('room_id', id); } catch {}
-      try { await sb.from('department_tasks').delete().eq('room_id', id); } catch {}
-
-      const { error: delErr } = await sb.from('rooms').delete().eq('id', id);
-      if (!delErr) return { success: true, deleted_id: id, permanent: true };
-
-      const { error: updErr } = await sb.from('rooms').update({ is_active: false }).eq('id', id);
-      if (!updErr) return { success: true, deleted_id: id, deactivated: true };
-      throw delErr;
-    } catch (e: any) {
-      throw new Error(e.message || 'Could not delete room from database');
-    }
+    return await req(`/rooms/${id}${hard ? '?hard=true' : ''}`, { method: 'DELETE' });
   },
   uploadImage: (image_data: string, filename?: string, extra?: Record<string, any>) =>
     req('/upload/image', { method: 'POST', body: { image_data, filename, ...(extra || {}) } }),
@@ -761,16 +742,10 @@ export const api = {
     };
   },
   saveCloudinaryConfig: async (body: any) => {
-    try {
-      return await req('/cloudinary/config', { method: 'POST', body });
-    } catch {}
-    return { success: true, configured: true };
+    return await req('/cloudinary/config', { method: 'POST', body });
   },
   pingCloudinary: async (body?: any) => {
-    try {
-      return await req('/cloudinary/ping', { method: 'POST', body: body || {} });
-    } catch {}
-    return { success: true, status: 'connected', cloud_name: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'juynm9ab' };
+    return await req('/cloudinary/ping', { method: 'POST', body: body || {} });
   },
   availability: async (check_in: string, check_out: string, guests: number) => {
     try {
@@ -962,9 +937,10 @@ export const api = {
       nextBody.check_out = addDaysYMD(nextBody.check_in, 1);
     }
     try {
-      const res = await req(`/reservations/${id}`, { method: 'PATCH', body: nextBody });
-      if (res && res.id) return res;
-    } catch {}
+      return await req(`/reservations/${id}`, { method: 'PATCH', body: nextBody });
+    } catch (err) {
+      if (!isBackendUnreachable(err)) throw err;
+    }
     const sb = await ensureSupabaseSession();
     const updatePayload: Record<string, any> = {
       updated_at: new Date().toISOString(),
@@ -1023,21 +999,16 @@ export const api = {
   cancelReservation: async (id: string) => {
     try {
       return await req(`/reservations/${id}/cancel`, { method: 'PATCH' });
-    } catch {}
+    } catch (err) {
+      if (!isBackendUnreachable(err)) throw err;
+    }
     const sb = await ensureSupabaseSession();
     const { data, error } = await sb.from('reservations').update({ status: 'cancelled' }).eq('id', id).select('*, rooms(name, slug, category, amenities, rate_php)').single();
     if (error) throw new Error(error.message);
     return data;
   },
   deleteReservation: async (id: string) => {
-    try {
-      const res = await req(`/reservations/${id}`, { method: 'DELETE' });
-      if (res) return res;
-    } catch {}
-    const sb = await ensureSupabaseSession();
-    const { error } = await sb.from('reservations').delete().eq('id', id);
-    if (error) throw new Error(error.message);
-    return { success: true, deleted_id: id };
+    return await req(`/reservations/${id}`, { method: 'DELETE' });
   },
   allReservations: async () => {
     try {
@@ -1068,9 +1039,10 @@ export const api = {
   setReservationStatus: async (id: string, status: string) => {
     invalidateFrontDeskCache();
     try {
-      const res = await req(`/reservations/${id}/status`, { method: 'PATCH', body: { status } });
-      if (res && res.id) return res;
-    } catch {}
+      return await req(`/reservations/${id}/status`, { method: 'PATCH', body: { status } });
+    } catch (err) {
+      if (!isBackendUnreachable(err)) throw err;
+    }
     const sb = await ensureSupabaseSession();
     const { data, error } = await sb
       .from('reservations')
@@ -1102,7 +1074,9 @@ export const api = {
   addReview: async (body: any) => {
     try {
       return await req('/reviews', { method: 'POST', body });
-    } catch {}
+    } catch (err) {
+      if (!isBackendUnreachable(err)) throw err;
+    }
     const sb = await ensureSupabaseSession();
     const { data, error } = await sb.from('reviews').insert({
       reservation_id: body.reservation_id,
@@ -1132,34 +1106,30 @@ export const api = {
   markNotificationRead: async (id: string) => {
     try {
       return await req(`/notifications/${id}/read`, { method: 'PATCH' });
-    } catch {}
+    } catch (err) {
+      if (!isBackendUnreachable(err)) throw err;
+    }
     const sb = await ensureSupabaseSession();
-    await sb.from('notifications').update({ is_read: true }).eq('id', id);
+    const updated = await sb.from('notifications').update({ is_read: true }).eq('id', id).select('id');
+    requireDirectWrite(updated, 'Marking the notification read', true);
     return { success: true };
   },
   markAllNotificationsRead: async () => {
     try {
       return await req('/notifications/read-all', { method: 'POST' });
-    } catch {}
+    } catch (err) {
+      if (!isBackendUnreachable(err)) throw err;
+    }
     const sb = await ensureSupabaseSession();
-    await sb.from('notifications').update({ is_read: true }).eq('is_read', false);
+    const updated = await sb.from('notifications').update({ is_read: true }).eq('is_read', false);
+    requireDirectWrite(updated, 'Marking notifications read');
     return { success: true };
   },
   deleteNotification: async (id: string) => {
-    try {
-      return await req(`/notifications/${id}`, { method: 'DELETE' });
-    } catch {}
-    const sb = await ensureSupabaseSession();
-    await sb.from('notifications').delete().eq('id', id);
-    return { success: true };
+    return await req(`/notifications/${id}`, { method: 'DELETE' });
   },
   clearAllNotifications: async () => {
-    try {
-      return await req('/notifications', { method: 'DELETE' });
-    } catch {}
-    const sb = await ensureSupabaseSession();
-    await sb.from('notifications').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    return { success: true };
+    return await req('/notifications', { method: 'DELETE' });
   },
 
   // Front Desk Non-Financial Overview
@@ -1256,27 +1226,30 @@ export const api = {
   logAuditEvent: async (body: any) => {
     try {
       return await req('/audit-logs', { method: 'POST', body });
-    } catch {}
+    } catch (err) {
+      if (!isBackendUnreachable(err)) {
+        console.warn('[logAuditEvent] the server did not record this entry:', err);
+        return { success: false };
+      }
+    }
     try {
       const sb = await ensureSupabaseSession();
-      const { data } = await sb.from('audit_logs').insert({
+      const { data, error } = await sb.from('audit_logs').insert({
         action: body.action || 'SYSTEM_EVENT',
         actor_email: body.actor_email || 'admin@rockviewresort.ph',
         actor_role: body.actor_role || 'administrator',
         resource_type: body.resource_type || 'system',
         details: body.details || {},
       }).select().single();
+      if (error) throw new Error(error.message);
       return data;
-    } catch {}
-    return { success: true };
+    } catch (directErr) {
+      console.warn('[logAuditEvent] direct audit write failed:', directErr);
+    }
+    return { success: false };
   },
   clearAuditLogs: async () => {
-    try {
-      return await req('/audit-logs/clear', { method: 'POST' });
-    } catch {}
-    const sb = await ensureSupabaseSession();
-    await sb.from('audit_logs').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    return { success: true };
+    return await req('/audit-logs/clear', { method: 'POST' });
   },
 
   // Administrator & Staff Provisioning
@@ -1488,9 +1461,10 @@ export const api = {
   },
   createDepartmentTask: async (body: any) => {
     try {
-      const res = await req('/department/tasks', { method: 'POST', body });
-      if (res && res.id) return res;
-    } catch {}
+      return await req('/department/tasks', { method: 'POST', body });
+    } catch (err) {
+      if (!isBackendUnreachable(err)) throw err;
+    }
     const sb = await ensureSupabaseSession();
     const { data, error } = await sb.from('department_tasks').insert({
       department: body.department || 'housekeeping',
@@ -1507,7 +1481,9 @@ export const api = {
   updateDepartmentTaskStatus: async (id: string, status: string) => {
     try {
       return await req(`/department/tasks/${id}/status`, { method: 'PATCH', body: { status } });
-    } catch {}
+    } catch (err) {
+      if (!isBackendUnreachable(err)) throw err;
+    }
     const sb = await ensureSupabaseSession();
     const { data, error } = await sb.from('department_tasks').update({ status, updated_at: new Date().toISOString() }).eq('id', id).select().single();
     if (error) throw new Error(error.message);
@@ -1534,9 +1510,10 @@ export const api = {
   },
   createInventoryItem: async (body: any) => {
     try {
-      const res = await req('/department/inventory', { method: 'POST', body });
-      if (res && res.id) return res;
-    } catch {}
+      return await req('/department/inventory', { method: 'POST', body });
+    } catch (err) {
+      if (!isBackendUnreachable(err)) throw err;
+    }
     const sb = await ensureSupabaseSession();
     const { data, error } = await sb.from('resort_inventory').insert(body).select().single();
     if (error) throw new Error(error.message);
@@ -1544,9 +1521,10 @@ export const api = {
   },
   updateInventoryItem: async (id: string, body: any) => {
     try {
-      const res = await req(`/department/inventory/${id}`, { method: 'PATCH', body });
-      if (res && res.id) return res;
-    } catch {}
+      return await req(`/department/inventory/${id}`, { method: 'PATCH', body });
+    } catch (err) {
+      if (!isBackendUnreachable(err)) throw err;
+    }
     const sb = await ensureSupabaseSession();
     const { data, error } = await sb
       .from('resort_inventory')
@@ -1558,14 +1536,7 @@ export const api = {
     return data;
   },
   deleteInventoryItem: async (id: string) => {
-    try {
-      const res = await req(`/department/inventory/${id}`, { method: 'DELETE' });
-      if (res) return res;
-    } catch {}
-    const sb = await ensureSupabaseSession();
-    const { error } = await sb.from('resort_inventory').delete().eq('id', id);
-    if (error) throw new Error(error.message);
-    return { success: true, deleted_id: id };
+    return await req(`/department/inventory/${id}`, { method: 'DELETE' });
   },
 
   // Customer Experience Hub & Digital Pass
@@ -1595,7 +1566,9 @@ export const api = {
   placeCustomerOrder: async (body: any) => {
     try {
       return await req('/customer/orders', { method: 'POST', body });
-    } catch {}
+    } catch (err) {
+      if (!isBackendUnreachable(err)) throw err;
+    }
     const sb = await ensureSupabaseSession();
     const { data, error } = await sb.from('resort_orders').insert({
       item_name: body.item_name || 'Resort Order',
@@ -1628,7 +1601,9 @@ export const api = {
   requestRefund: async (reservationId: string, reason?: string, amount?: number) => {
     try {
       return await req(`/reservations/${reservationId}/refund-request`, { method: 'POST', body: { reason, amount } });
-    } catch {}
+    } catch (err) {
+      if (!isBackendUnreachable(err)) throw err;
+    }
     const sb = await ensureSupabaseSession();
     const { data, error } = await sb
       .from('reservations')
@@ -1645,7 +1620,9 @@ export const api = {
   confirmRefund: async (reservationId: string, body?: any) => {
     try {
       return await req(`/reservations/${reservationId}/refund-confirm`, { method: 'POST', body });
-    } catch {}
+    } catch (err) {
+      if (!isBackendUnreachable(err)) throw err;
+    }
     const sb = await ensureSupabaseSession();
     const { data, error } = await sb
       .from('reservations')
@@ -1670,13 +1647,16 @@ export const api = {
   saveChatMessage: async (body: any) => {
     try {
       return await req('/chat/my-messages', { method: 'POST', body });
-    } catch {}
+    } catch (err) {
+      if (!isBackendUnreachable(err)) throw err;
+    }
     const sb = await ensureSupabaseSession();
-    const { data } = await sb.from('chat_messages').insert({
+    const { data, error } = await sb.from('chat_messages').insert({
       role: body.role || 'user',
       sender: body.sender || 'Guest',
       content: body.content || body.text || '',
     }).select().maybeSingle();
+    if (error) throw new Error(error.message);
     return data;
   },
 
@@ -1700,28 +1680,16 @@ export const api = {
     return [];
   },
   releaseQuarantinedIp: async (ip: string) => {
-    try {
-      return await req('/security/quarantine/release', { method: 'POST', body: { ip } });
-    } catch {}
-    return { success: true, ip };
+    return await req('/security/quarantine/release', { method: 'POST', body: { ip } });
   },
   isolateIp: async (ip: string, reason?: string, duration_minutes?: number) => {
-    try {
-      return await req('/security/quarantine/isolate', { method: 'POST', body: { ip, reason, duration_minutes } });
-    } catch {}
-    return { success: true, ip };
+    return await req('/security/quarantine/isolate', { method: 'POST', body: { ip, reason, duration_minutes } });
   },
   clearQuarantines: async () => {
-    try {
-      return await req('/security/quarantine/clear-all', { method: 'POST' });
-    } catch {}
-    return { success: true };
+    return await req('/security/quarantine/clear-all', { method: 'POST' });
   },
   clearLockouts: async () => {
-    try {
-      return await req('/security/lockouts/clear', { method: 'POST' });
-    } catch {}
-    return { success: true };
+    return await req('/security/lockouts/clear', { method: 'POST' });
   },
 
   // Debit & Credit General Ledger & Adaptive PostgreSQL Backup
@@ -1763,9 +1731,10 @@ export const api = {
   },
   createLedgerEntry: async (body: any) => {
     try {
-      const res = await req('/ledger/entries', { method: 'POST', body });
-      if (res) return res;
-    } catch {}
+      return await req('/ledger/entries', { method: 'POST', body });
+    } catch (err) {
+      if (!isBackendUnreachable(err)) throw err;
+    }
     const sb = await ensureSupabaseSession();
     const amount = Number(body.amount_php) || 0;
     const nowIso = new Date().toISOString();
@@ -1811,9 +1780,10 @@ export const api = {
   },
   reconcileLedger: async () => {
     try {
-      const res = await req('/ledger/reconcile', { method: 'POST' });
-      if (res) return res;
-    } catch {}
+      return await req('/ledger/reconcile', { method: 'POST' });
+    } catch (err) {
+      if (!isBackendUnreachable(err)) throw err;
+    }
     const sb = await ensureSupabaseSession();
     const [{ data: bookings }, { data: existingEntries }] = await Promise.all([
       sb.from('reservations').select('*, rooms(name, slug, category, amenities, rate_php)').neq('status', 'cancelled'),
@@ -1861,7 +1831,8 @@ export const api = {
       );
     }
     if (newRows.length > 0) {
-      await sb.from('ledger_entries').insert(newRows);
+      const inserted = await sb.from('ledger_entries').insert(newRows);
+      if (inserted.error) throw new Error(inserted.error.message);
     }
     return { data: { new_entries_posted: newRows.length } };
   },
@@ -1919,31 +1890,10 @@ export const api = {
     return sqlLines.join('\n');
   },
   importLedgerBackup: async (content: string, mode: 'append' | 'overwrite' = 'append') => {
-    try {
-      return await req('/ledger/backup/import', { method: 'POST', body: { content, mode } });
-    } catch {}
-    const sb = await ensureSupabaseSession();
-    if (mode === 'overwrite') {
-      await sb.from('ledger_entries').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    }
-    const trimmed = content.trim();
-    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-      const parsed = JSON.parse(trimmed);
-      const list = Array.isArray(parsed) ? parsed : (parsed.ledger_entries || []);
-      if (list.length > 0) {
-        await sb.from('ledger_entries').upsert(list, { onConflict: 'entry_number' });
-      }
-      return { imported_count: list.length, detected_format: 'json' };
-    }
-    return { imported_count: 1, detected_format: 'sql' };
+    return await req('/ledger/backup/import', { method: 'POST', body: { content, mode } });
   },
   clearLedger: async () => {
-    try {
-      return await req('/ledger/clear', { method: 'POST' });
-    } catch {}
-    const sb = await ensureSupabaseSession();
-    await sb.from('ledger_entries').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    return { success: true };
+    return await req('/ledger/clear', { method: 'POST' });
   },
 
   // Price-Change Approval Requests
