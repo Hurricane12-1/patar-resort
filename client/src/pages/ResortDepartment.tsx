@@ -6,6 +6,7 @@ import { api, addDaysYMD } from '../lib/api.ts';
 import { toast } from '../components/Toasts.tsx';
 import { to11Digits, formatTime12Hour } from '../lib/format.ts';
 import { getManilaTodayISO } from '../lib/offeringSpecs.ts';
+import { walkInStatus } from '../lib/walkInAdjust.ts';
 import { canEditRoomDetails, canRemoveRoom, canSwitchRoomAvailability, isAdministrator } from '../lib/rbac.ts';
 import type { UnitStatus } from '../lib/unitStatus.ts';
 import AddReservationModal, { NewReservationFormState } from '../components/admin/modals/AddReservationModal.tsx';
@@ -509,6 +510,7 @@ export default function ResortDepartment() {
         ...newReservation,
         room_id: targetRoomId,
         is_walk_in: true,
+        status: walkInStatus(checkIn, todayISO),
         check_in: checkIn,
         check_out: checkOut,
         check_in_time: checkInTime,

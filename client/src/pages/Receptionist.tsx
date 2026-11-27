@@ -9,6 +9,8 @@ import { VoucherModal, normalizeVoucherData } from '../components/receipt';
 import PriceChangeRequestPanel from '../components/PriceChangeRequestPanel.tsx';
 import AddReservationModal, { NewReservationFormState } from '../components/admin/modals/AddReservationModal.tsx';
 import { canAccessPortal } from '../lib/rbac.ts';
+import { getManilaTodayISO, addDaysISO } from '../lib/offeringSpecs.ts';
+import { walkInStatus } from '../lib/walkInAdjust.ts';
 import { AppPageLoader } from '../components/LoadingAnimations.tsx';
 
 export default function Receptionist() {
@@ -32,10 +34,10 @@ export default function Receptionist() {
     guest_name: '',
     guest_email: '',
     phone: '',
-    check_in: '2026-11-17',
-    check_out: '2026-11-18',
-    guests: 2,
-    total_php: 3500,
+    check_in: getManilaTodayISO(),
+    check_out: addDaysISO(getManilaTodayISO(), 1),
+    guests: 1,
+    total_php: 0,
     payment_method: 'Cash',
     payment_status: 'Paid',
     notes: '',
@@ -45,7 +47,11 @@ export default function Receptionist() {
     e.preventDefault();
     setCreatingReservation(true);
     try {
-      await api.createReservation(newReservation);
+      await api.createReservation({
+        ...newReservation,
+        is_walk_in: true,
+        status: walkInStatus(newReservation.check_in, getManilaTodayISO()),
+      });
       toast('Reservation created successfully!');
       loadData();
       setShowManualModal(false);

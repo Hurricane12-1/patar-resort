@@ -19,7 +19,13 @@ import {
   addDaysISO,
   type OfferingType,
 } from '../../../lib/offeringSpecs';
-import { adjustWalkIn, getManilaClock, type WalkInContext, type WalkInOptions } from '../../../lib/walkInAdjust.ts';
+import {
+  adjustWalkIn,
+  getManilaClock,
+  walkInStatus,
+  type WalkInContext,
+  type WalkInOptions,
+} from '../../../lib/walkInAdjust.ts';
 
 export interface NewReservationFormState {
   guest_name: string;
@@ -349,6 +355,7 @@ export default function AddReservationModal({
   const [processingPayment, setProcessingPayment] = useState(false);
   const [walkInTypeFilter, setWalkInTypeFilter] = useState<'all' | OfferingType>('all');
   const [autoNotices, setAutoNotices] = useState<string[]>([]);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const startedRef = useRef(false);
   const staffPickedRoomRef = useRef(false);
   const staffPickedTimeRef = useRef(false);
@@ -393,6 +400,7 @@ export default function AddReservationModal({
     if (!isOpen) {
       setAttemptedSubmit(false);
       setAutoNotices([]);
+      setConfirmOpen(false);
       startedRef.current = false;
       staffPickedRoomRef.current = false;
       staffPickedTimeRef.current = false;
@@ -408,6 +416,17 @@ export default function AddReservationModal({
     if (result.changed) setNewReservation(result.draft);
     setAutoNotices(result.notices);
   }, [isOpen, activeRoomsList.length, newReservation.room_id]);
+
+  useEffect(() => {
+    if (!confirmOpen) return;
+    const onKey = (ev: KeyboardEvent) => {
+      if (ev.key !== 'Escape') return;
+      ev.stopPropagation();
+      setConfirmOpen(false);
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [confirmOpen]);
 
   useEffect(() => {
     if (autoNotices.length === 0) return;
@@ -569,6 +588,11 @@ export default function AddReservationModal({
       return;
     }
 
+    setConfirmOpen(true);
+  };
+
+  const confirmBooking = async () => {
+    setConfirmOpen(false);
     if (newReservation.payment_method === 'GCash') {
       // Placeholder for the GCash payment step: shows "Processing…" briefly. No payment is taken yet.
       setProcessingPayment(true);
@@ -576,8 +600,19 @@ export default function AddReservationModal({
       setProcessingPayment(false);
     }
 
-    await onSubmit(e);
+    await onSubmit({ preventDefault() {} } as React.FormEvent);
   };
+
+  const checksInNow = walkInStatus(effectiveCin, getManilaTodayISO()) === 'checked_in';
+  const summaryRows: Array<[string, string]> = [
+    ['Guest', String(newReservation.guest_name || '').trim()],
+    ['Room', activeWalkInRoom?.name || ''],
+    ['Check-in', `${fmtDate(effectiveCin)}, ${formatTime12Hour(effectiveCinTime)}`],
+    ['Check-out', `${fmtDate(effectiveCout)}, ${formatTime12Hour(effectiveCoutTime)}`],
+    ['Guests', String(Number(newReservation.guests) || 1)],
+    ['Total', money(Number(newReservation.total_php) || 0)],
+    ['Payment', newReservation.payment_method || 'Cash'],
+  ];
 
   return (
     <div
@@ -1914,6 +1949,93 @@ export default function AddReservationModal({
           </form>
         </div>
       </div>
+
+      {confirmOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="walkin-confirm-title"
+          onClick={(e) => {
+            e.stopPropagation();
+            setConfirmOpen(false);
+          }}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'rgba(10, 15, 29, 0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+            zIndex: 5,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: 400,
+              background: isLightMode ? '#FFFFFF' : '#0F172A',
+              border: `1px solid ${themeBorder}`,
+              borderRadius: 12,
+              padding: 20,
+              color: themeText,
+            }}
+          >
+            <h3 id="walkin-confirm-title" style={{ margin: '0 0 12px', fontSize: '1.05rem', fontWeight: 800 }}>
+              Book this stay?
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '6px 16px', fontSize: '.86rem' }}>
+              {summaryRows.map(([label, value]) => (
+                <React.Fragment key={label}>
+                  <span style={{ color: themeMuted, fontWeight: 600 }}>{label}</span>
+                  <span style={{ fontWeight: 700, textAlign: 'right', overflowWrap: 'anywhere' }}>{value}</span>
+                </React.Fragment>
+              ))}
+            </div>
+            <p style={{ margin: '14px 0 0', fontSize: '.8rem', lineHeight: 1.5, color: themeMuted }}>
+              {checksInNow
+                ? 'The guest will be checked in right away. Check-out is done by staff when the guest leaves.'
+                : `This stay is saved for ${fmtDate(effectiveCin)}. Check-in is done on the day the guest arrives.`}
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 18 }}>
+              <button
+                type="button"
+                onClick={() => setConfirmOpen(false)}
+                style={{
+                  minWidth: 84,
+                  padding: '9px 18px',
+                  borderRadius: 8,
+                  border: '1px solid #006699',
+                  background: isLightMode ? '#FFFFFF' : 'transparent',
+                  color: isLightMode ? '#006699' : '#7DD3FC',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                No
+              </button>
+              <button
+                type="button"
+                autoFocus
+                onClick={confirmBooking}
+                style={{
+                  minWidth: 84,
+                  padding: '9px 18px',
+                  borderRadius: 8,
+                  border: '1px solid #006699',
+                  background: '#006699',
+                  color: '#FFFFFF',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                Yes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

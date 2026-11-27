@@ -471,7 +471,9 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
 
   pingSMS({
     profileId: req.user?.id || targetGuestId || null, reservationId: stay.id, toPhone: finalPhone,
-    body: `Mabuhay! Rock View Beach Resort ✦ Confirmed: ${stay.rooms?.name || roomName}, ${check_in} → ${check_out} (${nights} night${nights > 1 ? 's' : ''}), ₱${total_php.toLocaleString()}. Check-in 2:00 PM.`,
+    body: stay.status === 'checked_in'
+      ? `Rock View Beach Resort: welcome! 🌊 Checked in to ${stay.rooms?.name || roomName}, ${check_in} → ${check_out} (${nights} night${nights > 1 ? 's' : ''}). Enjoy Bolinao!`
+      : `Mabuhay! Rock View Beach Resort ✦ Confirmed: ${stay.rooms?.name || roomName}, ${check_in} → ${check_out} (${nights} night${nights > 1 ? 's' : ''}), ₱${total_php.toLocaleString()}. Check-in 2:00 PM.`,
   }).catch(() => {});
 
   stay.guest_email = stay.email || finalGuestEmail;

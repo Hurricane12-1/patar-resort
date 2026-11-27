@@ -80,6 +80,11 @@ function clockLabel(minutes: number): string {
   return `${h % 12 || 12}:${pad2(minutes % 60)} ${h >= 12 ? 'PM' : 'AM'}`;
 }
 
+/** A guest arriving today is checked in on the spot. A stay saved for a later date waits as confirmed. Check-out is always done by hand. */
+export function walkInStatus(checkIn: string, today: string): 'checked_in' | 'confirmed' {
+  return String(checkIn || '').slice(0, 10) <= today ? 'checked_in' : 'confirmed';
+}
+
 export function getManilaClock(now = new Date()): string {
   return new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Asia/Manila',

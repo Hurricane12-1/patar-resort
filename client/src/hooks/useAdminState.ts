@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabaseClient';
 import { uploadImageToCloudinary } from '../lib/cloudinary';
 import { toast } from '../components/Toasts';
 import { getDefaultSpecs, getManilaTodayISO, addDaysISO, OfferingType } from '../lib/offeringSpecs';
+import { walkInStatus } from '../lib/walkInAdjust.ts';
 import { EMPLOYEE_ROLE_PRESETS, normalizeDepartment, normalizeRole } from '../lib/rbac';
 
 export const emptyAnalytics = {
@@ -966,6 +967,7 @@ export function useAdminState() {
         ...newReservation,
         room_id: targetRoomId,
         is_walk_in: true,
+        status: walkInStatus(checkIn, getManilaTodayISO()),
         check_in: checkIn,
         check_out: checkOut,
         check_in_time: checkInTime,
