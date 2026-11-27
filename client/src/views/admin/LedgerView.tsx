@@ -7,7 +7,8 @@ import { exportReservationsCSV } from '../../lib/ledgerUtils';
 import { api } from '../../lib/api';
 import { resolveReservationOfferingType, OfferingType } from '../../lib/offeringSpecs';
 import { reservationRoomName, roomNameLookup } from '../../lib/reservationRoom';
-import { ResortSpinner, SkeletonTable } from '../../components/LoadingAnimations';
+
+const MIN_LIST_ROWS = 8;
 
 export interface LedgerViewProps {
   ledgerSubView: 'stay_folios' | 'availability' | 'debit_credit';
@@ -1392,19 +1393,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
           </div>
 
           {/* Reservations Ledger Table */}
-          {loadingReservations && allBookings.length === 0 ? (
-            <div style={{ padding: '32px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
-              <ResortSpinner size="lg" message="Loading Guest Reservation Folios…" submessage="Synchronizing active booking records with Supabase database." />
-              <div style={{ width: '100%' }}>
-                <SkeletonTable rows={5} />
-              </div>
-            </div>
-          ) : filteredBookings.length === 0 ? (
-            <div style={{ padding: '40px 16px', textAlign: 'center', background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.02)', borderRadius: 14, border: `1px dashed ${themeBorder}` }}>
-              <p className="muted" style={{ margin: '0 0 8px', fontSize: '1rem' }}>No reservations match your search or filter.</p>
-              <small style={{ color: themeMuted }}>Use the Booking Actions dropdown above to create a walk-in reservation.</small>
-            </div>
-          ) : (
+          {(
             <div className="table-wrap" style={{ background: isLightMode ? '#FFFFFF' : 'rgba(15,23,42,0.85)', border: `1px solid ${themeBorder}`, borderRadius: 12 }}>
               <table className="table" style={{ color: themeText }}>
                 <thead>
@@ -1562,6 +1551,11 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                           <option value="remove">🗑️ Remove Permanently</option>
                         </select>
                       </td>
+                    </tr>
+                  ))}
+                  {Array.from({ length: Math.max(0, MIN_LIST_ROWS - (folioViewLimit === 'all' ? filteredBookings.length : Math.min(folioViewLimit, filteredBookings.length))) }).map((_, emptyIndex) => (
+                    <tr key={`empty_${emptyIndex}`} aria-hidden="true" style={{ borderBottom: `1px solid ${themeBorder}`, height: 64 }}>
+                      <td colSpan={7} />
                     </tr>
                   ))}
                 </tbody>
