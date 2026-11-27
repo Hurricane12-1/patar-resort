@@ -1055,7 +1055,7 @@ export default function AvailabilityCalendar({
               <div className="pms-unit-label-cell">
                 <div className="pms-unit-chip" style={{ opacity: 0.4 }}>
                   <span className="pms-unit-title">
-                    {kindFilter === 'cottage' ? 'Cottage' : 'Room'} {units.filter((u) => u.kind === (kindFilter === 'cottage' ? 'cottage' : 'room')).length + emptyIndex + 1}
+                    {kindFilter === 'cottage' ? 'Cottage' : 'Room'}
                   </span>
                 </div>
               </div>
