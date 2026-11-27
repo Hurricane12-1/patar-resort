@@ -167,7 +167,7 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
           onClick={() => setOfferingFilter('room')}
           style={{
             background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)',
-            border: `1px solid ${offeringFilter === 'room' ? '#0EA5E9' : themeBorder}`,
+            border: `1px solid ${themeBorder}`,
             borderRadius: 16,
             padding: 14,
             cursor: 'pointer',
