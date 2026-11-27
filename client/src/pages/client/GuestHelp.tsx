@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type RefObject } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import GuestIcon, { type GuestIconName } from '../../components/guest/GuestIcon';
+import GuestAssistant from '../../components/guest/GuestAssistant';
 import { PROBLEM_TOPIC, useGuestPortal } from '../../components/guest/GuestPortalContext';
 import { toast } from '../../components/Toasts';
 import { RESORT_CONTACT, formatDateRange, formatRelativeTime, stayPhase, type GuestRequest } from '../../lib/guestPortal';
@@ -76,24 +77,32 @@ const FAQS: { topic: FaqTopic; q: string; a: string }[] = [
 
 const REQUEST_TOPICS = ['Change my dates', 'Change room or guests', 'Cancellation or refund', 'Payment question', PROBLEM_TOPIC, 'Something else'];
 
-function requestText(request: Pick<GuestRequest, 'topic' | 'message' | 'bookingRef'>, name: string): string {
+function requestText(request: Pick<GuestRequest, 'topic' | 'message' | 'bookingRef' | 'ticketNumber'>, name: string): string {
   const about = request.bookingRef ? ` (${request.bookingRef})` : '';
-  return `Hi Rock View, this is ${name}${about}. ${request.topic}: ${request.message}`;
+  return `Hi Rock View, this is ${name}${about}.${request.ticketNumber ? ` Ticket ${request.ticketNumber}.` : ''} ${request.topic}: ${request.message}`;
 }
 
 export default function GuestHelp() {
   const portal = useGuestPortal();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const presetBooking = searchParams.get('booking') || '';
   const [query, setQuery] = useState('');
   const [topic, setTopic] = useState<FaqTopic | 'All'>('All');
+  const [ticketSubject, setTicketSubject] = useState('');
   const formRef = useRef<HTMLElement>(null);
+  const wantsTicket = location.hash === '#file-ticket' || searchParams.get('ticket') === '1';
 
   useEffect(() => {
-    if (!presetBooking) return;
+    if (!presetBooking && !wantsTicket) return;
     const timer = window.setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150);
     return () => window.clearTimeout(timer);
-  }, [presetBooking]);
+  }, [presetBooking, wantsTicket]);
+
+  const openTicketForm = (subject?: string) => {
+    if (subject) setTicketSubject(subject);
+    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const term = query.trim().toLowerCase();
   const faqs = FAQS.filter((f) => (topic === 'All' || f.topic === topic) && (!term || `${f.q} ${f.a}`.toLowerCase().includes(term)));
@@ -130,6 +139,8 @@ export default function GuestHelp() {
           </div>
         </div>
       </section>
+
+      <GuestAssistant onFileTicket={openTicketForm} />
 
       <section aria-label="Contact the resort" className="gp-animate-in gp-delay-1 mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {contactCards.map((card) => (
@@ -201,7 +212,7 @@ export default function GuestHelp() {
         </section>
 
         <div className="min-w-0 space-y-6">
-          <RequestForm presetBooking={presetBooking} sectionRef={formRef} />
+          <RequestForm presetBooking={presetBooking} presetSubject={ticketSubject} sectionRef={formRef} />
           <RequestList />
           <ResortInfo />
         </div>
@@ -210,7 +221,15 @@ export default function GuestHelp() {
   );
 }
 
-function RequestForm({ presetBooking, sectionRef }: { presetBooking: string; sectionRef: RefObject<HTMLElement> }) {
+function RequestForm({
+  presetBooking,
+  presetSubject,
+  sectionRef,
+}: {
+  presetBooking: string;
+  presetSubject: string;
+  sectionRef: RefObject<HTMLElement>;
+}) {
   const portal = useGuestPortal();
   const bookingOptions = useMemo(
     () =>
@@ -225,6 +244,8 @@ function RequestForm({ presetBooking, sectionRef }: { presetBooking: string; sec
   );
   const [bookingId, setBookingId] = useState(presetBooking);
   const [topic, setTopic] = useState(REQUEST_TOPICS[0]);
+  const [priority, setPriority] = useState<'normal' | 'urgent'>('normal');
+  const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
@@ -234,8 +255,16 @@ function RequestForm({ presetBooking, sectionRef }: { presetBooking: string; sec
     if (presetBooking) setBookingId(presetBooking);
   }, [presetBooking]);
 
+  useEffect(() => {
+    if (presetSubject) setSubject(presetSubject.slice(0, 80));
+  }, [presetSubject]);
+
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    if (subject.trim().length < 4) {
+      setError('Give your ticket a short title (at least 4 characters).');
+      return;
+    }
     if (message.trim().length < 10) {
       setError('Tell us a little more (at least 10 characters).');
       return;
@@ -243,29 +272,39 @@ function RequestForm({ presetBooking, sectionRef }: { presetBooking: string; sec
     setError('');
     setSending(true);
     try {
-      const request = await portal.submitRequest({ bookingId: bookingId || undefined, topic, message });
+      const request = await portal.submitRequest({ bookingId: bookingId || undefined, topic, message, subject, priority });
       setLastSent(request);
+      setSubject('');
       setMessage('');
-      toast(request.delivery === 'sent' ? 'Request sent to the front desk' : 'Request saved on this device');
+      setPriority('normal');
+      toast(request.delivery === 'sent' ? `Ticket ${request.ticketNumber} sent to the front desk` : `Ticket ${request.ticketNumber} saved on this device`);
     } finally {
       setSending(false);
     }
   };
 
+  const fieldClass =
+    'mt-1.5 h-11 w-full rounded-xl border border-white/15 bg-[#040e22]/90 px-3 text-[14.5px] text-white outline-none focus:border-[#38BDF8] focus:ring-2 focus:ring-sky-500/20';
+
   return (
-    <section ref={sectionRef} aria-labelledby="request-title" className={`scroll-mt-28 rounded-[22px] border border-white/10 bg-[#061533]/80 backdrop-blur-md p-5 sm:p-6 ${CARD_SHADOW}`}>
+    <section
+      id="file-ticket"
+      ref={sectionRef}
+      aria-labelledby="request-title"
+      className={`scroll-mt-28 rounded-[22px] border border-white/10 bg-[#061533]/80 backdrop-blur-md p-5 sm:p-6 ${CARD_SHADOW}`}
+    >
       <h2 id="request-title" className="text-[18px] font-semibold text-white">
-        Send the front desk a request
+        File a ticket
       </h2>
-      <p className="mt-1 text-[13.5px] text-slate-400">Changes, questions, or anything you need for your stay.</p>
+      <p className="mt-1 text-[13.5px] text-slate-400">For changes, refunds, problems with your room, or anything the assistant cannot settle. You get a ticket number to quote.</p>
 
       {lastSent && (
         <div className={`mt-4 flex gap-3 rounded-2xl px-4 py-3 text-[13.5px] ${lastSent.delivery === 'sent' ? 'border border-emerald-500/30 bg-emerald-950/60 text-emerald-200' : 'border border-sky-500/30 bg-sky-950/60 text-sky-200'}`} role="status">
-          <GuestIcon name={lastSent.delivery === 'sent' ? 'check' : 'info'} className="mt-0.5 h-4 w-4" strokeWidth={2.2} />
+          <GuestIcon name={lastSent.delivery === 'sent' ? 'check' : 'info'} className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2.2} />
           <p>
             {lastSent.delivery === 'sent'
-              ? "Thanks. The front desk team has your request and will get back to you."
-              : 'Saved on this device. To make sure it reaches us, text or email it from Your requests below.'}
+              ? `Ticket ${lastSent.ticketNumber} is filed. The front desk team has it and will reply in your chat above.`
+              : `Ticket ${lastSent.ticketNumber} is saved on this device. To make sure it reaches us, text or email it from Your tickets below.`}
           </p>
         </div>
       )}
@@ -275,12 +314,7 @@ function RequestForm({ presetBooking, sectionRef }: { presetBooking: string; sec
           <label htmlFor="gp-request-booking" className="block text-[12.5px] font-semibold text-slate-300">
             About
           </label>
-          <select
-            id="gp-request-booking"
-            value={bookingId}
-            onChange={(e) => setBookingId(e.target.value)}
-            className="mt-1.5 h-11 w-full rounded-xl border border-white/15 bg-[#040e22]/90 px-3 text-[14.5px] text-white outline-none focus:border-[#38BDF8] focus:ring-2 focus:ring-sky-500/20"
-          >
+          <select id="gp-request-booking" value={bookingId} onChange={(e) => setBookingId(e.target.value)} className={fieldClass}>
             <option value="" className="bg-[#040e22] text-slate-400">A general question</option>
             {bookingOptions.map((option) => (
               <option key={option.id} value={option.id} className="bg-[#040e22] text-white">
@@ -291,14 +325,9 @@ function RequestForm({ presetBooking, sectionRef }: { presetBooking: string; sec
         </div>
         <div>
           <label htmlFor="gp-request-topic" className="block text-[12.5px] font-semibold text-slate-300">
-            Topic
+            Category
           </label>
-          <select
-            id="gp-request-topic"
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-            className="mt-1.5 h-11 w-full rounded-xl border border-white/15 bg-[#040e22]/90 px-3 text-[14.5px] text-white outline-none focus:border-[#38BDF8] focus:ring-2 focus:ring-sky-500/20"
-          >
+          <select id="gp-request-topic" value={topic} onChange={(e) => setTopic(e.target.value)} className={fieldClass}>
             {REQUEST_TOPICS.map((t) => (
               <option key={t} value={t} className="bg-[#040e22] text-white">
                 {t}
@@ -306,9 +335,44 @@ function RequestForm({ presetBooking, sectionRef }: { presetBooking: string; sec
             ))}
           </select>
         </div>
+        <fieldset className="m-0 min-w-0 border-0 p-0">
+          <legend className="block p-0 text-[12.5px] font-semibold text-slate-300">How urgent is it?</legend>
+          <div className="mt-1.5 grid grid-cols-2 gap-2">
+            {(['normal', 'urgent'] as const).map((level) => (
+              <button
+                key={level}
+                type="button"
+                aria-pressed={priority === level}
+                onClick={() => setPriority(level)}
+                className={`h-11 rounded-xl border px-3 text-[14px] font-semibold transition ${
+                  priority === level
+                    ? level === 'urgent'
+                      ? 'border-rose-400 bg-rose-950/70 text-rose-100'
+                      : 'border-[#38BDF8] bg-[#006699] text-white'
+                    : 'border-white/15 bg-[#040e22]/90 text-slate-300 hover:border-sky-400/40'
+                }`}
+              >
+                {level === 'urgent' ? 'Urgent (I am at the resort)' : 'Normal'}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+        <div>
+          <label htmlFor="gp-request-subject" className="block text-[12.5px] font-semibold text-slate-300">
+            Title
+          </label>
+          <input
+            id="gp-request-subject"
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            maxLength={80}
+            placeholder="For example: move my stay one day later"
+            className={`${fieldClass} placeholder:text-slate-500`}
+          />
+        </div>
         <div>
           <label htmlFor="gp-request-message" className="block text-[12.5px] font-semibold text-slate-300">
-            Message
+            Details
           </label>
           <textarea
             id="gp-request-message"
@@ -316,19 +380,19 @@ function RequestForm({ presetBooking, sectionRef }: { presetBooking: string; sec
             onChange={(e) => setMessage(e.target.value)}
             rows={4}
             maxLength={800}
-            placeholder="For example: can we move our stay one day later?"
+            placeholder="Tell us what happened and what you need."
             aria-invalid={error ? true : undefined}
             className={`mt-1.5 w-full resize-y rounded-xl border bg-[#040e22]/90 px-3.5 py-3 text-[14.5px] text-white outline-none placeholder:text-slate-500 focus:border-[#38BDF8] focus:ring-2 focus:ring-sky-500/20 ${error ? 'border-rose-500/50' : 'border-white/15'}`}
           />
           {error && <p className="mt-1 text-[12px] text-rose-400">{error}</p>}
         </div>
-        <button type="submit" disabled={sending} className="w-full rounded-xl bg-gradient-to-r from-[#0284C7] via-[#2563EB] to-[#1D4ED8] py-3 text-[14.5px] font-semibold text-white shadow-[0_0_16px_rgba(14,165,233,0.35)] transition hover:brightness-110 disabled:opacity-60">
-          {sending ? 'Sending…' : 'Send request'}
+        <button type="submit" disabled={sending} className="w-full rounded-xl bg-[#006699] py-3 text-[14.5px] font-semibold text-white transition hover:bg-[#005580] disabled:opacity-60">
+          {sending ? 'Filing…' : 'File ticket'}
         </button>
         <p className="text-[12px] leading-relaxed text-slate-400">
           {portal.mode === 'preview'
-            ? 'Preview: requests are saved on this device only. For anything urgent, call or text the front desk.'
-            : `Requests go to the front desk team. For anything urgent, call ${RESORT_CONTACT.phoneDisplay}.`}
+            ? 'Preview: tickets are saved on this device only. For anything urgent, call or text the front desk.'
+            : `Tickets go to the front desk team. For anything urgent, call ${RESORT_CONTACT.phoneDisplay}.`}
         </p>
       </form>
     </section>
@@ -343,46 +407,65 @@ function RequestList() {
   return (
     <section aria-labelledby="requests-title" className="rounded-[22px] border border-white/10 bg-[#061533]/80 backdrop-blur-md p-5 sm:p-6">
       <h2 id="requests-title" className="text-[16px] font-semibold text-white">
-        Your requests
+        Your tickets
       </h2>
       <ul className="mt-4 space-y-3">
         {requests.map((request) => {
           const text = requestText(request, portal.displayName);
+          const resolved = request.status === 'resolved';
           return (
             <li key={request.id} className="rounded-2xl border border-white/10 bg-[#040e22]/90 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-[14px] font-semibold text-white">{request.topic}</p>
+                  {request.ticketNumber && <p className="font-mono text-[12px] font-semibold tracking-tight text-[#38BDF8]">{request.ticketNumber}</p>}
+                  <p className="text-[14px] font-semibold text-white">{request.subject || request.topic}</p>
                   <p className="text-[12.5px] text-slate-400">
-                    {request.roomName ? `${request.roomName} · ` : ''}
-                    {formatRelativeTime(request.createdAt)}
+                    {request.topic}
+                    {request.roomName ? ` · ${request.roomName}` : ''} · {formatRelativeTime(request.createdAt)}
                   </p>
                 </div>
-                <span
-                  className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${
-                    request.delivery === 'sent' ? 'border-emerald-500/30 bg-emerald-950/60 text-emerald-300' : 'border-sky-500/30 bg-sky-950/60 text-sky-300'
-                  }`}
-                >
-                  {request.delivery === 'sent' ? 'Sent' : 'On this device'}
-                </span>
+                <div className="flex shrink-0 flex-col items-end gap-1.5">
+                  <span
+                    className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${
+                      resolved ? 'border-slate-500/40 bg-slate-800/70 text-slate-300' : 'border-emerald-500/30 bg-emerald-950/60 text-emerald-300'
+                    }`}
+                  >
+                    {resolved ? 'Resolved' : 'Open'}
+                  </span>
+                  {request.priority === 'urgent' && !resolved && (
+                    <span className="rounded-full border border-rose-500/40 bg-rose-950/60 px-2.5 py-0.5 text-[11px] font-semibold text-rose-200">Urgent</span>
+                  )}
+                </div>
               </div>
               <p className="mt-2 line-clamp-3 text-[13.5px] leading-relaxed text-slate-300">{request.message}</p>
-              {request.delivery === 'device' && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <a
-                    href={`sms:${RESORT_CONTACT.phoneHref}?&body=${encodeURIComponent(text)}`}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-sky-400/30 bg-white/5 px-3 py-1.5 text-[12.5px] font-semibold text-sky-200 hover:bg-white/10"
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {!resolved && (
+                  <button
+                    type="button"
+                    onClick={() => void portal.resolveRequest(request.id)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 px-3 py-1.5 text-[12.5px] font-semibold text-slate-200 transition hover:bg-white/10"
                   >
-                    <GuestIcon name="message" className="h-3.5 w-3.5" /> Text it
-                  </a>
-                  <a
-                    href={`mailto:${RESORT_CONTACT.email}?subject=${encodeURIComponent(`${request.topic}${request.bookingRef ? ` · ${request.bookingRef}` : ''}`)}&body=${encodeURIComponent(text)}`}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-sky-400/30 bg-white/5 px-3 py-1.5 text-[12.5px] font-semibold text-sky-200 hover:bg-white/10"
-                  >
-                    <GuestIcon name="mail" className="h-3.5 w-3.5" /> Email it
-                  </a>
-                </div>
-              )}
+                    <GuestIcon name="check" className="h-3.5 w-3.5" /> Mark resolved
+                  </button>
+                )}
+                {request.delivery === 'device' && !resolved && (
+                  <>
+                    <a
+                      href={`sms:${RESORT_CONTACT.phoneHref}?&body=${encodeURIComponent(text)}`}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-sky-400/30 bg-white/5 px-3 py-1.5 text-[12.5px] font-semibold text-sky-200 hover:bg-white/10"
+                    >
+                      <GuestIcon name="message" className="h-3.5 w-3.5" /> Text it
+                    </a>
+                    <a
+                      href={`mailto:${RESORT_CONTACT.email}?subject=${encodeURIComponent(`${request.ticketNumber || request.topic}${request.bookingRef ? ` · ${request.bookingRef}` : ''}`)}&body=${encodeURIComponent(text)}`}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-sky-400/30 bg-white/5 px-3 py-1.5 text-[12.5px] font-semibold text-sky-200 hover:bg-white/10"
+                    >
+                      <GuestIcon name="mail" className="h-3.5 w-3.5" /> Email it
+                    </a>
+                  </>
+                )}
+                {request.delivery === 'sent' && <span className="text-[12px] text-slate-400">With the front desk</span>}
+              </div>
             </li>
           );
         })}

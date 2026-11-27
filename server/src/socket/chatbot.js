@@ -312,9 +312,17 @@ function parseStructuredAIResponse(rawText) {
   return null;
 }
 
+let warnedMissingGeminiKey = false;
+
 async function queryGeminiWithGuardrails(userId, rawUserText, history = []) {
   const apiKey = env.GEMINI_API_KEY || process.env.GEMINI_API_KEY;
-  if (!apiKey) return null;
+  if (!apiKey) {
+    if (!warnedMissingGeminiKey) {
+      warnedMissingGeminiKey = true;
+      console.warn('[Chatbot] GEMINI_API_KEY is not set on this server, so the AI service cannot answer. Guests get the built-in answers instead.');
+    }
+    return null;
+  }
 
   const inputCheck = inspectInputMarkup(rawUserText);
   const liveContext = await buildLiveContext(userId);
@@ -346,6 +354,8 @@ async function queryGeminiWithGuardrails(userId, rawUserText, history = []) {
     { name: 'gemini-3.5-flash', supportsThinkingBudget: true },
     { name: 'gemini-3.1-flash-lite', supportsThinkingBudget: true },
     { name: 'gemini-3-flash-preview', supportsThinkingBudget: true },
+    { name: 'gemini-2.5-flash', supportsThinkingBudget: true },
+    { name: 'gemini-2.0-flash', supportsThinkingBudget: false },
   ];
 
   for (const modelCfg of models) {
@@ -371,7 +381,10 @@ async function queryGeminiWithGuardrails(userId, rawUserText, history = []) {
         }
       );
 
-      if (!res.ok) continue;
+      if (!res.ok) {
+        console.warn(`[Chatbot] Gemini model ${modelCfg.name} answered HTTP ${res.status}; trying the next model.`);
+        continue;
+      }
       const data = await res.json();
       const parts = data.candidates?.[0]?.content?.parts || [];
       // Filter out internal thinking parts so thoughts never leak or truncate output
@@ -440,6 +453,7 @@ async function answer(userId, text, history = []) {
       chips: [],
       is_ai: true,
       contact_card: true,
+      unavailable: true,
     };
   } catch (err) {
     console.warn('[Chatbot Query Error]', err.message);
@@ -448,6 +462,7 @@ async function answer(userId, text, history = []) {
       chips: [],
       is_ai: true,
       contact_card: true,
+      unavailable: true,
     };
   }
 }
@@ -708,12 +723,14 @@ export function attachChatbot(httpServer) {
       const started = Date.now();
       const reply = await answer(socket.userId, clean, socket.chatHistory || []);
 
-      // Update per-socket multi-turn memory
-      socket.chatHistory = [
-        ...(socket.chatHistory || []).slice(-8),
-        { role: 'user', text: clean },
-        { role: 'model', text: reply.text },
-      ];
+      // Update per-socket multi-turn memory (a "momentarily reconnecting" notice is not part of the conversation)
+      if (!reply.unavailable) {
+        socket.chatHistory = [
+          ...(socket.chatHistory || []).slice(-8),
+          { role: 'user', text: clean },
+          { role: 'model', text: reply.text },
+        ];
+      }
 
       if (reply.direct_to_agent || reply.requested_staff) {
         await handleDirectToAgent({ message: clean });
@@ -723,11 +740,14 @@ export function attachChatbot(httpServer) {
       pendingTimeout = setTimeout(() => {
         if (!socket.connected) return;
         socket.emit('bot:message', reply);
-        persist(socket.userId, clean, reply.text, {
-          requested_staff: !!reply.requested_staff,
-          guardrail: !!reply.guardrail,
-          category: reply.category || null,
-        });
+        // The guest's app answers an unavailable reply itself and saves that exchange, so nothing is saved here.
+        if (!reply.unavailable) {
+          persist(socket.userId, clean, reply.text, {
+            requested_staff: !!reply.requested_staff,
+            guardrail: !!reply.guardrail,
+            category: reply.category || null,
+          });
+        }
         pendingTimeout = null;
       }, Math.max(0, 250 - (Date.now() - started)));
     });

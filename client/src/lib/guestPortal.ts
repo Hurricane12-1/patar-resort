@@ -101,6 +101,12 @@ export interface GuestRequest {
   createdAt: string;
   /** sent: logged with the resort · device: saved on this device only */
   delivery: 'sent' | 'device';
+  /** Ticket number the guest quotes to the front desk, e.g. TK-1128-4821. Older requests have none. */
+  ticketNumber?: string;
+  subject?: string;
+  priority?: 'normal' | 'urgent';
+  /** A ticket stays open until the guest marks it resolved. */
+  status?: 'open' | 'resolved';
 }
 
 /** Profile details, saved payment methods, and help requests kept on this device. */

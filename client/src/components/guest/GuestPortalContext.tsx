@@ -61,7 +61,8 @@ export interface GuestPortalValue {
   addPaymentMethod: (input: NewPaymentMethod) => void;
   removePaymentMethod: (id: string) => void;
   setDefaultPaymentMethod: (id: string) => void;
-  submitRequest: (input: { bookingId?: string; topic: string; message: string }) => Promise<GuestRequest>;
+  submitRequest: (input: { bookingId?: string; topic: string; message: string; subject?: string; priority?: 'normal' | 'urgent' }) => Promise<GuestRequest>;
+  resolveRequest: (id: string) => Promise<void>;
   changePassword?: (password: string) => Promise<void>;
   signOut?: () => Promise<void>;
   resetPreview: () => void;
@@ -294,10 +295,27 @@ export function GuestPortalProvider({ children }: { children: ReactNode }) {
   );
 
   const submitRequest = useCallback(
-    async ({ bookingId, topic, message }: { bookingId?: string; topic: string; message: string }) => {
+    async ({
+      bookingId,
+      topic,
+      message,
+      subject,
+      priority = 'normal',
+    }: {
+      bookingId?: string;
+      topic: string;
+      message: string;
+      subject?: string;
+      priority?: 'normal' | 'urgent';
+    }) => {
       const booking = bookings.find((b) => b.id === bookingId);
+      const ticketNumber = `TK-${getManilaTodayISO().slice(5).replace('-', '')}-${Math.floor(1000 + Math.random() * 9000)}`;
       const request: GuestRequest = {
         id: `req-${Date.now().toString(36)}`,
+        ticketNumber,
+        subject: subject?.trim() || topic,
+        priority,
+        status: 'open',
         bookingId: booking?.id,
         bookingRef: booking?.reference,
         roomName: booking ? roomFor(booking).name : undefined,
@@ -326,6 +344,9 @@ export function GuestPortalProvider({ children }: { children: ReactNode }) {
             details: {
               reservation_id: booking?.dbId || 'unspecified',
               reference: booking?.reference || null,
+              ticket_number: ticketNumber,
+              priority,
+              subject: request.subject,
               topic,
               description: request.message,
               source_namespace: '/client',
@@ -336,6 +357,27 @@ export function GuestPortalProvider({ children }: { children: ReactNode }) {
         } catch {
           // Saved on this device; the guest can still call or text the front desk.
         }
+        // The ticket also lands in the guest's conversation, which is where customer service reads and replies.
+        try {
+          const lines = [
+            `TICKET ${ticketNumber} · ${priority === 'urgent' ? 'URGENT' : 'Normal'} · ${topic}`,
+            request.subject,
+            '',
+            request.message,
+            booking ? `Booking: ${booking.reference} (${roomFor(booking).name}, ${booking.checkIn} to ${booking.checkOut})` : '',
+          ];
+          await api.saveChatMessage({
+            role: 'user',
+            content: lines.join('\n').trim(),
+            metadata: {
+              ticket: { number: ticketNumber, subject: request.subject, topic, priority, status: 'open', booking_ref: booking?.reference || null },
+              requested_staff: priority === 'urgent',
+            },
+          });
+          request.delivery = 'sent';
+        } catch {
+          // The audit entry above may still have reached the front desk.
+        }
       }
       commitAccount({ ...account, requests: [request, ...account.requests].slice(0, 20) });
       if (disputed && booking) {
@@ -344,6 +386,26 @@ export function GuestPortalProvider({ children }: { children: ReactNode }) {
       return request;
     },
     [bookings, roomFor, signedIn, profileId, profileEmail, account, commitAccount]
+  );
+
+  const resolveRequest = useCallback(
+    async (id: string) => {
+      const target = account.requests.find((r) => r.id === id);
+      if (!target || target.status === 'resolved') return;
+      commitAccount({ ...account, requests: account.requests.map((r) => (r.id === id ? { ...r, status: 'resolved' } : r)) });
+      if (signedIn && target.ticketNumber) {
+        try {
+          await api.saveChatMessage({
+            role: 'user',
+            content: `Ticket ${target.ticketNumber} was marked resolved by the guest.`,
+            metadata: { ticket: { number: target.ticketNumber, status: 'resolved' } },
+          });
+        } catch {
+          // The ticket is closed on this device even if the note does not reach the front desk.
+        }
+      }
+    },
+    [account, commitAccount, signedIn]
   );
 
   const resetPreview = useCallback(() => {
@@ -382,6 +444,7 @@ export function GuestPortalProvider({ children }: { children: ReactNode }) {
       removePaymentMethod,
       setDefaultPaymentMethod,
       submitRequest,
+      resolveRequest,
       changePassword: signedIn
         ? async (password: string) => {
             await updatePassword(password);
@@ -408,6 +471,7 @@ export function GuestPortalProvider({ children }: { children: ReactNode }) {
     removePaymentMethod,
     setDefaultPaymentMethod,
     submitRequest,
+    resolveRequest,
     signedIn,
     updatePassword,
     signOutCustomer,

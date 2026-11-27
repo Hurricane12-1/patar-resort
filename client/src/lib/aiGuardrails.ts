@@ -1,5 +1,8 @@
 import { supabase } from './supabaseClient';
-import { API_BASE } from './api';
+import { API_BASE, api } from './api';
+import { getManilaTodayISO } from './offeringSpecs';
+import { RESORT_CONTACT } from './guestPortal';
+import { answerFromResortFacts, type ConciergeStay } from './conciergeEngine';
 
 /**
  * Structural Transport Sanitizer & Direct Edge AI Concierge Failover
@@ -110,14 +113,79 @@ You communicate naturally in the language the guest uses (English, Tagalog, or T
      "suggestions": ["Short follow-up prompt 1", "Short follow-up prompt 2", "Short follow-up prompt 3"]
    }`;
 
+export interface ConciergeOptions {
+  firstName?: string;
+  /** The guest's own stays, when the caller already has them. Loaded from the account otherwise. */
+  stays?: ConciergeStay[];
+}
+
+async function loadOwnStays(accessToken?: string): Promise<ConciergeStay[]> {
+  if (!accessToken) return [];
+  try {
+    const rows = await api.myReservations();
+    if (!Array.isArray(rows)) return [];
+    return rows.map((row: any) => ({
+      roomName: row.rooms?.name || row.room_name || 'Your room',
+      checkIn: String(row.check_in || '').slice(0, 10),
+      checkOut: String(row.check_out || '').slice(0, 10),
+      status: String(row.status || 'confirmed'),
+      guests: Number(row.guests) || undefined,
+      total: Number(row.total_php) || undefined,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/** Last resort: answer from the live room list and the stay rules, so the guest is never left without a reply. */
+async function answerFromResortFactsFor(
+  clean: string,
+  liveAccommodations: any[],
+  accessToken: string | undefined,
+  options: ConciergeOptions
+) {
+  const stays = options.stays ?? (await loadOwnStays(accessToken));
+  const answer = answerFromResortFacts(clean, {
+    rooms: liveAccommodations.map((room) => ({
+      name: String(room.name || ''),
+      category: room.category,
+      offering_type: room.offering_type,
+      capacity: Number(room.capacity) || 0,
+      rate_php: Number(room.rate_php) || 0,
+    })),
+    stays,
+    today: getManilaTodayISO(),
+    signedIn: Boolean(accessToken),
+    firstName: options.firstName,
+    contact: {
+      phone: RESORT_CONTACT.phoneDisplay,
+      checkIn: RESORT_CONTACT.checkInTime,
+      checkOut: RESORT_CONTACT.checkOutTime,
+      address: RESORT_CONTACT.addressLine,
+      mapsUrl: RESORT_CONTACT.mapsUrl,
+    },
+  });
+  return {
+    from: 'bot',
+    id: `bot-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    text: answer.text,
+    chips: answer.chips,
+    is_ai: true,
+    contact_card: Boolean(answer.needsPerson),
+    needs_ticket: Boolean(answer.needsPerson),
+    source: 'built_in',
+  };
+}
+
 /**
- * Resilient AI Concierge query that first attempts the backend HTTP endpoint (`/api/chat/ask`),
- * and seamlessly fails over to direct Supabase + Gemini evaluation if the backend host is cold-starting.
+ * Resilient AI Concierge query. It tries the backend HTTP endpoint (`/api/chat/ask`), then direct Supabase +
+ * Gemini, and finally answers from the resort's own facts, so a question always gets a reply.
  */
 export async function queryResilientConciergeAI(
   rawText: string,
   history: Array<{ role: string; text: string }> = [],
-  accessToken?: string
+  accessToken?: string,
+  options: ConciergeOptions = {}
 ): Promise<any> {
   const clean = (rawText || '').trim().slice(0, 600);
 
@@ -135,7 +203,7 @@ export async function queryResilientConciergeAI(
     if (res.ok) {
       const data = await res.json();
       if (data && typeof data.text === 'string' && !data.text.includes('momentarily reconnecting')) {
-        return data;
+        return { ...data, source: 'server' };
       }
     }
   } catch {}
@@ -169,13 +237,15 @@ export async function queryResilientConciergeAI(
 
   const metaEnv = typeof import.meta !== 'undefined' ? (import.meta as any).env : null;
   const apiKey = metaEnv?.VITE_GEMINI_API_KEY || '';
-  if (!apiKey) return null;
+  if (!apiKey) return answerFromResortFactsFor(clean, liveAccommodations, accessToken, options);
 
   const models = [
     { name: 'gemini-3.1-pro-preview', supportsThinkingBudget: false },
     { name: 'gemini-3.5-flash', supportsThinkingBudget: true },
     { name: 'gemini-3.1-flash-lite', supportsThinkingBudget: true },
     { name: 'gemini-3-flash-preview', supportsThinkingBudget: true },
+    { name: 'gemini-2.5-flash', supportsThinkingBudget: true },
+    { name: 'gemini-2.0-flash', supportsThinkingBudget: false },
   ];
 
   for (const modelCfg of models) {
@@ -242,10 +312,12 @@ export async function queryResilientConciergeAI(
           is_xss: rawCat === 'XSS_ATTEMPT',
           contact_card: Boolean(parsed.escalate_to_agent || parsed.is_emergency),
           is_concern: Boolean(parsed.is_emergency),
+          needs_ticket: Boolean(parsed.escalate_to_agent || parsed.is_emergency),
+          source: 'gemini',
         };
       }
     } catch {}
   }
 
-  return null;
+  return answerFromResortFactsFor(clean, liveAccommodations, accessToken, options);
 }

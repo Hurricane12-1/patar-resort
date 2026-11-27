@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.tsx';
 import { getSocket } from '../lib/socket.ts';
 import { animateTypewriterPrompt } from '../lib/wordPrompt.ts';
@@ -70,7 +71,8 @@ const getChipDetails = (chip: ChatChip | string): ChatChip => {
 };
 
 export default function Chatbot() {
-  const { customerSession } = useAuth();
+  const { customerSession, customerProfile } = useAuth();
+  const navigate = useNavigate();
   const session = customerSession;
   const [open, setOpen] = useState(false);
   const accountId = session?.user?.id || 'guest';
@@ -102,6 +104,7 @@ export default function Chatbot() {
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const cancelTypewriterRef = useRef<(() => void) | null>(null);
+  const lastAskRef = useRef<{ clean: string; history: Array<{ role: string; text: string }> } | null>(null);
 
   // Mandated Account Chat Reload: Hydrate from sessionStorage and sync with Supabase
   const reloadAccountChat = async () => {
@@ -366,7 +369,16 @@ export default function Chatbot() {
 
     const handleMessage = (m: any) => {
       if (typeof m?.text === 'string' && m.text.includes('momentarily reconnecting')) {
-        // Ignore stale reconnect notice if failover is handling or about to handle it
+        // The AI service has no answer right now. Answer from the resort's own facts straight away.
+        if ((window as any).__rvChatFallbackTimer) {
+          clearTimeout((window as any).__rvChatFallbackTimer);
+          (window as any).__rvChatFallbackTimer = null;
+        }
+        const pending = lastAskRef.current;
+        if (pending) {
+          lastAskRef.current = null;
+          runResilientFallback(pending.clean, pending.history);
+        }
         return;
       }
       if ((window as any).__rvChatFallbackTimer) {
@@ -434,8 +446,15 @@ export default function Chatbot() {
   }, [msgs, typing]);
 
   async function runResilientFallback(clean: string, currentHistory: Array<{ role: string; text: string }>) {
-    const fallbackReply = await queryResilientConciergeAI(clean, currentHistory, session?.access_token);
+    const fallbackReply = await queryResilientConciergeAI(clean, currentHistory, session?.access_token, {
+      firstName: customerProfile?.first_name || customerProfile?.full_name?.split(' ')[0],
+    });
     if (fallbackReply) {
+      if (session?.user?.id) {
+        // Keep the exchange on the account so the front desk sees it under customer service.
+        api.saveChatMessage({ role: 'user', content: clean }).catch(() => {});
+        api.saveChatMessage({ role: 'bot', content: fallbackReply.text }).catch(() => {});
+      }
       setMsgs((x) => [
         ...x,
         {
@@ -474,6 +493,7 @@ export default function Chatbot() {
       (window as any).__rvChatFallbackTimer = null;
     }
 
+    lastAskRef.current = { clean, history: historySnapshot };
     const s = sockRef.current || getSocket(session?.access_token);
     if (s && s.connected) {
       s.emit('chat:message', { text: clean });
@@ -820,6 +840,19 @@ export default function Chatbot() {
                       >
                         <><i className="fas fa-phone" style={{ marginRight: 6 }} />Call Front Desk</>
                       </a>
+                      {m.needs_ticket && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOpen(false);
+                            navigate(session?.user?.id ? '/client/help#file-ticket' : '/client/login');
+                          }}
+                          className="btn btn-outline btn-sm"
+                          style={{ padding: '4px 8px', fontSize: '0.7rem', flex: 1 }}
+                        >
+                          <><i className="fas fa-ticket" style={{ marginRight: 6 }} />File a ticket</>
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => {
