@@ -11,7 +11,15 @@ import {
   TWO_HOURS_MS,
 } from '../../../lib/api.ts';
 import { toast } from '../../Toasts.tsx';
-import { inferOfferingType, getOfferingLabel, getRateUnitSuffix, getManilaTodayISO, addDaysISO } from '../../../lib/offeringSpecs';
+import {
+  inferOfferingType,
+  getOfferingLabel,
+  getRateUnitSuffix,
+  getManilaTodayISO,
+  addDaysISO,
+  type OfferingType,
+} from '../../../lib/offeringSpecs';
+import { adjustWalkIn, getManilaClock, type WalkInContext, type WalkInOptions } from '../../../lib/walkInAdjust.ts';
 
 export interface NewReservationFormState {
   guest_name: string;
@@ -340,36 +348,72 @@ export default function AddReservationModal({
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
   const [walkInTypeFilter, setWalkInTypeFilter] = useState<'all' | OfferingType>('all');
+  const [autoNotices, setAutoNotices] = useState<string[]>([]);
+  const startedRef = useRef(false);
+  const staffPickedRoomRef = useRef(false);
+  const staffPickedTimeRef = useRef(false);
   const guestNameInputRef = useRef<HTMLInputElement | null>(null);
   const phoneInputRef = useRef<HTMLInputElement | null>(null);
   const topWarningRef = useRef<HTMLDivElement | null>(null);
 
   const activeWalkInRoom = activeRoomsList.find((r) => r.id === newReservation.room_id) || activeRoomsList[0];
 
+  const buildContext = (poolId: string = walkInPoolAddon): WalkInContext => {
+    const pool = POOL_ADDON_OPTIONS.find((o) => o.id === poolId);
+    return {
+      today: getManilaTodayISO(),
+      nowTime: getManilaClock(),
+      rooms: activeRoomsList,
+      reservations: reservationsList || [],
+      pool: { perGuest: pool?.pricePerGuest || 0, shortName: pool?.shortName || '' },
+    };
+  };
+
+  const applyChange = (patch: Partial<NewReservationFormState>, options: WalkInOptions = {}, poolId?: string) => {
+    const result = adjustWalkIn({ ...newReservation, ...patch }, buildContext(poolId), {
+      keepRoom: staffPickedRoomRef.current,
+      keepTime: staffPickedTimeRef.current,
+      ...options,
+    });
+    setNewReservation(result.draft);
+    setAutoNotices(result.notices);
+  };
+
+  const settleDates = () => {
+    const result = adjustWalkIn(newReservation, buildContext(), {
+      keepRoom: staffPickedRoomRef.current,
+      keepTime: staffPickedTimeRef.current,
+    });
+    if (!result.changed && result.notices.length === 0) return;
+    setNewReservation(result.draft);
+    setAutoNotices(result.notices);
+  };
+
   useEffect(() => {
     if (!isOpen) {
       setAttemptedSubmit(false);
+      setAutoNotices([]);
+      startedRef.current = false;
+      staffPickedRoomRef.current = false;
+      staffPickedTimeRef.current = false;
       return;
     }
-    const targetRoomId = newReservation.room_id || activeWalkInRoom?.id || '';
-    const defaultCin = getManilaTodayISO();
-    const cin = newReservation.check_in || defaultCin;
-    let cout = newReservation.check_out || addDaysYMD(cin, 1);
-    if (cout <= cin) {
-      cout = addDaysYMD(cin, 1);
-    }
-    if (targetRoomId !== newReservation.room_id || cout !== newReservation.check_out) {
-      const nights = Math.max(1, Math.round((new Date(cout).getTime() - new Date(cin).getTime()) / 86400000));
-      const rate = activeWalkInRoom?.rate_php || 3500;
-      setNewReservation((prev: any) => ({
-        ...prev,
-        room_id: targetRoomId,
-        check_in: cin,
-        check_out: cout,
-        total_php: prev.total_php || rate * nights,
-      }));
-    }
-  }, [isOpen, activeWalkInRoom?.id, newReservation.room_id, newReservation.check_in, newReservation.check_out, setNewReservation, activeWalkInRoom?.rate_php]);
+    if (startedRef.current && newReservation.room_id) return;
+    if (!startedRef.current) staffPickedRoomRef.current = Boolean(newReservation.room_id);
+    startedRef.current = true;
+    const result = adjustWalkIn(newReservation, buildContext(), {
+      initial: true,
+      keepRoom: staffPickedRoomRef.current,
+    });
+    if (result.changed) setNewReservation(result.draft);
+    setAutoNotices(result.notices);
+  }, [isOpen, activeRoomsList.length, newReservation.room_id]);
+
+  useEffect(() => {
+    if (autoNotices.length === 0) return;
+    const timer = setTimeout(() => setAutoNotices([]), 12000);
+    return () => clearTimeout(timer);
+  }, [autoNotices]);
 
   if (!isOpen) return null;
 
@@ -479,6 +523,18 @@ export default function AddReservationModal({
 
     if (activeRoomsList.length === 0) {
       toast("⚠️ There's no present room around. Please create a room in Room Management first.", true);
+      return;
+    }
+
+    const settled = adjustWalkIn(newReservation, buildContext(), {
+      keepRoom: staffPickedRoomRef.current,
+      keepTime: true,
+    });
+    if (settled.changed) {
+      setNewReservation(settled.draft);
+      setAutoNotices(settled.notices);
+      toast('Some details were adjusted. Please check them, then press Book again.', true);
+      topWarningRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
 
@@ -775,6 +831,50 @@ export default function AddReservationModal({
         >
           <form onSubmit={handleFormSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div ref={topWarningRef} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {autoNotices.length > 0 && (
+                <div
+                  role="status"
+                  style={{
+                    padding: '10px 14px',
+                    borderRadius: 8,
+                    background: isLightMode ? '#E6F2F7' : 'rgba(0, 102, 153, 0.25)',
+                    border: '1px solid #006699',
+                    color: isLightMode ? '#004D73' : '#E0F2FE',
+                    fontSize: '.78rem',
+                    lineHeight: 1.45,
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 10,
+                  }}
+                >
+                  <i className="fas fa-circle-info" style={{ color: isLightMode ? '#006699' : '#7DD3FC', marginTop: 2 }} />
+                  <div style={{ flex: 1 }}>
+                    <strong style={{ display: 'block', marginBottom: 2 }}>Heads up</strong>
+                    {autoNotices.map((notice) => (
+                      <span key={notice} style={{ display: 'block' }}>
+                        {notice}
+                      </span>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    aria-label="Dismiss"
+                    onClick={() => setAutoNotices([])}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'inherit',
+                      cursor: 'pointer',
+                      fontSize: '1rem',
+                      lineHeight: 1,
+                      padding: 0,
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+
               {/* WARNING: IF NO ROOMS PRESENT IN SYSTEM */}
               {activeRoomsList.length === 0 && (
                 <div
@@ -1090,20 +1190,12 @@ export default function AddReservationModal({
                 value={newReservation.room_id || activeWalkInRoom?.id || ''}
                 onChange={(e) => {
                   const rId = e.target.value;
-                  const room = activeRoomsList.find((r) => r.id === rId);
-                  const rate = room?.rate_php || 3500;
-                  const nights = Math.max(
-                    1,
-                    Math.round(
-                      (new Date(newReservation.check_out).getTime() - new Date(newReservation.check_in).getTime()) /
-                        86400000
-                    )
+                  if (!rId || rId === newReservation.room_id) return;
+                  staffPickedRoomRef.current = true;
+                  applyChange(
+                    { room_id: rId, notes: String(newReservation.notes || '').replace(/\[Unit\s*\d+\]\s*/g, '').trim() },
+                    { edited: ['room'] }
                   );
-                  setNewReservation({
-                    ...newReservation,
-                    room_id: rId,
-                    total_php: rate * nights,
-                  });
                 }}
                 style={{
                   width: '100%',
@@ -1349,40 +1441,24 @@ export default function AddReservationModal({
                         (targetRoomId ? activeRoomsList.find((r) => r.id === targetRoomId) : null) ||
                         activeRoomsList.find((r) => r.id === newReservation.room_id) ||
                         activeWalkInRoom;
-                      const rate = room?.rate_php || 3500;
-                      const nights = Math.max(
-                        1,
-                        Math.round((new Date(cout).getTime() - new Date(cin).getTime()) / 86400000)
-                      );
                       const unitTag = unitInfo && unitInfo.unitNumber ? `[Unit ${unitInfo.unitNumber}]` : '';
                       const cleanNotes = (newReservation.notes || '').replace(/\[Unit\s*\d+\]\s*/g, '').trim();
                       const nextNotes = unitTag ? `${unitTag} ${cleanNotes}`.trim() : cleanNotes;
 
-                      setNewReservation((prev: any) => ({
-                        ...prev,
-                        room_id: room?.id || prev.room_id,
-                        check_in: cin,
-                        check_out: cout,
-                        total_php: rate * nights,
-                        notes: nextNotes || prev.notes,
-                      }));
+                      staffPickedRoomRef.current = true;
+                      applyChange(
+                        {
+                          room_id: room?.id || newReservation.room_id,
+                          check_in: cin,
+                          check_out: cout,
+                          notes: nextNotes,
+                        },
+                        { edited: ['room', 'checkIn', 'checkOut'] }
+                      );
                     }}
                     onRoomChange={(roomId) => {
-                      const room = activeRoomsList.find((r) => r.id === roomId);
-                      const rate = room?.rate_php || 3500;
-                      const nights = Math.max(
-                        1,
-                        Math.round(
-                          (new Date(newReservation.check_out).getTime() -
-                            new Date(newReservation.check_in).getTime()) /
-                            86400000
-                        )
-                      );
-                      setNewReservation((prev: any) => ({
-                        ...prev,
-                        room_id: roomId,
-                        total_php: rate * nights,
-                      }));
+                      staffPickedRoomRef.current = true;
+                      applyChange({ room_id: roomId }, { edited: ['room'] });
                     }}
                     onClose={() => setShowWalkInCalendar(false)}
                   />
@@ -1407,25 +1483,9 @@ export default function AddReservationModal({
                     type="date"
                     required
                     value={newReservation.check_in}
-                    onChange={(e) => {
-                      const cin = e.target.value;
-                      let cout = newReservation.check_out;
-                      if (cin >= cout) {
-                        cout = addDaysYMD(cin, 1);
-                      }
-                      const nights = Math.max(
-                        1,
-                        Math.round((new Date(cout).getTime() - new Date(cin).getTime()) / 86400000)
-                      );
-                      const room = activeRoomsList.find((r) => r.id === newReservation.room_id) || activeWalkInRoom;
-                      const rate = room?.rate_php || 3500;
-                      setNewReservation({
-                        ...newReservation,
-                        check_in: cin,
-                        check_out: cout,
-                        total_php: rate * nights,
-                      });
-                    }}
+                    min={getManilaTodayISO()}
+                    onChange={(e) => applyChange({ check_in: e.target.value }, { edited: ['checkIn'], settle: false })}
+                    onBlur={settleDates}
                     style={{
                       width: '100%',
                       padding: '10px 14px',
@@ -1454,22 +1514,9 @@ export default function AddReservationModal({
                     type="date"
                     required
                     value={newReservation.check_out}
-                    onChange={(e) => {
-                      const cout = e.target.value;
-                      const nights = Math.max(
-                        1,
-                        Math.round(
-                          (new Date(cout).getTime() - new Date(newReservation.check_in).getTime()) / 86400000
-                        )
-                      );
-                      const room = activeRoomsList.find((r) => r.id === newReservation.room_id) || activeWalkInRoom;
-                      const rate = room?.rate_php || 3500;
-                      setNewReservation({
-                        ...newReservation,
-                        check_out: cout,
-                        total_php: rate * nights,
-                      });
-                    }}
+                    min={addDaysISO(newReservation.check_in || getManilaTodayISO(), 1)}
+                    onChange={(e) => applyChange({ check_out: e.target.value }, { edited: ['checkOut'], settle: false })}
+                    onBlur={settleDates}
                     style={{
                       width: '100%',
                       padding: '10px 14px',
@@ -1487,6 +1534,7 @@ export default function AddReservationModal({
                   label="Check-In Time"
                   value={newReservation.check_in_time || '14:00'}
                   onChange={(val) => {
+                    staffPickedTimeRef.current = true;
                     setNewReservation({
                       ...newReservation,
                       check_in_time: val,
@@ -1553,18 +1601,7 @@ export default function AddReservationModal({
                 onChange={(e) => {
                   const pId = e.target.value;
                   setWalkInPoolAddon(pId);
-                  const opt = POOL_ADDON_OPTIONS.find((o) => o.id === pId);
-                  const poolCost = (opt?.pricePerGuest || 0) * (Number(newReservation.guests) || 1);
-                  const baseRoom = (activeWalkInRoom?.rate_php || 3500) * computedNights;
-                  const cleanNotes = (newReservation.notes || '').replace(/\[Pool Add-on:[^\]]+\]\s*/g, '').trim();
-                  setNewReservation({
-                    ...newReservation,
-                    total_php: baseRoom + poolCost,
-                    notes:
-                      opt && opt.pricePerGuest > 0
-                        ? `[Pool Add-on: ${opt.shortName} (+₱${poolCost.toLocaleString()})] ${cleanNotes}`.trim()
-                        : cleanNotes,
-                  });
+                  applyChange({}, { edited: ['pool'] }, pId);
                 }}
                 style={{
                   width: '100%',
@@ -1582,7 +1619,7 @@ export default function AddReservationModal({
                 ))}
               </select>
               <small style={{ color: themeMuted, fontSize: '.72rem', display: 'block', marginTop: 3 }}>
-                Base Room: ₱{((activeWalkInRoom?.rate_php || 3500) * computedNights).toLocaleString()} (
+                Base Room: ₱{((Number(activeWalkInRoom?.rate_php) || 0) * computedNights).toLocaleString()} (
                 {computedNights} night{computedNights > 1 ? 's' : ''})
                 {walkInPoolAddon !== 'none' && (
                   <span style={{ color: '#0EA5E9', fontWeight: 700 }}> • Pool Add-on adjustment active</span>
@@ -1609,22 +1646,7 @@ export default function AddReservationModal({
                   max={activeWalkInRoom?.capacity || 20}
                   required
                   value={newReservation.guests}
-                  onChange={(e) => {
-                    const gCount = Number(e.target.value) || 1;
-                    const opt = POOL_ADDON_OPTIONS.find((o) => o.id === walkInPoolAddon);
-                    const poolCost = (opt?.pricePerGuest || 0) * gCount;
-                    const baseRoom = (activeWalkInRoom?.rate_php || 3500) * computedNights;
-                    const cleanNotes = (newReservation.notes || '').replace(/\[Pool Add-on:[^\]]+\]\s*/g, '').trim();
-                    setNewReservation({
-                      ...newReservation,
-                      guests: gCount,
-                      total_php: baseRoom + poolCost,
-                      notes:
-                        opt && opt.pricePerGuest > 0
-                          ? `[Pool Add-on: ${opt.shortName} (+₱${poolCost.toLocaleString()})] ${cleanNotes}`.trim()
-                          : cleanNotes,
-                    });
-                  }}
+                  onChange={(e) => applyChange({ guests: Number(e.target.value) || 1 }, { edited: ['guests'] })}
                   style={{
                     width: '100%',
                     padding: '10px 14px',
