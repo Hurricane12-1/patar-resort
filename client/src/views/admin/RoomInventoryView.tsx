@@ -685,15 +685,30 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
                                     textTransform: 'uppercase',
                                   }}
                                 >
-                                  {!isRoomActive ? 'Conflict' : (primaryBookingStatus === 'on_hold' ? 'On Hold' : primaryBookingStatus)}
+                                  {!isRoomActive ? 'Conflict' : (primaryBookingStatus === 'on_hold' ? 'On Hold' : 'Booked')}
                                 </span>
                               </div>
 
                               <div style={{ fontSize: '.78rem', color: themeText, lineHeight: 1.45, marginBottom: 8 }}>
-                                Guest: <b>{primaryBooking.guest_name || 'Guest'}</b>
-                                {primaryBooking.phone ? ` (${primaryBooking.phone})` : ''}
-                                <div style={{ color: themeMuted, fontSize: '.72rem', marginTop: 2 }}>
-                                  Stay Dates: <b>{formatDates(primaryBooking.check_in, primaryBooking.check_out)}</b> · Total: {money(primaryBooking.total_php)}
+                                <b>Booked</b> · {formatDates(primaryBooking.check_in, primaryBooking.check_out)}
+                                <div
+                                  style={{
+                                    color: isLightMode ? '#92400E' : '#FCD34D',
+                                    fontSize: '.72rem',
+                                    marginTop: 4,
+                                    display: 'flex',
+                                    alignItems: 'flex-start',
+                                    gap: 5,
+                                  }}
+                                >
+                                  <i className="fas fa-triangle-exclamation" style={{ marginTop: 2 }} />
+                                  <span>
+                                    {!isRoomActive
+                                      ? 'Caution: this unit is offline but still has a booking. Reactivate it or move the guest.'
+                                      : primaryBookingStatus === 'on_hold'
+                                        ? 'Caution: this booking is on hold. Staff review is needed before the dates are used.'
+                                        : 'Caution: this unit is booked. Check the booking before you hold it or mark it for maintenance.'}
+                                  </span>
                                 </div>
                               </div>
 
