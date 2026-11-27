@@ -10,7 +10,7 @@ import {
   isBookingCollisionWithGap,
   TWO_HOURS_MS,
 } from '../lib/api.ts';
-import { getManilaTodayISO, inferOfferingType } from '../lib/offeringSpecs';
+import { getManilaTodayISO, inferOfferingType, isRoomOrCottage } from '../lib/offeringSpecs';
 import { unitDisplayNames } from '../lib/unitNames';
 import '../styles/availability-calendar.css';
 
@@ -239,7 +239,7 @@ export default function AvailabilityCalendar({
     for (const r of rooms || []) {
       if (r && r.id) map.set(String(r.id), { ...map.get(String(r.id)), ...r });
     }
-    return Array.from(map.values()).filter((r) => r && r.is_active !== false);
+    return Array.from(map.values()).filter((r) => r && r.is_active !== false && isRoomOrCottage(r));
   }, [liveRooms, rooms]);
 
   const effectiveRooms = useMemo(() => {

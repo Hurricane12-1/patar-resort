@@ -188,6 +188,12 @@ export function inferOfferingType(item: any = {}): OfferingType {
   return detailed === 'cottage' || detailed === 'cabana' || detailed === 'event' ? 'cottage' : 'room';
 }
 
+/** False for tours and event venues that were saved in the rooms table. They are not places a guest sleeps or rents. */
+export function isRoomOrCottage(item: any = {}): boolean {
+  const detailed = inferDetailedOfferingType(item);
+  return detailed !== 'offer' && detailed !== 'event';
+}
+
 function inferDetailedOfferingType(item: any = {}): OfferingType {
   const rawType = String(item?.offering_type || '').toLowerCase().trim();
   if (rawType === 'villa') return 'villa';
