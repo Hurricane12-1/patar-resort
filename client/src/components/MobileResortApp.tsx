@@ -96,10 +96,10 @@ const HERO_SLIDES = [
 const MAX_INFANTS = 4;
 
 const FIT_TONE: Record<RoomFit, string> = {
-  best: 'text-emerald-700',
-  fits: 'text-[#6A6A6A]',
-  booked: 'text-rose-700',
-  'too-small': 'text-amber-700',
+  best: 'text-emerald-300',
+  fits: 'text-slate-300',
+  booked: 'text-rose-300',
+  'too-small': 'text-amber-300',
 };
 
 function fitLabel(fit: RoomFit, capacity: number, partySize: number, compact = false): string {
@@ -108,6 +108,77 @@ function fitLabel(fit: RoomFit, capacity: number, partySize: number, compact = f
   if (fit === 'booked') return compact ? 'Booked' : 'Booked on your dates';
   if (capacity <= 0) return 'Capacity not set';
   return compact ? `Up to ${capacity}` : `Too small for ${partySize}`;
+}
+
+interface RoomCardProps {
+  room: Room;
+  capacity: number;
+  fit?: RoomFit;
+  fitText?: string;
+  tag?: React.ReactNode;
+  variant?: 'row' | 'feature';
+}
+
+function RoomCard({ room, capacity, fit, fitText, tag, variant = 'row' }: RoomCardProps) {
+  const feature = variant === 'feature';
+  const cottage = inferOfferingType(room) === 'cottage';
+  return (
+    <div className={`flex min-w-0 gap-3 ${feature ? 'lg:flex-col lg:gap-0' : ''}`}>
+      <div
+        className={`relative shrink-0 overflow-hidden border border-white/10 bg-slate-800 ${
+          feature
+            ? 'h-20 w-24 rounded-xl sm:h-32 sm:w-44 lg:h-auto lg:w-full lg:aspect-[16/9] lg:rounded-none lg:border-0'
+            : 'h-14 w-16 rounded-lg'
+        }`}
+      >
+        {room.image_url && (
+          <img
+            src={room.image_url}
+            alt=""
+            loading="lazy"
+            className="absolute inset-0 h-full w-full object-cover"
+            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+          />
+        )}
+      </div>
+      <div className={`min-w-0 flex-1 ${feature ? 'lg:px-4 lg:pb-4 lg:pt-3' : ''}`}>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className={`break-words font-semibold leading-snug text-white ${feature ? 'text-base' : 'text-sm'}`}>
+            {room.name}
+          </span>
+          <span
+            className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+              cottage
+                ? 'border border-amber-400/30 bg-amber-400/20 text-amber-300'
+                : 'border border-white/10 bg-white/10 text-white/80'
+            }`}
+          >
+            {cottage ? 'Cottage' : 'Room'}
+          </span>
+        </div>
+        <div className="mt-0.5 text-[11px] text-white/60">
+          {capacity > 0 ? `Up to ${capacity} ${capacity === 1 ? 'guest' : 'guests'}` : 'Capacity not set'}
+        </div>
+        <div className="mt-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+          <span className="text-xs font-semibold text-cyan">
+            {formatPHP(room.rate_php || 0)}
+            <span className="font-normal text-white/60">/night</span>
+          </span>
+          {fit && fitText && (
+            <span className={`inline-flex items-center gap-1 text-[11px] font-semibold ${FIT_TONE[fit]}`}>
+              {fit === 'booked' && (
+                <svg viewBox="0 0 24 24" className="h-3 w-3" fill="currentColor" aria-hidden="true">
+                  <path d="M12 2 1 21h22L12 2zm0 13a1 1 0 110 2 1 1 0 010-2zm-1-7h2v5h-2V8z" />
+                </svg>
+              )}
+              {fitText}
+            </span>
+          )}
+        </div>
+        {tag && <div className="mt-2">{tag}</div>}
+      </div>
+    </div>
+  );
 }
 
 // =============================================================================
@@ -918,6 +989,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
 
   const selectedCapacity = Number(selectedRoom.capacity) || 0;
   const selectedFits = selectedCapacity > 0 && selectedCapacity >= partySize;
+  const selectedFit = roomRanking.options.find((o) => o.room.id === selectedRoom.id)?.fit;
   const reserveBlock: 'capacity' | 'dates' | null = !selectedFits ? 'capacity' : hasRangeConflict ? 'dates' : null;
 
   // Auto-match follows party size, dates, and live inventory changes only when explicitly enabled.
@@ -2318,7 +2390,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
             className="lg:col-span-5 xl:col-span-4 self-start lg:sticky lg:top-24 scroll-mt-24 relative z-10"
             style={{ position: 'sticky', top: '96px', alignSelf: 'flex-start', zIndex: 10 }}
           >
-            <div className="bg-[#0B1426] border border-white/15 rounded-3xl p-6 sm:p-7 shadow-2xl text-white">
+            <div className="bg-[#0B1426] border border-white/15 rounded-3xl p-5 sm:p-7 shadow-2xl text-white">
               
               {/* Price Header */}
               <div className="flex items-baseline justify-between gap-2 mb-5">
@@ -2332,6 +2404,56 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                   {(selectedRoom as any).reviews_count ? `★ ${(selectedRoom as any).rating_avg || '5.0'} · ${(selectedRoom as any).reviews_count} reviews` : '★ Direct Verified'}
                 </span>
               </div>
+
+              {/* Selected room, shown where the stay is booked: the same card the picker lists */}
+              {selectedRoomIds.length > 0 ? (
+                <div className="mb-4 overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-2.5 sm:p-3 lg:p-0">
+                  <RoomCard
+                    room={selectedRoom}
+                    capacity={selectedCapacity}
+                    fit={selectedFit}
+                    fitText={selectedFit ? fitLabel(selectedFit, selectedCapacity, partySize) : undefined}
+                    tag={
+                      <span
+                        className={`inline-block rounded-full border px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider ${
+                          roomMode === 'auto'
+                            ? 'border-emerald-500/30 bg-emerald-500/20 text-emerald-300'
+                            : 'border-cyan/30 bg-cyan/20 text-cyan'
+                        }`}
+                      >
+                        {roomMode === 'auto' ? 'Auto-matched' : 'Your pick'}
+                      </span>
+                    }
+                    variant="feature"
+                  />
+                </div>
+              ) : (
+                <div className="mb-4 rounded-2xl border border-dashed border-white/20 p-4 text-center">
+                  <p className="text-sm font-semibold text-white">
+                    {rooms.length > 0
+                      ? 'No room selected yet'
+                      : dbStatus === 'connecting'
+                      ? 'Loading rooms…'
+                      : dbStatus === 'offline'
+                      ? 'Rooms are unavailable right now'
+                      : 'No rooms are published yet'}
+                  </p>
+                  {rooms.length > 0 && (
+                    <>
+                      <p className="mt-1 text-xs leading-relaxed text-white/60">
+                        Choose a room to see its photo, capacity, and nightly rate here.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setCardDrawer('room')}
+                        className="mt-3 min-h-11 rounded-xl bg-cyan px-4 text-xs font-bold text-[#060B18] transition hover:bg-cyan/90 cursor-pointer"
+                      >
+                        Choose a room
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
 
               {/* 2x2 Unified Input Box */}
               <div className="border border-white/15 rounded-2xl mb-4 bg-white/5 overflow-hidden shadow-inner">
@@ -2416,7 +2538,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                         <span className="rounded-full bg-cyan/20 px-2 py-0.5 text-[9px] font-extrabold tracking-wider text-cyan border border-cyan/30">YOUR PICK</span>
                       )}
                     </span>
-                    <span className="block text-sm text-white mt-0.5 font-semibold truncate">
+                    <span className="block text-sm text-white mt-0.5 font-semibold leading-snug break-words">
                       {selectedRoomIds.length === 0
                         ? 'Select accommodation · tap to choose'
                         : `${selectedRoom.name} · up to ${selectedCapacity} ${selectedCapacity === 1 ? 'guest' : 'guests'}`}
@@ -2511,46 +2633,44 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
 
               {/* Inline Room Drawer: auto-match or a manual pick, with live capacity and date availability */}
               {cardDrawer === 'room' && (
-                <div className="mb-4 border border-white/15 rounded-2xl bg-[#060B18] p-4 shadow-xl text-white">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
+                <div className="mb-4 border border-white/15 rounded-2xl bg-[#060B18] p-3 sm:p-4 shadow-xl text-white">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
                       <div className="text-sm font-semibold text-white">Choose your room</div>
-                      <div className="text-xs text-white/60 mt-0.5">
+                      <div className="mt-0.5 text-xs text-white/60">
                         {partySize} {partySize === 1 ? 'guest' : 'guests'}
                         {checkIn && checkOut ? ` · ${formatShortDate(checkIn)} – ${formatShortDate(checkOut)}` : ' · add dates to check availability'}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={roomMode === 'auto'}
-                        onClick={() => {
-                          if (roomMode === 'auto') {
-                            setRoomMode('manual');
-                            setSelectedRoomIds([]);
-                            setSelectedRoomId(null);
-                          } else {
-                            enableAutoMatch();
-                          }
-                        }}
-                        className="flex items-center gap-2 text-xs font-semibold text-white cursor-pointer shrink-0"
-                      >
-                        <span>Auto-match</span>
-                        <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition ${roomMode === 'auto' ? 'bg-cyan' : 'bg-white/20'}`}>
-                          <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${roomMode === 'auto' ? 'translate-x-[18px]' : 'translate-x-[2px]'}`} />
-                        </span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setCardDrawer('none')}
-                        aria-label="Close room drawer"
-                        className="h-6 w-6 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-xs font-bold transition cursor-pointer shrink-0"
-                      >
-                        ✕
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setCardDrawer('none')}
+                      aria-label="Close room drawer"
+                      className="-mr-1.5 -mt-1.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white/80 transition hover:text-white cursor-pointer"
+                    >
+                      <span aria-hidden="true" className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-xs font-bold">✕</span>
+                    </button>
                   </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={roomMode === 'auto'}
+                    onClick={() => {
+                      if (roomMode === 'auto') {
+                        setRoomMode('manual');
+                        setSelectedRoomIds([]);
+                        setSelectedRoomId(null);
+                      } else {
+                        enableAutoMatch();
+                      }
+                    }}
+                    className="mt-3 flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left text-xs font-semibold text-white transition hover:border-white/25 cursor-pointer"
+                  >
+                    <span>Auto-match</span>
+                    <span className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition ${roomMode === 'auto' ? 'bg-cyan' : 'bg-white/20'}`}>
+                      <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${roomMode === 'auto' ? 'translate-x-[18px]' : 'translate-x-[2px]'}`} />
+                    </span>
+                  </button>
                   <p className="mt-2 text-[11px] leading-relaxed text-white/60">
                     {roomMode === 'auto'
                       ? `We pick the smallest open room that fits ${partySize} ${partySize === 1 ? 'guest' : 'guests'}. `
@@ -2559,10 +2679,10 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                       : 'Tap any room to select it. Turn on auto-match to let us choose by party size. '}
                     Capacity follows the resort's live room settings; infants don't count.
                   </p>
-                  <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-medium text-white/60">
+                  <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-medium text-white/60">
                     <span className="inline-flex items-center gap-1 whitespace-nowrap"><span className="h-2.5 w-2.5 shrink-0 rounded-[3px] border border-cyan bg-cyan/20" /> Selected</span>
                     <span className="inline-flex items-center gap-1 whitespace-nowrap"><span className="h-2.5 w-2.5 shrink-0 rounded-[3px] border border-rose-500/40 bg-rose-500/20" /> Already booked</span>
-                    <span className="inline-flex items-center whitespace-nowrap text-white/40">Tap to select or deselect</span>
+                    <span className="inline-flex items-center whitespace-nowrap text-white/60">Tap to select or deselect</span>
                   </div>
 
                   {/* Category Filter Dropdown */}
@@ -2581,11 +2701,11 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                           }
                         }}
                         aria-label="Filter category"
-                        className="w-full appearance-none pl-3 pr-8 py-1.5 rounded-lg bg-[#0B1426] border border-white/15 hover:border-cyan text-xs font-bold text-white shadow-xs focus:outline-none focus:border-cyan cursor-pointer transition"
+                        className="w-full appearance-none min-h-11 pl-3 pr-8 py-2 rounded-lg bg-[#0B1426] border border-white/15 hover:border-cyan text-xs font-bold text-white shadow-xs focus:outline-none focus:border-cyan cursor-pointer transition"
                       >
                         <option value="all">All Units ({roomRanking.options.length})</option>
-                        <option value="room">🛏️ Rooms ({drawerRoomCount})</option>
-                        <option value="cottage">🏡 Cottages ({drawerCottageCount})</option>
+                        <option value="room">Rooms ({drawerRoomCount})</option>
+                        <option value="cottage">Cottages ({drawerCottageCount})</option>
                       </select>
                       <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-white/50">
                         <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -2595,9 +2715,9 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                     </div>
                   </div>
 
-                  <div className="mt-2 space-y-2 max-h-72 overflow-y-auto no-scrollbar pr-0.5" role="group" aria-label="Accommodations">
+                  <div className="mt-2 space-y-2" role="group" aria-label="Accommodations">
                     {filteredDrawerOptions.length === 0 ? (
-                      <div className="py-8 text-center text-xs text-white/50">
+                      <div className="py-8 text-center text-xs text-white/60">
                         No {drawerCategory === 'room' ? 'rooms' : drawerCategory === 'cottage' ? 'cottages' : 'accommodations'} available.
                       </div>
                     ) : (
@@ -2606,7 +2726,6 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                         const isBooked = option.fit === 'booked';
                         const isTooSmall = option.fit === 'too-small';
                         const disabled = isTooSmall;
-                        const offering = inferOfferingType(option.room);
                         const toneClass = isBooked
                           ? 'border-rose-500/40 bg-rose-950/30 hover:border-rose-400 cursor-pointer'
                           : isSelected
@@ -2640,67 +2759,28 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                                 toggleRoomSelect(option.room.id);
                               }
                             }}
-                            className={`w-full flex items-start gap-3 rounded-xl border p-2.5 text-left transition ${toneClass}`}
+                            className={`w-full rounded-xl border p-2.5 text-left transition ${toneClass}`}
                           >
-                            <div className="h-12 w-14 shrink-0 rounded-lg bg-slate-800 mt-0.5 border border-white/10 overflow-hidden">
-                              {option.room.image_url && (
-                                <img
-                                  src={option.room.image_url}
-                                  alt=""
-                                  className="h-full w-full object-cover"
-                                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                                />
-                              )}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="min-w-0 flex-1 pr-1">
-                                  <div className="flex items-center gap-1.5 flex-wrap">
-                                    <span className="text-sm font-semibold text-white leading-snug break-words">
-                                      {option.room.name}
-                                    </span>
-                                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider shrink-0 ${
-                                      offering === 'cottage'
-                                        ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30'
-                                        : 'bg-white/10 text-white/80 border border-white/10'
-                                    }`}>
-                                      {offering === 'cottage' ? 'Cottage' : 'Room'}
-                                    </span>
-                                  </div>
-                                  <div className="text-[11px] text-white/60 mt-0.5">
-                                    {option.capacity > 0 ? `Up to ${option.capacity} ${option.capacity === 1 ? 'guest' : 'guests'}` : 'Capacity not set'}
-                                  </div>
-                                </div>
-                                <div className="shrink-0 text-right">
-                                  <div className="text-xs font-semibold text-cyan">
-                                    {formatPHP(option.room.rate_php || 0)}
-                                    <span className="font-normal text-white/50">/night</span>
-                                  </div>
-                                  <div className={`mt-0.5 inline-flex items-center gap-1 text-[11px] font-semibold ${isBooked ? 'text-rose-400' : FIT_TONE[option.fit]}`}>
-                                    {isBooked && (
-                                      <svg viewBox="0 0 24 24" className="h-3 w-3" fill="currentColor" aria-hidden="true">
-                                        <path d="M12 2 1 21h22L12 2zm0 13a1 1 0 110 2 1 1 0 010-2zm-1-7h2v5h-2V8z" />
-                                      </svg>
-                                    )}
-                                    {fitLabel(option.fit, option.capacity, partySize)}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
+                            <RoomCard
+                              room={option.room}
+                              capacity={option.capacity}
+                              fit={option.fit}
+                              fitText={fitLabel(option.fit, option.capacity, partySize)}
+                            />
                           </button>
                         );
                       })
                     )}
                   </div>
-                  <div className="mt-3 flex items-center justify-between gap-3">
-                    <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-white/60">
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-white/60">
                       <span className={`w-1.5 h-1.5 rounded-full ${dbStatus === 'connected' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
                       {dbStatus === 'connected' ? 'Live room inventory' : 'Offline room list'}
                     </span>
                     <button
                       onClick={() => setCardDrawer('none')}
                       type="button"
-                      className="px-4 py-1.5 rounded-lg bg-cyan text-[#060B18] text-xs font-bold cursor-pointer hover:bg-cyan/90 transition shadow-sm"
+                      className="min-h-11 rounded-xl bg-cyan px-5 text-xs font-bold text-[#060B18] cursor-pointer hover:bg-cyan/90 transition shadow-sm"
                     >
                       Done
                     </button>
@@ -2804,7 +2884,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                       <span className="text-white font-semibold">{formatPHP(priceBreakdown.remainingBalance)}</span>
                     </div>
                     <p className="text-[10px] text-white/60 px-2.5 pt-0.5">
-                      🛡️ <Link to="/policy" className="text-[#F3D9A4] underline hover:text-white">50% Downpayment Policy</Link> applies to lock reservation dates.
+                      <Link to="/policy" className="text-[#F3D9A4] underline hover:text-white">50% Downpayment Policy</Link> applies to lock reservation dates.
                     </p>
                   </div>
                 </div>
@@ -3341,7 +3421,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                       <span>{formatPHP(priceBreakdown.remainingBalance)}</span>
                     </div>
                     <p className="text-[10px] text-sky-700 pt-1 border-t border-sky-200/60">
-                      🛡️ A 50% reservation deposit secures your booking window per <Link to="/policy" target="_blank" className="underline font-bold">Resort Policy</Link>.
+                      A 50% reservation deposit secures your booking window per <Link to="/policy" target="_blank" className="underline font-bold">Resort Policy</Link>.
                     </p>
                   </div>
                 </div>
@@ -3524,7 +3604,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                       <span>{formatPHP(priceBreakdown.remainingBalance)}</span>
                     </div>
                     <p className="text-[10px] text-sky-700 pt-1 border-t border-sky-200/60">
-                      🛡️ A 50% reservation deposit secures your booking window per <Link to="/policy" target="_blank" className="underline font-bold">Resort Policy</Link>.
+                      A 50% reservation deposit secures your booking window per <Link to="/policy" target="_blank" className="underline font-bold">Resort Policy</Link>.
                     </p>
                   </div>
                 </div>
