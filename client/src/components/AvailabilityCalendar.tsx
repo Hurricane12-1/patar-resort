@@ -14,6 +14,8 @@ import { getManilaTodayISO, inferOfferingType } from '../lib/offeringSpecs';
 import { unitDisplayNames } from '../lib/unitNames';
 import '../styles/availability-calendar.css';
 
+const MIN_CALENDAR_ROWS = 11;
+
 export interface CalendarStay {
   id: string;
   unitId: string;
@@ -901,22 +903,7 @@ export default function AvailabilityCalendar({
           </div>
 
           {/* PHYSICAL UNIT ROWS */}
-          {units.length === 0 ? (
-            <div style={{ padding: '40px 20px', textAlign: 'center', color: '#F43F5E', fontSize: '.88rem' }}>
-              <i className="fas fa-triangle-exclamation" style={{ fontSize: '1.8rem', display: 'block', marginBottom: 10, color: '#F43F5E' }} />
-              <strong style={{ display: 'block', marginBottom: 4, fontSize: '1rem', color: isLightMode ? '#DC2626' : '#F87171' }}>
-                There's No Present Room Around
-              </strong>
-              <span style={{ color: isLightMode ? '#64748B' : '#94A3B8', fontSize: '.82rem' }}>
-                No open accommodation units are currently configured or active in resort inventory. Open or create rooms in Room Management.
-              </span>
-            </div>
-          ) : visibleUnits.length === 0 ? (
-            <div style={{ padding: '40px 20px', textAlign: 'center', color: isLightMode ? '#64748B' : '#94A3B8', fontSize: '.88rem' }}>
-              No {kindFilter === 'cottage' ? 'cottages' : 'rooms'} are open right now.
-            </div>
-          ) : (
-            visibleUnits.map((unit) => {
+          {visibleUnits.map((unit) => {
               const isCurrentActiveUnit = unit.id === activeUnitId;
 
               // Stays rendered as pills on this unit row
@@ -1060,8 +1047,29 @@ export default function AvailabilityCalendar({
                   </div>
                 </div>
               );
-            })
-          )}
+            })}
+
+          {/* Empty rows keep the grid at its full height; each new room takes the next one. */}
+          {Array.from({ length: showKindFilter ? Math.max(0, MIN_CALENDAR_ROWS - visibleUnits.length) : 0 }).map((_, emptyIndex) => (
+            <div key={`empty_${emptyIndex}`} className="pms-row" aria-hidden="true">
+              <div className="pms-unit-label-cell" />
+              <div className="pms-days-track" style={{ gridTemplateColumns: `repeat(${daysCount}, 1fr)` }}>
+                {daysArray.map((day) => {
+                  const isPast = day.dateStr < todayStr;
+                  const isWeekend = day.dayOfWeek === 'SAT' || day.dayOfWeek === 'SUN';
+                  return (
+                    <div
+                      key={day.dateStr}
+                      className={`pms-cell ${day.isToday ? 'is-today' : ''} ${isWeekend ? 'is-weekend' : ''} ${isPast ? 'is-past' : ''}`}
+                      style={{ cursor: 'default' }}
+                    >
+                      {!isPast && <span className="pms-open-dot" />}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
 
           {/* UNASSIGNED ROWS */}
           {visibleUnassignedStays.length > 0 &&
