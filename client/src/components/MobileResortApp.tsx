@@ -35,6 +35,7 @@ import {
 } from '../lib/guestPortal';
 import { describeNights, nightLevel, openRoomsForRange, roomNights, type RoomNight } from '../lib/stayCalendar';
 import { combinedCapacity, splitPartyAcrossRooms } from '../lib/multiRoom';
+import RoomPhoto from './guest/RoomPhoto';
 import { AvailableRoomsPanel, CalendarRoomChips, NightDots, roomDotClass } from './guest/StayCalendarRooms';
 
 // =============================================================================
@@ -1957,17 +1958,11 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                     isSelected ? 'border-cyan shadow-cyan/30' : 'border-white/10 hover:border-cyan/50'
                   }`}
                 >
-                  {room.image_url ? (
-                    <img
-                      src={room.image_url}
-                      alt={room.name}
-                      loading="lazy"
-                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                      className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-[#0B1528] to-[#060B18]" />
-                  )}
+                  <RoomPhoto
+                    room={room}
+                    alt={room.name}
+                    className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                  />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#060B18] via-[#060B18]/35 to-transparent" />
                   <div className="absolute inset-x-0 bottom-0 p-5">
                     <span className="text-[10px] uppercase font-mono tracking-widest text-cyan font-bold block mb-1">
@@ -2183,17 +2178,10 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                           }}
                           className={`group relative h-52 w-[86%] max-w-[300px] shrink-0 snap-start overflow-hidden rounded-2xl border text-left transition ${cardClass}`}
                         >
-                          {option.room.image_url ? (
-                            <img
-                              src={option.room.image_url}
-                              alt=""
-                              loading="lazy"
-                              className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                              onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                            />
-                          ) : (
-                            <div className="absolute inset-0 bg-gradient-to-br from-[#0B1528] to-[#060B18]" />
-                          )}
+                          <RoomPhoto
+                            room={option.room}
+                            className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                          />
                           <div className="absolute inset-0 bg-gradient-to-t from-[#060B18] via-[#060B18]/60 to-transparent" />
                           {isSelected && (
                             <span className="absolute right-3 top-3 rounded-full bg-cyan px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-[#060B18]">
@@ -3490,14 +3478,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                 <div className="border border-[#DDDDDD] rounded-xl p-4 space-y-2.5 text-sm">
                   <div className="flex items-center gap-3 pb-1">
                     <div className="w-14 h-14 rounded-lg bg-slate-100 shrink-0 overflow-hidden">
-                      {selectedRoom.image_url && (
-                        <img
-                          src={selectedRoom.image_url}
-                          alt=""
-                          className="h-full w-full object-cover"
-                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                        />
-                      )}
+                      <RoomPhoto room={pickedRooms[0] ?? selectedRoom} className="h-full w-full object-cover" />
                     </div>
                     <div className="min-w-0">
                       <div className="font-bold text-[#222222] break-words">{pickedRooms.length > 1 ? pickedRoomsLabel : selectedRoom.name}</div>
@@ -3684,14 +3665,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                 <div className="border border-[#DDDDDD] rounded-xl p-4 space-y-2.5 text-sm">
                   <div className="flex items-center gap-3 pb-1">
                     <div className="w-14 h-14 rounded-lg bg-slate-100 shrink-0 overflow-hidden">
-                      {selectedRoom.image_url && (
-                        <img
-                          src={selectedRoom.image_url}
-                          alt=""
-                          className="h-full w-full object-cover"
-                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                        />
-                      )}
+                      <RoomPhoto room={pickedRooms[0] ?? selectedRoom} className="h-full w-full object-cover" />
                     </div>
                     <div className="min-w-0">
                       <div className="font-bold text-[#222222] break-words">{pickedRooms.length > 1 ? pickedRoomsLabel : selectedRoom.name}</div>

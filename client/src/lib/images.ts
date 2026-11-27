@@ -123,6 +123,13 @@ export const RESORT_STAND_IN = {
   cottage: '/images/rockview/18_outdoor_cottage_seating.jpg',
 };
 
+export const isCottageLike = (room: { offering_type?: string; category?: string; name?: string }): boolean =>
+  room.offering_type === 'cottage' || /cottage|cabana/i.test(`${room.category || ''} ${room.name || ''}`);
+
+/** The photo to show for a room or cottage: its own when saved, otherwise the stand-in for its kind. */
+export const roomPhotoFor = (room: { image_url?: string; offering_type?: string; category?: string; name?: string }): string =>
+  roomPhotoOrStandIn(room.image_url, room.name || '', room.category || '', isCottageLike(room));
+
 export const roomPhotoOrStandIn = (stored: string | undefined, name: string, category: string, isCottage: boolean): string =>
   stored && stored.trim()
     ? getRoomImageUrl({ image_url: stored, name, category })

@@ -4,7 +4,7 @@ import { api } from '../../lib/api';
 import { supabase } from '../../lib/supabaseClient';
 import { to11Digits } from '../../lib/format';
 import { getManilaTodayISO } from '../../lib/offeringSpecs';
-import { roomPhotoOrStandIn } from '../../lib/images';
+import { isCottageLike, roomPhotoOrStandIn } from '../../lib/images';
 import { FALLBACK_ROOMS, fetchBookableRooms, type Room } from '../../lib/guestRooms';
 import {
   GUEST_BOOKINGS_STORAGE_KEY,
@@ -218,7 +218,7 @@ export function GuestPortalProvider({ children }: { children: ReactNode }) {
       const room = rooms.find((r) => String(r.id) === String(booking.roomId));
       const name = room?.name || booking.roomName;
       const category = room?.category || booking.roomCategory;
-      const isCottage = room?.offering_type === 'cottage' || /cottage|cabana/i.test(`${category} ${name}`);
+      const isCottage = isCottageLike({ offering_type: room?.offering_type, category, name });
       return {
         name,
         category,
