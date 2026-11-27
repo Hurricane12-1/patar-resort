@@ -738,7 +738,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                       key={b.id || idx}
                       onClick={() => {
                         setActiveTab('ledger');
-                        toast(`📋 Folio ${bookingCode}: ${guestName} (${roomName})`);
+                        toast(`Booking ${bookingCode}: ${guestName} (${roomName})`);
                       }}
                       style={{
                         display: 'flex',
@@ -848,7 +848,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                   <div style={{ fontSize: '0.74rem', opacity: 0.85, maxWidth: 320, margin: '0 auto 12px' }}>
                     {bookingStatusFilter !== 'all'
                       ? `There are no reservations currently matching "${bookingStatusFilter}".`
-                      : 'Active and upcoming guest reservations will stream into this ledger live.'}
+                      : 'Current and upcoming bookings will appear here.'}
                   </div>
                   <button
                     type="button"
@@ -895,7 +895,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <button
               onClick={() => {
                 setActiveTab('ledger');
-                toast('📋 Navigated to Reservations Ledger');
+                toast('Opened Reservations');
               }}
               style={{
                 background: 'transparent',
@@ -913,7 +913,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
               onMouseEnter={(e) => (e.currentTarget.style.gap = '10px')}
               onMouseLeave={(e) => (e.currentTarget.style.gap = '6px')}
             >
-              view all in reservations ledger <i className="fas fa-arrow-right" style={{ marginLeft: 4 }} />
+              view all reservations <i className="fas fa-arrow-right" style={{ marginLeft: 4 }} />
             </button>
             <button
               type="button"
@@ -972,12 +972,12 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
               <div>
                 <span style={{ fontSize: '.72rem', color: '#6366F1', fontWeight: 800, letterSpacing: '.12em', textTransform: 'uppercase', display: 'block', marginBottom: 2 }}>
-                  OPEN CONVERSATIONS
+                  GUEST MESSAGES
                 </span>
                 <h3 style={{ fontSize: '1.25rem', margin: 0, color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800 }}>
                   {guestConversations.length === 0
-                    ? 'No conversations to resolve'
-                    : `${guestConversations.length} ${guestConversations.length === 1 ? 'conversation' : 'conversations'} to resolve`}
+                    ? 'No guest messages yet'
+                    : `${guestConversations.length} guest ${guestConversations.length === 1 ? 'chat' : 'chats'}`}
                 </h3>
               </div>
               {guestConversations.length > 0 && (
@@ -999,7 +999,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             </div>
 
             <p style={{ margin: '0 0 16px', fontSize: '.78rem', color: themeMuted, lineHeight: 1.4 }}>
-              Start resolving your open conversations now and boost your average client's CSAT score.
+              Chats from guests show up here. Click one to read it and reply.
             </p>
 
             {/* Guest conversation cards list */}
@@ -1023,7 +1023,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                         setSelectedPanelGuest(g);
                         setActiveChatGuest(null);
                         setActiveTab('conversations');
-                        toast(`💬 Opened conversation thread for ${g.name}`);
+                        toast(`Opened the chat with ${g.name}`);
                       }}
                       style={{
                         display: 'flex',
@@ -1113,8 +1113,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                   fontSize: '0.82rem',
                 }}>
                   <div style={{ fontSize: '1.4rem', marginBottom: 6 }}>💬</div>
-                  <div>No open guest conversations</div>
-                  <div style={{ fontSize: '0.74rem', marginTop: 4, opacity: 0.8 }}>Incoming guest chat inquiries will stream here in real time.</div>
+                  <div>No guest messages yet</div>
+                  <div style={{ fontSize: '0.74rem', marginTop: 4, opacity: 0.8 }}>New chats from guests will appear here.</div>
                 </div>
               )}
             </div>
@@ -1127,7 +1127,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 setSelectedPanelGuest(guestConversations[0] || null);
                 setActiveChatGuest(null);
                 setActiveTab('conversations');
-                toast('💬 Navigated to Guest Conversations Inbox');
+                toast('Opened Customer Services');
               }}
               style={{
                 background: 'transparent',
@@ -1147,7 +1147,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             >
               view more <i className="fas fa-arrow-right" style={{ marginLeft: 4 }} />
             </button>
-            <small style={{ fontSize: '.72rem', color: themeMuted }}>Click thread to open chat</small>
+            <small style={{ fontSize: '.72rem', color: themeMuted }}>Click a chat to open it</small>
           </div>
         </div>
       </div>
