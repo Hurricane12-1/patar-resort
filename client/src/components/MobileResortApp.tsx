@@ -34,6 +34,7 @@ import {
   type GuestPaymentMethod,
 } from '../lib/guestPortal';
 import { describeNights, nightLevel, openRoomsForRange, roomNights, type RoomNight } from '../lib/stayCalendar';
+import { combinedCapacity, splitPartyAcrossRooms } from '../lib/multiRoom';
 import { AvailableRoomsPanel, CalendarRoomChips, NightDots, roomDotClass } from './guest/StayCalendarRooms';
 
 // =============================================================================
@@ -235,8 +236,9 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   // Application Data States (Live Supabase)
   const [rooms, setRooms] = useState<Room[]>([]);
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
-  // Visual multi-select: rooms the guest has toggled on. Booking uses selectedRoomIds[0] as the primary room.
+  // Rooms the guest has picked. One room unless "more than one room" is switched on; each picked room is booked.
   const [selectedRoomIds, setSelectedRoomIds] = useState<string[]>([]);
+  const [multiRoom, setMultiRoom] = useState(false);
   const [activeLodgingCategory, setActiveLodgingCategory] = useState<'room' | 'cottage'>('room');
   const [reservations, setReservations] = useState<ReservationWindow[]>([]);
   const [dbStatus, setDbStatus] = useState<'connecting' | 'connected' | 'offline'>('connecting');
@@ -939,6 +941,12 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     return ids.map((id) => rooms.find((r) => r.id === id)).filter((r): r is Room => Boolean(r));
   }, [selectedRoomIds, selectedRoomId, rooms]);
 
+  const pickedRooms = useMemo(
+    () => selectedRoomIds.map((id) => rooms.find((r) => r.id === id)).filter((r): r is Room => Boolean(r)),
+    [selectedRoomIds, rooms]
+  );
+  const pickedRoomsLabel = pickedRooms.map((room) => room.name).join(' + ');
+
   const monthNights = useMemo(() => {
     const byDay = new Map<string, RoomNight[]>();
     if (calendarRooms.length === 0) return byDay;
@@ -972,9 +980,11 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
         rooms.length === 1 ? 'room' : 'rooms'
       } available`;
 
-  const selectedCapacity = Number(selectedRoom.capacity) || 0;
-  const selectedFits = selectedCapacity > 0 && selectedCapacity >= partySize;
-  const reserveBlock: 'capacity' | 'dates' | null = !selectedFits ? 'capacity' : hasRangeConflict ? 'dates' : null;
+  const selectedCapacity = pickedRooms.length > 1 ? combinedCapacity(pickedRooms) : Number(selectedRoom.capacity) || 0;
+  const tooFewGuestsForRooms = pickedRooms.length > 1 && partySize < pickedRooms.length;
+  const selectedFits = selectedCapacity > 0 && selectedCapacity >= partySize && !tooFewGuestsForRooms;
+  const reserveBlock: 'capacity' | 'dates' | null =
+    pickedRooms.length === 0 ? null : !selectedFits ? 'capacity' : hasRangeConflict ? 'dates' : null;
 
   // Auto-match follows party size, dates, and live inventory changes only when explicitly enabled.
   useEffect(() => {
@@ -1046,12 +1056,16 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
       }
     }
   };
-  // Toggle a room in the multi-select list; booking uses the first still-selected room as primary.
+  // Picking a room replaces the current one, unless "more than one room" is on: then rooms are added or removed.
   const toggleRoomSelect = (roomId: string) => {
     setRoomMode('manual');
-    const next = selectedRoomIds.includes(roomId)
-      ? selectedRoomIds.filter((id) => id !== roomId)
-      : [...selectedRoomIds, roomId];
+    const next = multiRoom
+      ? selectedRoomIds.includes(roomId)
+        ? selectedRoomIds.filter((id) => id !== roomId)
+        : [...selectedRoomIds, roomId]
+      : selectedRoomIds.length === 1 && selectedRoomIds[0] === roomId
+      ? []
+      : [roomId];
     setSelectedRoomIds(next);
     if (next.length) setSelectedRoomId(next[0]);
     else setSelectedRoomId(null);
@@ -1112,8 +1126,17 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     setSelectedRoomId(null);
     setConflictToast(null);
   };
+  const changeMultiRoom = (on: boolean) => {
+    setMultiRoom(on);
+    if (on) {
+      setRoomMode('manual');
+    } else if (selectedRoomIds.length > 1) {
+      chooseRoom(selectedRoomIds[0]);
+    }
+  };
   const enableAutoMatch = () => {
     setRoomMode('auto');
+    setMultiRoom(false);
     const best = roomRanking.best;
     if (best) {
       setSelectedRoomId(best.id);
@@ -1135,12 +1158,11 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   }, [checkIn, checkOut]);
 
   // Every selected room adds to the bill. One room selected → same as before; several → summed.
-  const pricedRooms = useMemo<Room[]>(() => {
-    const picked = selectedRoomIds
-      .map((id) => rooms.find((r) => r.id === id))
-      .filter((r): r is Room => Boolean(r));
-    return picked.length ? picked : [selectedRoom];
-  }, [selectedRoomIds, rooms, selectedRoom]);
+  const pricedRooms = useMemo<Room[]>(
+    () => (pickedRooms.length ? pickedRooms : [selectedRoom]),
+    [pickedRooms, selectedRoom]
+  );
+  const nightlyTotal = pickedRooms.reduce((sum, room) => sum + (room.rate_php || 0), 0);
 
   const priceBreakdown = useMemo(
     () => {
@@ -1486,6 +1508,11 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
       setAuthOpen?.(true);
       return;
     }
+    if (!selectedRoomId || selectedRoomIds.length === 0) {
+      (document.getElementById('reserve-rooms') ?? document.getElementById('reserve-card'))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      toast('Please choose a room or cottage to continue.', true);
+      return;
+    }
     if (!checkIn || !checkOut) {
       const cal = document.getElementById('calendar-section');
       if (cal) {
@@ -1495,11 +1522,6 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
         setActiveField(checkIn ? 'checkout' : 'checkin');
         document.getElementById('reserve-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
-      return;
-    }
-    if (!selectedRoomId || selectedRoomIds.length === 0) {
-      document.getElementById('reserve-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      toast('Please choose a room or cottage to continue.', true);
       return;
     }
     if (reserveBlock) {
@@ -1552,7 +1574,14 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     const reference = makeBookingReference(checkIn);
     const pin = makeArrivalPin();
     const payment = resolvePayment();
-    const room = selectedRoom;
+    const roomsToBook = pickedRooms.length ? pickedRooms : [selectedRoom];
+    const room = roomsToBook[0];
+    const guestShares = splitPartyAcrossRooms(partySize, roomsToBook);
+    if (!guestShares) {
+      setReserveError('The rooms you picked cannot hold your party. Go back and change the rooms or the guests.');
+      setReserveSubmitting(false);
+      return;
+    }
     const partyNote = [
       `${guests.adults} adult${guests.adults === 1 ? '' : 's'}`,
       `${guests.children} ${guests.children === 1 ? 'child' : 'children'}`,
@@ -1564,44 +1593,48 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     // The keypad PIN is deliberately not written to shared reservation notes.
     const notes = `Ref ${reference} · Online booking · ${partyNote} · Room ${roomMode === 'auto' ? 'auto-matched to party size' : 'chosen by guest'}${requestsNote}`;
 
-    let savedRow: any = null;
-    try {
-      savedRow = await api.createReservation({
-        room_id: room.id,
-        guest_name: name,
-        email,
-        phone,
-        check_in: checkIn,
-        check_out: checkOut,
-        guests: partySize,
-        total_php: priceBreakdown.grandTotal,
-        downpayment_php: priceBreakdown.downpaymentRequired,
-        payment_method: payment.db,
-        payment_status: 'unpaid',
-        status: 'confirmed',
-        notes,
-        ...(signedInGuest && customerProfile?.id ? { guest_id: customerProfile.id } : {}),
-      });
-    } catch (err: any) {
-      const message = String(err?.message || '').replace(/^⚠️\s*/, '');
-      // Real conflicts and validation problems go back to the guest instead of being saved locally.
-      if (/already reserved|in the past|required information/i.test(message)) {
-        setReserveError(message);
+    // One reservation per picked room, each with its own share of the party. If one fails, the earlier ones are undone.
+    const savedRows: any[] = [];
+    for (let i = 0; i < roomsToBook.length; i++) {
+      const target = roomsToBook[i];
+      const roomPrice = computeStayPrice(target.rate_php || 0, checkIn, checkOut);
+      try {
+        const row = await api.createReservation({
+          room_id: target.id,
+          guest_name: name,
+          email,
+          phone,
+          check_in: checkIn,
+          check_out: checkOut,
+          guests: guestShares[i],
+          total_php: roomPrice.grandTotal,
+          downpayment_php: Math.round(roomPrice.grandTotal * 0.5),
+          payment_method: payment.db,
+          payment_status: 'unpaid',
+          status: 'confirmed',
+          notes: roomsToBook.length > 1 ? `${notes} · Room ${i + 1} of ${roomsToBook.length}` : notes,
+          ...(signedInGuest && customerProfile?.id ? { guest_id: customerProfile.id } : {}),
+        });
+        if (!row || !row.id) throw new Error('Reservation could not be saved to resort database. Please try again.');
+        savedRows.push(row);
+      } catch (err: any) {
+        const undone = await Promise.all(
+          savedRows.map((row) => api.cancelReservation(String(row.id)).then(() => true).catch(() => false))
+        );
+        const message = String(err?.message || '').replace(/^⚠️\s*/, '');
+        const aftermath = savedRows.length === 0
+          ? ''
+          : undone.every(Boolean)
+          ? ' None of your rooms were booked.'
+          : ` Some of your rooms may still be booked, so please call the front desk at ${RESORT_CONTACT.phoneDisplay}.`;
+        // Real conflicts and validation problems go back to the guest instead of being saved locally.
+        setReserveError(`${message || 'Unable to complete reservation with server. Please try again.'}${aftermath}`);
         setReserveSubmitting(false);
         fetchLiveReservations();
         return;
       }
-      setReserveError(message || 'Unable to complete reservation with server. Please try again.');
-      setReserveSubmitting(false);
-      fetchLiveReservations();
-      return;
     }
-
-    if (!savedRow || !savedRow.id) {
-      setReserveError('Reservation could not be saved to resort database. Please try again.');
-      setReserveSubmitting(false);
-      return;
-    }
+    const savedRow = savedRows[0];
 
     const record: GuestBooking = {
       id: String(savedRow.id),
@@ -1609,7 +1642,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
       reference,
       source: 'account',
       roomId: String(room.id),
-      roomName: room.name,
+      roomName: roomsToBook.map((r) => r.name).join(' + '),
       roomCategory: room.category || 'Room',
       roomImage: room.image_url || '',
       roomCapacity: selectedCapacity,
@@ -1637,9 +1670,12 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     };
     if (!signedInGuest) rememberBookingGuest({ name, email, phone });
 
-    const newBookingKey = `${room.id}:${checkIn}:${checkOut}`;
-    justBookedRef.current.add(String(savedRow.id));
-    justBookedRef.current.add(newBookingKey);
+    const newBookingKeys = savedRows.map((row, i) => {
+      const key = `${roomsToBook[i].id}:${checkIn}:${checkOut}`;
+      justBookedRef.current.add(String(row.id));
+      justBookedRef.current.add(key);
+      return key;
+    });
 
     setConflictToast(null);
     setCalendarNotice(null);
@@ -1647,15 +1683,15 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     setCheckOut(null);
     setHoverDate(null);
     setReservations((prev) => [
-      ...prev.filter((r) => `${r.room_id}:${r.check_in}:${r.check_out}` !== newBookingKey),
-      {
-        id: String(savedRow.id),
-        room_id: String(room.id),
+      ...prev.filter((r) => !newBookingKeys.includes(`${r.room_id}:${r.check_in}:${r.check_out}`)),
+      ...savedRows.map((row, i) => ({
+        id: String(row.id),
+        room_id: String(roomsToBook[i].id),
         check_in: checkIn,
         check_out: checkOut,
         status: 'confirmed',
         is_own: true,
-      },
+      })),
     ]);
 
     setBookingRef(reference);
@@ -1975,11 +2011,13 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                       {selectedRoomIds.length === 0 ? (
                         <span className="rounded-full border border-white/10 bg-white/10 px-2 py-0.5 text-[10px] font-extrabold tracking-wider text-white/70">NOT SELECTED</span>
                       ) : !selectedFits ? (
-                        <span className="rounded-full border border-rose-500/30 bg-rose-500/20 px-2 py-0.5 text-[10px] font-extrabold tracking-wider text-rose-300">TOO SMALL</span>
+                        <span className="rounded-full border border-rose-500/30 bg-rose-500/20 px-2 py-0.5 text-[10px] font-extrabold tracking-wider text-rose-300">{tooFewGuestsForRooms ? 'ADD GUESTS' : 'TOO SMALL'}</span>
                       ) : roomMode === 'auto' ? (
                         <span className="rounded-full border border-emerald-500/30 bg-emerald-500/20 px-2 py-0.5 text-[10px] font-extrabold tracking-wider text-emerald-300">AUTO-MATCHED</span>
                       ) : (
-                        <span className="rounded-full border border-cyan/30 bg-cyan/20 px-2 py-0.5 text-[10px] font-extrabold tracking-wider text-cyan">YOUR PICK</span>
+                        <span className="rounded-full border border-cyan/30 bg-cyan/20 px-2 py-0.5 text-[10px] font-extrabold tracking-wider text-cyan">
+                          {pickedRooms.length > 1 ? `${pickedRooms.length} ROOMS` : 'YOUR PICK'}
+                        </span>
                       )}
                     </div>
                     <div className="mt-0.5 text-xs text-white/60">
@@ -2006,12 +2044,31 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                     <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${roomMode === 'auto' ? 'translate-x-[18px]' : 'translate-x-[2px]'}`} />
                   </span>
                 </button>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={multiRoom}
+                  onClick={() => changeMultiRoom(!multiRoom)}
+                  className="mt-2 flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left text-xs font-semibold text-white transition hover:border-white/25 cursor-pointer"
+                >
+                  <span>
+                    Book more than one room
+                    <span className="mt-0.5 block text-[11px] font-normal text-white/60">
+                      {multiRoom ? 'Tap every room you want. Each is booked for the same dates.' : 'Off: you can pick one room.'}
+                    </span>
+                  </span>
+                  <span className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition ${multiRoom ? 'bg-cyan' : 'bg-white/20'}`}>
+                    <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${multiRoom ? 'translate-x-[18px]' : 'translate-x-[2px]'}`} />
+                  </span>
+                </button>
                 <p className="mt-2 text-[11px] leading-relaxed text-white/60">
                   {roomMode === 'auto'
                     ? `We pick the smallest open room that fits ${partySize} ${partySize === 1 ? 'guest' : 'guests'}. `
+                    : multiRoom
+                    ? 'Tap a room to add it, tap it again to remove it. Guests are shared across your rooms. '
                     : selectedRoomIds.length > 0
-                    ? 'You picked this accommodation. Tap any room to select or deselect, or turn on auto-match. '
-                    : 'Tap any room to select it. Turn on auto-match to let us choose by party size. '}
+                    ? 'Tap another room to switch, or tap this one again to clear it. '
+                    : 'Tap a room to choose it, or turn on auto-match to let us choose by party size. '}
                   Capacity follows the resort's live room settings; infants don't count.
                 </p>
                 <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-medium text-white/60">
@@ -2660,22 +2717,28 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
               {/* Price Header */}
               <div className="flex items-baseline justify-between gap-2 mb-5">
                 <div>
-                  <span className="font-serif text-3xl font-bold text-white tracking-tight">
-                    {formatPHP(selectedRoom.rate_php || 0)}
+                  <span className={`font-serif text-3xl font-bold tracking-tight ${pickedRooms.length === 0 ? 'text-white/40' : 'text-white'}`}>
+                    {pickedRooms.length === 0 ? '₱ —' : formatPHP(nightlyTotal)}
                   </span>
                   <span className="text-sm text-white/60 ml-1.5 font-light">/ night</span>
                 </div>
                 <span className="text-xs font-semibold text-[#F3D9A4] bg-white/5 border border-white/10 px-2.5 py-1 rounded-full">
-                  {(selectedRoom as any).reviews_count ? `★ ${(selectedRoom as any).rating_avg || '5.0'} · ${(selectedRoom as any).reviews_count} reviews` : '★ Direct Verified'}
+                  {pickedRooms.length === 0
+                    ? 'No room yet'
+                    : pickedRooms.length > 1
+                    ? `${pickedRooms.length} rooms`
+                    : (selectedRoom as any).reviews_count
+                    ? `★ ${(selectedRoom as any).rating_avg || '5.0'} · ${(selectedRoom as any).reviews_count} reviews`
+                    : '★ Direct Verified'}
                 </span>
               </div>
 
               <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-xs">
-                <span className="text-white/60">Room</span>
+                <span className="text-white/60">{pickedRooms.length > 1 ? 'Rooms' : 'Room'}</span>
                 <span className="min-w-0 break-words text-right font-semibold text-white">
-                  {selectedRoomIds.length === 0
+                  {pickedRooms.length === 0
                     ? 'Not selected yet'
-                    : `${selectedRoom.name} · up to ${selectedCapacity} ${selectedCapacity === 1 ? 'guest' : 'guests'}`}
+                    : `${pickedRoomsLabel} · up to ${selectedCapacity} ${selectedCapacity === 1 ? 'guest' : 'guests'}`}
                 </span>
               </div>
 
@@ -2812,7 +2875,11 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                   ))}
                   <p className="border-t border-white/10 pt-3 text-[11px] leading-relaxed text-white/60">
                     Our largest room fits {maxCapacity} guests; for bigger groups, call the front desk.{' '}
-                    {roomMode === 'auto' ? 'We match a room to your party automatically.' : `${selectedRoom.name} fits up to ${selectedCapacity}.`}
+                    {roomMode === 'auto'
+                      ? 'We match a room to your party automatically.'
+                      : pickedRooms.length > 0
+                      ? `${pickedRoomsLabel} ${pickedRooms.length > 1 ? 'fit' : 'fits'} up to ${selectedCapacity}.`
+                      : 'Pick a room to see how many it fits.'}
                   </p>
                   <button
                     onClick={() => setCardDrawer('none')}
@@ -2828,10 +2895,16 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
               {reserveBlock === 'capacity' && (
                 <div className="mb-4 rounded-xl border border-rose-500/30 bg-rose-950/40 px-3.5 py-3 text-xs text-rose-200" role="status">
                   <p className="font-semibold">
-                    {selectedRoom.name} fits up to {selectedCapacity} {selectedCapacity === 1 ? 'guest' : 'guests'}; your party has {partySize}.
+                    {tooFewGuestsForRooms
+                      ? `Each room needs at least one guest. You picked ${pickedRooms.length} rooms for ${partySize} ${partySize === 1 ? 'guest' : 'guests'}.`
+                      : `${pickedRoomsLabel} ${pickedRooms.length > 1 ? 'fit' : 'fits'} up to ${selectedCapacity} ${selectedCapacity === 1 ? 'guest' : 'guests'}; your party has ${partySize}.`}
                   </p>
                   <p className="mt-0.5 text-rose-300/80">
-                    {bestFreeRoom ? `${bestFreeRoom.name} fits ${bestFreeRoom.capacity} and is open.` : 'Try a different room or fewer guests.'}
+                    {tooFewGuestsForRooms
+                      ? 'Add a guest or remove a room.'
+                      : bestFreeRoom
+                      ? `${bestFreeRoom.name} fits ${bestFreeRoom.capacity} and is open.`
+                      : 'Try a different room or fewer guests.'}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {bestFreeRoom && (
@@ -2874,7 +2947,9 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                 onClick={openReserve}
                 className="btn-airbnb-reserve w-full h-12 rounded-xl text-[15px] font-bold tracking-wide cursor-pointer flex items-center justify-center shadow-lg shadow-cyan-500/20"
               >
-                {!checkIn || !checkOut
+                {pickedRooms.length === 0
+                  ? 'Choose a room first'
+                  : !checkIn || !checkOut
                   ? 'Check availability'
                   : reserveBlock === 'capacity'
                   ? 'Choose a room that fits'
@@ -2887,48 +2962,60 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                 You won’t be charged yet · Official digital voucher
               </p>
 
-              {/* Fee Breakdown */}
-              {checkIn && checkOut && totalNights > 0 ? (
-                <div className="mt-5 pt-4 border-t border-white/10 space-y-2.5 text-sm text-white/80">
-                  <div className="flex justify-between">
-                    <span className="underline text-white/70">{formatPHP(selectedRoom.rate_php || 0)} × {totalNights} nights{pricedRooms.length > 1 ? ` · ${pricedRooms.length} rooms` : ''}</span>
-                    <span className="text-white font-medium">{formatPHP(priceBreakdown.nightsTotal)}</span>
-                  </div>
-                  <div className="flex justify-between text-white/60">
-                    <span className="underline">Resort Cleaning Fee</span>
-                    <span className="text-white/90">{formatPHP(priceBreakdown.cleaningFee)}</span>
-                  </div>
-                  <div className="flex justify-between text-white/60">
-                    <span className="underline">Coastal Conservation Fee</span>
-                    <span className="text-white/90">{formatPHP(priceBreakdown.coastalFee)}</span>
-                  </div>
-                  <div className="flex justify-between text-cyan font-medium">
-                    <span>Direct Booking Tourism Tax</span>
-                    <span className="text-cyan font-bold">Waived (₱0)</span>
-                  </div>
-                  <div className="pt-3 border-t border-white/10 flex justify-between font-bold text-base text-white">
-                    <span>Total Stay Amount</span>
-                    <span className="text-cyan font-serif text-xl font-bold">{formatPHP(priceBreakdown.grandTotal)}</span>
-                  </div>
-                  <div className="pt-2.5 border-t border-dashed border-white/10 space-y-1.5 text-xs">
-                    <div className="flex justify-between font-bold text-cyan bg-cyan/15 px-3 py-2 rounded-xl border border-cyan/40">
-                      <span>50% Downpayment (Required)</span>
-                      <span className="font-serif text-sm font-bold">{formatPHP(priceBreakdown.downpaymentRequired)}</span>
+              {/* Fee Breakdown: always shown; dashes until a room and dates are picked */}
+              {(() => {
+                const showPrices = pickedRooms.length > 0 && Boolean(checkIn && checkOut) && totalNights > 0;
+                const money = (amount: number) => (showPrices ? formatPHP(amount) : '—');
+                return (
+                  <div className="mt-5 pt-4 border-t border-white/10 space-y-2.5 text-sm text-white/80">
+                    <div className="flex justify-between">
+                      <span className="underline text-white/70">
+                        {showPrices
+                          ? `${formatPHP(nightlyTotal)} × ${totalNights} nights${pickedRooms.length > 1 ? ` · ${pickedRooms.length} rooms` : ''}`
+                          : 'Room × nights'}
+                      </span>
+                      <span className="text-white font-medium">{money(priceBreakdown.nightsTotal)}</span>
                     </div>
-                    <div className="flex justify-between text-white/70 px-2.5">
-                      <span>50% Balance on Check-in</span>
-                      <span className="text-white font-semibold">{formatPHP(priceBreakdown.remainingBalance)}</span>
+                    <div className="flex justify-between text-white/60">
+                      <span className="underline">Resort Cleaning Fee</span>
+                      <span className="text-white/90">{money(priceBreakdown.cleaningFee)}</span>
                     </div>
-                    <p className="text-[10px] text-white/60 px-2.5 pt-0.5">
-                      <Link to="/policy" className="text-[#F3D9A4] underline hover:text-white">50% Downpayment Policy</Link> applies to lock reservation dates.
-                    </p>
+                    <div className="flex justify-between text-white/60">
+                      <span className="underline">Coastal Conservation Fee</span>
+                      <span className="text-white/90">{money(priceBreakdown.coastalFee)}</span>
+                    </div>
+                    <div className="flex justify-between text-cyan font-medium">
+                      <span>Direct Booking Tourism Tax</span>
+                      <span className="text-cyan font-bold">{showPrices ? 'Waived (₱0)' : '—'}</span>
+                    </div>
+                    <div className="pt-3 border-t border-white/10 flex justify-between font-bold text-base text-white">
+                      <span>Total Stay Amount</span>
+                      <span className="text-cyan font-serif text-xl font-bold">{money(priceBreakdown.grandTotal)}</span>
+                    </div>
+                    <div className="pt-2.5 border-t border-dashed border-white/10 space-y-1.5 text-xs">
+                      <div className="flex justify-between font-bold text-cyan bg-cyan/15 px-3 py-2 rounded-xl border border-cyan/40">
+                        <span>50% Downpayment (Required)</span>
+                        <span className="font-serif text-sm font-bold">{money(priceBreakdown.downpaymentRequired)}</span>
+                      </div>
+                      <div className="flex justify-between text-white/70 px-2.5">
+                        <span>50% Balance on Check-in</span>
+                        <span className="text-white font-semibold">{money(priceBreakdown.remainingBalance)}</span>
+                      </div>
+                      <p className="text-[10px] text-white/60 px-2.5 pt-0.5">
+                        {showPrices ? (
+                          <>
+                            <Link to="/policy" className="text-[#F3D9A4] underline hover:text-white">50% Downpayment Policy</Link> applies to lock reservation dates.
+                          </>
+                        ) : pickedRooms.length === 0 ? (
+                          'Pick a room and your dates to see the price.'
+                        ) : (
+                          'Select check-in and checkout to see the price.'
+                        )}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="mt-5 pt-4 border-t border-white/10 text-center text-xs text-white/50">
-                  <span>Stay dates default: <strong className="text-white">N/A</strong> · Select check-in and checkout to see pricing</span>
-                </div>
-              )}
+                );
+              })()}
             </div>
           </aside>
           )}
@@ -3279,15 +3366,15 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-[#EBEBEB] px-5 py-3 flex items-center justify-between shadow-lg">
         <div>
           <span className="text-base font-bold text-[#222222]">
-            {checkIn && checkOut ? formatPHP(priceBreakdown.grandTotal) : `${formatPHP(selectedRoom.rate_php || 0)} / night`}
+            {checkIn && checkOut && pickedRooms.length > 0 ? formatPHP(priceBreakdown.grandTotal) : pickedRooms.length > 0 ? `${formatPHP(nightlyTotal)} / night` : 'Choose a room'}
           </span>
           <span className="block text-[11px] text-[#6A6A6A]">
-            {checkIn && checkOut ? `${totalNights} nights · ${selectedRoom.name}` : 'Select dates'}
+            {pickedRooms.length === 0 ? 'No room yet' : checkIn && checkOut ? `${totalNights} nights · ${pickedRoomsLabel}` : 'Select dates'}
           </span>
         </div>
         <button
           onClick={() => {
-            if (!checkIn || !checkOut) {
+            if (pickedRooms.length > 0 && (!checkIn || !checkOut)) {
               const el = document.getElementById('calendar-section');
               el?.scrollIntoView({ behavior: 'smooth' });
             } else {
@@ -3297,7 +3384,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
           type="button"
           className="btn-airbnb-reserve px-5 py-2.5 rounded-lg text-xs font-semibold cursor-pointer"
         >
-          {!checkIn || !checkOut ? 'Check Dates' : reserveBlock ? 'Review room' : 'Reserve'}
+          {pickedRooms.length === 0 ? 'Pick a room' : !checkIn || !checkOut ? 'Check Dates' : reserveBlock ? 'Review room' : 'Reserve'}
         </button>
       </div>
       )}
@@ -3413,9 +3500,9 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                       )}
                     </div>
                     <div className="min-w-0">
-                      <div className="font-bold text-[#222222] truncate">{selectedRoom.name}</div>
+                      <div className="font-bold text-[#222222] break-words">{pickedRooms.length > 1 ? pickedRoomsLabel : selectedRoom.name}</div>
                       <div className="text-xs text-[#6A6A6A]">
-                        {selectedRoom.category} · up to {selectedCapacity} {selectedCapacity === 1 ? 'guest' : 'guests'}
+                        {pickedRooms.length > 1 ? `${pickedRooms.length} rooms` : selectedRoom.category} · up to {selectedCapacity} {selectedCapacity === 1 ? 'guest' : 'guests'}
                       </div>
                       <span
                         className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider ${
@@ -3607,9 +3694,9 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                       )}
                     </div>
                     <div className="min-w-0">
-                      <div className="font-bold text-[#222222] truncate">{selectedRoom.name}</div>
+                      <div className="font-bold text-[#222222] break-words">{pickedRooms.length > 1 ? pickedRoomsLabel : selectedRoom.name}</div>
                       <div className="text-xs text-[#6A6A6A]">
-                        {selectedRoom.category} · up to {selectedCapacity} {selectedCapacity === 1 ? 'guest' : 'guests'}
+                        {pickedRooms.length > 1 ? `${pickedRooms.length} rooms` : selectedRoom.category} · up to {selectedCapacity} {selectedCapacity === 1 ? 'guest' : 'guests'}
                       </div>
                     </div>
                   </div>
