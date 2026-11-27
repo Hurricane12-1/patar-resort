@@ -519,9 +519,9 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
               <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700 }}>
-                Extra Amenities ({currentAmenities.length})
+                Amenities ({currentAmenities.length})
                 <span style={{ display: 'block', fontWeight: 500, fontSize: '.72rem', marginTop: 2 }}>
-                  Only extras such as Wi-Fi or a jacuzzi. Beds, bath, cooling and view are set in the specifications above.
+                  What the room offers, such as Air Conditioning, Wi-Fi or a jacuzzi. Beds, bath and view are set above.
                 </span>
               </label>
               {currentAmenities.length > 0 && (
