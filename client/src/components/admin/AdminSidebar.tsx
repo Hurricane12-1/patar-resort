@@ -183,7 +183,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               title="Hide sidebar menu completely"
               aria-label="Hide sidebar menu"
             >
-              <i className="fas fa-xmark" />
+              <i className="fas fa-arrow-left" />
             </button>
           </div>
         )}
