@@ -1052,7 +1052,13 @@ export default function AvailabilityCalendar({
           {/* Empty rows keep the grid at its full height; each new room takes the next one. */}
           {Array.from({ length: showKindFilter ? Math.max(0, MIN_CALENDAR_ROWS - visibleUnits.length) : 0 }).map((_, emptyIndex) => (
             <div key={`empty_${emptyIndex}`} className="pms-row" aria-hidden="true">
-              <div className="pms-unit-label-cell" />
+              <div className="pms-unit-label-cell">
+                <div className="pms-unit-chip" style={{ opacity: 0.4 }}>
+                  <span className="pms-unit-title">
+                    {kindFilter === 'cottage' ? 'Cottage' : 'Room'} {units.filter((u) => u.kind === (kindFilter === 'cottage' ? 'cottage' : 'room')).length + emptyIndex + 1}
+                  </span>
+                </div>
+              </div>
               <div className="pms-days-track" style={{ gridTemplateColumns: `repeat(${daysCount}, 1fr)` }}>
                 {daysArray.map((day) => {
                   const isPast = day.dateStr < todayStr;
