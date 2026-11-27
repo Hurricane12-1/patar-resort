@@ -320,7 +320,7 @@ export function mapReservationRow(row: any, rooms: Room[]): GuestBooking {
     roomId: String(row.room_id || ''),
     roomName: String(room?.name || row.rooms?.name || 'Rock View stay').trim(),
     roomCategory: room?.category || row.rooms?.category || 'Room',
-    roomImage: room?.image_url || '/images/suite.jpg',
+    roomImage: room?.image_url || '',
     roomCapacity: Number(room?.capacity || row.rooms?.capacity) || guests,
     rate,
     checkIn,

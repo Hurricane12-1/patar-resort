@@ -6,7 +6,6 @@ import { api } from '../lib/api';
 import { usePageSettings, savePageSettings } from '../lib/pageSettings';
 import { isValidPHMobile, to11Digits } from '../lib/format';
 import { formatOfferingBadge, getManilaTodayISO, inferOfferingType, type OfferingType } from '../lib/offeringSpecs';
-import { getRoomImageUrl, handleImageError } from '../lib/images';
 import { VoucherBarcode } from './receipt/VoucherBarcode';
 import { toast } from './Toasts';
 import {
@@ -1085,9 +1084,9 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     () => {
       const summary = pricedRooms.reduce(
         (acc, room) => {
-          const p = computeStayPrice(room.rate_php || 3500, checkIn, checkOut);
+          const p = computeStayPrice(room.rate_php || 0, checkIn, checkOut);
           return {
-            baseRate: acc.baseRate + (room.rate_php || 3500),
+            baseRate: acc.baseRate + (room.rate_php || 0),
             nights: p.nights,
             nightsTotal: acc.nightsTotal + p.nightsTotal,
             cleaningFee: acc.cleaningFee + p.cleaningFee,
@@ -1236,8 +1235,8 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
       const isInRange = checkIn && checkOut && isoStr > checkIn && isoStr < checkOut;
       const isHoverRange = checkIn && !checkOut && hoverDate && isoStr > checkIn && isoStr <= hoverDate;
       const rate = isWeekendNight(isoStr)
-        ? Math.round((selectedRoom.rate_php || 3500) * 1.15)
-        : selectedRoom.rate_php || 3500;
+        ? Math.round((selectedRoom.rate_php || 0) * 1.15)
+        : selectedRoom.rate_php || 0;
 
       let cellClass = 'cal-box-open cursor-pointer';
       if (isPast) cellClass = 'cal-box-past';
@@ -1506,9 +1505,9 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
       roomId: String(room.id),
       roomName: room.name,
       roomCategory: room.category || 'Room',
-      roomImage: room.image_url || '/images/suite.jpg',
+      roomImage: room.image_url || '',
       roomCapacity: selectedCapacity,
-      rate: room.rate_php || 3500,
+      rate: room.rate_php || 0,
       checkIn,
       checkOut,
       nights: totalNights,
@@ -1563,15 +1562,8 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   };
 
   // Gallery Photos for Bento Grid
-  const galleryPhotos = selectedRoom.images && selectedRoom.images.length >= 5
-    ? selectedRoom.images
-    : [
-        selectedRoom.image_url || '/images/chason_room_generated.jpg',
-        '/images/rockview/03_deluxe_bedroom_swan_towels.jpg',
-        '/images/sunset_cottage_generated.jpg',
-        '/images/cliffside_hero_generated.jpg',
-        '/images/rockview/02_ocean_rock_formation_cliff.jpg'
-      ];
+  // Only this room's own photos: never another room's picture or a stock image.
+  const galleryPhotos = Array.from(new Set([selectedRoom.image_url, ...(selectedRoom.images || [])].filter(Boolean))) as string[];
 
   return (
     <div className="bg-[#060B18] text-[#E8EEF7] min-h-screen selection:bg-cyan selection:text-[#060B18]">
@@ -1806,37 +1798,49 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                 </p>
               </div>
             )}
-            {rooms.map((room) => (
-              <article
-                key={room.id}
-                onClick={() => {
-                  chooseRoom(room.id);
-                  handleCategorySwitch(room.offering_type === 'cottage' ? 'cottage' : 'room');
-                  document.getElementById('booking-workspace')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="group relative h-80 w-[280px] sm:w-[320px] shrink-0 snap-start overflow-hidden rounded-3xl border border-white/10 cursor-pointer transition hover:border-cyan/50 shadow-xl"
-              >
-                <img
-                  src={getRoomImageUrl(room)}
-                  alt={room.name}
-                  loading="lazy"
-                  onError={handleImageError}
-                  className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#060B18] via-[#060B18]/35 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 p-5">
-                  <span className="text-[10px] uppercase font-mono tracking-widest text-cyan font-bold block mb-1">
-                    ✦ {formatOfferingBadge(room.offering_type || 'room', room.category)}
-                  </span>
-                  <h3 className="font-serif text-2xl font-medium leading-tight text-white">
-                    {room.name}
-                  </h3>
-                  <p className="mt-1 font-serif text-lg text-cyan">
-                    ₱{Number(room.rate_php || 0).toLocaleString()} <span className="font-sans text-[11px] text-white/60">/ night</span>
-                  </p>
-                </div>
-              </article>
-            ))}
+            {rooms.map((room) => {
+              const isSelected = selectedRoomIds.includes(room.id);
+              return (
+                <article
+                  key={room.id}
+                  onClick={() => {
+                    // Set the category directly: handleCategorySwitch would re-pick a room from the stale selection.
+                    const type = room.offering_type === 'cottage' ? 'cottage' : 'room';
+                    setActiveLodgingCategory(type);
+                    setDrawerCategory(type);
+                    chooseRoom(room.id);
+                    document.getElementById('booking-workspace')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className={`group relative h-80 w-[280px] sm:w-[320px] shrink-0 snap-start overflow-hidden rounded-3xl border cursor-pointer transition shadow-xl ${
+                    isSelected ? 'border-cyan shadow-cyan/30' : 'border-white/10 hover:border-cyan/50'
+                  }`}
+                >
+                  {room.image_url ? (
+                    <img
+                      src={room.image_url}
+                      alt={room.name}
+                      loading="lazy"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-[#0B1528] to-[#060B18]" />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#060B18] via-[#060B18]/35 to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 p-5">
+                    <span className="text-[10px] uppercase font-mono tracking-widest text-cyan font-bold block mb-1">
+                      ✦ {formatOfferingBadge(room.offering_type || 'room', room.category)}
+                    </span>
+                    <h3 className="font-serif text-2xl font-medium leading-tight text-white">
+                      {room.name}
+                    </h3>
+                    <p className="mt-1 font-serif text-lg text-cyan">
+                      ₱{Number(room.rate_php || 0).toLocaleString()} <span className="font-sans text-[11px] text-white/60">/ night</span>
+                    </p>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </section>
       </>
@@ -2320,7 +2324,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
               <div className="flex items-baseline justify-between gap-2 mb-5">
                 <div>
                   <span className="font-serif text-3xl font-bold text-white tracking-tight">
-                    {formatPHP(selectedRoom.rate_php || 3500)}
+                    {formatPHP(selectedRoom.rate_php || 0)}
                   </span>
                   <span className="text-sm text-white/60 ml-1.5 font-light">/ night</span>
                 </div>
@@ -2638,11 +2642,16 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                             }}
                             className={`w-full flex items-start gap-3 rounded-xl border p-2.5 text-left transition ${toneClass}`}
                           >
-                            <img
-                              src={option.room.image_url || '/images/cottage.jpg'}
-                              alt=""
-                              className="h-12 w-14 shrink-0 rounded-lg object-cover bg-slate-800 mt-0.5 border border-white/10"
-                            />
+                            <div className="h-12 w-14 shrink-0 rounded-lg bg-slate-800 mt-0.5 border border-white/10 overflow-hidden">
+                              {option.room.image_url && (
+                                <img
+                                  src={option.room.image_url}
+                                  alt=""
+                                  className="h-full w-full object-cover"
+                                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                />
+                              )}
+                            </div>
                             <div className="min-w-0 flex-1">
                               <div className="flex items-start justify-between gap-2">
                                 <div className="min-w-0 flex-1 pr-1">
@@ -2664,7 +2673,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                                 </div>
                                 <div className="shrink-0 text-right">
                                   <div className="text-xs font-semibold text-cyan">
-                                    {formatPHP(option.room.rate_php || 3500)}
+                                    {formatPHP(option.room.rate_php || 0)}
                                     <span className="font-normal text-white/50">/night</span>
                                   </div>
                                   <div className={`mt-0.5 inline-flex items-center gap-1 text-[11px] font-semibold ${isBooked ? 'text-rose-400' : FIT_TONE[option.fit]}`}>
@@ -2766,7 +2775,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
               {checkIn && checkOut && totalNights > 0 ? (
                 <div className="mt-5 pt-4 border-t border-white/10 space-y-2.5 text-sm text-white/80">
                   <div className="flex justify-between">
-                    <span className="underline text-white/70">{formatPHP(selectedRoom.rate_php || 3500)} × {totalNights} nights{pricedRooms.length > 1 ? ` · ${pricedRooms.length} rooms` : ''}</span>
+                    <span className="underline text-white/70">{formatPHP(selectedRoom.rate_php || 0)} × {totalNights} nights{pricedRooms.length > 1 ? ` · ${pricedRooms.length} rooms` : ''}</span>
                     <span className="text-white font-medium">{formatPHP(priceBreakdown.nightsTotal)}</span>
                   </div>
                   <div className="flex justify-between text-white/60">
@@ -3157,7 +3166,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-[#EBEBEB] px-5 py-3 flex items-center justify-between shadow-lg">
         <div>
           <span className="text-base font-bold text-[#222222]">
-            {checkIn && checkOut ? formatPHP(priceBreakdown.grandTotal) : `${formatPHP(selectedRoom.rate_php || 3500)} / night`}
+            {checkIn && checkOut ? formatPHP(priceBreakdown.grandTotal) : `${formatPHP(selectedRoom.rate_php || 0)} / night`}
           </span>
           <span className="block text-[11px] text-[#6A6A6A]">
             {checkIn && checkOut ? `${totalNights} nights · ${selectedRoom.name}` : 'Select dates'}
@@ -3196,18 +3205,24 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
               ‹ Back to listing
             </button>
             <span className="text-sm font-semibold">
-              {tourIndex + 1} / {galleryPhotos.length}
+              {galleryPhotos.length ? tourIndex + 1 : 0} / {galleryPhotos.length}
             </span>
             <div className="w-16"></div>
           </div>
 
           <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 flex flex-col items-center justify-center">
             <div className="w-full max-w-4xl h-[54vh] rounded-[12px] relative overflow-hidden shadow-md">
-              <img
-                src={galleryPhotos[tourIndex]}
-                alt="Villa photo tour"
-                className="w-full h-full object-cover"
-              />
+              {galleryPhotos[tourIndex] ? (
+                <img
+                  src={galleryPhotos[tourIndex]}
+                  alt={selectedRoom.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-[#6A6A6A] text-sm">
+                  No photos have been uploaded for this room yet.
+                </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
               <div className="absolute bottom-5 left-5 right-5 text-white">
                 <h3 className="text-xl sm:text-2xl font-bold">
@@ -3274,11 +3289,16 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
               <form onSubmit={handleReserveSubmit} className="p-6 space-y-4">
                 <div className="border border-[#DDDDDD] rounded-xl p-4 space-y-2.5 text-sm">
                   <div className="flex items-center gap-3 pb-1">
-                    <img
-                      src={selectedRoom.image_url || '/images/cottage.jpg'}
-                      alt=""
-                      className="w-14 h-14 rounded-lg object-cover bg-slate-100 shrink-0"
-                    />
+                    <div className="w-14 h-14 rounded-lg bg-slate-100 shrink-0 overflow-hidden">
+                      {selectedRoom.image_url && (
+                        <img
+                          src={selectedRoom.image_url}
+                          alt=""
+                          className="h-full w-full object-cover"
+                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        />
+                      )}
+                    </div>
                     <div className="min-w-0">
                       <div className="font-bold text-[#222222] truncate">{selectedRoom.name}</div>
                       <div className="text-xs text-[#6A6A6A]">
@@ -3463,11 +3483,16 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
 
                 <div className="border border-[#DDDDDD] rounded-xl p-4 space-y-2.5 text-sm">
                   <div className="flex items-center gap-3 pb-1">
-                    <img
-                      src={selectedRoom.image_url || '/images/cottage.jpg'}
-                      alt=""
-                      className="w-14 h-14 rounded-lg object-cover bg-slate-100 shrink-0"
-                    />
+                    <div className="w-14 h-14 rounded-lg bg-slate-100 shrink-0 overflow-hidden">
+                      {selectedRoom.image_url && (
+                        <img
+                          src={selectedRoom.image_url}
+                          alt=""
+                          className="h-full w-full object-cover"
+                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        />
+                      )}
+                    </div>
                     <div className="min-w-0">
                       <div className="font-bold text-[#222222] truncate">{selectedRoom.name}</div>
                       <div className="text-xs text-[#6A6A6A]">

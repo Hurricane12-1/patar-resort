@@ -47,12 +47,13 @@ export function offeringTypeOfRow(row: any): string {
 
 /**
  * The rooms table also stores day tours and offers (tagged `__type__:offer` by the
- * admin console). Only active overnight accommodations can be booked as rooms.
+ * admin console). Only active overnight accommodations with a nightly rate can be booked as rooms.
  */
 export function isBookableRoomRow(row: any): boolean {
   if (!row || row.is_active === false) return false;
   const type = offeringTypeOfRow(row);
   if (type !== 'room' && type !== 'cottage') return false;
+  if (!(Number(row.rate_php) > 0)) return false;
   return !NON_STAY_CATEGORY.test(String(row.category || ''));
 }
 
@@ -69,11 +70,11 @@ export function mapLiveRoom(row: any, idx: number): Room {
     name: String(row.name || `Room ${idx + 1}`).trim(),
     category: parsed.displayCategory || row.category || '',
     offering_type: offeringTypeOfRow(row),
-    rate_php: Number(row.rate_php) || 3500,
+    rate_php: Number(row.rate_php) || 0,
     // A missing or invalid capacity stays 0 so the room is never auto-assigned to a party it may not fit.
     capacity: capacity > 0 ? capacity : 0,
-    beds_count: Number(row.beds_count) || 2,
-    baths_count: Number(row.baths_count) || 1,
+    beds_count: Number(row.beds_count) || 0,
+    baths_count: Number(row.baths_count) || 0,
     description: row.description || '',
     amenities: parsed.cleanAmenities,
     image_url: images[0] || '',

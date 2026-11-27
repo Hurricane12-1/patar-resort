@@ -218,7 +218,7 @@ export function GuestPortalProvider({ children }: { children: ReactNode }) {
       return {
         name: room?.name || booking.roomName,
         category: room?.category || booking.roomCategory,
-        image: room?.image_url || booking.roomImage || '/images/suite.jpg',
+        image: room?.image_url || booking.roomImage || '',
         capacity: Number(room?.capacity) || booking.roomCapacity,
       };
     },
