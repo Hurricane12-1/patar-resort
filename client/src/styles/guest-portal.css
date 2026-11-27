@@ -163,6 +163,11 @@
   animation: gp-fade 0.2s ease-out both;
 }
 
+/* Overlay wrappers sit over the dashboard; the portal's full-screen gradient would hide it. */
+.guest-portal.gp-overlay {
+  background: transparent;
+}
+
 .gp-drawer {
   animation: gp-sheet-up 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
 }

@@ -793,8 +793,8 @@ function AddPaymentDialog({ onClose }: { onClose: () => void }) {
   ];
 
   return createPortal(
-    <div className="guest-portal fixed inset-0 z-[90] flex items-end justify-center bg-transparent md:items-center md:p-6">
-      <button type="button" aria-label="Close" onClick={onClose} className="gp-backdrop absolute inset-0 cursor-default bg-[#020713]/80 backdrop-blur-md" />
+    <div className="guest-portal gp-overlay fixed inset-0 z-[90] flex items-end justify-center md:items-center md:p-6">
+      <button type="button" aria-label="Close" onClick={onClose} className="gp-backdrop absolute inset-0 cursor-default bg-[#020713]/80 backdrop-blur-md md:bg-[#020713]/30 md:backdrop-blur-none" />
       <div role="dialog" aria-modal="true" aria-labelledby="add-payment-title" className="gp-dialog relative max-h-[92vh] w-full overflow-y-auto rounded-t-[28px] bg-[#040e22] border border-white/15 p-6 shadow-2xl md:max-w-[460px] md:rounded-[28px] md:p-7 text-white">
         <div className="flex items-start justify-between gap-4">
           <div>

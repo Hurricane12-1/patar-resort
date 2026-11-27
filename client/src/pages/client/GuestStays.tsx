@@ -562,8 +562,8 @@ function BookingDrawer({ item, today, onClose }: { item: StayItem; today: string
   }
 
   return createPortal(
-    <div className="guest-portal fixed inset-0 z-[90] flex items-end justify-end bg-transparent md:items-stretch">
-      <button type="button" aria-label="Close stay details" onClick={onClose} className="gp-backdrop absolute inset-0 cursor-default bg-[#020713]/80 backdrop-blur-md" />
+    <div className="guest-portal gp-overlay fixed inset-0 z-[90] flex items-end justify-end md:items-stretch">
+      <button type="button" aria-label="Close stay details" onClick={onClose} className="gp-backdrop absolute inset-0 cursor-default bg-[#020713]/80 backdrop-blur-md md:bg-[#020713]/30 md:backdrop-blur-none" />
       <aside
         role="dialog"
         aria-modal="true"
