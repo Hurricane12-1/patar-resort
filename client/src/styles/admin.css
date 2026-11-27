@@ -1209,8 +1209,9 @@
   border-radius: 8px !important;
 }
 
-/* Approval Requests is hidden for now. Remove this rule to bring it back. */
-.admin-portal .sidebar-nav-item[data-tab="approvals"] {
+/* Approval Requests and Backup & Data Explorer are hidden for now. Remove this rule to bring them back. */
+.admin-portal .sidebar-nav-item[data-tab="approvals"],
+.admin-portal .sidebar-nav-item[data-tab="csv"] {
   display: none !important;
 }
 
