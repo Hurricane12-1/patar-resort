@@ -353,7 +353,7 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, fontSize: '.84rem', color: themeText, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: 12, border: `1px solid ${themeBorder}` }}>
                         <div>
                           <span style={{ color: themeMuted, fontSize: '.7rem', display: 'block', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.03em' }}>Capacity</span>
-                          <b style={{ fontSize: '.88rem' }}>{inferOfferingType(room) === 'offer' ? `Up to ${room.capacity || 10} pax` : `Sleeps ${room.capacity || 2}`}</b>
+                          <b style={{ fontSize: '.88rem' }}>{inferOfferingType(room) === 'offer' ? `Up to ${room.capacity || 10} pax` : `${room.capacity || 2} ${Number(room.capacity || 2) === 1 ? 'person' : 'persons'}`}</b>
                         </div>
                         <div>
                           <span style={{ color: themeMuted, fontSize: '.7rem', display: 'block', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.03em' }}>Rate</span>

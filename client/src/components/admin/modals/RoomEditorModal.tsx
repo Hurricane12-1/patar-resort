@@ -386,7 +386,7 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
               >
                 <span>
                   <i className="fas fa-users" style={{ marginRight: 4 }} />
-                  Sleeps {formData.capacity || 2} Guests
+                  {formData.capacity || 2} {Number(formData.capacity || 2) === 1 ? 'Person' : 'Persons'}
                 </span>
                 <span>•</span>
                 <span>
@@ -486,7 +486,7 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
               />
             </div>
             <div>
-              <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Sleeps Capacity (Guests)</label>
+              <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Capacity (Persons)</label>
               <input
                 type="number"
                 min={1}

@@ -343,7 +343,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
               >
                 <span>
                   <i className="fas fa-users" style={{ marginRight: 4 }} />
-                  Sleeps {newRoom.capacity || 2} Guests
+                  {newRoom.capacity || 2} {Number(newRoom.capacity || 2) === 1 ? 'Person' : 'Persons'}
                 </span>
                 <span>•</span>
                 <span>
@@ -457,7 +457,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
               </div>
               <div>
                 <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>
-                  Sleeps Capacity (Guests)
+                  Capacity (Persons)
                 </label>
                 <input
                   required
