@@ -4,6 +4,10 @@ import { admin, userClient, getSystemAdminClient } from '../lib/supabase.js';
 import { ApiError } from './errors.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
 
+if (process.env.NODE_ENV === 'production' && !env.SUPABASE_JWT_SECRET) {
+  console.error('[SECURITY] SUPABASE_JWT_SECRET is not set. Login tokens are signed with a secret that is published in the source code. Set it on the server.');
+}
+
 const VALID_DEPARTMENTS = new Set(['front_desk', 'housekeeping', 'kitchen', 'tours', 'accounting', 'management']);
 const STAFF_ROLES = new Set(['administrator', 'admin', 'staff', 'receptionist', 'accounting', 'housekeeping', 'kitchen', 'tours']);
 
@@ -54,42 +58,7 @@ export async function authenticate(req, _res, next) {
           }
         }
       }
-      if (/^jd-benchmark-concurrency/.test(req.headers['x-benchmark-bypass'] || '') || (process.env.BENCHMARK_MODE === 'true' && req.headers['x-benchmark-test'])) {
-        req.user = { id: 'benchmark-admin-id', role: 'administrator', full_name: 'Benchmark Load Tester' };
-        req.token = 'benchmark-token';
-        return next();
-      }
       throw new ApiError(401, 'Missing token');
-    }
-
-    // Dynamic resolution of verified employee account session
-    if (token && token.startsWith('emp_session_')) {
-      const empId = token.replace('emp_session_', '');
-      const sysClient = await getSystemAdminClient().catch(() => admin);
-      const { data: empUser } = await sysClient
-        .from('employee_accounts')
-        .select('*')
-        .eq('id', empId)
-        .eq('is_active', true)
-        .maybeSingle()
-        .catch(() => ({ data: null }));
-
-      if (empUser) {
-        const normalizedRole = normalizeEmployeeRole(empUser.role);
-        const normalizedDept = normalizeEmployeeDepartment(normalizedRole, empUser.department);
-        const isExecAdmin = normalizedRole === 'administrator';
-        req.user = {
-          ...empUser,
-          id: empUser.auth_user_id || empUser.id,
-          role: normalizedRole,
-          department: normalizedDept,
-          admin_token_verified: isExecAdmin,
-          admin_token_key: isExecAdmin ? (process.env.ADMIN_TOKEN_KEY || 'etc-34') : '',
-        };
-        req.token = token;
-        req.sb = sysClient;
-        return next();
-      }
     }
 
     let userId = null;
@@ -97,15 +66,20 @@ export async function authenticate(req, _res, next) {
     let userMetadata = {};
     let isLiveSupabaseToken = false;
 
-    // 1. Try local JWT verification with environment or resilient fallback secret
-    const jwtSecret = env.SUPABASE_JWT_SECRET || 'rock-view-dev-jwt-secret-very-secure-2026';
-    try {
-      const payload = jwt.verify(token, jwtSecret);
-      userId = payload.sub;
-      userEmail = payload.email;
-      userMetadata = { ...(payload.user_metadata || {}), ...payload };
-    } catch {
-      // Fall back to live Supabase verification
+    // 1. Verify the signature. The published dev secrets apply only when no secret is configured.
+    const jwtSecrets = env.SUPABASE_JWT_SECRET
+      ? [env.SUPABASE_JWT_SECRET]
+      : ['rock-view-dev-jwt-secret-very-secure-2026', 'rockview-customer-secret-key-2026'];
+    for (const secret of jwtSecrets) {
+      try {
+        const payload = jwt.verify(token, secret, { algorithms: ['HS256'] });
+        userId = payload.sub;
+        userEmail = payload.email;
+        userMetadata = { ...(payload.user_metadata || {}), ...payload };
+        break;
+      } catch {
+        // Not signed with this secret; try the next one, then live Supabase verification
+      }
     }
 
     // 2. Fall back to live Supabase Auth getUser() verification using anon key
@@ -118,18 +92,6 @@ export async function authenticate(req, _res, next) {
           userEmail = data.user.email;
           userMetadata = data.user.user_metadata || {};
           isLiveSupabaseToken = true;
-        }
-      } catch {}
-    }
-
-    // 3. Fallback for valid non-expired JWT tokens
-    if (!userId) {
-      try {
-        const decoded = jwt.decode(token);
-        if (decoded && decoded.sub && (decoded.exp ? decoded.exp * 1000 > Date.now() : true)) {
-          userId = decoded.sub;
-          userEmail = decoded.email;
-          userMetadata = { ...(decoded.user_metadata || {}), ...decoded };
         }
       } catch {}
     }
@@ -401,10 +363,7 @@ export const requireAdminSecurityBlock = (req, _res, next) => {
   );
   const tokenVerified = req.user.admin_token_verified === true || req.user.admin_token_key === expectedKey || isOwnerEmail;
 
-  const isBenchmark = /^jd-benchmark-concurrency/.test(req.headers['x-benchmark-bypass'] || '') ||
-                      (process.env.BENCHMARK_MODE === 'true' && req.headers['x-benchmark-test']);
-
-  if (!tokenVerified && headerKey !== expectedKey && !isBenchmark) {
+  if (!tokenVerified && headerKey !== expectedKey) {
     if (process.env.NODE_ENV === 'test' && !req.headers['x-enforce-token-key'] && (userRole === 'administrator' || userRole === 'accounting')) {
       return next();
     }

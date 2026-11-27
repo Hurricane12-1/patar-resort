@@ -257,9 +257,7 @@ export const corsPolicy = cors({
 export const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 300,
-  skip: (req) => process.env.NODE_ENV === 'test' ||
-                 process.env.BENCHMARK_MODE === 'true' ||
-                 String(req.headers['x-benchmark-bypass'] || '').startsWith('jd-benchmark-concurrency'),
+  skip: () => process.env.NODE_ENV === 'test' || process.env.BENCHMARK_MODE === 'true',
   standardHeaders: 'draft-7',
   legacyHeaders: false,
 });
