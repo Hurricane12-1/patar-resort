@@ -14,6 +14,8 @@ import { AdminState } from '../../../hooks/useAdminState';
 import { uploadImageToCloudinary } from '../../../lib/cloudinary';
 import { api } from '../../../lib/api';
 import { toast } from '../../Toasts';
+import { getManilaTodayISO } from '../../../lib/offeringSpecs';
+import { getUnitStatus } from '../../../lib/unitStatus';
 
 export interface AdminModalsProps {
   state: AdminState;
@@ -110,6 +112,7 @@ export const AdminModals: React.FC<AdminModalsProps> = ({ state }) => {
           themeBorder={state.themeBorder}
           themeText={state.themeText}
           themeMuted={state.themeMuted}
+          unitStatus={getUnitStatus(state.editingRoom, state.reservationsList, getManilaTodayISO())}
           uploadImageToCloudinary={uploadImageToCloudinary}
           toast={toast}
         />

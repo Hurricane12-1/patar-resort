@@ -6,6 +6,7 @@ import { toast } from '../components/Toasts.tsx';
 import { to11Digits, formatTime12Hour } from '../lib/format.ts';
 import { getManilaTodayISO } from '../lib/offeringSpecs.ts';
 import { canEditRoomDetails, canSwitchRoomAvailability, isAdministrator } from '../lib/rbac.ts';
+import type { UnitStatus } from '../lib/unitStatus.ts';
 import AddReservationModal, { NewReservationFormState } from '../components/admin/modals/AddReservationModal.tsx';
 import { RoomEditorModal } from '../components/admin/modals/RoomEditorModal.tsx';
 import { CreateRoomModal } from '../components/admin/modals/CreateRoomModal.tsx';
@@ -135,6 +136,12 @@ export default function ResortDepartment() {
   const canManageRooms = isAdministrator(staffProfile || adminProfile);
   const canSwitchAvailability = canSwitchRoomAvailability(staffProfile || adminProfile);
   const canEditRooms = canEditRoomDetails(staffProfile || adminProfile);
+  const unitStatusFor = (roomId: string): UnitStatus => {
+    const unit = rooms.find((r) => r.id === roomId);
+    if (unit?.status === 'occupied') return 'booked';
+    if (unit?.status === 'maintenance') return 'offline';
+    return 'available';
+  };
 
   // Dynamic Asia/Manila Today ISO
   const todayISO = useMemo(() => getManilaTodayISO(), []);
@@ -2670,6 +2677,7 @@ export default function ResortDepartment() {
           onSave={handleSaveEditedRoom}
           onDelete={canManageRooms ? handleDeleteRoom : undefined}
           rateLocked={!canManageRooms}
+          unitStatus={unitStatusFor(editingRoom.id)}
           isLightMode={true}
           themeBorder="#E2E8F0"
           themeText="#1E293B"

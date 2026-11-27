@@ -8,6 +8,7 @@ import {
   getDefaultSpecs,
   normalizeCategoryName,
 } from '../../../lib/offeringSpecs';
+import type { UnitStatus } from '../../../lib/unitStatus';
 
 export interface RoomEditorModalProps {
   room: any | null;
@@ -16,6 +17,7 @@ export interface RoomEditorModalProps {
   onSave: (updatedRoom: any) => Promise<void> | void;
   onDelete?: (room: any) => void;
   rateLocked?: boolean;
+  unitStatus?: UnitStatus;
   isLightMode: boolean;
   themeBorder: string;
   themeText: string;
@@ -31,6 +33,7 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
   onSave,
   onDelete,
   rateLocked = false,
+  unitStatus,
   isLightMode,
   themeBorder,
   themeText,
@@ -194,7 +197,12 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
     (Array.isArray(formData.images) && formData.images[0]) ||
     '';
 
-  const isCloudinaryFeatured = Boolean(featuredImageUrl && featuredImageUrl.includes('cloudinary.com'));
+  const STATUS_PILLS: Record<UnitStatus, { label: string; background: string }> = {
+    booked: { label: 'Booked', background: '#BE123C' },
+    available: { label: 'Available', background: '#047857' },
+    offline: { label: 'Offline', background: '#475569' },
+  };
+  const statusPill = unitStatus ? STATUS_PILLS[unitStatus] : null;
 
   return (
     <div
@@ -256,17 +264,8 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
                 width: '100%',
                 height: '100%',
                 background: 'linear-gradient(135deg, #0b1528 0%, #172554 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexDirection: 'column',
-                gap: 8,
-                color: 'rgba(255, 255, 255, 0.45)',
               }}
-            >
-              <i className="fas fa-camera" style={{ fontSize: '2.2rem' }} />
-              <span style={{ fontSize: '.8rem', fontWeight: 600 }}>No Room Photo Uploaded Yet</span>
-            </div>
+            />
           )}
           <div
             style={{
@@ -276,6 +275,35 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
               pointerEvents: 'none',
             }}
           />
+
+          <button
+            type="button"
+            onClick={() => !uploadingPhoto && fileInputRef.current?.click()}
+            disabled={uploadingPhoto}
+            aria-label={featuredImageUrl ? 'Change photo' : 'Add photo'}
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              zIndex: 4,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '10px 18px',
+              borderRadius: 999,
+              background: 'rgba(15, 23, 42, 0.78)',
+              color: '#FFFFFF',
+              border: '1px solid rgba(255, 255, 255, 0.5)',
+              backdropFilter: 'blur(4px)',
+              fontSize: '.82rem',
+              fontWeight: 700,
+              cursor: uploadingPhoto ? 'wait' : 'pointer',
+            }}
+          >
+            <i className={uploadingPhoto ? 'fas fa-spinner fa-spin' : 'fas fa-camera'} />
+            {uploadingPhoto ? 'Uploading…' : featuredImageUrl ? 'Change photo' : 'Add photo'}
+          </button>
 
           <div
             style={{
@@ -289,49 +317,21 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
               zIndex: 3,
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <span
-                style={{
-                  padding: '4px 10px',
-                  borderRadius: 20,
-                  background: 'rgba(14, 165, 233, 0.95)',
-                  color: '#FFFFFF',
-                  fontSize: '.68rem',
-                  fontWeight: 800,
-                  letterSpacing: '.06em',
-                  textTransform: 'uppercase',
-                }}
-              >
-                ✦ ROOM DETAILS &amp; PHOTO MANAGEMENT
-              </span>
-              <span
-                style={{
-                  padding: '4px 10px',
-                  borderRadius: 20,
-                  background: 'rgba(15, 23, 42, 0.78)',
-                  color: '#F8FAFC',
-                  fontSize: '.68rem',
-                  fontWeight: 700,
-                  border: '1px solid rgba(255,255,255,0.22)',
-                }}
-              >
-                {formData.category || 'Cottage'}
-              </span>
-              {isCloudinaryFeatured && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {statusPill && (
                 <span
                   style={{
-                    padding: '4px 10px',
+                    padding: '4px 12px',
                     borderRadius: 20,
-                    background: 'rgba(16, 185, 129, 0.9)',
+                    background: statusPill.background,
                     color: '#FFFFFF',
-                    fontSize: '.66rem',
+                    fontSize: '.68rem',
                     fontWeight: 800,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 5,
+                    letterSpacing: '.06em',
+                    textTransform: 'uppercase',
                   }}
                 >
-                  <i className="fas fa-cloud" /> CLOUDINARY CDN FEATURED
+                  {statusPill.label}
                 </span>
               )}
             </div>
@@ -371,18 +371,6 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
             }}
           >
             <div>
-              <div
-                style={{
-                  fontSize: '.68rem',
-                  color: '#38BDF8',
-                  fontWeight: 800,
-                  textTransform: 'uppercase',
-                  letterSpacing: '.06em',
-                }}
-              >
-                <i className="fas fa-image" style={{ marginRight: 5 }} />
-                Cloudinary Image Background Detail
-              </div>
               <h3
                 style={{
                   margin: '2px 0 0',
