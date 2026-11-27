@@ -1315,6 +1315,9 @@ export const api = {
     } catch (err) {
       if (!isBackendUnreachable(err)) throw err;
     }
+    if (typeof body.password !== 'string' || body.password.length < 6) {
+      throw new Error('Enter a password of at least 6 characters.');
+    }
     const sb = await ensureSupabaseSession();
 
     let seq = 1;
@@ -1353,7 +1356,7 @@ export const api = {
       full_name: fullName,
       username: username,
       email: targetEmail,
-      password: body.password || 'theneckron123',
+      password: body.password,
       role: body.role || 'receptionist',
       department: body.department || 'FrontDesk',
       position: body.position || String(body.role || 'Staff').toUpperCase(),
