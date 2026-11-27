@@ -298,7 +298,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
         const netDifference = Math.abs(totalDebits - totalCredits);
         const isBalanced = trialBalance ? trialBalance.is_balanced : netDifference === 0;
 
-        const totalResortUnits = Math.max(1, activeRoomsList.reduce((acc, r) => acc + (Number(r.units) || 1), 0));
+        const totalResortUnits = activeRoomsList.reduce((acc, r) => acc + (Number(r.units) || 1), 0);
 
         // Dynamic Year and Month Parsing
         const [selYearStr, selMonthStr] = analyticsYearMonth.split('-');
@@ -397,34 +397,17 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
           const total = Number(b.total_php) || 0;
           const down = Number(b.downpayment_php) || 0;
           const payStatus = String(b.payment_status || '').toLowerCase().trim();
-          const bookingStatus = String(b.status || '').toLowerCase().trim();
 
-          if (payStatus === 'paid') {
-            return total;
-          }
-          if (payStatus === 'partially_paid') {
-            return down > 0 ? down : Math.round(total * 0.5);
-          }
-          if (payStatus === 'refunded') {
-            return 0;
-          }
-          if (down > 0) {
-            return down;
-          }
-          if (['checked_in', 'checked_out'].includes(bookingStatus) && payStatus !== 'unpaid') {
-            return total;
-          }
-          if (bookingStatus === 'confirmed' && (!payStatus || payStatus === 'confirmed')) {
-            return down > 0 ? down : Math.round(total * 0.5);
-          }
-          return 0;
+          if (payStatus === 'refunded') return 0;
+          if (payStatus === 'paid') return total;
+          return Math.min(total, down);
         };
 
         const collectedAmount = Math.round(selectedMonthStays.reduce((sum: number, b: any) => sum + computeBookingCollected(b), 0));
         const outstandingAmount = Math.max(0, billedAmount - collectedAmount);
         const collectionRate = billedAmount > 0
           ? ((collectedAmount / billedAmount) * 100).toFixed(1)
-          : '100.0';
+          : '0.0';
 
         // Daily real occupancy (1..daysInMonth) with same-day stay support
         const dailyOccupancy = Array.from({ length: daysInMonth }, (_, i) => {
@@ -514,9 +497,10 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
         const nextMonthRemainingCapacity = Math.max(0, nextMonthCapacity - nextMonthBookedNights);
         
         // 1. Dynamic Baseline ADR with Bayesian Shrinkage (James-Stein Regularization)
-        const catalogAvgRate = Math.round(
-          activeRoomsList.reduce((acc, r) => acc + (Number(r.rate_php) || 3500), 0) / Math.max(1, activeRoomsList.length)
-        );
+        const ratedRooms = activeRoomsList.filter((r) => Number(r.rate_php) > 0);
+        const catalogAvgRate = ratedRooms.length > 0
+          ? Math.round(ratedRooms.reduce((acc, r) => acc + Number(r.rate_php), 0) / ratedRooms.length)
+          : 0;
         const adrSampleSize = roomNightsSold;
         const shrinkageK = 4;
         const adrWeight = adrSampleSize / (adrSampleSize + shrinkageK);
@@ -547,34 +531,29 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
           : roomRevenue;
 
         // 4. Bayesian Capacity Absorption Prior (p_hat) for Next Period
-        const currentOccupancyRatio = availableUnitNights > 0 ? (occupiedUnitNights / availableUnitNights) : 0.15;
-        const velocityAbsorptionRatio = nextMonthCapacity > 0 ? (dailyVelocity * nextDaysInMonth) / nextMonthCapacity : 0.20;
-        const leadDaysNum = Number(avgLeadTime) || 3.0;
-        const leadDecayFactor = 1 / (1 + Math.exp(-0.12 * (14 - leadDaysNum)));
+        const currentOccupancyRatio = availableUnitNights > 0 ? (occupiedUnitNights / availableUnitNights) : 0;
+        const velocityAbsorptionRatio = nextMonthCapacity > 0 ? (dailyVelocity * nextDaysInMonth) / nextMonthCapacity : 0;
+        const leadDecayFactor = leadCount > 0 ? 1 / (1 + Math.exp(-0.12 * (14 - Number(avgLeadTime)))) : 0;
 
         const rawPHat = (0.45 * currentOccupancyRatio) + (0.40 * velocityAbsorptionRatio) + (0.15 * leadDecayFactor);
-        const pHat = Math.min(0.85, Math.max(0.12, Number(rawPHat.toFixed(4))));
+        const pHat = Math.min(0.85, Math.max(0, Number(rawPHat.toFixed(4))));
 
         // 5. Binomial Variance & Confidence Bands (P10 Conservative, P50 Expected, P90 Optimistic)
         const NRem = Math.max(1, nextMonthRemainingCapacity);
         const sigmaP = Math.sqrt((pHat * (1 - pHat)) / NRem);
         const z90 = 1.282; // 90% confidence two-sided span (P10 to P90)
 
-        const p10Conservative = Math.max(0.05, Number((pHat - z90 * sigmaP).toFixed(4)));
+        const p10Conservative = pHat === 0 ? 0 : Math.max(0, Number((pHat - z90 * sigmaP).toFixed(4)));
         const p50Expected = pHat;
-        const p90Optimistic = Math.min(0.95, Number((pHat + z90 * sigmaP).toFixed(4)));
+        const p90Optimistic = pHat === 0 ? 0 : Math.min(0.95, Number((pHat + z90 * sigmaP).toFixed(4)));
 
-        const pickupConservative = Math.max(0, Math.round(NRem * p10Conservative));
-        const pickupExpected = Math.min(NRem, Math.max(0, Math.round(NRem * p50Expected)));
-        const pickupOptimistic = Math.min(NRem, Math.max(0, Math.round(NRem * p90Optimistic)));
+        const pickupConservative = Math.min(nextMonthRemainingCapacity, Math.max(0, Math.round(NRem * p10Conservative)));
+        const pickupExpected = Math.min(nextMonthRemainingCapacity, Math.max(0, Math.round(NRem * p50Expected)));
+        const pickupOptimistic = Math.min(nextMonthRemainingCapacity, Math.max(0, Math.round(NRem * p90Optimistic)));
 
         const forecastConservative = Math.round(nextMonthBookedRev + (pickupConservative * baselineADR));
         const forecastExpected = Math.round(nextMonthBookedRev + (pickupExpected * baselineADR));
         const forecastOptimistic = Math.round(nextMonthBookedRev + (pickupOptimistic * baselineADR));
-
-        // 6. ML Precision Score (based on inverse coefficient of variation)
-        const cv = sigmaP / Math.max(0.05, pHat);
-        const mlPrecisionScore = Math.min(98.8, Math.max(86.2, Number(((1 - cv * 0.22) * 100).toFixed(1))));
 
         const renderBadge = (val: number, label: string) => {
           if (!val || val === 0) {
@@ -808,6 +787,10 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                     <span style={{ fontSize: '.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: 9999, background: 'rgba(239, 68, 68, 0.12)', color: '#EF4444', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
                       Pending
                     </span>
+                  ) : billedAmount === 0 ? (
+                    <span style={{ fontSize: '.72rem', fontWeight: 700, padding: '2px 8px', borderRadius: 9999, background: isLightMode ? '#F1F5F9' : 'rgba(148, 163, 184, 0.15)', color: themeMuted, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                      ● Live
+                    </span>
                   ) : (
                     <span style={{ fontSize: '.72rem', fontWeight: 700, padding: '2px 8px', borderRadius: 9999, background: 'rgba(16, 185, 129, 0.12)', color: '#10B981', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
                       Settled
@@ -843,7 +826,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                     const hasOccupancy = d.occupied > 0;
                     const isPeak = d.occupied >= 4;
                     const barColor = isPeak ? '#D97706' : d.occupied >= 2 ? '#6366F1' : hasOccupancy ? '#0EA5E9' : (isLightMode ? '#E2E8F0' : 'rgba(255,255,255,0.06)');
-                    const barHeightPct = hasOccupancy ? Math.max(10, Math.round((d.occupied / totalResortUnits) * 100)) : 3;
+                    const barHeightPct = hasOccupancy ? Math.max(10, Math.min(100, d.pct)) : 3;
 
                     return (
                       <div
@@ -948,9 +931,6 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                     </h3>
                     <span style={{ fontSize: '.72rem', fontWeight: 800, padding: '3px 10px', borderRadius: 9999, background: 'rgba(79, 70, 229, 0.12)', color: '#4F46E5' }}>
                       Ensemble ML Pace Model
-                    </span>
-                    <span style={{ fontSize: '.72rem', fontWeight: 800, padding: '3px 10px', borderRadius: 9999, background: 'rgba(16, 185, 129, 0.12)', color: '#10B981' }}>
-                      Precision: {mlPrecisionScore}%
                     </span>
                     <span style={{ fontSize: '.72rem', fontWeight: 700, padding: '3px 10px', borderRadius: 9999, background: isLightMode ? '#F1F5F9' : 'rgba(148, 163, 184, 0.15)', color: themeMuted }}>
                       Velocity: {dailyVelocity.toFixed(2)} units/day
@@ -1077,14 +1057,14 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                     <div style={{ margin: '12px 0 8px' }}>
                       <div style={{ fontSize: '.85rem', fontWeight: 700, color: themeText, display: 'flex', alignItems: 'center', gap: 6 }}>
                         <i className={pHat >= 0.50 ? "fas fa-arrow-trend-up text-emerald-500" : pHat >= 0.25 ? "fas fa-sliders text-indigo-500" : "fas fa-bolt text-amber-500"} />
-                        {pHat >= 0.50 ? 'Increase peak & weekend rates +15%' : pHat >= 0.25 ? 'Maintain yield matrix & dynamic minimum stay' : 'Activate mid-week package discounts'}
+                        {pHat >= 0.50 ? 'Raise peak and weekend rates' : pHat >= 0.25 ? 'Hold current rates' : 'Consider mid-week offers'}
                       </div>
                       <div style={{ fontSize: '.75rem', color: themeMuted, marginTop: 4, lineHeight: 1.45 }}>
                         {pHat >= 0.50
                           ? `High booking velocity detected (${dailyVelocity.toFixed(2)} units/day, ${(pHat * 100).toFixed(1)}% expected absorption). Maximize yield by raising rates on peak dates.`
                           : pHat >= 0.25
-                          ? `Steady pacing detected (${dailyVelocity.toFixed(2)} units/day). Protect baseline ADR at ${money(baselineADR)} and require 2-night minimum on weekends.`
-                          : `Inventory absorption is pacing at ${(pHat * 100).toFixed(1)}%. Recommend flash promotions or cottage bundle incentives to accelerate pickup.`}
+                          ? `Steady pacing (${dailyVelocity.toFixed(2)} units/day). Baseline ADR is ${money(baselineADR)}.`
+                          : `Bookings are pacing at ${(pHat * 100).toFixed(1)}% of next month's open nights.`}
                       </div>
                     </div>
                   </div>
