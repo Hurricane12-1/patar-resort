@@ -5,7 +5,7 @@ import { formatTime12Hour, to11Digits } from '../lib/format';
 import { supabase } from '../lib/supabaseClient';
 import { uploadImageToCloudinary } from '../lib/cloudinary';
 import { toast } from '../components/Toasts';
-import { getDefaultSpecs, OfferingType } from '../lib/offeringSpecs';
+import { getDefaultSpecs, getManilaTodayISO, addDaysISO, OfferingType } from '../lib/offeringSpecs';
 import { EMPLOYEE_ROLE_PRESETS, normalizeDepartment, normalizeRole } from '../lib/rbac';
 
 export const emptyAnalytics = {
@@ -242,8 +242,8 @@ export function useAdminState() {
     phone: '',
     guest_email: '',
     room_id: '',
-    check_in: new Date().toISOString().slice(0, 10),
-    check_out: new Date(Date.now() + 86400000).toISOString().slice(0, 10),
+    check_in: getManilaTodayISO(),
+    check_out: addDaysISO(getManilaTodayISO(), 1),
     check_in_time: '14:00',
     check_out_time: '12:00',
     guests: 2,
@@ -949,7 +949,7 @@ export function useAdminState() {
         const m = (newReservation.notes || '').match(/\[?(?:Unit\s*|u)(\d+)\]?/i);
         throw new Error(`⚠️ Already Booked: Unit ${m ? m[1] : ''} is already reserved on these dates. Please pick another unit or date.`);
       }
-      const checkIn = newReservation.check_in || new Date().toISOString().slice(0, 10);
+      const checkIn = newReservation.check_in || getManilaTodayISO();
       const checkOut =
         newReservation.check_out && newReservation.check_out > checkIn
           ? newReservation.check_out

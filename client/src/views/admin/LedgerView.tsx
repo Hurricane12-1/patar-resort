@@ -5,7 +5,7 @@ import StatusPill from '../../components/StatusPill';
 import AvailabilityCalendar from '../../components/AvailabilityCalendar';
 import { exportReservationsCSV } from '../../lib/ledgerUtils';
 import { api } from '../../lib/api';
-import { resolveReservationOfferingType, OfferingType } from '../../lib/offeringSpecs';
+import { resolveReservationOfferingType, getManilaTodayISO, addDaysISO, OfferingType } from '../../lib/offeringSpecs';
 import { reservationRoomName, roomNameLookup } from '../../lib/reservationRoom';
 
 const MIN_LIST_ROWS = 8;
@@ -274,8 +274,8 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                 return;
               }
               const activeRoom = activeRoomsList[0];
-              const todayStr = new Date().toISOString().slice(0, 10);
-              const tmrStr = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+              const todayStr = getManilaTodayISO();
+              const tmrStr = addDaysISO(getManilaTodayISO(), 1);
               setNewReservation((prev: any) => ({
                 ...prev,
                 room_id: prev.room_id || activeRoom?.id || '',
@@ -1582,8 +1582,8 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                 return;
               }
               const activeRoom = activeRoomsList[0];
-              const todayStr = new Date().toISOString().slice(0, 10);
-              const tmrStr = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+              const todayStr = getManilaTodayISO();
+              const tmrStr = addDaysISO(getManilaTodayISO(), 1);
               setNewReservation((prev: any) => ({
                 ...prev,
                 room_id: prev.room_id || activeRoom?.id || '',

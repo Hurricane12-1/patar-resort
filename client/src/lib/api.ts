@@ -867,7 +867,7 @@ export const api = {
       throw new Error(`⚠️ Please fill in required information: ${missingFields.join(', ')}.`);
     }
 
-    const checkIn = String(body.check_in || new Date().toISOString().slice(0, 10)).slice(0, 10);
+    const checkIn = String(body.check_in || getManilaTodayISO()).slice(0, 10);
     let checkOut = String(body.check_out || '').slice(0, 10);
     if (!checkOut || checkOut <= checkIn) {
       checkOut = addDaysYMD(checkIn, 1);
@@ -1211,7 +1211,7 @@ export const api = {
     } catch {}
     const bookings = await api.allReservations().catch(() => []);
     const activeBookings = (Array.isArray(bookings) ? bookings : []).filter((b: any) => b.status !== 'cancelled');
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getManilaTodayISO();
     const result = {
       overview: {
         arrivals_today: activeBookings.filter((b: any) => b.check_in === today).length,
@@ -1239,7 +1239,7 @@ export const api = {
       ]);
       const rooms = Array.isArray(roomsRes.data) ? roomsRes.data.map(normalizeRoom) : [];
       const bookings = Array.isArray(bookingsRes.data) ? bookingsRes.data : [];
-      const today = new Date().toISOString().slice(0, 10);
+      const today = getManilaTodayISO();
       const activeBookings = bookings.filter((b: any) => b.status !== 'cancelled');
       const totalRev = activeBookings.reduce((s: number, b: any) => s + (Number(b.total_php) || 0), 0);
       return {

@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { AreaLineChart, Sparkline } from '../../components/Charts';
+import { getManilaTodayISO, addDaysISO } from '../../lib/offeringSpecs';
 
 export interface OverviewViewProps {
   roomsList: any[];
@@ -267,7 +268,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
     };
   }, [selectedYearMonth, activeBookings, data?.daily, totalUnitsCount]);
 
-  const todayIso = new Date().toISOString().slice(0, 10);
+  const todayIso = getManilaTodayISO();
   const occupiedTonight = allBookings.filter((b: any) => b.status === 'checked_in' || (b.check_in <= todayIso && b.check_out > todayIso && b.status !== 'cancelled')).length;
 
   const revenueSparkline = salesData.map((d: any) => d.revenue);
@@ -858,7 +859,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                         return;
                       }
                       const activeRoom = activeRoomsList[0];
-                      const tmrIso = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+                      const tmrIso = addDaysISO(getManilaTodayISO(), 1);
                       setNewReservation((prev: any) => ({
                         ...prev,
                         room_id: prev.room_id || activeRoom?.id || '',
@@ -923,7 +924,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                   return;
                 }
                 const activeRoom = activeRoomsList[0];
-                const tmrIso = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+                const tmrIso = addDaysISO(getManilaTodayISO(), 1);
                 setNewReservation((prev: any) => ({
                   ...prev,
                   room_id: prev.room_id || activeRoom?.id || '',

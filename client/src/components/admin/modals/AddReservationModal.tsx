@@ -11,7 +11,7 @@ import {
   TWO_HOURS_MS,
 } from '../../../lib/api.ts';
 import { toast } from '../../Toasts.tsx';
-import { inferOfferingType, getOfferingLabel, getRateUnitSuffix } from '../../../lib/offeringSpecs';
+import { inferOfferingType, getOfferingLabel, getRateUnitSuffix, getManilaTodayISO, addDaysISO } from '../../../lib/offeringSpecs';
 
 export interface NewReservationFormState {
   guest_name: string;
@@ -352,7 +352,7 @@ export default function AddReservationModal({
       return;
     }
     const targetRoomId = newReservation.room_id || activeWalkInRoom?.id || '';
-    const defaultCin = new Date().toISOString().slice(0, 10);
+    const defaultCin = getManilaTodayISO();
     const cin = newReservation.check_in || defaultCin;
     let cout = newReservation.check_out || addDaysYMD(cin, 1);
     if (cout <= cin) {
@@ -377,7 +377,7 @@ export default function AddReservationModal({
   const themeMuted = propThemeMuted || (isLightMode ? '#64748B' : '#94A3B8');
 
   const activeRoomImage = getRoomImageUrl(activeWalkInRoom);
-  const effectiveCin = String(newReservation.check_in || new Date().toISOString().slice(0, 10)).slice(0, 10);
+  const effectiveCin = String(newReservation.check_in || getManilaTodayISO()).slice(0, 10);
   const rawCout = String(newReservation.check_out || '').slice(0, 10);
   const effectiveCout = rawCout > effectiveCin ? rawCout : addDaysYMD(effectiveCin, 1);
   const targetRoomId = newReservation.room_id || activeWalkInRoom?.id || '';
