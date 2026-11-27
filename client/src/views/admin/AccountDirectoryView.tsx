@@ -259,7 +259,7 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
               <p className="muted" style={{ padding: '30px 0' }}>No staff accounts match your filters.</p>
             ) : (
               <div className="table-wrap" style={{ overflowX: 'auto', borderRadius: 12, border: `1px solid ${isLightMode ? '#E2E8F0' : themeBorder}`, background: isLightMode ? '#FFFFFF' : 'rgba(15,23,42,0.85)', boxShadow: isLightMode ? '0 1px 3px rgba(0,0,0,0.03)' : 'none' }}>
-                <table className="table" style={{ minWidth: 780, width: '100%', borderCollapse: 'separate', borderSpacing: 0, color: themeText }}>
+                <table className="table" style={{ minWidth: 520, width: '100%', borderCollapse: 'separate', borderSpacing: 0, color: themeText }}>
                   <thead>
                     <tr style={{ background: isLightMode ? '#F8FAFC' : 'rgba(30,41,59,0.8)', borderBottom: `1px solid ${isLightMode ? '#E2E8F0' : themeBorder}` }}>
                       <th style={{ textAlign: 'left', padding: '11px 16px', fontSize: '.72rem', fontWeight: 700, color: isLightMode ? '#475569' : themeMuted, textTransform: 'uppercase', letterSpacing: '.06em' }}>Full Name</th>
@@ -413,12 +413,8 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
             {(() => {
               const custUsers = users.filter((u) => !u.role || u.role === 'customer');
               const totalCust = custUsers.length;
-              const activeStays = custUsers.filter((u) => (u.stays_count || 0) > 0).length;
-              const totalRev = custUsers.reduce((sum, u) => sum + (u.total_spent_php || 0), 0);
               return [
                 { label: 'TOTAL CUSTOMERS', value: totalCust, icon: 'fas fa-users', color: '#0EA5E9' },
-                { label: 'WITH ACTIVE STAYS', value: activeStays, icon: 'fas fa-hotel', color: '#10B981' },
-                { label: 'TOTAL REVENUE', value: money(totalRev), icon: 'fas fa-money-bill-wave', color: '#F59E0B' },
               ].map((s, si) => (
                 <div key={si} style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.5)', border: `1px solid ${isLightMode ? '#E2E8F0' : themeBorder}`, borderRadius: 12, padding: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
                   <span style={{ fontSize: "1.5rem" }}><i className={s.icon} style={{ color: s.color }} /></span>
@@ -449,10 +445,6 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
                     <tr style={{ background: isLightMode ? '#F8FAFC' : 'rgba(30,41,59,0.8)', borderBottom: `1px solid ${isLightMode ? '#E2E8F0' : themeBorder}` }}>
                       <th style={{ textAlign: 'left', padding: '11px 16px', fontSize: '.72rem', fontWeight: 700, color: isLightMode ? '#475569' : themeMuted, textTransform: 'uppercase', letterSpacing: '.06em' }}>Full Name</th>
                       <th style={{ textAlign: 'left', padding: '11px 16px', fontSize: '.72rem', fontWeight: 700, color: isLightMode ? '#475569' : themeMuted, textTransform: 'uppercase', letterSpacing: '.06em' }}>Phone</th>
-                      <th style={{ textAlign: 'left', padding: '11px 16px', fontSize: '.72rem', fontWeight: 700, color: isLightMode ? '#475569' : themeMuted, textTransform: 'uppercase', letterSpacing: '.06em' }}>City / Address</th>
-                      <th style={{ textAlign: 'left', padding: '11px 16px', fontSize: '.72rem', fontWeight: 700, color: isLightMode ? '#475569' : themeMuted, textTransform: 'uppercase', letterSpacing: '.06em' }}>Stays</th>
-                      <th style={{ textAlign: 'left', padding: '11px 16px', fontSize: '.72rem', fontWeight: 700, color: isLightMode ? '#475569' : themeMuted, textTransform: 'uppercase', letterSpacing: '.06em' }}>Orders</th>
-                      <th style={{ textAlign: 'left', padding: '11px 16px', fontSize: '.72rem', fontWeight: 700, color: isLightMode ? '#475569' : themeMuted, textTransform: 'uppercase', letterSpacing: '.06em' }}>Total Spent (₱)</th>
                       <th style={{ textAlign: 'right', padding: '11px 16px', fontSize: '.72rem', fontWeight: 700, color: isLightMode ? '#475569' : themeMuted, textTransform: 'uppercase', letterSpacing: '.06em' }}>Action</th>
                     </tr>
                   </thead>
@@ -483,10 +475,6 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
                           </div>
                         </td>
                         <td style={{ padding: '12px 16px', fontSize: '.78rem', color: themeText, fontFamily: 'monospace' }}>{u.phone || 'N/A'}</td>
-                        <td style={{ padding: '12px 16px', fontSize: '.78rem', color: isLightMode ? '#475569' : themeMuted }}>{u.address ? `${u.address}, ${u.city}` : 'N/A'}</td>
-                        <td style={{ padding: '12px 16px' }}><b style={{ color: '#0EA5E9' }}>{u.stays_count || 0}</b></td>
-                        <td style={{ padding: '12px 16px', fontSize: '.82rem' }}>{u.orders_count || 0}</td>
-                        <td style={{ padding: '12px 16px' }}><b style={{ color: '#F59E0B' }}>{money(u.total_spent_php || 0)}</b></td>
                         <td style={{ padding: '12px 16px', textAlign: 'right' }}>
                           <button
                             type="button"

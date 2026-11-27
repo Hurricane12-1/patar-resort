@@ -159,25 +159,6 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
           <button
             className="btn btn-sm"
-            onClick={() => setAuditAutoRefresh(!auditAutoRefresh)}
-            style={{
-              border: `1px solid ${auditAutoRefresh ? '#10B981' : themeBorder}`,
-              color: auditAutoRefresh ? '#10B981' : themeMuted,
-              background: auditAutoRefresh ? 'rgba(16,185,129,0.1)' : 'transparent',
-              fontWeight: 700,
-            }}
-          >
-            <i className={`fas ${auditAutoRefresh ? 'fa-sync fa-spin' : 'fa-pause'}`} style={{ marginRight: 6 }} />
-            {auditAutoRefresh ? 'Auto-Sync ON (5s)' : 'Auto-Sync Paused'}
-          </button>
-
-          <button className="btn btn-sky btn-sm" onClick={fetchAuditLogs} disabled={loadingAudit}>
-            <i className={`fas ${loadingAudit ? 'fa-spinner fa-spin' : 'fa-arrows-rotate'}`} style={{ marginRight: 6 }} />
-            {loadingAudit ? 'Syncing…' : 'Refresh Logs'}
-          </button>
-
-          <button
-            className="btn btn-sm"
             onClick={() => {
               const blob = new Blob([JSON.stringify(auditLogs, null, 2)], { type: 'application/json' });
               const url = URL.createObjectURL(blob);
