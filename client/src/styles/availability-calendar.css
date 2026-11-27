@@ -620,6 +620,30 @@
 .dark-mode .pms-day-header-cell {
   border-right-color: rgba(255, 255, 255, 0.08);
 }
+.pms-day-header-cell.has-open-count {
+  min-height: 68px;
+  height: 68px;
+  cursor: pointer;
+}
+.pms-day-header-cell.has-open-count:hover {
+  background: rgba(0, 102, 153, 0.06);
+}
+.pms-day-open {
+  margin-top: 2px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.2;
+  min-height: 0.75rem;
+  color: #047857;
+}
+.pms-day-open.is-partial { color: #B45309; }
+.pms-day-open.is-full { color: #B91C1C; }
+.pms-calendar-card.dark .pms-day-open,
+.dark-mode .pms-day-open { color: #34D399; }
+.pms-calendar-card.dark .pms-day-open.is-partial,
+.dark-mode .pms-day-open.is-partial { color: #FBBF24; }
+.pms-calendar-card.dark .pms-day-open.is-full,
+.dark-mode .pms-day-open.is-full { color: #F87171; }
 .pms-day-header-cell.is-weekend {
   background: rgba(0, 0, 0, 0.02);
 }

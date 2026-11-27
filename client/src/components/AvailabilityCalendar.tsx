@@ -12,6 +12,8 @@ import {
 } from '../lib/api.ts';
 import { getManilaTodayISO, inferOfferingType, isRoomOrCottage } from '../lib/offeringSpecs';
 import { unitDisplayNames } from '../lib/unitNames';
+import { summarizeNight } from '../lib/dayAvailability';
+import { DayAvailabilityPanel } from './admin/DayAvailabilityPanel';
 import '../styles/availability-calendar.css';
 
 const MIN_CALENDAR_ROWS = 11;
@@ -115,6 +117,7 @@ export default function AvailabilityCalendar({
   });
 
   const [kindFilter, setKindFilter] = useState<'all' | 'room' | 'cottage'>('all');
+  const [focusedDate, setFocusedDate] = useState<string | null>(null);
   const [selectedCell, setSelectedCell] = useState<{ unitId: string; dateStr: string } | null>(null);
   const [activeDetailStay, setActiveDetailStay] = useState<CalendarStay | null>(null);
   const [savingBookingEdit, setSavingBookingEdit] = useState(false);
@@ -501,6 +504,27 @@ export default function AvailabilityCalendar({
     };
   }, [activeBlockingStays, todayStr, windowEndDateStr, windowStartDateStr, units.length]);
 
+  const isUnitReservedOn = useCallback(
+    (unit: UnitInfo, dateStr: string) =>
+      activeBlockingStays.some(
+        (s) =>
+          dateStr >= s.checkIn &&
+          dateStr < s.checkOut &&
+          (s.assignedUnitNumber === unit.unitNumber || (s.isUnassigned && String(s.roomId) === String(unit.roomId)))
+      ),
+    [activeBlockingStays]
+  );
+
+  // Open and booked units for each date in view, used for the counts in the date header and the date panel.
+  const nightsByDate = useMemo(() => {
+    const byDate = new Map<string, ReturnType<typeof summarizeNight<UnitInfo>>>();
+    if (!showMetrics) return byDate;
+    for (const day of daysArray) {
+      byDate.set(day.dateStr, summarizeNight(visibleUnits, (unit) => isUnitReservedOn(unit, day.dateStr)));
+    }
+    return byDate;
+  }, [showMetrics, daysArray, visibleUnits, isUnitReservedOn]);
+
   const stayNightsCount = useMemo(() => {
     if (!initialCheckIn || !initialCheckOut) return 1;
     const cin = new Date(`${initialCheckIn}T12:00:00Z`);
@@ -865,6 +889,37 @@ export default function AvailabilityCalendar({
         )}
       </div>
 
+      {showMetrics && focusedDate && nightsByDate.get(focusedDate) && (() => {
+        const night = nightsByDate.get(focusedDate)!;
+        const dateLabel = new Date(`${focusedDate}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' });
+        const canBook = !!onSelectDates && focusedDate >= todayStr;
+        const guestFor = (unit: UnitInfo) =>
+          activeBlockingStays.find(
+            (s) =>
+              focusedDate >= s.checkIn &&
+              focusedDate < s.checkOut &&
+              (s.assignedUnitNumber === unit.unitNumber || (s.isUnassigned && String(s.roomId) === String(unit.roomId)))
+          )?.guestName;
+        return (
+          <DayAvailabilityPanel
+            heading={dateLabel}
+            summary={`${night.open.length} of ${visibleUnits.length} open`}
+            open={night.open.map((unit) => ({ id: unit.id, name: unit.name, detail: `₱${unit.ratePhp.toLocaleString()}/night` }))}
+            booked={night.booked.map((unit) => ({ id: unit.id, name: unit.name, detail: guestFor(unit) }))}
+            onBook={
+              canBook
+                ? (unitId) => {
+                    const unit = units.find((u) => u.id === unitId);
+                    if (unit) onSelectDates?.(focusedDate, addDaysYMD(focusedDate, 1), unit.roomId, unit);
+                  }
+                : undefined
+            }
+            onClose={() => setFocusedDate(null)}
+            isLightMode={isLightMode}
+          />
+        );
+      })()}
+
       {/* 2. CALENDAR MATRIX */}
       <div className="pms-grid-container">
         <div className="pms-grid-table">
@@ -886,7 +941,12 @@ export default function AvailabilityCalendar({
                 return (
                   <div
                     key={day.dateStr}
-                    className={`pms-day-header-cell ${day.isToday ? 'is-today' : ''} ${isWeekend ? 'is-weekend' : ''}`}
+                    className={`pms-day-header-cell ${day.isToday ? 'is-today' : ''} ${isWeekend ? 'is-weekend' : ''} ${showMetrics ? 'has-open-count' : ''}`}
+                    onClick={showMetrics ? () => setFocusedDate(focusedDate === day.dateStr ? null : day.dateStr) : undefined}
+                    role={showMetrics ? 'button' : undefined}
+                    tabIndex={showMetrics ? 0 : undefined}
+                    onKeyDown={showMetrics ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setFocusedDate(focusedDate === day.dateStr ? null : day.dateStr); } } : undefined}
+                    title={showMetrics ? 'Click to see which rooms are open on this date' : undefined}
                   >
                     <div className="pms-day-name">{day.dayOfWeek}</div>
                     {day.isToday ? (
@@ -895,6 +955,11 @@ export default function AvailabilityCalendar({
                       </div>
                     ) : (
                       <div className="pms-day-num">{isFirstOfMonth ? `${monthName} ${day.dayNum}` : day.dayNum}</div>
+                    )}
+                    {showMetrics && nightsByDate.get(day.dateStr)?.level !== 'none' && (
+                      <div className={`pms-day-open is-${day.dateStr < todayStr ? 'past' : nightsByDate.get(day.dateStr)?.level}`}>
+                        {day.dateStr < todayStr ? '' : `${nightsByDate.get(day.dateStr)?.open.length ?? 0} open`}
+                      </div>
                     )}
                   </div>
                 );

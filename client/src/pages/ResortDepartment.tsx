@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.tsx';
+import { summarizeNight, stayBlocksNight } from '../lib/dayAvailability';
+import { DayAvailabilityPanel } from '../components/admin/DayAvailabilityPanel';
 import { api, addDaysYMD } from '../lib/api.ts';
 import { toast } from '../components/Toasts.tsx';
 import { to11Digits, formatTime12Hour } from '../lib/format.ts';
@@ -440,6 +442,45 @@ export default function ResortDepartment() {
   }, []);
 
   // Helper Room Resolver
+  // Open and booked rooms for one date. A room under maintenance is not open on any date.
+  const nightFor = (iso: string) =>
+    summarizeNight(rooms, (rm) =>
+      rm.status === 'maintenance' ||
+      bookings.some((b) => b.roomId === rm.id && stayBlocksNight({ checkIn: b.checkIn, checkOut: b.checkOut, status: b.status }, iso))
+    );
+
+  const bookRoomOnDate = (roomId: string, iso: string) => {
+    const room = rooms.find((r) => r.id === roomId);
+    setNewReservation((prev) => ({
+      ...prev,
+      room_id: roomId,
+      check_in: iso,
+      check_out: addDaysISO(iso, 1),
+      total_php: Number(room?.rate) || 3500,
+    }));
+    setShowManualBookingModal(true);
+  };
+
+  const renderDatePanel = (iso: string) => {
+    const night = nightFor(iso);
+    return (
+      <DayAvailabilityPanel
+        heading={formatDateReadable(iso)}
+        summary={`${night.open.length} of ${rooms.length} open`}
+        open={night.open.map((rm) => ({ id: rm.id, name: rm.name, detail: `${formatPHP(rm.rate)}/night` }))}
+        booked={night.booked.map((rm) => {
+          const guests = bookings
+            .filter((b) => b.roomId === rm.id && stayBlocksNight({ checkIn: b.checkIn, checkOut: b.checkOut, status: b.status }, iso))
+            .map((b) => b.guest);
+          return { id: rm.id, name: rm.name, detail: guests.length > 0 ? guests.join(', ') : 'Under maintenance' };
+        })}
+        onBook={iso >= todayISO ? (roomId) => bookRoomOnDate(roomId, iso) : undefined}
+        onClose={() => setSelectedDate(todayISO)}
+        isLightMode
+      />
+    );
+  };
+
   const getRoomById = (roomId: string) => {
     return rooms.find((r) => r.id === roomId) || { id: roomId, code: '—', name: 'Unassigned Unit', category: 'Standard', capacity: '—', rate: 0, status: 'available' as const, guest: null, note: '' };
   };
@@ -1350,11 +1391,23 @@ export default function ResortDepartment() {
                 <thead>
                   <tr>
                     <th style={{ width: 220, textAlign: 'left', padding: '10px 14px' }}>Unit &amp; Category</th>
-                    {Array.from({ length: 14 }, (_, i) => addDaysISO(tapeStartDate, i)).map((iso) => (
-                      <th key={iso} style={{ textAlign: 'center', padding: '8px 6px', minWidth: 64 }}>
-                        <div style={{ fontSize: '10px', color: '#64748B' }}>{formatDateShort(iso)}</div>
-                      </th>
-                    ))}
+                    {Array.from({ length: 14 }, (_, i) => addDaysISO(tapeStartDate, i)).map((iso) => {
+                      const night = nightFor(iso);
+                      const tone = night.level === 'full' ? '#B91C1C' : night.level === 'partial' ? '#B45309' : '#047857';
+                      return (
+                        <th
+                          key={iso}
+                          onClick={() => setSelectedDate(iso)}
+                          title="Click to see which rooms are open on this date"
+                          style={{ textAlign: 'center', padding: '8px 6px', minWidth: 64, cursor: 'pointer', background: iso === selectedDate ? 'rgba(0, 102, 153, 0.08)' : undefined }}
+                        >
+                          <div style={{ fontSize: '10px', color: '#64748B' }}>{formatDateShort(iso)}</div>
+                          {iso >= todayISO && night.level !== 'none' && (
+                            <div style={{ fontSize: '10px', fontWeight: 700, color: tone }}>{night.open.length} open</div>
+                          )}
+                        </th>
+                      );
+                    })}
                   </tr>
                 </thead>
                 <tbody>
@@ -1417,6 +1470,7 @@ export default function ResortDepartment() {
                   )}
                 </tbody>
               </table>
+              <div style={{ margin: '16px -18px 0' }}>{renderDatePanel(selectedDate)}</div>
             </div>
           )}
 
@@ -1510,6 +1564,35 @@ export default function ResortDepartment() {
                             <span className="staff-ops-day-count">{dayBookings.length} stays</span>
                           )}
                         </div>
+                        {iso >= todayISO && rooms.length > 0 && (() => {
+                          const night = nightFor(iso);
+                          const dots = rooms.slice(0, 8);
+                          return (
+                            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 3, marginBottom: 6 }} title={`${night.open.length} of ${rooms.length} open`}>
+                              {dots.map((rm) => {
+                                const isBooked = night.booked.some((x) => x.id === rm.id);
+                                return (
+                                  <span
+                                    key={rm.id}
+                                    aria-hidden="true"
+                                    style={{
+                                      width: 9,
+                                      height: 9,
+                                      borderRadius: '50%',
+                                      background: isBooked ? '#EF4444' : 'rgba(16, 185, 129, 0.25)',
+                                      border: isBooked ? '2px solid #EF4444' : '2px solid #10B981',
+                                      boxSizing: 'border-box',
+                                    }}
+                                  />
+                                );
+                              })}
+                              {rooms.length > dots.length && <span style={{ fontSize: 9, fontWeight: 700, color: '#64748B' }}>+{rooms.length - dots.length}</span>}
+                              <span style={{ marginLeft: 'auto', fontSize: 10, fontWeight: 700, color: night.level === 'full' ? '#B91C1C' : night.level === 'partial' ? '#B45309' : '#047857' }}>
+                                {night.open.length} open
+                              </span>
+                            </div>
+                          );
+                        })()}
                         <div className="staff-ops-day-stays">
                           {dayBookings.slice(0, 3).map((b) => {
                             const rm = getRoomById(b.roomId);
@@ -1538,6 +1621,7 @@ export default function ResortDepartment() {
                     );
                   })}
                 </div>
+                <div style={{ margin: '16px -18px 0' }}>{renderDatePanel(selectedDate)}</div>
               </div>
             );
           })()}
