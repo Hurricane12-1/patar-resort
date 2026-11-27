@@ -52,14 +52,6 @@ const BATHROOM_PRESETS = [
   'Shared Bathroom',
 ] as const;
 
-const CLIMATE_PRESETS = [
-  'Split Air-Conditioned',
-  'Dual Split Inverter AC',
-  'Silent Inverter Air-Conditioned',
-  'Window Air-Conditioned',
-  'Fan / Coastal Breeze',
-] as const;
-
 const COTTAGE_STYLE_PRESETS = [
   'Open-Air Nipa Cottage',
   'Beachfront Kubo Pavilion',
@@ -283,29 +275,6 @@ export const OfferingSpecsFields: React.FC<OfferingSpecsFieldsProps> = ({
               themeText={themeText}
               themeMuted={themeMuted}
             />
-
-            <CustomizableDropdown
-              id={`${idPrefix}-climate`}
-              label="Cooling & Climate"
-              value={String(specs?.climate_control || 'Split Air-Conditioned')}
-              onChange={(val) => updateSpec('climate_control', val)}
-              options={CLIMATE_PRESETS}
-              isLightMode={isLightMode}
-              themeBorder={themeBorder}
-              themeText={themeText}
-              themeMuted={themeMuted}
-            />
-
-            <div>
-              <label htmlFor={`${idPrefix}-wing`} style={labelStyle}>Floor / Wing</label>
-              <input
-                id={`${idPrefix}-wing`}
-                style={fieldStyle}
-                value={String(specs?.floor_wing || '')}
-                onChange={(e) => updateSpec('floor_wing', e.target.value)}
-                placeholder="e.g. Upper Terrace, Oceanfront Wing"
-              />
-            </div>
 
             <div style={{ gridColumn: 'span 2' }}>
               <label htmlFor={`${idPrefix}-view-type`} style={labelStyle}>View &amp; Deck Outlook</label>

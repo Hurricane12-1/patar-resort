@@ -46,8 +46,6 @@ export const DEFAULT_SPECS_BY_TYPE = {
   room: {
     bed_config: '1 Queen Bed',
     bathroom_type: 'Private En-Suite',
-    climate_control: 'Split Air-Conditioned',
-    floor_wing: 'Main Wing',
     view_type: 'Coastal / Garden View',
     check_in_out: '02:00 PM / 12:00 PM',
     pricing_mode: 'per_night',
@@ -55,8 +53,6 @@ export const DEFAULT_SPECS_BY_TYPE = {
   villa: {
     bed_config: '2 King Beds + Living Area',
     bathroom_type: 'Private Ocean En-Suite + Tub',
-    climate_control: 'Dual Split Inverter AC',
-    floor_wing: 'Cliffside Oceanfront Wing',
     view_type: 'Panoramic Sunset & Ocean View',
     check_in_out: '02:00 PM / 12:00 PM',
     pricing_mode: 'per_night',
@@ -64,8 +60,6 @@ export const DEFAULT_SPECS_BY_TYPE = {
   suite: {
     bed_config: '1 King Bed + Lounge Suite',
     bathroom_type: 'Luxury Marble Bath & Rain Shower',
-    climate_control: 'Silent Inverter Air-Conditioned',
-    floor_wing: 'Upper Terrace Wing',
     view_type: 'Unobstructed Sea View Deck',
     check_in_out: '02:00 PM / 12:00 PM',
     pricing_mode: 'per_night',

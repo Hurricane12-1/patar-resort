@@ -29,8 +29,6 @@ export interface OfferingSpecs {
   // Room / Villa / Suite specifications
   bed_config?: string;
   bathroom_type?: string;
-  climate_control?: string;
-  floor_wing?: string;
   view_type?: string;
   check_in_out?: string;
   // Cottage / Cabana / Event specifications
@@ -110,8 +108,6 @@ export const DEFAULT_SPECS_BY_TYPE: Record<OfferingType, OfferingSpecs> = {
   room: {
     bed_config: '1 Queen Bed',
     bathroom_type: 'Private En-Suite',
-    climate_control: 'Split Air-Conditioned',
-    floor_wing: 'Main Wing',
     view_type: 'Coastal / Garden View',
     check_in_out: '02:00 PM / 12:00 PM',
     pricing_mode: 'per_night',
@@ -119,8 +115,6 @@ export const DEFAULT_SPECS_BY_TYPE: Record<OfferingType, OfferingSpecs> = {
   villa: {
     bed_config: '2 King Beds + Living Area',
     bathroom_type: 'Private Ocean En-Suite + Tub',
-    climate_control: 'Dual Split Inverter AC',
-    floor_wing: 'Cliffside Oceanfront Wing',
     view_type: 'Panoramic Sunset & Ocean View',
     check_in_out: '02:00 PM / 12:00 PM',
     pricing_mode: 'per_night',
@@ -128,8 +122,6 @@ export const DEFAULT_SPECS_BY_TYPE: Record<OfferingType, OfferingSpecs> = {
   suite: {
     bed_config: '1 King Bed + Lounge Suite',
     bathroom_type: 'Luxury Marble Bath & Rain Shower',
-    climate_control: 'Silent Inverter Air-Conditioned',
-    floor_wing: 'Upper Terrace Wing',
     view_type: 'Unobstructed Sea View Deck',
     check_in_out: '02:00 PM / 12:00 PM',
     pricing_mode: 'per_night',
@@ -416,7 +408,6 @@ export function formatSpecHighlights(item: any): { label: string; value: string 
     return [
       { label: 'Beds', value: String(specs.bed_config || '1 King Bed') },
       { label: 'Bath', value: String(specs.bathroom_type || 'Luxury En-Suite') },
-      { label: 'Cooling', value: String(specs.climate_control || 'Split Air-Conditioned') },
       { label: 'View', value: String(specs.view_type || 'Panoramic Ocean View') },
     ];
   }
@@ -447,8 +438,7 @@ export function formatSpecHighlights(item: any): { label: string; value: string 
   return [
     { label: 'Beds', value: String(specs.bed_config || '1 Queen Bed') },
     { label: 'Bath', value: String(specs.bathroom_type || 'Private En-Suite') },
-    { label: 'Cooling', value: String(specs.climate_control || 'Split Air-Conditioned') },
-    { label: 'Wing', value: String(specs.floor_wing || 'Main Wing') },
+    ...(specs.view_type ? [{ label: 'View', value: String(specs.view_type) }] : []),
   ];
 }
 
