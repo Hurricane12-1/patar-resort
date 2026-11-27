@@ -223,16 +223,8 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                 width: '100%',
                 height: '100%',
                 background: 'linear-gradient(135deg, #0b1528 0%, #172554 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexDirection: 'column',
-                gap: 8,
-                color: 'rgba(255, 255, 255, 0.45)',
               }}
-            >
-              <i className="fas fa-camera" style={{ fontSize: '2.2rem' }} />
-            </div>
+            />
           )}
           <div
             style={{
@@ -242,6 +234,34 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
               pointerEvents: 'none',
             }}
           />
+
+          <button
+            type="button"
+            onClick={() => !uploadingPhoto && fileInputRef.current?.click()}
+            disabled={uploadingPhoto}
+            aria-label={featuredImageUrl ? 'Change photo' : 'Add photo'}
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              zIndex: 4,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '10px 18px',
+              background: 'rgba(15, 23, 42, 0.78)',
+              color: '#FFFFFF',
+              border: '1px solid rgba(255, 255, 255, 0.5)',
+              backdropFilter: 'blur(4px)',
+              fontSize: '.82rem',
+              fontWeight: 700,
+              cursor: uploadingPhoto ? 'wait' : 'pointer',
+            }}
+          >
+            <i className={uploadingPhoto ? 'fas fa-spinner fa-spin' : 'fas fa-camera'} />
+            {uploadingPhoto ? 'Uploading…' : featuredImageUrl ? 'Change photo' : 'Add photo'}
+          </button>
 
           {/* Top Bar Over Featured Image */}
           <div
