@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { asyncH, ApiError } from '../middleware/errors.js';
 import { validate } from '../middleware/validate.js';
 import { admin, getSystemAdminClient } from '../lib/supabase.js';
-import { authenticate, optionalAuth, requireAdmin, requireFrontDeskOrAdmin } from '../middleware/auth.js';
+import { authenticate, optionalAuth, requireAdmin, requireFrontDeskOrAdmin, normalizeEmployeeRole } from '../middleware/auth.js';
 import {
   parseOfferingTags,
   packOfferingAmenities,
@@ -16,6 +16,7 @@ import { redis } from '../lib/redis.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
 import { getLocalReservations } from '../lib/reservationStore.js';
 import { setRoomAvailability } from '../lib/roomAvailability.js';
+import { assertRoomEditAllowed } from '../lib/roomEditRules.js';
 
 const r = Router();
 
@@ -462,7 +463,7 @@ r.get('/availability/calendar', optionalAuth, asyncH(async (req, res) => {
   return res.json(payload);
 }));
 
-r.post('/rooms', authenticate, requireAdmin,
+r.post('/rooms', authenticate, requireFrontDeskOrAdmin,
   validate(z.object({
     name: z.string().min(2).max(100),
     slug: z.string().min(2).max(100).optional(),
@@ -507,7 +508,7 @@ r.post('/rooms', authenticate, requireAdmin,
     return res.status(201).json(normalized);
   }));
 
-r.patch('/rooms/:id', authenticate, requireAdmin,
+r.patch('/rooms/:id', authenticate, requireFrontDeskOrAdmin,
   validate(z.object({
     name: z.string().min(2).max(100).optional(),
     slug: z.string().min(2).max(100).optional(),
@@ -534,6 +535,12 @@ r.patch('/rooms/:id', authenticate, requireAdmin,
       const { data } = await client.from('rooms').select('*').eq('id', req.params.id).single();
       existingRoom = data;
     } catch {}
+
+    assertRoomEditAllowed({
+      isAdministrator: normalizeEmployeeRole(req.user?.role) === 'administrator',
+      existingRoom,
+      body: req.body,
+    });
 
     const payload = packRoomPayload(req.body, existingRoom);
 

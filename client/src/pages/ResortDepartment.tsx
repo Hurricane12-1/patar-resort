@@ -5,7 +5,7 @@ import { api, addDaysYMD } from '../lib/api.ts';
 import { toast } from '../components/Toasts.tsx';
 import { to11Digits, formatTime12Hour } from '../lib/format.ts';
 import { getManilaTodayISO } from '../lib/offeringSpecs.ts';
-import { canSwitchRoomAvailability, isAdministrator } from '../lib/rbac.ts';
+import { canEditRoomDetails, canSwitchRoomAvailability, isAdministrator } from '../lib/rbac.ts';
 import AddReservationModal, { NewReservationFormState } from '../components/admin/modals/AddReservationModal.tsx';
 import { RoomEditorModal } from '../components/admin/modals/RoomEditorModal.tsx';
 import { CreateRoomModal } from '../components/admin/modals/CreateRoomModal.tsx';
@@ -134,6 +134,7 @@ export default function ResortDepartment() {
   const { staffProfile, adminProfile } = useAuth();
   const canManageRooms = isAdministrator(staffProfile || adminProfile);
   const canSwitchAvailability = canSwitchRoomAvailability(staffProfile || adminProfile);
+  const canEditRooms = canEditRoomDetails(staffProfile || adminProfile);
 
   // Dynamic Asia/Manila Today ISO
   const todayISO = useMemo(() => getManilaTodayISO(), []);
@@ -668,6 +669,10 @@ export default function ResortDepartment() {
   const handleToggleMaintenance = async (rm: RoomItem) => {
     try {
       const targetActive = rm.status === 'maintenance';
+      if (!targetActive && rm.status === 'occupied') {
+        toast('A guest is in this unit. Check them out before putting it offline.', true);
+        return;
+      }
       await api.setRoomAvailability(rm.id, targetActive);
       toast(targetActive ? `✓ ${rm.name} reactivated and available for stays.` : `⚠ ${rm.name} placed under maintenance.`);
       await loadLiveOperationsData();
@@ -1557,12 +1562,12 @@ export default function ResortDepartment() {
               <p style={{ margin: '4px 0 0', fontSize: '.78rem', color: '#64748B' }}>
                 {canManageRooms
                   ? 'Admin-synchronized inventory: edit rates, photos, amenities, turnover readiness, and dispatch maintenance'
-                  : 'Turnover readiness for your shift. Take a unit offline or back online, or report a problem with Escalate. Administrators add rooms and change rates.'}
+                  : 'Turnover readiness for your shift. Add and edit units, take a unit offline or back online, or report a problem with Escalate. Only administrators change rates or delete units.'}
               </p>
             </div>
 
             <div className="flex items-center gap-3">
-              {canManageRooms && (
+              {canEditRooms && (
               <button
                 type="button"
                 onClick={() => setShowCreateRoomModal(true)}
@@ -1744,6 +1749,7 @@ export default function ResortDepartment() {
                           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.7) 0%, transparent 60%)' }} />
 
                           {/* Top-Left Category Badge */}
+                          {rm.category && rm.category.toLowerCase() !== 'standard' && (
                           <span
                             style={{
                               position: 'absolute',
@@ -1762,6 +1768,7 @@ export default function ResortDepartment() {
                           >
                             {rm.category.toUpperCase()}
                           </span>
+                          )}
 
                           {/* Top-Right Status Pill */}
                           <span
@@ -1820,7 +1827,7 @@ export default function ResortDepartment() {
                         {/* Card Content Body */}
                         <div style={{ padding: 18, flex: 1, display: 'flex', flexDirection: 'column' }}>
                           <div className="flex items-start justify-between gap-2 mb-1.5">
-                            <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#0F172A', fontWeight: 800, lineHeight: 1.3 }}>
+                            <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#0F172A', fontWeight: 800, lineHeight: 1.3, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                               {rm.name}
                             </h3>
                           </div>
@@ -1896,7 +1903,8 @@ export default function ResortDepartment() {
                               onClick={() => handleToggleMaintenance(rm)}
                               className="staff-ops-link-btn"
                               style={{ fontSize: '.72rem', fontWeight: 700 }}
-                              title={rm.status === 'maintenance' ? 'Reactivate unit' : 'Put unit under maintenance'}
+                              title={rm.status === 'maintenance' ? 'Reactivate unit' : rm.status === 'occupied' ? 'A guest is in this unit. Check them out before putting it offline.' : 'Put unit under maintenance'}
+                              disabled={rm.status === 'occupied'}
                             >
                               {rm.status === 'maintenance' ? 'Reactivate' : 'Maint.'}
                             </button>
@@ -1949,7 +1957,7 @@ export default function ResortDepartment() {
 
                             <div className="flex items-center gap-1.5">
                               {/* EDIT BUTTON (Opens RoomEditorModal) */}
-                              {canManageRooms && (
+                              {canEditRooms && (
                               <button
                                 type="button"
                                 onClick={() => setEditingRoom(raw)}
@@ -2654,13 +2662,14 @@ export default function ResortDepartment() {
       {/* =========================================================================
           ADMIN-GRADE ROOM EDITOR MODAL
           ========================================================================= */}
-      {canManageRooms && editingRoom && (
+      {canEditRooms && editingRoom && (
         <RoomEditorModal
           room={editingRoom}
           isOpen={Boolean(editingRoom)}
           onClose={() => setEditingRoom(null)}
           onSave={handleSaveEditedRoom}
-          onDelete={handleDeleteRoom}
+          onDelete={canManageRooms ? handleDeleteRoom : undefined}
+          rateLocked={!canManageRooms}
           isLightMode={true}
           themeBorder="#E2E8F0"
           themeText="#1E293B"
@@ -2673,7 +2682,7 @@ export default function ResortDepartment() {
       {/* =========================================================================
           ADMIN-GRADE CREATE ROOM / ACCOMMODATION MODAL
           ========================================================================= */}
-      {canManageRooms && showCreateRoomModal && (
+      {canEditRooms && showCreateRoomModal && (
         <CreateRoomModal
           isOpen={showCreateRoomModal}
           onClose={() => setShowCreateRoomModal(false)}

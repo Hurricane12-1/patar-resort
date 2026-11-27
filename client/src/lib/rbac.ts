@@ -127,6 +127,11 @@ export function canSwitchRoomAvailability(profile: any): boolean {
   return role === 'administrator' || role === 'staff' || role === 'receptionist';
 }
 
+export function canEditRoomDetails(profile: any): boolean {
+  const role = normalizeRole(profile?.role);
+  return role === 'administrator' || role === 'staff' || role === 'receptionist';
+}
+
 export function getAllowedOperationalDepartments(profile: any): DepartmentOption[] {
   const role = normalizeRole(profile?.role);
   const dept = normalizeDepartment(profile);

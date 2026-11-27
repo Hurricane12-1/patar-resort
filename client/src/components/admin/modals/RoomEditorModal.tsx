@@ -15,6 +15,7 @@ export interface RoomEditorModalProps {
   onClose: () => void;
   onSave: (updatedRoom: any) => Promise<void> | void;
   onDelete?: (room: any) => void;
+  rateLocked?: boolean;
   isLightMode: boolean;
   themeBorder: string;
   themeText: string;
@@ -29,6 +30,7 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
   onClose,
   onSave,
   onDelete,
+  rateLocked = false,
   isLightMode,
   themeBorder,
   themeText,
@@ -484,7 +486,14 @@ export const RoomEditorModal: React.FC<RoomEditorModalProps> = ({
                 style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${themeBorder}`, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.05)', color: themeText }}
                 value={formData.rate_php ?? ''}
                 onChange={(e) => setFormData({ ...formData, rate_php: e.target.value })}
+                disabled={rateLocked}
+                title={rateLocked ? 'Only an administrator can change the rate' : undefined}
               />
+              {rateLocked && (
+                <p style={{ margin: '4px 0 0', fontSize: '.72rem', color: themeMuted }}>
+                  Only an administrator changes the rate. Send a price change request.
+                </p>
+              )}
             </div>
             <div>
               <label style={{ fontSize: '.78rem', color: themeMuted, fontWeight: 700, display: 'block', marginBottom: 4 }}>Available Physical Units *</label>
