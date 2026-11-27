@@ -408,25 +408,6 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
       {/* ═══ CUSTOMERS & GUESTS SUB-TAB ═══ */}
       {accountsSubTab === 'customers' && (
         <>
-          {/* Customer Summary Stats */}
-          <div className="admin-grid-3-col" style={{ gap: 14, marginBottom: 20 }}>
-            {(() => {
-              const custUsers = users.filter((u) => !u.role || u.role === 'customer');
-              const totalCust = custUsers.length;
-              return [
-                { label: 'TOTAL CUSTOMERS', value: totalCust, icon: 'fas fa-users', color: '#0EA5E9' },
-              ].map((s, si) => (
-                <div key={si} style={{ background: isLightMode ? '#F8FAFC' : 'rgba(2,6,23,0.5)', border: `1px solid ${isLightMode ? '#E2E8F0' : themeBorder}`, borderRadius: 12, padding: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ fontSize: "1.5rem" }}><i className={s.icon} style={{ color: s.color }} /></span>
-                  <div>
-                    <span style={{ fontSize: '.68rem', color: themeMuted, fontWeight: 700, letterSpacing: '.08em' }}>{s.label}</span>
-                    <b style={{ display: 'block', fontSize: '1.25rem', color: s.color }}>{s.value}</b>
-                  </div>
-                </div>
-              ));
-            })()}
-          </div>
-
           {searchingUsers && users.length === 0 ? (
             <div style={{ padding: '24px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
               <ResortSpinner size="md" variant="primary" icon="id-badge" message="Loading Staff Directory…" submessage="Verifying employee accounts and department roles." />
