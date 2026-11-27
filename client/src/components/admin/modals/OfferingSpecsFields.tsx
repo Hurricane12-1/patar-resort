@@ -158,6 +158,8 @@ const CustomizableDropdown: React.FC<CustomizableDropdownProps> = ({
             placeholder={placeholder}
             style={{
               flex: 1,
+              minWidth: 0,
+              boxSizing: 'border-box',
               padding: '9px 12px',
               borderRadius: 10,
               border: '1px solid #0284C7',
@@ -194,6 +196,8 @@ const CustomizableDropdown: React.FC<CustomizableDropdownProps> = ({
             id={id}
             style={{
               flex: 1,
+              minWidth: 0,
+              boxSizing: 'border-box',
               padding: '9px 12px',
               borderRadius: 10,
               border: `1px solid ${themeBorder}`,
@@ -220,6 +224,7 @@ const CustomizableDropdown: React.FC<CustomizableDropdownProps> = ({
               display: 'inline-flex',
               alignItems: 'center',
               gap: 4,
+              flexShrink: 0,
               padding: '9px 12px',
               borderRadius: 10,
               border: '1px solid #0284C7',
@@ -258,6 +263,8 @@ export const OfferingSpecsFields: React.FC<OfferingSpecsFieldsProps> = ({
 
   const fieldStyle: React.CSSProperties = {
     width: '100%',
+    minWidth: 0,
+    boxSizing: 'border-box',
     padding: '9px 12px',
     borderRadius: 10,
     border: `1px solid ${themeBorder}`,
@@ -365,7 +372,7 @@ export const OfferingSpecsFields: React.FC<OfferingSpecsFieldsProps> = ({
 
         {/* 1. ROOM / VILLA / SUITE SPECIFICATIONS */}
         {isLodgingUnit && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
             <div>
               <label htmlFor={`${idPrefix}-bed-config`} style={labelStyle}>Bed Configuration</label>
               <input
@@ -430,7 +437,7 @@ export const OfferingSpecsFields: React.FC<OfferingSpecsFieldsProps> = ({
         {/* 2. COTTAGE / CABANA SPECIFICATIONS */}
         {isCottageUnit && (
           <>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
               <CustomizableDropdown
                 id={`${idPrefix}-cottage-style`}
                 label="Cottage / Cabana Structure"
@@ -507,7 +514,7 @@ export const OfferingSpecsFields: React.FC<OfferingSpecsFieldsProps> = ({
 
         {/* 3. ISLAND TOUR / CHARTER SPECIFICATIONS */}
         {offeringType === 'offer' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
             <CustomizableDropdown
               id={`${idPrefix}-tour-subtype`}
               label="Tour Activity Subtype"
@@ -558,7 +565,7 @@ export const OfferingSpecsFields: React.FC<OfferingSpecsFieldsProps> = ({
 
         {/* 4. EVENT PAVILION SPECIFICATIONS */}
         {offeringType === 'event' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
             <CustomizableDropdown
               id={`${idPrefix}-event-style`}
               label="Pavilion Venue Structure"

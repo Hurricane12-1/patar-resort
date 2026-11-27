@@ -5,6 +5,7 @@ import { api, addDaysYMD } from '../lib/api.ts';
 import { toast } from '../components/Toasts.tsx';
 import { to11Digits, formatTime12Hour } from '../lib/format.ts';
 import { getManilaTodayISO } from '../lib/offeringSpecs.ts';
+import { isAdministrator } from '../lib/rbac.ts';
 import AddReservationModal, { NewReservationFormState } from '../components/admin/modals/AddReservationModal.tsx';
 import { RoomEditorModal } from '../components/admin/modals/RoomEditorModal.tsx';
 import { CreateRoomModal } from '../components/admin/modals/CreateRoomModal.tsx';
@@ -130,6 +131,8 @@ export default function ResortDepartment() {
   const [tasks, setTasks] = useState<OperationalTask[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [activeProfile, setActiveProfile] = useState<any>(null);
+  const { staffProfile, adminProfile } = useAuth();
+  const canManageRooms = isAdministrator(staffProfile || adminProfile);
 
   // Dynamic Asia/Manila Today ISO
   const todayISO = useMemo(() => getManilaTodayISO(), []);
@@ -563,33 +566,6 @@ export default function ResortDepartment() {
     }
   };
 
-  // Cycle Status Action (Synchronized with Supabase / Room is_active)
-  const cycleRoomStatus = async (roomId: string) => {
-    const target = rooms.find((r) => r.id === roomId);
-    if (!target) return;
-    const order: RoomItem['status'][] = ['available', 'occupied', 'dirty', 'maintenance'];
-    const nextStatus = order[(order.indexOf(target.status) + 1) % order.length];
-
-    setRooms((prev) =>
-      prev.map((r) => {
-        if (r.id !== roomId) return r;
-        return {
-          ...r,
-          status: nextStatus,
-          guest: nextStatus === 'occupied' ? (r.guest || 'In-House Guest') : null,
-        };
-      })
-    );
-    toast(`${target.name} status updated to ${nextStatus.toUpperCase()}`);
-
-    const prevStatus = String(target.status);
-    if (nextStatus === 'maintenance') {
-      try { await api.updateRoom(roomId, { is_active: false }); } catch {}
-    } else if (prevStatus === 'maintenance') {
-      try { await api.updateRoom(roomId, { is_active: true }); } catch {}
-    }
-  };
-
   // Room Cover Image Fallback Resolver
   const getRoomCoverImage = (rm: RoomItem) => {
     if (rm.image_url) return rm.image_url;
@@ -712,13 +688,16 @@ export default function ResortDepartment() {
     }
   };
 
-  const handleTriggerEscalation = (target: { id: string; name: string; type: 'reservation' | 'room'; reason?: string }) => {
+  const handleTriggerEscalation = (target: { id: string; name: string; type: 'reservation' | 'room'; reservationId?: string | null; reason?: string }) => {
+    const isRoom = target.type === 'room';
     window.dispatchEvent(
       new CustomEvent('open-staff-escalate', {
         detail: {
-          reservationId: target.id,
-          category: target.type === 'room' ? 'Security / Property Incident' : 'Inventory Overbooking Clash',
-          reason: target.reason || (target.type === 'room' ? `Critical maintenance/facility breakdown for ${target.name}.` : `Urgent escalation for stay ${target.name}.`),
+          reservationId: isRoom ? target.reservationId || '' : target.id,
+          roomId: isRoom ? target.id : '',
+          roomName: isRoom ? target.name : '',
+          category: isRoom ? 'Security / Property Incident' : 'Inventory Overbooking Clash',
+          reason: target.reason || (isRoom ? `Critical maintenance/facility breakdown for ${target.name}.` : `Urgent escalation for stay ${target.name}.`),
           severity: 'urgent',
         },
       })
@@ -1588,11 +1567,14 @@ export default function ResortDepartment() {
                 Rooms, Cottages &amp; Resort Amenities
               </h2>
               <p style={{ margin: '4px 0 0', fontSize: '.78rem', color: '#64748B' }}>
-                Admin-synchronized inventory: edit rates, photos, amenities, turnover readiness, and dispatch maintenance
+                {canManageRooms
+                  ? 'Admin-synchronized inventory: edit rates, photos, amenities, turnover readiness, and dispatch maintenance'
+                  : 'Turnover readiness for your shift. Report a problem with Escalate. Administrators add rooms and change rates.'}
               </p>
             </div>
 
             <div className="flex items-center gap-3">
+              {canManageRooms && (
               <button
                 type="button"
                 onClick={() => setShowCreateRoomModal(true)}
@@ -1603,6 +1585,7 @@ export default function ResortDepartment() {
                 <i className="fas fa-plus" />
                 <span>+ Add Accommodation</span>
               </button>
+              )}
 
               <button
                 type="button"
@@ -1919,6 +1902,7 @@ export default function ResortDepartment() {
                               </span>
                             </div>
 
+                            {canManageRooms && (
                             <button
                               type="button"
                               onClick={() => handleToggleMaintenance(rm)}
@@ -1928,6 +1912,7 @@ export default function ResortDepartment() {
                             >
                               {rm.status === 'maintenance' ? 'Reactivate' : 'Maint.'}
                             </button>
+                            )}
                           </div>
 
                           {/* Amenity Badges */}
@@ -1976,6 +1961,7 @@ export default function ResortDepartment() {
 
                             <div className="flex items-center gap-1.5">
                               {/* EDIT BUTTON (Opens RoomEditorModal) */}
+                              {canManageRooms && (
                               <button
                                 type="button"
                                 onClick={() => setEditingRoom(raw)}
@@ -1994,6 +1980,7 @@ export default function ResortDepartment() {
                                 <i className="fas fa-pen-to-square" style={{ color: '#0284C7' }} />
                                 <span>Edit</span>
                               </button>
+                              )}
 
                               {/* BOOK BUTTON (Opens Manual Booking modal preselected) */}
                               <button
@@ -2027,7 +2014,7 @@ export default function ResortDepartment() {
                               {/* ESCALATE ISSUE BUTTON */}
                               <button
                                 type="button"
-                                onClick={() => handleTriggerEscalation({ id: rm.id, name: rm.name, type: 'room' })}
+                                onClick={() => handleTriggerEscalation({ id: rm.id, name: rm.name, type: 'room', reservationId: rm.activeStay?.rawId || null })}
                                 style={{
                                   background: 'transparent',
                                   border: '1px solid #CBD5E1',
@@ -2678,7 +2665,7 @@ export default function ResortDepartment() {
       {/* =========================================================================
           ADMIN-GRADE ROOM EDITOR MODAL
           ========================================================================= */}
-      {editingRoom && (
+      {canManageRooms && editingRoom && (
         <RoomEditorModal
           room={editingRoom}
           isOpen={Boolean(editingRoom)}
@@ -2697,7 +2684,7 @@ export default function ResortDepartment() {
       {/* =========================================================================
           ADMIN-GRADE CREATE ROOM / ACCOMMODATION MODAL
           ========================================================================= */}
-      {showCreateRoomModal && (
+      {canManageRooms && showCreateRoomModal && (
         <CreateRoomModal
           isOpen={showCreateRoomModal}
           onClose={() => setShowCreateRoomModal(false)}

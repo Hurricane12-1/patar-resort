@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient.ts';
+import { api } from '../../lib/api.ts';
+import { normalizeRole } from '../../lib/rbac.ts';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { toast } from '../../components/Toasts.tsx';
 import { money, fmtDate } from '../../lib/format.ts';
@@ -13,6 +15,8 @@ export default function RecoveryPortal() {
   const activeSession = adminSession || staffSession;
   const isAuthenticated = Boolean(activeSession);
   const activeProfile = adminProfile || staffProfile;
+  const decisionProfile = staffProfile || adminProfile;
+  const canDecide = ['administrator', 'receptionist', 'accounting'].includes(normalizeRole(decisionProfile?.role));
 
   const [activeTab, setActiveTab] = useState<'cases' | 'audit'>('cases');
   const [disputedBookings, setDisputedBookings] = useState<any[]>([]);
@@ -25,41 +29,16 @@ export default function RecoveryPortal() {
   const [resolutionNote, setResolutionNote] = useState('');
   const [actionBusy, setActionBusy] = useState(false);
 
-  // Real 100% Live Database Fetch
   const fetchLiveRecoveryData = async () => {
     setLoading(true);
     setErrorMsg(null);
     try {
-      // 1. Fetch live reservations with disputed, flagged, or pending escalation status
-      const { data: resData, error: resErr } = await supabase
-        .from('reservations')
-        .select('*, rooms(name)')
-        .or('status.eq.disputed,status.eq.flagged,status.eq.cancelled,status.eq.pending')
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (resErr) {
-        console.warn('[Recovery Database Query] Reservations error:', resErr.message);
-        setErrorMsg(resErr.message);
-      } else {
-        setDisputedBookings(resData || []);
-      }
-
-      // 2. Fetch live escalation audit logs
-      const { data: logData, error: logErr } = await supabase
-        .from('audit_logs')
-        .select('*')
-        .or('action.ilike.%ESCALAT%,action.ilike.%DISPUTE%,action.ilike.%RECOVERY%')
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (logErr) {
-        console.warn('[Recovery Database Query] Audit logs error:', logErr.message);
-      } else {
-        setAuditEvents(logData || []);
-      }
+      const data = await api.escalationCases();
+      setDisputedBookings(data.cases || []);
+      setAuditEvents(data.events || []);
+      if (data.events_error) setErrorMsg(`Audit trail unavailable: ${data.events_error}`);
     } catch (err: any) {
-      setErrorMsg(err.message || 'Database connection error');
+      setErrorMsg(err.message || 'Could not load recovery cases.');
     } finally {
       setLoading(false);
     }
@@ -92,38 +71,14 @@ export default function RecoveryPortal() {
     }
     setActionBusy(true);
     try {
-      const updatedNotes = `${booking.notes || ''}\n[RECOVERY_RESOLVED by ${activeProfile?.email || 'Officer'}]: ${resolutionNote.trim()}`.trim();
-
-      const { error: updErr } = await supabase
-        .from('reservations')
-        .update({
-          status: 'confirmed',
-          notes: updatedNotes,
-        })
-        .eq('id', booking.id);
-
-      if (updErr) throw updErr;
-
-      // Log resolution audit record
-      await supabase.from('audit_logs').insert({
-        action: 'RECOVERY_RESOLVED_AND_RESTORED',
-        actor_id: activeProfile?.id || null,
-        actor_email: activeProfile?.email || 'recovery@resort.ph',
-        actor_role: activeProfile?.role || 'recovery',
-        details: {
-          reservation_id: booking.id,
-          previous_status: booking.status,
-          new_status: 'confirmed',
-          resolution_note: resolutionNote.trim(),
-        },
-      });
-
-      toast(`✅ Reservation ${booking.id.slice(0, 8)} restored to CONFIRMED in database.`);
+      const result = await api.resolveEscalationCase(booking.id, resolutionNote.trim());
+      const auditNote = result.audit_recorded ? '' : ` The audit entry did not save: ${result.audit_error || 'unknown error'}.`;
+      toast(`✅ Reservation ${booking.id.slice(0, 8)} restored to CONFIRMED.${auditNote}`, !result.audit_recorded);
       setSelectedBooking(null);
       setResolutionNote('');
       fetchLiveRecoveryData();
     } catch (err: any) {
-      toast(err.message || 'Failed to update reservation state in database', true);
+      toast(err.message || 'The case was not updated. Try again.', true);
     } finally {
       setActionBusy(false);
     }
@@ -137,38 +92,14 @@ export default function RecoveryPortal() {
     }
     setActionBusy(true);
     try {
-      const updatedNotes = `${booking.notes || ''}\n[EXECUTIVE_GOVERNANCE_ESCALATION by ${activeProfile?.email || 'Officer'}]: ${resolutionNote.trim()}`.trim();
-
-      const { error: updErr } = await supabase
-        .from('reservations')
-        .update({
-          status: 'escalated',
-          notes: updatedNotes,
-        })
-        .eq('id', booking.id);
-
-      if (updErr) throw updErr;
-
-      // Log high-priority escalation in audit_logs
-      await supabase.from('audit_logs').insert({
-        action: 'EXECUTIVE_GOVERNANCE_ESCALATION',
-        actor_id: activeProfile?.id || null,
-        actor_email: activeProfile?.email || 'recovery@resort.ph',
-        actor_role: activeProfile?.role || 'recovery',
-        details: {
-          reservation_id: booking.id,
-          target_namespace: '/admin',
-          priority: 'CRITICAL',
-          narrative: resolutionNote.trim(),
-        },
-      });
-
-      toast(`⚠️ Reservation ${booking.id.slice(0, 8)} elevated to Executive Governance (/admin).`);
+      const result = await api.escalateCaseToGovernance(booking.id, resolutionNote.trim());
+      const auditNote = result.audit_recorded ? '' : ` The audit entry did not save: ${result.audit_error || 'unknown error'}.`;
+      toast(`⚠️ Reservation ${booking.id.slice(0, 8)} elevated to Executive Governance (/admin).${auditNote}`, !result.audit_recorded);
       setSelectedBooking(null);
       setResolutionNote('');
       fetchLiveRecoveryData();
     } catch (err: any) {
-      toast(err.message || 'Failed to record governance escalation in database', true);
+      toast(err.message || 'The governance escalation was not saved. Try again.', true);
     } finally {
       setActionBusy(false);
     }
@@ -240,7 +171,7 @@ export default function RecoveryPortal() {
                 {activeProfile?.full_name || activeProfile?.username || activeProfile?.email || 'Authenticated User'}
               </h3>
               <div style={{ fontSize: '.82rem', color: '#CBD5E1' }}>
-                Role: <strong style={{ color: '#FBBF24', textTransform: 'capitalize' }}>{activeProfile?.role || 'Authenticated Member'}</strong> · Email: <span style={{ color: '#E2E8F0' }}>{activeProfile?.email || activeSession?.user?.email || 'Active Verified'}</span> · Database: <span style={{ color: '#34D399' }}>Live Supabase Connected</span>
+                Role: <strong style={{ color: '#FBBF24', textTransform: 'capitalize' }}>{activeProfile?.role || 'Authenticated Member'}</strong> · Email: <span style={{ color: '#E2E8F0' }}>{activeProfile?.email || activeSession?.user?.email || 'Active Verified'}</span> · Data: <span style={{ color: '#34D399' }}>Live server data</span>
               </div>
             </div>
           </div>
@@ -584,25 +515,31 @@ export default function RecoveryPortal() {
               />
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginTop: 20 }}>
-              <button
-                type="button"
-                disabled={actionBusy}
-                style={{
-                  fontSize: '.76rem',
-                  fontWeight: 700,
-                  color: '#C4B5FD',
-                  background: 'rgba(139, 92, 246, 0.15)',
-                  border: '1px solid rgba(139, 92, 246, 0.4)',
-                  padding: '8px 14px',
-                  borderRadius: 8,
-                  cursor: 'pointer',
-                }}
-                onClick={() => handleEscalateToAdmin(selectedBooking)}
-              >
-                <i className="fas fa-crown" style={{ marginRight: 6 }} />
-                Escalate to Governance (/admin)
-              </button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginTop: 20 }}>
+              {canDecide ? (
+                <button
+                  type="button"
+                  disabled={actionBusy}
+                  style={{
+                    fontSize: '.76rem',
+                    fontWeight: 700,
+                    color: '#C4B5FD',
+                    background: 'rgba(139, 92, 246, 0.15)',
+                    border: '1px solid rgba(139, 92, 246, 0.4)',
+                    padding: '8px 14px',
+                    borderRadius: 8,
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => handleEscalateToAdmin(selectedBooking)}
+                >
+                  <i className="fas fa-crown" style={{ marginRight: 6 }} />
+                  Escalate to Governance (/admin)
+                </button>
+              ) : (
+                <span style={{ fontSize: '.76rem', color: '#94A3B8' }}>
+                  Front desk, accounting, or an administrator resolves this case.
+                </span>
+              )}
 
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
@@ -613,16 +550,18 @@ export default function RecoveryPortal() {
                 >
                   Cancel
                 </button>
-                <button
-                  type="button"
-                  className="btn btn-sky"
-                  disabled={actionBusy}
-                  style={{ background: '#10B981', borderColor: '#059669', color: '#FFFFFF', fontWeight: 800 }}
-                  onClick={() => handleResolveAndRestore(selectedBooking)}
-                >
-                  <i className="fas fa-check-circle" style={{ marginRight: 6 }} />
-                  {actionBusy ? 'Updating…' : 'Resolve & Restore'}
-                </button>
+                {canDecide && (
+                  <button
+                    type="button"
+                    className="btn btn-sky"
+                    disabled={actionBusy}
+                    style={{ background: '#10B981', borderColor: '#059669', color: '#FFFFFF', fontWeight: 800 }}
+                    onClick={() => handleResolveAndRestore(selectedBooking)}
+                  >
+                    <i className="fas fa-check-circle" style={{ marginRight: 6 }} />
+                    {actionBusy ? 'Updating…' : 'Resolve & Restore'}
+                  </button>
+                )}
               </div>
             </div>
           </div>

@@ -46,6 +46,7 @@ let lastBackendCheck = 0;
 const BACKEND_COOLDOWN_MS = 60000;
 const READ_TIMEOUT_MS = 2500;
 const WRITE_TIMEOUT_MS = 45000;
+const SIGN_IN_TIMEOUT_MS = 30000;
 
 function isBackendUnreachable(err: unknown): boolean {
   return err instanceof ApiError && err.unreachable;
@@ -147,7 +148,7 @@ export function invalidateFrontDeskCache() {
   _frontDeskCache = null;
 }
 
-async function req<T = any>(path: string, { method = 'GET', body, slowWrite = false }: { method?: string; body?: any; slowWrite?: boolean } = {}): Promise<T> {
+async function req<T = any>(path: string, { method = 'GET', body, slowWrite = false, timeoutMs }: { method?: string; body?: any; slowWrite?: boolean; timeoutMs?: number } = {}): Promise<T> {
   if (backendApiAvailable === false && Date.now() - lastBackendCheck < BACKEND_COOLDOWN_MS) {
     throw new ApiError(503, 'Backend temporarily unavailable — routing to Supabase', undefined, true);
   }
@@ -166,8 +167,9 @@ async function req<T = any>(path: string, { method = 'GET', body, slowWrite = fa
   const onAdminPath = currentPath.startsWith('/admin');
   const onStaffPath = currentPath.startsWith('/staff') || currentPath.startsWith('/recovery') || currentPath.startsWith('/receptionist') || currentPath.startsWith('/accounting') || currentPath.startsWith('/resort-department');
 
-  const isAdminEndpoint = path.startsWith('/admin') || path.includes('/admin') || path.startsWith('/analytics') || path.startsWith('/audit');
-  const isStaffEndpoint = path.startsWith('/staff') || path.startsWith('/department') || path.startsWith('/reception') || path.startsWith('/housekeeping');
+  const isFrontDeskAnalytics = path.startsWith('/analytics/front-desk');
+  const isAdminEndpoint = !isFrontDeskAnalytics && (path.startsWith('/admin') || path.includes('/admin') || path.startsWith('/analytics') || path.startsWith('/audit'));
+  const isStaffEndpoint = isFrontDeskAnalytics || path.startsWith('/staff') || path.startsWith('/department') || path.startsWith('/reception') || path.startsWith('/housekeeping');
 
   if (onAdminPath || isAdminEndpoint) {
     // 1. Executive Admin Scope
@@ -204,7 +206,7 @@ async function req<T = any>(path: string, { method = 'GET', body, slowWrite = fa
   const endpoint = API_BASE ? `${API_BASE}/api${path}` : `/api${path}`;
   const controller = new AbortController();
   // Reads and sign-ins fall back fast; admin saves get longer so a slow write is not cut off mid-way.
-  const timeoutId = setTimeout(() => controller.abort(), slowWrite ? WRITE_TIMEOUT_MS : READ_TIMEOUT_MS);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs ?? (slowWrite ? WRITE_TIMEOUT_MS : READ_TIMEOUT_MS));
 
   let res: Response;
   try {
@@ -462,6 +464,23 @@ export const CHART_OF_ACCOUNTS = [
   { code: '5040', name: 'Repairs & Property Maintenance', type: 'EXPENSE', normal: 'DEBIT' },
 ];
 
+export interface EscalationResult {
+  reservation_id: string | null;
+  room_id: string | null;
+  room_name?: string;
+  status?: string;
+  attached: boolean;
+  audit_recorded: boolean;
+  audit_error: string | null;
+}
+
+export interface EscalationDecision {
+  reservation_id: string;
+  status: string;
+  audit_recorded: boolean;
+  audit_error: string | null;
+}
+
 export const api = {
   // Tri-Adapter Gateway according to architecture
   adapter: frontendAdapter,
@@ -491,7 +510,7 @@ export const api = {
   verifyOtp: (email: string, code: string, name?: string) =>
     req<{ success: boolean; message: string; session: any; user: any; profile: any }>('/auth/otp/verify', { method: 'POST', body: { email, code, name } }),
   adminLogin: (credentials: { email?: string; username?: string; identifier?: string; identity?: string; password: string; tokenIdKey?: string; position?: string }) =>
-    req('/auth/admin-login', { method: 'POST', body: credentials }),
+    req('/auth/admin-login', { method: 'POST', body: credentials, timeoutMs: SIGN_IN_TIMEOUT_MS }),
   logout: () => req<{ success: boolean; message: string }>('/auth/logout', { method: 'POST' }).catch(() => ({ success: true, message: 'Session purged' })),
   me: async () => {
     try {
@@ -1159,12 +1178,12 @@ export const api = {
   },
 
   // Front Desk Non-Financial Overview
-  frontDeskOverview: async () => {
+  frontDeskOverview: async ({ analytics = true }: { analytics?: boolean } = {}) => {
     if (_frontDeskCache && Date.now() < _frontDeskCache.expiry) {
       return _frontDeskCache.data;
     }
     try {
-      const res = await req('/analytics/front-desk');
+      const res = analytics ? await req('/analytics/front-desk') : null;
       if (res && res.overview) {
         _frontDeskCache = { data: res, expiry: Date.now() + 15000 };
         return res;
@@ -1235,6 +1254,16 @@ export const api = {
     const url = API_BASE ? `${API_BASE}/api/analytics/export` : '/api/analytics/export';
     window.open(url, '_blank');
   },
+
+  // Staff escalations to the recovery desk; the server saves the case and the audit entry
+  createEscalation: (body: { reservation_id?: string | null; room_id?: string | null; category: string; severity: string; reason: string }) =>
+    req<EscalationResult>('/escalations', { method: 'POST', body }),
+  escalationCases: () =>
+    req<{ cases: any[]; events: any[]; events_error: string | null }>('/escalations'),
+  resolveEscalationCase: (reservationId: string, note: string) =>
+    req<EscalationDecision>(`/escalations/${reservationId}/resolve`, { method: 'POST', body: { note } }),
+  escalateCaseToGovernance: (reservationId: string, note: string) =>
+    req<EscalationDecision>(`/escalations/${reservationId}/govern`, { method: 'POST', body: { note } }),
 
   // Audit Auto Logger API
   auditLogs: async (params = '') => {

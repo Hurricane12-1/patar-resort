@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.tsx';
-import { supabase } from '../lib/supabaseClient.ts';
 import { api } from '../lib/api.ts';
 import { toast } from '../components/Toasts.tsx';
-import { canAccessPortal, canEscalateToRecovery, formatDepartmentBadge, isAdministrator, PortalKey } from '../lib/rbac.ts';
+import { canAccessPortal, canEscalateToRecovery, canViewFrontDeskOverview, formatDepartmentBadge, isAdministrator, PortalKey } from '../lib/rbac.ts';
 import '../styles/staff-portal.css';
+
+const EMPTY_ESCALATION = {
+  reservationId: '',
+  roomId: '',
+  roomName: '',
+  category: 'Inventory Overbooking Clash',
+  reason: '',
+  severity: 'urgent',
+};
 
 interface StaffLayoutProps {
   children?: React.ReactNode;
@@ -163,7 +171,7 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
   useEffect(() => {
     let isMounted = true;
     Promise.all([
-      api.frontDeskOverview().catch(() => null),
+      api.frontDeskOverview({ analytics: canViewFrontDeskOverview(activeProfile) }).catch(() => null),
       api.rooms(false).catch(() => []),
       api.conversations().catch(() => []),
       api.departmentTasks().catch(() => []),
@@ -190,21 +198,19 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
   // Escalation Handoff Modal State (Preserved 100% of existing functionality)
   const [showEscalationModal, setShowEscalationModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [escalationForm, setEscalationForm] = useState({
-    reservationId: '',
-    category: 'Inventory Overbooking Clash',
-    reason: '',
-    severity: 'urgent',
-  });
+  const [escalationForm, setEscalationForm] = useState(EMPTY_ESCALATION);
 
   useEffect(() => {
     const handleEscalateEvent = (e: any) => {
       const d = e.detail || {};
       setEscalationForm({
+        ...EMPTY_ESCALATION,
         reservationId: d.reservationId || '',
-        category: d.category || 'Inventory Overbooking Clash',
+        roomId: d.roomId || '',
+        roomName: d.roomName || '',
+        category: d.category || EMPTY_ESCALATION.category,
         reason: d.reason || '',
-        severity: d.severity || 'urgent',
+        severity: d.severity || EMPTY_ESCALATION.severity,
       });
       setShowEscalationModal(true);
     };
@@ -214,51 +220,43 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
 
   const handleEscalateToRecovery = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!escalationForm.reservationId.trim() || !escalationForm.reason.trim()) {
-      toast('Please provide a valid reservation ID and reason for escalation.', true);
+    const resId = escalationForm.reservationId.trim();
+    const reason = escalationForm.reason.trim();
+    if (!resId && !escalationForm.roomId) {
+      toast('Enter a reservation ID, or open the escalation from a room.', true);
+      return;
+    }
+    if (resId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(resId)) {
+      toast('The reservation ID must be a full UUID.', true);
+      return;
+    }
+    if (reason.length < 5) {
+      toast('Describe the incident in at least 5 characters.', true);
       return;
     }
 
     setSubmitting(true);
     try {
-      const resId = escalationForm.reservationId.trim();
-      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(resId);
-
-      if (isUUID) {
-        const { error: updateErr } = await supabase
-          .from('reservations')
-          .update({
-            status: 'disputed',
-            notes: `[STAFF_ESCALATION (${escalationForm.severity.toUpperCase()})]: ${escalationForm.reason.trim()}`,
-          })
-          .eq('id', resId);
-
-        if (updateErr) {
-          console.warn('[Staff Escalation] Notice updating reservation:', updateErr.message);
-        }
-      }
-
-      await supabase.from('audit_logs').insert({
-        action: 'STAFF_ESCALATE_TO_RECOVERY',
-        actor_id: activeProfile?.id || null,
-        actor_email: activeProfile?.email || 'staff@resort.ph',
-        actor_role: activeProfile?.role || 'staff',
-        details: {
-          reservation_id: resId,
-          category: escalationForm.category,
-          severity: escalationForm.severity,
-          reason: escalationForm.reason.trim(),
-          source_namespace: '/staff',
-          target_namespace: '/recovery',
-        },
+      const result = await api.createEscalation({
+        reservation_id: resId || null,
+        room_id: escalationForm.roomId || null,
+        category: escalationForm.category,
+        severity: escalationForm.severity,
+        reason,
       });
 
-      toast(`✦ Case ${resId} successfully escalated to /recovery in Supabase!`);
+      const auditNote = result.audit_recorded ? '' : ` The audit entry did not save: ${result.audit_error || 'unknown error'}.`;
       setShowEscalationModal(false);
-      setEscalationForm({ reservationId: '', category: 'Inventory Overbooking Clash', reason: '', severity: 'urgent' });
-      navigate(`/recovery/cases?ref=${encodeURIComponent(resId)}`);
+      setEscalationForm(EMPTY_ESCALATION);
+      if (result.attached && result.reservation_id) {
+        toast(`✦ Stay ${result.reservation_id.slice(0, 8)} escalated to /recovery.${auditNote}`, !result.audit_recorded);
+        navigate(`/recovery/cases?ref=${encodeURIComponent(result.reservation_id)}`);
+      } else {
+        toast(`✦ ${escalationForm.roomName || 'Room'} logged for recovery review. It is not attached to a stay.${auditNote}`, !result.audit_recorded);
+        navigate('/recovery/audit');
+      }
     } catch (err: any) {
-      toast(err.message || 'Failed to submit escalation to database', true);
+      toast(err.message || 'The escalation was not saved. Try again.', true);
     } finally {
       setSubmitting(false);
     }
@@ -508,14 +506,18 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
 
             <div style={{ padding: '20px 24px' }}>
               <p style={{ color: '#64748B', fontSize: '.84rem', margin: '0 0 16px', lineHeight: 1.5 }}>
-                Transitions reservation state to <code>disputed</code> in Supabase and routes to the specialized <strong>/recovery</strong> console.
+                Marks the stay as disputed and sends the case to the <strong>/recovery</strong> console. Room-only reports are logged for review.
               </p>
 
               <form onSubmit={handleEscalateToRecovery} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {escalationForm.roomId && (
+                  <p style={{ margin: 0, fontSize: '.84rem', color: '#0F172A' }}>
+                    Room: <strong>{escalationForm.roomName}</strong>
+                  </p>
+                )}
                 <div className="field">
-                  <label>RESERVATION ID (UUID)</label>
+                  <label>RESERVATION ID (UUID, optional for a room report)</label>
                   <input
-                    required
                     placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000"
                     value={escalationForm.reservationId}
                     onChange={(e) => setEscalationForm({ ...escalationForm, reservationId: e.target.value })}

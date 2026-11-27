@@ -16,6 +16,7 @@ import { admin, getSystemAdminClient } from '../lib/supabase.js';
 import { pingSMS } from '../lib/sms.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
 import { hashPassword } from '../lib/passwords.js';
+import { removeAccountRecords } from '../lib/accountRemoval.js';
 
 const r = Router();
 
@@ -620,60 +621,10 @@ r.patch('/admin/users/:id', authenticate, requireAdmin,
     return res.json(data);
   }));
 
-// Helper: Permanent deletion of user account credentials while preserving prior business records
+// Permanent removal of one account; throws when any record is left behind.
 export async function deleteUserPermanently(userId) {
   const sysAdmin = await getSystemAdminClient().catch(() => null);
-  const client = sysAdmin || admin;
-
-  // 1. Fetch user profile for audit & record
-  let prof = null;
-  try {
-    const { data } = await client.from('profiles').select('id, full_name, email, role').eq('id', userId).maybeSingle();
-    prof = data;
-  } catch {}
-
-  // 2. Cascade delete authentication tokens and transient notifications
-  try { await client.from('user_confirmations').delete().eq('user_id', userId); } catch (e) { console.warn('[Delete User] Confirmations notice:', e.message); }
-  try { await client.from('chat_messages').delete().eq('profile_id', userId); } catch (e) { console.warn('[Delete User] Chat notice:', e.message); }
-  try { await client.from('notifications').delete().eq('profile_id', userId); } catch (e) { console.warn('[Delete User] Notifications notice:', e.message); }
-
-  // 3. PRIOR BUSINESS RECORDS ARE PRESERVED (Reservations, Orders, Reviews remain in ledger)
-  try {
-    await client.from('reservations').update({ guest_id: null }).eq('guest_id', userId);
-  } catch (e) {
-    console.warn('[Delete User] Preserve reservations notice:', e.message);
-  }
-  try {
-    await client.from('resort_orders').update({ guest_id: null }).eq('guest_id', userId);
-  } catch (e) {
-    console.warn('[Delete User] Preserve orders notice:', e.message);
-  }
-  try {
-    await client.from('reviews').update({ guest_id: null }).eq('guest_id', userId);
-  } catch (e) {
-    console.warn('[Delete User] Preserve reviews notice:', e.message);
-  }
-
-  // 4. Delete user account from identity and profile tables: employee_accounts, customers, users, profiles
-  try {
-    const empFilters = [`auth_user_id.eq.${userId}`];
-    if (prof?.email) empFilters.push(`email.eq.${prof.email}`);
-    await client.from('employee_accounts').delete().or(empFilters.join(','));
-  } catch (e) {
-    console.warn('[Delete User] Employee notice:', e.message);
-  }
-  try { await client.from('customers').delete().eq('id', userId); } catch (e) { console.warn('[Delete User] Customers notice:', e.message); }
-  try { await client.from('users').delete().eq('id', userId); } catch (e) { console.warn('[Delete User] Users notice:', e.message); }
-  try { await client.from('profiles').delete().eq('id', userId); } catch (e) { console.warn('[Delete User] Profiles notice:', e.message); }
-
-  // 5. Delete from Supabase Auth admin so credentials can no longer sign in
-  try {
-    await admin.auth.admin.deleteUser(userId);
-  } catch (err) {
-    console.warn('[Delete User] Auth admin notice:', err.message);
-  }
-
-  return prof || { id: userId };
+  return removeAccountRecords(sysAdmin || admin, userId);
 }
 
 // Self-Service Account Deletion (Guest or Staff permanently deletes own account)

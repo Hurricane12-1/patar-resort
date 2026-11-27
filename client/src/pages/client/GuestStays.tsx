@@ -562,13 +562,13 @@ function BookingDrawer({ item, today, onClose }: { item: StayItem; today: string
   }
 
   return createPortal(
-    <div className="guest-portal gp-overlay fixed inset-0 z-[90] flex items-end justify-end md:items-stretch">
+    <div className="guest-portal gp-overlay fixed inset-0 z-[90] flex items-end justify-center md:items-center md:p-6">
       <button type="button" aria-label="Close stay details" onClick={onClose} className="gp-backdrop absolute inset-0 cursor-default bg-[#020713]/80 backdrop-blur-md md:bg-[#020713]/30 md:backdrop-blur-none" />
       <aside
         role="dialog"
         aria-modal="true"
         aria-labelledby="stay-drawer-title"
-        className="gp-drawer relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-[28px] bg-[#040e22] text-white shadow-[0_-12px_40px_rgba(0,0,0,0.8)] md:h-full md:max-h-none md:max-w-[500px] md:rounded-none md:rounded-l-[28px] border-l border-white/15"
+        className="gp-dialog relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-[28px] bg-[#040e22] text-white shadow-[0_-12px_40px_rgba(0,0,0,0.8)] md:h-auto md:max-h-[88vh] md:max-w-[520px] md:rounded-[28px] border border-white/15"
       >
         <div className="flex items-center justify-between gap-3 border-b border-white/10 px-5 py-4 sm:px-6">
           <div className="min-w-0">
