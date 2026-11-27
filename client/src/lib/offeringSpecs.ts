@@ -190,7 +190,13 @@ export function getMinGuestCheckInISO(now = new Date()): string {
   return getManilaTodayISO(now);
 }
 
+/** The database holds many kinds (villa, suite, cabana, event). The resort only has Rooms and Cottages, so everything resolves to one of those two. */
 export function inferOfferingType(item: any = {}): OfferingType {
+  const detailed = inferDetailedOfferingType(item);
+  return detailed === 'cottage' || detailed === 'cabana' || detailed === 'event' ? 'cottage' : 'room';
+}
+
+function inferDetailedOfferingType(item: any = {}): OfferingType {
   const rawType = String(item?.offering_type || '').toLowerCase().trim();
   if (rawType === 'villa') return 'villa';
   if (rawType === 'suite') return 'suite';
@@ -447,6 +453,11 @@ export function formatSpecHighlights(item: any): { label: string; value: string 
 }
 
 export function resolveReservationOfferingType(reservation: any): OfferingType {
+  const detailed = resolveDetailedReservationType(reservation);
+  return detailed === 'cottage' || detailed === 'cabana' || detailed === 'event' ? 'cottage' : 'room';
+}
+
+function resolveDetailedReservationType(reservation: any): OfferingType {
   const notes = String(reservation?.notes || '');
   const tagMatch = notes.match(/\[BookingType:\s*(room|villa|suite|cottage|cabana|offer|tour|event)\]/i);
   if (tagMatch) {

@@ -1065,12 +1065,7 @@ export default function AddReservationModal({
                 {([
                   { key: 'all' as const, label: 'All Units' },
                   { key: 'room' as const, label: 'Rooms (Overnight)' },
-                  { key: 'villa' as const, label: 'Villas' },
-                  { key: 'suite' as const, label: 'Suites' },
                   { key: 'cottage' as const, label: 'Cottages (Day-Use)' },
-                  { key: 'cabana' as const, label: 'Cabanas' },
-                  { key: 'offer' as const, label: 'Tours & Offers' },
-                  { key: 'event' as const, label: 'Events' },
                 ]).map((f) => (
                   <button
                     key={f.key}

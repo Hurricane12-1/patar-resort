@@ -1380,12 +1380,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
               >
                 <option value="all">All Types ({allBookings.length})</option>
                 <option value="room">Rooms ({allBookings.filter((b: any) => resolveReservationOfferingType(b) === 'room').length})</option>
-                <option value="villa">Villas ({allBookings.filter((b: any) => resolveReservationOfferingType(b) === 'villa').length})</option>
-                <option value="suite">Suites ({allBookings.filter((b: any) => resolveReservationOfferingType(b) === 'suite').length})</option>
                 <option value="cottage">Cottages ({allBookings.filter((b: any) => resolveReservationOfferingType(b) === 'cottage').length})</option>
-                <option value="cabana">Cabanas ({allBookings.filter((b: any) => resolveReservationOfferingType(b) === 'cabana').length})</option>
-                <option value="offer">Island Tours &amp; Offers ({allBookings.filter((b: any) => resolveReservationOfferingType(b) === 'offer').length})</option>
-                <option value="event">Event Pavilions ({allBookings.filter((b: any) => resolveReservationOfferingType(b) === 'event').length})</option>
               </select>
             </div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>

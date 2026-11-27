@@ -209,20 +209,8 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
               <button type="button" className="btn btn-sm" style={{ background: '#006699', color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '7px 12px', fontSize: '.78rem', fontWeight: 700, cursor: 'pointer' }} onClick={() => (openCreateOfferingModal ? openCreateOfferingModal('room') : setShowCreateRoomModal(true))}>
                 + Room
               </button>
-              <button type="button" className="btn btn-sm" style={{ background: '#7C3AED', color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '7px 12px', fontSize: '.78rem', fontWeight: 700, cursor: 'pointer' }} onClick={() => (openCreateOfferingModal ? openCreateOfferingModal('villa') : setShowCreateRoomModal(true))}>
-                + Villa
-              </button>
-              <button type="button" className="btn btn-sm" style={{ background: '#D97706', color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '7px 12px', fontSize: '.78rem', fontWeight: 700, cursor: 'pointer' }} onClick={() => (openCreateOfferingModal ? openCreateOfferingModal('suite') : setShowCreateRoomModal(true))}>
-                + Suite
-              </button>
               <button type="button" className="btn btn-sm" style={{ background: '#047857', color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '7px 12px', fontSize: '.78rem', fontWeight: 700, cursor: 'pointer' }} onClick={() => (openCreateOfferingModal ? openCreateOfferingModal('cottage') : setShowCreateRoomModal(true))}>
                 + Cottage
-              </button>
-              <button type="button" className="btn btn-sm" style={{ background: '#0D9488', color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '7px 12px', fontSize: '.78rem', fontWeight: 700, cursor: 'pointer' }} onClick={() => (openCreateOfferingModal ? openCreateOfferingModal('cabana') : setShowCreateRoomModal(true))}>
-                + Cabana
-              </button>
-              <button type="button" className="btn btn-sm" style={{ background: '#EA580C', color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '7px 12px', fontSize: '.78rem', fontWeight: 700, cursor: 'pointer' }} onClick={() => (openCreateOfferingModal ? openCreateOfferingModal('offer') : setShowCreateRoomModal(true))}>
-                + Tour
               </button>
             </div>
           ) : (
@@ -374,12 +362,7 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
                 {([
                   { key: 'all' as const, label: `All (${roomsList.length})` },
                   { key: 'room' as const, label: `Rooms (${roomsList.filter((r) => inferOfferingType(r) === 'room').length})` },
-                  { key: 'villa' as const, label: `Villas (${roomsList.filter((r) => inferOfferingType(r) === 'villa').length})` },
-                  { key: 'suite' as const, label: `Suites (${roomsList.filter((r) => inferOfferingType(r) === 'suite').length})` },
                   { key: 'cottage' as const, label: `Cottages (${roomsList.filter((r) => inferOfferingType(r) === 'cottage').length})` },
-                  { key: 'cabana' as const, label: `Cabanas (${roomsList.filter((r) => inferOfferingType(r) === 'cabana').length})` },
-                  { key: 'offer' as const, label: `Tours & Offers (${roomsList.filter((r) => inferOfferingType(r) === 'offer').length})` },
-                  { key: 'event' as const, label: `Events (${roomsList.filter((r) => inferOfferingType(r) === 'event').length})` },
                 ]).map((pill) => {
                   const isSel = offeringFilter === pill.key;
                   return (
@@ -421,12 +404,7 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
               >
                 <option value="all">All Accommodations ({roomsList.filter((r) => r.is_active !== false).length})</option>
                 <option value="Room">Rooms · Overnight ({roomsList.filter((r) => r.is_active !== false && (inferOfferingType(r) === 'room' || r.category?.toLowerCase() === 'room')).length})</option>
-                <option value="Villa">Villas · Oceanfront ({roomsList.filter((r) => r.is_active !== false && (inferOfferingType(r) === 'villa' || r.category?.toLowerCase() === 'villa')).length})</option>
-                <option value="Suite">Suites · Terrace &amp; Loft ({roomsList.filter((r) => r.is_active !== false && (inferOfferingType(r) === 'suite' || r.category?.toLowerCase() === 'suite')).length})</option>
-                <option value="Cottage">Cottages · Day-Use ({roomsList.filter((r) => r.is_active !== false && (inferOfferingType(r) === 'cottage' || r.category?.toLowerCase() === 'cottage')).length})</option>
-                <option value="Cabana">Cabanas · Shaded Lounge ({roomsList.filter((r) => r.is_active !== false && (inferOfferingType(r) === 'cabana' || r.category?.toLowerCase() === 'cabana')).length})</option>
-                <option value="Island Tour">Island Tours &amp; Charters ({roomsList.filter((r) => r.is_active !== false && (inferOfferingType(r) === 'offer' || r.category?.toLowerCase() === 'island tour')).length})</option>
-                <option value="Event Pavilion">Event Pavilions ({roomsList.filter((r) => r.is_active !== false && (inferOfferingType(r) === 'event' || r.category?.toLowerCase() === 'event pavilion')).length})</option>
+                <option value="Cottage">Cottages · Day-Use ({roomsList.filter((r) => r.is_active !== false && inferOfferingType(r) === 'cottage').length})</option>
               </select>
             </div>
 
@@ -531,7 +509,7 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
                         interval={3500}
                         badge={
                           <span className="pill" style={{ background: 'rgba(14,165,233,0.85)', color: '#FFFFFF', fontWeight: 800, fontSize: '.72rem', backdropFilter: 'blur(4px)' }}>
-                            {getOfferingLabel(inferOfferingType(room))} · {room.category || 'Standard'}
+                            {getOfferingLabel(inferOfferingType(room))}
                           </span>
                         }
                       />
