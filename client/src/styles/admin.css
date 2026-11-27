@@ -1204,6 +1204,15 @@
   border-radius: 8px !important;
 }
 
+.admin-portal .pms-top-bar button,
+.admin-portal .pms-top-bar select {
+  border-radius: 8px !important;
+}
+
+.admin-portal .pms-top-bar .pms-seg-btn {
+  border-radius: 6px !important;
+}
+
 .admin-portal .account-directory-actions .account-new-btn:hover {
   filter: brightness(0.92);
 }

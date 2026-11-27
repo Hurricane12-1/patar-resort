@@ -10,7 +10,7 @@ import {
   isBookingCollisionWithGap,
   TWO_HOURS_MS,
 } from '../lib/api.ts';
-import { getManilaTodayISO } from '../lib/offeringSpecs';
+import { getManilaTodayISO, inferOfferingType } from '../lib/offeringSpecs';
 import { unitDisplayNames } from '../lib/unitNames';
 import '../styles/availability-calendar.css';
 
@@ -45,6 +45,7 @@ export interface UnitInfo {
   name: string;
   label: string;
   ratePhp: number;
+  kind: 'room' | 'cottage';
 }
 
 interface AvailabilityCalendarProps {
@@ -111,6 +112,7 @@ export default function AvailabilityCalendar({
     return getLocalDateString();
   });
 
+  const [kindFilter, setKindFilter] = useState<'all' | 'room' | 'cottage'>('all');
   const [selectedCell, setSelectedCell] = useState<{ unitId: string; dateStr: string } | null>(null);
   const [activeDetailStay, setActiveDetailStay] = useState<CalendarStay | null>(null);
   const [savingBookingEdit, setSavingBookingEdit] = useState(false);
@@ -280,6 +282,7 @@ export default function AvailabilityCalendar({
           name,
           label: `${r.name} (${name})`,
           ratePhp: r.rate_php || 3500,
+          kind: inferOfferingType(r) === 'cottage' ? 'cottage' : 'room',
         });
         unitCounter++;
       }
@@ -287,6 +290,12 @@ export default function AvailabilityCalendar({
 
     return list;
   }, [effectiveRooms, unitNames]);
+
+  const visibleUnits = useMemo(
+    () => (kindFilter === 'all' ? units : units.filter((u) => u.kind === kindFilter)),
+    [units, kindFilter]
+  );
+  const showKindFilter = !selectedRoomId || selectedRoomId === 'all';
 
   // Generate days array starting from windowStartDateStr
   const daysArray = useMemo(() => {
@@ -740,6 +749,19 @@ export default function AvailabilityCalendar({
           </div>
 
           <h2 className="pms-date-title">{dateRangeLabel}</h2>
+
+          {showKindFilter && (
+            <select
+              className="pms-kind-select"
+              aria-label="Show rooms or cottages"
+              value={kindFilter}
+              onChange={(e) => setKindFilter(e.target.value as 'all' | 'room' | 'cottage')}
+            >
+              <option value="all">All units ({units.length})</option>
+              <option value="room">Rooms ({units.filter((u) => u.kind === 'room').length})</option>
+              <option value="cottage">Cottages ({units.filter((u) => u.kind === 'cottage').length})</option>
+            </select>
+          )}
         </div>
 
         {/* Right: Metrics (Staff) OR Clean 3-Color Legend (White = Available, Red = Reserved, Blue = Selected) */}
@@ -890,8 +912,12 @@ export default function AvailabilityCalendar({
                 No open accommodation units are currently configured or active in resort inventory. Open or create rooms in Room Management.
               </span>
             </div>
+          ) : visibleUnits.length === 0 ? (
+            <div style={{ padding: '40px 20px', textAlign: 'center', color: isLightMode ? '#64748B' : '#94A3B8', fontSize: '.88rem' }}>
+              No {kindFilter === 'cottage' ? 'cottages' : 'rooms'} are open right now.
+            </div>
           ) : (
-            units.map((unit) => {
+            visibleUnits.map((unit) => {
               const isCurrentActiveUnit = unit.id === activeUnitId;
 
               // Stays rendered as pills on this unit row
