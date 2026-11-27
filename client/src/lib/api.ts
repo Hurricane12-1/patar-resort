@@ -12,11 +12,13 @@ import {
 export class ApiError extends Error {
   status: number;
   data: any;
-  constructor(status: number, message: string, data?: any) {
+  unreachable: boolean;
+  constructor(status: number, message: string, data?: any, unreachable = false) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.data = data;
+    this.unreachable = unreachable;
   }
 }
 
@@ -42,6 +44,37 @@ let inMemoryCsrfToken = '';
 let backendApiAvailable: boolean | null = null;
 let lastBackendCheck = 0;
 const BACKEND_COOLDOWN_MS = 60000;
+const READ_TIMEOUT_MS = 2500;
+const WRITE_TIMEOUT_MS = 45000;
+
+function isBackendUnreachable(err: unknown): boolean {
+  return err instanceof ApiError && err.unreachable;
+}
+
+function requireDirectWrite(
+  res: { error: { message?: string } | null; data?: any },
+  action: string,
+  needsRow = false,
+) {
+  if (res.error) throw new Error(`${action} failed: ${res.error.message || 'unknown error'}`);
+  if (needsRow && !(Array.isArray(res.data) && res.data.length > 0)) {
+    throw new Error(`${action} failed: the server is unreachable and the direct save was refused. Try again shortly.`);
+  }
+}
+
+function liveTokenFor(
+  storageKey: string,
+  storedToken: string | null,
+  session: { access_token?: string; user?: { id?: string } } | null,
+): string | null {
+  if (!session?.access_token || !session.user?.id || typeof sessionStorage === 'undefined') return storedToken;
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(storageKey) || 'null');
+    return saved?.user?.id === session.user.id ? session.access_token : storedToken;
+  } catch {
+    return storedToken;
+  }
+}
 
 async function getOrFetchCsrfToken(): Promise<string> {
   if (backendApiAvailable === false && Date.now() - lastBackendCheck < BACKEND_COOLDOWN_MS) return '';
@@ -61,8 +94,10 @@ async function getOrFetchCsrfToken(): Promise<string> {
     clearTimeout(timeoutId);
     const ct = res.headers.get('content-type') || '';
     if (!res.ok || ct.includes('text/html')) {
-      backendApiAvailable = false;
-      lastBackendCheck = Date.now();
+      if (ct.includes('text/html') || res.status >= 502) {
+        backendApiAvailable = false;
+        lastBackendCheck = Date.now();
+      }
       return '';
     }
     const data = await res.json();
@@ -87,9 +122,9 @@ export function invalidateFrontDeskCache() {
   _frontDeskCache = null;
 }
 
-async function req<T = any>(path: string, { method = 'GET', body }: { method?: string; body?: any } = {}): Promise<T> {
-  if (backendApiAvailable === false && (!API_BASE || Date.now() - lastBackendCheck < BACKEND_COOLDOWN_MS)) {
-    throw new ApiError(503, 'Backend temporarily unavailable — routing to Supabase');
+async function req<T = any>(path: string, { method = 'GET', body, slowWrite = false }: { method?: string; body?: any; slowWrite?: boolean } = {}): Promise<T> {
+  if (backendApiAvailable === false && Date.now() - lastBackendCheck < BACKEND_COOLDOWN_MS) {
+    throw new ApiError(503, 'Backend temporarily unavailable — routing to Supabase', undefined, true);
   }
 
   const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
@@ -98,9 +133,9 @@ async function req<T = any>(path: string, { method = 'GET', body }: { method?: s
   };
 
   const adminTokenKey = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_token_key') : null;
-  const adminJwt = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_jwt') : null;
-  const staffJwt = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_staff_jwt') : null;
-  const customerJwt = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_customer_jwt') : null;
+  const adminJwt = liveTokenFor('jd_admin_session', typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_admin_jwt') : null, session);
+  const staffJwt = liveTokenFor('jd_staff_session', typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_staff_jwt') : null, session);
+  const customerJwt = liveTokenFor('jd_customer_session', typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jd_customer_jwt') : null, session);
 
   const currentPath = typeof window !== 'undefined' ? window.location.pathname.toLowerCase() : '';
   const onAdminPath = currentPath.startsWith('/admin');
@@ -143,8 +178,8 @@ async function req<T = any>(path: string, { method = 'GET', body }: { method?: s
 
   const endpoint = API_BASE ? `${API_BASE}/api${path}` : `/api${path}`;
   const controller = new AbortController();
-  // Snappy 2.5s timeout for fast UI fallback so user never feels lag
-  const timeoutId = setTimeout(() => controller.abort(), 2500);
+  // Reads and sign-ins fall back fast; admin saves get longer so a slow write is not cut off mid-way.
+  const timeoutId = setTimeout(() => controller.abort(), slowWrite ? WRITE_TIMEOUT_MS : READ_TIMEOUT_MS);
 
   let res: Response;
   try {
@@ -156,9 +191,12 @@ async function req<T = any>(path: string, { method = 'GET', body }: { method?: s
       signal: controller.signal,
     });
   } catch (err: any) {
+    if (slowWrite && err?.name === 'AbortError') {
+      throw new ApiError(504, 'The server took too long to respond. Refresh the page to check whether the change was saved.', err);
+    }
     backendApiAvailable = false;
     lastBackendCheck = Date.now();
-    throw new ApiError(504, 'API request timed out or network error — falling back to Supabase', err);
+    throw new ApiError(504, 'API request timed out or network error — falling back to Supabase', err, true);
   } finally {
     clearTimeout(timeoutId);
   }
@@ -167,7 +205,7 @@ async function req<T = any>(path: string, { method = 'GET', body }: { method?: s
   if (contentType.includes('text/html')) {
     backendApiAvailable = false;
     lastBackendCheck = Date.now();
-    throw new ApiError(404, 'Static host HTML fallback — routing to Supabase');
+    throw new ApiError(404, 'Static host HTML fallback — routing to Supabase', undefined, true);
   }
 
   const csrfHeader = res.headers.get('x-csrf-token');
@@ -176,20 +214,18 @@ async function req<T = any>(path: string, { method = 'GET', body }: { method?: s
   }
 
   if (!res.ok) {
-    if (res.status >= 500) {
+    const gatewayDown = res.status === 502 || res.status === 503 || res.status === 504;
+    if (gatewayDown) {
       backendApiAvailable = false;
       lastBackendCheck = Date.now();
     }
-    if (res.status === 404 || res.status === 405) {
-      const errorBody = await res.json().catch(() => ({}));
-      if (!errorBody.message && !errorBody.error) {
-        backendApiAvailable = false;
-        lastBackendCheck = Date.now();
-      }
-      throw new ApiError(res.status, errorBody.detail || errorBody.message || errorBody.error || `HTTP ${res.status} error`, errorBody);
-    }
     const errorBody = await res.json().catch(() => ({}));
-    throw new ApiError(res.status, errorBody.detail || errorBody.message || errorBody.error || `HTTP ${res.status} error`, errorBody);
+    const firewallMessage = errorBody.code === 'NGWF_IP_QUARANTINED'
+      ? 'This connection is temporarily blocked by the security firewall. Try again later.'
+      : errorBody.code === 'NGWF_THREAT_BLOCKED'
+        ? 'The security firewall flagged text in this request. Remove code-like text from the fields and try again.'
+        : null;
+    throw new ApiError(res.status, firewallMessage || errorBody.detail || errorBody.message || errorBody.error || `HTTP ${res.status} error`, errorBody, gatewayDown);
   }
 
   backendApiAvailable = true;
@@ -1302,9 +1338,10 @@ export const api = {
   },
   createStaffAccount: async (body: any) => {
     try {
-      const res = await req('/admin/users', { method: 'POST', body });
-      if (res && res.id) return res;
-    } catch {}
+      return await req('/admin/users', { method: 'POST', body, slowWrite: true });
+    } catch (err) {
+      if (!isBackendUnreachable(err)) throw err;
+    }
     const sb = await ensureSupabaseSession();
 
     let seq = 1;
@@ -1360,23 +1397,30 @@ export const api = {
   },
   updateUserRole: async (id: string, role: string, department?: string) => {
     try {
-      return await req(`/admin/users/${id}/role`, { method: 'PATCH', body: department ? { role, department } : { role } });
-    } catch {}
+      return await req(`/admin/users/${id}/role`, { method: 'PATCH', body: department ? { role, department } : { role }, slowWrite: true });
+    } catch (err) {
+      if (!isBackendUnreachable(err)) throw err;
+    }
     const sb = await ensureSupabaseSession();
-    const empPatch: Record<string, any> = { role, updated_at: new Date().toISOString() };
+    const now = new Date().toISOString();
+    const empPatch: Record<string, any> = { role, updated_at: now };
     if (department) empPatch.department = department;
-    await Promise.all([
-      sb.from('profiles').update({ role, updated_at: new Date().toISOString() }).eq('id', id),
-      sb.from('users').update({ role, updated_at: new Date().toISOString() }).eq('id', id),
+    const [profileRes, legacyRes, empRes] = await Promise.all([
+      sb.from('profiles').update({ role, updated_at: now }).eq('id', id).select('id'),
+      sb.from('users').update({ role, updated_at: now }).eq('id', id),
       sb.from('employee_accounts').update(empPatch).or(`id.eq.${id},auth_user_id.eq.${id}`),
     ]);
+    if (legacyRes.error) console.warn('[updateUserRole] legacy users write failed:', legacyRes.error.message);
+    requireDirectWrite(profileRes, 'Changing the role', true);
+    requireDirectWrite(empRes, 'Changing the role');
     return { id, role, department, success: true };
   },
   adminUpdateUser: async (id: string, body: any) => {
     try {
-      const res = await req(`/admin/users/${id}`, { method: 'PATCH', body });
-      if (res) return res;
-    } catch {}
+      return (await req(`/admin/users/${id}`, { method: 'PATCH', body, slowWrite: true })) ?? { id, ...body };
+    } catch (err) {
+      if (!isBackendUnreachable(err)) throw err;
+    }
     const sb = await ensureSupabaseSession();
     const updateData: Record<string, any> = {
       full_name: body.full_name,
@@ -1390,38 +1434,35 @@ export const api = {
     const empUpdate: Record<string, any> = { ...updateData };
     if (body.department) empUpdate.department = body.department;
     if (body.position) empUpdate.position = body.position;
-    await Promise.all([
-      sb.from('profiles').update(updateData).eq('id', id),
+    const [profileRes, empRes] = await Promise.all([
+      sb.from('profiles').update(updateData).eq('id', id).select('id'),
       sb.from('employee_accounts').update(empUpdate).or(`id.eq.${id},auth_user_id.eq.${id}`),
     ]);
+    requireDirectWrite(profileRes, 'Saving the profile', true);
+    requireDirectWrite(empRes, 'Saving the employee record');
     return { id, ...updateData, department: body.department };
   },
   resetUserPassword: async (id: string, new_password: string) => {
     try {
-      return await req(`/admin/users/${id}/reset-password`, { method: 'POST', body: { new_password } });
-    } catch {}
+      return await req(`/admin/users/${id}/reset-password`, { method: 'POST', body: { new_password }, slowWrite: true });
+    } catch (err) {
+      if (!isBackendUnreachable(err)) throw err;
+    }
     const sb = await ensureSupabaseSession();
-    await Promise.all([
-      sb.from('profiles').update({ password: new_password, updated_at: new Date().toISOString() }).eq('id', id),
-      sb.from('employee_accounts').update({ password: new_password, updated_at: new Date().toISOString() }).or(`id.eq.${id},auth_user_id.eq.${id}`),
+    const now = new Date().toISOString();
+    const [profileRes, empRes] = await Promise.all([
+      sb.from('profiles').update({ password: new_password, updated_at: now }).eq('id', id).select('id'),
+      sb.from('employee_accounts').update({ password: new_password, updated_at: now }).or(`id.eq.${id},auth_user_id.eq.${id}`),
     ]);
+    requireDirectWrite(profileRes, 'Resetting the password', true);
+    requireDirectWrite(empRes, 'Resetting the password');
     return { success: true };
   },
   adminResetPassword: async (id: string, new_password: string) => {
     return api.resetUserPassword(id, new_password);
   },
   adminDeleteUser: async (id: string) => {
-    try {
-      return await req(`/admin/users/${id}`, { method: 'DELETE' });
-    } catch {}
-    const sb = await ensureSupabaseSession();
-    await Promise.all([
-      sb.from('employee_accounts').delete().or(`id.eq.${id},auth_user_id.eq.${id}`),
-      sb.from('customers').delete().eq('id', id),
-      sb.from('users').delete().eq('id', id),
-      sb.from('profiles').delete().eq('id', id),
-    ]);
-    return { success: true, deleted_id: id };
+    return await req(`/admin/users/${id}`, { method: 'DELETE', slowWrite: true });
   },
 
   // Telemetry & Network Status Control
