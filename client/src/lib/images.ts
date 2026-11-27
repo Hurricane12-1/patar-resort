@@ -117,6 +117,17 @@ export const getRoomImageUrl = (room: any): string => {
   return roomImg(room.slug || room.name, room.category || room.offering_type);
 };
 
+/** Shown when a room or cottage has no photo of its own yet. A cottage gets a resort scene, never a hotel bedroom. */
+export const RESORT_STAND_IN = {
+  room: IMG.room,
+  cottage: '/images/rockview/18_outdoor_cottage_seating.jpg',
+};
+
+export const roomPhotoOrStandIn = (stored: string | undefined, name: string, category: string, isCottage: boolean): string =>
+  stored && stored.trim()
+    ? getRoomImageUrl({ image_url: stored, name, category })
+    : RESORT_STAND_IN[isCottage ? 'cottage' : 'room'];
+
 /**
  * Handles broken images gracefully by falling back to verified resort photography.
  */

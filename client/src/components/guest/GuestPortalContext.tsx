@@ -4,6 +4,7 @@ import { api } from '../../lib/api';
 import { supabase } from '../../lib/supabaseClient';
 import { to11Digits } from '../../lib/format';
 import { getManilaTodayISO } from '../../lib/offeringSpecs';
+import { roomPhotoOrStandIn } from '../../lib/images';
 import { FALLBACK_ROOMS, fetchBookableRooms, type Room } from '../../lib/guestRooms';
 import {
   GUEST_BOOKINGS_STORAGE_KEY,
@@ -215,10 +216,13 @@ export function GuestPortalProvider({ children }: { children: ReactNode }) {
   const roomFor = useCallback(
     (booking: GuestBooking): RoomSnapshot => {
       const room = rooms.find((r) => String(r.id) === String(booking.roomId));
+      const name = room?.name || booking.roomName;
+      const category = room?.category || booking.roomCategory;
+      const isCottage = room?.offering_type === 'cottage' || /cottage|cabana/i.test(`${category} ${name}`);
       return {
-        name: room?.name || booking.roomName,
-        category: room?.category || booking.roomCategory,
-        image: room?.image_url || booking.roomImage || '',
+        name,
+        category,
+        image: roomPhotoOrStandIn(room?.image_url || booking.roomImage, name, category, isCottage),
         capacity: Number(room?.capacity) || booking.roomCapacity,
       };
     },

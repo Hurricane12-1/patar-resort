@@ -7,6 +7,7 @@ import { usePageSettings } from '../../lib/pageSettings';
 import { toast } from '../../components/Toasts';
 import { VoucherBarcode } from '../../components/receipt/VoucherBarcode';
 import { nightsBetween } from '../../lib/guestRooms';
+import { handleImageError } from '../../lib/images';
 import {
   RESORT_CONTACT,
   canGuestCancel,
@@ -247,14 +248,13 @@ function BookingCard({ item, today, featured, onOpen }: { item: StayItem; today:
       }`}
     >
       <div className={`relative overflow-hidden bg-[#040e22] ${featured ? 'aspect-[16/10] md:aspect-auto md:min-h-[340px] md:w-[52%]' : 'aspect-[16/10]'}`}>
-        {room.image && (
-          <img
-            src={room.image}
-            alt={`${room.name} at Rock View Beach Resort`}
-            loading="lazy"
-            className={`absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03] ${muted ? 'opacity-70 grayscale' : ''}`}
-          />
-        )}
+        <img
+          src={room.image}
+          alt={`${room.name} at Rock View Beach Resort`}
+          loading="lazy"
+          onError={handleImageError}
+          className={`absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03] ${muted ? 'opacity-70 grayscale' : ''}`}
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-[#061533] via-black/20 to-black/30" />
         <div className="absolute left-4 top-4 flex flex-wrap items-center gap-2">
           <StatusPill label={status.label} tone={status.tone} />
@@ -593,7 +593,7 @@ function BookingDrawer({ item, today, onClose }: { item: StayItem; today: string
         <div className="flex-1 overflow-y-auto overscroll-contain">
           <div className="px-5 pt-5 sm:px-6">
             <div className="relative aspect-[16/9] overflow-hidden rounded-2xl bg-[#061533]">
-              {room.image && <img src={room.image} alt={`${room.name} at Rock View Beach Resort`} className={`absolute inset-0 h-full w-full object-cover ${phase === 'cancelled' ? 'opacity-70 grayscale' : ''}`} />}
+              <img src={room.image} alt={`${room.name} at Rock View Beach Resort`} onError={handleImageError} className={`absolute inset-0 h-full w-full object-cover ${phase === 'cancelled' ? 'opacity-70 grayscale' : ''}`} />
               <div className="absolute inset-0 bg-gradient-to-t from-[#040e22]/80 via-transparent to-transparent" />
               <div className="absolute left-3 top-3 flex gap-2">
                 <StatusPill label={status.label} tone={status.tone} />
