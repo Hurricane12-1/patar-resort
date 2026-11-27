@@ -722,11 +722,12 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     };
   }, [fetchLiveRooms, fetchLiveReservations]);
 
-  // "Book a stay" links from the guest dashboard land on the reservation card.
+  // "Book a stay" links from the guest dashboard land on the room cards in the reservation card.
   useEffect(() => {
     if (location.hash !== '#reserve') return;
     const timer = window.setTimeout(() => {
-      document.getElementById('reserve-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const target = document.getElementById('reserve-rooms') ?? document.getElementById('reserve-card');
+      target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 300);
     return () => window.clearTimeout(timer);
   }, [location.hash]);
@@ -2540,7 +2541,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
               )}
 
               {/* Room list: auto-match or a manual pick, with live capacity and date availability */}
-              <div className="mb-4 rounded-2xl border border-white/15 bg-[#060B18] p-3 sm:p-4 shadow-xl text-white">
+              <div id="reserve-rooms" className="scroll-mt-28 mb-4 rounded-2xl border border-white/15 bg-[#060B18] p-3 sm:p-4 shadow-xl text-white">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
