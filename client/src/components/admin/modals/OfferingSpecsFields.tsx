@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   OfferingType,
   OfferingSpecs,
@@ -167,8 +167,6 @@ export const OfferingSpecsFields: React.FC<OfferingSpecsFieldsProps> = ({
   const inputBg = isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.06)';
   const cardBg = isLightMode ? '#F8FAFC' : 'rgba(15,23,42,0.55)';
 
-  const [newSettingKey, setNewSettingKey] = useState('');
-  const [newSettingVal, setNewSettingVal] = useState('');
 
   const fieldStyle: React.CSSProperties = {
     width: '100%',
@@ -192,25 +190,6 @@ export const OfferingSpecsFields: React.FC<OfferingSpecsFieldsProps> = ({
 
   const updateSpec = (key: keyof OfferingSpecs, value: unknown) => {
     onSpecsChange({ ...(specs || {}), [key]: value });
-  };
-
-  const customSpecsObj: Record<string, string> = (specs?.custom_specs as Record<string, string>) || {};
-  const customSpecsList = Object.entries(customSpecsObj);
-
-  const handleAddCustomSetting = () => {
-    const k = newSettingKey.trim();
-    const v = newSettingVal.trim();
-    if (!k || !v) return;
-    const nextCustom = { ...customSpecsObj, [k]: v };
-    onSpecsChange({ ...(specs || {}), custom_specs: nextCustom });
-    setNewSettingKey('');
-    setNewSettingVal('');
-  };
-
-  const handleRemoveCustomSetting = (keyToRemove: string) => {
-    const nextCustom = { ...customSpecsObj };
-    delete nextCustom[keyToRemove];
-    onSpecsChange({ ...(specs || {}), custom_specs: nextCustom });
   };
 
   const isLodgingUnit = ['room', 'villa', 'suite'].includes(offeringType);
@@ -505,130 +484,6 @@ export const OfferingSpecsFields: React.FC<OfferingSpecsFieldsProps> = ({
             </div>
           </div>
         )}
-      </div>
-
-      {/* 5. ADDITIONAL CUSTOM SETTINGS (+ ADD SETTING) */}
-      <div
-        style={{
-          padding: 14,
-          borderRadius: 12,
-          border: `1.5px dashed ${themeBorder}`,
-          background: cardBg,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 10,
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: '.76rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.06em', color: themeText }}>
-            <i className="fas fa-sliders" style={{ color: '#0EA5E9', marginRight: 6 }} />
-            Additional Settings &amp; Custom Specs ({customSpecsList.length})
-          </span>
-          <span style={{ fontSize: '.72rem', color: themeMuted }}>Syncs directly with database specs</span>
-        </div>
-
-        {/* Existing Custom Badges */}
-        {customSpecsList.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {customSpecsList.map(([k, v]) => (
-              <span
-                key={k}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '4px 10px',
-                  borderRadius: 9999,
-                  background: isLightMode ? '#E0F2FE' : 'rgba(14, 165, 233, 0.15)',
-                  border: `1px solid ${isLightMode ? '#BAE6FD' : 'rgba(14, 165, 233, 0.35)'}`,
-                  color: isLightMode ? '#0369A1' : '#38BDF8',
-                  fontSize: '.76rem',
-                  fontWeight: 700,
-                }}
-              >
-                <strong>{k}:</strong> {v}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveCustomSetting(k)}
-                  title="Remove this setting"
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#EF4444',
-                    cursor: 'pointer',
-                    fontSize: '.82rem',
-                    padding: 0,
-                    lineHeight: 1,
-                  }}
-                >
-                  ✕
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
-
-        {/* Add Setting Input Row */}
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <input
-            type="text"
-            placeholder="Setting Name (e.g. Wi-Fi Speed, Backup Power)"
-            value={newSettingKey}
-            onChange={(e) => setNewSettingKey(e.target.value)}
-            style={{
-              flex: '1 1 180px',
-              padding: '8px 12px',
-              borderRadius: 8,
-              border: `1px solid ${themeBorder}`,
-              background: inputBg,
-              color: themeText,
-              fontSize: '.82rem',
-            }}
-          />
-          <input
-            type="text"
-            placeholder="Value (e.g. 200 Mbps, 5kVA Solar)"
-            value={newSettingVal}
-            onChange={(e) => setNewSettingVal(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                handleAddCustomSetting();
-              }
-            }}
-            style={{
-              flex: '1 1 180px',
-              padding: '8px 12px',
-              borderRadius: 8,
-              border: `1px solid ${themeBorder}`,
-              background: inputBg,
-              color: themeText,
-              fontSize: '.82rem',
-            }}
-          />
-          <button
-            type="button"
-            onClick={handleAddCustomSetting}
-            disabled={!newSettingKey.trim() || !newSettingVal.trim()}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '8px 14px',
-              borderRadius: 8,
-              border: 'none',
-              background: '#0EA5E9',
-              color: '#FFFFFF',
-              fontSize: '.78rem',
-              fontWeight: 700,
-              cursor: newSettingKey.trim() && newSettingVal.trim() ? 'pointer' : 'not-allowed',
-              opacity: newSettingKey.trim() && newSettingVal.trim() ? 1 : 0.5,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            <i className="fas fa-plus" /> Add Setting
-          </button>
-        </div>
       </div>
     </div>
   );
