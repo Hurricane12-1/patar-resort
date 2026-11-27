@@ -1580,7 +1580,7 @@ export default function ResortDepartment() {
                 title="Add New Accommodation or Tour"
               >
                 <i className="fas fa-plus" />
-                <span>+ Add Accommodation</span>
+                <span>Add Accommodation</span>
               </button>
               )}
 

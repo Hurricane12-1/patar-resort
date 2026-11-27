@@ -178,7 +178,7 @@ export default function Receptionist() {
             title="Create Walk-In or Phone Reservation"
           >
             <i className="fas fa-calendar-plus" />
-            <span>+ Manual Booking</span>
+            <span>Manual Booking</span>
             <span style={{ fontSize: '10px', background: 'rgba(255,255,255,0.25)', padding: '1px 6px', borderRadius: 6 }}>Desk</span>
           </button>
 

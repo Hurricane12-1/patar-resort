@@ -963,7 +963,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
               }}
             >
               <i className="fas fa-plus" />
-              <span>+ New Booking</span>
+              <span>New Booking</span>
             </button>
           </div>
         </div>

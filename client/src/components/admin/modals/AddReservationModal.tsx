@@ -168,7 +168,6 @@ const TimeCombobox: React.FC<TimeComboboxProps> = ({
         <input
           id={id}
           type="text"
-          list={`${id}-datalist`}
           value={displayVal}
           placeholder="e.g. 2:00 PM or type time…"
           onChange={(e) => onChange(e.target.value)}
@@ -205,15 +204,6 @@ const TimeCombobox: React.FC<TimeComboboxProps> = ({
           <i className={`fas fa-chevron-${isOpen ? 'up' : 'down'}`} style={{ fontSize: '.75rem' }} />
         </button>
       </div>
-
-      {/* NATIVE DATALIST AUTOCOMPLETE */}
-      <datalist id={`${id}-datalist`}>
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.label}>
-            {opt.desc}
-          </option>
-        ))}
-      </datalist>
 
       {/* QUICK PRESET CHIPS */}
       <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
