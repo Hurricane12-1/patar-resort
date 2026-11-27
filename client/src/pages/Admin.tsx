@@ -148,16 +148,13 @@ export default function Admin() {
             <RoomInventoryView
               {...themeProps} toast={toast}
               roomsList={state.roomsList} allBookings={state.allBookings}
-              inventoryList={state.inventoryList} loadingRoomsAndInv={state.loadingRoomsAndInv}
+              loadingRoomsAndInv={state.loadingRoomsAndInv}
               refreshRoomsAndInventory={state.refreshRoomsAndInventory}
               refreshReservations={state.refreshReservations}
               setShowCreateRoomModal={state.setShowCreateRoomModal}
               openCreateOfferingModal={state.openCreateOfferingModal}
-              setShowCreateSupplyModal={state.setShowCreateSupplyModal}
               setEditingRoom={state.setEditingRoom} setRoomToRemove={state.setRoomToRemove}
-              setSupplyToRemove={state.setSupplyToRemove}
               handleToggleRoomActive={state.handleToggleRoomActive}
-              handleAdjustSupplyStock={state.handleAdjustSupplyStock}
             />
           )}
 
