@@ -879,21 +879,20 @@ export default function AvailabilityCalendar({
               {daysArray.map((day) => {
                 const isWeekend = day.dayOfWeek === 'SAT' || day.dayOfWeek === 'SUN';
                 const isFirstOfMonth = day.dayNum === 1;
-                const monthName = new Date(`${day.dateStr}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }).toUpperCase();
+                const monthName = new Date(`${day.dateStr}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
 
                 return (
                   <div
                     key={day.dateStr}
                     className={`pms-day-header-cell ${day.isToday ? 'is-today' : ''} ${isWeekend ? 'is-weekend' : ''}`}
                   >
-                    {isFirstOfMonth && <span className="pms-month-badge">{monthName}</span>}
                     <div className="pms-day-name">{day.dayOfWeek}</div>
                     {day.isToday ? (
                       <div className="pms-day-num-today-badge" title="Today">
                         {day.dayNum}
                       </div>
                     ) : (
-                      <div className="pms-day-num">{day.dayNum}</div>
+                      <div className="pms-day-num">{isFirstOfMonth ? `${monthName} ${day.dayNum}` : day.dayNum}</div>
                     )}
                   </div>
                 );
