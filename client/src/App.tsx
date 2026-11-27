@@ -45,7 +45,6 @@ import GuestStays from './pages/client/GuestStays.tsx';
 import GuestProfile from './pages/client/GuestProfile.tsx';
 import GuestHelp from './pages/client/GuestHelp.tsx';
 import AuthCallback from './components/AuthCallback.tsx';
-import DevPortal from './pages/DevPortal.tsx';
 
 function StaffPortalLanding() {
   const { adminProfile, profile } = useAuth();
@@ -68,7 +67,7 @@ function MainAppShell() {
   const path = location.pathname.toLowerCase();
 
   // Determine whether current route is within a dedicated portal or authentication namespace
-  const isDedicatedPortal = ['/admin', '/staff', '/recovery', '/client', '/user', '/dev'].some((p) =>
+  const isDedicatedPortal = ['/admin', '/staff', '/recovery', '/client', '/user'].some((p) =>
     path.startsWith(p)
   );
 
@@ -86,9 +85,9 @@ function MainAppShell() {
   const isPolicy = ['/policy', '/policies', '/terms', '/rules', '/privacy', '/data-deletion'].some((p) => path.startsWith(p));
   const hideNavbarAndFooter = isDedicatedPortal || isLegacyInternal || isGuestHome || isPolicy;
 
-  // Staff/admin/recovery/dev are the internal consoles where the public AI
+  // Staff/admin/recovery are the only internal consoles where the public AI
   // concierge should stay hidden. Guests (/client, /user) keep the chat.
-  const isInternalConsole = ['/admin', '/staff', '/recovery', '/dev'].some((p) => path.startsWith(p));
+  const isInternalConsole = ['/admin', '/staff', '/recovery'].some((p) => path.startsWith(p));
   const hideChatbot = isInternalConsole || isLegacyInternal;
 
   return (
@@ -217,12 +216,6 @@ function MainAppShell() {
               </ClientLayout>
             </ClientGuard>
           } />
-
-          {/* ============================================================ */}
-          {/* DEVELOPER SANDBOX & PLANTING GROUND (/dev)                   */}
-          {/* ============================================================ */}
-          <Route path="/dev" element={<DevPortal />} />
-          <Route path="/dev/*" element={<DevPortal />} />
 
           {/* User Route Aliases & OAuth Callback */}
           <Route path="/auth/callback" element={<AuthCallback />} />
