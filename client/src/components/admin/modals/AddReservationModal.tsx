@@ -338,6 +338,7 @@ export default function AddReservationModal({
 }: AddReservationModalProps) {
   const [showWalkInCalendar, setShowWalkInCalendar] = useState(false);
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
+  const [processingPayment, setProcessingPayment] = useState(false);
   const [walkInTypeFilter, setWalkInTypeFilter] = useState<'all' | OfferingType>('all');
   const guestNameInputRef = useRef<HTMLInputElement | null>(null);
   const phoneInputRef = useRef<HTMLInputElement | null>(null);
@@ -510,6 +511,13 @@ export default function AddReservationModal({
         phoneInputRef.current.focus();
       }
       return;
+    }
+
+    if (newReservation.payment_method === 'GCash') {
+      // Placeholder for the GCash payment step: shows "Processing…" briefly. No payment is taken yet.
+      setProcessingPayment(true);
+      await new Promise((resolve) => setTimeout(resolve, 2500));
+      setProcessingPayment(false);
     }
 
     await onSubmit(e);
@@ -1838,7 +1846,7 @@ export default function AddReservationModal({
               </button>
               <button
                 type="submit"
-                disabled={creatingReservation || activeRoomsList.length === 0 || isModalRoomLocked || isSelectedUnitTaken}
+                disabled={processingPayment || creatingReservation || activeRoomsList.length === 0 || isModalRoomLocked || isSelectedUnitTaken}
                 className="btn btn-sky btn-sm"
                 style={{
                   fontWeight: 700,
@@ -1849,8 +1857,13 @@ export default function AddReservationModal({
                     isModalRoomLocked || isSelectedUnitTaken || activeRoomsList.length === 0 ? '#94A3B8' : undefined,
                 }}
               >
-                {creatingReservation ? (
-                  'Saving to Ledger…'
+                {processingPayment ? (
+                  <>
+                    <span className="photo-upload-spinner" aria-hidden="true" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: 8 }} />
+                    Processing…
+                  </>
+                ) : creatingReservation ? (
+                  'Booking…'
                 ) : activeRoomsList.length === 0 ? (
                   <>
                     <i className="fas fa-triangle-exclamation" style={{ marginRight: 6 }} />
@@ -1872,7 +1885,7 @@ export default function AddReservationModal({
                     Unit Occupied (2h Buffer)
                   </>
                 ) : (
-                  'Save & Log to Ledger ✦'
+                  'Book'
                 )}
               </button>
             </div>
