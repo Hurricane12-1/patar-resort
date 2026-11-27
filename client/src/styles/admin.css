@@ -1213,6 +1213,15 @@
   border-radius: 6px !important;
 }
 
+.admin-portal .room-add-btn {
+  border-radius: 8px !important;
+  box-shadow: none !important;
+}
+
+.admin-portal .room-add-btn:hover {
+  filter: brightness(0.92);
+}
+
 .admin-portal .account-directory-actions .account-new-btn:hover {
   filter: brightness(0.92);
 }

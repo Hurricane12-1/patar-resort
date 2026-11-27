@@ -149,16 +149,14 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
             onChange={(e) => setInventorySearch(e.target.value)}
             style={{ maxWidth: 220, background: isLightMode ? '#FFF' : undefined, color: themeText }}
           />
-          {(
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              <button type="button" className="btn btn-sm" style={{ background: '#006699', color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '7px 12px', fontSize: '.78rem', fontWeight: 700, cursor: 'pointer' }} onClick={() => (openCreateOfferingModal ? openCreateOfferingModal('room') : setShowCreateRoomModal(true))}>
-                + Room
-              </button>
-              <button type="button" className="btn btn-sm" style={{ background: '#047857', color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '7px 12px', fontSize: '.78rem', fontWeight: 700, cursor: 'pointer' }} onClick={() => (openCreateOfferingModal ? openCreateOfferingModal('cottage') : setShowCreateRoomModal(true))}>
-                + Cottage
-              </button>
-            </div>
-          )}
+          <button
+            type="button"
+            className="room-add-btn"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#006699', color: '#FFFFFF', border: '1px solid #006699', padding: '7px 14px', fontSize: '.8rem', fontWeight: 600, cursor: 'pointer' }}
+            onClick={() => (openCreateOfferingModal ? openCreateOfferingModal('room') : setShowCreateRoomModal(true))}
+          >
+            <i className="fas fa-plus" style={{ fontSize: '.75rem' }} /> Add Room
+          </button>
         </div>
       </div>
 
