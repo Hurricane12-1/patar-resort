@@ -214,6 +214,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                 setActiveTab(item.key);
                 setSidebarMobileOpen(false);
               }}
+              data-tab={item.key}
               className={`sidebar-nav-item ${isActive ? 'active' : ''}`}
               style={{
                 display: 'flex',

@@ -1209,6 +1209,11 @@
   border-radius: 8px !important;
 }
 
+/* Approval Requests is hidden for now. Remove this rule to bring it back. */
+.admin-portal .sidebar-nav-item[data-tab="approvals"] {
+  display: none !important;
+}
+
 .admin-portal .pms-top-bar .pms-seg-btn {
   border-radius: 6px !important;
 }
