@@ -3107,10 +3107,42 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
           </div>
 
           <div className="h-[360px] sm:h-[440px] rounded-2xl overflow-hidden border border-white/10 bg-[#0B1426] relative shadow-lg">
+            {/* Shown while the map loads, and stays visible if the map never does (slow data, blocked frames). */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center">
+              <span className="flex h-12 w-12 items-center justify-center rounded-full border border-cyan/30 bg-cyan/15 text-cyan">
+                <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z" />
+                  <circle cx="12" cy="9.5" r="2.5" />
+                </svg>
+              </span>
+              <div>
+                <p className="text-base font-semibold text-white">Rock View Beach Resort</p>
+                <p className="mt-0.5 text-xs text-white/60">Patar Coastal Road, Brgy. Patar, Bolinao, Pangasinan</p>
+              </div>
+              <p className="text-[11px] text-white/50">The map is loading. If it does not appear, use a button below.</p>
+              <div className="flex flex-wrap justify-center gap-2">
+                <a
+                  href="https://www.google.com/maps/search/?api=1&query=Rock+View+Beach+Resort,+Patar+Road,+Bolinao,+Pangasinan"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-lg bg-cyan px-4 py-2.5 text-xs font-bold text-[#060B18] transition hover:bg-cyan/90"
+                >
+                  Open in Google Maps
+                </a>
+                <a
+                  href="https://www.google.com/maps/dir/?api=1&destination=Rock+View+Beach+Resort,+Patar+Road,+Bolinao,+Pangasinan"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-lg border border-white/25 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-white/10"
+                >
+                  Get directions
+                </a>
+              </div>
+            </div>
             <iframe
               title="Rock View Beach Resort Location Map"
               src="https://maps.google.com/maps?q=Rock+View+Beach+Resort,+Patar+Road,+Bolinao,+Pangasinan&t=&z=15&ie=UTF8&iwloc=&output=embed"
-              className="w-full h-full border-0"
+              className="relative h-full w-full border-0"
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
               allowFullScreen
