@@ -1198,6 +1198,16 @@
   border-radius: 9999px !important;
 }
 
+/* The Accounts Directory toolbar uses squarer controls than the pill rule above. */
+.admin-portal .account-directory-actions button,
+.admin-portal .account-directory-actions input.search {
+  border-radius: 8px !important;
+}
+
+.admin-portal .account-directory-actions .account-new-btn:hover {
+  filter: brightness(0.92);
+}
+
 .admin-portal .kpi-card-clickable {
   border-radius: 20px !important;
   cursor: pointer;

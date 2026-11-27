@@ -101,7 +101,7 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
           <h3 className="serif" style={{ fontSize: '1.4rem', fontWeight: 700, margin: 0, color: themeText, letterSpacing: '-0.01em' }}>Accounts Directory</h3>
           <p className="muted small" style={{ margin: '3px 0 0', fontSize: '.8rem', color: themeMuted }}>Manage staff credentials, customer profiles, and account recovery.</p>
         </div>
-        <div className="admin-tab-header-actions" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+        <div className="admin-tab-header-actions account-directory-actions" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
           <input
             className="search"
             placeholder="Search by name, email, or phone…"
@@ -142,56 +142,31 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
             <i className={`fas fa-rotate ${searchingUsers ? 'fa-spin' : ''}`} style={{ fontSize: '.75rem' }} /> {searchingUsers ? 'Loading…' : 'Refresh'}
           </button>
           {accountsSubTab === 'staff' && (
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  background: 'linear-gradient(135deg, #F59E0B, #D97706)',
-                  color: '#FFFFFF',
-                  border: '1px solid rgba(245, 158, 11, 0.4)',
-                  boxShadow: '0 1px 3px rgba(217, 119, 6, 0.25)',
-                  borderRadius: 8,
-                  padding: '7px 14px',
-                  fontSize: '.8rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.18s ease',
-                }}
-                onClick={() => {
-                  setNewStaff({ first_name: '', middle_name: '', last_name: '', full_name: '', email: '', password: '', phone: '', role: 'administrator', department: 'management' });
-                  setShowCreateModal(true);
-                }}
-              >
-                <i className="fas fa-crown" style={{ fontSize: '.75rem' }} /> Provision Administrator
-              </button>
-              <button
-                type="button"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  border: `1px solid ${isLightMode ? '#CBD5E1' : 'rgba(255,255,255,0.16)'}`,
-                  color: isLightMode ? '#0F172A' : '#F8FAFC',
-                  background: isLightMode ? '#FFF' : 'rgba(255,255,255,0.06)',
-                  boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-                  borderRadius: 8,
-                  padding: '7px 14px',
-                  fontSize: '.8rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.18s ease',
-                }}
-                onClick={() => {
-                  setNewStaff({ first_name: '', middle_name: '', last_name: '', full_name: '', email: '', password: '', phone: '', role: 'staff', department: 'front_desk' });
-                  setShowCreateModal(true);
-                }}
-              >
-                <i className="fas fa-shield-halved" style={{ fontSize: '.75rem', color: isLightMode ? '#0284C7' : '#38BDF8' }} /> Provision Staff
-              </button>
-            </div>
+            <button
+              type="button"
+              className="account-new-btn"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                background: '#006699',
+                color: '#FFFFFF',
+                border: '1px solid #006699',
+                boxShadow: '0 1px 3px rgba(0, 102, 153, 0.25)',
+                borderRadius: 8,
+                padding: '7px 14px',
+                fontSize: '.8rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.18s ease',
+              }}
+              onClick={() => {
+                setNewStaff({ first_name: '', middle_name: '', last_name: '', full_name: '', email: '', password: '', phone: '', role: 'staff', department: 'front_desk' });
+                setShowCreateModal(true);
+              }}
+            >
+              <i className="fas fa-plus" style={{ fontSize: '.75rem' }} /> New account
+            </button>
           )}
         </div>
       </div>
