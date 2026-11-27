@@ -149,9 +149,6 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
             onChange={(e) => setInventorySearch(e.target.value)}
             style={{ maxWidth: 220, background: isLightMode ? '#FFF' : undefined, color: themeText }}
           />
-          <button className="btn btn-sm" onClick={refreshRoomsAndInventory} disabled={loadingRoomsAndInv} style={{ border: `1px solid ${themeBorder}`, color: themeText }}>
-            {loadingRoomsAndInv ? 'Syncing…' : '↻ Sync Now'}
-          </button>
           {(
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               <button type="button" className="btn btn-sm" style={{ background: '#006699', color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '7px 12px', fontSize: '.78rem', fontWeight: 700, cursor: 'pointer' }} onClick={() => (openCreateOfferingModal ? openCreateOfferingModal('room') : setShowCreateRoomModal(true))}>
