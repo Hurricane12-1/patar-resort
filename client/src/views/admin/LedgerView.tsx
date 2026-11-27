@@ -214,19 +214,6 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
     return { all, confirmed, pending, checkedIn, checkedOut, onHold, maintenance, disputed, noShow, cancelled };
   }, [allBookings]);
 
-  const filterOptions = [
-    { key: 'all', label: 'All', count: statusCounts.all },
-    { key: 'confirmed', label: 'Confirmed', count: statusCounts.confirmed },
-    { key: 'pending', label: 'Pending', count: statusCounts.pending },
-    { key: 'checked_in', label: 'Checked in', count: statusCounts.checkedIn },
-    { key: 'checked_out', label: 'Checked out', count: statusCounts.checkedOut },
-    { key: 'on_hold', label: 'On Hold', count: statusCounts.onHold },
-    { key: 'maintenance', label: 'Maintenance', count: statusCounts.maintenance },
-    { key: 'disputed', label: 'Disputed', count: statusCounts.disputed },
-    { key: 'no_show', label: 'No Show', count: statusCounts.noShow },
-    { key: 'cancelled', label: 'Cancelled', count: statusCounts.cancelled },
-  ];
-
   return (
     <div className="ledger-view-wrapper">
       {/* 1. TOP VIEW SWITCHER & ACTIONS BAR (MATCHING SCREENSHOT) */}
@@ -303,28 +290,6 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
           </button>
         </div>
       </div>
-
-      {/* 2. STATUS FILTER PILL STRIP (Displayed for Stay Folios List view) */}
-      {ledgerSubView === 'stay_folios' && (
-        <div className={`pms-filter-strip ${!isLightMode ? 'dark' : ''}`}>
-          {filterOptions.map((f) => {
-            const isActive = reservationFilter === f.key;
-            return (
-              <button
-                key={f.key}
-                type="button"
-                onClick={() => setReservationFilter(f.key)}
-                className={`pms-filter-chip ${isActive ? 'active' : ''} ${!isLightMode ? 'dark' : ''}`}
-              >
-                <span>{f.label}</span>
-                <span className="pms-filter-count">
-                  {f.count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      )}
 
       {/* VIEW 1: EXECUTIVE HOSPITALITY PMS ANALYTICS & REVENUE FORECASTING */}
       {ledgerSubView === 'debit_credit' && (() => {
@@ -1475,7 +1440,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                     <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Party</th>
                     <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Total Amount</th>
                     <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Status</th>
-                    <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Front Desk Actions</th>
+                    <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1587,7 +1552,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                             outline: 'none',
                           }}
                         >
-                          <option value="">⚡ Front Desk Actions ▾</option>
+                          <option value="">⚡ Actions</option>
                           <option value="edit">✏️ Edit Reservation</option>
                           <option value="receipt">🧾 Receipt &amp; Folio</option>
                           <option value="timeline">🕒 Status Timeline</option>
