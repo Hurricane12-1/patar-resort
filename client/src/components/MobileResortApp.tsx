@@ -3894,9 +3894,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                       <li>Scan the QR code and pay {formatPHP(downpaymentHold.amount_php)}.</li>
                       <li>Keep this page open. It confirms your booking by itself.</li>
                     </ol>
-                    {downpaymentHold.emailed && (
-                      <p className="text-xs text-[#6A6A6A]">A copy of this QR code was sent to {guestEmail.trim()}.</p>
-                    )}
+                    <p className="text-xs text-[#6A6A6A]">A copy of this QR code is on its way to {guestEmail.trim()}.</p>
 
                     {reserveError && (
                       <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs font-medium text-rose-900">

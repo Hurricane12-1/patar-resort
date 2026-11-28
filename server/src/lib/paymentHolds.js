@@ -58,7 +58,7 @@ export function paymentRequestRetryAt(requestTimesMs, nowMs) {
   return new Date(inWindow[inWindow.length - PAYMENT_REQUEST_LIMIT] + PAYMENT_REQUEST_WINDOW_MS);
 }
 
-function serializeHold(hold, qrDataUrl, emailed = false) {
+function serializeHold(hold, qrDataUrl) {
   return {
     id: hold.id,
     reference: hold.reference,
@@ -67,7 +67,6 @@ function serializeHold(hold, qrDataUrl, emailed = false) {
     expires_at: hold.expires_at,
     reservation_ids: hold.reservation_ids,
     qr_data_url: qrDataUrl,
-    emailed,
   };
 }
 
@@ -111,6 +110,14 @@ async function releaseHold(client, hold) {
 }
 
 async function creditHold(client, hold) {
+  const reservations = await loadReservations(client, hold.reservation_ids);
+  const stillWaiting = reservations.length === hold.reservation_ids.length
+    && reservations.every((row) => row.status === 'pending');
+  if (!stillWaiting) {
+    await releaseHold(client, hold);
+    return null;
+  }
+
   const nowIso = new Date().toISOString();
   const { data: paidRows, error } = await client
     .from('payment_holds')
@@ -304,9 +311,8 @@ export async function createDownpaymentHold({ user, reservationIds, req }) {
 
   const qrPng = await renderQrPng(hold.reference, amount);
 
-  let emailed = false;
   if (hold.guest_email) {
-    emailed = await sendDownpaymentQrEmail({
+    sendDownpaymentQrEmail({
       to: hold.guest_email,
       name: hold.guest_name || 'Guest',
       reference: hold.reference,
@@ -316,12 +322,7 @@ export async function createDownpaymentHold({ user, reservationIds, req }) {
       checkOut: guest.check_out,
       expiresAt,
       qrPng,
-    })
-      .then(() => true)
-      .catch((err) => {
-        console.warn('[Downpayment] QR email could not be sent:', err.message);
-        return false;
-      });
+    }).catch((err) => console.warn('[Downpayment] QR email could not be sent:', err.message));
   }
 
   await logAuditEvent({
@@ -329,11 +330,11 @@ export async function createDownpaymentHold({ user, reservationIds, req }) {
     action: 'DOWNPAYMENT_REQUESTED',
     resourceType: 'payment_hold',
     resourceId: hold.id,
-    details: { reference: hold.reference, amount_php: amount, reservation_ids: ids, expires_at: expiresAt, emailed },
+    details: { reference: hold.reference, amount_php: amount, reservation_ids: ids, expires_at: expiresAt },
     req,
   });
 
-  return serializeHold(hold, `data:image/png;base64,${qrPng.toString('base64')}`, emailed);
+  return serializeHold(hold, `data:image/png;base64,${qrPng.toString('base64')}`);
 }
 
 export async function getDownpaymentHoldForGuest({ user, holdId }) {

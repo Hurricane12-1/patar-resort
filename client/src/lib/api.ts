@@ -490,7 +490,6 @@ export interface DownpaymentHold {
   paid_at?: string | null;
   reservation_ids: string[];
   qr_data_url?: string;
-  emailed?: boolean;
 }
 
 export const api = {
@@ -901,7 +900,7 @@ export const api = {
     };
 
     try {
-      const res = await req('/reservations', { method: 'POST', body: normalizedBody });
+      const res = await req('/reservations', { method: 'POST', body: normalizedBody, slowWrite: true });
       if (res && res.id) return res;
     } catch (err: any) {
       if (!isBackendUnreachable(err) && err?.status !== 401) {
@@ -1074,11 +1073,11 @@ export const api = {
     return [];
   },
   createDownpaymentHold: (reservationIds: string[]) =>
-    req<DownpaymentHold>('/payment-holds', { method: 'POST', body: { reservation_ids: reservationIds } }),
-  getDownpaymentHold: (holdId: string) => req<DownpaymentHold>(`/payment-holds/${holdId}`),
+    req<DownpaymentHold>('/payment-holds', { method: 'POST', body: { reservation_ids: reservationIds }, slowWrite: true }),
+  getDownpaymentHold: (holdId: string) => req<DownpaymentHold>(`/payment-holds/${holdId}`, { timeoutMs: 10000 }),
   cancelReservation: async (id: string) => {
     try {
-      return await req(`/reservations/${id}/cancel`, { method: 'PATCH' });
+      return await req(`/reservations/${id}/cancel`, { method: 'PATCH', slowWrite: true });
     } catch (err) {
       if (!isBackendUnreachable(err)) throw err;
     }
