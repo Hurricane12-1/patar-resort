@@ -16,6 +16,8 @@ const REFERENCE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const WINDOW_CLOSED_MESSAGE = 'The 15-minute downpayment window has closed, so these rooms were released. Please book again.';
 
+const DOWNPAYMENT_RATE = 0.5;
+
 let sweepTimer = null;
 
 function makeReference() {
@@ -55,7 +57,7 @@ function serializeHold(hold, qrDataUrl, emailed = false) {
 async function loadReservations(client, ids) {
   const { data, error } = await client
     .from('reservations')
-    .select('id, guest_id, email, guest_name, phone, status, payment_status, downpayment_php, check_in, check_out, rooms(name)')
+    .select('id, guest_id, email, guest_name, phone, status, payment_status, total_php, check_in, check_out, rooms(name)')
     .in('id', ids);
   if (error) throw new ApiError(500, error.message);
   return data ?? [];
@@ -143,7 +145,8 @@ export async function createDownpaymentHold({ user, reservationIds, req }) {
     return serializeHold(existing, `data:image/png;base64,${qrPng.toString('base64')}`);
   }
 
-  const amount = reservations.reduce((sum, row) => sum + (Number(row.downpayment_php) || 0), 0);
+  const stayTotal = reservations.reduce((sum, row) => sum + (Number(row.total_php) || 0), 0);
+  const amount = Math.round(stayTotal * DOWNPAYMENT_RATE);
   if (amount <= 0) {
     throw new ApiError(422, 'These bookings have no downpayment to collect.');
   }

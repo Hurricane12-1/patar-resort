@@ -37,6 +37,7 @@ import { broadcastPayload1 } from '../socket/chatbot.js';
 import { getLocalReservations, addLocalReservation, updateLocalReservation, deleteLocalReservation } from '../lib/reservationStore.js';
 import { normalizePaymentStatus } from '../lib/paymentStatus.js';
 import { sweepExpiredHolds } from '../lib/paymentHolds.js';
+import { computeGuestStayTotal } from '../lib/guestStayPricing.js';
 
 const r = Router();
 const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -322,15 +323,16 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
   const roomName = room.name;
   const roomRate = room.rate_php;
   const nights = Math.max(1, Math.round((new Date(check_out) - new Date(check_in)) / 86400000));
-  const calculatedTotal = calculateOfferingTotal({
-    rate_php: roomRate,
-    nights,
-    guests,
-    offering_type: resolvedOfferingType,
-    specs: parsedRoom.specs,
-  });
-  const poolAddonFee = computeVerifiedPoolAddonFee(finalNotes, guests);
-  const serverCalculatedTotal = calculatedTotal + poolAddonFee;
+  // Guest bookings are priced exactly as the booking page shows them. Desk bookings keep the desk rules.
+  const serverCalculatedTotal = isDeskStaff
+    ? calculateOfferingTotal({
+        rate_php: roomRate,
+        nights,
+        guests,
+        offering_type: resolvedOfferingType,
+        specs: parsedRoom.specs,
+      }) + computeVerifiedPoolAddonFee(finalNotes, guests)
+    : computeGuestStayTotal({ rate_php: roomRate, check_in, check_out }).grandTotal;
   const total_php = (actorRole === 'administrator' && customTotal && customTotal > 0)
     ? Number(customTotal)
     : serverCalculatedTotal;
