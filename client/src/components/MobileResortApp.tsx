@@ -513,7 +513,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   const [guestEmail, setGuestEmail] = useState('');
   const [guestPhone, setGuestPhone] = useState('');
   const [guestRequests, setGuestRequests] = useState('');
-  const [paymentChoice, setPaymentChoice] = useState('front-desk');
+  const [paymentChoice, setPaymentChoice] = useState('GCash');
   const [savedPayments, setSavedPayments] = useState<GuestPaymentMethod[]>([]);
   const [reserveError, setReserveError] = useState<string | null>(null);
   const [savedBooking, setSavedBooking] = useState<GuestBooking | null>(null);
@@ -1542,7 +1542,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     const methods = deviceAccount ? deviceAccount.payments : [];
     setSavedPayments(methods);
     const preferred = methods.find((m) => m.isDefault) || methods[0];
-    setPaymentChoice(preferred ? `saved:${preferred.id}` : 'front-desk');
+    setPaymentChoice(preferred ? `saved:${preferred.id}` : 'GCash');
   };
 
   const resolvePayment = (): { db: string; display: string } => {
@@ -1552,7 +1552,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     }
     if (paymentChoice === 'GCash' || paymentChoice === 'Maya') return { db: paymentChoice, display: paymentChoice };
     if (paymentChoice === 'Card') return { db: 'Card', display: 'Credit or debit card' };
-    return { db: 'Cash', display: 'Pay at the front desk' };
+    return { db: 'GCash', display: 'GCash' };
   };
 
   const openReserve = () => {
@@ -3719,7 +3719,6 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                           {`${paymentDisplay(method)}${method.isDefault ? ' (default)' : ''}`}
                         </option>
                       ))}
-                      <option value="front-desk">Pay at the front desk</option>
                       <option value="GCash">GCash</option>
                       <option value="Maya">Maya</option>
                       <option value="Card">Credit or debit card</option>
