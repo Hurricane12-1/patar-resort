@@ -482,70 +482,35 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
                             </div>
                           </div>
 
-                          {/* Interactive Decision Guardrail Buttons */}
-                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', paddingTop: 6, borderTop: `1px dashed ${!isRoomActive ? 'rgba(244,63,94,0.3)' : 'rgba(0,0,0,0.08)'}` }}>
-                            <button
-                              type="button"
-                              onClick={() => handleProceedBooking(primaryBooking, room)}
+                          {/* One Actions menu for the booking decisions */}
+                          <div style={{ paddingTop: 8, borderTop: `1px dashed ${!isRoomActive ? 'rgba(244,63,94,0.3)' : 'rgba(0,0,0,0.08)'}` }}>
+                            <select
+                              aria-label="Booking actions"
+                              value=""
+                              onChange={(e) => {
+                                const action = e.target.value;
+                                e.target.value = '';
+                                if (action === 'proceed') handleProceedBooking(primaryBooking, room);
+                                else if (action === 'hold') handleHoldBooking(primaryBooking);
+                                else if (action === 'maintenance') handleMarkMaintenanceWithBooking(room, primaryBooking);
+                              }}
                               style={{
-                                border: 'none',
+                                width: '100%',
+                                border: '1px solid #006699',
                                 borderRadius: 8,
-                                padding: '5px 10px',
-                                fontSize: '.72rem',
+                                padding: '7px 10px',
+                                fontSize: '.78rem',
                                 fontWeight: 700,
-                                background: '#059669',
+                                background: '#006699',
                                 color: '#FFFFFF',
                                 cursor: 'pointer',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 4,
                               }}
-                              title="Approve booking to proceed and clear maintenance hold"
                             >
-                              <i className="fas fa-check" /> Proceed Booking
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => handleHoldBooking(primaryBooking)}
-                              style={{
-                                border: '1px solid rgba(217, 119, 6, 0.4)',
-                                borderRadius: 8,
-                                padding: '5px 10px',
-                                fontSize: '.72rem',
-                                fontWeight: 700,
-                                background: primaryBookingStatus === 'on_hold' ? '#D97706' : (isLightMode ? '#FFFBEB' : 'rgba(217,119,6,0.15)'),
-                                color: primaryBookingStatus === 'on_hold' ? '#FFFFFF' : '#D97706',
-                                cursor: 'pointer',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 4,
-                              }}
-                              title="Put booking on hold pending staff review"
-                            >
-                              <i className="fas fa-pause" /> {primaryBookingStatus === 'on_hold' ? 'Booking On Hold' : 'Put on Hold'}
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => handleMarkMaintenanceWithBooking(room, primaryBooking)}
-                              style={{
-                                border: '1px solid rgba(244, 63, 94, 0.4)',
-                                borderRadius: 8,
-                                padding: '5px 10px',
-                                fontSize: '.72rem',
-                                fontWeight: 700,
-                                background: !isRoomActive ? '#F43F5E' : (isLightMode ? '#FFF1F2' : 'rgba(244,63,94,0.15)'),
-                                color: !isRoomActive ? '#FFFFFF' : '#F43F5E',
-                                cursor: 'pointer',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 4,
-                              }}
-                              title="Mark room on maintenance and hold booking"
-                            >
-                              <i className="fas fa-screwdriver-wrench" /> {!isRoomActive ? 'Under Maintenance' : 'Mark Maintenance'}
-                            </button>
+                              <option value="" style={{ color: '#0F172A' }}>Actions</option>
+                              <option value="proceed" style={{ color: '#0F172A' }}>Proceed Booking</option>
+                              <option value="hold" style={{ color: '#0F172A' }}>{primaryBookingStatus === 'on_hold' ? 'Booking On Hold' : 'Put on Hold'}</option>
+                              <option value="maintenance" style={{ color: '#0F172A' }}>{!isRoomActive ? 'Under Maintenance' : 'Mark Maintenance'}</option>
+                            </select>
                           </div>
                         </div>
                       ) : (
