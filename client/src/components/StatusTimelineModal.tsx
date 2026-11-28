@@ -122,9 +122,6 @@ export default function StatusTimelineModal({
   }
 
   // AI & Agent Communication State
-  const aiResolved = true;
-  const ratingVal = booking.reviews?.rating || 5;
-  const reviewComment = booking.reviews?.comment || (isCustomer ? '' : 'Guest enjoyed the beachfront sunset and quick room check-in.');
 
   return (
     <div
@@ -487,47 +484,6 @@ export default function StatusTimelineModal({
               </div>
             </div>
           )}
-        </div>
-
-        {/* 3. AI & AGENT COMMUNICATION RESOLUTION & CSAT RATING */}
-        <div
-          style={{
-            background: 'rgba(15, 23, 42, 0.7)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: 14,
-            padding: '16px 20px',
-            marginBottom: 20,
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
-            <span style={{ fontSize: '.78rem', fontWeight: 800, color: '#38BDF8', letterSpacing: '.06em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <><i className="fas fa-robot" style={{ marginRight: 6 }} />AI Concierge & Agent Communications</>
-            </span>
-            <span style={{ fontSize: '.72rem', background: 'rgba(16, 185, 129, 0.15)', color: '#10B981', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '2px 8px', borderRadius: 8, fontWeight: 700 }}>
-              {aiResolved ? <><i className="fas fa-circle-check" style={{ marginRight: 4 }} />Resolved by AI Concierge</> : <><i className="fas fa-user-tie" style={{ marginRight: 4 }} />Handled by Staff</>}
-            </span>
-          </div>
-
-          <p style={{ margin: 0, fontSize: '.8rem', color: '#CBD5E1', lineHeight: 1.5 }}>
-            Guest communication channel: <strong>24/7 Socket.io AI Concierge & SMS Gateway</strong>.
-            Verified room amenities, swimming pool pass inclusion, and automated check-in directions.
-          </p>
-
-          {/* GUEST CSAT RATING */}
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 10, marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
-            <div>
-              <span style={{ fontSize: '.72rem', color: '#94A3B8', display: 'block' }}>GUEST SATISFACTION RATING</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-                <span style={{ color: '#F59E0B', fontSize: '.85rem' }}><i className="fas fa-star" /><i className="fas fa-star" /><i className="fas fa-star" /><i className="fas fa-star" /><i className="fas fa-star" /></span>
-                <strong style={{ fontSize: '.85rem', color: '#FFFFFF' }}>{ratingVal}.0 / 5.0</strong>
-              </div>
-            </div>
-            {reviewComment && (
-              <div style={{ fontSize: '.76rem', color: '#94A3B8', fontStyle: 'italic', maxWidth: 400 }}>
-                "{reviewComment}"
-              </div>
-            )}
-          </div>
         </div>
 
         {/* 4. OVERSEER / GENERAL MANAGER PRIVILEGED TELEMETRY CARD */}
