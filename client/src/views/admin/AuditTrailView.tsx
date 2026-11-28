@@ -547,14 +547,6 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({
                     {/* 2. ACTOR & ROLE */}
                     <td style={{ padding: '12px 14px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{
-                          width: 28, height: 28, borderRadius: '50%',
-                          background: isAdmin ? 'linear-gradient(135deg, #7C3AED, #9333EA)' : isCustomer ? 'linear-gradient(135deg, #059669, #10B981)' : 'linear-gradient(135deg, #0284C7, #0EA5E9)',
-                          color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: '.75rem', fontWeight: 800, flexShrink: 0,
-                        }}>
-                          <i className={`fas ${isAdmin ? 'fa-crown' : isCustomer ? 'fa-user' : 'fa-user-tie'}`} />
-                        </div>
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             <b style={{ fontSize: '.8rem', color: themeText }}>{log.actor_name || 'System User'}</b>
@@ -567,7 +559,7 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({
                               color: isAdmin ? '#8B5CF6' : isCustomer ? '#10B981' : '#0EA5E9',
                               border: `1px solid ${isAdmin ? 'rgba(139,92,246,0.3)' : isCustomer ? 'rgba(16,185,129,0.3)' : 'rgba(14,165,233,0.3)'}`,
                             }}>
-                              {isAdmin ? 'ADMIN' : isCustomer ? 'CLIENT' : 'EMPLOYEE'}
+                              {isAdmin ? 'ADMIN' : isCustomer ? 'CLIENT' : 'STAFF'}
                             </span>
                           </div>
                           <span style={{ fontSize: '.7rem', color: themeMuted, display: 'block' }}>{log.actor_email}</span>
