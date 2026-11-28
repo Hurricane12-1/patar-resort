@@ -1,3 +1,4 @@
+import StaffTicketsList from './StaffTicketsList';
 import { useState, useRef, useEffect } from 'react';
 import { toast } from './Toasts.tsx';
 import { DefaultUserAvatar } from './AdminIcons.tsx';
@@ -291,6 +292,8 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
           </h2>
         </div>
       </div>
+
+      <StaffTicketsList isLightMode={isLightMode} themeBg={themeBg} themeText={themeText} themeMuted={themeMuted} themeBorder={themeBorder} />
 
       {/* 2-COLUMN RESPONSIVE PANEL LAYOUT */}
       <div
