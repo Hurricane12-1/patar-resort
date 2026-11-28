@@ -464,7 +464,6 @@ async function answer(userId, text, history = []) {
       is_ai: true,
       contact_card: true,
       unavailable: true,
-      reason: lastGeminiFailure || undefined,
     };
   } catch (err) {
     console.warn('[Chatbot Query Error]', err.message);
@@ -474,7 +473,6 @@ async function answer(userId, text, history = []) {
       is_ai: true,
       contact_card: true,
       unavailable: true,
-      reason: lastGeminiFailure || undefined,
     };
   }
 }
