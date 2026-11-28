@@ -33,3 +33,7 @@ create index if not exists payment_holds_requested_by_idx on public.payment_hold
 
 -- 4. Security: no policies are added, so only the server (service role) can read or write this table.
 alter table public.payment_holds enable row level security;
+
+-- 5. Tell the API to pick up the new table now. Without this, the booking page can keep
+--    showing "table not found in the schema cache" for a while after the table is created.
+notify pgrst, 'reload schema';
