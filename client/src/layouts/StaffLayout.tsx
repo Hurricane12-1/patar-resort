@@ -432,17 +432,20 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
             </div>
 
             {/* Navigation Section 2: Property Ops */}
+            {(canAccessPortal(activeProfile, 'accounting') || isExecAdmin) && (
             <div className="staff-nav-group">
               {!isSidebarCollapsed && <div className="staff-nav-group-title">Property Ops</div>}
               <nav className="staff-nav-menu">
-                <NavLink
-                  to="/staff/accounting"
-                  className={({ isActive }) => `staff-nav-item ${isActive ? 'active' : ''}`}
-                  title="Billing & Ledgers"
-                >
-                  <i className="fas fa-calculator staff-nav-icon staff-nav-icon--indigo" />
-                  {!isSidebarCollapsed && <span className="staff-nav-text">Billing &amp; Ledgers</span>}
-                </NavLink>
+                {canAccessPortal(activeProfile, 'accounting') && (
+                  <NavLink
+                    to="/staff/accounting"
+                    className={({ isActive }) => `staff-nav-item ${isActive ? 'active' : ''}`}
+                    title="Billing & Ledgers"
+                  >
+                    <i className="fas fa-calculator staff-nav-icon staff-nav-icon--indigo" />
+                    {!isSidebarCollapsed && <span className="staff-nav-text">Billing &amp; Ledgers</span>}
+                  </NavLink>
+                )}
 
                 {isExecAdmin && (
                   <Link
@@ -456,6 +459,7 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
                 )}
               </nav>
             </div>
+            )}
           </div>
 
           {/* Duty Profile Footer */}

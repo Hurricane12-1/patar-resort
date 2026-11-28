@@ -91,7 +91,7 @@ export function canAccessPortal(profile: any, portal: PortalKey): boolean {
     case 'reception':
       return role === 'administrator' || role === 'staff' || dept === 'front_desk';
     case 'accounting':
-      return role === 'administrator' || role === 'staff' || dept === 'accounting';
+      return role === 'administrator' || dept === 'accounting';
     case 'operations':
       return (
         role === 'administrator' ||
