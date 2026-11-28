@@ -161,7 +161,7 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({
 
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
           <button
-            className="btn btn-sm"
+            type="button"
             onClick={() => {
               const blob = new Blob([JSON.stringify(auditLogs, null, 2)], { type: 'application/json' });
               const url = URL.createObjectURL(blob);
@@ -171,9 +171,9 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({
               a.click();
               toast('Audit logs exported to JSON');
             }}
-            style={{ border: `1px solid ${themeBorder}`, color: themeText, fontWeight: 700 }}
+            style={{ border: '1px solid #006699', background: 'transparent', color: isLightMode ? '#006699' : '#7DD3FC', fontWeight: 600, fontSize: '.84rem', borderRadius: 8, padding: '7px 14px', boxShadow: 'none', textTransform: 'none', letterSpacing: 'normal', cursor: 'pointer' }}
           >
-            <i className="fas fa-file-export" style={{ marginRight: 6 }} /> Export JSON
+            Export JSON
           </button>
         </div>
       </div>
