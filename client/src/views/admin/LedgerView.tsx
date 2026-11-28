@@ -1546,7 +1546,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                             outline: 'none',
                           }}
                         >
-                          <option value="">⚡ Actions</option>
+                          <option value="">Actions</option>
                           <option value="edit">✏️ Edit Reservation</option>
                           <option value="receipt">🧾 Receipt &amp; Folio</option>
                           <option value="timeline">🕒 Status Timeline</option>

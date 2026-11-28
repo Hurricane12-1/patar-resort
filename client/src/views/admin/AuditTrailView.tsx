@@ -410,7 +410,7 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({
                 let processColor = '#0EA5E9';
                 let processBg = 'rgba(14,165,233,0.12)';
                 let processBorder = 'rgba(14,165,233,0.3)';
-                let processFaIcon = 'fa-bolt';
+                let processFaIcon: string | null = null;
                 let processSummary = typeof log.details === 'object' ? (log.details.message || JSON.stringify(log.details)) : String(log.details || '');
 
                 if (act === 'CUSTOMER_LOGIN') {
@@ -425,7 +425,6 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({
                   processColor = '#8B5CF6';
                   processBg = 'rgba(139,92,246,0.15)';
                   processBorder = 'rgba(139,92,246,0.35)';
-                  processFaIcon = 'fa-crown';
                   processSummary = log.details?.message || 'Executive administrator logged into administrative portal';
                 } else if (act === 'STAFF_LOGIN') {
                   processTitle = 'Staff Authenticated';
@@ -575,7 +574,7 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({
                           background: processBg, color: processColor, border: `1px solid ${processBorder}`,
                           display: 'inline-flex', alignItems: 'center', gap: 4,
                         }}>
-                          <i className={`fas ${processFaIcon}`} />
+                          {processFaIcon && <i className={`fas ${processFaIcon}`} />}
                           {act}
                         </span>
                       </div>
