@@ -13,12 +13,11 @@ r.post('/webhooks/sms/status', asyncH(async (req, res) => {
     throw new ApiError(403, 'Invalid webhook signature');
   }
   const { MessageSid, MessageStatus } = req.body;
-  const map = { delivered: 'delivered', sent: 'sent', queued: 'queued',
-                failed: 'failed', undelivered: 'failed' };
+  const map = { delivered: 'sent', sent: 'sent', failed: 'failed', undelivered: 'failed' };
   if (MessageSid && map[MessageStatus]) {
     await admin.from('notifications')
-      .update({ status: map[MessageStatus], sent_at: new Date().toISOString() })
-      .eq('provider_sid', MessageSid);
+      .update({ status: map[MessageStatus] })
+      .eq('payload->>provider_sid', MessageSid);
   }
   res.sendStatus(204);
 }));

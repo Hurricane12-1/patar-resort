@@ -338,10 +338,11 @@ export function GuestPortalProvider({ children }: { children: ReactNode }) {
           }
           const { error } = await supabase.from('audit_logs').insert({
             action: topic === PROBLEM_TOPIC ? 'CLIENT_DISPUTE_FILED' : 'CLIENT_HELP_REQUEST',
-            actor_id: profileId || null,
-            actor_email: profileEmail || account.profile.email,
-            actor_role: 'customer',
+            user_id: profileId || null,
+            resource: 'help_ticket',
             details: {
+              actor_email: profileEmail || account.profile.email,
+              actor_role: 'customer',
               reservation_id: booking?.dbId || 'unspecified',
               reference: booking?.reference || null,
               ticket_number: ticketNumber,

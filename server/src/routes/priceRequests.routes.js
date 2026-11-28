@@ -14,6 +14,7 @@ import { admin, getSystemAdminClient } from '../lib/supabase.js';
 import { redis } from '../lib/redis.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
 import { getTransporter } from '../lib/mailer.js';
+import { insertNotification } from '../lib/notifications.js';
 import { env } from '../config/env.js';
 import {
   listPriceChangeRequests,
@@ -60,14 +61,7 @@ async function applyRoomRateUpdate(roomId, newRatePhp) {
 async function insertNotificationSafe({ profileId = null, title, body, recipient }) {
   try {
     const client = (await getSystemAdminClient().catch(() => null)) || admin;
-    await client.from('notifications').insert({
-      profile_id: profileId,
-      title,
-      body,
-      type: 'sms',
-      recipient,
-      status: 'sent',
-    });
+    await insertNotification({ userId: profileId, title, body, recipient, client });
   } catch (err) {
     console.warn('[PriceRequests] Notification notice:', err?.message || err);
   }

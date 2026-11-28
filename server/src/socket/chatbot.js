@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
 import { admin, getSystemAdminClient } from '../lib/supabase.js';
 import { redis } from '../lib/redis.js';
+import { notifyStaff } from '../lib/notify.js';
 
 let ioInstance = null;
 
@@ -539,7 +540,7 @@ export function attachChatbot(httpServer) {
           .limit(8);
         if (Array.isArray(recentMsgs) && recentMsgs.length > 0) {
           socket.chatHistory = recentMsgs.reverse().map((m) => ({
-            role: m.role === 'user' ? 'user' : 'model',
+            role: (m.role === 'user' || m.role === 'customer') ? 'user' : 'model',
             text: m.content,
           }));
         }
@@ -565,7 +566,7 @@ export function attachChatbot(httpServer) {
 
         const { data: reqMsg } = await admin.from('chat_messages').insert({
           profile_id: socket.userId || null,
-          role: 'user',
+          role: 'customer',
           sender: socket.userId ? 'customer' : 'guest',
           content: reqText,
           metadata: {
@@ -582,7 +583,7 @@ export function attachChatbot(httpServer) {
 
         const { data: handoffMsg } = await admin.from('chat_messages').insert({
           profile_id: socket.userId || null,
-          role: 'bot',
+          role: 'assistant',
           sender: 'service_agent',
           content: handoffText,
           metadata: {
@@ -596,14 +597,11 @@ export function attachChatbot(httpServer) {
           },
         }).select().single();
 
-        await admin.from('notifications').insert({
-          profile_id: socket.userId || null,
-          title: `Live Customer Directed to ${agent.name}`,
-          body: `Customer ${socket.guestName || 'Guest'} (${socket.userId || 'webchat'}) is now connected live with service agent ${agent.name}.`,
-          type: 'sms',
-          recipient: 'Front Desk',
-          status: 'sent',
-        }).catch(() => {});
+        await notifyStaff({
+          type: 'ticket',
+          title: `Live customer directed to ${agent.name}`,
+          body: `Customer ${socket.guestName || 'Guest'} is now connected live with service agent ${agent.name}.`,
+        });
 
         await redis.del('analytics:overview').catch(() => {});
 
@@ -685,7 +683,7 @@ export function attachChatbot(httpServer) {
       if (socket.isDirectedToAgent && socket.assignedAgent) {
         const { data: savedCustomerMsg } = await admin.from('chat_messages').insert({
           profile_id: socket.userId || null,
-          role: 'user',
+          role: 'customer',
           sender: socket.userId ? 'customer' : 'guest',
           content: clean,
           metadata: {
@@ -793,7 +791,7 @@ export function attachChatbot(httpServer) {
 
         const { data: savedReply } = await admin.from('chat_messages').insert({
           profile_id: targetPid,
-          role: 'bot',
+          role: 'assistant',
           sender: 'service_agent',
           content: cleanReply,
           metadata: {
@@ -838,14 +836,14 @@ function persist(userId, userText, botText, extraMeta = {}) {
   admin.from('chat_messages').insert([
     {
       profile_id: profileId,
-      role: 'user',
+      role: 'customer',
       sender: profileId ? 'customer' : 'guest',
       content: userText,
       metadata: { is_customer: !!profileId, saved_at: new Date().toISOString(), ...extraMeta },
     },
     {
       profile_id: profileId,
-      role: 'bot',
+      role: 'assistant',
       sender: 'concierge_ai',
       content: botText,
       metadata: { is_customer: !!profileId, saved_at: new Date().toISOString(), ...extraMeta },

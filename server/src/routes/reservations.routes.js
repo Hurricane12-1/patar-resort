@@ -28,6 +28,7 @@ import { validate } from '../middleware/validate.js';
 import { bookingLimiter } from '../middleware/security.js';
 import { admin, getSystemAdminClient } from '../lib/supabase.js';
 import { notifyStaff } from '../lib/notify.js';
+import { insertNotification } from '../lib/notifications.js';
 import { pingSMS } from '../lib/sms.js';
 import { redis } from '../lib/redis.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
@@ -797,23 +798,20 @@ r.post('/reservations/:id/refund-request', authenticate,
     }
 
     try {
-      await sysClient.from('notifications').insert([
-        {
-          profile_id: b.guest_id || req.user.id,
-          title: 'Refund Request In Process',
-          body: `Your refund request for ${roomName} (₱${refundAmount.toLocaleString()}) has been received and is being processed.`,
-          type: 'sms',
-          recipient: guestName,
-          status: 'sent',
-        },
-        {
-          title: 'Guest Refund Requested',
-          body: `Guest ${guestName} requested refund of ₱${refundAmount.toLocaleString()} for ${roomName} (#${b.id.slice(0, 8)}).`,
-          type: 'sms',
-          recipient: 'Accounting Desk',
-          status: 'sent',
-        }
-      ]);
+      await insertNotification({
+        userId: b.guest_id || req.user.id,
+        title: 'Refund Request In Process',
+        body: `Your refund request for ${roomName} (₱${refundAmount.toLocaleString()}) has been received and is being processed.`,
+        recipient: guestName,
+        client: sysClient,
+      });
+      await insertNotification({
+        title: 'Guest Refund Requested',
+        body: `Guest ${guestName} requested refund of ₱${refundAmount.toLocaleString()} for ${roomName} (#${b.id.slice(0, 8)}).`,
+        type: 'booking',
+        recipient: 'Accounting Desk',
+        client: sysClient,
+      });
     } catch (notifErr) {
       console.warn('[Notification Insert Warning]', notifErr?.message);
     }
@@ -899,13 +897,12 @@ r.post('/reservations/:id/refund-confirm', authenticate, requireFinanceOrAdmin,
     }
 
     try {
-      await sysClient.from('notifications').insert({
-        profile_id: b.guest_id || null,
+      await insertNotification({
+        userId: b.guest_id || null,
         title: 'Refund Approved & Processed',
         body: `Refund of ₱${refundAmount.toLocaleString()} has been sent to your account via ${refundMethod}. Ref: ${refNum}.`,
-        type: 'sms',
         recipient: guestName,
-        status: 'sent',
+        client: sysClient,
       });
     } catch (notifErr) {
       console.warn('[Notification Insert Warning]', notifErr?.message);

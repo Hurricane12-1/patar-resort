@@ -298,7 +298,7 @@ async function computeFullDivePayload(range, client = admin) {
     c.from('reservations').select('id, room_id, total_php, status, check_in, check_out, created_at, guest_name, phone, rooms(name), profiles(full_name, phone)').order('created_at', { ascending: false }).limit(50),
     c.from('resort_orders').select('id, item_name, category, price_php, status, created_at, profiles:guest_id(full_name)').order('created_at', { ascending: false }).limit(20),
     c.from('department_tasks').select('id, department, title, room_name, status, created_at').order('created_at', { ascending: false }).limit(10),
-    c.from('notifications').select('id, to_phone, body, status, created_at').order('created_at', { ascending: false }).limit(10),
+    c.from('notifications').select('id, message, payload, status, created_at').order('created_at', { ascending: false }).limit(10),
   ]);
 
   const rooms = roomsRes.data || [];
@@ -369,7 +369,7 @@ async function computeFullDivePayload(range, client = admin) {
     allEvents.push({
       id: `ev-notif-${n.id}`,
       event: `SMS Alert (${n.status})`,
-      detail: `Sent to ${n.to_phone || 'Guest'}`,
+      detail: `Sent to ${n.payload?.to_phone || 'Guest'}`,
       timestamp: new Date(n.created_at).getTime(),
       time: timeAgo(n.created_at),
       icon: '📟',

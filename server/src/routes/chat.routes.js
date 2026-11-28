@@ -74,8 +74,8 @@ r.get('/chat/conversations', authenticate, requireCustomerService, asyncH(async 
         const isAgent = msg.sender === 'service_agent' || !!msg.metadata?.is_agent;
         const formattedMsg = {
           id: msg.id,
-          sender: msg.role === 'user' ? 'guest' : 'admin',
-          senderName: msg.role === 'user' ? 'Guest' : (msg.metadata?.agent_name || (isAgent ? 'Service Agent' : 'Rock View Concierge')),
+          sender: (msg.role === 'user' || msg.role === 'customer') ? 'guest' : 'admin',
+          senderName: (msg.role === 'user' || msg.role === 'customer') ? 'Guest' : (msg.metadata?.agent_name || (isAgent ? 'Service Agent' : 'Rock View Concierge')),
           text: msg.content,
           time: msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
           is_agent: isAgent,
@@ -214,7 +214,7 @@ r.post('/chat/conversations/:profileId/messages', authenticate, requireCustomerS
         .from('chat_messages')
         .insert({
           profile_id: targetProfileId,
-          role: 'bot',
+          role: 'assistant',
           sender: 'service_agent',
           content: content.trim(),
           metadata: {
@@ -269,7 +269,7 @@ r.post('/chat/conversations/:profileId/messages', authenticate, requireCustomerS
       return res.status(201).json({
         id: `msg-${Date.now()}`,
         profile_id: targetProfileId,
-        role: 'bot',
+        role: 'assistant',
         sender: 'service_agent',
         content: content.trim(),
         metadata: {
@@ -326,7 +326,7 @@ r.post('/chat/request-staff', asyncH(async (req, res) => {
   // 1. Insert customer request into chat_messages
   const { data: userMsg } = await client.from('chat_messages').insert({
     profile_id: profileId,
-    role: 'user',
+    role: 'customer',
     sender: profileId ? 'customer' : 'guest',
     content: reqText,
     metadata: {
@@ -344,7 +344,7 @@ r.post('/chat/request-staff', asyncH(async (req, res) => {
 
   const { data: agentMsg } = await client.from('chat_messages').insert({
     profile_id: profileId,
-    role: 'bot',
+    role: 'assistant',
     sender: 'service_agent',
     content: handoffContent,
     metadata: {
@@ -358,14 +358,11 @@ r.post('/chat/request-staff', asyncH(async (req, res) => {
     },
   }).select().single();
 
-  await client.from('notifications').insert({
-    profile_id: profileId,
-    title: `Live Customer Directed to ${agent.name}`,
+  await notifyStaff({
+    type: 'ticket',
+    title: `Live customer directed to ${agent.name}`,
     body: reqText ? `Inquiry: ${reqText.slice(0, 100)}` : `Customer is now live with ${agent.name}`,
-    type: 'sms',
-    recipient: 'Front Desk',
-    status: 'sent',
-  }).catch(() => {});
+  });
 
   // Emit real-time agent assigned event to customer
   emitToGuest(profileId, 'agent:assigned', {
@@ -450,9 +447,9 @@ r.get('/chat/my-messages', asyncH(async (req, res) => {
     const isAgent = m.sender === 'service_agent' || !!m.metadata?.is_agent;
     return {
       id: m.id,
-      from: m.role === 'user' ? 'user' : 'bot',
+      from: (m.role === 'user' || m.role === 'customer') ? 'user' : 'bot',
       text: m.content,
-      is_ai: m.role !== 'user' && !isAgent,
+      is_ai: m.role !== 'user' && m.role !== 'customer' && !isAgent,
       is_agent: isAgent,
       agent_name: m.metadata?.agent_name || (isAgent ? 'Front Desk Concierge' : undefined),
       agent_role: m.metadata?.agent_role || (isAgent ? 'Service Agent' : undefined),
@@ -498,8 +495,8 @@ r.post('/chat/my-messages', asyncH(async (req, res) => {
 
   const { data, error } = await client.from('chat_messages').insert({
     profile_id: userId || null,
-    role: role === 'user' ? 'user' : 'bot',
-    sender: role === 'user' ? (userId ? 'customer' : 'guest') : 'concierge_ai',
+    role: role === 'user' || role === 'customer' ? 'customer' : 'assistant',
+    sender: role === 'user' || role === 'customer' ? (userId ? 'customer' : 'guest') : 'concierge_ai',
     content: String(content).slice(0, 2000),
     metadata: {
       is_customer: !!userId,

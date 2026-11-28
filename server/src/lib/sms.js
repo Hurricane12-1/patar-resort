@@ -1,15 +1,27 @@
 import twilioPkg from 'twilio';
 import { env, smsEnabled } from '../config/env.js';
 import { admin } from './supabase.js';
+import { insertNotification } from './notifications.js';
 
 const client = smsEnabled ? twilioPkg(env.TWILIO_ACCOUNT_SID, env.TWILIO_AUTH_TOKEN) : null;
 
 export async function pingSMS({ profileId, reservationId = null, toPhone, body }) {
   if (!toPhone) return null;
-  const { data: note } = await admin
-    .from('notifications')
-    .insert({ profile_id: profileId, reservation_id: reservationId, to_phone: toPhone, body })
-    .select().single();
+  let note = null;
+  try {
+    note = await insertNotification({
+      userId: profileId,
+      title: 'SMS to guest',
+      body,
+      type: 'sms',
+      channel: 'sms',
+      status: 'sent',
+      reservationId,
+      toPhone,
+    });
+  } catch (e) {
+    console.warn('[sms] Could not log the message:', e.message);
+  }
   if (!note) return null;
 
   if (!client) { console.log(`[sms:dev] → ${toPhone}: ${body}`); return note; }
@@ -19,7 +31,7 @@ export async function pingSMS({ profileId, reservationId = null, toPhone, body }
       statusCallback: env.PUBLIC_API_URL ? `${env.PUBLIC_API_URL}/api/webhooks/sms/status` : undefined,
     });
     await admin.from('notifications')
-      .update({ status: 'sent', provider_sid: msg.sid, sent_at: new Date().toISOString() })
+      .update({ status: 'sent', payload: { ...(note.payload || {}), provider_sid: msg.sid, sent_at: new Date().toISOString() } })
       .eq('id', note.id);
   } catch (e) {
     console.error('SMS failed:', e.message);

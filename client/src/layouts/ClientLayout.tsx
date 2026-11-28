@@ -52,10 +52,11 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
       // Log dispute action into Supabase audit_logs
       await supabase.from('audit_logs').insert({
         action: 'CLIENT_DISPUTE_FILED',
-        actor_id: activeProfile?.id || null,
-        actor_email: activeProfile?.email || 'resident@guest.ph',
-        actor_role: 'customer',
+        user_id: activeProfile?.id || null,
+        resource: 'dispute',
         details: {
+          actor_email: activeProfile?.email || 'resident@guest.ph',
+          actor_role: 'customer',
           reservation_id: resId || 'unspecified',
           category: disputeForm.category,
           description: disputeForm.description.trim(),

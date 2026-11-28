@@ -632,7 +632,7 @@ export const api = {
           const g = byGuest.get(gid);
           g.messages.push({
             id: m.id,
-            sender: m.role === 'user' ? 'guest' : 'staff',
+            sender: m.role === 'user' || m.role === 'customer' ? 'guest' : 'staff',
             role: m.role,
             text: m.content,
             content: m.content,
@@ -1164,7 +1164,19 @@ export const api = {
     try {
       const sb = await ensureSupabaseSession();
       const { data } = await sb.from('notifications').select('*').order('created_at', { ascending: false }).limit(50);
-      if (Array.isArray(data)) return data;
+      if (Array.isArray(data)) {
+        return data.map((row: any) => ({
+          id: row.id,
+          profile_id: row.user_id,
+          title: row.title,
+          body: row.message,
+          type: row.payload?.type || (row.channel === 'sms' ? 'sms' : 'system'),
+          to_phone: row.payload?.to_phone || null,
+          status: row.status,
+          is_read: row.status === 'read',
+          created_at: row.created_at,
+        }));
+      }
     } catch {}
     return [];
   },
@@ -1175,7 +1187,7 @@ export const api = {
       if (!isBackendUnreachable(err)) throw err;
     }
     const sb = await ensureSupabaseSession();
-    const updated = await sb.from('notifications').update({ is_read: true }).eq('id', id).select('id');
+    const updated = await sb.from('notifications').update({ status: 'read' }).eq('id', id).select('id');
     requireDirectWrite(updated, 'Marking the notification read', true);
     return { success: true };
   },
@@ -1186,7 +1198,7 @@ export const api = {
       if (!isBackendUnreachable(err)) throw err;
     }
     const sb = await ensureSupabaseSession();
-    const updated = await sb.from('notifications').update({ is_read: true }).eq('is_read', false);
+    const updated = await sb.from('notifications').update({ status: 'read' }).eq('status', 'unread');
     requireDirectWrite(updated, 'Marking notifications read');
     return { success: true };
   },
@@ -1311,10 +1323,12 @@ export const api = {
       const sb = await ensureSupabaseSession();
       const { data, error } = await sb.from('audit_logs').insert({
         action: body.action || 'SYSTEM_EVENT',
-        actor_email: body.actor_email || 'admin@rockviewresort.ph',
-        actor_role: body.actor_role || 'administrator',
-        resource_type: body.resource_type || 'system',
-        details: body.details || {},
+        resource: String(body.resource_type || body.action || 'system'),
+        details: {
+          ...(body.details || {}),
+          actor_email: body.actor_email || 'admin@rockviewresort.ph',
+          actor_role: body.actor_role || 'administrator',
+        },
       }).select().single();
       if (error) throw new Error(error.message);
       return data;
@@ -1730,7 +1744,7 @@ export const api = {
     }
     const sb = await ensureSupabaseSession();
     const { data, error } = await sb.from('chat_messages').insert({
-      role: body.role || 'user',
+      role: body.role === 'bot' || body.role === 'assistant' ? 'assistant' : 'customer',
       sender: body.sender || 'Guest',
       content: body.content || body.text || '',
     }).select().maybeSingle();

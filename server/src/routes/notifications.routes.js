@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { asyncH, ApiError } from '../middleware/errors.js';
 import { authenticate, requireStaffOrAdmin, normalizeEmployeeRole } from '../middleware/auth.js';
 import { getSystemAdminClient, admin } from '../lib/supabase.js';
+import { shapeNotification } from '../lib/notifications.js';
 
 const r = Router();
 
@@ -19,15 +20,17 @@ const fetchNotificationsHandler = asyncH(async (req, res) => {
 
     if (!isAdmin) {
       if (isStaff) {
-        query = query.or(`profile_id.eq.${req.user.id},profile_id.is.null`).neq('recipient', 'Administrator');
+        query = query
+          .or(`user_id.eq.${req.user.id},user_id.is.null`)
+          .or('payload->>recipient.is.null,payload->>recipient.neq.Administrator');
       } else {
-        query = query.eq('profile_id', req.user.id);
+        query = query.eq('user_id', req.user.id);
       }
     }
 
     const { data, error } = await query;
     if (error) return res.json([]);
-    return res.json(data || []);
+    return res.json((data || []).map(shapeNotification));
   } catch {
     return res.json([]);
   }
@@ -41,7 +44,7 @@ r.patch('/notifications/:id/read', authenticate, asyncH(async (req, res) => {
     const client = await getSystemAdminClient();
     const { data, error } = await client
       .from('notifications')
-      .update({ is_read: true })
+      .update({ status: 'read' })
       .eq('id', req.params.id)
       .select()
       .single();
@@ -58,9 +61,9 @@ r.post('/notifications/read-all', authenticate, asyncH(async (req, res) => {
     const client = await getSystemAdminClient();
     let query = client
       .from('notifications')
-      .update({ is_read: true });
+      .update({ status: 'read' });
     if (!isStaffOrAdmin) {
-      query = query.eq('profile_id', req.user.id);
+      query = query.eq('user_id', req.user.id);
     }
     await query;
     res.json({ status: 'success' });
@@ -75,9 +78,9 @@ r.patch('/notifications/read-all', authenticate, asyncH(async (req, res) => {
     const client = await getSystemAdminClient();
     let query = client
       .from('notifications')
-      .update({ is_read: true });
+      .update({ status: 'read' });
     if (!isStaffOrAdmin) {
-      query = query.eq('profile_id', req.user.id);
+      query = query.eq('user_id', req.user.id);
     }
     await query;
     res.json({ status: 'success' });
@@ -93,7 +96,7 @@ r.delete('/notifications/:id', authenticate, asyncH(async (req, res) => {
     const client = isStaffOrAdmin ? await getSystemAdminClient() : (req.sb || admin);
     let query = client.from('notifications').delete().eq('id', req.params.id);
     if (!isStaffOrAdmin) {
-      query = query.eq('profile_id', req.user.id);
+      query = query.eq('user_id', req.user.id);
     }
     const { error } = await query;
     if (error) throw new ApiError(400, error.message);
@@ -110,7 +113,7 @@ r.delete('/notifications', authenticate, asyncH(async (req, res) => {
     const client = isStaffOrAdmin ? await getSystemAdminClient() : (req.sb || admin);
     let query = client.from('notifications').delete();
     if (!isStaffOrAdmin) {
-      query = query.eq('profile_id', req.user.id);
+      query = query.eq('user_id', req.user.id);
     } else {
       query = query.neq('id', '00000000-0000-0000-0000-000000000000');
     }
