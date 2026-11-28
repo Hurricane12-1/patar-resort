@@ -1682,6 +1682,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
           ? ' None of your rooms were booked.'
           : ` Some of your rooms may still be booked, so please call the front desk at ${RESORT_CONTACT.phoneDisplay}.`;
         // Real conflicts and validation problems go back to the guest instead of being saved locally.
+        if (err?.data?.code === 'EMAIL_NOT_VERIFIED') setAuthOpen?.(true);
         setReserveError(`${message || 'Unable to complete reservation with server. Please try again.'}${aftermath}`);
         setReserveSubmitting(false);
         fetchLiveReservations();

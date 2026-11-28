@@ -176,6 +176,9 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
   const isFrontDeskOrAdmin = actorRole === 'administrator' || actorRole === 'receptionist' || (actorRole === 'staff' && actorDept === 'front_desk');
   const isDeskStaff = isFrontDeskOrAdmin || actorRole === 'accounting';
   if (check_in < today) throw new ApiError(422, 'Check-in date cannot be in the past');
+  if (!isDeskStaff && req.user?.is_verified !== true) {
+    throw new ApiError(403, 'Please verify your Gmail first. Sign in, then enter the 6-digit code sent to your email.', { code: 'EMAIL_NOT_VERIFIED' });
+  }
   await sweepExpiredHolds();
 
   const sysClient = await getSystemAdminClient();

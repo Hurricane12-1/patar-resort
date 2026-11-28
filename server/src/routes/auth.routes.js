@@ -10,6 +10,7 @@ import { pingSMS } from '../lib/sms.js';
 import { notifyStaff } from '../lib/notify.js';
 import { sendRecoveryOTP, sendPasswordResetSuccess, sendSignup2FAOTP, sendWelcomeClientEmail, sendSignupExpiredEmail } from '../lib/mailer.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
+import { devOtpPreview } from '../lib/otpPreview.js';
 import { checkBruteForceLockout, recordFailedAttempt, recordSuccessfulAttempt } from '../middleware/bruteForceGuard.js';
 import { hashPassword, verifyPassword } from '../lib/passwords.js';
 import { saveCustomer, findCustomerByEmail } from '../lib/customerStore.js';
@@ -102,7 +103,7 @@ r.post('/auth/otp/send', asyncH(async (req, res) => {
     message: `6-digit OTP code dispatched to ${cleanEmail}. Valid for 10 minutes.`,
     email: cleanEmail,
     provider: supabaseDispatched ? 'supabase_auth' : 'gmail_smtp',
-    otp_preview: code,
+    ...devOtpPreview(code),
     expires_in_seconds: ttlSeconds,
   });
 }));
@@ -689,7 +690,7 @@ r.post('/auth/signup/initiate',
       provider,
       expires_in_seconds: 60,
       channel: phone ? 'email_and_sms' : 'email',
-      otp_preview: code,
+      ...devOtpPreview(code),
     });
   }));
 
@@ -943,7 +944,7 @@ r.post('/auth/signup/resend-2fa',
       success: true,
       message: `A new confirmation code has been dispatched to ${cleanEmail}. You have 1 minute to confirm.`,
       expires_in_seconds: 60,
-      otp_preview: newCode,
+      ...devOtpPreview(newCode),
     });
   }));
 
@@ -1087,7 +1088,7 @@ r.post('/auth/forgot-password',
         : `Recovery code dispatched to your email (${email}).`,
       expires_in_seconds: 900,
       channel: targetPhone ? 'email_and_sms' : 'email',
-      otp_preview: code,
+      ...devOtpPreview(code),
     });
   }));
 
