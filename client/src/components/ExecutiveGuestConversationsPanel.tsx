@@ -277,7 +277,6 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
     return matchesFilter && matchesSearch;
   });
 
-  const openCount = guestList.filter((g) => g.status !== 'Resolved').length;
 
   return (
     <div className="panel" style={{ background: themeBg, border: `1px solid ${themeBorder}`, borderRadius: 20, padding: 24, boxShadow: themeShadow, width: '100%', boxSizing: 'border-box' }}>
@@ -290,11 +289,6 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
           <h2 style={{ fontSize: '1.6rem', margin: '4px 0 0', color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800 }}>
             Customer Services & Resolution Panel
           </h2>
-        </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <span style={{ fontSize: '.82rem', padding: '6px 14px', background: 'rgba(99, 102, 241, 0.15)', color: '#6366F1', fontWeight: 700, borderRadius: 20, border: '1px solid rgba(99, 102, 241, 0.3)' }}>
-            <><i className="fas fa-comments" style={{ marginRight: 6 }} />{openCount} Open Ticket{openCount === 1 ? '' : 's'} · CSAT 100%</>
-          </span>
         </div>
       </div>
 
