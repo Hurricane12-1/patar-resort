@@ -314,10 +314,18 @@ function parseStructuredAIResponse(rawText) {
 }
 
 let warnedMissingGeminiKey = false;
+let lastGeminiFailure = '';
+
+function describeGeminiFailure(model, status, bodyText) {
+  let detail = '';
+  try { detail = JSON.parse(bodyText)?.error?.message || ''; } catch { detail = String(bodyText || ''); }
+  return `${model} HTTP ${status}${detail ? `: ${detail}` : ''}`.replace(/AIza[A-Za-z0-9_-]{20,}/g, '[key]').slice(0, 300);
+}
 
 async function queryGeminiWithGuardrails(userId, rawUserText, history = []) {
   const apiKey = env.GEMINI_API_KEY || process.env.GEMINI_API_KEY;
   if (!apiKey) {
+    lastGeminiFailure = 'GEMINI_API_KEY is not set';
     if (!warnedMissingGeminiKey) {
       warnedMissingGeminiKey = true;
       console.warn('[Chatbot] GEMINI_API_KEY is not set on this server, so the AI service cannot answer. Guests get the built-in answers instead.');
@@ -383,7 +391,8 @@ async function queryGeminiWithGuardrails(userId, rawUserText, history = []) {
       );
 
       if (!res.ok) {
-        console.warn(`[Chatbot] Gemini model ${modelCfg.name} answered HTTP ${res.status}; trying the next model.`);
+        lastGeminiFailure = describeGeminiFailure(modelCfg.name, res.status, await res.text().catch(() => ''));
+        console.warn(`[Chatbot] Gemini failed (${lastGeminiFailure}); trying the next model.`);
         continue;
       }
       const data = await res.json();
@@ -403,8 +412,8 @@ async function queryGeminiWithGuardrails(userId, rawUserText, history = []) {
         }
         return structured;
       }
-    } catch {
-      // Independent timeout or network error on this model; proceed to next model
+    } catch (err) {
+      lastGeminiFailure = `${modelCfg.name} ${err?.name || 'error'}: ${String(err?.message || '').slice(0, 120)}`;
     }
   }
 
@@ -455,6 +464,7 @@ async function answer(userId, text, history = []) {
       is_ai: true,
       contact_card: true,
       unavailable: true,
+      reason: lastGeminiFailure || undefined,
     };
   } catch (err) {
     console.warn('[Chatbot Query Error]', err.message);
@@ -464,6 +474,7 @@ async function answer(userId, text, history = []) {
       is_ai: true,
       contact_card: true,
       unavailable: true,
+      reason: lastGeminiFailure || undefined,
     };
   }
 }
