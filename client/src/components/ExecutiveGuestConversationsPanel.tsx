@@ -279,6 +279,8 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
   });
 
 
+  const [view, setView] = useState('messages');
+
   return (
     <div className="panel" style={{ background: themeBg, border: `1px solid ${themeBorder}`, borderRadius: 20, padding: 24, boxShadow: themeShadow, width: '100%', boxSizing: 'border-box' }}>
       {/* PANEL PAGE HEADER */}
@@ -293,9 +295,41 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
         </div>
       </div>
 
-      <StaffTicketsList isLightMode={isLightMode} themeBg={themeBg} themeText={themeText} themeMuted={themeMuted} themeBorder={themeBorder} />
+      <div role="group" aria-label="Choose a view" style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 6, padding: 4, borderRadius: 10, border: `1px solid ${themeBorder}`, marginBottom: 16 }}>
+        {[
+          { key: 'messages', label: 'Guest messages' },
+          { key: 'tickets', label: 'Guest tickets' },
+        ].map((option) => {
+          const active = view === option.key;
+          return (
+            <button
+              key={option.key}
+              type="button"
+              aria-pressed={active}
+              onClick={() => setView(option.key)}
+              style={{
+                padding: '7px 16px',
+                borderRadius: 8,
+                border: `1px solid ${active ? '#006699' : themeBorder}`,
+                background: active ? '#006699' : 'transparent',
+                color: active ? '#FFFFFF' : themeText,
+                fontSize: '.84rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              {option.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {view === 'tickets' && (
+        <StaffTicketsList isLightMode={isLightMode} themeBg={themeBg} themeText={themeText} themeMuted={themeMuted} themeBorder={themeBorder} />
+      )}
 
       {/* 2-COLUMN RESPONSIVE PANEL LAYOUT */}
+      {view === 'messages' && (
       <div
         className="conversations-grid-layout"
         style={{
@@ -682,6 +716,7 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }
