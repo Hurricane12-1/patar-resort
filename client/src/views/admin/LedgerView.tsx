@@ -8,6 +8,7 @@ import { exportReservationsCSV } from '../../lib/ledgerUtils';
 import { api } from '../../lib/api';
 import { resolveReservationOfferingType, getManilaTodayISO, addDaysISO, OfferingType } from '../../lib/offeringSpecs';
 import { reservationRoomName, roomNameLookup } from '../../lib/reservationRoom';
+import { forecastMonth, monthOnTheBooks, collectedFor, nextYearMonth, manilaTodayIso, type MonthForecast } from '../../lib/revenueForecast';
 
 const MIN_LIST_ROWS = 8;
 /** The double-entry ledger table is hidden until the client asks for it. */
@@ -341,39 +342,14 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
           return (cin <= monthEndStr && cout >= monthStartStr);
         });
 
-        // Exact stay revenue and nights prorated across this selected month with day-use support
-        let computedRevenue = 0;
-        let computedNights = 0;
-
-        selectedMonthStays.forEach((b: any) => {
-          const cin = String(b.check_in || '').slice(0, 10);
-          const cout = String(b.check_out || '').slice(0, 10);
-          const isSameDayStay = cin === cout;
-          const totalStayNights = Math.max(1, Math.round((new Date(cout).getTime() - new Date(cin).getTime()) / 86400000));
-          const totalAmount = Number(b.total_php) || 0;
-          const nightlyRate = totalAmount / totalStayNights;
-
-          let overlapDays = 0;
-          if (isSameDayStay) {
-            if (cin >= monthStartStr && cin <= monthEndStr) {
-              overlapDays = 1;
-            }
-          } else {
-            const startD = cin < monthStartStr ? monthStartStr : cin;
-            const endD = cout > monthEndStr ? monthEndStr : cout;
-            overlapDays = Math.max(0, Math.round((new Date(endD).getTime() - new Date(startD).getTime()) / 86400000));
-          }
-
-          computedNights += overlapDays;
-          computedRevenue += (overlapDays * nightlyRate);
-        });
-
-        const roomRevenue = Math.round(computedRevenue);
-        const roomNightsSold = computedNights;
+        // Nights and revenue inside this month. A stay that runs past the month end keeps its last night here.
+        const monthTotals = monthOnTheBooks(Array.isArray(allBookings) ? allBookings : [], analyticsYearMonth, totalResortUnits);
+        const roomRevenue = monthTotals.revenue;
+        const roomNightsSold = monthTotals.soldNights;
         const occupiedUnitNights = Math.min(roomNightsSold, availableUnitNights);
-        const occupancyPct = availableUnitNights > 0 ? Number(((occupiedUnitNights / availableUnitNights) * 100).toFixed(1)) : 0;
-        const adr = roomNightsSold > 0 ? Math.round(roomRevenue / roomNightsSold) : 0;
-        const revPar = availableUnitNights > 0 ? Math.round(roomRevenue / availableUnitNights) : 0;
+        const occupancyPct = monthTotals.occupancyPct;
+        const adr = monthTotals.adr;
+        const revPar = monthTotals.revpar;
 
         const arrivalsCount = selectedMonthStays.filter((b: any) => {
           const cin = String(b.check_in || '').slice(0, 10);
@@ -410,17 +386,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
         // Dynamic Billed & Collected with financial precision:
         const billedAmount = Math.round(selectedMonthStays.reduce((sum: number, b: any) => sum + (Number(b.total_php) || 0), 0));
         
-        const computeBookingCollected = (b: any): number => {
-          const total = Number(b.total_php) || 0;
-          const down = Number(b.downpayment_php) || 0;
-          const payStatus = String(b.payment_status || '').toLowerCase().trim();
-
-          if (payStatus === 'refunded') return 0;
-          if (payStatus === 'paid') return total;
-          return Math.min(total, down);
-        };
-
-        const collectedAmount = Math.round(selectedMonthStays.reduce((sum: number, b: any) => sum + computeBookingCollected(b), 0));
+        const collectedAmount = Math.round(selectedMonthStays.reduce((sum: number, b: any) => sum + collectedFor(b), 0));
         const outstandingAmount = Math.max(0, billedAmount - collectedAmount);
         const collectionRate = billedAmount > 0
           ? ((collectedAmount / billedAmount) * 100).toFixed(1)
@@ -465,112 +431,88 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
         ];
         const maxArrivals = Math.max(1, ...weekdayArrivals.map((w) => w.count));
 
-        // ────────────────────────────────────────────────────────────
-        // MACHINE LEARNING & PREDICTIVE PACE MODEL (HOSPITALITY ENSEMBLE)
-        // ────────────────────────────────────────────────────────────
-        const nextDate = new Date(selYear, selMonth, 1);
-        const nextYearStr = String(nextDate.getFullYear());
-        const nextMonthStr = String(nextDate.getMonth() + 1).padStart(2, '0');
-        const nextDaysInMonth = new Date(nextDate.getFullYear(), nextDate.getMonth() + 1, 0).getDate();
-        const nextMonthStartStr = `${nextYearStr}-${nextMonthStr}-01`;
-        const nextMonthEndStr = `${nextYearStr}-${nextMonthStr}-${String(nextDaysInMonth).padStart(2, '0')}`;
-        const nextMonthName = nextDate.toLocaleString('en-US', { month: 'long', year: 'numeric' });
-
-        const nextMonthStays = nonCancelled.filter((b: any) => {
-          const cin = String(b.check_in || '').slice(0, 10);
-          const cout = String(b.check_out || '').slice(0, 10);
-          if (cin === cout) {
-            return cin >= nextMonthStartStr && cin <= nextMonthEndStr;
-          }
-          return (cin <= nextMonthEndStr && cout >= nextMonthStartStr);
-        });
-
-        let nextMonthBookedRev = 0;
-        let nextMonthBookedNights = 0;
-        nextMonthStays.forEach((b: any) => {
-          const cin = String(b.check_in || '').slice(0, 10);
-          const cout = String(b.check_out || '').slice(0, 10);
-          const isSameDayStay = cin === cout;
-          const totalStayNights = Math.max(1, Math.round((new Date(cout).getTime() - new Date(cin).getTime()) / 86400000));
-          const totalAmount = Number(b.total_php) || 0;
-          const nightlyRate = totalAmount / totalStayNights;
-
-          let overlapDays = 0;
-          if (isSameDayStay) {
-            if (cin >= nextMonthStartStr && cin <= nextMonthEndStr) {
-              overlapDays = 1;
-            }
-          } else {
-            const startD = cin < nextMonthStartStr ? nextMonthStartStr : cin;
-            const endD = cout > nextMonthEndStr ? nextMonthEndStr : cout;
-            overlapDays = Math.max(0, Math.round((new Date(endD).getTime() - new Date(startD).getTime()) / 86400000));
-          }
-
-          nextMonthBookedNights += overlapDays;
-          nextMonthBookedRev += (overlapDays * nightlyRate);
-        });
-
-        const nextMonthCapacity = totalResortUnits * nextDaysInMonth;
-        const nextMonthRemainingCapacity = Math.max(0, nextMonthCapacity - nextMonthBookedNights);
-        
-        // 1. Dynamic Baseline ADR with Bayesian Shrinkage (James-Stein Regularization)
+        // Forecast for this month and the next, built from bookings only (see lib/revenueForecast.ts).
         const ratedRooms = activeRoomsList.filter((r) => Number(r.rate_php) > 0);
         const catalogAvgRate = ratedRooms.length > 0
           ? Math.round(ratedRooms.reduce((acc, r) => acc + Number(r.rate_php), 0) / ratedRooms.length)
           : 0;
-        const adrSampleSize = roomNightsSold;
-        const shrinkageK = 4;
-        const adrWeight = adrSampleSize / (adrSampleSize + shrinkageK);
-        const baselineADR = Math.round(
-          adr > 0 ? (adrWeight * adr + (1 - adrWeight) * catalogAvgRate) : catalogAvgRate
+        const forecastInput = {
+          bookings: Array.isArray(allBookings) ? allBookings : [],
+          units: totalResortUnits,
+          todayIso: manilaTodayIso(),
+          roomListRate: catalogAvgRate,
+        };
+        const thisMonthForecast = forecastMonth({ ...forecastInput, yearMonth: analyticsYearMonth });
+        const nextMonthKey = nextYearMonth(analyticsYearMonth);
+        const nextMonthForecast = forecastMonth({ ...forecastInput, yearMonth: nextMonthKey });
+        const monthLabel = (ym: string) => new Date(`${ym}-01T00:00:00`).toLocaleString('en-US', { month: 'long', year: 'numeric' });
+        const nextMonthName = monthLabel(nextMonthKey);
+        const forecastPace = nextMonthForecast.pace;
+        const forecastCurve = nextMonthForecast.curve;
+        const nextOccupancy = nextMonthForecast.occupancyPct.expected;
+        const forecastAccent = isLightMode ? '#006699' : '#38BDF8';
+        const rateSourceText = (f: MonthForecast) =>
+          f.rateSource === 'this month'
+            ? `of ${monthLabel(f.month)}'s booked nights`
+            : f.rateSource === 'recent bookings'
+            ? 'of bookings around the last 90 days'
+            : 'of the room list prices';
+        const forecastSuggestion =
+          nextOccupancy >= 75
+            ? `About ${nextOccupancy}% of ${nextMonthName} is expected to fill. Demand is strong, so weekend rates can stay firm.`
+            : nextOccupancy >= 40
+            ? `About ${nextOccupancy}% of ${nextMonthName} is expected to fill. Current rates look right.`
+            : `About ${nextOccupancy}% of ${nextMonthName} is expected to fill. A mid-week offer could help fill open nights.`;
+
+        const renderForecastCard = (f: MonthForecast, heading: string) => (
+          <div className="pms-forecast-card">
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                <div>
+                  <span style={{ fontSize: '.82rem', fontWeight: 700, color: forecastAccent }}>{heading}</span>
+                  <div style={{ fontSize: '.72rem', color: themeMuted }}>{monthLabel(f.month)}</div>
+                </div>
+                <span style={{ fontSize: '.7rem', fontWeight: 800, padding: '2px 8px', borderRadius: 9999, background: isLightMode ? '#E0F2FE' : 'rgba(56,189,248,0.15)', color: isLightMode ? '#075985' : '#7DD3FC' }}>
+                  {f.status === 'past' ? 'Final' : f.status === 'current' ? 'In progress' : 'Ahead'}
+                </span>
+              </div>
+
+              <div style={{ fontSize: '1.75rem', fontWeight: 800, color: themeText, margin: '12px 0 4px', letterSpacing: '-0.02em', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                {money(f.revenue.expected)}
+              </div>
+              <div style={{ fontSize: '.75rem', color: themeMuted, lineHeight: 1.45 }}>
+                {f.status === 'past'
+                  ? `What the month earned from ${f.onTheBooks.soldNights} booked room-nights.`
+                  : `Likely between ${money(f.revenue.low)} and ${money(f.revenue.high)}.`}
+              </div>
+            </div>
+
+            <div className="pms-forecast-scenario-track">
+              <div className="pms-forecast-scenario-row">
+                <span style={{ color: themeMuted }}>Already booked</span>
+                <strong style={{ color: themeText }}>{money(f.onTheBooks.revenue)} · {f.onTheBooks.soldNights} nights</strong>
+              </div>
+              {f.status !== 'past' && (
+                <div className="pms-forecast-scenario-row">
+                  <span style={{ color: themeMuted }}>Expected new bookings</span>
+                  <strong style={{ color: themeText }}>about {f.pickupNights.expected} nights · {money(f.pickupNights.expected * f.rateUsed)}</strong>
+                </div>
+              )}
+              <div className="pms-forecast-scenario-row">
+                <span style={{ color: themeMuted }}>Occupancy</span>
+                <strong style={{ color: themeText }}>
+                  {f.status === 'past' ? `${f.onTheBooks.occupancyPct}%` : `${f.occupancyPct.expected}% (${f.occupancyPct.low}–${f.occupancyPct.high}%)`}
+                </strong>
+              </div>
+              {f.status !== 'past' && (
+                <div className="pms-forecast-scenario-row">
+                  <span style={{ color: themeMuted }}>Room-nights still open</span>
+                  <strong style={{ color: themeText }}>{f.openNights}</strong>
+                </div>
+              )}
+            </div>
+          </div>
         );
-
-        // 2. Empirical Velocity & Seasonality Multiplier (Day-of-Week Weights)
-        const now = new Date();
-        const isCurrentMonthActive = (analyticsYearMonth === `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
-        const currentDay = isCurrentMonthActive ? now.getDate() : daysInMonth;
-        const daysElapsed = Math.max(1, currentDay);
-        const dailyVelocity = roomNightsSold / daysElapsed; // Observed pace in units/day
-
-        const weekendArrivals = (dayCounts.Fri || 0) + (dayCounts.Sat || 0) + (dayCounts.Sun || 0);
-        const totalSampleArrivals = Math.max(1, arrivalsCount);
-        const empiricalWeekendRatio = weekendArrivals / totalSampleArrivals;
-        const dowSeasonalityWeight = Math.min(1.35, Math.max(0.85, 1.0 + (empiricalWeekendRatio - 0.4285) * 0.5));
-
-        // 3. Current Month Remaining Run-Rate Projection
-        const daysLeftInMonth = isCurrentMonthActive ? Math.max(0, daysInMonth - currentDay) : 0;
-        const remainingCapacityCurrentMonth = daysLeftInMonth * totalResortUnits;
-        const projectedCurrentPickupNights = isCurrentMonthActive
-          ? Math.min(remainingCapacityCurrentMonth, Math.round(dailyVelocity * daysLeftInMonth * dowSeasonalityWeight))
-          : 0;
-        const currentMonthEndForecast = isCurrentMonthActive
-          ? Math.round(roomRevenue + (projectedCurrentPickupNights * baselineADR))
-          : roomRevenue;
-
-        // 4. Bayesian Capacity Absorption Prior (p_hat) for Next Period
-        const currentOccupancyRatio = availableUnitNights > 0 ? (occupiedUnitNights / availableUnitNights) : 0;
-        const velocityAbsorptionRatio = nextMonthCapacity > 0 ? (dailyVelocity * nextDaysInMonth) / nextMonthCapacity : 0;
-        const leadDecayFactor = leadCount > 0 ? 1 / (1 + Math.exp(-0.12 * (14 - Number(avgLeadTime)))) : 0;
-
-        const rawPHat = (0.45 * currentOccupancyRatio) + (0.40 * velocityAbsorptionRatio) + (0.15 * leadDecayFactor);
-        const pHat = Math.min(0.85, Math.max(0, Number(rawPHat.toFixed(4))));
-
-        // 5. Binomial Variance & Confidence Bands (P10 Conservative, P50 Expected, P90 Optimistic)
-        const NRem = Math.max(1, nextMonthRemainingCapacity);
-        const sigmaP = Math.sqrt((pHat * (1 - pHat)) / NRem);
-        const z90 = 1.282; // 90% confidence two-sided span (P10 to P90)
-
-        const p10Conservative = pHat === 0 ? 0 : Math.max(0, Number((pHat - z90 * sigmaP).toFixed(4)));
-        const p50Expected = pHat;
-        const p90Optimistic = pHat === 0 ? 0 : Math.min(0.95, Number((pHat + z90 * sigmaP).toFixed(4)));
-
-        const pickupConservative = Math.min(nextMonthRemainingCapacity, Math.max(0, Math.round(NRem * p10Conservative)));
-        const pickupExpected = Math.min(nextMonthRemainingCapacity, Math.max(0, Math.round(NRem * p50Expected)));
-        const pickupOptimistic = Math.min(nextMonthRemainingCapacity, Math.max(0, Math.round(NRem * p90Optimistic)));
-
-        const forecastConservative = Math.round(nextMonthBookedRev + (pickupConservative * baselineADR));
-        const forecastExpected = Math.round(nextMonthBookedRev + (pickupExpected * baselineADR));
-        const forecastOptimistic = Math.round(nextMonthBookedRev + (pickupOptimistic * baselineADR));
 
         const renderBadge = (val: number, label: string) => {
           if (!val || val === 0) {
@@ -935,166 +877,60 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
               </div>
             </div>
 
-            {/* EXECUTIVE REVENUE FORECAST & PREDICTIVE PACE ENGINE */}
+            {/* REVENUE FORECAST */}
             <div className="pms-forecast-section">
               <div className="pms-forecast-header">
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: '1.2rem', color: '#4F46E5' }}>
-                      <i className="fas fa-chart-line" />
+                    <span style={{ fontSize: '1.2rem', color: forecastAccent }}>
+                      <i className="fas fa-chart-line" aria-hidden="true" />
                     </span>
                     <h3 style={{ margin: 0, fontSize: '1.18rem', fontWeight: 800, color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                      Revenue Forecast &amp; Predictive Pace Model
+                      Revenue forecast
                     </h3>
-                    <span style={{ fontSize: '.72rem', fontWeight: 700, padding: '3px 10px', borderRadius: 9999, background: isLightMode ? '#F1F5F9' : 'rgba(148, 163, 184, 0.15)', color: themeMuted }}>
-                      Velocity: {dailyVelocity.toFixed(2)} units/day
-                    </span>
                   </div>
                   <div style={{ fontSize: '.78rem', color: themeMuted, marginTop: 4 }}>
-                    Automated on-the-books (OTB) pace, Bayesian absorption priors, and binomial variance confidence intervals (P10–P90).
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '.7rem', color: themeMuted, textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>
-                      Baseline ADR (Bayesian)
-                    </div>
-                    <div style={{ fontSize: '1rem', fontWeight: 800, color: themeText }}>
-                      {money(baselineADR)} <span style={{ fontSize: '.72rem', color: themeMuted, fontWeight: 500 }}>/ night</span>
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right', borderLeft: `1px solid ${themeBorder}`, paddingLeft: 14 }}>
-                    <div style={{ fontSize: '.7rem', color: themeMuted, textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>
-                      Expected Absorption
-                    </div>
-                    <div style={{ fontSize: '1rem', fontWeight: 800, color: '#4F46E5' }}>
-                      {(p50Expected * 100).toFixed(1)}% <span style={{ fontSize: '.72rem', color: themeMuted, fontWeight: 500 }}>pace</span>
-                    </div>
+                    Built from your bookings: what is already booked, how fast new bookings come in, and how close to arrival guests usually book.
                   </div>
                 </div>
               </div>
 
               <div className="pms-forecast-grid">
-                {/* FORECAST CARD 1: Current Month-End Run Rate */}
+                {renderForecastCard(thisMonthForecast, thisMonthForecast.status === 'current' ? 'This month' : 'Selected month')}
+                {renderForecastCard(nextMonthForecast, 'Following month')}
+
                 <div className="pms-forecast-card">
                   <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div>
-                        <span style={{ fontSize: '.82rem', fontWeight: 700, color: themeMuted }}>Month-End Projection</span>
-                        <div style={{ fontSize: '.72rem', color: themeMuted }}>{monthNameFull}</div>
-                      </div>
-                      <span style={{ fontSize: '.7rem', fontWeight: 800, padding: '2px 8px', borderRadius: 9999, background: 'rgba(14, 165, 233, 0.12)', color: '#0EA5E9' }}>
-                        {isCurrentMonthActive ? `${daysLeftInMonth}d remaining` : 'Finalized Month'}
-                      </span>
-                    </div>
-
-                    <div style={{ fontSize: '1.75rem', fontWeight: 800, color: themeText, margin: '12px 0 4px', letterSpacing: '-0.02em', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                      {money(currentMonthEndForecast)}
-                    </div>
-
-                    <div style={{ fontSize: '.75rem', color: themeMuted, lineHeight: 1.4 }}>
-                      {isCurrentMonthActive
-                        ? `Realized ${money(roomRevenue)} + projected velocity pickup of ${money(currentMonthEndForecast - roomRevenue)} (${projectedCurrentPickupNights} units @ ${money(baselineADR)}/nt).`
-                        : `Finalized reconciled room revenue across all ${roomNightsSold} unit-nights sold.`}
-                    </div>
+                    <span style={{ fontSize: '.82rem', fontWeight: 700, color: forecastAccent }}>What's behind these numbers</span>
+                    <ul style={{ margin: '10px 0 0', paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 8, fontSize: '.76rem', color: themeText, lineHeight: 1.45 }}>
+                      <li>
+                        <b>Booking pace:</b>{' '}
+                        {forecastPace.bookings > 0
+                          ? `in the last 4 weeks, guests made ${forecastPace.bookings} ${forecastPace.bookings === 1 ? 'booking' : 'bookings'} for ${forecastPace.nights} room-nights, about ${forecastPace.nightsPerDay.toFixed(1)} a day.`
+                          : 'no new bookings in the last 4 weeks, so no new bookings are expected unless that changes.'}
+                      </li>
+                      <li>
+                        <b>When guests book:</b>{' '}
+                        {forecastCurve.source === 'history'
+                          ? `half of your guests book ${forecastCurve.medianLeadDays} days or less before they arrive (from ${forecastCurve.nightsUsed} past room-nights). Nights further away still have most of their bookings to come.`
+                          : 'there are not enough past stays yet to learn this, so new bookings are assumed to arrive evenly over the next 60 days.'}
+                      </li>
+                      <li>
+                        <b>Rate used:</b> {money(nextMonthForecast.rateUsed)} per room-night, the average {rateSourceText(nextMonthForecast)}.
+                      </li>
+                      <li>
+                        <b>Why there is a range:</b>{' '}
+                        {forecastPace.bookings >= 10
+                          ? `the pace rests on ${forecastPace.bookings} recent bookings, and day-to-day demand still varies.`
+                          : `the pace rests on only ${forecastPace.bookings} recent ${forecastPace.bookings === 1 ? 'booking' : 'bookings'}, so the range is wide.`}
+                      </li>
+                    </ul>
                   </div>
 
                   <div className="pms-forecast-scenario-track">
-                    <div className="pms-forecast-scenario-row">
-                      <span style={{ color: themeMuted }}>Realized Bookings (OTB):</span>
-                      <strong style={{ color: themeText }}>{money(roomRevenue)}</strong>
-                    </div>
-                    <div className="pms-forecast-scenario-row">
-                      <span style={{ color: themeMuted }}>Remaining Pickup (Units):</span>
-                      <strong style={{ color: themeText }}>{isCurrentMonthActive ? `${projectedCurrentPickupNights} of ${remainingCapacityCurrentMonth}` : '0'} units</strong>
-                    </div>
-                    <div className="pms-forecast-scenario-row">
-                      <span style={{ color: themeMuted }}>Estimated Month-End RevPAR:</span>
-                      <strong style={{ color: '#0EA5E9' }}>{money(Math.round(currentMonthEndForecast / Math.max(1, availableUnitNights)))}</strong>
-                    </div>
-                  </div>
-                </div>
-
-                {/* FORECAST CARD 2: Next Month Forecast (Scenarios) */}
-                <div className="pms-forecast-card" style={{ border: '1px solid rgba(79, 70, 229, 0.25)', position: 'relative' }}>
-                  <div style={{ position: 'absolute', top: -10, right: 16, background: '#4F46E5', color: '#fff', fontSize: '.65rem', fontWeight: 800, padding: '2px 8px', borderRadius: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Next Month Pace
-                  </div>
-
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div>
-                        <span style={{ fontSize: '.82rem', fontWeight: 700, color: '#4F46E5' }}>Expected Target Revenue</span>
-                        <div style={{ fontSize: '.72rem', color: themeMuted }}>{nextMonthName} ({(p50Expected * 100).toFixed(1)}% Pickup)</div>
-                      </div>
-                    </div>
-
-                    <div style={{ fontSize: '1.75rem', fontWeight: 800, color: themeText, margin: '12px 0 4px', letterSpacing: '-0.02em', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                      {money(forecastExpected)}
-                    </div>
-
-                    <div style={{ fontSize: '.75rem', color: themeMuted, lineHeight: 1.4 }}>
-                      Based on {nextMonthBookedNights} on-the-books nights ({money(nextMonthBookedRev)}) plus {(p50Expected * 100).toFixed(1)}% expected absorption ({pickupExpected} of {nextMonthRemainingCapacity} available unit-nights).
-                    </div>
-                  </div>
-
-                  <div className="pms-forecast-scenario-track">
-                    <div className="pms-forecast-scenario-row">
-                      <span style={{ color: themeMuted }}>Conservative ({(p10Conservative * 100).toFixed(1)}% · P10):</span>
-                      <strong style={{ color: '#D97706' }}>{money(forecastConservative)}</strong>
-                    </div>
-                    <div className="pms-forecast-scenario-row">
-                      <span style={{ color: themeMuted }}>Expected Pace ({(p50Expected * 100).toFixed(1)}% · P50):</span>
-                      <strong style={{ color: '#4F46E5' }}>{money(forecastExpected)}</strong>
-                    </div>
-                    <div className="pms-forecast-scenario-row">
-                      <span style={{ color: themeMuted }}>Optimistic Surge ({(p90Optimistic * 100).toFixed(1)}% · P90):</span>
-                      <strong style={{ color: '#059669' }}>{money(forecastOptimistic)}</strong>
-                    </div>
-                  </div>
-                </div>
-
-                {/* FORECAST CARD 3: Pace & Revenue Management Insights */}
-                <div className="pms-forecast-card">
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div>
-                        <span style={{ fontSize: '.82rem', fontWeight: 700, color: themeMuted }}>Yield Management Strategy</span>
-                        <div style={{ fontSize: '.72rem', color: themeMuted }}>Algorithmic Pricing Advisory</div>
-                      </div>
-                      <span style={{ fontSize: '.7rem', fontWeight: 800, padding: '2px 8px', borderRadius: 9999, background: pHat >= 0.50 ? 'rgba(16, 185, 129, 0.12)' : pHat >= 0.25 ? 'rgba(79, 70, 229, 0.12)' : 'rgba(217, 119, 6, 0.12)', color: pHat >= 0.50 ? '#10B981' : pHat >= 0.25 ? '#4F46E5' : '#D97706' }}>
-                        {pHat >= 0.50 ? 'High Demand Surge' : pHat >= 0.25 ? 'Balanced Momentum' : 'Value Optimization'}
-                      </span>
-                    </div>
-
-                    <div style={{ margin: '12px 0 8px' }}>
-                      <div style={{ fontSize: '.85rem', fontWeight: 700, color: themeText, display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <i className={pHat >= 0.50 ? "fas fa-arrow-trend-up text-emerald-500" : pHat >= 0.25 ? "fas fa-sliders text-indigo-500" : "fas fa-bolt text-amber-500"} />
-                        {pHat >= 0.50 ? 'Raise peak and weekend rates' : pHat >= 0.25 ? 'Hold current rates' : 'Consider mid-week offers'}
-                      </div>
-                      <div style={{ fontSize: '.75rem', color: themeMuted, marginTop: 4, lineHeight: 1.45 }}>
-                        {pHat >= 0.50
-                          ? `High booking velocity detected (${dailyVelocity.toFixed(2)} units/day, ${(pHat * 100).toFixed(1)}% expected absorption). Maximize yield by raising rates on peak dates.`
-                          : pHat >= 0.25
-                          ? `Steady pacing (${dailyVelocity.toFixed(2)} units/day). Baseline ADR is ${money(baselineADR)}.`
-                          : `Bookings are pacing at ${(pHat * 100).toFixed(1)}% of next month's open nights.`}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="pms-forecast-scenario-track">
-                    <div className="pms-forecast-scenario-row">
-                      <span style={{ color: themeMuted }}>On-the-Books (OTB) Revenue:</span>
-                      <strong style={{ color: themeText }}>{money(nextMonthBookedRev)}</strong>
-                    </div>
-                    <div className="pms-forecast-scenario-row">
-                      <span style={{ color: themeMuted }}>Unsold Next Month Nights:</span>
-                      <strong style={{ color: themeText }}>{nextMonthRemainingCapacity} unit-nights</strong>
-                    </div>
-                    <div className="pms-forecast-scenario-row">
-                      <span style={{ color: themeMuted }}>Target Next Month RevPAR:</span>
-                      <strong style={{ color: '#059669' }}>{money(Math.round(forecastExpected / Math.max(1, nextMonthCapacity)))}</strong>
+                    <div className="pms-forecast-scenario-row" style={{ alignItems: 'flex-start', gap: 12 }}>
+                      <span style={{ color: themeMuted }}>Suggestion</span>
+                      <strong style={{ color: themeText, textAlign: 'right' }}>{forecastSuggestion}</strong>
                     </div>
                   </div>
                 </div>
