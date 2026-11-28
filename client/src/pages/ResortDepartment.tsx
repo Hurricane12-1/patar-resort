@@ -950,9 +950,10 @@ export default function ResortDepartment() {
                 const month = currentMonthDate.getMonth();
                 const firstDayOfWeek = new Date(year, month, 1).getDay();
                 const daysInMonth = new Date(year, month + 1, 0).getDate();
+                const trailingBlanks = (7 - ((firstDayOfWeek + daysInMonth) % 7)) % 7;
 
                 return (
-                  <div>
+                  <div className="staff-ops-cal-month">
                     {/* Day Headers */}
                     <div className="staff-ops-cal-header-row">
                       {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
@@ -1025,6 +1026,10 @@ export default function ResortDepartment() {
                           </div>
                         );
                       })}
+
+                      {Array.from({ length: trailingBlanks }).map((_, idx) => (
+                        <div key={`trail-${idx}`} className="staff-ops-cal-day empty" style={{ opacity: 0.25, pointerEvents: 'none', background: '#F1F5F9' }} />
+                      ))}
                     </div>
                   </div>
                 );
