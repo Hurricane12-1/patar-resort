@@ -1991,7 +1991,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
         {/* =====================================================================
              ROOM OVERVIEW WORKSPACE (Centered on Landing, 2-Col in Embedded/Logged-in)
              ===================================================================== */}
-        <div className={showBookingTools ? "grid grid-cols-1 lg:grid-cols-12 gap-12 items-start" : "max-w-4xl mx-auto space-y-6"}>
+        <div className={showBookingTools ? "grid grid-cols-1 lg:grid-cols-12 gap-12 items-stretch" : "max-w-4xl mx-auto space-y-6"}>
           
           {/* LEFT / MAIN COLUMN */}
           <div className={showBookingTools ? "lg:col-span-7 xl:col-span-8" : "w-full"}>
@@ -2697,10 +2697,9 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
           {showBookingTools && (
           <aside
             id="reserve-card"
-            className="lg:col-span-5 xl:col-span-4 self-start lg:sticky lg:top-24 scroll-mt-24 relative z-10"
-            style={{ position: 'sticky', top: '96px', alignSelf: 'flex-start', zIndex: 10 }}
+            className="lg:col-span-5 xl:col-span-4 scroll-mt-24 relative z-10"
           >
-            <div className="bg-[#0B1426] border border-white/15 rounded-3xl p-5 sm:p-7 shadow-2xl text-white">
+            <div className="h-full bg-[#0B1426] border border-white/15 rounded-3xl p-5 sm:p-7 shadow-2xl text-white">
               
               {/* Price Header */}
               <div className="flex items-baseline justify-between gap-2 mb-5">
