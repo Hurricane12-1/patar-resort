@@ -7,6 +7,7 @@ import { getSystemAdminClient, admin } from '../lib/supabase.js';
 import { redis } from '../lib/redis.js';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
+import { notifyStaff } from '../lib/notify.js';
 import { findAvailableServiceAgent, emitToGuest, broadcastToStaff, answerChatInquiry } from '../socket/chatbot.js';
 
 const r = Router();
@@ -508,6 +509,14 @@ r.post('/chat/my-messages', asyncH(async (req, res) => {
   }).select().single();
 
   if (error) throw new ApiError(500, error.message);
+  const ticket = metadata?.ticket;
+  if (ticket?.number && ticket.status !== 'resolved') {
+    notifyStaff({
+      type: 'ticket',
+      title: `Ticket ${ticket.number}${ticket.priority === 'urgent' ? ' (urgent)' : ''}`,
+      body: `${ticket.subject || ticket.topic || 'New ticket'}${ticket.topic && ticket.subject ? ` · ${ticket.topic}` : ''}`,
+    });
+  }
   return res.status(201).json(data);
 }));
 

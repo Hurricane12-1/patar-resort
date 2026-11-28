@@ -7,6 +7,7 @@ import { validateJoi, joiSchemas } from '../middleware/joiValidation.js';
 import { admin, userClient } from '../lib/supabase.js';
 import { redis } from '../lib/redis.js';
 import { pingSMS } from '../lib/sms.js';
+import { notifyStaff } from '../lib/notify.js';
 import { sendRecoveryOTP, sendPasswordResetSuccess, sendSignup2FAOTP, sendWelcomeClientEmail, sendSignupExpiredEmail } from '../lib/mailer.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
 import { checkBruteForceLockout, recordFailedAttempt, recordSuccessfulAttempt } from '../middleware/bruteForceGuard.js';
@@ -294,6 +295,7 @@ r.post('/auth/register', asyncH(async (req, res) => {
       phone: normPhone,
       role: 'customer',
     }, { onConflict: 'id' });
+    notifyStaff({ type: 'customer', title: 'New customer account', body: `${fullName} (${cleanEmail}) signed up.` });
   } catch (err) {
     console.warn('[Profiles Upsert Warning]:', err.message);
   }
@@ -812,6 +814,8 @@ r.post('/auth/signup/confirm-2fa',
 
     if (profErr) {
       console.warn('[Database Warning] Profile upsert notice:', profErr.message);
+    } else {
+      notifyStaff({ type: 'customer', title: 'New customer account', body: `${full_name || cleanEmail} (${cleanEmail}) signed up.` });
     }
 
     // Upsert customer record into customers table with password hash

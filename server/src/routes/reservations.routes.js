@@ -27,6 +27,7 @@ import {
 import { validate } from '../middleware/validate.js';
 import { bookingLimiter } from '../middleware/security.js';
 import { admin, getSystemAdminClient } from '../lib/supabase.js';
+import { notifyStaff } from '../lib/notify.js';
 import { pingSMS } from '../lib/sms.js';
 import { redis } from '../lib/redis.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
@@ -468,6 +469,13 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
   try {
     broadcastPayload1('reservations:created', stay);
   } catch {}
+
+  notifyStaff({
+    type: 'booking',
+    title: stay.status === 'checked_in' ? 'Walk-in checked in' : 'New booking',
+    body: `${finalGuestName} booked ${stay.rooms?.name || roomName}, ${check_in} to ${check_out} (${guests} guest${Number(guests) === 1 ? '' : 's'}, ₱${Number(total_php).toLocaleString()}).`,
+    reservationId: stay.id,
+  });
 
   pingSMS({
     profileId: req.user?.id || targetGuestId || null, reservationId: stay.id, toPhone: finalPhone,

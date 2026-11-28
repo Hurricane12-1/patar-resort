@@ -54,14 +54,12 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
 
   const unreadNotifsCount = notifications.filter((n: any) => !n.is_read).length;
   const readNotifsCount = notifications.filter((n: any) => Boolean(n.is_read)).length;
-  const smsNotifsCount = notifications.filter((n: any) => n.type === 'sms' || Boolean(n.to_phone)).length;
-  const systemNotifsCount = notifications.filter((n: any) => n.type !== 'sms' && !n.to_phone).length;
+  const countOf = (type: string) => notifications.filter((n: any) => n.type === type).length;
 
   const filtered = notifications.filter((n: any) => {
     if (notifFilter === 'unread') return !n.is_read;
     if (notifFilter === 'read') return Boolean(n.is_read);
-    if (notifFilter === 'sms') return n.type === 'sms' || Boolean(n.to_phone);
-    if (notifFilter === 'system') return n.type !== 'sms' && !n.to_phone;
+    if (['booking', 'ticket', 'customer'].includes(notifFilter)) return n.type === notifFilter;
     return true;
   });
 
@@ -76,7 +74,7 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
             <i className="fas fa-bell" style={{ color: '#6366F1' }} /> Notifications
           </h3>
           <p className="muted small" style={{ margin: '4px 0 0' }}>
-            Live dispatch log of SMS guest alerts, role change verifications and automated reservation updates.
+            New bookings, tickets and customer sign-ups appear here as they happen.
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -182,8 +180,9 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
             <option value="unread">Unread ({unreadNotifsCount})</option>
             <option value="all">All Notifications ({notifications.length})</option>
             <option value="read">Read ({readNotifsCount})</option>
-            <option value="sms">SMS Messages ({smsNotifsCount})</option>
-            <option value="system">System Logs ({systemNotifsCount})</option>
+            <option value="booking">Booking ({countOf('booking')})</option>
+            <option value="ticket">Ticket ({countOf('ticket')})</option>
+            <option value="customer">Customer ({countOf('customer')})</option>
           </select>
         </div>
 
@@ -199,15 +198,16 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
             <i className="fas fa-inbox" style={{ fontSize: '2rem', display: 'block', marginBottom: 8, opacity: 0.5 }} />
             No alerts or notifications recorded.
           </p>
-          <small>SMS confirmations and system dispatches will appear here in real time.</small>
+          <small>Bookings, tickets and new customers will appear here as they happen.</small>
         </div>
       ) : filtered.length === 0 ? (
         <div style={{ padding: '40px 20px', textAlign: 'center', color: themeMuted, background: isLightMode ? '#F8FAFC' : 'rgba(255,255,255,0.02)', borderRadius: 14, border: `1px dashed ${themeBorder}` }}>
           <p style={{ fontSize: '1.1rem', margin: '0 0 6px', color: themeText, fontWeight: 700 }}>
             {notifFilter === 'unread' && <><i className="fas fa-trophy" style={{ color: '#F59E0B', marginRight: 6 }} />You're all caught up! No unread notifications.</>}
             {notifFilter === 'read' && <><i className="fas fa-book-open" style={{ color: '#0EA5E9', marginRight: 6 }} />No read notifications found in history.</>}
-            {notifFilter === 'sms' && <><i className="fas fa-mobile-screen-button" style={{ color: '#10B981', marginRight: 6 }} />No SMS dispatch messages found.</>}
-            {notifFilter === 'system' && <><i className="fas fa-gear" style={{ color: '#6366F1', marginRight: 6 }} />No system log alerts found.</>}
+            {notifFilter === 'booking' && <>No booking alerts yet.</>}
+            {notifFilter === 'ticket' && <>No ticket alerts yet.</>}
+            {notifFilter === 'customer' && <>No new customer alerts yet.</>}
           </p>
           <small>
             {notifFilter === 'unread' ? 'All alerts have been marked as read. Switch filter above to "Read" or "All Notifications" to view history.' : 'Check other filters or wait for upcoming alerts.'}
@@ -237,7 +237,7 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
               <div style={{ flex: 1, minWidth: 0, paddingRight: 16 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
                   <span className={`pill ${n.status || 'sent'}`}>{n.status || 'sent'}</span>
-                  {n.to_phone && <span style={{ fontSize: '.75rem', fontWeight: 700, color: '#0EA5E9' }}><i className="fas fa-mobile-alt" style={{ marginRight: 4 }} />{n.to_phone}</span>}
+                  {['booking', 'ticket', 'customer'].includes(n.type) && <span style={{ fontSize: '.75rem', fontWeight: 800, color: '#006699', textTransform: 'capitalize' }}>{n.type}</span>}
                   <span style={{ fontSize: '.75rem', color: themeMuted }}>• {fmtDate(n.created_at)} {fmtTime(n.created_at)}</span>
                   {!n.is_read ? (
                     <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#F43F5E', display: 'inline-block' }} title="Unread alert" />
@@ -246,7 +246,8 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
                   )}
                 </div>
                 <p style={{ margin: 0, fontSize: '.9rem', color: themeText, lineHeight: 1.4 }}>
-                  {n.body || n.content || 'Notification message'}
+                  {n.title && <b>{n.title}: </b>}
+                  {n.body || n.message || n.content || 'Notification message'}
                 </p>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
