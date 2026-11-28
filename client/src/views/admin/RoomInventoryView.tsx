@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { money } from '../../lib/format';
 import { api } from '../../lib/api';
+import { chevronSelectStyle } from '../../lib/selectChevron';
 import RoomImageCarousel from '../../components/RoomImageCarousel';
 import {
   inferOfferingType,
@@ -498,10 +499,11 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
                                 width: '100%',
                                 border: '1px solid #006699',
                                 borderRadius: 8,
-                                padding: '7px 10px',
+                                padding: '7px 28px 7px 10px',
                                 fontSize: '.78rem',
                                 fontWeight: 700,
-                                background: '#006699',
+                                backgroundColor: '#006699',
+                                ...chevronSelectStyle('#FFFFFF'),
                                 color: '#FFFFFF',
                                 cursor: 'pointer',
                               }}

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { toast } from './Toasts';
+import { chevronSelectStyle } from '../lib/selectChevron';
 
 interface StaffTicketsListProps {
   isLightMode: boolean;
@@ -179,7 +180,7 @@ export default function StaffTicketsList({ isLightMode, themeBg, themeText, them
                           e.target.value = '';
                           if (action) runAction(t, action);
                         }}
-                        style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #006699', background: '#006699', color: '#FFFFFF', fontSize: '.78rem', fontWeight: 700, cursor: 'pointer' }}
+                        style={{ padding: '6px 28px 6px 10px', borderRadius: 8, border: '1px solid #006699', backgroundColor: '#006699', ...chevronSelectStyle('#FFFFFF'), color: '#FFFFFF', fontSize: '.78rem', fontWeight: 700, cursor: 'pointer' }}
                       >
                         <option value="">Actions</option>
                         {t.status !== 'in_progress' && t.status !== 'resolved' && t.status !== 'closed' && <option value="take">Take this ticket</option>}

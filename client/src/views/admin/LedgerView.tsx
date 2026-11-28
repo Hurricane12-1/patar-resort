@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { money, fmtDate, fmtTime } from '../../lib/format';
 import { IconSearch } from '../../components/AdminIcons';
+import { chevronSelectStyle } from '../../lib/selectChevron';
 import StatusPill from '../../components/StatusPill';
 import AvailabilityCalendar from '../../components/AvailabilityCalendar';
 import { exportReservationsCSV } from '../../lib/ledgerUtils';
@@ -1534,10 +1535,11 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                             }
                           }}
                           style={{
-                            padding: '8px 12px',
+                            padding: '8px 30px 8px 12px',
                             borderRadius: 10,
                             border: `1.5px solid ${isLightMode ? '#CBD5E1' : '#334155'}`,
-                            background: isLightMode ? '#F8FAFC' : '#1E293B',
+                            backgroundColor: isLightMode ? '#F8FAFC' : '#1E293B',
+                            ...chevronSelectStyle(isLightMode ? '#006699' : '#38BDF8'),
                             color: themeText,
                             fontSize: '.8rem',
                             fontWeight: 700,
