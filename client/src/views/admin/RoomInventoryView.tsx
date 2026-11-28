@@ -376,7 +376,7 @@ export const RoomInventoryView: React.FC<RoomInventoryViewProps> = ({
                               </span>
                             ) : primaryBookingStatus === 'checked_in' ? (
                               <span style={{ fontSize: '.74rem', fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: 'rgba(14,165,233,0.12)', color: '#0EA5E9', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                                🔴 In-House
+                                🔴 Checked In
                               </span>
                             ) : (
                               <span style={{ fontSize: '.74rem', fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: 'rgba(79,70,229,0.12)', color: '#4F46E5', display: 'inline-flex', alignItems: 'center', gap: 4 }}>

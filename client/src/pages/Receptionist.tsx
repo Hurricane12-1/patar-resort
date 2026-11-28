@@ -275,7 +275,7 @@ export default function Receptionist() {
             className={`chip ${statusFilter === 'checked_in' ? 'sel' : ''}`}
           >
             <i className="fas fa-key" style={{ fontSize: '.7rem' }} />
-            In-House ({checkedInCount})
+            Checked In ({checkedInCount})
           </button>
           <button
             type="button"

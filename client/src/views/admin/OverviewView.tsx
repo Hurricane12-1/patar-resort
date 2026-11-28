@@ -661,7 +661,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 {[
                   { key: 'all', label: `All (${allBookings.length})` },
                   { key: 'confirmed', label: `Confirmed (${allBookings.filter((b: any) => b.status === 'confirmed').length})` },
-                  { key: 'checked_in', label: `In-House (${allBookings.filter((b: any) => b.status === 'checked_in').length})` },
+                  { key: 'checked_in', label: `Checked In (${allBookings.filter((b: any) => b.status === 'checked_in').length})` },
                   { key: 'pending', label: `Pending (${allBookings.filter((b: any) => b.status === 'pending').length})` },
                 ].map((f) => {
                   const active = bookingStatusFilter === f.key;
@@ -727,7 +727,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
                   const statusConfig: Record<string, { label: string; bg: string; text: string; border: string }> = {
                     confirmed: { label: 'Confirmed', bg: 'rgba(16, 185, 129, 0.12)', text: '#10B981', border: 'rgba(16, 185, 129, 0.3)' },
-                    checked_in: { label: 'In-House', bg: 'rgba(59, 130, 246, 0.12)', text: '#3B82F6', border: 'rgba(59, 130, 246, 0.3)' },
+                    checked_in: { label: 'Checked In',bg: 'rgba(59, 130, 246, 0.12)', text: '#3B82F6', border: 'rgba(59, 130, 246, 0.3)' },
                     pending: { label: 'Pending', bg: 'rgba(245, 158, 11, 0.12)', text: '#F59E0B', border: 'rgba(245, 158, 11, 0.3)' },
                     checked_out: { label: 'Checked Out', bg: 'rgba(100, 116, 139, 0.12)', text: '#64748B', border: 'rgba(100, 116, 139, 0.3)' },
                     cancelled: { label: 'Cancelled', bg: 'rgba(239, 68, 68, 0.12)', text: '#EF4444', border: 'rgba(239, 68, 68, 0.3)' },

@@ -1244,10 +1244,10 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                 border: `1.5px solid ${reservationFilter === 'checked_in' ? '#10B981' : (isLightMode ? '#A7F3D0' : 'rgba(16,185,129,0.25)')}`,
                 boxShadow: reservationFilter === 'checked_in' ? '0 0 0 3px rgba(16,185,129,0.2)' : 'none',
               }}
-              title="Click to filter In-House / Checked In guests"
+              title="Click to filter checked-in guests"
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <small style={{ color: isLightMode ? '#047857' : '#34D399', textTransform: 'uppercase', fontSize: '.7rem', fontWeight: 800, letterSpacing: '.06em' }}>In-House / Checked In</small>
+                <small style={{ color: isLightMode ? '#047857' : '#34D399', textTransform: 'uppercase', fontSize: '.7rem', fontWeight: 800, letterSpacing: '.06em' }}>Checked In</small>
                 {reservationFilter === 'checked_in' && (
                   <span style={{ fontSize: '.68rem', fontWeight: 800, color: '#10B981', background: 'rgba(16,185,129,0.2)', padding: '2px 8px', borderRadius: 9999 }}>
                     Active
@@ -1349,7 +1349,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
               >
                 <option value="all">All Folios ({allBookings.length})</option>
                 <option value="confirmed">Upcoming Confirmed ({statusCounts.confirmed})</option>
-                <option value="checked_in">In-House / Checked In ({statusCounts.checkedIn})</option>
+                <option value="checked_in">Checked In ({statusCounts.checkedIn})</option>
                 <option value="checked_out">Checked Out ({statusCounts.checkedOut})</option>
                 <option value="pending">Pending Approval ({statusCounts.pending})</option>
                 <option value="on_hold">On Hold / In Review ({statusCounts.onHold})</option>

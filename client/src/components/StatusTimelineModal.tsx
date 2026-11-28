@@ -112,7 +112,7 @@ export default function StatusTimelineModal({
     activeStageBadgeBg = '#1E3A8A';
     activeStageBadgeText = '#93C5FD';
     activeStageBorder = '#2563EB';
-    activeStageDescription = 'In-House Resort Guest Active in Room';
+    activeStageDescription = 'Guest checked in and staying in the room';
   } else if (isPending) {
     activeStageLabel = 'PENDING APPROVAL';
     activeStageBadgeBg = '#78350F';
@@ -396,7 +396,7 @@ export default function StatusTimelineModal({
               </p>
               {isCheckedIn && (
                 <span style={{ display: 'inline-block', marginTop: 6, fontSize: '.68rem', background: '#1E3A8A', color: '#93C5FD', padding: '2px 8px', borderRadius: 9999, fontWeight: 800 }}>
-                  ● PRESENT ACTIVE STAGE (IN-HOUSE GUEST)
+                  ● PRESENT ACTIVE STAGE (CHECKED IN GUEST)
                 </span>
               )}
             </div>
