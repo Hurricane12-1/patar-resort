@@ -22,6 +22,7 @@ import {
   type GuestPaymentMethod,
   type GuestProfile,
   type GuestRequest,
+  type GuestTicket,
 } from '../../lib/guestPortal';
 
 export type PortalMode = 'preview' | 'account';
@@ -61,8 +62,11 @@ export interface GuestPortalValue {
   addPaymentMethod: (input: NewPaymentMethod) => void;
   removePaymentMethod: (id: string) => void;
   setDefaultPaymentMethod: (id: string) => void;
-  submitRequest: (input: { bookingId?: string; topic: string; message: string; subject?: string; priority?: 'normal' | 'urgent' }) => Promise<GuestRequest>;
-  resolveRequest: (id: string) => Promise<void>;
+  tickets: GuestTicket[];
+  /** Files a ticket for one of the guest's own bookings. Throws with a plain message when the server refuses. */
+  fileTicket: (input: { bookingId: string; topic: string; subject: string; message: string; priority: 'normal' | 'urgent' }) => Promise<GuestTicket>;
+  rateTicket: (id: string, rating: number, feedback: string) => Promise<void>;
+  reopenTicket: (id: string) => Promise<void>;
   changePassword?: (password: string) => Promise<void>;
   signOut?: () => Promise<void>;
   resetPreview: () => void;
@@ -294,119 +298,65 @@ export function GuestPortalProvider({ children }: { children: ReactNode }) {
     [account, commitAccount]
   );
 
-  const submitRequest = useCallback(
-    async ({
-      bookingId,
-      topic,
-      message,
-      subject,
-      priority = 'normal',
-    }: {
-      bookingId?: string;
-      topic: string;
-      message: string;
-      subject?: string;
-      priority?: 'normal' | 'urgent';
-    }) => {
+  const [tickets, setTickets] = useState<GuestTicket[]>([]);
+
+  const loadTickets = useCallback(async () => {
+    if (!signedIn) {
+      setTickets([]);
+      return;
+    }
+    try {
+      setTickets(await api.myTickets());
+    } catch {
+      // The list stays as it was; the Help page shows what it has.
+    }
+  }, [signedIn]);
+
+  useEffect(() => {
+    loadTickets();
+  }, [loadTickets]);
+
+  const fileTicket = useCallback(
+    async ({ bookingId, topic, subject, message, priority }: { bookingId: string; topic: string; subject: string; message: string; priority: 'normal' | 'urgent' }) => {
       const booking = bookings.find((b) => b.id === bookingId);
-      const ticketNumber = `TK-${getManilaTodayISO().slice(5).replace('-', '')}-${Math.floor(1000 + Math.random() * 9000)}`;
-      const request: GuestRequest = {
-        id: `req-${Date.now().toString(36)}`,
-        ticketNumber,
-        subject: subject?.trim() || topic,
+      if (!signedIn || !booking?.dbId) {
+        throw new Error('Tickets can only be filed for a booking made on your account.');
+      }
+      const ticket = (await api.createTicket({
+        reservation_id: booking.dbId,
+        category: topic,
         priority,
-        status: 'open',
-        bookingId: booking?.id,
-        bookingRef: booking?.reference,
-        roomName: booking ? roomFor(booking).name : undefined,
-        topic,
-        message: message.trim(),
-        createdAt: new Date().toISOString(),
-        delivery: 'device',
-      };
-      let disputed = false;
-      // Preview requests stay on this device; signed-in residents' requests reach the staff and recovery queues.
-      if (signedIn) {
-        try {
-          if (topic === PROBLEM_TOPIC && booking?.dbId) {
-            const note = `[CLIENT_DISPUTE] ${request.message}`;
-            const { error } = await supabase
-              .from('reservations')
-              .update({ status: 'disputed', notes: booking.notes ? `${booking.notes}\n${note}` : note })
-              .eq('id', booking.dbId);
-            disputed = !error;
-          }
-          const { error } = await supabase.from('audit_logs').insert({
-            action: topic === PROBLEM_TOPIC ? 'CLIENT_DISPUTE_FILED' : 'CLIENT_HELP_REQUEST',
-            user_id: profileId || null,
-            resource: 'help_ticket',
-            details: {
-              actor_email: profileEmail || account.profile.email,
-              actor_role: 'customer',
-              reservation_id: booking?.dbId || 'unspecified',
-              reference: booking?.reference || null,
-              ticket_number: ticketNumber,
-              priority,
-              subject: request.subject,
-              topic,
-              description: request.message,
-              source_namespace: '/client',
-              target_namespace: topic === PROBLEM_TOPIC ? '/recovery' : '/staff',
-            },
-          });
-          if (!error || disputed) request.delivery = 'sent';
-        } catch {
-          // Saved on this device; the guest can still call or text the front desk.
-        }
-        // The ticket also lands in the guest's conversation, which is where customer service reads and replies.
-        try {
-          const lines = [
-            `TICKET ${ticketNumber} · ${priority === 'urgent' ? 'URGENT' : 'Normal'} · ${topic}`,
-            request.subject,
-            '',
-            request.message,
-            booking ? `Booking: ${booking.reference} (${roomFor(booking).name}, ${booking.checkIn} to ${booking.checkOut})` : '',
-          ];
-          await api.saveChatMessage({
-            role: 'user',
-            content: lines.join('\n').trim(),
-            metadata: {
-              ticket: { number: ticketNumber, subject: request.subject, topic, priority, status: 'open', booking_ref: booking?.reference || null },
-              requested_staff: priority === 'urgent',
-            },
-          });
-          request.delivery = 'sent';
-        } catch {
-          // The audit entry above may still have reached the front desk.
-        }
+        subject: subject.trim(),
+        details: message.trim(),
+      })) as GuestTicket;
+      if (topic === PROBLEM_TOPIC) {
+        const note = `[CLIENT_DISPUTE] ${ticket.tracking_id}: ${message.trim()}`;
+        const { error } = await supabase
+          .from('reservations')
+          .update({ status: 'disputed', notes: booking.notes ? `${booking.notes}\n${note}` : note })
+          .eq('id', booking.dbId);
+        if (!error) setBookings((list) => list.map((b) => (b.id === booking.id ? { ...b, status: 'disputed' } : b)));
       }
-      commitAccount({ ...account, requests: [request, ...account.requests].slice(0, 20) });
-      if (disputed && booking) {
-        setBookings((list) => list.map((b) => (b.id === booking.id ? { ...b, status: 'disputed' } : b)));
-      }
-      return request;
+      await loadTickets();
+      return ticket;
     },
-    [bookings, roomFor, signedIn, profileId, profileEmail, account, commitAccount]
+    [bookings, signedIn, loadTickets]
   );
 
-  const resolveRequest = useCallback(
-    async (id: string) => {
-      const target = account.requests.find((r) => r.id === id);
-      if (!target || target.status === 'resolved') return;
-      commitAccount({ ...account, requests: account.requests.map((r) => (r.id === id ? { ...r, status: 'resolved' } : r)) });
-      if (signedIn && target.ticketNumber) {
-        try {
-          await api.saveChatMessage({
-            role: 'user',
-            content: `Ticket ${target.ticketNumber} was marked resolved by the guest.`,
-            metadata: { ticket: { number: target.ticketNumber, status: 'resolved' } },
-          });
-        } catch {
-          // The ticket is closed on this device even if the note does not reach the front desk.
-        }
-      }
+  const rateTicket = useCallback(
+    async (id: string, rating: number, feedback: string) => {
+      await api.rateTicket(id, rating, feedback);
+      await loadTickets();
     },
-    [account, commitAccount, signedIn]
+    [loadTickets]
+  );
+
+  const reopenTicket = useCallback(
+    async (id: string) => {
+      await api.reopenTicket(id);
+      await loadTickets();
+    },
+    [loadTickets]
   );
 
   const resetPreview = useCallback(() => {
@@ -444,8 +394,10 @@ export function GuestPortalProvider({ children }: { children: ReactNode }) {
       addPaymentMethod,
       removePaymentMethod,
       setDefaultPaymentMethod,
-      submitRequest,
-      resolveRequest,
+      tickets,
+      fileTicket,
+      rateTicket,
+      reopenTicket,
       changePassword: signedIn
         ? async (password: string) => {
             await updatePassword(password);
@@ -471,8 +423,10 @@ export function GuestPortalProvider({ children }: { children: ReactNode }) {
     addPaymentMethod,
     removePaymentMethod,
     setDefaultPaymentMethod,
-    submitRequest,
-    resolveRequest,
+    tickets,
+    fileTicket,
+    rateTicket,
+    reopenTicket,
     signedIn,
     updatePassword,
     signOutCustomer,

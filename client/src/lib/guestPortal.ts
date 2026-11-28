@@ -109,6 +109,30 @@ export interface GuestRequest {
   status?: 'open' | 'resolved';
 }
 
+export type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
+
+/** A support ticket as the resort database holds it. */
+export interface GuestTicket {
+  id: string;
+  tracking_id: string;
+  category: string;
+  priority: 'normal' | 'urgent';
+  subject: string;
+  details: string;
+  status: TicketStatus;
+  booking_code?: string | null;
+  room_name?: string | null;
+  assigned_name?: string | null;
+  assigned_employee_id?: string | null;
+  /** Every staff member who acted on the ticket, with their employee ID, in the order they first acted. */
+  handlers?: { name: string; employee_id: string | null }[];
+  resolution_note?: string | null;
+  rating?: number | null;
+  feedback?: string | null;
+  created_at: string;
+  resolved_at?: string | null;
+}
+
 /** Profile details, saved payment methods, and help requests kept on this device. */
 export interface GuestAccount {
   isSample: boolean;

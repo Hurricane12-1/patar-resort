@@ -1729,6 +1729,22 @@ export const api = {
     return { message: 'Refund confirmed and recorded in database ✦', reservation: data };
   },
 
+  // Support tickets
+  createTicket: (body: { reservation_id: string; category: string; priority: 'normal' | 'urgent'; subject: string; details: string }) =>
+    req('/tickets', { method: 'POST', body }),
+  myTickets: async () => {
+    const rows = await req('/tickets/mine');
+    return Array.isArray(rows) ? rows : [];
+  },
+  rateTicket: (id: string, rating: number, feedback: string) => req(`/tickets/${id}/rating`, { method: 'POST', body: { rating, feedback } }),
+  reopenTicket: (id: string) => req(`/tickets/${id}/reopen`, { method: 'POST' }),
+  allTickets: async (status?: string) => {
+    const rows = await req(`/tickets${status ? `?status=${encodeURIComponent(status)}` : ''}`);
+    return Array.isArray(rows) ? rows : [];
+  },
+  updateTicket: (id: string, body: { action: 'take' | 'progress' | 'resolve' | 'close'; note?: string }) =>
+    req(`/tickets/${id}`, { method: 'PATCH', body }),
+
   // Mandated Account Chat Reload & Persistence
   myChatMessages: async (guestSessionId?: string) => {
     try {

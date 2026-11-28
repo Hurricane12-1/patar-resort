@@ -4,13 +4,13 @@ import GuestIcon, { type GuestIconName } from '../../components/guest/GuestIcon'
 import GuestAssistant from '../../components/guest/GuestAssistant';
 import { PROBLEM_TOPIC, useGuestPortal } from '../../components/guest/GuestPortalContext';
 import { toast } from '../../components/Toasts';
-import { RESORT_CONTACT, formatDateRange, formatRelativeTime, stayPhase, type GuestRequest } from '../../lib/guestPortal';
+import { RESORT_CONTACT, formatDateRange, formatRelativeTime, stayPhase, type GuestTicket } from '../../lib/guestPortal';
 
 const CARD_SHADOW = 'shadow-[0_8px_32px_rgba(0,0,0,0.36)]';
 
-type FaqTopic = 'Booking & rooms' | 'Changes & cancellation' | 'Arrival' | 'Payments' | 'During your stay';
+type FaqTopic = 'Booking & rooms' | 'Changes & cancellation' | 'Arrival' | 'Payments' | 'During your stay' | 'Tickets';
 
-const FAQ_TOPICS: FaqTopic[] = ['Booking & rooms', 'Changes & cancellation', 'Arrival', 'Payments', 'During your stay'];
+const FAQ_TOPICS: FaqTopic[] = ['Booking & rooms', 'Changes & cancellation', 'Arrival', 'Payments', 'During your stay', 'Tickets'];
 
 const FAQS: { topic: FaqTopic; q: string; a: string }[] = [
   {
@@ -71,16 +71,41 @@ const FAQS: { topic: FaqTopic; q: string; a: string }[] = [
   {
     topic: 'During your stay',
     q: "Something isn't right with my room. What should I do?",
-    a: `Call or text the front desk at ${RESORT_CONTACT.phoneDisplay}, or send a "${PROBLEM_TOPIC}" request below so our guest recovery team can follow up.`,
+    a: `Call or text the front desk at ${RESORT_CONTACT.phoneDisplay}, or file a "${PROBLEM_TOPIC}" ticket below so our guest recovery team can follow up.`,
+  },
+  {
+    topic: 'Tickets',
+    q: 'Who can file a ticket?',
+    a: 'Only guests who have booked a room or cottage. A ticket is always about one of your own bookings, so you choose the booking when you file it. Cancelled bookings cannot be used.',
+  },
+  {
+    topic: 'Tickets',
+    q: 'How do I file a ticket?',
+    a: 'Open File a ticket on this page, pick your booking, choose a category and how urgent it is, then add a short title and the details. When you press File ticket, your ticket gets a tracking ID.',
+  },
+  {
+    topic: 'Tickets',
+    q: 'What is the tracking ID?',
+    a: 'Every ticket gets its own number in the form R-000-000-001. The next ticket is R-000-000-002, and the number keeps counting up on its own. Quote it when you call or text so the front desk can find your ticket straight away.',
+  },
+  {
+    topic: 'Tickets',
+    q: 'What do Open, In progress, Resolved and Closed mean?',
+    a: 'Open: we have it and nobody has picked it up yet. In progress: a staff member is working on it. Resolved: we think it is done. Closed: the front desk closed it. You see the status under Your tickets.',
+  },
+  {
+    topic: 'Tickets',
+    q: 'How do I rate a ticket or reopen it?',
+    a: 'When a ticket is Resolved, Your tickets shows a rating from 1 to 5 and a box for feedback. If the problem is not actually solved, choose Not solved? Reopen and the front desk gets it again.',
+  },
+  {
+    topic: 'Tickets',
+    q: 'Is there a limit on tickets?',
+    a: 'You can have up to 5 open tickets at once. For an emergency at the resort, call the front desk first.',
   },
 ];
 
 const REQUEST_TOPICS = ['Change my dates', 'Change room or guests', 'Cancellation or refund', 'Payment question', PROBLEM_TOPIC, 'Something else'];
-
-function requestText(request: Pick<GuestRequest, 'topic' | 'message' | 'bookingRef' | 'ticketNumber'>, name: string): string {
-  const about = request.bookingRef ? ` (${request.bookingRef})` : '';
-  return `Hi Rock View, this is ${name}${about}.${request.ticketNumber ? ` Ticket ${request.ticketNumber}.` : ''} ${request.topic}: ${request.message}`;
-}
 
 export default function GuestHelp() {
   const portal = useGuestPortal();
@@ -213,7 +238,8 @@ export default function GuestHelp() {
 
         <div className="min-w-0 space-y-6">
           <RequestForm presetBooking={presetBooking} presetSubject={ticketSubject} sectionRef={formRef} />
-          <RequestList />
+          <TicketList />
+          <TicketGuidelines />
           <ResortInfo />
         </div>
       </div>
@@ -234,14 +260,15 @@ function RequestForm({
   const bookingOptions = useMemo(
     () =>
       [...portal.bookings]
-        .filter((b) => stayPhase(b, portal.today) !== 'cancelled')
+        .filter((b) => b.dbId && stayPhase(b, portal.today) !== 'cancelled')
         .sort((a, b) => a.checkIn.localeCompare(b.checkIn))
         .map((b) => ({
           id: b.id,
-          label: `${portal.roomFor(b).name} · ${formatDateRange(b.checkIn, b.checkOut)}${b.source === 'sample' ? ' (sample)' : ''}`,
+          label: `${portal.roomFor(b).name} · ${formatDateRange(b.checkIn, b.checkOut)}`,
         })),
     [portal.bookings, portal.roomFor, portal.today]
   );
+  const eligible = portal.mode === 'account' && bookingOptions.length > 0;
   const [bookingId, setBookingId] = useState(presetBooking);
   const [topic, setTopic] = useState(REQUEST_TOPICS[0]);
   const [priority, setPriority] = useState<'normal' | 'urgent'>('normal');
@@ -249,11 +276,15 @@ function RequestForm({
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
-  const [lastSent, setLastSent] = useState<GuestRequest | null>(null);
+  const [lastSent, setLastSent] = useState<GuestTicket | null>(null);
 
   useEffect(() => {
     if (presetBooking) setBookingId(presetBooking);
   }, [presetBooking]);
+
+  useEffect(() => {
+    if (!bookingId && bookingOptions.length > 0) setBookingId(bookingOptions[0].id);
+  }, [bookingId, bookingOptions]);
 
   useEffect(() => {
     if (presetSubject) setSubject(presetSubject.slice(0, 80));
@@ -261,6 +292,10 @@ function RequestForm({
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    if (!bookingId) {
+      setError('Choose the booking this ticket is about.');
+      return;
+    }
     if (subject.trim().length < 4) {
       setError('Give your ticket a short title (at least 4 characters).');
       return;
@@ -272,12 +307,14 @@ function RequestForm({
     setError('');
     setSending(true);
     try {
-      const request = await portal.submitRequest({ bookingId: bookingId || undefined, topic, message, subject, priority });
-      setLastSent(request);
+      const ticket = await portal.fileTicket({ bookingId, topic, subject, message, priority });
+      setLastSent(ticket);
       setSubject('');
       setMessage('');
       setPriority('normal');
-      toast(request.delivery === 'sent' ? `Ticket ${request.ticketNumber} sent to the front desk` : `Ticket ${request.ticketNumber} saved on this device`);
+      toast(`Ticket ${ticket.tracking_id} filed`);
+    } catch (err: any) {
+      setError(String(err?.message || 'We could not file your ticket. Please try again, or call the front desk.'));
     } finally {
       setSending(false);
     }
@@ -296,113 +333,131 @@ function RequestForm({
       <h2 id="request-title" className="text-[18px] font-semibold text-white">
         File a ticket
       </h2>
-      <p className="mt-1 text-[13.5px] text-slate-400">For changes, refunds, problems with your room, or anything the assistant cannot settle. You get a ticket number to quote.</p>
+      <p className="mt-1 text-[13.5px] text-slate-400">
+        For changes, refunds, problems with your room, or anything the assistant cannot settle. Every ticket gets a tracking ID like R-000-000-001.
+      </p>
 
-      {lastSent && (
-        <div className={`mt-4 flex gap-3 rounded-2xl px-4 py-3 text-[13.5px] ${lastSent.delivery === 'sent' ? 'border border-emerald-500/30 bg-emerald-950/60 text-emerald-200' : 'border border-sky-500/30 bg-sky-950/60 text-sky-200'}`} role="status">
-          <GuestIcon name={lastSent.delivery === 'sent' ? 'check' : 'info'} className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2.2} />
-          <p>
-            {lastSent.delivery === 'sent'
-              ? `Ticket ${lastSent.ticketNumber} is filed. The front desk team has it and will reply in your chat above.`
-              : `Ticket ${lastSent.ticketNumber} is saved on this device. To make sure it reaches us, text or email it from Your tickets below.`}
+      {!eligible ? (
+        <div className="mt-4 rounded-2xl border border-white/10 bg-[#040e22]/90 px-4 py-5 text-[14px] leading-relaxed text-slate-300">
+          <p className="font-semibold text-white">Tickets are for guests with a booking.</p>
+          <p className="mt-1">
+            {portal.mode === 'account'
+              ? 'Once you have booked a room or cottage, you can file a ticket about that stay here.'
+              : 'Sign in to your guest account. Once you have booked a room or cottage, you can file a ticket about that stay.'}
           </p>
+          <Link
+            to={portal.mode === 'account' ? { pathname: '/', hash: '#reserve' } : '/client/login'}
+            className="mt-3 inline-flex rounded-lg bg-[#006699] px-4 py-2 text-[13.5px] font-semibold text-white transition hover:bg-[#005580]"
+          >
+            {portal.mode === 'account' ? 'Book a stay' : 'Sign in'}
+          </Link>
         </div>
-      )}
+      ) : (
+        <>
+          {lastSent && (
+            <div className="mt-4 flex gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-950/60 px-4 py-3 text-[13.5px] text-emerald-200" role="status">
+              <GuestIcon name="check" className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2.2} />
+              <p>
+                Ticket <span className="font-mono font-semibold">{lastSent.tracking_id}</span> is filed. Quote this ID when you call. The front desk will reply here and in your chat above.
+              </p>
+            </div>
+          )}
 
-      <form onSubmit={submit} noValidate className="mt-5 space-y-4">
-        <div>
-          <label htmlFor="gp-request-booking" className="block text-[12.5px] font-semibold text-slate-300">
-            About
-          </label>
-          <select id="gp-request-booking" value={bookingId} onChange={(e) => setBookingId(e.target.value)} className={fieldClass}>
-            <option value="" className="bg-[#040e22] text-slate-400">A general question</option>
-            {bookingOptions.map((option) => (
-              <option key={option.id} value={option.id} className="bg-[#040e22] text-white">
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label htmlFor="gp-request-topic" className="block text-[12.5px] font-semibold text-slate-300">
-            Category
-          </label>
-          <select id="gp-request-topic" value={topic} onChange={(e) => setTopic(e.target.value)} className={fieldClass}>
-            {REQUEST_TOPICS.map((t) => (
-              <option key={t} value={t} className="bg-[#040e22] text-white">
-                {t}
-              </option>
-            ))}
-          </select>
-        </div>
-        <fieldset className="m-0 min-w-0 border-0 p-0">
-          <legend className="block p-0 text-[12.5px] font-semibold text-slate-300">How urgent is it?</legend>
-          <div className="mt-1.5 grid grid-cols-2 gap-2">
-            {(['normal', 'urgent'] as const).map((level) => (
-              <button
-                key={level}
-                type="button"
-                aria-pressed={priority === level}
-                onClick={() => setPriority(level)}
-                className={`h-11 rounded-xl border px-3 text-[14px] font-semibold transition ${
-                  priority === level
-                    ? level === 'urgent'
-                      ? 'border-rose-400 bg-rose-950/70 text-rose-100'
-                      : 'border-[#38BDF8] bg-[#006699] text-white'
-                    : 'border-white/15 bg-[#040e22]/90 text-slate-300 hover:border-sky-400/40'
-                }`}
-              >
-                {level === 'urgent' ? 'Urgent (I am at the resort)' : 'Normal'}
-              </button>
-            ))}
-          </div>
-        </fieldset>
-        <div>
-          <label htmlFor="gp-request-subject" className="block text-[12.5px] font-semibold text-slate-300">
-            Title
-          </label>
-          <input
-            id="gp-request-subject"
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-            maxLength={80}
-            placeholder="For example: move my stay one day later"
-            className={`${fieldClass} placeholder:text-slate-500`}
-          />
-        </div>
-        <div>
-          <label htmlFor="gp-request-message" className="block text-[12.5px] font-semibold text-slate-300">
-            Details
-          </label>
-          <textarea
-            id="gp-request-message"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            rows={4}
-            maxLength={800}
-            placeholder="Tell us what happened and what you need."
-            aria-invalid={error ? true : undefined}
-            className={`mt-1.5 w-full resize-y rounded-xl border bg-[#040e22]/90 px-3.5 py-3 text-[14.5px] text-white outline-none placeholder:text-slate-500 focus:border-[#38BDF8] focus:ring-2 focus:ring-sky-500/20 ${error ? 'border-rose-500/50' : 'border-white/15'}`}
-          />
-          {error && <p className="mt-1 text-[12px] text-rose-400">{error}</p>}
-        </div>
-        <button type="submit" disabled={sending} className="w-full rounded-xl bg-[#006699] py-3 text-[14.5px] font-semibold text-white transition hover:bg-[#005580] disabled:opacity-60">
-          {sending ? 'Filing…' : 'File ticket'}
-        </button>
-        <p className="text-[12px] leading-relaxed text-slate-400">
-          {portal.mode === 'preview'
-            ? 'Preview: tickets are saved on this device only. For anything urgent, call or text the front desk.'
-            : `Tickets go to the front desk team. For anything urgent, call ${RESORT_CONTACT.phoneDisplay}.`}
-        </p>
-      </form>
+          <form onSubmit={submit} noValidate className="mt-5 space-y-4">
+            <div>
+              <label htmlFor="gp-request-booking" className="block text-[12.5px] font-semibold text-slate-300">
+                Booking
+              </label>
+              <select id="gp-request-booking" value={bookingId} onChange={(e) => setBookingId(e.target.value)} className={fieldClass}>
+                {bookingOptions.map((option) => (
+                  <option key={option.id} value={option.id} className="bg-[#040e22] text-white">
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="gp-request-topic" className="block text-[12.5px] font-semibold text-slate-300">
+                Category
+              </label>
+              <select id="gp-request-topic" value={topic} onChange={(e) => setTopic(e.target.value)} className={fieldClass}>
+                {REQUEST_TOPICS.map((t) => (
+                  <option key={t} value={t} className="bg-[#040e22] text-white">
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <fieldset className="m-0 min-w-0 border-0 p-0">
+              <legend className="block p-0 text-[12.5px] font-semibold text-slate-300">How urgent is it?</legend>
+              <div className="mt-1.5 grid grid-cols-2 gap-2">
+                {(['normal', 'urgent'] as const).map((level) => (
+                  <button
+                    key={level}
+                    type="button"
+                    aria-pressed={priority === level}
+                    onClick={() => setPriority(level)}
+                    className={`h-11 rounded-xl border px-3 text-[14px] font-semibold transition ${
+                      priority === level
+                        ? level === 'urgent'
+                          ? 'border-rose-400 bg-rose-950/70 text-rose-100'
+                          : 'border-[#38BDF8] bg-[#006699] text-white'
+                        : 'border-white/15 bg-[#040e22]/90 text-slate-300 hover:border-sky-400/40'
+                    }`}
+                  >
+                    {level === 'urgent' ? 'Urgent (I am at the resort)' : 'Normal'}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+            <div>
+              <label htmlFor="gp-request-subject" className="block text-[12.5px] font-semibold text-slate-300">
+                Title
+              </label>
+              <input
+                id="gp-request-subject"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                maxLength={80}
+                placeholder="For example: move my stay one day later"
+                className={`${fieldClass} placeholder:text-slate-500`}
+              />
+            </div>
+            <div>
+              <label htmlFor="gp-request-message" className="block text-[12.5px] font-semibold text-slate-300">
+                Details
+              </label>
+              <textarea
+                id="gp-request-message"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                rows={4}
+                maxLength={800}
+                placeholder="Tell us what happened and what you need."
+                aria-invalid={error ? true : undefined}
+                className={`mt-1.5 w-full resize-y rounded-xl border bg-[#040e22]/90 px-3.5 py-3 text-[14.5px] text-white outline-none placeholder:text-slate-500 focus:border-[#38BDF8] focus:ring-2 focus:ring-sky-500/20 ${error ? 'border-rose-500/50' : 'border-white/15'}`}
+              />
+              {error && <p className="mt-1 text-[12px] text-rose-400">{error}</p>}
+            </div>
+            <button type="submit" disabled={sending} className="w-full rounded-xl bg-[#006699] py-3 text-[14.5px] font-semibold text-white transition hover:bg-[#005580] disabled:opacity-60">
+              {sending ? 'Filing…' : 'File ticket'}
+            </button>
+            <p className="text-[12px] leading-relaxed text-slate-400">
+              Read <a href="#ticket-guidelines" className="font-semibold text-[#38BDF8] hover:underline">how tickets work</a> below. For anything urgent, call {RESORT_CONTACT.phoneDisplay}.
+            </p>
+          </form>
+        </>
+      )}
     </section>
   );
 }
 
-function RequestList() {
+const STATUS_LABEL: Record<string, string> = { open: 'Open', in_progress: 'In progress', resolved: 'Resolved', closed: 'Closed' };
+
+function TicketList() {
   const portal = useGuestPortal();
-  const { requests } = portal.account;
-  if (!requests.length) return null;
+  const { tickets } = portal;
+  if (!tickets.length) return null;
 
   return (
     <section aria-labelledby="requests-title" className="rounded-[22px] border border-white/10 bg-[#061533]/80 backdrop-blur-md p-5 sm:p-6">
@@ -410,66 +465,164 @@ function RequestList() {
         Your tickets
       </h2>
       <ul className="mt-4 space-y-3">
-        {requests.map((request) => {
-          const text = requestText(request, portal.displayName);
-          const resolved = request.status === 'resolved';
-          return (
-            <li key={request.id} className="rounded-2xl border border-white/10 bg-[#040e22]/90 p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  {request.ticketNumber && <p className="font-mono text-[12px] font-semibold tracking-tight text-[#38BDF8]">{request.ticketNumber}</p>}
-                  <p className="text-[14px] font-semibold text-white">{request.subject || request.topic}</p>
-                  <p className="text-[12.5px] text-slate-400">
-                    {request.topic}
-                    {request.roomName ? ` · ${request.roomName}` : ''} · {formatRelativeTime(request.createdAt)}
-                  </p>
-                </div>
-                <div className="flex shrink-0 flex-col items-end gap-1.5">
-                  <span
-                    className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${
-                      resolved ? 'border-slate-500/40 bg-slate-800/70 text-slate-300' : 'border-emerald-500/30 bg-emerald-950/60 text-emerald-300'
-                    }`}
-                  >
-                    {resolved ? 'Resolved' : 'Open'}
-                  </span>
-                  {request.priority === 'urgent' && !resolved && (
-                    <span className="rounded-full border border-rose-500/40 bg-rose-950/60 px-2.5 py-0.5 text-[11px] font-semibold text-rose-200">Urgent</span>
-                  )}
-                </div>
-              </div>
-              <p className="mt-2 line-clamp-3 text-[13.5px] leading-relaxed text-slate-300">{request.message}</p>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                {!resolved && (
-                  <button
-                    type="button"
-                    onClick={() => void portal.resolveRequest(request.id)}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 px-3 py-1.5 text-[12.5px] font-semibold text-slate-200 transition hover:bg-white/10"
-                  >
-                    <GuestIcon name="check" className="h-3.5 w-3.5" /> Mark resolved
-                  </button>
-                )}
-                {request.delivery === 'device' && !resolved && (
-                  <>
-                    <a
-                      href={`sms:${RESORT_CONTACT.phoneHref}?&body=${encodeURIComponent(text)}`}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-sky-400/30 bg-white/5 px-3 py-1.5 text-[12.5px] font-semibold text-sky-200 hover:bg-white/10"
-                    >
-                      <GuestIcon name="message" className="h-3.5 w-3.5" /> Text it
-                    </a>
-                    <a
-                      href={`mailto:${RESORT_CONTACT.email}?subject=${encodeURIComponent(`${request.ticketNumber || request.topic}${request.bookingRef ? ` · ${request.bookingRef}` : ''}`)}&body=${encodeURIComponent(text)}`}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-sky-400/30 bg-white/5 px-3 py-1.5 text-[12.5px] font-semibold text-sky-200 hover:bg-white/10"
-                    >
-                      <GuestIcon name="mail" className="h-3.5 w-3.5" /> Email it
-                    </a>
-                  </>
-                )}
-                {request.delivery === 'sent' && <span className="text-[12px] text-slate-400">With the front desk</span>}
-              </div>
-            </li>
-          );
-        })}
+        {tickets.map((ticket) => (
+          <TicketCard key={ticket.id} ticket={ticket} />
+        ))}
       </ul>
+    </section>
+  );
+}
+
+function TicketCard({ ticket }: { ticket: GuestTicket }) {
+  const portal = useGuestPortal();
+  const [stars, setStars] = useState(0);
+  const [feedback, setFeedback] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const resolved = ticket.status === 'resolved';
+  const active = ticket.status === 'open' || ticket.status === 'in_progress';
+
+  const run = async (action: () => Promise<void>) => {
+    setBusy(true);
+    setError('');
+    try {
+      await action();
+    } catch (err: any) {
+      setError(String(err?.message || 'That did not go through. Please try again.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <li className="rounded-2xl border border-white/10 bg-[#040e22]/90 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-mono text-[12px] font-semibold tracking-tight text-[#38BDF8]">{ticket.tracking_id}</p>
+          <p className="text-[14px] font-semibold text-white">{ticket.subject}</p>
+          <p className="text-[12.5px] text-slate-400">
+            {ticket.category}
+            {ticket.room_name ? ` · ${ticket.room_name}` : ''} · {formatRelativeTime(ticket.created_at)}
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <span
+            className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${
+              active ? 'border-emerald-500/30 bg-emerald-950/60 text-emerald-300' : 'border-slate-500/40 bg-slate-800/70 text-slate-300'
+            }`}
+          >
+            {STATUS_LABEL[ticket.status] || ticket.status}
+          </span>
+          {ticket.priority === 'urgent' && active && (
+            <span className="rounded-full border border-rose-500/40 bg-rose-950/60 px-2.5 py-0.5 text-[11px] font-semibold text-rose-200">Urgent</span>
+          )}
+        </div>
+      </div>
+      <p className="mt-2 line-clamp-3 text-[13.5px] leading-relaxed text-slate-300">{ticket.details}</p>
+      {(ticket.handlers?.length ?? 0) > 0 && (
+        <p className="mt-2 text-[12.5px] text-slate-400">
+          Handled by{' '}
+          {ticket.handlers!.map((h) => (h.employee_id ? `${h.name} (${h.employee_id})` : h.name)).join(', ')}
+        </p>
+      )}
+      {resolved && ticket.resolution_note && (
+        <p className="mt-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[13px] text-slate-200">Reply: {ticket.resolution_note}</p>
+      )}
+
+      {resolved && !ticket.rating && (
+        <div className="mt-3 border-t border-white/10 pt-3">
+          <p className="text-[13px] font-semibold text-white">How was the help you got?</p>
+          <div className="mt-1.5 flex gap-1" role="radiogroup" aria-label="Rating">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                type="button"
+                role="radio"
+                aria-checked={stars === n}
+                aria-label={`${n} star${n === 1 ? '' : 's'}`}
+                onClick={() => setStars(n)}
+                className={`h-9 w-9 rounded-lg border text-[15px] font-bold transition ${stars >= n ? 'border-amber-400 bg-amber-500/20 text-amber-300' : 'border-white/15 text-slate-400 hover:border-white/30'}`}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+          <label htmlFor={`fb-${ticket.id}`} className="sr-only">
+            Feedback
+          </label>
+          <textarea
+            id={`fb-${ticket.id}`}
+            value={feedback}
+            onChange={(e) => setFeedback(e.target.value)}
+            rows={2}
+            maxLength={500}
+            placeholder="Anything we could do better? (optional)"
+            className="mt-2 w-full resize-y rounded-xl border border-white/15 bg-[#061533]/60 px-3 py-2 text-[13.5px] text-white outline-none placeholder:text-slate-500 focus:border-[#38BDF8]"
+          />
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={busy || stars === 0}
+              onClick={() => run(() => portal.rateTicket(ticket.id, stars, feedback))}
+              className="rounded-lg bg-[#006699] px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-[#005580] disabled:opacity-50"
+            >
+              Send rating
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => run(() => portal.reopenTicket(ticket.id))}
+              className="rounded-lg border border-white/20 px-4 py-2 text-[13px] font-semibold text-slate-200 transition hover:bg-white/10 disabled:opacity-50"
+            >
+              Not solved? Reopen
+            </button>
+          </div>
+        </div>
+      )}
+      {resolved && ticket.rating ? (
+        <p className="mt-3 text-[12.5px] text-slate-400">
+          You rated this {ticket.rating} out of 5{ticket.feedback ? `: "${ticket.feedback}"` : ''}.
+        </p>
+      ) : null}
+      {error && <p className="mt-2 text-[12px] text-rose-400">{error}</p>}
+    </li>
+  );
+}
+
+function TicketGuidelines() {
+  const steps = [
+    'Only guests with a booking can file a ticket, and it is always about one of your own bookings.',
+    'Fill in the booking, a category, how urgent it is, a short title and the details. The ticket gets a tracking ID such as R-000-000-001.',
+    'The front desk sees it right away and replies here and in your chat. Quote the tracking ID if you call.',
+    'When it is resolved, rate the help you got. If it is not actually solved, reopen it.',
+  ];
+  const statuses: [string, string][] = [
+    ['Open', 'We have your ticket and nobody has picked it up yet.'],
+    ['In progress', 'A staff member is working on it.'],
+    ['Resolved', 'We think it is done. Rate it, or reopen it if it is not.'],
+    ['Closed', 'The ticket was closed by the front desk.'],
+  ];
+  return (
+    <section id="ticket-guidelines" aria-labelledby="ticket-guidelines-title" className="rounded-[22px] border border-white/10 bg-[#061533]/80 backdrop-blur-md p-5 sm:p-6">
+      <h2 id="ticket-guidelines-title" className="text-[16px] font-semibold text-white">
+        How tickets work
+      </h2>
+      <ol className="mt-3 list-decimal space-y-2 pl-5 text-[13.5px] leading-relaxed text-slate-300">
+        {steps.map((step) => (
+          <li key={step}>{step}</li>
+        ))}
+      </ol>
+      <dl className="mt-4 space-y-2 text-[13px]">
+        {statuses.map(([name, text]) => (
+          <div key={name} className="flex gap-2">
+            <dt className="w-24 shrink-0 font-semibold text-white">{name}</dt>
+            <dd className="text-slate-400">{text}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-4 text-[12.5px] leading-relaxed text-slate-400">
+        You can have up to 5 open tickets at a time. For an emergency at the resort, call {RESORT_CONTACT.phoneDisplay} first.
+      </p>
     </section>
   );
 }
