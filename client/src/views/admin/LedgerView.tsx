@@ -945,9 +945,6 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                     <h3 style={{ margin: 0, fontSize: '1.18rem', fontWeight: 800, color: themeText, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                       Revenue Forecast &amp; Predictive Pace Model
                     </h3>
-                    <span style={{ fontSize: '.72rem', fontWeight: 800, padding: '3px 10px', borderRadius: 9999, background: 'rgba(79, 70, 229, 0.12)', color: '#4F46E5' }}>
-                      Ensemble ML Pace Model
-                    </span>
                     <span style={{ fontSize: '.72rem', fontWeight: 700, padding: '3px 10px', borderRadius: 9999, background: isLightMode ? '#F1F5F9' : 'rgba(148, 163, 184, 0.15)', color: themeMuted }}>
                       Velocity: {dailyVelocity.toFixed(2)} units/day
                     </span>
