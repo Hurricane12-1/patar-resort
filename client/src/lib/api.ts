@@ -1761,7 +1761,7 @@ export const api = {
   rateTicket: (id: string, rating: number, feedback: string) => req(`/tickets/${id}/rating`, { method: 'POST', body: { rating, feedback } }),
   reopenTicket: (id: string) => req(`/tickets/${id}/reopen`, { method: 'POST' }),
   allTickets: async (status?: string) => {
-    const rows = await req(`/tickets${status ? `?status=${encodeURIComponent(status)}` : ''}`);
+    const rows = await req(`/tickets${status ? `?status=${encodeURIComponent(status)}` : ''}`, { timeoutMs: 15000 });
     return Array.isArray(rows) ? rows : [];
   },
   updateTicket: (id: string, body: { action: 'take' | 'progress' | 'resolve' | 'close'; note?: string }) =>
