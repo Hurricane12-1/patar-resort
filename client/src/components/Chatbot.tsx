@@ -826,33 +826,30 @@ export default function Chatbot() {
                       <><i className="fas fa-location-dot" style={{ marginRight: 6 }} />{RESORT_CONTACT_INFO.receptionDesk}</>
                     </div>
 
-                    <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6 }}>
                       <a
                         href={`tel:${RESORT_CONTACT_INFO.primaryPhone}`}
                         className="btn btn-sky btn-sm"
                         style={{
-                          padding: '4px 8px',
-                          fontSize: '0.7rem',
+                          padding: '7px 10px',
+                          fontSize: '0.75rem',
                           textDecoration: 'none',
-                          textAlign: 'center',
-                          flex: 1,
+                          textAlign: 'left',
                         }}
                       >
                         <><i className="fas fa-phone" style={{ marginRight: 6 }} />Call Front Desk</>
                       </a>
-                      {m.needs_ticket && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setOpen(false);
-                            navigate(session?.user?.id ? '/client/help#file-ticket' : '/client/login');
-                          }}
-                          className="btn btn-outline btn-sm"
-                          style={{ padding: '4px 8px', fontSize: '0.7rem', flex: 1 }}
-                        >
-                          <><i className="fas fa-ticket" style={{ marginRight: 6 }} />File a ticket</>
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOpen(false);
+                          navigate(session?.user?.id ? '/client/help#file-ticket' : '/client/login');
+                        }}
+                        className="btn btn-outline btn-sm"
+                        style={{ padding: '7px 10px', fontSize: '0.75rem', textAlign: 'left' }}
+                      >
+                        <><i className="fas fa-ticket" style={{ marginRight: 6 }} />File a ticket</>
+                      </button>
                       <button
                         type="button"
                         onClick={() => {
@@ -865,7 +862,7 @@ export default function Chatbot() {
                           }
                         }}
                         className="btn btn-outline btn-sm"
-                        style={{ padding: '4px 8px', fontSize: '0.7rem', flex: 1 }}
+                        style={{ padding: '7px 10px', fontSize: '0.75rem', textAlign: 'left' }}
                       >
                         <><i className="fas fa-clipboard" style={{ marginRight: 6 }} />Copy Hotline</>
                       </button>
