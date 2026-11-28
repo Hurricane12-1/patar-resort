@@ -9,6 +9,8 @@ import { resolveReservationOfferingType, getManilaTodayISO, addDaysISO, Offering
 import { reservationRoomName, roomNameLookup } from '../../lib/reservationRoom';
 
 const MIN_LIST_ROWS = 8;
+/** The double-entry ledger table is hidden until the client asks for it. */
+const SHOW_GENERAL_LEDGER = false;
 
 /** Payment is shown on its own, apart from the stay status. Balance is what is still owed on a booking that is not fully paid. */
 function paymentSummary(b: any): { label: string; bg: string; color: string; balance: number } {
@@ -1102,6 +1104,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
             </div>
 
             {/* EXPANDABLE ACCORDION: GENERAL LEDGER DEBIT & CREDIT JOURNAL */}
+            {SHOW_GENERAL_LEDGER && (
             <div style={{ marginTop: 8 }}>
               <div
                 style={{
@@ -1192,6 +1195,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                 </div>
               </div>
             </div>
+            )}
           </div>
         );
       })()}
