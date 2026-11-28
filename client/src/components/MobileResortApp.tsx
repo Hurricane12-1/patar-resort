@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
-import { api, type DownpaymentHold } from '../lib/api';
+import { api, type BookingAllowance, type DownpaymentHold } from '../lib/api';
 import { usePageSettings, savePageSettings } from '../lib/pageSettings';
 import { isValidPHMobile, to11Digits } from '../lib/format';
 import { formatOfferingBadge, getManilaTodayISO, inferOfferingType, type OfferingType } from '../lib/offeringSpecs';
@@ -446,6 +446,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   const [reserveStep, setReserveStep] = useState<'form' | 'review' | 'payment' | 'success'>('form');
   const [downpaymentHold, setDownpaymentHold] = useState<DownpaymentHold | null>(null);
   const [downpaymentNow, setDownpaymentNow] = useState(() => Date.now());
+  const [bookingAllowance, setBookingAllowance] = useState<BookingAllowance | null>(null);
   const downpaymentRemainingMs = downpaymentHold ? Math.max(0, new Date(downpaymentHold.expires_at).getTime() - downpaymentNow) : 0;
   const downpaymentExpired = reserveStep === 'payment' && downpaymentHold !== null
     && (downpaymentHold.status === 'expired' || downpaymentRemainingMs === 0);
@@ -496,6 +497,22 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
       window.clearInterval(timer);
     };
   }, [reserveStep, downpaymentHold?.id, downpaymentHold?.status]);
+
+  useEffect(() => {
+    if (!showReserveModal || !signedInGuest) return;
+    let active = true;
+    api
+      .getBookingAllowance()
+      .then((allowance) => {
+        if (active) setBookingAllowance(allowance);
+      })
+      .catch(() => {
+        if (active) setBookingAllowance(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [showReserveModal, signedInGuest]);
   const [reserveSubmitting, setReserveSubmitting] = useState<boolean>(false);
   const [calendarNotice, setCalendarNotice] = useState<string | null>(null);
   const [conflictToast, setConflictToast] = useState<{
@@ -1600,6 +1617,14 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     }
     if (!guestName.trim() || !guestEmail.trim()) {
       setReserveError('Please complete your name and email so we can issue your voucher.');
+      return;
+    }
+    if (bookingAllowance && bookingAllowance.bookingsLeft <= 0) {
+      setReserveError(`You have used your bookings this month. You can book again on ${bookingAllowance.resetsOn}.`);
+      return;
+    }
+    if (bookingAllowance && (pickedRooms.length || 1) > bookingAllowance.maxRooms) {
+      setReserveError(`On this booking you can reserve up to ${bookingAllowance.maxRooms} ${bookingAllowance.maxRooms === 1 ? 'room' : 'rooms'}. Remove a room to continue.`);
       return;
     }
     setReserveError(null);
@@ -3745,6 +3770,15 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                   <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs font-medium text-rose-900">
                     {reserveError}
                   </div>
+                )}
+
+                {bookingAllowance && (
+                  <p className="text-xs leading-relaxed text-[#6A6A6A]">
+                    {bookingAllowance.bookingsLeft > 0
+                      ? `You can reserve up to ${bookingAllowance.maxRooms} ${bookingAllowance.maxRooms === 1 ? 'room' : 'rooms'} on this booking. Bookings left this month: ${bookingAllowance.bookingsLeft}.`
+                      : `You have used your bookings this month. You can book again on ${bookingAllowance.resetsOn}.`}{' '}
+                    Need more? File a ticket with customer service.
+                  </p>
                 )}
 
                 <button

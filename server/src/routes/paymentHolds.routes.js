@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { asyncH } from '../middleware/errors.js';
 import { authenticate } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
-import { createDownpaymentHold, getDownpaymentHoldForGuest } from '../lib/paymentHolds.js';
+import { createDownpaymentHold, getDownpaymentHoldForGuest, getBookingAllowance } from '../lib/paymentHolds.js';
 
 const r = Router();
 
@@ -26,6 +26,11 @@ r.get('/payment-holds/:id', authenticate, asyncH(async (req, res) => {
     holdId: req.params.id,
   });
   return res.json(hold);
+}));
+
+r.get('/booking-allowance', authenticate, asyncH(async (req, res) => {
+  const allowance = await getBookingAllowance(req.user);
+  return res.json(allowance);
 }));
 
 export default r;

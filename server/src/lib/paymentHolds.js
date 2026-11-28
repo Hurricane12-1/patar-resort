@@ -50,7 +50,9 @@ async function renderQrPng(reference, amount) {
   });
 }
 
-export const MONTHLY_BOOKING_LIMIT = 3;
+// Rooms allowed on a guest's 1st, 2nd and 3rd booking of the calendar month. No booking is allowed after the 3rd.
+export const BOOKING_ROOM_TIERS = [2, 1, 1];
+export const MONTHLY_BOOKING_LIMIT = BOOKING_ROOM_TIERS.length;
 const MANILA_OFFSET_MS = 8 * 60 * 60 * 1000;
 
 export function monthlyBookingWindow(nowMs) {
@@ -63,8 +65,15 @@ export function monthlyBookingWindow(nowMs) {
   };
 }
 
-// One payment request is made per checkout, so counting them counts bookings by the day they were made.
-export async function checkMonthlyBookingLimit(user) {
+export function tierForBookingCount(bookingsThisMonth) {
+  return {
+    bookingsLeft: Math.max(0, MONTHLY_BOOKING_LIMIT - bookingsThisMonth),
+    maxRooms: BOOKING_ROOM_TIERS[bookingsThisMonth] ?? 0,
+  };
+}
+
+// One payment request is made per booking, so counting them counts bookings by the day they were made.
+export async function getBookingAllowance(user) {
   const { startMs, nextStartMs } = monthlyBookingWindow(Date.now());
   const client = await getSystemAdminClient();
   const { count, error } = await client
@@ -74,18 +83,28 @@ export async function checkMonthlyBookingLimit(user) {
     .gte('created_at', new Date(startMs).toISOString());
   if (error) throw new ApiError(500, error.message);
 
-  if ((count ?? 0) >= MONTHLY_BOOKING_LIMIT) {
-    const reopens = new Date(nextStartMs).toLocaleDateString('en-US', {
+  const used = count ?? 0;
+  return {
+    bookingsThisMonth: used,
+    ...tierForBookingCount(used),
+    resetsOn: new Date(nextStartMs).toLocaleDateString('en-US', {
       month: 'long',
       day: 'numeric',
       timeZone: 'Asia/Manila',
-    });
+    }),
+  };
+}
+
+export async function checkMonthlyBookingLimit(user) {
+  const allowance = await getBookingAllowance(user);
+  if (allowance.bookingsLeft <= 0) {
     throw new ApiError(
       429,
-      `You have made ${MONTHLY_BOOKING_LIMIT} bookings this month. You can book again on ${reopens}.`,
+      `You have made ${MONTHLY_BOOKING_LIMIT} bookings this month. You can book again on ${allowance.resetsOn}. For more, file a ticket with customer service.`,
       { code: 'MONTHLY_BOOKING_LIMIT' }
     );
   }
+  return allowance;
 }
 
 export function paymentRequestRetryAt(requestTimesMs, nowMs) {
@@ -322,6 +341,15 @@ export async function createDownpaymentHold({ user, reservationIds, req }) {
   }
 
   await enforcePaymentRequestLimit(client, user);
+
+  const allowance = await checkMonthlyBookingLimit(user);
+  if (ids.length > allowance.maxRooms) {
+    throw new ApiError(
+      422,
+      `On this booking you can reserve up to ${allowance.maxRooms} ${allowance.maxRooms === 1 ? 'room' : 'rooms'}. Remove a room to continue.`,
+      { code: 'ROOM_LIMIT' }
+    );
+  }
 
   const stayTotal = reservations.reduce((sum, row) => sum + (Number(row.total_php) || 0), 0);
   const amount = Math.round(stayTotal * DOWNPAYMENT_RATE);

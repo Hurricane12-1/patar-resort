@@ -481,6 +481,13 @@ export interface EscalationDecision {
   audit_error: string | null;
 }
 
+export interface BookingAllowance {
+  bookingsThisMonth: number;
+  bookingsLeft: number;
+  maxRooms: number;
+  resetsOn: string;
+}
+
 export interface DownpaymentHold {
   id: string;
   reference: string;
@@ -1075,6 +1082,7 @@ export const api = {
   createDownpaymentHold: (reservationIds: string[]) =>
     req<DownpaymentHold>('/payment-holds', { method: 'POST', body: { reservation_ids: reservationIds }, slowWrite: true }),
   getDownpaymentHold: (holdId: string) => req<DownpaymentHold>(`/payment-holds/${holdId}`, { timeoutMs: 10000 }),
+  getBookingAllowance: () => req<BookingAllowance>('/booking-allowance'),
   cancelReservation: async (id: string) => {
     try {
       return await req(`/reservations/${id}/cancel`, { method: 'PATCH', slowWrite: true });
