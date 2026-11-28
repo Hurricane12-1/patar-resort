@@ -27,4 +27,4 @@ Tokens: `var(--font-sans)`, and `font-sans` or `font-mono` in Tailwind (`font-mo
 - Load both fonts only in `client/index.html`. Do not add `@import` lines for fonts in stylesheets.
 - Do not name any other family in `font-family`, `fontFamily`, or `--font-*` values.
 - Generic fallbacks (`Georgia`, `system-ui`, `Arial`, `sans-serif`, `serif`) are allowed. They only show if the two fonts fail to load.
-- Run `node scripts/check-fonts.mjs` before committing. It fails if a font outside this list appears.
+- Run `node tools/check-fonts.mjs` before committing. It fails if a font outside this list appears.
