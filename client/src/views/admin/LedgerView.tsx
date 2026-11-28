@@ -1294,36 +1294,6 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
               </span>
             </div>
 
-            {/* CARD 4: GROSS STAY VALUE */}
-            <div
-              className="kpi-card-clickable"
-              onClick={() => setReservationFilter(reservationFilter === 'pending' ? 'all' : 'pending')}
-              style={{
-                padding: '18px 20px',
-                background: reservationFilter === 'pending'
-                  ? (isLightMode ? '#FEF3C7' : 'rgba(245,158,11,0.2)')
-                  : (isLightMode ? '#FFFBEB' : 'rgba(245,158,11,0.08)'),
-                borderRadius: 20,
-                border: `1.5px solid ${reservationFilter === 'pending' ? '#F59E0B' : (isLightMode ? '#FDE68A' : 'rgba(245,158,11,0.25)')}`,
-                boxShadow: reservationFilter === 'pending' ? '0 0 0 3px rgba(245,158,11,0.2)' : 'none',
-              }}
-              title="Click to filter pending stays or inspect revenue"
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <small style={{ color: isLightMode ? '#B45309' : '#FBBF24', textTransform: 'uppercase', fontSize: '.7rem', fontWeight: 800, letterSpacing: '.06em' }}>Gross Stay Value</small>
-                {reservationFilter === 'pending' && (
-                  <span style={{ fontSize: '.68rem', fontWeight: 800, color: '#F59E0B', background: 'rgba(245,158,11,0.2)', padding: '2px 8px', borderRadius: 9999 }}>
-                    Pending Filter
-                  </span>
-                )}
-              </div>
-              <b style={{ display: 'block', fontSize: '1.65rem', color: isLightMode ? '#92400E' : '#F59E0B', marginTop: 4 }}>
-                {money(allBookings.filter((b) => b.status !== 'cancelled').reduce((acc, b) => acc + (b.total_php || 0), 0))}
-              </b>
-              <span style={{ fontSize: '.74rem', color: '#F59E0B', display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
-                <i className="fas fa-sack-dollar" style={{ fontSize: '.7rem' }} /> Total booking revenue
-              </span>
-            </div>
           </div>
 
           {/* Search Bar & Clean Filter Dropdown */}
