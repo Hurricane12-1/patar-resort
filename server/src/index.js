@@ -31,7 +31,13 @@ app.use(cookieTokenizer);
 app.use(ngwfFirewall);
 
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
-app.use(express.json({ limit: '5mb' }));
+// rawBody keeps the exact bytes a payment provider signed; the sanitizer below rewrites req.body.
+app.use(express.json({
+  limit: '5mb',
+  verify: (req, _res, buf) => {
+    if (req.originalUrl?.startsWith('/api/webhooks/')) req.rawBody = buf.toString('utf8');
+  },
+}));
 app.use(antiXssSanitizer);
 
 // Security CSRF & Certificates endpoints

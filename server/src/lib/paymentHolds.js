@@ -8,6 +8,7 @@ import { logAuditEvent } from './auditLogger.js';
 import { notifyStaff } from './notify.js';
 import { pingSMS } from './sms.js';
 import { redis } from './redis.js';
+import { checkPaymentAgainstHold } from './paymentSecurity.js';
 
 export const DOWNPAYMENT_WINDOW_MS = 15 * 60 * 1000;
 export const PAYMENT_REQUEST_LIMIT = 3;
@@ -19,6 +20,12 @@ export const PAYMENT_REQUEST_WINDOW_MS = 30 * 60 * 1000;
 // provider's confirmation callback instead.
 export const SIMULATED_PROVIDER = 'simulated-auto-credit';
 export const SIMULATED_CREDIT_DELAY_MS = 20 * 1000;
+
+// PAYMENT_PROVIDER unset or "simulated" keeps the temporary auto-credit. Any other value (for example
+// "paymongo") turns it off, and only signed provider webhooks can credit a hold.
+export function simulatedPaymentsEnabled() {
+  return (process.env.PAYMENT_PROVIDER || 'simulated').trim().toLowerCase() === 'simulated';
+}
 
 const SWEEP_INTERVAL_MS = 15 * 1000;
 const DOWNPAYMENT_RATE = 0.5;
@@ -166,7 +173,7 @@ async function releaseHold(client, hold) {
   if (error) throw new Error(error.message);
 }
 
-async function creditHold(client, hold) {
+async function creditHold(client, hold, provider = SIMULATED_PROVIDER) {
   const reservations = await loadReservations(client, hold.reservation_ids);
   const stillWaiting = reservations.length === hold.reservation_ids.length
     && reservations.every((row) => row.status === 'pending');
@@ -178,7 +185,7 @@ async function creditHold(client, hold) {
   const nowIso = new Date().toISOString();
   const { data: paidRows, error } = await client
     .from('payment_holds')
-    .update({ status: 'paid', paid_at: nowIso, provider: SIMULATED_PROVIDER })
+    .update({ status: 'paid', paid_at: nowIso, provider })
     .eq('id', hold.id)
     .eq('status', 'awaiting')
     .gt('expires_at', nowIso)
@@ -197,17 +204,18 @@ async function creditHold(client, hold) {
 
   await redis.clear();
 
+  const simulated = provider === SIMULATED_PROVIDER;
   await logAuditEvent({
-    actor: SYSTEM_ACTOR,
-    action: 'DOWNPAYMENT_AUTO_CREDITED',
+    actor: simulated ? SYSTEM_ACTOR : { id: null, full_name: `Payment provider (${provider})`, role: 'system' },
+    action: simulated ? 'DOWNPAYMENT_AUTO_CREDITED' : 'DOWNPAYMENT_PROVIDER_CREDITED',
     resourceType: 'payment_hold',
     resourceId: paid.id,
     details: {
       reference: paid.reference,
       amount_php: paid.amount_php,
       reservation_ids: paid.reservation_ids,
-      provider: SIMULATED_PROVIDER,
-      simulated: true,
+      provider,
+      simulated,
     },
   });
 
@@ -215,8 +223,8 @@ async function creditHold(client, hold) {
   const amountLabel = `₱${Number(paid.amount_php).toLocaleString()}`;
   await notifyStaff({
     type: 'booking',
-    title: 'Downpayment received (simulated)',
-    body: `${guest?.guest_name || paid.guest_name || 'Guest'} downpayment of ${amountLabel} (${paid.reference}) was credited automatically. Temporary simulated payment.`,
+    title: simulated ? 'Downpayment received (simulated)' : 'Downpayment received',
+    body: `${guest?.guest_name || paid.guest_name || 'Guest'} downpayment of ${amountLabel} (${paid.reference}) was credited ${simulated ? 'automatically. Temporary simulated payment.' : `by ${provider}.`}`,
     reservationId: paid.reservation_ids[0],
   });
 
@@ -233,6 +241,7 @@ async function creditHold(client, hold) {
 }
 
 async function creditDueHolds() {
+  if (!simulatedPaymentsEnabled()) return 0;
   const client = await getSystemAdminClient();
   const nowMs = Date.now();
   const { data: due, error } = await client
@@ -424,7 +433,8 @@ export async function getDownpaymentHoldForGuest({ user, holdId }) {
 
   if (hold.status !== 'awaiting') return serializeStatus(hold);
 
-  const dueForCredit = Date.now() - new Date(hold.created_at).getTime() >= SIMULATED_CREDIT_DELAY_MS;
+  const dueForCredit = simulatedPaymentsEnabled()
+    && Date.now() - new Date(hold.created_at).getTime() >= SIMULATED_CREDIT_DELAY_MS;
   if (dueForCredit) {
     await creditHold(client, hold);
   }
@@ -442,4 +452,53 @@ export async function getDownpaymentHoldForGuest({ user, holdId }) {
     .single();
   if (latestError) throw new ApiError(500, latestError.message);
   return serializeStatus(latest);
+}
+
+const REVIEW_OUTCOMES = new Set(['unknown_reference', 'window_closed', 'wrong_currency', 'amount_mismatch', 'not_credited']);
+
+// Applies one verified provider event. The event id is stored first, so a resent or replayed event
+// is recognised and does nothing the second time.
+export async function applyProviderPaymentEvent(event, provider) {
+  const client = await getSystemAdminClient();
+  const { error: insertError } = await client.from('payment_events').insert({
+    event_id: event.id,
+    provider,
+    type: event.type,
+    reference: event.data.reference,
+    amount_centavos: event.data.amount_centavos,
+    outcome: 'received',
+  });
+  if (insertError) {
+    if (insertError.code === '23505') return 'duplicate';
+    throw new Error(insertError.message);
+  }
+
+  let outcome = 'ignored';
+  if (event.type === 'payment.paid') {
+    const { data: hold, error } = await client
+      .from('payment_holds')
+      .select('*')
+      .eq('reference', event.data.reference)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+
+    const check = checkPaymentAgainstHold(hold, { amountCentavos: event.data.amount_centavos, currency: event.data.currency });
+    if (!check.ok) {
+      outcome = check.reason;
+    } else {
+      outcome = (await creditHold(client, hold, provider)) ? 'credited' : 'not_credited';
+    }
+  }
+
+  const { error: updateError } = await client.from('payment_events').update({ outcome }).eq('event_id', event.id);
+  if (updateError) console.warn('[Payments] Could not record the event outcome:', updateError.message);
+
+  if (REVIEW_OUTCOMES.has(outcome)) {
+    await notifyStaff({
+      type: 'booking',
+      title: 'Payment needs review',
+      body: `A ${provider} payment for ${event.data.reference} (₱${(event.data.amount_centavos / 100).toLocaleString()}) was not applied: ${outcome.replace(/_/g, ' ')}.`,
+    });
+  }
+  return outcome;
 }

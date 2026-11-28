@@ -1,0 +1,53 @@
+-- ============================================================
+-- PAYMENT API SETUP (run in the Supabase SQL editor)
+-- Select all of this file, paste it, then press Run. Safe to run again.
+-- Run DOWNPAYMENT-HOLD-SETUP.txt first.
+--
+-- Creates:
+--   payment_methods  saved GCash, Maya, and card methods (never full card numbers)
+--   payment_events   every payment provider event, so a resent event is applied only once
+-- ============================================================
+
+-- 1. Saved payment methods. Cards keep only the provider's token, brand, last 4 digits and expiry.
+create table if not exists public.payment_methods (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null,
+  type text not null check (type in ('gcash', 'maya', 'card')),
+  provider text not null,
+  provider_token text,
+  label text not null check (char_length(label) <= 60),
+  brand text check (brand is null or brand in ('visa', 'mastercard', 'jcb', 'amex')),
+  last4 text not null check (last4 ~ '^[0-9]{4}$'),
+  exp_month smallint check (exp_month is null or exp_month between 1 and 12),
+  exp_year smallint check (exp_year is null or exp_year between 2024 and 2100),
+  holder_name text not null check (char_length(holder_name) between 2 and 80),
+  is_default boolean not null default false,
+  created_at timestamptz not null default now(),
+  revoked_at timestamptz,
+  constraint card_needs_token check (type <> 'card' or revoked_at is not null or provider_token is not null)
+);
+
+create index if not exists payment_methods_user_idx on public.payment_methods (user_id) where revoked_at is null;
+-- At most one default method per guest
+create unique index if not exists payment_methods_one_default on public.payment_methods (user_id) where is_default and revoked_at is null;
+-- The same card token cannot be saved twice by one guest
+create unique index if not exists payment_methods_unique_token on public.payment_methods (user_id, provider_token) where provider_token is not null and revoked_at is null;
+
+-- 2. Provider events. The event id is the primary key, which is what blocks replays.
+create table if not exists public.payment_events (
+  event_id text primary key,
+  provider text not null,
+  type text not null,
+  reference text,
+  amount_centavos bigint,
+  outcome text not null,
+  received_at timestamptz not null default now()
+);
+
+create index if not exists payment_events_reference_idx on public.payment_events (reference);
+
+-- 3. Security: no policies, so only the server (service role) can read or write either table.
+alter table public.payment_methods enable row level security;
+alter table public.payment_events enable row level security;
+
+notify pgrst, 'reload schema';

@@ -7,7 +7,8 @@
     "build": "echo 'Server ready'",
     "dev": "node --watch src/index.js",
     "start": "node server.js",
-    "test": "node test/verify-all.test.js"
+    "test": "node test/verify-all.test.js",
+    "test:security": "node --test test/payment-security.test.js test/payment-webhook-http.test.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
