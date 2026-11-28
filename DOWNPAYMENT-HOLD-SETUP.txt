@@ -1,0 +1,29 @@
+-- ============================================================
+-- DOWNPAYMENT HOLD SETUP (run once, in the Supabase SQL editor)
+-- Select all of this file, paste it, then press Run.
+-- Run this BEFORE guests book again. Bookings fail until this table exists.
+-- Creates: the payment_holds table, which tracks each 15-minute
+-- downpayment window and its QR reference.
+-- ============================================================
+
+-- 1. One row per downpayment request. Each row covers one or more bookings
+--    made in the same checkout.
+create table if not exists public.payment_holds (
+  id uuid primary key default gen_random_uuid(),
+  reference text not null unique,
+  reservation_ids uuid[] not null,
+  guest_email text,
+  guest_name text,
+  amount_php integer not null check (amount_php >= 0),
+  status text not null default 'awaiting' check (status in ('awaiting', 'paid', 'expired')),
+  expires_at timestamptz not null,
+  paid_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+-- 2. Fast lookups for the expiry check and for finding a guest's open request
+create index if not exists payment_holds_status_idx on public.payment_holds (status, expires_at);
+create index if not exists payment_holds_reservations_idx on public.payment_holds using gin (reservation_ids);
+
+-- 3. Security: no policies are added, so only the server (service role) can read or write this table.
+alter table public.payment_holds enable row level security;

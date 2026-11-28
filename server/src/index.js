@@ -15,6 +15,7 @@ import { attachChatbot } from './socket/chatbot.js';
 import { bootstrapFramework } from './framework/ModuleLoader.js';
 import { registry } from './framework/ModuleRegistry.js';
 import { startSchemaCollector } from './services/schemaCollector.js';
+import { startPaymentHoldSweeper } from './lib/paymentHolds.js';
 
 const app = express();
 app.disable('x-powered-by');
@@ -196,6 +197,9 @@ server.listen(env.port, () => {
 
   // Start background live Schema Collector over SSL
   startSchemaCollector(60000);
+
+  // Release bookings whose 15-minute downpayment window has closed
+  startPaymentHoldSweeper();
 
   // Secondary port listener (4000) for legacy script & test compatibility
   if (!process.env.RENDER && env.port !== 4000) {

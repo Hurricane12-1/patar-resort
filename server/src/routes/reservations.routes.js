@@ -36,6 +36,7 @@ import { sendRefundRequestedEmail, sendRefundConfirmedEmail } from '../lib/maile
 import { broadcastPayload1 } from '../socket/chatbot.js';
 import { getLocalReservations, addLocalReservation, updateLocalReservation, deleteLocalReservation } from '../lib/reservationStore.js';
 import { normalizePaymentStatus } from '../lib/paymentStatus.js';
+import { sweepExpiredHolds } from '../lib/paymentHolds.js';
 
 const r = Router();
 const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -174,6 +175,7 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
   const isFrontDeskOrAdmin = actorRole === 'administrator' || actorRole === 'receptionist' || (actorRole === 'staff' && actorDept === 'front_desk');
   const isDeskStaff = isFrontDeskOrAdmin || actorRole === 'accounting';
   if (check_in < today) throw new ApiError(422, 'Check-in date cannot be in the past');
+  await sweepExpiredHolds();
 
   const sysClient = await getSystemAdminClient();
 
@@ -334,7 +336,7 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
     : serverCalculatedTotal;
   const downpayment_php = (actorRole === 'administrator' && customDownpayment !== undefined)
     ? Number(customDownpayment)
-    : Math.round(total_php * 0.3);
+    : Math.round(total_php * (isDeskStaff ? 0.3 : 0.5));
 
   const finalGuestName = (guest_name || guestName || req.user?.full_name || req.user?.name || '').trim();
   if (!finalGuestName || finalGuestName.length < 2) {
@@ -401,7 +403,7 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
     downpayment_php,
     payment_method: finalPaymentMethod,
     payment_status: (isDeskStaff && payment_status) ? normalizePaymentStatus(payment_status) : 'unpaid',
-    status: (isDeskStaff && customStatus) ? customStatus : 'confirmed',
+    status: isDeskStaff ? (customStatus || 'confirmed') : 'pending',
     guest_name: finalGuestName,
     email: finalGuestEmail,
     phone: finalPhone,
@@ -478,7 +480,7 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
     reservationId: stay.id,
   });
 
-  pingSMS({
+  if (stay.status !== 'pending') pingSMS({
     profileId: req.user?.id || targetGuestId || null, reservationId: stay.id, toPhone: finalPhone,
     body: stay.status === 'checked_in'
       ? `Rock View Beach Resort: welcome! 🌊 Checked in to ${stay.rooms?.name || roomName}, ${check_in} → ${check_out} (${nights} night${nights > 1 ? 's' : ''}). Enjoy Bolinao!`

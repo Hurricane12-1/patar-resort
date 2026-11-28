@@ -343,7 +343,7 @@ export default function PolicyPage() {
             </div>
 
             <p style={{ fontSize: '0.85rem', color: '#CBD5E1', lineHeight: 1.6, margin: 0 }}>
-              💡 <em>Important: All accommodations are billed on a flat-rate per room/cottage per night basis, not per head. Unconfirmed reservations without proof of downpayment within 24 hours are automatically released back to public inventory.</em>
+              💡 <em>Important: All accommodations are billed on a flat-rate per room/cottage per night basis, not per head. Unconfirmed reservations without a paid downpayment within 15 minutes are automatically released back to public inventory.</em>
             </p>
           </section>
 

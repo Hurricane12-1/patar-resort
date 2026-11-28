@@ -481,6 +481,17 @@ export interface EscalationDecision {
   audit_error: string | null;
 }
 
+export interface DownpaymentHold {
+  id: string;
+  reference: string;
+  amount_php: number;
+  status: 'awaiting' | 'paid' | 'expired';
+  expires_at: string;
+  reservation_ids: string[];
+  qr_data_url: string;
+  emailed?: boolean;
+}
+
 export const api = {
   // Tri-Adapter Gateway according to architecture
   adapter: frontendAdapter,
@@ -1061,6 +1072,13 @@ export const api = {
     } catch {}
     return [];
   },
+  createDownpaymentHold: (reservationIds: string[]) =>
+    req<DownpaymentHold>('/payment-holds', { method: 'POST', body: { reservation_ids: reservationIds } }),
+  confirmDownpaymentHold: (holdId: string) =>
+    req<{ success: boolean; status: string; reference: string; amount_php: number; reservation_ids: string[] }>(
+      `/payment-holds/${holdId}/confirm`,
+      { method: 'POST' }
+    ),
   cancelReservation: async (id: string) => {
     try {
       return await req(`/reservations/${id}/cancel`, { method: 'PATCH' });
