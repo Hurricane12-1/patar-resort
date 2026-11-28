@@ -70,7 +70,7 @@ export function useAdminState() {
   const getInitialActiveTab = (): string => {
     if (typeof window !== 'undefined') {
       const hash = window.location.hash.replace('#', '').trim();
-      const validTabs = ['overview', 'ledger', 'inventory', 'approvals', 'conversations', 'settings', 'audit', 'accounts', 'notifications', 'csv'];
+      const validTabs = ['overview', 'ledger', 'inventory', 'approvals', 'conversations', 'tickets', 'settings', 'audit', 'accounts', 'notifications', 'csv'];
       if (validTabs.includes(hash)) {
         return hash;
       }
@@ -110,7 +110,7 @@ export function useAdminState() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '').trim();
-      const validTabs = ['overview', 'ledger', 'inventory', 'approvals', 'conversations', 'settings', 'audit', 'accounts', 'notifications', 'csv'];
+      const validTabs = ['overview', 'ledger', 'inventory', 'approvals', 'conversations', 'tickets', 'settings', 'audit', 'accounts', 'notifications', 'csv'];
       if (validTabs.includes(hash) && hash !== activeTab) {
         setActiveTab(hash);
       }

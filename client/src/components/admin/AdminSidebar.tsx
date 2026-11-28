@@ -86,6 +86,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       badgeColor: '#6366F1',
     },
     {
+      key: 'tickets',
+      label: 'Ticket Ledger',
+      icon: <i className="fas fa-ticket" style={{ fontSize: 17 }} />,
+    },
+    {
       key: 'accounts',
       label: 'Staff & Accounts',
       icon: <i className="fas fa-users-gear" style={{ fontSize: 17 }} />,
@@ -205,7 +210,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             {isStaffRestricted ? 'STAFF WORKSPACE' : 'EXECUTIVE MENU'}
           </span>
         )}
-        {(isStaffRestricted ? sidebarItems.filter((i) => i.key === 'inventory' || i.key === 'conversations') : sidebarItems).map((item) => {
+        {(isStaffRestricted ? sidebarItems.filter((i) => i.key === 'inventory' || i.key === 'conversations' || i.key === 'tickets') : sidebarItems).map((item) => {
           const isActive = activeTab === item.key || (item.key === 'settings' && activeTab === 'page-adjustment');
           return (
             <button

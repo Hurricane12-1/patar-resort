@@ -10,6 +10,7 @@ import { AccountDirectoryView } from '../views/admin/AccountDirectoryView';
 import { AuditTrailView } from '../views/admin/AuditTrailView';
 import { NotificationsView } from '../views/admin/NotificationsView';
 import { SettingsView } from '../views/admin/SettingsView';
+import { TicketLedgerView } from '../views/admin/TicketLedgerView';
 import { ExecutiveGuestConversationsPanel } from '../components/ExecutiveGuestConversationsPanel';
 import CsvTableViewer from '../components/CsvTableViewer';
 import { AdminSidebar } from '../components/admin/AdminSidebar';
@@ -177,6 +178,14 @@ export default function Admin() {
               {...themeProps}
               initialGuest={state.selectedPanelGuest}
               conversations={state.guestConversations}
+              onOpenTicketLedger={() => state.setActiveTab('tickets')}
+            />
+          )}
+
+          {state.activeTab === 'tickets' && (
+            <TicketLedgerView
+              {...themeProps}
+              onBack={() => state.setActiveTab('conversations')}
             />
           )}
 
