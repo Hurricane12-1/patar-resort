@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getManilaTodayISO, addDaysISO } from '../../lib/offeringSpecs';
 import { api } from '../../lib/api';
 import { ResortSpinner, SkeletonTable } from '../../components/LoadingAnimations';
 
@@ -112,7 +113,9 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({
     if (auditDateFilter !== 'ALL') {
       const rawTs = log.timestamp || log.created_at || '';
       const dStr = rawTs.slice(0, 10);
-      if (dStr !== auditDateFilter) return false;
+      if (auditDateFilter === 'WEEK') {
+        if (dStr < addDaysISO(getManilaTodayISO(), -6) || dStr > getManilaTodayISO()) return false;
+      } else if (dStr !== auditDateFilter) return false;
     }
 
     // 3. Action Type Filter
@@ -262,7 +265,7 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({
               </span>
               <input
                 type="date"
-                value={auditDateFilter === 'ALL' ? '' : auditDateFilter}
+                value={auditDateFilter === 'ALL' || auditDateFilter === 'WEEK' ? '' : auditDateFilter}
                 onChange={(e) => setAuditDateFilter(e.target.value || 'ALL')}
                 style={{
                   padding: '6px 12px',
@@ -275,34 +278,41 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({
                   cursor: 'pointer',
                 }}
               />
-              <button
-                type="button"
-                onClick={() => setAuditDateFilter(new Date().toISOString().slice(0, 10))}
-                className={`btn btn-sm ${auditDateFilter === new Date().toISOString().slice(0, 10) ? 'btn-sky' : 'btn-ghost'}`}
-                style={{ fontSize: '.75rem', padding: '5px 10px', fontWeight: 700, borderRadius: 8 }}
-              >
-                Today
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const y = new Date();
-                  y.setDate(y.getDate() - 1);
-                  setAuditDateFilter(y.toISOString().slice(0, 10));
+              <select
+                aria-label="Quick date range"
+                value={
+                  auditDateFilter === 'ALL' ? 'ALL'
+                  : auditDateFilter === 'WEEK' ? 'WEEK'
+                  : auditDateFilter === getManilaTodayISO() ? 'TODAY'
+                  : auditDateFilter === addDaysISO(getManilaTodayISO(), -1) ? 'YESTERDAY'
+                  : 'CUSTOM'
+                }
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === 'ALL') setAuditDateFilter('ALL');
+                  else if (v === 'WEEK') setAuditDateFilter('WEEK');
+                  else if (v === 'TODAY') setAuditDateFilter(getManilaTodayISO());
+                  else if (v === 'YESTERDAY') setAuditDateFilter(addDaysISO(getManilaTodayISO(), -1));
                 }}
-                className={`btn btn-sm ${auditDateFilter === new Date(Date.now() - 86400000).toISOString().slice(0, 10) ? 'btn-sky' : 'btn-ghost'}`}
-                style={{ fontSize: '.75rem', padding: '5px 10px', fontWeight: 700, borderRadius: 8 }}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: 8,
+                  border: `1px solid ${themeBorder}`,
+                  background: isLightMode ? '#FFF' : '#1E293B',
+                  color: themeText,
+                  fontSize: '.82rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
               >
-                Yesterday
-              </button>
-              <button
-                type="button"
-                onClick={() => setAuditDateFilter('ALL')}
-                className={`btn btn-sm ${auditDateFilter === 'ALL' ? 'btn-sky' : 'btn-ghost'}`}
-                style={{ fontSize: '.75rem', padding: '5px 10px', fontWeight: 700, borderRadius: 8 }}
-              >
-                All Days
-              </button>
+                <option value="ALL">All Days</option>
+                <option value="WEEK">This Week</option>
+                <option value="YESTERDAY">Yesterday</option>
+                <option value="TODAY">Today</option>
+                {auditDateFilter !== 'ALL' && auditDateFilter !== 'WEEK' && auditDateFilter !== getManilaTodayISO() && auditDateFilter !== addDaysISO(getManilaTodayISO(), -1) && (
+                  <option value="CUSTOM">Picked day</option>
+                )}
+              </select>
             </div>
           </div>
 
@@ -324,25 +334,28 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({
           <span style={{ fontSize: '.72rem', fontWeight: 700, color: themeMuted, marginRight: 4 }}>
             ACTION TYPE:
           </span>
-          {[
-            { key: 'ALL', label: 'All Actions', icon: 'fa-layer-group' },
-            { key: 'LOGIN', label: 'Logins', icon: 'fa-right-to-bracket' },
-            { key: 'ROOM', label: 'Rooms', icon: 'fa-bed' },
-            { key: 'BOOKING', label: 'Reservations', icon: 'fa-calendar-check' },
-            { key: 'INVENTORY', label: 'Supplies', icon: 'fa-boxes-stacked' },
-            { key: 'PROVISIONED', label: 'Accounts', icon: 'fa-user-plus' },
-          ].map((f) => (
-            <button
-              key={f.key}
-              type="button"
-              className={`chip ${auditActionFilter === f.key ? 'sel' : ''}`}
-              onClick={() => setAuditActionFilter(f.key)}
-              style={{ fontSize: '.72rem', padding: '3px 10px', display: 'inline-flex', alignItems: 'center', gap: 5 }}
-            >
-              <i className={`fas ${f.icon}`} />
-              {f.label}
-            </button>
-          ))}
+          <select
+            aria-label="Action type"
+            value={auditActionFilter}
+            onChange={(e) => setAuditActionFilter(e.target.value)}
+            style={{
+              padding: '6px 12px',
+              borderRadius: 8,
+              border: `1px solid ${themeBorder}`,
+              background: isLightMode ? '#FFF' : '#1E293B',
+              color: themeText,
+              fontSize: '.82rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            <option value="ALL">All Actions</option>
+            <option value="LOGIN">Logins</option>
+            <option value="ROOM">Rooms</option>
+            <option value="BOOKING">Reservations</option>
+            <option value="INVENTORY">Supplies</option>
+            <option value="PROVISIONED">Accounts</option>
+          </select>
         </div>
       </div>
 
