@@ -61,7 +61,7 @@ export async function sendRecoveryOTP({ to, code, name = 'Guest' }) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Account Recovery Verification Code</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #0F172A; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #F8FAFC;">
+<body style="margin: 0; padding: 0; background-color: #0F172A; font-family: 'Plus Jakarta Sans', Arial, sans-serif; color: #F8FAFC;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0F172A; padding: 36px 16px;">
     <tr>
       <td align="center">
@@ -89,7 +89,7 @@ export async function sendRecoveryOTP({ to, code, name = 'Guest' }) {
                 <tr>
                   <td align="center" style="background-color: #0F172A; border: 1px solid #0284C7; border-radius: 12px; padding: 22px 16px;">
                     <span style="display: block; font-size: 11px; letter-spacing: 0.15em; color: #38BDF8; text-transform: uppercase; font-weight: 700; margin-bottom: 8px;">One-Time Verification Code (OTP)</span>
-                    <span style="display: block; font-family: Consolas, 'Liberation Mono', Menlo, Courier, monospace; font-size: 36px; font-weight: 800; letter-spacing: 0.35em; color: #38BDF8;">
+                    <span style="display: block; font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-size: 36px; font-weight: 800; letter-spacing: 0.35em; color: #38BDF8;">
                       ${code}
                     </span>
                     <span style="display: block; font-size: 12px; color: #64748B; margin-top: 8px;">
@@ -163,7 +163,7 @@ export async function sendPasswordResetSuccess({ to, name = 'Guest' }) {
   <meta charset="utf-8">
   <title>Password Reset Confirmation</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #0F172A; font-family: sans-serif; color: #F8FAFC;">
+<body style="margin: 0; padding: 0; background-color: #0F172A; font-family: 'Plus Jakarta Sans', Arial, sans-serif; color: #F8FAFC;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 30px 16px;">
     <tr>
       <td align="center">
@@ -217,7 +217,7 @@ export async function sendSignup2FAOTP({ to, code, name = 'Guest', provider = 'e
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>2FA Sign-Up Confirmation</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #0F172A; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #F8FAFC;">
+<body style="margin: 0; padding: 0; background-color: #0F172A; font-family: 'Plus Jakarta Sans', Arial, sans-serif; color: #F8FAFC;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0F172A; padding: 36px 16px;">
     <tr>
       <td align="center">
@@ -248,7 +248,7 @@ export async function sendSignup2FAOTP({ to, code, name = 'Guest', provider = 'e
                 <tr>
                   <td align="center" style="background-color: #0F172A; border: 1px solid #0284C7; border-radius: 12px; padding: 22px 16px;">
                     <span style="display: block; font-size: 11px; letter-spacing: 0.15em; color: #38BDF8; text-transform: uppercase; font-weight: 700; margin-bottom: 8px;">2FA Finalization Code</span>
-                    <span style="display: block; font-family: Consolas, 'Liberation Mono', Menlo, Courier, monospace; font-size: 38px; font-weight: 800; letter-spacing: 0.35em; color: #38BDF8;">
+                    <span style="display: block; font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-size: 38px; font-weight: 800; letter-spacing: 0.35em; color: #38BDF8;">
                       ${code}
                     </span>
                     <span style="display: block; font-size: 12px; color: #64748B; margin-top: 8px;">
@@ -321,7 +321,7 @@ export async function sendWelcomeClientEmail({ to, name = 'Guest', provider = 'e
   <meta charset="utf-8">
   <title>Welcome to Rock View Beach Resort</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #0F172A; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #F8FAFC;">
+<body style="margin: 0; padding: 0; background-color: #0F172A; font-family: 'Plus Jakarta Sans', Arial, sans-serif; color: #F8FAFC;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 30px 16px;">
     <tr>
       <td align="center">
@@ -376,7 +376,7 @@ export async function sendSignupExpiredEmail({ to, name = 'Guest' }) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Account Not Confirmed · Rock View Beach Resort</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #0F172A; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #F8FAFC;">
+<body style="margin: 0; padding: 0; background-color: #0F172A; font-family: 'Plus Jakarta Sans', Arial, sans-serif; color: #F8FAFC;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0F172A; padding: 36px 16px;">
     <tr>
       <td align="center">
@@ -489,7 +489,7 @@ export async function sendRefundRequestedEmail({
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Refund Request In Process</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #0F172A; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #F8FAFC;">
+<body style="margin: 0; padding: 0; background-color: #0F172A; font-family: 'Plus Jakarta Sans', Arial, sans-serif; color: #F8FAFC;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0F172A; padding: 36px 16px;">
     <tr>
       <td align="center">
@@ -629,7 +629,7 @@ export async function sendRefundConfirmedEmail({
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Refund Confirmed and Processed</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #0F172A; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #F8FAFC;">
+<body style="margin: 0; padding: 0; background-color: #0F172A; font-family: 'Plus Jakarta Sans', Arial, sans-serif; color: #F8FAFC;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0F172A; padding: 36px 16px;">
     <tr>
       <td align="center">
@@ -672,7 +672,7 @@ export async function sendRefundConfirmedEmail({
                 </tr>
                 <tr>
                   <td style="padding: 14px 18px; font-size: 13px; color: #94A3B8;">Reference No.:</td>
-                  <td style="padding: 14px 18px; font-size: 13px; color: #38BDF8; font-family: monospace; font-weight: 700; text-align: right;">${referenceNumber}</td>
+                  <td style="padding: 14px 18px; font-size: 13px; color: #38BDF8; font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-weight: 700; text-align: right;">${referenceNumber}</td>
                 </tr>
               </table>
 

@@ -1877,7 +1877,7 @@ export default function ResortDepartment() {
                               color: 'rgba(255,255,255,0.85)',
                               fontSize: '10px',
                               fontWeight: 700,
-                              fontFamily: 'monospace',
+                              fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums',
                             }}
                           >
                             ID: {rm.code}

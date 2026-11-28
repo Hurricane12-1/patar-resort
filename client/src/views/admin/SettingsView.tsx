@@ -255,7 +255,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#9E7E46' }}>
                     {dashBadge || 'Guest dashboard'}
                   </span>
-                  <h4 style={{ margin: '6px 0 4px', fontSize: 24, fontWeight: 700, color: '#18222B', fontFamily: 'serif' }}>
+                  <h4 style={{ margin: '6px 0 4px', fontSize: 24, fontWeight: 700, color: '#18222B', fontFamily: 'var(--font-serif)' }}>
                     {dashGreeting ? `${dashGreeting}, Maria` : 'Good morning, Maria'}
                   </h4>
                   <p style={{ margin: 0, fontSize: 13.5, color: '#5F5B53' }}>

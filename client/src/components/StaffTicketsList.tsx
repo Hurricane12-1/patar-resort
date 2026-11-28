@@ -339,7 +339,7 @@ export default function StaffTicketsList({ isLightMode, themeBg, themeText, them
                 const tone = STATUS_TONE[t.status] || STATUS_TONE.closed;
                 return (
                   <tr key={t.id}>
-                    <td style={{ ...cell, fontFamily: 'monospace', fontWeight: 700, color: isLightMode ? '#006699' : '#38BDF8', whiteSpace: 'nowrap' }}>
+                    <td style={{ ...cell, fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: isLightMode ? '#006699' : '#38BDF8', whiteSpace: 'nowrap' }}>
                       {t.tracking_id}
                       {t.priority === 'urgent' && (
                         <span style={{ display: 'block', marginTop: 4, fontSize: '.66rem', fontWeight: 800, color: '#E11D48', fontFamily: 'inherit' }}>URGENT</span>
@@ -354,7 +354,7 @@ export default function StaffTicketsList({ isLightMode, themeBg, themeText, them
                       {t.room_name || t.booking_code ? (
                         <>
                           <b>{t.room_name || 'Booking'}</b>
-                          {t.booking_code && <span style={{ ...sub, fontFamily: 'monospace' }}>{t.booking_code}</span>}
+                          {t.booking_code && <span style={{ ...sub, fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums' }}>{t.booking_code}</span>}
                         </>
                       ) : (
                         <span style={{ color: themeMuted }}>No booking</span>

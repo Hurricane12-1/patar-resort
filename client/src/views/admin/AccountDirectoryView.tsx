@@ -300,7 +300,7 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
                           </div>
                         </td>
                         <td style={{ padding: '12px 16px', fontSize: '.78rem', color: isLightMode ? '#475569' : themeMuted }}>{u.email || '—'}</td>
-                        <td style={{ padding: '12px 16px', fontSize: '.78rem', color: themeText, fontFamily: 'monospace' }}>{u.phone || 'N/A'}</td>
+                        <td style={{ padding: '12px 16px', fontSize: '.78rem', color: themeText, fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums' }}>{u.phone || 'N/A'}</td>
                         <td style={{ padding: '12px 16px' }}>
                           <span style={{
                             display: 'inline-flex',
@@ -455,7 +455,7 @@ export const AccountDirectoryView: React.FC<AccountDirectoryViewProps> = ({
                             </div>
                           </div>
                         </td>
-                        <td style={{ padding: '12px 16px', fontSize: '.78rem', color: themeText, fontFamily: 'monospace' }}>{u.phone || 'N/A'}</td>
+                        <td style={{ padding: '12px 16px', fontSize: '.78rem', color: themeText, fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums' }}>{u.phone || 'N/A'}</td>
                         <td style={{ padding: '12px 16px', textAlign: 'right' }}>
                           <button
                             type="button"

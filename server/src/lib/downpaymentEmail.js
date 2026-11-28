@@ -48,7 +48,7 @@ export async function sendDownpaymentQrEmail({
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Downpayment QR Code · Rock View Beach Resort</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #0F172A; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #F8FAFC;">
+<body style="margin: 0; padding: 0; background-color: #0F172A; font-family: 'Plus Jakarta Sans', Arial, sans-serif; color: #F8FAFC;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0F172A; padding: 32px 16px;">
     <tr>
       <td align="center">
@@ -73,7 +73,7 @@ export async function sendDownpaymentQrEmail({
                   <td align="center" style="padding: 22px 16px;">
                     <img src="cid:${QR_CID}" width="240" height="240" alt="Downpayment QR code for reference ${escapeHtml(reference)}" style="display: block; margin: 0 auto 12px; width: 240px; height: 240px; background-color: #FFFFFF; border-radius: 8px;">
                     <span style="display: block; font-size: 12px; color: #94A3B8;">Reference</span>
-                    <span style="display: block; font-family: Consolas, 'Liberation Mono', Menlo, Courier, monospace; font-size: 18px; font-weight: 700; color: #38BDF8; letter-spacing: 0.08em;">${escapeHtml(reference)}</span>
+                    <span style="display: block; font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-size: 18px; font-weight: 700; color: #38BDF8; letter-spacing: 0.08em;">${escapeHtml(reference)}</span>
                   </td>
                 </tr>
               </table>

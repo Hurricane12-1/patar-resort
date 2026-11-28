@@ -260,7 +260,7 @@
 }
 
 .gbb-month-title {
-  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 1.05rem;
   font-weight: 700;
   color: #FFFFFF;
@@ -651,7 +651,8 @@
   background: rgba(15, 23, 42, 0.8);
   color: #FFFFFF;
   font-size: 0.85rem;
-  font-family: monospace;
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
   text-transform: uppercase;
   outline: none;
   box-sizing: border-box;

@@ -115,7 +115,7 @@ export default function PolicyPage() {
   };
 
   return (
-    <div className="policy-page" style={{ minHeight: '100vh', background: '#070D14', color: '#F8FAFC', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div className="policy-page" style={{ minHeight: '100vh', background: '#070D14', color: '#F8FAFC', fontFamily: 'var(--font-sans)' }}>
       {/* Top Header */}
       <header style={{
         position: 'sticky',
@@ -210,7 +210,7 @@ export default function PolicyPage() {
             lineHeight: 1.2,
             marginBottom: 16,
             color: '#FFFFFF',
-            fontFamily: 'serif',
+            fontFamily: 'var(--font-serif)',
           }}>
             Resort Policies, 50% Downpayment &amp; House Guidelines
           </h1>

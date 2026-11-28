@@ -203,7 +203,7 @@ export default function PriceChangeRequestPanel() {
                               placeholder="Enter Admin Code (e.g. RV-XXXXXX)"
                               value={codeInputs[r.id] || ''}
                               onChange={(e) => setCodeInputs((prev) => ({ ...prev, [r.id]: e.target.value.toUpperCase() }))}
-                              style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid var(--line)', fontFamily: 'monospace', minWidth: 185 }}
+                              style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid var(--line)', fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums', minWidth: 185 }}
                             />
                             <button
                               type="button"

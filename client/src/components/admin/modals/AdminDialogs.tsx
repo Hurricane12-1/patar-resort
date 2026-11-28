@@ -467,7 +467,7 @@ export const AdminDialogs: React.FC<AdminDialogsProps> = ({
                     <span>Badge ID: {generateEmployeeId(1)}</span>
                     <span>Role: {newStaff.role === 'administrator' ? 'Administrator' : 'Staff'}</span>
                   </div>
-                  <div style={{ color: themeText, fontFamily: 'monospace' }}>
+                  <div style={{ color: themeText, fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums' }}>
                     Email: {generateAccountEmail(newStaff.first_name, newStaff.middle_name, newStaff.last_name, 1, true, newStaff.role)}
                   </div>
                   <div style={{ color: themeMuted, fontSize: '.7rem' }}>

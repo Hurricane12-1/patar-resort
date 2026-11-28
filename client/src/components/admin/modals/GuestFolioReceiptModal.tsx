@@ -127,7 +127,7 @@ export const GuestFolioReceiptModal: React.FC<GuestFolioReceiptModalProps> = ({
               }}>
                 OFFICIAL GUEST FOLIO
               </span>
-              <h3 style={{ margin: '8px 0 2px', fontSize: '1.15rem', fontWeight: 800, color: '#0F172A', fontFamily: 'monospace' }}>
+              <h3 style={{ margin: '8px 0 2px', fontSize: '1.15rem', fontWeight: 800, color: '#0F172A', fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums' }}>
                 {folioId}
               </h3>
               <small style={{ display: 'block', fontSize: '.72rem', color: '#64748B' }}>
@@ -231,15 +231,15 @@ export const GuestFolioReceiptModal: React.FC<GuestFolioReceiptModalProps> = ({
               </span>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, color: '#475569' }}>
                 <span>VATable Sales:</span>
-                <span style={{ fontFamily: 'monospace' }}>₱{vatableSales.toFixed(2)}</span>
+                <span style={{ fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums' }}>₱{vatableSales.toFixed(2)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, color: '#475569' }}>
                 <span>12% VAT:</span>
-                <span style={{ fontFamily: 'monospace' }}>₱{vatAmount.toFixed(2)}</span>
+                <span style={{ fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums' }}>₱{vatAmount.toFixed(2)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, color: '#475569' }}>
                 <span>VAT-Exempt Sales:</span>
-                <span style={{ fontFamily: 'monospace' }}>₱0.00</span>
+                <span style={{ fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums' }}>₱0.00</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, paddingTop: 6, borderTop: '1px dashed #CBD5E1', fontWeight: 700, color: '#0F172A' }}>
                 <span>Settlement Mode:</span>
@@ -291,7 +291,7 @@ export const GuestFolioReceiptModal: React.FC<GuestFolioReceiptModalProps> = ({
                 DOUBLE-ENTRY GENERAL LEDGER RECONCILIATION
               </span>
               <div style={{ fontSize: '.8rem', color: '#14532D', marginTop: 2 }}>
-                Voucher Ref: <b style={{ fontFamily: 'monospace' }}>{ledgerRef}</b> • Status: <b style={{ color: '#15803D' }}>BALANCED & RECONCILED</b>
+                Voucher Ref: <b style={{ fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums' }}>{ledgerRef}</b> • Status: <b style={{ color: '#15803D' }}>BALANCED & RECONCILED</b>
               </div>
               <div style={{ fontSize: '.72rem', color: '#166534', marginTop: 2 }}>
                 DR: Acct 1010 (Cash Clearing & Digital Wallets) ₱{totalAmt.toLocaleString()} | CR: Acct 4010 (Accommodations Revenue) ₱{totalAmt.toLocaleString()}

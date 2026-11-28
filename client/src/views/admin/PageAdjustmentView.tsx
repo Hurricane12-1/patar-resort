@@ -255,7 +255,7 @@ export const PageAdjustmentView: React.FC<PageAdjustmentViewProps> = ({
                 fontWeight: 700,
                 color: '#FFFFFF',
                 lineHeight: 1.2,
-                fontFamily: 'serif',
+                fontFamily: 'var(--font-serif)',
                 textShadow: '0 2px 10px rgba(0,0,0,0.5)',
               }}
             >

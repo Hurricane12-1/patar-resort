@@ -472,7 +472,7 @@ export default function RecoveryPortal() {
                       Actor: {ev.actor_email || 'System'} ({ev.actor_role || 'system'}) · {fmtDate(ev.created_at)}
                     </div>
                   </div>
-                  <span style={{ fontSize: '.74rem', color: '#38BDF8', fontFamily: 'monospace' }}>
+                  <span style={{ fontSize: '.74rem', color: '#38BDF8', fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums' }}>
                     {typeof ev.details === 'object' ? JSON.stringify(ev.details).slice(0, 60) + '…' : ''}
                   </span>
                 </div>

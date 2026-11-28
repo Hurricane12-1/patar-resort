@@ -170,7 +170,7 @@ export const ApprovalRequestsView: React.FC<ApprovalRequestsViewProps> = ({
               Authorization Code Ready to Send
             </div>
             <div style={{ color: themeText, fontSize: '.92rem', marginTop: 4 }}>
-              Send authorization code <strong style={{ fontFamily: 'monospace', fontSize: '1.1rem', letterSpacing: '.08em', color: '#006699' }}>{latestIssuedCode.code}</strong> to{' '}
+              Send authorization code <strong style={{ fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums', fontSize: '1.1rem', letterSpacing: '.08em', color: '#006699' }}>{latestIssuedCode.code}</strong> to{' '}
               <b>{latestIssuedCode.recipient}</b> for <b>{latestIssuedCode.roomName}</b> (dispatched automatically to employee inbox/logs).
             </div>
           </div>
@@ -393,7 +393,7 @@ export const ApprovalRequestsView: React.FC<ApprovalRequestsViewProps> = ({
                             </span>
                           </div>
                           {item.requested_by_id && (
-                            <div style={{ fontSize: '.66rem', color: themeMuted, marginTop: 2, fontFamily: 'monospace' }}>
+                            <div style={{ fontSize: '.66rem', color: themeMuted, marginTop: 2, fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums' }}>
                               ID: {String(item.requested_by_id).slice(0, 14)}…
                             </div>
                           )}
@@ -422,7 +422,7 @@ export const ApprovalRequestsView: React.FC<ApprovalRequestsViewProps> = ({
                         </span>
                       </div>
                       {item.room_id && (
-                        <div style={{ fontSize: '.68rem', color: themeMuted, marginTop: 4, fontFamily: 'monospace' }}>
+                        <div style={{ fontSize: '.68rem', color: themeMuted, marginTop: 4, fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums' }}>
                           Ref: {String(item.room_id).slice(0, 12)}…
                         </div>
                       )}

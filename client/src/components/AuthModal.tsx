@@ -1078,7 +1078,7 @@ export default function AuthModal() {
                   </div>
                 </div>
                 <div style={{
-                  fontFamily: 'Consolas, monospace',
+                  fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums',
                   fontSize: '1.4rem',
                   fontWeight: 800,
                   color: confirmationTimeLeft < 15 ? '#EF4444' : '#38BDF8',
@@ -1125,7 +1125,7 @@ export default function AuthModal() {
                       <span style={{ fontSize: '0.7rem', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', fontWeight: 700 }}>
                         Gmail 2FA Code Dispatched
                       </span>
-                      <span style={{ fontFamily: 'Consolas, monospace', fontSize: '1.15rem', fontWeight: 800, color: '#34D399', letterSpacing: '0.15em' }}>
+                      <span style={{ fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums', fontSize: '1.15rem', fontWeight: 800, color: '#34D399', letterSpacing: '0.15em' }}>
                         {latestOtpPreview}
                       </span>
                     </div>
@@ -1348,7 +1348,7 @@ export default function AuthModal() {
                           <span style={{ fontSize: '0.7rem', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', fontWeight: 700 }}>
                             Recovery OTP Dispatched
                           </span>
-                          <span style={{ fontFamily: 'Consolas, monospace', fontSize: '1.15rem', fontWeight: 800, color: '#34D399', letterSpacing: '0.15em' }}>
+                          <span style={{ fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums', fontSize: '1.15rem', fontWeight: 800, color: '#34D399', letterSpacing: '0.15em' }}>
                             {latestOtpPreview}
                           </span>
                         </div>
@@ -1526,7 +1526,7 @@ export default function AuthModal() {
                           <span style={{ fontSize: '0.7rem', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', fontWeight: 700 }}>
                             Gmail OTP Code Dispatched
                           </span>
-                          <span style={{ fontFamily: 'Consolas, monospace', fontSize: '1.15rem', fontWeight: 800, color: '#34D399', letterSpacing: '0.15em' }}>
+                          <span style={{ fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums', fontSize: '1.15rem', fontWeight: 800, color: '#34D399', letterSpacing: '0.15em' }}>
                             {latestOtpPreview}
                           </span>
                         </div>

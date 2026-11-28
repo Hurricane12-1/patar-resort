@@ -171,7 +171,7 @@ export default function StatusTimelineModal({
               </div>
             </div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 10, flexWrap: 'wrap' }}>
-              <span style={{ fontFamily: 'monospace', fontSize: '.76rem', color: '#38BDF8', background: 'rgba(56, 189, 248, 0.12)', padding: '2px 8px', borderRadius: 6, border: '1px solid rgba(56, 189, 248, 0.25)' }}>
+              <span style={{ fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums', fontSize: '.76rem', color: '#38BDF8', background: 'rgba(56, 189, 248, 0.12)', padding: '2px 8px', borderRadius: 6, border: '1px solid rgba(56, 189, 248, 0.25)' }}>
                 {folioId}
               </span>
               <span style={{ fontSize: '.78rem', color: '#CBD5E1' }}>
@@ -302,7 +302,7 @@ export default function StatusTimelineModal({
             <div style={{ background: 'rgba(30, 41, 59, 0.5)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '12px 16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
                 <b style={{ fontSize: '.88rem', color: '#F8FAFC' }}>1. Booked at / Reservation Inception</b>
-                <span style={{ fontSize: '.72rem', color: '#38BDF8', fontFamily: 'monospace' }}>
+                <span style={{ fontSize: '.72rem', color: '#38BDF8', fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums' }}>
                   {fmtDate(createdDate)} • {fmtTime(createdDate)}
                 </span>
               </div>
@@ -347,12 +347,12 @@ export default function StatusTimelineModal({
             <div style={{ background: 'rgba(30, 41, 59, 0.5)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '12px 16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
                 <b style={{ fontSize: '.88rem', color: '#F8FAFC' }}>2. Reserved & Confirmed at</b>
-                <span style={{ fontSize: '.72rem', color: '#10B981', fontFamily: 'monospace' }}>
+                <span style={{ fontSize: '.72rem', color: '#10B981', fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums' }}>
                   {fmtDate(createdDate)} • Instant Confirmation
                 </span>
               </div>
               <p style={{ margin: '4px 0 0', fontSize: '.78rem', color: '#94A3B8' }}>
-                Ledger Voucher: <strong style={{ color: '#38BDF8', fontFamily: 'monospace' }}>{ledgerVoucher}</strong> • Settled via {booking.payment_method || 'GCash'}
+                Ledger Voucher: <strong style={{ color: '#38BDF8', fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums' }}>{ledgerVoucher}</strong> • Settled via {booking.payment_method || 'GCash'}
               </p>
               {isConfirmed && !isCancelled && (
                 <span style={{ display: 'inline-block', marginTop: 6, fontSize: '.68rem', background: '#D1FAE5', color: '#065F46', padding: '2px 8px', borderRadius: 9999, fontWeight: 800 }}>
@@ -387,7 +387,7 @@ export default function StatusTimelineModal({
             <div style={{ background: 'rgba(30, 41, 59, 0.5)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '12px 16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
                 <b style={{ fontSize: '.88rem', color: '#F8FAFC' }}>3. Check-In at</b>
-                <span style={{ fontSize: '.72rem', color: isCheckedIn ? '#60A5FA' : '#94A3B8', fontFamily: 'monospace' }}>
+                <span style={{ fontSize: '.72rem', color: isCheckedIn ? '#60A5FA' : '#94A3B8', fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums' }}>
                   {isCheckedIn ? 'Checked In Today' : `${fmtDate(checkInDate)} (2:00 PM)`}
                 </span>
               </div>
@@ -426,7 +426,7 @@ export default function StatusTimelineModal({
             <div style={{ background: 'rgba(30, 41, 59, 0.5)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '12px 16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
                 <b style={{ fontSize: '.88rem', color: '#F8FAFC' }}>4. Check-Out at</b>
-                <span style={{ fontSize: '.72rem', color: isCheckedOut ? '#A5B4FC' : '#94A3B8', fontFamily: 'monospace' }}>
+                <span style={{ fontSize: '.72rem', color: isCheckedOut ? '#A5B4FC' : '#94A3B8', fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums' }}>
                   {isCheckedOut ? 'Completed' : `${fmtDate(checkOutDate)} (12:00 NN)`}
                 </span>
               </div>
@@ -469,7 +469,7 @@ export default function StatusTimelineModal({
                   <b style={{ fontSize: '.88rem', color: '#FCA5A5' }}>
                     {isRefunded ? '5. Cancelled & Refunded at' : '5. Cancelled at'}
                   </b>
-                  <span style={{ fontSize: '.72rem', color: '#FCA5A5', fontFamily: 'monospace' }}>
+                  <span style={{ fontSize: '.72rem', color: '#FCA5A5', fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums' }}>
                     Resolution Settled
                   </span>
                 </div>

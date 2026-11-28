@@ -17,8 +17,8 @@
   --radius: 16px;
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
   --shadow-lift: 0 20px 48px rgba(0, 0, 0, 0.5);
-  --font-display: 'Space Grotesk', sans-serif;
-  --font-body: 'Public Sans', sans-serif;
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
 }
 
 * {
@@ -2605,7 +2605,7 @@ input[type="date"] {
 .admin-portal table,
 .admin-portal label,
 .admin-portal span {
-  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
 }
 
 .admin-portal h1,
@@ -2613,7 +2613,7 @@ input[type="date"] {
 .admin-portal h3,
 .admin-portal h4,
 .admin-portal .corp-title {
-  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
   font-weight: 800 !important;
   letter-spacing: -0.028em !important;
 }
@@ -2688,7 +2688,7 @@ input[type="date"] {
 }
 
 .admin-portal .serif {
-  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
   font-weight: 700 !important;
   letter-spacing: -0.025em !important;
   font-style: normal !important;

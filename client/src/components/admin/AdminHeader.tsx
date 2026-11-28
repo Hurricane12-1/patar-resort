@@ -185,7 +185,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
               color: themeMuted,
               background: isLightMode ? '#E2E8F0' : 'rgba(255,255,255,0.1)',
               border: `1px solid ${isLightMode ? '#CBD5E1' : 'rgba(255,255,255,0.15)'}`,
-              fontFamily: 'monospace',
+              fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums',
               pointerEvents: 'none',
               boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
             }}

@@ -2,8 +2,8 @@
    Loads after global.css. Functional styles (tables,
    pills, chat, admin) untouched — this is the film.   */
 :root {
-  --font-serif: 'Cormorant Garamond', Georgia, serif;
-  --font-sans: 'Outfit', sans-serif;
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-sans: 'Plus Jakarta Sans', sans-serif;
   --navy: #070D1B;
 }
 

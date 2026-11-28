@@ -790,7 +790,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                             <b style={{ fontSize: '.86rem', color: themeText, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                               {guestName}
                             </b>
-                            <span style={{ fontSize: '.7rem', color: '#0EA5E9', fontFamily: 'monospace', fontWeight: 600 }}>
+                            <span style={{ fontSize: '.7rem', color: '#0EA5E9', fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
                               {bookingCode}
                             </span>
                           </div>

@@ -20,7 +20,7 @@
 }
 
 .guest-portal {
-  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   font-weight: 400;
   letter-spacing: normal;
   color: #F1F5F9;
@@ -66,7 +66,7 @@
 }
 
 .guest-portal .gp-display {
-  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-family: 'Playfair Display', Georgia, serif;
   letter-spacing: -0.01em;
 }
 

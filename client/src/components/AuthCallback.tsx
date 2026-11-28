@@ -49,7 +49,7 @@ export default function AuthCallback() {
         gap: 16,
         background: '#040e22',
         color: '#e8eef7',
-        fontFamily: 'system-ui, -apple-system, sans-serif',
+        fontFamily: 'var(--font-sans)',
       }}
     >
       <div

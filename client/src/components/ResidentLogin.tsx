@@ -790,7 +790,7 @@ export default function ResidentLogin({ returnTo = '/user' }: ResidentLoginProps
                         <span style={{ fontSize: '0.72rem', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', fontWeight: 700 }}>
                           Recovery OTP Code Dispatched
                         </span>
-                        <span style={{ fontFamily: 'Consolas, monospace', fontSize: '1.2rem', fontWeight: 800, color: '#34D399', letterSpacing: '0.15em' }}>
+                        <span style={{ fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums', fontSize: '1.2rem', fontWeight: 800, color: '#34D399', letterSpacing: '0.15em' }}>
                           {latestOtpPreview}
                         </span>
                       </div>
@@ -975,7 +975,7 @@ export default function ResidentLogin({ returnTo = '/user' }: ResidentLoginProps
                           <span style={{ fontSize: '0.72rem', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', fontWeight: 700 }}>
                             Gmail OTP Code Dispatched
                           </span>
-                          <span style={{ fontFamily: 'Consolas, monospace', fontSize: '1.2rem', fontWeight: 800, color: '#34D399', letterSpacing: '0.15em' }}>
+                          <span style={{ fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums', fontSize: '1.2rem', fontWeight: 800, color: '#34D399', letterSpacing: '0.15em' }}>
                             {latestOtpPreview}
                           </span>
                         </div>

@@ -638,7 +638,7 @@ export function AreaLineChart({
                 fontSize="10"
                 fontWeight="600"
                 fill={isLightMode ? '#64748B' : '#94A3B8'}
-                fontFamily="'Plus Jakarta Sans', monospace"
+                fontFamily="'Plus Jakarta Sans', sans-serif"
               >
                 {tick.label}
               </text>

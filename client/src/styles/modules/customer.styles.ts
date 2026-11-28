@@ -45,7 +45,7 @@ export const customerStyles = {
     fontSize: '1.2rem',
     fontWeight: 800,
     letterSpacing: '0.1em',
-    fontFamily: 'monospace',
+    fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums',
   } as CSSProperties,
 
   orderItemRow: {

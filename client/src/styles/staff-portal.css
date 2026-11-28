@@ -3,8 +3,6 @@
    Namespace: /staff  ·  sl-* = Staff Login  ·  staff-* = Portal & Layout
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
-
 /* ──────────────────────────────────────────────────────────────────────────
    STAFF LOGIN — sl-* namespace
    Operational Station Sign-In (Dark Blue Theme matching Admin Portal)
@@ -23,7 +21,7 @@
   box-sizing: border-box;
   position: relative;
   overflow: hidden;
-  font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   color: #E8EEF7;
 }
 
@@ -147,7 +145,7 @@
 
 .sl-hero__title {
   margin: 0 0 8px;
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: 'Playfair Display', Georgia, serif;
   font-size: 2.35rem;
   font-weight: 600;
   color: #FFFFFF;
@@ -340,7 +338,7 @@
   flex-direction: column;
   background-color: #F8FAFC;
   color: #1E293B;
-  font-family: 'Inter', 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
 }
@@ -494,7 +492,8 @@
   position: absolute;
   right: 10px;
   font-size: 10px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
   color: #94A3B8;
   background: #FFFFFF;
   border: 1px solid #E2E8F0;
@@ -538,7 +537,8 @@
 }
 
 .staff-metric-val {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
   font-size: .72rem;
   font-weight: 700;
   padding: 2px 7px;
@@ -1344,7 +1344,8 @@
 }
 
 .staff-ops-badge {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
   font-size: .68rem;
   font-weight: 700;
   background: #F1F5F9;
@@ -1470,14 +1471,15 @@
 }
 
 .staff-ops-unit-price {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
   font-size: .78rem;
   font-weight: 700;
   color: #0F172A;
 }
 
 .staff-ops-unit-price small {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: .65rem;
   font-weight: 500;
   color: #64748B;
@@ -1672,7 +1674,8 @@
 }
 
 .staff-ops-day-num {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
   font-size: .74rem;
   font-weight: 700;
   color: #334155;
@@ -1686,7 +1689,8 @@
 }
 
 .staff-ops-day-count {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
   font-size: .65rem;
   color: #94A3B8;
 }
@@ -1854,7 +1858,8 @@
 }
 
 .staff-ops-date-badge {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
   font-size: .66rem;
   font-weight: 600;
   background: #F8FAFC;

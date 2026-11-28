@@ -133,7 +133,7 @@ export const NetworkStatusControl: React.FC = () => {
             boxShadow: '0 4px 12px rgba(15, 23, 42, 0.10)',
             cursor: 'pointer',
             fontSize: '11px',
-            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+            fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums',
             fontWeight: 700,
             color: '#0F172A',
           }}
@@ -164,7 +164,7 @@ export const NetworkStatusControl: React.FC = () => {
               borderRadius: 9999,
               padding: '6px 12px',
               fontSize: '11px',
-              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+              fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums',
               fontWeight: 600,
               boxShadow: '0 4px 12px rgba(15, 23, 42, 0.08)',
               cursor: 'pointer',
@@ -237,7 +237,7 @@ export const NetworkStatusControl: React.FC = () => {
             boxShadow: '0 12px 30px rgba(15, 23, 42, 0.14)',
             fontSize: '12px',
             color: '#0F172A',
-            fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+            fontFamily: 'var(--font-sans)',
           }}
         >
           {/* Header */}
@@ -255,7 +255,7 @@ export const NetworkStatusControl: React.FC = () => {
               <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: getStatusColor() }} />
               <span
                 style={{
-                  fontFamily: 'ui-monospace, monospace',
+                  fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums',
                   fontWeight: 800,
                   fontSize: '11px',
                   letterSpacing: '0.05em',
@@ -272,7 +272,7 @@ export const NetworkStatusControl: React.FC = () => {
                   color: '#64748B',
                   padding: '1px 5px',
                   borderRadius: 4,
-                  fontFamily: 'ui-monospace, monospace',
+                  fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums',
                 }}
               >
                 LIVE
@@ -288,7 +288,7 @@ export const NetworkStatusControl: React.FC = () => {
                   cursor: 'pointer',
                   fontSize: '11px',
                   fontWeight: 700,
-                  fontFamily: 'ui-monospace, monospace',
+                  fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums',
                 }}
               >
                 <><i className="fas fa-rotate" style={{ marginRight: 4 }} />SYNC</>
@@ -316,7 +316,7 @@ export const NetworkStatusControl: React.FC = () => {
               <div
                 style={{
                   fontSize: '9px',
-                  fontFamily: 'ui-monospace, monospace',
+                  fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums',
                   color: '#64748B',
                   fontWeight: 700,
                   letterSpacing: '0.04em',
@@ -327,7 +327,7 @@ export const NetworkStatusControl: React.FC = () => {
               <div
                 style={{
                   fontSize: '13px',
-                  fontFamily: 'ui-monospace, monospace',
+                  fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums',
                   fontWeight: 800,
                   color: getStatusColor(),
                   marginTop: 2,
@@ -335,7 +335,7 @@ export const NetworkStatusControl: React.FC = () => {
               >
                 {network.status === 'HEALTHY' ? 'SYS:OK' : network.status === 'DEGRADED' ? 'SYS:WARN' : 'SYS:ERR'}
               </div>
-              <div style={{ fontSize: '10px', fontFamily: 'ui-monospace, monospace', color: '#64748B', marginTop: 2 }}>
+              <div style={{ fontSize: '10px', fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums', color: '#64748B', marginTop: 2 }}>
                 UPTIME: {formatUptime(network.metrics?.uptime_seconds)}
               </div>
             </div>
@@ -345,7 +345,7 @@ export const NetworkStatusControl: React.FC = () => {
               <div
                 style={{
                   fontSize: '9px',
-                  fontFamily: 'ui-monospace, monospace',
+                  fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums',
                   color: '#64748B',
                   fontWeight: 700,
                   letterSpacing: '0.04em',
@@ -356,7 +356,7 @@ export const NetworkStatusControl: React.FC = () => {
               <div
                 style={{
                   fontSize: '13px',
-                  fontFamily: 'ui-monospace, monospace',
+                  fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums',
                   fontWeight: 800,
                   color: '#0F172A',
                   marginTop: 2,
@@ -364,7 +364,7 @@ export const NetworkStatusControl: React.FC = () => {
               >
                 {network.metrics?.db_latency_ms ?? 0} ms
               </div>
-              <div style={{ fontSize: '10px', fontFamily: 'ui-monospace, monospace', color: '#64748B', marginTop: 2 }}>
+              <div style={{ fontSize: '10px', fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums', color: '#64748B', marginTop: 2 }}>
                 POSTGRES 15+ · OK
               </div>
             </div>
@@ -374,7 +374,7 @@ export const NetworkStatusControl: React.FC = () => {
               <div
                 style={{
                   fontSize: '9px',
-                  fontFamily: 'ui-monospace, monospace',
+                  fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums',
                   color: '#64748B',
                   fontWeight: 700,
                   letterSpacing: '0.04em',
@@ -385,7 +385,7 @@ export const NetworkStatusControl: React.FC = () => {
               <div
                 style={{
                   fontSize: '13px',
-                  fontFamily: 'ui-monospace, monospace',
+                  fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums',
                   fontWeight: 800,
                   color: '#0F172A',
                   marginTop: 2,
@@ -393,7 +393,7 @@ export const NetworkStatusControl: React.FC = () => {
               >
                 :{network.port || 8000} · TLS 1.3
               </div>
-              <div style={{ fontSize: '10px', fontFamily: 'ui-monospace, monospace', color: '#64748B', marginTop: 2 }}>
+              <div style={{ fontSize: '10px', fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums', color: '#64748B', marginTop: 2 }}>
                 NGWF L7 ACTIVE
               </div>
             </div>
@@ -403,7 +403,7 @@ export const NetworkStatusControl: React.FC = () => {
               <div
                 style={{
                   fontSize: '9px',
-                  fontFamily: 'ui-monospace, monospace',
+                  fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums',
                   color: '#64748B',
                   fontWeight: 700,
                   letterSpacing: '0.04em',
@@ -414,7 +414,7 @@ export const NetworkStatusControl: React.FC = () => {
               <div
                 style={{
                   fontSize: '13px',
-                  fontFamily: 'ui-monospace, monospace',
+                  fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums',
                   fontWeight: 800,
                   color: '#0F172A',
                   marginTop: 2,
@@ -422,7 +422,7 @@ export const NetworkStatusControl: React.FC = () => {
               >
                 {network.modules?.healthy ?? 19}/{network.modules?.total ?? 19} MOD
               </div>
-              <div style={{ fontSize: '10px', fontFamily: 'ui-monospace, monospace', color: '#10B981', marginTop: 2 }}>
+              <div style={{ fontSize: '10px', fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums', color: '#10B981', marginTop: 2 }}>
                 ISOLATION: 100% OK
               </div>
             </div>
@@ -432,7 +432,7 @@ export const NetworkStatusControl: React.FC = () => {
               <div
                 style={{
                   fontSize: '9px',
-                  fontFamily: 'ui-monospace, monospace',
+                  fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums',
                   color: '#64748B',
                   fontWeight: 700,
                   letterSpacing: '0.04em',
@@ -443,7 +443,7 @@ export const NetworkStatusControl: React.FC = () => {
               <div
                 style={{
                   fontSize: '13px',
-                  fontFamily: 'ui-monospace, monospace',
+                  fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums',
                   fontWeight: 800,
                   color: '#0F172A',
                   marginTop: 2,
@@ -451,7 +451,7 @@ export const NetworkStatusControl: React.FC = () => {
               >
                 {network.metrics?.memory_heap_mb ?? 27} MB
               </div>
-              <div style={{ fontSize: '10px', fontFamily: 'ui-monospace, monospace', color: '#64748B', marginTop: 2 }}>
+              <div style={{ fontSize: '10px', fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums', color: '#64748B', marginTop: 2 }}>
                 RSS: {network.metrics?.memory_rss_mb ?? 85} MB
               </div>
             </div>
@@ -461,7 +461,7 @@ export const NetworkStatusControl: React.FC = () => {
               <div
                 style={{
                   fontSize: '9px',
-                  fontFamily: 'ui-monospace, monospace',
+                  fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums',
                   color: '#64748B',
                   fontWeight: 700,
                   letterSpacing: '0.04em',
@@ -472,7 +472,7 @@ export const NetworkStatusControl: React.FC = () => {
               <div
                 style={{
                   fontSize: '13px',
-                  fontFamily: 'ui-monospace, monospace',
+                  fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums',
                   fontWeight: 800,
                   color: '#0F172A',
                   marginTop: 2,
@@ -480,7 +480,7 @@ export const NetworkStatusControl: React.FC = () => {
               >
                 {network.metrics?.redis_latency_ms ?? 0} ms
               </div>
-              <div style={{ fontSize: '10px', fontFamily: 'ui-monospace, monospace', color: '#64748B', marginTop: 2 }}>
+              <div style={{ fontSize: '10px', fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums', color: '#64748B', marginTop: 2 }}>
                 KEYS: {network.metrics?.cached_keys ?? 0} / 500
               </div>
             </div>
@@ -491,7 +491,7 @@ export const NetworkStatusControl: React.FC = () => {
             <span
               style={{
                 fontSize: '10px',
-                fontFamily: 'ui-monospace, monospace',
+                fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums',
                 padding: '2px 6px',
                 background: '#F1F5F9',
                 border: '1px solid #E2E8F0',
@@ -505,7 +505,7 @@ export const NetworkStatusControl: React.FC = () => {
             <span
               style={{
                 fontSize: '10px',
-                fontFamily: 'ui-monospace, monospace',
+                fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums',
                 padding: '2px 6px',
                 background: '#F1F5F9',
                 border: '1px solid #E2E8F0',
@@ -519,7 +519,7 @@ export const NetworkStatusControl: React.FC = () => {
             <span
               style={{
                 fontSize: '10px',
-                fontFamily: 'ui-monospace, monospace',
+                fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums',
                 padding: '2px 6px',
                 background: '#F1F5F9',
                 border: '1px solid #E2E8F0',
@@ -533,7 +533,7 @@ export const NetworkStatusControl: React.FC = () => {
             <span
               style={{
                 fontSize: '10px',
-                fontFamily: 'ui-monospace, monospace',
+                fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums',
                 padding: '2px 6px',
                 background: '#F1F5F9',
                 border: '1px solid #E2E8F0',
@@ -562,7 +562,7 @@ export const NetworkStatusControl: React.FC = () => {
               rel="noopener noreferrer"
               style={{
                 fontSize: '10px',
-                fontFamily: 'ui-monospace, monospace',
+                fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums',
                 color: '#2563EB',
                 textDecoration: 'none',
                 fontWeight: 700,
@@ -570,7 +570,7 @@ export const NetworkStatusControl: React.FC = () => {
             >
               IMF INSPECT ↗
             </a>
-            <span style={{ fontSize: '9px', fontFamily: 'ui-monospace, monospace', color: '#94A3B8' }}>
+            <span style={{ fontSize: '9px', fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums', color: '#94A3B8' }}>
               {network.timestamp ? new Date(network.timestamp).toLocaleTimeString() : 'LIVE'}
             </span>
           </div>

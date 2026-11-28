@@ -538,7 +538,7 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({
                         <i className="fas fa-calendar-day" style={{ color: '#0EA5E9', fontSize: '.75rem' }} />
                         <b style={{ fontSize: '.78rem', color: themeText }}>{logDateStr}</b>
                       </div>
-                      <span style={{ fontFamily: 'monospace', fontSize: '.72rem', color: themeMuted, paddingLeft: 18, display: 'block' }}>
+                      <span style={{ fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums', fontSize: '.72rem', color: themeMuted, paddingLeft: 18, display: 'block' }}>
                         {logTimeStr}
                       </span>
                     </td>
@@ -610,7 +610,7 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({
 
                     {/* 5. IP ADDRESS */}
                     <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
-                      <span style={{ fontFamily: 'monospace', fontSize: '.75rem', color: themeText, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                      <span style={{ fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums', fontSize: '.75rem', color: themeText, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
                         <i className="fas fa-network-wired" style={{ color: themeMuted, fontSize: '.7rem' }} />
                         {log.ip_address || '127.0.0.1'}
                       </span>
@@ -674,7 +674,7 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({
                 <h3 style={{ margin: '6px 0 2px', fontSize: '1.25rem', color: themeText }}>
                   {inspectAuditLog.action}
                 </h3>
-                <span style={{ fontSize: '.75rem', color: themeMuted, fontFamily: 'monospace' }}>
+                <span style={{ fontSize: '.75rem', color: themeMuted, fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums' }}>
                   Record ID: #{inspectAuditLog.id} • {new Date(inspectAuditLog.timestamp || inspectAuditLog.created_at).toLocaleString()}
                 </span>
               </div>
@@ -725,7 +725,7 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({
                   </div>
                   <div>
                     <small style={{ fontSize: '.68rem', color: themeMuted, display: 'block' }}>RESOURCE IDENTIFIER</small>
-                    <span style={{ fontSize: '.8rem', fontFamily: 'monospace', color: themeMuted }}>#{inspectAuditLog.resource_id || 'N/A'}</span>
+                    <span style={{ fontSize: '.8rem', fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums', color: themeMuted }}>#{inspectAuditLog.resource_id || 'N/A'}</span>
                   </div>
                   <div>
                     <small style={{ fontSize: '.68rem', color: themeMuted, display: 'block' }}>EXECUTION STATE</small>
@@ -755,7 +755,7 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({
                   </div>
                   <div>
                     <small style={{ fontSize: '.68rem', color: themeMuted, display: 'block' }}>IP ADDRESS</small>
-                    <span style={{ fontSize: '.8rem', fontFamily: 'monospace', color: '#0EA5E9' }}>{inspectAuditLog.ip_address || '127.0.0.1'}</span>
+                    <span style={{ fontSize: '.8rem', fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums', color: '#0EA5E9' }}>{inspectAuditLog.ip_address || '127.0.0.1'}</span>
                   </div>
                 </div>
                 <small style={{ fontSize: '.68rem', color: themeMuted, display: 'block', wordBreak: 'break-all' }}>
@@ -772,7 +772,7 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({
                 <pre style={{
                   background: isLightMode ? '#F1F5F9' : '#030712',
                   padding: 12, borderRadius: 8, fontSize: '.75rem',
-                  fontFamily: 'monospace', overflowX: 'auto', margin: 0,
+                  fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums', overflowX: 'auto', margin: 0,
                   border: `1px solid ${themeBorder}`, color: isLightMode ? '#0F172A' : '#38BDF8',
                 }}>
                   {JSON.stringify(inspectAuditLog.details || {}, null, 2)}

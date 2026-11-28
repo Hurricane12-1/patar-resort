@@ -41,7 +41,7 @@ export function LiveClock({ isLightMode = false, style, showSeconds = true }: Li
         color: isLightMode ? '#0F172A' : '#F8FAFC',
         fontSize: '0.78rem',
         fontWeight: 700,
-        fontFamily: "'Plus Jakarta Sans', monospace",
+        fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums',
         boxShadow: isLightMode ? '0 1px 3px rgba(0,0,0,0.05)' : '0 2px 8px rgba(0,0,0,0.3)',
         whiteSpace: 'nowrap',
         userSelect: 'none',

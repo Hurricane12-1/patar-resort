@@ -370,7 +370,7 @@ export default function BackupMigrationModal({
                       width: '100%',
                       padding: '12px',
                       borderRadius: 10,
-                      fontFamily: 'monospace',
+                      fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums',
                       fontSize: '.78rem',
                       border: `1px solid ${themeBorder}`,
                       background: isLightMode ? '#F1F5F9' : '#020617',
@@ -465,7 +465,7 @@ export default function BackupMigrationModal({
                   border: `1px solid ${themeBorder}`,
                   background: isLightMode ? '#FFF' : '#1E293B',
                   color: themeText,
-                  fontFamily: 'monospace',
+                  fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums',
                   fontSize: '.78rem',
                   marginBottom: 14,
                 }}

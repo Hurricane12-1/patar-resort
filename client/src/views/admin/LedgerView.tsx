@@ -1014,14 +1014,14 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                     <tbody>
                       {ledgerEntriesList.slice(0, 50).map((e: any) => (
                         <tr key={e.id} style={{ borderBottom: `1px solid ${themeBorder}` }}>
-                          <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: '.8rem', color: '#0EA5E9' }}>{e.entry_number}</td>
+                          <td style={{ padding: '10px 12px', fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums', fontSize: '.8rem', color: '#0EA5E9' }}>{e.entry_number}</td>
                           <td style={{ padding: '10px 12px', fontSize: '.78rem', color: themeMuted }}>{fmtDate(e.posted_at)}</td>
                           <td style={{ padding: '10px 12px', fontSize: '.82rem' }}><b>{e.account_code}</b> {e.account_name}</td>
                           <td style={{ padding: '10px 12px', fontSize: '.82rem' }}>{e.particulars}</td>
                           <td style={{ padding: '10px 12px', fontSize: '.74rem', textTransform: 'uppercase' }}>{e.category}</td>
                           <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#10B981' }}>{e.debit_php > 0 ? money(e.debit_php) : '—'}</td>
                           <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#3B82F6' }}>{e.credit_php > 0 ? money(e.credit_php) : '—'}</td>
-                          <td style={{ padding: '10px 12px', textAlign: 'right', fontFamily: 'monospace' }}>{money(e.running_balance_php)}</td>
+                          <td style={{ padding: '10px 12px', textAlign: 'right', fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums' }}>{money(e.running_balance_php)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1239,7 +1239,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                           </span>
                           <div>
                             <b>{b.guest_name || b.profiles?.full_name || 'Guest User'}</b>
-                            <span style={{ display: 'block', fontSize: '.72rem', color: '#0EA5E9', fontFamily: 'monospace', fontWeight: 600 }}>
+                            <span style={{ display: 'block', fontSize: '.72rem', color: '#0EA5E9', fontFamily: 'var(--font-sans)', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
                               {b.booking_code || ('RV-' + String(b.id || '').slice(0, 8).toUpperCase())}
                             </span>
                             <small style={{ color: themeMuted, display: 'block' }}>{b.phone || b.profiles?.phone || 'No phone recorded'}</small>
