@@ -446,9 +446,9 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
   const [reserveStep, setReserveStep] = useState<'form' | 'review' | 'payment' | 'success'>('form');
   const [downpaymentHold, setDownpaymentHold] = useState<DownpaymentHold | null>(null);
   const [downpaymentNow, setDownpaymentNow] = useState(() => Date.now());
-  const [downpaymentConfirming, setDownpaymentConfirming] = useState(false);
   const downpaymentRemainingMs = downpaymentHold ? Math.max(0, new Date(downpaymentHold.expires_at).getTime() - downpaymentNow) : 0;
-  const downpaymentExpired = reserveStep === 'payment' && downpaymentHold !== null && downpaymentRemainingMs === 0;
+  const downpaymentExpired = reserveStep === 'payment' && downpaymentHold !== null
+    && (downpaymentHold.status === 'expired' || downpaymentRemainingMs === 0);
   const downpaymentCountdown = (() => {
     const totalSeconds = Math.ceil(downpaymentRemainingMs / 1000);
     return `${Math.floor(totalSeconds / 60)}:${String(totalSeconds % 60).padStart(2, '0')}`;
@@ -462,6 +462,40 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     const timer = window.setInterval(() => setDownpaymentNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, [reserveStep, downpaymentHold]);
+
+  useEffect(() => {
+    if (reserveStep !== 'payment' || !downpaymentHold || downpaymentHold.status !== 'awaiting') return;
+    const holdId = downpaymentHold.id;
+    const paidIds = downpaymentHold.reservation_ids;
+    let stopped = false;
+    const checkPayment = async () => {
+      try {
+        const latest = await api.getDownpaymentHold(holdId);
+        if (stopped) return;
+        if (latest.status === 'paid') {
+          stopped = true;
+          setDownpaymentHold((prev) => (prev ? { ...prev, ...latest } : latest));
+          setReservations((prev) => prev.map((r) => (paidIds.includes(String(r.id)) ? { ...r, status: 'confirmed' } : r)));
+          setSavedBooking((prev) => (prev ? { ...prev, status: 'confirmed', paymentStatus: 'partially_paid' } : prev));
+          setReserveError(null);
+          setReserveStep('success');
+          toast('✓ Downpayment received. Your stay is confirmed!');
+          fetchLiveReservations();
+        } else if (latest.status === 'expired') {
+          stopped = true;
+          setDownpaymentHold((prev) => (prev ? { ...prev, ...latest } : latest));
+          fetchLiveReservations();
+        }
+      } catch (err: any) {
+        if (!stopped) setReserveError(String(err?.message || 'We could not check your payment. Retrying…'));
+      }
+    };
+    const timer = window.setInterval(checkPayment, 3000);
+    return () => {
+      stopped = true;
+      window.clearInterval(timer);
+    };
+  }, [reserveStep, downpaymentHold?.id, downpaymentHold?.status]);
   const [reserveSubmitting, setReserveSubmitting] = useState<boolean>(false);
   const [calendarNotice, setCalendarNotice] = useState<string | null>(null);
   const [conflictToast, setConflictToast] = useState<{
@@ -1733,31 +1767,8 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
     setSavedBooking(record);
     setDownpaymentHold(hold);
     setDownpaymentNow(Date.now());
-    setDownpaymentConfirming(false);
     setReserveSubmitting(false);
     setReserveStep('payment');
-    fetchLiveReservations();
-  };
-
-  const confirmDownpayment = async () => {
-    if (!downpaymentHold || downpaymentConfirming || downpaymentExpired) return;
-    setDownpaymentConfirming(true);
-    setReserveError(null);
-    try {
-      await api.confirmDownpaymentHold(downpaymentHold.id);
-    } catch (err: any) {
-      setDownpaymentConfirming(false);
-      if (err?.status === 410) setDownpaymentNow(Date.now());
-      setReserveError(String(err?.message || 'We could not confirm your payment. Please try again.'));
-      fetchLiveReservations();
-      return;
-    }
-    const paidIds = downpaymentHold.reservation_ids;
-    setReservations((prev) => prev.map((r) => (paidIds.includes(String(r.id)) ? { ...r, status: 'confirmed' } : r)));
-    setSavedBooking((prev) => (prev ? { ...prev, status: 'confirmed', paymentStatus: 'partially_paid' } : prev));
-    setDownpaymentConfirming(false);
-    setReserveStep('success');
-    toast('✓ Downpayment received. Your stay is confirmed!');
     fetchLiveReservations();
   };
 
@@ -3881,7 +3892,7 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
 
                     <ol className="list-decimal pl-5 space-y-1 text-sm text-[#222222]">
                       <li>Scan the QR code and pay {formatPHP(downpaymentHold.amount_php)}.</li>
-                      <li>Press “I have paid” below.</li>
+                      <li>Keep this page open. It confirms your booking by itself.</li>
                     </ol>
                     {downpaymentHold.emailed && (
                       <p className="text-xs text-[#6A6A6A]">A copy of this QR code was sent to {guestEmail.trim()}.</p>
@@ -3893,14 +3904,11 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                       </div>
                     )}
 
-                    <button
-                      type="button"
-                      onClick={confirmDownpayment}
-                      disabled={downpaymentConfirming || downpaymentExpired}
-                      className="w-full h-12 rounded-md bg-[#006699] text-sm font-semibold text-white transition hover:bg-[#005A87] cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {downpaymentConfirming ? 'Checking payment…' : 'I have paid'}
-                    </button>
+                    {!downpaymentExpired && (
+                      <p role="status" className="text-center text-sm font-semibold text-[#222222]">
+                        Waiting for your payment. This page updates by itself.
+                      </p>
+                    )}
                   </>
                 )}
               </div>

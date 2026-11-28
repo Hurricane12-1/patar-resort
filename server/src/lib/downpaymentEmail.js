@@ -15,7 +15,7 @@ function formatPeso(amount) {
   return `₱${Number(amount || 0).toLocaleString('en-US')}`;
 }
 
-function formatDeadline(iso) {
+export function formatManilaTime(iso) {
   return new Date(iso).toLocaleTimeString('en-US', {
     hour: 'numeric',
     minute: '2-digit',
@@ -35,7 +35,7 @@ export async function sendDownpaymentQrEmail({
   qrPng,
 }) {
   const mail = getTransporter();
-  const deadline = formatDeadline(expiresAt);
+  const deadline = formatManilaTime(expiresAt);
   const amountLabel = formatPeso(amount);
   const roomsLabel = rooms.length ? rooms.join(' + ') : 'Your stay';
   const stayLabel = checkIn && checkOut ? `${checkIn} → ${checkOut}` : '';
@@ -82,7 +82,7 @@ export async function sendDownpaymentQrEmail({
                 1. Scan the QR code above and pay <strong>${escapeHtml(amountLabel)}</strong>.
               </p>
               <p style="margin: 0 0 20px; font-size: 14px; color: #E2E8F0; line-height: 1.6;">
-                2. Go back to the booking page and press <strong>I have paid</strong>.
+                2. Keep the booking page open. It confirms your payment by itself.
               </p>
 
               <p style="margin: 0 0 8px; font-size: 13px; color: #FBBF24; line-height: 1.5;">
@@ -118,7 +118,7 @@ export async function sendDownpaymentQrEmail({
     `Reference: ${reference}`,
     '',
     '1. Scan the QR code attached to this email and pay the downpayment.',
-    '2. Go back to the booking page and press "I have paid".',
+    '2. Keep the booking page open. It confirms your payment by itself.',
     '',
     `The rooms are released if the downpayment is not confirmed by ${deadline} (15 minutes after booking).`,
     '',

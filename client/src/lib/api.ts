@@ -487,8 +487,9 @@ export interface DownpaymentHold {
   amount_php: number;
   status: 'awaiting' | 'paid' | 'expired';
   expires_at: string;
+  paid_at?: string | null;
   reservation_ids: string[];
-  qr_data_url: string;
+  qr_data_url?: string;
   emailed?: boolean;
 }
 
@@ -1074,11 +1075,7 @@ export const api = {
   },
   createDownpaymentHold: (reservationIds: string[]) =>
     req<DownpaymentHold>('/payment-holds', { method: 'POST', body: { reservation_ids: reservationIds } }),
-  confirmDownpaymentHold: (holdId: string) =>
-    req<{ success: boolean; status: string; reference: string; amount_php: number; reservation_ids: string[] }>(
-      `/payment-holds/${holdId}/confirm`,
-      { method: 'POST' }
-    ),
+  getDownpaymentHold: (holdId: string) => req<DownpaymentHold>(`/payment-holds/${holdId}`),
   cancelReservation: async (id: string) => {
     try {
       return await req(`/reservations/${id}/cancel`, { method: 'PATCH' });

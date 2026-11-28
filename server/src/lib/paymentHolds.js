@@ -3,20 +3,29 @@ import QRCode from 'qrcode';
 import { ApiError } from '../middleware/errors.js';
 import { getSystemAdminClient } from './supabase.js';
 import { ownsReservation } from './authz.js';
-import { sendDownpaymentQrEmail } from './downpaymentEmail.js';
+import { sendDownpaymentQrEmail, formatManilaTime } from './downpaymentEmail.js';
 import { logAuditEvent } from './auditLogger.js';
 import { notifyStaff } from './notify.js';
 import { pingSMS } from './sms.js';
 import { redis } from './redis.js';
 
 export const DOWNPAYMENT_WINDOW_MS = 15 * 60 * 1000;
-const SWEEP_INTERVAL_MS = 60 * 1000;
+export const PAYMENT_REQUEST_LIMIT = 3;
+export const PAYMENT_REQUEST_WINDOW_MS = 30 * 60 * 1000;
+
+// TEMPORARY: simulated payment. There is no real payment provider yet, so the server credits each
+// downpayment by itself once SIMULATED_CREDIT_DELAY_MS has passed, while the 15-minute window is open.
+// When a real provider is connected, delete creditDueHolds and the credit calls, and credit from the
+// provider's confirmation callback instead.
+export const SIMULATED_PROVIDER = 'simulated-auto-credit';
+export const SIMULATED_CREDIT_DELAY_MS = 20 * 1000;
+
+const SWEEP_INTERVAL_MS = 15 * 1000;
+const DOWNPAYMENT_RATE = 0.5;
 const MAX_RESERVATIONS_PER_HOLD = 10;
 const REFERENCE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const WINDOW_CLOSED_MESSAGE = 'The 15-minute downpayment window has closed, so these rooms were released. Please book again.';
-
-const DOWNPAYMENT_RATE = 0.5;
+const SYSTEM_ACTOR = { id: null, full_name: 'Simulated payment (automatic)', role: 'system' };
 
 let sweepTimer = null;
 
@@ -41,6 +50,14 @@ async function renderQrPng(reference, amount) {
   });
 }
 
+export function paymentRequestRetryAt(requestTimesMs, nowMs) {
+  const inWindow = requestTimesMs
+    .filter((time) => time > nowMs - PAYMENT_REQUEST_WINDOW_MS)
+    .sort((a, b) => a - b);
+  if (inWindow.length < PAYMENT_REQUEST_LIMIT) return null;
+  return new Date(inWindow[inWindow.length - PAYMENT_REQUEST_LIMIT] + PAYMENT_REQUEST_WINDOW_MS);
+}
+
 function serializeHold(hold, qrDataUrl, emailed = false) {
   return {
     id: hold.id,
@@ -54,6 +71,18 @@ function serializeHold(hold, qrDataUrl, emailed = false) {
   };
 }
 
+function serializeStatus(hold) {
+  return {
+    id: hold.id,
+    reference: hold.reference,
+    amount_php: hold.amount_php,
+    status: hold.status,
+    expires_at: hold.expires_at,
+    paid_at: hold.paid_at ?? null,
+    reservation_ids: hold.reservation_ids,
+  };
+}
+
 async function loadReservations(client, ids) {
   const { data, error } = await client
     .from('reservations')
@@ -63,8 +92,8 @@ async function loadReservations(client, ids) {
   return data ?? [];
 }
 
-// Releases the rooms first, then marks the hold expired. A hold is only expired after
-// its window has passed, and confirmation checks the window again, so the two can never both succeed.
+// Releases the rooms first, then marks the hold expired. Crediting checks the window again
+// at the moment it writes, so a hold that has expired can never be credited afterwards.
 async function releaseHold(client, hold) {
   const { error: releaseError } = await client
     .from('reservations')
@@ -81,7 +110,82 @@ async function releaseHold(client, hold) {
   if (error) throw new Error(error.message);
 }
 
-export async function expireOverdueHolds() {
+async function creditHold(client, hold) {
+  const nowIso = new Date().toISOString();
+  const { data: paidRows, error } = await client
+    .from('payment_holds')
+    .update({ status: 'paid', paid_at: nowIso, provider: SIMULATED_PROVIDER })
+    .eq('id', hold.id)
+    .eq('status', 'awaiting')
+    .gt('expires_at', nowIso)
+    .select('*');
+  if (error) throw new Error(error.message);
+  if (!paidRows?.length) return null;
+
+  const paid = paidRows[0];
+  const { data: confirmed, error: confirmError } = await client
+    .from('reservations')
+    .update({ status: 'confirmed', payment_status: 'partially_paid', updated_at: nowIso })
+    .in('id', paid.reservation_ids)
+    .eq('status', 'pending')
+    .select('id, guest_id, guest_name, phone');
+  if (confirmError) throw new Error(confirmError.message);
+
+  await redis.clear();
+
+  await logAuditEvent({
+    actor: SYSTEM_ACTOR,
+    action: 'DOWNPAYMENT_AUTO_CREDITED',
+    resourceType: 'payment_hold',
+    resourceId: paid.id,
+    details: {
+      reference: paid.reference,
+      amount_php: paid.amount_php,
+      reservation_ids: paid.reservation_ids,
+      provider: SIMULATED_PROVIDER,
+      simulated: true,
+    },
+  });
+
+  const guest = confirmed?.[0];
+  const amountLabel = `₱${Number(paid.amount_php).toLocaleString()}`;
+  await notifyStaff({
+    type: 'booking',
+    title: 'Downpayment received (simulated)',
+    body: `${guest?.guest_name || paid.guest_name || 'Guest'} downpayment of ${amountLabel} (${paid.reference}) was credited automatically. Temporary simulated payment.`,
+    reservationId: paid.reservation_ids[0],
+  });
+
+  if (guest?.phone) {
+    pingSMS({
+      profileId: guest.guest_id || null,
+      reservationId: paid.reservation_ids[0],
+      toPhone: guest.phone,
+      body: `Rock View Beach Resort: downpayment of ${amountLabel} received (${paid.reference}). Your stay is confirmed. The balance is paid at check-in.`,
+    }).catch((err) => console.warn('[Downpayment] Confirmation SMS not sent:', err.message));
+  }
+
+  return paid;
+}
+
+async function creditDueHolds() {
+  const client = await getSystemAdminClient();
+  const nowMs = Date.now();
+  const { data: due, error } = await client
+    .from('payment_holds')
+    .select('*')
+    .eq('status', 'awaiting')
+    .gt('expires_at', new Date(nowMs).toISOString())
+    .lt('created_at', new Date(nowMs - SIMULATED_CREDIT_DELAY_MS).toISOString());
+  if (error) throw new Error(error.message);
+
+  for (const hold of due ?? []) {
+    await creditHold(client, hold);
+  }
+  return due?.length ?? 0;
+}
+
+async function expireOverdueHolds() {
   const client = await getSystemAdminClient();
   const { data: overdue, error } = await client
     .from('payment_holds')
@@ -97,18 +201,45 @@ export async function expireOverdueHolds() {
   return overdue?.length ?? 0;
 }
 
-export async function sweepExpiredHolds() {
+async function runSweepStep(label, step) {
   try {
-    await expireOverdueHolds();
+    await step();
   } catch (err) {
-    console.warn('[Downpayment] Could not release overdue holds:', err.message);
+    console.warn(`[Downpayment] Sweep (${label}) failed:`, err.message);
   }
+}
+
+export async function sweepExpiredHolds() {
+  await runSweepStep('credit', creditDueHolds);
+  await runSweepStep('expire', expireOverdueHolds);
 }
 
 export function startPaymentHoldSweeper() {
   if (sweepTimer) return;
   sweepTimer = setInterval(sweepExpiredHolds, SWEEP_INTERVAL_MS);
   sweepTimer.unref?.();
+}
+
+async function enforcePaymentRequestLimit(client, user) {
+  const sinceIso = new Date(Date.now() - PAYMENT_REQUEST_WINDOW_MS).toISOString();
+  const { data, error } = await client
+    .from('payment_holds')
+    .select('created_at')
+    .eq('requested_by', user.id)
+    .gt('created_at', sinceIso);
+  if (error) throw new ApiError(500, error.message);
+
+  const retryAt = paymentRequestRetryAt(
+    (data ?? []).map((row) => new Date(row.created_at).getTime()),
+    Date.now()
+  );
+  if (retryAt) {
+    throw new ApiError(
+      429,
+      `You have asked for ${PAYMENT_REQUEST_LIMIT} payments in the last 30 minutes. Try again after ${formatManilaTime(retryAt.toISOString())}.`,
+      { retry_at: retryAt.toISOString() }
+    );
+  }
 }
 
 export async function createDownpaymentHold({ user, reservationIds, req }) {
@@ -145,6 +276,8 @@ export async function createDownpaymentHold({ user, reservationIds, req }) {
     return serializeHold(existing, `data:image/png;base64,${qrPng.toString('base64')}`);
   }
 
+  await enforcePaymentRequestLimit(client, user);
+
   const stayTotal = reservations.reduce((sum, row) => sum + (Number(row.total_php) || 0), 0);
   const amount = Math.round(stayTotal * DOWNPAYMENT_RATE);
   if (amount <= 0) {
@@ -158,6 +291,7 @@ export async function createDownpaymentHold({ user, reservationIds, req }) {
     .insert({
       reference: makeReference(),
       reservation_ids: ids,
+      requested_by: user.id,
       guest_email: guest.email || user.email || null,
       guest_name: guest.guest_name || null,
       amount_php: amount,
@@ -202,7 +336,7 @@ export async function createDownpaymentHold({ user, reservationIds, req }) {
   return serializeHold(hold, `data:image/png;base64,${qrPng.toString('base64')}`, emailed);
 }
 
-export async function confirmDownpaymentHold({ user, holdId, req }) {
+export async function getDownpaymentHoldForGuest({ user, holdId }) {
   if (!UUID_PATTERN.test(String(holdId))) {
     throw new ApiError(404, 'This payment request could not be found.');
   }
@@ -221,66 +355,24 @@ export async function confirmDownpaymentHold({ user, holdId, req }) {
     throw new ApiError(403, 'This payment request belongs to another guest.');
   }
 
-  if (hold.status === 'paid') {
-    return { success: true, status: 'paid', reference: hold.reference, amount_php: hold.amount_php, reservation_ids: hold.reservation_ids };
+  if (hold.status !== 'awaiting') return serializeStatus(hold);
+
+  const dueForCredit = Date.now() - new Date(hold.created_at).getTime() >= SIMULATED_CREDIT_DELAY_MS;
+  if (dueForCredit) {
+    await creditHold(client, hold);
   }
 
-  const windowClosed = hold.status === 'expired' || new Date(hold.expires_at).getTime() <= Date.now();
+  const windowClosed = new Date(hold.expires_at).getTime() <= Date.now();
   if (windowClosed) {
     await releaseHold(client, hold);
     await redis.clear();
-    throw new ApiError(410, WINDOW_CLOSED_MESSAGE);
   }
 
-  const nowIso = new Date().toISOString();
-  const { data: paidRows, error: payError } = await client
+  const { data: latest, error: latestError } = await client
     .from('payment_holds')
-    .update({ status: 'paid', paid_at: nowIso })
+    .select('*')
     .eq('id', hold.id)
-    .eq('status', 'awaiting')
-    .gt('expires_at', nowIso)
-    .select('*');
-  if (payError) throw new ApiError(500, payError.message);
-  if (!paidRows?.length) {
-    throw new ApiError(409, 'This payment was already handled. Check your bookings for its status.');
-  }
-  const paid = paidRows[0];
-
-  const { error: confirmError } = await client
-    .from('reservations')
-    .update({ status: 'confirmed', payment_status: 'partially_paid', updated_at: nowIso })
-    .in('id', paid.reservation_ids)
-    .eq('status', 'pending');
-  if (confirmError) throw new ApiError(500, confirmError.message);
-
-  await redis.clear();
-
-  await logAuditEvent({
-    actor: user,
-    action: 'DOWNPAYMENT_CONFIRMED',
-    resourceType: 'payment_hold',
-    resourceId: paid.id,
-    details: { reference: paid.reference, amount_php: paid.amount_php, reservation_ids: paid.reservation_ids, simulated: true },
-    req,
-  });
-
-  const guest = reservations[0];
-  const guestName = guest.guest_name || 'Guest';
-  await notifyStaff({
-    type: 'booking',
-    title: 'Downpayment received',
-    body: `${guestName} paid the ₱${Number(paid.amount_php).toLocaleString()} downpayment (${paid.reference}). Booking confirmed.`,
-    reservationId: paid.reservation_ids[0],
-  });
-
-  if (guest.phone) {
-    pingSMS({
-      profileId: guest.guest_id || null,
-      reservationId: paid.reservation_ids[0],
-      toPhone: guest.phone,
-      body: `Rock View Beach Resort: downpayment of ₱${Number(paid.amount_php).toLocaleString()} received (${paid.reference}). Your stay is confirmed. The balance is paid at check-in.`,
-    }).catch((err) => console.warn('[Downpayment] Confirmation SMS not sent:', err.message));
-  }
-
-  return { success: true, status: 'paid', reference: paid.reference, amount_php: paid.amount_php, reservation_ids: paid.reservation_ids };
+    .single();
+  if (latestError) throw new ApiError(500, latestError.message);
+  return serializeStatus(latest);
 }

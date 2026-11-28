@@ -1,13 +1,13 @@
 -- ============================================================
--- DOWNPAYMENT HOLD SETUP (run once, in the Supabase SQL editor)
+-- DOWNPAYMENT HOLD SETUP (run in the Supabase SQL editor)
 -- Select all of this file, paste it, then press Run.
--- Run this BEFORE guests book again. Bookings fail until this table exists.
--- Creates: the payment_holds table, which tracks each 15-minute
--- downpayment window and its QR reference.
+-- Safe to run again. Run it BEFORE guests book again.
+--
+-- TEMPORARY: downpayments are credited automatically by the server
+-- (simulated payment). Replace this with a real payment provider later.
 -- ============================================================
 
--- 1. One row per downpayment request. Each row covers one or more bookings
---    made in the same checkout.
+-- 1. One row per downpayment request. Each row covers the bookings made in one checkout.
 create table if not exists public.payment_holds (
   id uuid primary key default gen_random_uuid(),
   reference text not null unique,
@@ -21,9 +21,15 @@ create table if not exists public.payment_holds (
   created_at timestamptz not null default now()
 );
 
--- 2. Fast lookups for the expiry check and for finding a guest's open request
+-- 2. Columns added after the first version: who asked for the payment (used for the
+--    3-requests-per-30-minutes limit) and how it was credited.
+alter table public.payment_holds add column if not exists requested_by uuid;
+alter table public.payment_holds add column if not exists provider text;
+
+-- 3. Fast lookups for the expiry check, the auto-credit check, and the request limit
 create index if not exists payment_holds_status_idx on public.payment_holds (status, expires_at);
 create index if not exists payment_holds_reservations_idx on public.payment_holds using gin (reservation_ids);
+create index if not exists payment_holds_requested_by_idx on public.payment_holds (requested_by, created_at);
 
--- 3. Security: no policies are added, so only the server (service role) can read or write this table.
+-- 4. Security: no policies are added, so only the server (service role) can read or write this table.
 alter table public.payment_holds enable row level security;
