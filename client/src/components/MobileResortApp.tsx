@@ -2498,8 +2498,12 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                 </div>
               )}
 
-              {/* Quick Preset Buttons & Month Jump */}
-              <div className="flex flex-wrap items-center justify-between gap-2.5 pb-4 mb-5 border-b border-white/10">
+              {/* Single Large Calendar View */}
+              <div>
+                {/* Single Month Box Card */}
+                <div className="cal-month-box p-4 sm:p-6 shadow-2xl border border-white/10 rounded-2xl bg-[#0B1426]" onMouseLeave={() => setHoverDate(null)}>
+                  {/* Quick Preset Buttons & Month Jump */}
+                  <div className="flex flex-wrap items-center justify-between gap-2.5 mb-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     onClick={() => applyQuickPreset('weekend')}
@@ -2551,10 +2555,6 @@ export default function MobileResortApp({ embedded = false }: { embedded?: boole
                 </button>
               </div>
 
-              {/* Single Large Calendar View */}
-              <div>
-                {/* Single Month Box Card */}
-                <div className="cal-month-box p-4 sm:p-6 shadow-2xl border border-white/10 rounded-2xl bg-[#0B1426]" onMouseLeave={() => setHoverDate(null)}>
                   
                   {/* Big Month Navigation Header */}
                   <div className="flex items-center justify-between pb-4 mb-4 border-b border-white/10">
