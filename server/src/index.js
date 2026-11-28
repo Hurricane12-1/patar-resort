@@ -31,11 +31,13 @@ app.use(cookieTokenizer);
 app.use(ngwfFirewall);
 
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
-// rawBody keeps the exact bytes a payment provider signed; the sanitizer below rewrites req.body.
+// rawBody keeps the exact bytes a payment provider signed, and the chat message as the guest typed it.
+// The sanitizer below rewrites req.body, which would otherwise hide markup from the chat guardrail.
 app.use(express.json({
   limit: '5mb',
   verify: (req, _res, buf) => {
-    if (req.originalUrl?.startsWith('/api/webhooks/')) req.rawBody = buf.toString('utf8');
+    const url = req.originalUrl || '';
+    if (url.startsWith('/api/webhooks/') || url.startsWith('/api/chat/ask')) req.rawBody = buf.toString('utf8');
   },
 }));
 app.use(antiXssSanitizer);

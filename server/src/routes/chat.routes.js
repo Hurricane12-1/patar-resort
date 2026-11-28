@@ -18,6 +18,16 @@ const r = Router();
  * POST /api/chat/ask
  * HTTP endpoint for AI concierge + semantic guardrails (used when WebSocket is handshaking or on serverless/edge clients).
  */
+function rawChatText(req) {
+  if (typeof req.rawBody !== 'string') return null;
+  try {
+    const parsed = JSON.parse(req.rawBody);
+    return typeof parsed?.text === 'string' ? parsed.text.trim().slice(0, 600) : null;
+  } catch {
+    return null;
+  }
+}
+
 r.post('/chat/ask', asyncH(async (req, res) => {
   const { text, history } = req.body || {};
   const clean = typeof text === 'string' ? text.trim().slice(0, 600) : '';
@@ -46,7 +56,8 @@ r.post('/chat/ask', asyncH(async (req, res) => {
     return res.json({ text: limitReachedText(), chips: [], is_ai: true, contact_card: true, limit_reached: true, quota });
   }
 
-  const reply = await answerChatInquiry(userId, clean, sanitizeClientHistory(history));
+  // The guardrail checks the message as typed, so markup is refused instead of being silently stripped.
+  const reply = await answerChatInquiry(userId, rawChatText(req) || clean, sanitizeClientHistory(history));
   return res.json({ ...reply, quota });
 }));
 

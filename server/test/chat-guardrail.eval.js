@@ -32,6 +32,21 @@ const REFUSAL_LANGUAGE = /\b(can't|cannot|can not|unable to|not able to|only (?:
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 let localAnswer = null;
+let csrf = null;
+
+// The API uses a double-submit CSRF check for requests without a sign-in token, so the runner picks up
+// the cookie and header from one GET first, exactly like the website does.
+async function csrfHeaders() {
+  if (!csrf) {
+    const res = await fetch(`${baseUrl.replace(/\/+$/, '')}/health`, { signal: AbortSignal.timeout(30000) });
+    const token = res.headers.get('x-csrf-token');
+    const cookie = (res.headers.getSetCookie?.() || []).map((c) => c.split(';')[0]).find((c) => c.startsWith('csrf_token='));
+    if (!token || !cookie) throw new Error('The server did not hand out a CSRF token.');
+    csrf = { 'x-csrf-token': token, cookie };
+  }
+  return csrf;
+}
+
 async function ask(text) {
   if (local) {
     if (!localAnswer) {
@@ -42,7 +57,7 @@ async function ask(text) {
   }
   const res = await fetch(`${baseUrl.replace(/\/+$/, '')}/api/chat/ask`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...(await csrfHeaders()) },
     body: JSON.stringify({ text, history: [] }),
     signal: AbortSignal.timeout(30000),
   });
