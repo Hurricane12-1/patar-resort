@@ -634,7 +634,7 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
                   type="button"
                   onClick={() => animateTypewriterPrompt('✅ Early check-in at 11:00 AM is approved! Room is ready.', (s) => setInputText(s))}
                   className="btn btn-sm"
-                  style={{ fontSize: '.74rem', padding: '5px 10px', background: 'rgba(16, 185, 129, 0.12)', color: '#10B981', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 12, cursor: 'pointer' }}
+                  style={{ fontSize: '.74rem', padding: '5px 10px', background: 'rgba(16, 185, 129, 0.12)', color: '#10B981', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 12, boxShadow: 'none', cursor: 'pointer' }}
                   title="Click to type prompt into reply composer"
                 >
                   <><i className="fas fa-check" style={{ marginRight: 4 }} />Approve Early Check-In</>
@@ -643,7 +643,7 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
                   type="button"
                   onClick={() => animateTypewriterPrompt('🍽️ Candlelight beachfront dinner confirmed for 2 guests at 7:00 PM.', (s) => setInputText(s))}
                   className="btn btn-sm"
-                  style={{ fontSize: '.74rem', padding: '5px 10px', background: 'rgba(99, 102, 241, 0.12)', color: '#6366F1', border: '1px solid rgba(99, 102, 241, 0.3)', borderRadius: 12, cursor: 'pointer' }}
+                  style={{ fontSize: '.74rem', padding: '5px 10px', background: 'rgba(99, 102, 241, 0.12)', color: '#6366F1', border: '1px solid rgba(99, 102, 241, 0.3)', borderRadius: 12, boxShadow: 'none', cursor: 'pointer' }}
                   title="Click to type prompt into reply composer"
                 >
                   <><i className="fas fa-utensils" style={{ marginRight: 4 }} />Confirm Dining</>
@@ -652,7 +652,7 @@ export function ExecutiveGuestConversationsPanel({ initialGuest, isLightMode, co
                   type="button"
                   onClick={() => animateTypewriterPrompt('🚐 Executive van pickup details sent to your SMS.', (s) => setInputText(s))}
                   className="btn btn-sm"
-                  style={{ fontSize: '.74rem', padding: '5px 10px', background: 'rgba(56, 189, 248, 0.12)', color: '#0EA5E9', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: 12, cursor: 'pointer' }}
+                  style={{ fontSize: '.74rem', padding: '5px 10px', background: 'rgba(56, 189, 248, 0.12)', color: '#0EA5E9', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: 12, boxShadow: 'none', cursor: 'pointer' }}
                   title="Click to type prompt into reply composer"
                 >
                   <><i className="fas fa-van-shuttle" style={{ marginRight: 4 }} />Send Van Details</>
