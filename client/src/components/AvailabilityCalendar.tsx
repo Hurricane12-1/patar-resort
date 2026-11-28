@@ -858,7 +858,7 @@ export default function AvailabilityCalendar({
                   className="pms-legend-dot reserved"
                   style={{
                     backgroundColor: '#006699',
-                    border: '1.5px solid #DC2626',
+                    border: '1.5px solid #005580',
                   }}
                 />
                 Reserved
