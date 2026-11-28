@@ -50,6 +50,44 @@ async function renderQrPng(reference, amount) {
   });
 }
 
+export const MONTHLY_BOOKING_LIMIT = 3;
+const MANILA_OFFSET_MS = 8 * 60 * 60 * 1000;
+
+export function monthlyBookingWindow(nowMs) {
+  const local = new Date(nowMs + MANILA_OFFSET_MS);
+  const year = local.getUTCFullYear();
+  const month = local.getUTCMonth();
+  return {
+    startMs: Date.UTC(year, month, 1) - MANILA_OFFSET_MS,
+    nextStartMs: Date.UTC(year, month + 1, 1) - MANILA_OFFSET_MS,
+  };
+}
+
+// One payment request is made per checkout, so counting them counts bookings by the day they were made.
+export async function checkMonthlyBookingLimit(user) {
+  const { startMs, nextStartMs } = monthlyBookingWindow(Date.now());
+  const client = await getSystemAdminClient();
+  const { count, error } = await client
+    .from('payment_holds')
+    .select('id', { count: 'exact', head: true })
+    .eq('requested_by', user.id)
+    .gte('created_at', new Date(startMs).toISOString());
+  if (error) throw new ApiError(500, error.message);
+
+  if ((count ?? 0) >= MONTHLY_BOOKING_LIMIT) {
+    const reopens = new Date(nextStartMs).toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      timeZone: 'Asia/Manila',
+    });
+    throw new ApiError(
+      429,
+      `You have made ${MONTHLY_BOOKING_LIMIT} bookings this month. You can book again on ${reopens}.`,
+      { code: 'MONTHLY_BOOKING_LIMIT' }
+    );
+  }
+}
+
 export function paymentRequestRetryAt(requestTimesMs, nowMs) {
   const inWindow = requestTimesMs
     .filter((time) => time > nowMs - PAYMENT_REQUEST_WINDOW_MS)

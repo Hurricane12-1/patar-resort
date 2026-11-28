@@ -36,7 +36,7 @@ import { sendRefundRequestedEmail, sendRefundConfirmedEmail } from '../lib/maile
 import { broadcastPayload1 } from '../socket/chatbot.js';
 import { getLocalReservations, addLocalReservation, updateLocalReservation, deleteLocalReservation } from '../lib/reservationStore.js';
 import { normalizePaymentStatus } from '../lib/paymentStatus.js';
-import { sweepExpiredHolds } from '../lib/paymentHolds.js';
+import { sweepExpiredHolds, checkMonthlyBookingLimit } from '../lib/paymentHolds.js';
 import { computeGuestStayTotal } from '../lib/guestStayPricing.js';
 
 const r = Router();
@@ -178,6 +178,9 @@ r.post('/reservations', authenticate, bookingLimiter, validate(createSchema), as
   if (check_in < today) throw new ApiError(422, 'Check-in date cannot be in the past');
   if (!isDeskStaff && req.user?.is_verified !== true) {
     throw new ApiError(403, 'Please verify your Gmail first. Sign in, then enter the 6-digit code sent to your email.', { code: 'EMAIL_NOT_VERIFIED' });
+  }
+  if (!isDeskStaff) {
+    await checkMonthlyBookingLimit(req.user);
   }
   await sweepExpiredHolds();
 
