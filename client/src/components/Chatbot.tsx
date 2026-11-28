@@ -96,6 +96,8 @@ export default function Chatbot() {
   const [chips, setChips] = useState<Array<ChatChip | string>>(DEFAULT_CHIPS);
   const [typing, setTyping] = useState(false);
   const [text, setText] = useState('');
+  const [quota, setQuota] = useState<{ used: number; limit: number; remaining: number } | null>(null);
+  const limitReached = Boolean(quota && quota.remaining <= 0);
   const [isTypingPrompt, setIsTypingPrompt] = useState(false);
   const [reloadingChat, setReloadingChat] = useState(false);
   const [assignedAgent, setAssignedAgent] = useState<{ id: string; name: string; role: string; phone?: string } | null>(null);
@@ -368,6 +370,7 @@ export default function Chatbot() {
     sockRef.current = s;
 
     const handleMessage = (m: any) => {
+      if (m?.quota) setQuota(m.quota);
       if (typeof m?.text === 'string' && m.text.includes('momentarily reconnecting')) {
         // The AI service has no answer right now. Answer from the resort's own facts straight away.
         if ((window as any).__rvChatFallbackTimer) {
@@ -450,6 +453,7 @@ export default function Chatbot() {
       firstName: customerProfile?.first_name || customerProfile?.full_name?.split(' ')[0],
     });
     if (fallbackReply) {
+      if (fallbackReply.quota) setQuota(fallbackReply.quota);
       if (session?.user?.id) {
         // Keep the exchange on the account so the front desk sees it under customer service.
         api.saveChatMessage({ role: 'user', content: clean }).catch(() => {});
@@ -477,7 +481,7 @@ export default function Chatbot() {
       setIsTypingPrompt(false);
     }
     const clean = (t ?? text).trim();
-    if (!clean) return;
+    if (!clean || limitReached) return;
 
     const historySnapshot = msgs
       .slice(-8)
@@ -1113,6 +1117,17 @@ export default function Chatbot() {
             </div>
           )}
 
+          {quota && quota.remaining <= 10 && (
+            <p
+              role="status"
+              style={{ margin: '0 12px 6px', fontSize: '0.72rem', fontWeight: 600, color: limitReached ? '#B91C1C' : '#64748B' }}
+            >
+              {limitReached
+                ? `You've used today's ${quota.limit} messages. The limit resets at midnight, Manila time.`
+                : `${quota.remaining} of ${quota.limit} messages left today`}
+            </p>
+          )}
+
           {/* Input Form */}
           <form
             className={`chat-input ${isTypingPrompt ? 'typing-pulse' : ''}`}
@@ -1124,7 +1139,8 @@ export default function Chatbot() {
             <input
               ref={inputRef}
               value={text}
-              placeholder="Ask about rooms, rates, amenities, check-in…"
+              disabled={limitReached}
+              placeholder={limitReached ? 'Daily message limit reached' : 'Ask about rooms, rates, amenities, check-in…'}
               onChange={(e) => {
                 if (isTypingPrompt && cancelTypewriterRef.current) {
                   cancelTypewriterRef.current();
@@ -1137,7 +1153,7 @@ export default function Chatbot() {
             <button
               className="btn btn-sky btn-sm"
               type="submit"
-              disabled={!text.trim()}
+              disabled={!text.trim() || limitReached}
               style={{
                 borderRadius: 9999,
                 padding: '8px 16px',
@@ -1145,8 +1161,8 @@ export default function Chatbot() {
                 alignItems: 'center',
                 gap: 6,
                 fontWeight: 700,
-                cursor: text.trim() ? 'pointer' : 'not-allowed',
-                opacity: text.trim() ? 1 : 0.6,
+                cursor: text.trim() && !limitReached ? 'pointer' : 'not-allowed',
+                opacity: text.trim() && !limitReached ? 1 : 0.6,
                 transition: 'all 0.15s ease',
               }}
             >

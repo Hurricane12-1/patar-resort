@@ -9,6 +9,8 @@ import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
 import { notifyStaff } from '../lib/notify.js';
 import { findAvailableServiceAgent, emitToGuest, broadcastToStaff, answerChatInquiry } from '../socket/chatbot.js';
+import { sanitizeClientHistory, limitReachedText } from '../lib/chatGuard.js';
+import { consumeChatQuota, clientIpFrom } from '../lib/chatQuota.js';
 
 const r = Router();
 
@@ -39,8 +41,13 @@ r.post('/chat/ask', asyncH(async (req, res) => {
     }
   }
 
-  const reply = await answerChatInquiry(userId, clean, Array.isArray(history) ? history : []);
-  return res.json(reply);
+  const quota = await consumeChatQuota({ userId, ip: clientIpFrom(req.headers, req.ip) });
+  if (!quota.allowed) {
+    return res.json({ text: limitReachedText(), chips: [], is_ai: true, contact_card: true, limit_reached: true, quota });
+  }
+
+  const reply = await answerChatInquiry(userId, clean, sanitizeClientHistory(history));
+  return res.json({ ...reply, quota });
 }));
 
 /**
