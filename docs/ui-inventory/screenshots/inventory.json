@@ -1,0 +1,3277 @@
+{
+  "baseUrl": "https://patar-resort.pages.dev",
+  "when": "2026-11-28T17:08:44.254Z",
+  "results": [
+    {
+      "name": "01-home",
+      "path": "/",
+      "view": "desktop 1440x900",
+      "file": "01-home.jpg",
+      "finalUrl": "/",
+      "title": "Rock View Beach Resort · Bolinao, Pangasinan · Room Reservations",
+      "height": 5389,
+      "actionResults": [],
+      "items": [
+        {
+          "n": 1,
+          "kind": "link",
+          "name": "Rock View Beach Resort",
+          "href": "/",
+          "disabled": false,
+          "size": "143x41",
+          "fixed": true
+        },
+        {
+          "n": 2,
+          "kind": "link",
+          "name": "SIGN IN",
+          "href": "/client/login",
+          "disabled": false,
+          "size": "118x36",
+          "fixed": true
+        },
+        {
+          "n": 3,
+          "kind": "link",
+          "name": "Already have an account? Sign in →",
+          "href": "/client/login",
+          "disabled": false,
+          "size": "240x20",
+          "fixed": false
+        },
+        {
+          "n": 4,
+          "kind": "button",
+          "name": "Scroll accommodations left",
+          "disabled": false,
+          "size": "40x40",
+          "fixed": false
+        },
+        {
+          "n": 5,
+          "kind": "button",
+          "name": "Scroll accommodations right",
+          "disabled": false,
+          "size": "40x40",
+          "fixed": false
+        },
+        {
+          "n": 6,
+          "kind": "link",
+          "name": "Open in Google Maps ↗",
+          "href": "https://www.google.com/maps/search/?api=1&query=Rock+View+Beach+Resort,+Patar+Road,+Bolinao,+Pangasinan",
+          "disabled": false,
+          "size": "143x16",
+          "fixed": false
+        },
+        {
+          "n": 7,
+          "kind": "link",
+          "name": "Open in Google Maps",
+          "href": "https://www.google.com/maps/search/?api=1&query=Rock+View+Beach+Resort,+Patar+Road,+Bolinao,+Pangasinan",
+          "disabled": false,
+          "size": "160x38",
+          "fixed": false
+        },
+        {
+          "n": 8,
+          "kind": "link",
+          "name": "Get directions",
+          "href": "https://www.google.com/maps/dir/?api=1&destination=Rock+View+Beach+Resort,+Patar+Road,+Bolinao,+Pangasinan",
+          "disabled": false,
+          "size": "120x38",
+          "fixed": false
+        },
+        {
+          "n": 9,
+          "kind": "button",
+          "name": "What is the reservation deposit requirement? +",
+          "disabled": false,
+          "size": "1070x68",
+          "fixed": false
+        },
+        {
+          "n": 10,
+          "kind": "button",
+          "name": "What are your check-in and check-out times? +",
+          "disabled": false,
+          "size": "1070x68",
+          "fixed": false
+        },
+        {
+          "n": 11,
+          "kind": "button",
+          "name": "Can we bring our own food or cook on site? +",
+          "disabled": false,
+          "size": "1070x68",
+          "fixed": false
+        },
+        {
+          "n": 12,
+          "kind": "button",
+          "name": "Is Patar beach swimmable and child-friendly? +",
+          "disabled": false,
+          "size": "1070x68",
+          "fixed": false
+        },
+        {
+          "n": 13,
+          "kind": "button",
+          "name": "What is your cancellation and refund policy? +",
+          "disabled": false,
+          "size": "1070x68",
+          "fixed": false
+        },
+        {
+          "n": 14,
+          "kind": "link",
+          "name": "Instagram",
+          "href": "https://www.instagram.com/rockviewbeachresort",
+          "disabled": false,
+          "size": "66x22",
+          "fixed": false
+        },
+        {
+          "n": 15,
+          "kind": "link",
+          "name": "Facebook",
+          "href": "https://www.facebook.com/rockviewbeachresort",
+          "disabled": false,
+          "size": "67x22",
+          "fixed": false
+        },
+        {
+          "n": 16,
+          "kind": "link",
+          "name": "TikTok",
+          "href": "https://www.tiktok.com/@rockviewbeachresort",
+          "disabled": false,
+          "size": "41x22",
+          "fixed": false
+        },
+        {
+          "n": 17,
+          "kind": "link",
+          "name": "50% Downpayment Policy & Rules",
+          "href": "/policy",
+          "disabled": false,
+          "size": "225x22",
+          "fixed": false
+        },
+        {
+          "n": 18,
+          "kind": "link",
+          "name": "Cancellation & Rebooking",
+          "href": "/policy#cancellation",
+          "disabled": false,
+          "size": "171x22",
+          "fixed": false
+        },
+        {
+          "n": 19,
+          "kind": "link",
+          "name": "Resort House Guidelines",
+          "href": "/policy#house-rules",
+          "disabled": false,
+          "size": "162x22",
+          "fixed": false
+        },
+        {
+          "n": 20,
+          "kind": "link",
+          "name": "Privacy & Terms",
+          "href": "/policy#privacy",
+          "disabled": false,
+          "size": "102x22",
+          "fixed": false
+        },
+        {
+          "n": 21,
+          "kind": "button",
+          "name": "Open 24/7 Resort Concierge Chat",
+          "disabled": false,
+          "size": "52x52",
+          "fixed": true
+        }
+      ]
+    },
+    {
+      "name": "02-home-chat-open",
+      "path": "/",
+      "view": "desktop 1440x900",
+      "actions": [
+        {
+          "click": ".chat-fab"
+        }
+      ],
+      "file": "02-home-chat-open.jpg",
+      "finalUrl": "/",
+      "title": "Rock View Beach Resort · Bolinao, Pangasinan · Room Reservations",
+      "height": 5389,
+      "actionResults": [
+        {
+          "action": {
+            "click": ".chat-fab"
+          },
+          "ok": true
+        }
+      ],
+      "items": [
+        {
+          "n": 1,
+          "kind": "link",
+          "name": "Rock View Beach Resort",
+          "href": "/",
+          "disabled": false,
+          "size": "143x41",
+          "fixed": true
+        },
+        {
+          "n": 2,
+          "kind": "link",
+          "name": "SIGN IN",
+          "href": "/client/login",
+          "disabled": false,
+          "size": "118x36",
+          "fixed": true
+        },
+        {
+          "n": 3,
+          "kind": "link",
+          "name": "Already have an account? Sign in →",
+          "href": "/client/login",
+          "disabled": false,
+          "size": "240x20",
+          "fixed": false
+        },
+        {
+          "n": 4,
+          "kind": "button",
+          "name": "Scroll accommodations left",
+          "disabled": false,
+          "size": "40x40",
+          "fixed": false
+        },
+        {
+          "n": 5,
+          "kind": "button",
+          "name": "Scroll accommodations right",
+          "disabled": false,
+          "size": "40x40",
+          "fixed": false
+        },
+        {
+          "n": 6,
+          "kind": "link",
+          "name": "Open in Google Maps ↗",
+          "href": "https://www.google.com/maps/search/?api=1&query=Rock+View+Beach+Resort,+Patar+Road,+Bolinao,+Pangasinan",
+          "disabled": false,
+          "size": "143x16",
+          "fixed": false
+        },
+        {
+          "n": 7,
+          "kind": "link",
+          "name": "Open in Google Maps",
+          "href": "https://www.google.com/maps/search/?api=1&query=Rock+View+Beach+Resort,+Patar+Road,+Bolinao,+Pangasinan",
+          "disabled": false,
+          "size": "160x38",
+          "fixed": false
+        },
+        {
+          "n": 8,
+          "kind": "link",
+          "name": "Get directions",
+          "href": "https://www.google.com/maps/dir/?api=1&destination=Rock+View+Beach+Resort,+Patar+Road,+Bolinao,+Pangasinan",
+          "disabled": false,
+          "size": "120x38",
+          "fixed": false
+        },
+        {
+          "n": 9,
+          "kind": "button",
+          "name": "What is the reservation deposit requirement? +",
+          "disabled": false,
+          "size": "1070x68",
+          "fixed": false
+        },
+        {
+          "n": 10,
+          "kind": "button",
+          "name": "What are your check-in and check-out times? +",
+          "disabled": false,
+          "size": "1070x68",
+          "fixed": false
+        },
+        {
+          "n": 11,
+          "kind": "button",
+          "name": "Can we bring our own food or cook on site? +",
+          "disabled": false,
+          "size": "1070x68",
+          "fixed": false
+        },
+        {
+          "n": 12,
+          "kind": "button",
+          "name": "Is Patar beach swimmable and child-friendly? +",
+          "disabled": false,
+          "size": "1070x68",
+          "fixed": false
+        },
+        {
+          "n": 13,
+          "kind": "button",
+          "name": "What is your cancellation and refund policy? +",
+          "disabled": false,
+          "size": "1070x68",
+          "fixed": false
+        },
+        {
+          "n": 14,
+          "kind": "link",
+          "name": "Instagram",
+          "href": "https://www.instagram.com/rockviewbeachresort",
+          "disabled": false,
+          "size": "66x22",
+          "fixed": false
+        },
+        {
+          "n": 15,
+          "kind": "link",
+          "name": "Facebook",
+          "href": "https://www.facebook.com/rockviewbeachresort",
+          "disabled": false,
+          "size": "67x22",
+          "fixed": false
+        },
+        {
+          "n": 16,
+          "kind": "link",
+          "name": "TikTok",
+          "href": "https://www.tiktok.com/@rockviewbeachresort",
+          "disabled": false,
+          "size": "41x22",
+          "fixed": false
+        },
+        {
+          "n": 17,
+          "kind": "link",
+          "name": "50% Downpayment Policy & Rules",
+          "href": "/policy",
+          "disabled": false,
+          "size": "225x22",
+          "fixed": false
+        },
+        {
+          "n": 18,
+          "kind": "link",
+          "name": "Cancellation & Rebooking",
+          "href": "/policy#cancellation",
+          "disabled": false,
+          "size": "171x22",
+          "fixed": false
+        },
+        {
+          "n": 19,
+          "kind": "link",
+          "name": "Resort House Guidelines",
+          "href": "/policy#house-rules",
+          "disabled": false,
+          "size": "162x22",
+          "fixed": false
+        },
+        {
+          "n": 20,
+          "kind": "link",
+          "name": "Privacy & Terms",
+          "href": "/policy#privacy",
+          "disabled": false,
+          "size": "102x22",
+          "fixed": false
+        },
+        {
+          "n": 21,
+          "kind": "button",
+          "name": "Restart chat",
+          "disabled": false,
+          "size": "30x30",
+          "fixed": true
+        },
+        {
+          "n": 22,
+          "kind": "button",
+          "name": "Close chat",
+          "disabled": false,
+          "size": "30x30",
+          "fixed": true
+        },
+        {
+          "n": 23,
+          "kind": "button",
+          "name": "Thumbs up - Helpful",
+          "disabled": false,
+          "size": "29x19",
+          "fixed": true
+        },
+        {
+          "n": 24,
+          "kind": "button",
+          "name": "Thumbs down - Needs improvement",
+          "disabled": false,
+          "size": "29x19",
+          "fixed": true
+        },
+        {
+          "n": 25,
+          "kind": "form",
+          "name": "",
+          "disabled": false,
+          "size": "393x64",
+          "fixed": true
+        },
+        {
+          "n": 26,
+          "kind": "field",
+          "name": "Ask about rooms, rates, amenities, check-in…",
+          "disabled": false,
+          "size": "262x39",
+          "fixed": true
+        },
+        {
+          "n": 27,
+          "kind": "button",
+          "name": "SEND",
+          "disabled": true,
+          "size": "95x38",
+          "fixed": true
+        },
+        {
+          "n": 28,
+          "kind": "button",
+          "name": "Open 24/7 Resort Concierge Chat",
+          "disabled": false,
+          "size": "52x52",
+          "fixed": true
+        }
+      ]
+    },
+    {
+      "name": "03-rooms",
+      "path": "/rooms",
+      "view": "desktop 1440x900",
+      "file": "03-rooms.jpg",
+      "finalUrl": "/rooms",
+      "title": "Rock View Beach Resort · Bolinao, Pangasinan · Room Reservations",
+      "height": 3898,
+      "actionResults": [],
+      "items": [
+        {
+          "n": 1,
+          "kind": "link",
+          "name": "Rock View BEACH RESORT",
+          "href": "/",
+          "disabled": false,
+          "size": "157x38",
+          "fixed": true
+        },
+        {
+          "n": 2,
+          "kind": "link",
+          "name": "Home",
+          "href": "/",
+          "disabled": false,
+          "size": "67x35",
+          "fixed": true
+        },
+        {
+          "n": 3,
+          "kind": "link",
+          "name": "Rooms",
+          "href": "/rooms",
+          "disabled": false,
+          "size": "73x35",
+          "fixed": true
+        },
+        {
+          "n": 4,
+          "kind": "link",
+          "name": "My Bookings",
+          "href": "/client/bookings",
+          "disabled": false,
+          "size": "115x35",
+          "fixed": true
+        },
+        {
+          "n": 5,
+          "kind": "button",
+          "name": "SIGN IN",
+          "disabled": false,
+          "size": "108x38",
+          "fixed": true
+        },
+        {
+          "n": 6,
+          "kind": "link",
+          "name": "BOOK STAY",
+          "href": "/",
+          "disabled": false,
+          "size": "137x38",
+          "fixed": true
+        },
+        {
+          "n": 7,
+          "kind": "field",
+          "name": "Search rooms…",
+          "disabled": false,
+          "size": "836x39",
+          "fixed": false
+        },
+        {
+          "n": 8,
+          "kind": "button",
+          "name": "VIEW RESORT CALENDAR (CHECK OCCUPIED & OPEN DATES)",
+          "disabled": false,
+          "size": "572x38",
+          "fixed": false
+        },
+        {
+          "n": 9,
+          "kind": "button",
+          "name": "All Accommodations",
+          "disabled": false,
+          "size": "150x29",
+          "fixed": false
+        },
+        {
+          "n": 10,
+          "kind": "button",
+          "name": "Rooms",
+          "disabled": false,
+          "size": "70x29",
+          "fixed": false
+        },
+        {
+          "n": 11,
+          "kind": "button",
+          "name": "Cottages",
+          "disabled": false,
+          "size": "85x29",
+          "fixed": false
+        },
+        {
+          "n": 12,
+          "kind": "button",
+          "name": "VIEW FREE DATES",
+          "disabled": false,
+          "size": "375x38",
+          "fixed": false
+        },
+        {
+          "n": 13,
+          "kind": "link",
+          "name": "ADVANCE BOOK",
+          "href": "/",
+          "disabled": false,
+          "size": "173x38",
+          "fixed": false
+        },
+        {
+          "n": 14,
+          "kind": "link",
+          "name": "RESERVE ROOM",
+          "href": "/",
+          "disabled": false,
+          "size": "556x38",
+          "fixed": false
+        },
+        {
+          "n": 15,
+          "kind": "button",
+          "name": "VIEW FREE DATES",
+          "disabled": false,
+          "size": "375x38",
+          "fixed": false
+        },
+        {
+          "n": 16,
+          "kind": "link",
+          "name": "ADVANCE BOOK",
+          "href": "/",
+          "disabled": false,
+          "size": "173x38",
+          "fixed": false
+        },
+        {
+          "n": 17,
+          "kind": "link",
+          "name": "RESERVE ROOM",
+          "href": "/",
+          "disabled": false,
+          "size": "556x38",
+          "fixed": false
+        },
+        {
+          "n": 18,
+          "kind": "link",
+          "name": "RESERVE ROOM",
+          "href": "/",
+          "disabled": false,
+          "size": "556x38",
+          "fixed": false
+        },
+        {
+          "n": 19,
+          "kind": "button",
+          "name": "VIEW FREE DATES",
+          "disabled": false,
+          "size": "375x38",
+          "fixed": false
+        },
+        {
+          "n": 20,
+          "kind": "link",
+          "name": "ADVANCE BOOK",
+          "href": "/",
+          "disabled": false,
+          "size": "173x38",
+          "fixed": false
+        },
+        {
+          "n": 21,
+          "kind": "link",
+          "name": "RESERVE ROOM",
+          "href": "/",
+          "disabled": false,
+          "size": "556x38",
+          "fixed": false
+        },
+        {
+          "n": 22,
+          "kind": "link",
+          "name": "RESERVE ROOM",
+          "href": "/",
+          "disabled": false,
+          "size": "556x38",
+          "fixed": false
+        },
+        {
+          "n": 23,
+          "kind": "link",
+          "name": "RESERVE ROOM",
+          "href": "/",
+          "disabled": false,
+          "size": "556x38",
+          "fixed": false
+        },
+        {
+          "n": 24,
+          "kind": "link",
+          "name": "RESERVE ROOM",
+          "href": "/",
+          "disabled": false,
+          "size": "556x38",
+          "fixed": false
+        },
+        {
+          "n": 25,
+          "kind": "link",
+          "name": "Book a stay",
+          "href": "/",
+          "disabled": false,
+          "size": "213x26",
+          "fixed": false
+        },
+        {
+          "n": 26,
+          "kind": "link",
+          "name": "Rooms & rates",
+          "href": "/rooms",
+          "disabled": false,
+          "size": "213x26",
+          "fixed": false
+        },
+        {
+          "n": 27,
+          "kind": "link",
+          "name": "My bookings",
+          "href": "/my-bookings",
+          "disabled": false,
+          "size": "213x26",
+          "fixed": false
+        },
+        {
+          "n": 28,
+          "kind": "link",
+          "name": "Facebook Page",
+          "href": "https://www.facebook.com/rockviewbeachresort",
+          "disabled": false,
+          "size": "122x26",
+          "fixed": false
+        },
+        {
+          "n": 29,
+          "kind": "button",
+          "name": "Open 24/7 Resort Concierge Chat",
+          "disabled": false,
+          "size": "52x52",
+          "fixed": true
+        }
+      ]
+    },
+    {
+      "name": "04-policy",
+      "path": "/policy",
+      "view": "desktop 1440x900",
+      "file": "04-policy.jpg",
+      "finalUrl": "/policy",
+      "title": "Rock View Beach Resort · Bolinao, Pangasinan · Room Reservations",
+      "height": 4443,
+      "actionResults": [],
+      "items": [
+        {
+          "n": 1,
+          "kind": "link",
+          "name": "Back to Resort",
+          "href": "/",
+          "disabled": false,
+          "size": "148x40",
+          "fixed": true
+        },
+        {
+          "n": 2,
+          "kind": "link",
+          "name": "Book a Stay",
+          "href": "/#booking",
+          "disabled": false,
+          "size": "131x38",
+          "fixed": true
+        },
+        {
+          "n": 3,
+          "kind": "button",
+          "name": "50% Downpayment",
+          "disabled": false,
+          "size": "174x34",
+          "fixed": false
+        },
+        {
+          "n": 4,
+          "kind": "button",
+          "name": "Check-in / Check-out",
+          "disabled": false,
+          "size": "185x34",
+          "fixed": false
+        },
+        {
+          "n": 5,
+          "kind": "button",
+          "name": "Cancellation & Weather",
+          "disabled": false,
+          "size": "195x34",
+          "fixed": false
+        },
+        {
+          "n": 6,
+          "kind": "button",
+          "name": "House Rules & Quiet Hours",
+          "disabled": false,
+          "size": "208x34",
+          "fixed": false
+        },
+        {
+          "n": 7,
+          "kind": "button",
+          "name": "Pool & Beachfront",
+          "disabled": false,
+          "size": "162x34",
+          "fixed": false
+        },
+        {
+          "n": 8,
+          "kind": "button",
+          "name": "Dining & Zero Corkage",
+          "disabled": false,
+          "size": "184x34",
+          "fixed": false
+        },
+        {
+          "n": 9,
+          "kind": "button",
+          "name": "Pet Policy",
+          "disabled": false,
+          "size": "109x34",
+          "fixed": false
+        },
+        {
+          "n": 10,
+          "kind": "button",
+          "name": "Power, Wi-Fi & Safety",
+          "disabled": false,
+          "size": "182x34",
+          "fixed": false
+        },
+        {
+          "n": 11,
+          "kind": "button",
+          "name": "User Data Deletion",
+          "disabled": false,
+          "size": "165x34",
+          "fixed": false
+        },
+        {
+          "n": 12,
+          "kind": "link",
+          "name": "Resident Guest Portal",
+          "href": "/client/login",
+          "disabled": false,
+          "size": "138x17",
+          "fixed": false
+        },
+        {
+          "n": 13,
+          "kind": "form",
+          "name": "",
+          "disabled": false,
+          "size": "1068x41",
+          "fixed": false
+        },
+        {
+          "n": 14,
+          "kind": "field",
+          "name": "Enter your Facebook / Google account email address...",
+          "disabled": false,
+          "size": "555x41",
+          "fixed": false
+        },
+        {
+          "n": 15,
+          "kind": "dropdown",
+          "name": "Deletion scope",
+          "disabled": false,
+          "size": "304x41",
+          "fixed": false
+        },
+        {
+          "n": 16,
+          "kind": "button",
+          "name": "Request Data Deletion",
+          "disabled": false,
+          "size": "189x41",
+          "fixed": false
+        },
+        {
+          "n": 17,
+          "kind": "link",
+          "name": "Reserve Your Stay Now",
+          "href": "/#booking",
+          "disabled": false,
+          "size": "200x43",
+          "fixed": false
+        },
+        {
+          "n": 18,
+          "kind": "link",
+          "name": "Home",
+          "href": "/",
+          "disabled": false,
+          "size": "40x26",
+          "fixed": false
+        },
+        {
+          "n": 19,
+          "kind": "link",
+          "name": "Rooms & Cottages",
+          "href": "/rooms",
+          "disabled": false,
+          "size": "124x26",
+          "fixed": false
+        },
+        {
+          "n": 20,
+          "kind": "link",
+          "name": "Guest Dashboard",
+          "href": "/client/bookings",
+          "disabled": false,
+          "size": "116x26",
+          "fixed": false
+        },
+        {
+          "n": 21,
+          "kind": "link",
+          "name": "Policies & 50% Deposit",
+          "href": "/policy",
+          "disabled": false,
+          "size": "156x26",
+          "fixed": false
+        },
+        {
+          "n": 22,
+          "kind": "link",
+          "name": "User Data Deletion",
+          "href": "/data-deletion",
+          "disabled": false,
+          "size": "124x26",
+          "fixed": false
+        },
+        {
+          "n": 23,
+          "kind": "button",
+          "name": "Open 24/7 Resort Concierge Chat",
+          "disabled": false,
+          "size": "52x52",
+          "fixed": true
+        }
+      ]
+    },
+    {
+      "name": "05-terms",
+      "path": "/terms",
+      "view": "desktop 1440x900",
+      "file": "05-terms.jpg",
+      "finalUrl": "/terms",
+      "title": "Rock View Beach Resort · Bolinao, Pangasinan · Room Reservations",
+      "height": 4443,
+      "actionResults": [],
+      "items": [
+        {
+          "n": 1,
+          "kind": "link",
+          "name": "Back to Resort",
+          "href": "/",
+          "disabled": false,
+          "size": "148x40",
+          "fixed": true
+        },
+        {
+          "n": 2,
+          "kind": "link",
+          "name": "Book a Stay",
+          "href": "/#booking",
+          "disabled": false,
+          "size": "131x38",
+          "fixed": true
+        },
+        {
+          "n": 3,
+          "kind": "button",
+          "name": "50% Downpayment",
+          "disabled": false,
+          "size": "174x34",
+          "fixed": false
+        },
+        {
+          "n": 4,
+          "kind": "button",
+          "name": "Check-in / Check-out",
+          "disabled": false,
+          "size": "185x34",
+          "fixed": false
+        },
+        {
+          "n": 5,
+          "kind": "button",
+          "name": "Cancellation & Weather",
+          "disabled": false,
+          "size": "195x34",
+          "fixed": false
+        },
+        {
+          "n": 6,
+          "kind": "button",
+          "name": "House Rules & Quiet Hours",
+          "disabled": false,
+          "size": "208x34",
+          "fixed": false
+        },
+        {
+          "n": 7,
+          "kind": "button",
+          "name": "Pool & Beachfront",
+          "disabled": false,
+          "size": "162x34",
+          "fixed": false
+        },
+        {
+          "n": 8,
+          "kind": "button",
+          "name": "Dining & Zero Corkage",
+          "disabled": false,
+          "size": "184x34",
+          "fixed": false
+        },
+        {
+          "n": 9,
+          "kind": "button",
+          "name": "Pet Policy",
+          "disabled": false,
+          "size": "109x34",
+          "fixed": false
+        },
+        {
+          "n": 10,
+          "kind": "button",
+          "name": "Power, Wi-Fi & Safety",
+          "disabled": false,
+          "size": "182x34",
+          "fixed": false
+        },
+        {
+          "n": 11,
+          "kind": "button",
+          "name": "User Data Deletion",
+          "disabled": false,
+          "size": "165x34",
+          "fixed": false
+        },
+        {
+          "n": 12,
+          "kind": "link",
+          "name": "Resident Guest Portal",
+          "href": "/client/login",
+          "disabled": false,
+          "size": "138x17",
+          "fixed": false
+        },
+        {
+          "n": 13,
+          "kind": "form",
+          "name": "",
+          "disabled": false,
+          "size": "1068x41",
+          "fixed": false
+        },
+        {
+          "n": 14,
+          "kind": "field",
+          "name": "Enter your Facebook / Google account email address...",
+          "disabled": false,
+          "size": "555x41",
+          "fixed": false
+        },
+        {
+          "n": 15,
+          "kind": "dropdown",
+          "name": "Deletion scope",
+          "disabled": false,
+          "size": "304x41",
+          "fixed": false
+        },
+        {
+          "n": 16,
+          "kind": "button",
+          "name": "Request Data Deletion",
+          "disabled": false,
+          "size": "189x41",
+          "fixed": false
+        },
+        {
+          "n": 17,
+          "kind": "link",
+          "name": "Reserve Your Stay Now",
+          "href": "/#booking",
+          "disabled": false,
+          "size": "200x43",
+          "fixed": false
+        },
+        {
+          "n": 18,
+          "kind": "link",
+          "name": "Home",
+          "href": "/",
+          "disabled": false,
+          "size": "40x26",
+          "fixed": false
+        },
+        {
+          "n": 19,
+          "kind": "link",
+          "name": "Rooms & Cottages",
+          "href": "/rooms",
+          "disabled": false,
+          "size": "124x26",
+          "fixed": false
+        },
+        {
+          "n": 20,
+          "kind": "link",
+          "name": "Guest Dashboard",
+          "href": "/client/bookings",
+          "disabled": false,
+          "size": "116x26",
+          "fixed": false
+        },
+        {
+          "n": 21,
+          "kind": "link",
+          "name": "Policies & 50% Deposit",
+          "href": "/policy",
+          "disabled": false,
+          "size": "156x26",
+          "fixed": false
+        },
+        {
+          "n": 22,
+          "kind": "link",
+          "name": "User Data Deletion",
+          "href": "/data-deletion",
+          "disabled": false,
+          "size": "124x26",
+          "fixed": false
+        },
+        {
+          "n": 23,
+          "kind": "button",
+          "name": "Open 24/7 Resort Concierge Chat",
+          "disabled": false,
+          "size": "52x52",
+          "fixed": true
+        }
+      ]
+    },
+    {
+      "name": "06-rules",
+      "path": "/rules",
+      "view": "desktop 1440x900",
+      "file": "06-rules.jpg",
+      "finalUrl": "/rules",
+      "title": "Rock View Beach Resort · Bolinao, Pangasinan · Room Reservations",
+      "height": 4443,
+      "actionResults": [],
+      "items": [
+        {
+          "n": 1,
+          "kind": "link",
+          "name": "Back to Resort",
+          "href": "/",
+          "disabled": false,
+          "size": "148x40",
+          "fixed": true
+        },
+        {
+          "n": 2,
+          "kind": "link",
+          "name": "Book a Stay",
+          "href": "/#booking",
+          "disabled": false,
+          "size": "131x38",
+          "fixed": true
+        },
+        {
+          "n": 3,
+          "kind": "button",
+          "name": "50% Downpayment",
+          "disabled": false,
+          "size": "174x34",
+          "fixed": false
+        },
+        {
+          "n": 4,
+          "kind": "button",
+          "name": "Check-in / Check-out",
+          "disabled": false,
+          "size": "185x34",
+          "fixed": false
+        },
+        {
+          "n": 5,
+          "kind": "button",
+          "name": "Cancellation & Weather",
+          "disabled": false,
+          "size": "195x34",
+          "fixed": false
+        },
+        {
+          "n": 6,
+          "kind": "button",
+          "name": "House Rules & Quiet Hours",
+          "disabled": false,
+          "size": "208x34",
+          "fixed": false
+        },
+        {
+          "n": 7,
+          "kind": "button",
+          "name": "Pool & Beachfront",
+          "disabled": false,
+          "size": "162x34",
+          "fixed": false
+        },
+        {
+          "n": 8,
+          "kind": "button",
+          "name": "Dining & Zero Corkage",
+          "disabled": false,
+          "size": "184x34",
+          "fixed": false
+        },
+        {
+          "n": 9,
+          "kind": "button",
+          "name": "Pet Policy",
+          "disabled": false,
+          "size": "109x34",
+          "fixed": false
+        },
+        {
+          "n": 10,
+          "kind": "button",
+          "name": "Power, Wi-Fi & Safety",
+          "disabled": false,
+          "size": "182x34",
+          "fixed": false
+        },
+        {
+          "n": 11,
+          "kind": "button",
+          "name": "User Data Deletion",
+          "disabled": false,
+          "size": "165x34",
+          "fixed": false
+        },
+        {
+          "n": 12,
+          "kind": "link",
+          "name": "Resident Guest Portal",
+          "href": "/client/login",
+          "disabled": false,
+          "size": "138x17",
+          "fixed": false
+        },
+        {
+          "n": 13,
+          "kind": "form",
+          "name": "",
+          "disabled": false,
+          "size": "1068x41",
+          "fixed": false
+        },
+        {
+          "n": 14,
+          "kind": "field",
+          "name": "Enter your Facebook / Google account email address...",
+          "disabled": false,
+          "size": "555x41",
+          "fixed": false
+        },
+        {
+          "n": 15,
+          "kind": "dropdown",
+          "name": "Deletion scope",
+          "disabled": false,
+          "size": "304x41",
+          "fixed": false
+        },
+        {
+          "n": 16,
+          "kind": "button",
+          "name": "Request Data Deletion",
+          "disabled": false,
+          "size": "189x41",
+          "fixed": false
+        },
+        {
+          "n": 17,
+          "kind": "link",
+          "name": "Reserve Your Stay Now",
+          "href": "/#booking",
+          "disabled": false,
+          "size": "200x43",
+          "fixed": false
+        },
+        {
+          "n": 18,
+          "kind": "link",
+          "name": "Home",
+          "href": "/",
+          "disabled": false,
+          "size": "40x26",
+          "fixed": false
+        },
+        {
+          "n": 19,
+          "kind": "link",
+          "name": "Rooms & Cottages",
+          "href": "/rooms",
+          "disabled": false,
+          "size": "124x26",
+          "fixed": false
+        },
+        {
+          "n": 20,
+          "kind": "link",
+          "name": "Guest Dashboard",
+          "href": "/client/bookings",
+          "disabled": false,
+          "size": "116x26",
+          "fixed": false
+        },
+        {
+          "n": 21,
+          "kind": "link",
+          "name": "Policies & 50% Deposit",
+          "href": "/policy",
+          "disabled": false,
+          "size": "156x26",
+          "fixed": false
+        },
+        {
+          "n": 22,
+          "kind": "link",
+          "name": "User Data Deletion",
+          "href": "/data-deletion",
+          "disabled": false,
+          "size": "124x26",
+          "fixed": false
+        },
+        {
+          "n": 23,
+          "kind": "button",
+          "name": "Open 24/7 Resort Concierge Chat",
+          "disabled": false,
+          "size": "52x52",
+          "fixed": true
+        }
+      ]
+    },
+    {
+      "name": "07-privacy",
+      "path": "/privacy",
+      "view": "desktop 1440x900",
+      "file": "07-privacy.jpg",
+      "finalUrl": "/privacy",
+      "title": "Rock View Beach Resort · Bolinao, Pangasinan · Room Reservations",
+      "height": 4443,
+      "actionResults": [],
+      "items": [
+        {
+          "n": 1,
+          "kind": "link",
+          "name": "Back to Resort",
+          "href": "/",
+          "disabled": false,
+          "size": "148x40",
+          "fixed": true
+        },
+        {
+          "n": 2,
+          "kind": "link",
+          "name": "Book a Stay",
+          "href": "/#booking",
+          "disabled": false,
+          "size": "131x38",
+          "fixed": true
+        },
+        {
+          "n": 3,
+          "kind": "button",
+          "name": "50% Downpayment",
+          "disabled": false,
+          "size": "174x34",
+          "fixed": false
+        },
+        {
+          "n": 4,
+          "kind": "button",
+          "name": "Check-in / Check-out",
+          "disabled": false,
+          "size": "185x34",
+          "fixed": false
+        },
+        {
+          "n": 5,
+          "kind": "button",
+          "name": "Cancellation & Weather",
+          "disabled": false,
+          "size": "195x34",
+          "fixed": false
+        },
+        {
+          "n": 6,
+          "kind": "button",
+          "name": "House Rules & Quiet Hours",
+          "disabled": false,
+          "size": "208x34",
+          "fixed": false
+        },
+        {
+          "n": 7,
+          "kind": "button",
+          "name": "Pool & Beachfront",
+          "disabled": false,
+          "size": "162x34",
+          "fixed": false
+        },
+        {
+          "n": 8,
+          "kind": "button",
+          "name": "Dining & Zero Corkage",
+          "disabled": false,
+          "size": "184x34",
+          "fixed": false
+        },
+        {
+          "n": 9,
+          "kind": "button",
+          "name": "Pet Policy",
+          "disabled": false,
+          "size": "109x34",
+          "fixed": false
+        },
+        {
+          "n": 10,
+          "kind": "button",
+          "name": "Power, Wi-Fi & Safety",
+          "disabled": false,
+          "size": "182x34",
+          "fixed": false
+        },
+        {
+          "n": 11,
+          "kind": "button",
+          "name": "User Data Deletion",
+          "disabled": false,
+          "size": "165x34",
+          "fixed": false
+        },
+        {
+          "n": 12,
+          "kind": "link",
+          "name": "Resident Guest Portal",
+          "href": "/client/login",
+          "disabled": false,
+          "size": "138x17",
+          "fixed": false
+        },
+        {
+          "n": 13,
+          "kind": "form",
+          "name": "",
+          "disabled": false,
+          "size": "1068x41",
+          "fixed": false
+        },
+        {
+          "n": 14,
+          "kind": "field",
+          "name": "Enter your Facebook / Google account email address...",
+          "disabled": false,
+          "size": "555x41",
+          "fixed": false
+        },
+        {
+          "n": 15,
+          "kind": "dropdown",
+          "name": "Deletion scope",
+          "disabled": false,
+          "size": "304x41",
+          "fixed": false
+        },
+        {
+          "n": 16,
+          "kind": "button",
+          "name": "Request Data Deletion",
+          "disabled": false,
+          "size": "189x41",
+          "fixed": false
+        },
+        {
+          "n": 17,
+          "kind": "link",
+          "name": "Reserve Your Stay Now",
+          "href": "/#booking",
+          "disabled": false,
+          "size": "200x43",
+          "fixed": false
+        },
+        {
+          "n": 18,
+          "kind": "link",
+          "name": "Home",
+          "href": "/",
+          "disabled": false,
+          "size": "40x26",
+          "fixed": false
+        },
+        {
+          "n": 19,
+          "kind": "link",
+          "name": "Rooms & Cottages",
+          "href": "/rooms",
+          "disabled": false,
+          "size": "124x26",
+          "fixed": false
+        },
+        {
+          "n": 20,
+          "kind": "link",
+          "name": "Guest Dashboard",
+          "href": "/client/bookings",
+          "disabled": false,
+          "size": "116x26",
+          "fixed": false
+        },
+        {
+          "n": 21,
+          "kind": "link",
+          "name": "Policies & 50% Deposit",
+          "href": "/policy",
+          "disabled": false,
+          "size": "156x26",
+          "fixed": false
+        },
+        {
+          "n": 22,
+          "kind": "link",
+          "name": "User Data Deletion",
+          "href": "/data-deletion",
+          "disabled": false,
+          "size": "124x26",
+          "fixed": false
+        },
+        {
+          "n": 23,
+          "kind": "button",
+          "name": "Open 24/7 Resort Concierge Chat",
+          "disabled": false,
+          "size": "52x52",
+          "fixed": true
+        }
+      ]
+    },
+    {
+      "name": "08-data-deletion",
+      "path": "/data-deletion",
+      "view": "desktop 1440x900",
+      "file": "08-data-deletion.jpg",
+      "finalUrl": "/data-deletion",
+      "title": "Rock View Beach Resort · Bolinao, Pangasinan · Room Reservations",
+      "height": 4443,
+      "actionResults": [],
+      "items": [
+        {
+          "n": 1,
+          "kind": "link",
+          "name": "Back to Resort",
+          "href": "/",
+          "disabled": false,
+          "size": "148x40",
+          "fixed": true
+        },
+        {
+          "n": 2,
+          "kind": "link",
+          "name": "Book a Stay",
+          "href": "/#booking",
+          "disabled": false,
+          "size": "131x38",
+          "fixed": true
+        },
+        {
+          "n": 3,
+          "kind": "button",
+          "name": "50% Downpayment",
+          "disabled": false,
+          "size": "174x34",
+          "fixed": false
+        },
+        {
+          "n": 4,
+          "kind": "button",
+          "name": "Check-in / Check-out",
+          "disabled": false,
+          "size": "185x34",
+          "fixed": false
+        },
+        {
+          "n": 5,
+          "kind": "button",
+          "name": "Cancellation & Weather",
+          "disabled": false,
+          "size": "195x34",
+          "fixed": false
+        },
+        {
+          "n": 6,
+          "kind": "button",
+          "name": "House Rules & Quiet Hours",
+          "disabled": false,
+          "size": "208x34",
+          "fixed": false
+        },
+        {
+          "n": 7,
+          "kind": "button",
+          "name": "Pool & Beachfront",
+          "disabled": false,
+          "size": "162x34",
+          "fixed": false
+        },
+        {
+          "n": 8,
+          "kind": "button",
+          "name": "Dining & Zero Corkage",
+          "disabled": false,
+          "size": "184x34",
+          "fixed": false
+        },
+        {
+          "n": 9,
+          "kind": "button",
+          "name": "Pet Policy",
+          "disabled": false,
+          "size": "109x34",
+          "fixed": false
+        },
+        {
+          "n": 10,
+          "kind": "button",
+          "name": "Power, Wi-Fi & Safety",
+          "disabled": false,
+          "size": "182x34",
+          "fixed": false
+        },
+        {
+          "n": 11,
+          "kind": "button",
+          "name": "User Data Deletion",
+          "disabled": false,
+          "size": "165x34",
+          "fixed": false
+        },
+        {
+          "n": 12,
+          "kind": "link",
+          "name": "Resident Guest Portal",
+          "href": "/client/login",
+          "disabled": false,
+          "size": "138x17",
+          "fixed": false
+        },
+        {
+          "n": 13,
+          "kind": "form",
+          "name": "",
+          "disabled": false,
+          "size": "1068x41",
+          "fixed": false
+        },
+        {
+          "n": 14,
+          "kind": "field",
+          "name": "Enter your Facebook / Google account email address...",
+          "disabled": false,
+          "size": "555x41",
+          "fixed": false
+        },
+        {
+          "n": 15,
+          "kind": "dropdown",
+          "name": "Deletion scope",
+          "disabled": false,
+          "size": "304x41",
+          "fixed": false
+        },
+        {
+          "n": 16,
+          "kind": "button",
+          "name": "Request Data Deletion",
+          "disabled": false,
+          "size": "189x41",
+          "fixed": false
+        },
+        {
+          "n": 17,
+          "kind": "link",
+          "name": "Reserve Your Stay Now",
+          "href": "/#booking",
+          "disabled": false,
+          "size": "200x43",
+          "fixed": false
+        },
+        {
+          "n": 18,
+          "kind": "link",
+          "name": "Home",
+          "href": "/",
+          "disabled": false,
+          "size": "40x26",
+          "fixed": false
+        },
+        {
+          "n": 19,
+          "kind": "link",
+          "name": "Rooms & Cottages",
+          "href": "/rooms",
+          "disabled": false,
+          "size": "124x26",
+          "fixed": false
+        },
+        {
+          "n": 20,
+          "kind": "link",
+          "name": "Guest Dashboard",
+          "href": "/client/bookings",
+          "disabled": false,
+          "size": "116x26",
+          "fixed": false
+        },
+        {
+          "n": 21,
+          "kind": "link",
+          "name": "Policies & 50% Deposit",
+          "href": "/policy",
+          "disabled": false,
+          "size": "156x26",
+          "fixed": false
+        },
+        {
+          "n": 22,
+          "kind": "link",
+          "name": "User Data Deletion",
+          "href": "/data-deletion",
+          "disabled": false,
+          "size": "124x26",
+          "fixed": false
+        },
+        {
+          "n": 23,
+          "kind": "button",
+          "name": "Open 24/7 Resort Concierge Chat",
+          "disabled": false,
+          "size": "52x52",
+          "fixed": true
+        }
+      ]
+    },
+    {
+      "name": "09-guest-login",
+      "path": "/client/login",
+      "view": "desktop 1440x900",
+      "file": "09-guest-login.jpg",
+      "finalUrl": "/client/login",
+      "title": "Rock View Beach Resort · Bolinao, Pangasinan · Room Reservations",
+      "height": 900,
+      "actionResults": [],
+      "items": [
+        {
+          "n": 1,
+          "kind": "button",
+          "name": "Sign In",
+          "disabled": false,
+          "size": "197x35",
+          "fixed": false
+        },
+        {
+          "n": 2,
+          "kind": "button",
+          "name": "Create Account",
+          "disabled": false,
+          "size": "195x35",
+          "fixed": false
+        },
+        {
+          "n": 3,
+          "kind": "button",
+          "name": "Google",
+          "disabled": false,
+          "size": "197x42",
+          "fixed": false
+        },
+        {
+          "n": 4,
+          "kind": "button",
+          "name": "Facebook",
+          "disabled": false,
+          "size": "197x42",
+          "fixed": false
+        },
+        {
+          "n": 5,
+          "kind": "form",
+          "name": "",
+          "disabled": false,
+          "size": "406x235",
+          "fixed": false
+        },
+        {
+          "n": 6,
+          "kind": "field",
+          "name": "EMAIL ADDRESS",
+          "disabled": false,
+          "size": "406x42",
+          "fixed": false
+        },
+        {
+          "n": 7,
+          "kind": "field",
+          "name": "PASSWORD",
+          "disabled": false,
+          "size": "406x42",
+          "fixed": false
+        },
+        {
+          "n": 8,
+          "kind": "button",
+          "name": "Show password",
+          "disabled": false,
+          "size": "28x30",
+          "fixed": false
+        },
+        {
+          "n": 9,
+          "kind": "button",
+          "name": "Forgot account or password?",
+          "disabled": false,
+          "size": "177x16",
+          "fixed": false
+        },
+        {
+          "n": 10,
+          "kind": "button",
+          "name": "SIGN IN TO RESIDENT GUEST PORTAL",
+          "disabled": false,
+          "size": "406x44",
+          "fixed": false
+        },
+        {
+          "n": 11,
+          "kind": "link",
+          "name": "Return to Public Guest Website",
+          "href": "/",
+          "disabled": false,
+          "size": "209x20",
+          "fixed": false
+        },
+        {
+          "n": 12,
+          "kind": "button",
+          "name": "Open 24/7 Resort Concierge Chat",
+          "disabled": false,
+          "size": "52x52",
+          "fixed": true
+        }
+      ]
+    },
+    {
+      "name": "10-guest-create-account",
+      "path": "/client/login",
+      "view": "desktop 1440x900",
+      "actions": [
+        {
+          "clickText": "Create Account",
+          "exact": true
+        }
+      ],
+      "file": "10-guest-create-account.jpg",
+      "finalUrl": "/client/login",
+      "title": "Rock View Beach Resort · Bolinao, Pangasinan · Room Reservations",
+      "height": 980,
+      "actionResults": [
+        {
+          "action": {
+            "clickText": "Create Account",
+            "exact": true
+          },
+          "ok": true
+        }
+      ],
+      "items": [
+        {
+          "n": 1,
+          "kind": "button",
+          "name": "Sign In",
+          "disabled": false,
+          "size": "195x35",
+          "fixed": false
+        },
+        {
+          "n": 2,
+          "kind": "button",
+          "name": "Create Account",
+          "disabled": false,
+          "size": "197x35",
+          "fixed": false
+        },
+        {
+          "n": 3,
+          "kind": "button",
+          "name": "Google",
+          "disabled": false,
+          "size": "197x42",
+          "fixed": false
+        },
+        {
+          "n": 4,
+          "kind": "button",
+          "name": "Facebook",
+          "disabled": false,
+          "size": "197x42",
+          "fixed": false
+        },
+        {
+          "n": 5,
+          "kind": "form",
+          "name": "",
+          "disabled": false,
+          "size": "406x410",
+          "fixed": false
+        },
+        {
+          "n": 6,
+          "kind": "field",
+          "name": "FIRST NAME",
+          "disabled": false,
+          "size": "198x42",
+          "fixed": false
+        },
+        {
+          "n": 7,
+          "kind": "field",
+          "name": "LAST NAME",
+          "disabled": false,
+          "size": "198x42",
+          "fixed": false
+        },
+        {
+          "n": 8,
+          "kind": "field",
+          "name": "MOBILE PHONE (11 DIGITS, 09XXXXXXXXX)",
+          "disabled": false,
+          "size": "406x42",
+          "fixed": false
+        },
+        {
+          "n": 9,
+          "kind": "field",
+          "name": "EMAIL ADDRESS",
+          "disabled": false,
+          "size": "406x42",
+          "fixed": false
+        },
+        {
+          "n": 10,
+          "kind": "field",
+          "name": "PASSWORD (MIN 8 CHARACTERS WITH LETTERS & NUMBERS)",
+          "disabled": false,
+          "size": "406x42",
+          "fixed": false
+        },
+        {
+          "n": 11,
+          "kind": "button",
+          "name": "Show password",
+          "disabled": false,
+          "size": "28x30",
+          "fixed": false
+        },
+        {
+          "n": 12,
+          "kind": "checkbox",
+          "name": "I agree to the Resort Terms of Stay and Privacy Policy.",
+          "disabled": false,
+          "size": "16x16",
+          "fixed": false
+        },
+        {
+          "n": 13,
+          "kind": "button",
+          "name": "CREATE RESIDENT ACCOUNT",
+          "disabled": false,
+          "size": "406x44",
+          "fixed": false
+        },
+        {
+          "n": 14,
+          "kind": "link",
+          "name": "Return to Public Guest Website",
+          "href": "/",
+          "disabled": false,
+          "size": "209x20",
+          "fixed": false
+        },
+        {
+          "n": 15,
+          "kind": "button",
+          "name": "Open 24/7 Resort Concierge Chat",
+          "disabled": false,
+          "size": "52x52",
+          "fixed": true
+        }
+      ]
+    },
+    {
+      "name": "11-guest-forgot-password",
+      "path": "/client/login",
+      "view": "desktop 1440x900",
+      "actions": [
+        {
+          "clickText": "Forgot account or password?"
+        }
+      ],
+      "file": "11-guest-forgot-password.jpg",
+      "finalUrl": "/client/login",
+      "title": "Rock View Beach Resort · Bolinao, Pangasinan · Room Reservations",
+      "height": 900,
+      "actionResults": [
+        {
+          "action": {
+            "clickText": "Forgot account or password?"
+          },
+          "ok": true
+        }
+      ],
+      "items": [
+        {
+          "n": 1,
+          "kind": "button",
+          "name": "Back to Sign In",
+          "disabled": false,
+          "size": "105x16",
+          "fixed": false
+        },
+        {
+          "n": 2,
+          "kind": "form",
+          "name": "",
+          "disabled": false,
+          "size": "406x122",
+          "fixed": false
+        },
+        {
+          "n": 3,
+          "kind": "field",
+          "name": "REGISTERED EMAIL ADDRESS",
+          "disabled": false,
+          "size": "406x42",
+          "fixed": false
+        },
+        {
+          "n": 4,
+          "kind": "button",
+          "name": "SEND RECOVERY CODE",
+          "disabled": false,
+          "size": "406x44",
+          "fixed": false
+        },
+        {
+          "n": 5,
+          "kind": "link",
+          "name": "Return to Public Guest Website",
+          "href": "/",
+          "disabled": false,
+          "size": "209x20",
+          "fixed": false
+        },
+        {
+          "n": 6,
+          "kind": "button",
+          "name": "Open 24/7 Resort Concierge Chat",
+          "disabled": false,
+          "size": "52x52",
+          "fixed": true
+        }
+      ]
+    },
+    {
+      "name": "12-staff-login",
+      "path": "/staff/login",
+      "view": "desktop 1440x900",
+      "file": "12-staff-login.jpg",
+      "finalUrl": "/staff/login",
+      "title": "Rock View Beach Resort · Bolinao, Pangasinan · Room Reservations",
+      "height": 900,
+      "actionResults": [],
+      "items": [
+        {
+          "n": 1,
+          "kind": "form",
+          "name": "",
+          "disabled": false,
+          "size": "414x229",
+          "fixed": false
+        },
+        {
+          "n": 2,
+          "kind": "field",
+          "name": "EMPLOYEE EMAIL / ID",
+          "disabled": false,
+          "size": "414x46",
+          "fixed": false
+        },
+        {
+          "n": 3,
+          "kind": "field",
+          "name": "PASSWORD",
+          "disabled": false,
+          "size": "414x46",
+          "fixed": false
+        },
+        {
+          "n": 4,
+          "kind": "button",
+          "name": "Show password",
+          "disabled": false,
+          "size": "24x23",
+          "fixed": false
+        },
+        {
+          "n": 5,
+          "kind": "button",
+          "name": "SIGN IN TO STAFF PORTAL",
+          "disabled": false,
+          "size": "414x45",
+          "fixed": false
+        },
+        {
+          "n": 6,
+          "kind": "link",
+          "name": "← Return to Guest Portal",
+          "href": "/",
+          "disabled": false,
+          "size": "150x20",
+          "fixed": false
+        }
+      ]
+    },
+    {
+      "name": "13-staff-forgot-password",
+      "path": "/staff/login",
+      "view": "desktop 1440x900",
+      "actions": [
+        {
+          "clickText": "Forgot"
+        }
+      ],
+      "file": "13-staff-forgot-password.jpg",
+      "finalUrl": "/staff/login",
+      "title": "Rock View Beach Resort · Bolinao, Pangasinan · Room Reservations",
+      "height": 900,
+      "actionResults": [
+        {
+          "action": {
+            "clickText": "Forgot"
+          },
+          "ok": false
+        }
+      ],
+      "items": [
+        {
+          "n": 1,
+          "kind": "form",
+          "name": "",
+          "disabled": false,
+          "size": "414x229",
+          "fixed": false
+        },
+        {
+          "n": 2,
+          "kind": "field",
+          "name": "EMPLOYEE EMAIL / ID",
+          "disabled": false,
+          "size": "414x46",
+          "fixed": false
+        },
+        {
+          "n": 3,
+          "kind": "field",
+          "name": "PASSWORD",
+          "disabled": false,
+          "size": "414x46",
+          "fixed": false
+        },
+        {
+          "n": 4,
+          "kind": "button",
+          "name": "Show password",
+          "disabled": false,
+          "size": "24x23",
+          "fixed": false
+        },
+        {
+          "n": 5,
+          "kind": "button",
+          "name": "SIGN IN TO STAFF PORTAL",
+          "disabled": false,
+          "size": "414x45",
+          "fixed": false
+        },
+        {
+          "n": 6,
+          "kind": "link",
+          "name": "← Return to Guest Portal",
+          "href": "/",
+          "disabled": false,
+          "size": "150x20",
+          "fixed": false
+        }
+      ]
+    },
+    {
+      "name": "14-admin-login",
+      "path": "/admin",
+      "view": "desktop 1440x900",
+      "file": "14-admin-login.jpg",
+      "finalUrl": "/admin",
+      "title": "Rock View Beach Resort · Bolinao, Pangasinan · Room Reservations",
+      "height": 900,
+      "actionResults": [],
+      "items": [
+        {
+          "n": 1,
+          "kind": "form",
+          "name": "",
+          "disabled": false,
+          "size": "414x247",
+          "fixed": false
+        },
+        {
+          "n": 2,
+          "kind": "field",
+          "name": "e.g. jjd001.administrator@rockview.ph",
+          "disabled": false,
+          "size": "414x44",
+          "fixed": false
+        },
+        {
+          "n": 3,
+          "kind": "field",
+          "name": "••••••••",
+          "disabled": false,
+          "size": "414x44",
+          "fixed": false
+        },
+        {
+          "n": 4,
+          "kind": "button",
+          "name": "Forgot password? Reset via OTP",
+          "disabled": false,
+          "size": "189x16",
+          "fixed": false
+        },
+        {
+          "n": 5,
+          "kind": "button",
+          "name": "SIGN IN TO PORTAL",
+          "disabled": false,
+          "size": "414x45",
+          "fixed": false
+        },
+        {
+          "n": 6,
+          "kind": "link",
+          "name": "Go to Staff Station Login (/staff/login) →",
+          "href": "/staff/login",
+          "disabled": false,
+          "size": "231x15",
+          "fixed": false
+        },
+        {
+          "n": 7,
+          "kind": "link",
+          "name": "← Return to Guest Homepage",
+          "href": "/",
+          "disabled": false,
+          "size": "182x16",
+          "fixed": false
+        }
+      ]
+    },
+    {
+      "name": "15-recovery",
+      "path": "/recovery",
+      "view": "desktop 1440x900",
+      "file": "15-recovery.jpg",
+      "finalUrl": "/recovery",
+      "title": "Rock View Beach Resort · Bolinao, Pangasinan · Room Reservations",
+      "height": 901,
+      "actionResults": [],
+      "items": [
+        {
+          "n": 1,
+          "kind": "link",
+          "name": "SPECIALIZED RESOLUTION & RESTORATION /recovery Incident & Escalation Portal",
+          "href": "/recovery",
+          "disabled": false,
+          "size": "435x42",
+          "fixed": true
+        },
+        {
+          "n": 2,
+          "kind": "link",
+          "name": "Resolution Console",
+          "href": "/recovery",
+          "disabled": false,
+          "size": "172x36",
+          "fixed": true
+        },
+        {
+          "n": 3,
+          "kind": "link",
+          "name": "Flagged & Disputed Queue",
+          "href": "/recovery/cases",
+          "disabled": false,
+          "size": "221x36",
+          "fixed": true
+        },
+        {
+          "n": 4,
+          "kind": "link",
+          "name": "Escalation Logs",
+          "href": "/recovery/audit",
+          "disabled": false,
+          "size": "149x36",
+          "fixed": true
+        },
+        {
+          "n": 5,
+          "kind": "link",
+          "name": "Sign In",
+          "href": "/admin/login",
+          "disabled": false,
+          "size": "83x33",
+          "fixed": true
+        },
+        {
+          "n": 6,
+          "kind": "button",
+          "name": "SIGN IN TO ACCOUNT",
+          "disabled": false,
+          "size": "241x38",
+          "fixed": false
+        },
+        {
+          "n": 7,
+          "kind": "button",
+          "name": "Disputed Reservations (0)",
+          "disabled": false,
+          "size": "220x35",
+          "fixed": false
+        },
+        {
+          "n": 8,
+          "kind": "button",
+          "name": "Escalation Audit Trail (0)",
+          "disabled": false,
+          "size": "205x35",
+          "fixed": false
+        }
+      ]
+    },
+    {
+      "name": "16-mobile-home",
+      "path": "/",
+      "view": "mobile 390x844",
+      "file": "16-mobile-home.jpg",
+      "finalUrl": "/",
+      "title": "Rock View Beach Resort · Bolinao, Pangasinan · Room Reservations",
+      "height": 6454,
+      "actionResults": [],
+      "items": [
+        {
+          "n": 1,
+          "kind": "link",
+          "name": "Rock View Beach Resort",
+          "href": "/",
+          "disabled": false,
+          "size": "143x41",
+          "fixed": true
+        },
+        {
+          "n": 2,
+          "kind": "link",
+          "name": "SIGN IN",
+          "href": "/client/login",
+          "disabled": false,
+          "size": "118x36",
+          "fixed": true
+        },
+        {
+          "n": 3,
+          "kind": "link",
+          "name": "Already have an account? Sign in →",
+          "href": "/client/login",
+          "disabled": false,
+          "size": "210x16",
+          "fixed": false
+        },
+        {
+          "n": 4,
+          "kind": "button",
+          "name": "Scroll accommodations left",
+          "disabled": false,
+          "size": "40x40",
+          "fixed": false
+        },
+        {
+          "n": 5,
+          "kind": "button",
+          "name": "Scroll accommodations right",
+          "disabled": false,
+          "size": "40x40",
+          "fixed": false
+        },
+        {
+          "n": 6,
+          "kind": "link",
+          "name": "Open in Google Maps ↗",
+          "href": "https://www.google.com/maps/search/?api=1&query=Rock+View+Beach+Resort,+Patar+Road,+Bolinao,+Pangasinan",
+          "disabled": false,
+          "size": "358x16",
+          "fixed": false
+        },
+        {
+          "n": 7,
+          "kind": "link",
+          "name": "Open in Google Maps",
+          "href": "https://www.google.com/maps/search/?api=1&query=Rock+View+Beach+Resort,+Patar+Road,+Bolinao,+Pangasinan",
+          "disabled": false,
+          "size": "160x38",
+          "fixed": false
+        },
+        {
+          "n": 8,
+          "kind": "link",
+          "name": "Get directions",
+          "href": "https://www.google.com/maps/dir/?api=1&destination=Rock+View+Beach+Resort,+Patar+Road,+Bolinao,+Pangasinan",
+          "disabled": false,
+          "size": "120x38",
+          "fixed": false
+        },
+        {
+          "n": 9,
+          "kind": "button",
+          "name": "What is the reservation deposit requirement? +",
+          "disabled": false,
+          "size": "348x96",
+          "fixed": false
+        },
+        {
+          "n": 10,
+          "kind": "button",
+          "name": "What are your check-in and check-out times? +",
+          "disabled": false,
+          "size": "348x96",
+          "fixed": false
+        },
+        {
+          "n": 11,
+          "kind": "button",
+          "name": "Can we bring our own food or cook on site? +",
+          "disabled": false,
+          "size": "348x96",
+          "fixed": false
+        },
+        {
+          "n": 12,
+          "kind": "button",
+          "name": "Is Patar beach swimmable and child-friendly? +",
+          "disabled": false,
+          "size": "348x96",
+          "fixed": false
+        },
+        {
+          "n": 13,
+          "kind": "button",
+          "name": "What is your cancellation and refund policy? +",
+          "disabled": false,
+          "size": "348x96",
+          "fixed": false
+        },
+        {
+          "n": 14,
+          "kind": "link",
+          "name": "Instagram",
+          "href": "https://www.instagram.com/rockviewbeachresort",
+          "disabled": false,
+          "size": "66x22",
+          "fixed": false
+        },
+        {
+          "n": 15,
+          "kind": "link",
+          "name": "Facebook",
+          "href": "https://www.facebook.com/rockviewbeachresort",
+          "disabled": false,
+          "size": "67x22",
+          "fixed": false
+        },
+        {
+          "n": 16,
+          "kind": "link",
+          "name": "TikTok",
+          "href": "https://www.tiktok.com/@rockviewbeachresort",
+          "disabled": false,
+          "size": "41x22",
+          "fixed": false
+        },
+        {
+          "n": 17,
+          "kind": "link",
+          "name": "50% Downpayment Policy & Rules",
+          "href": "/policy",
+          "disabled": false,
+          "size": "225x22",
+          "fixed": false
+        },
+        {
+          "n": 18,
+          "kind": "link",
+          "name": "Cancellation & Rebooking",
+          "href": "/policy#cancellation",
+          "disabled": false,
+          "size": "171x22",
+          "fixed": false
+        },
+        {
+          "n": 19,
+          "kind": "link",
+          "name": "Resort House Guidelines",
+          "href": "/policy#house-rules",
+          "disabled": false,
+          "size": "162x22",
+          "fixed": false
+        },
+        {
+          "n": 20,
+          "kind": "link",
+          "name": "Privacy & Terms",
+          "href": "/policy#privacy",
+          "disabled": false,
+          "size": "102x22",
+          "fixed": false
+        },
+        {
+          "n": 21,
+          "kind": "button",
+          "name": "Open 24/7 Resort Concierge Chat",
+          "disabled": false,
+          "size": "50x50",
+          "fixed": true
+        }
+      ]
+    },
+    {
+      "name": "17-mobile-home-chat-open",
+      "path": "/",
+      "view": "mobile 390x844",
+      "actions": [
+        {
+          "click": ".chat-fab"
+        }
+      ],
+      "file": "17-mobile-home-chat-open.jpg",
+      "finalUrl": "/",
+      "title": "Rock View Beach Resort · Bolinao, Pangasinan · Room Reservations",
+      "height": 6454,
+      "actionResults": [
+        {
+          "action": {
+            "click": ".chat-fab"
+          },
+          "ok": true
+        }
+      ],
+      "items": [
+        {
+          "n": 1,
+          "kind": "link",
+          "name": "Rock View Beach Resort",
+          "href": "/",
+          "disabled": false,
+          "size": "143x41",
+          "fixed": true
+        },
+        {
+          "n": 2,
+          "kind": "link",
+          "name": "SIGN IN",
+          "href": "/client/login",
+          "disabled": false,
+          "size": "118x36",
+          "fixed": true
+        },
+        {
+          "n": 3,
+          "kind": "link",
+          "name": "Already have an account? Sign in →",
+          "href": "/client/login",
+          "disabled": false,
+          "size": "210x16",
+          "fixed": false
+        },
+        {
+          "n": 4,
+          "kind": "button",
+          "name": "Scroll accommodations left",
+          "disabled": false,
+          "size": "40x40",
+          "fixed": false
+        },
+        {
+          "n": 5,
+          "kind": "button",
+          "name": "Scroll accommodations right",
+          "disabled": false,
+          "size": "40x40",
+          "fixed": false
+        },
+        {
+          "n": 6,
+          "kind": "link",
+          "name": "Open in Google Maps ↗",
+          "href": "https://www.google.com/maps/search/?api=1&query=Rock+View+Beach+Resort,+Patar+Road,+Bolinao,+Pangasinan",
+          "disabled": false,
+          "size": "358x16",
+          "fixed": false
+        },
+        {
+          "n": 7,
+          "kind": "link",
+          "name": "Open in Google Maps",
+          "href": "https://www.google.com/maps/search/?api=1&query=Rock+View+Beach+Resort,+Patar+Road,+Bolinao,+Pangasinan",
+          "disabled": false,
+          "size": "160x38",
+          "fixed": false
+        },
+        {
+          "n": 8,
+          "kind": "link",
+          "name": "Get directions",
+          "href": "https://www.google.com/maps/dir/?api=1&destination=Rock+View+Beach+Resort,+Patar+Road,+Bolinao,+Pangasinan",
+          "disabled": false,
+          "size": "120x38",
+          "fixed": false
+        },
+        {
+          "n": 9,
+          "kind": "button",
+          "name": "What is the reservation deposit requirement? +",
+          "disabled": false,
+          "size": "348x96",
+          "fixed": false
+        },
+        {
+          "n": 10,
+          "kind": "button",
+          "name": "What are your check-in and check-out times? +",
+          "disabled": false,
+          "size": "348x96",
+          "fixed": false
+        },
+        {
+          "n": 11,
+          "kind": "button",
+          "name": "Can we bring our own food or cook on site? +",
+          "disabled": false,
+          "size": "348x96",
+          "fixed": false
+        },
+        {
+          "n": 12,
+          "kind": "button",
+          "name": "Is Patar beach swimmable and child-friendly? +",
+          "disabled": false,
+          "size": "348x96",
+          "fixed": false
+        },
+        {
+          "n": 13,
+          "kind": "button",
+          "name": "What is your cancellation and refund policy? +",
+          "disabled": false,
+          "size": "348x96",
+          "fixed": false
+        },
+        {
+          "n": 14,
+          "kind": "link",
+          "name": "Instagram",
+          "href": "https://www.instagram.com/rockviewbeachresort",
+          "disabled": false,
+          "size": "66x22",
+          "fixed": false
+        },
+        {
+          "n": 15,
+          "kind": "link",
+          "name": "Facebook",
+          "href": "https://www.facebook.com/rockviewbeachresort",
+          "disabled": false,
+          "size": "67x22",
+          "fixed": false
+        },
+        {
+          "n": 16,
+          "kind": "link",
+          "name": "TikTok",
+          "href": "https://www.tiktok.com/@rockviewbeachresort",
+          "disabled": false,
+          "size": "41x22",
+          "fixed": false
+        },
+        {
+          "n": 17,
+          "kind": "link",
+          "name": "50% Downpayment Policy & Rules",
+          "href": "/policy",
+          "disabled": false,
+          "size": "225x22",
+          "fixed": false
+        },
+        {
+          "n": 18,
+          "kind": "link",
+          "name": "Cancellation & Rebooking",
+          "href": "/policy#cancellation",
+          "disabled": false,
+          "size": "171x22",
+          "fixed": false
+        },
+        {
+          "n": 19,
+          "kind": "link",
+          "name": "Resort House Guidelines",
+          "href": "/policy#house-rules",
+          "disabled": false,
+          "size": "162x22",
+          "fixed": false
+        },
+        {
+          "n": 20,
+          "kind": "link",
+          "name": "Privacy & Terms",
+          "href": "/policy#privacy",
+          "disabled": false,
+          "size": "102x22",
+          "fixed": false
+        },
+        {
+          "n": 21,
+          "kind": "button",
+          "name": "Restart chat",
+          "disabled": false,
+          "size": "30x30",
+          "fixed": true
+        },
+        {
+          "n": 22,
+          "kind": "button",
+          "name": "Close chat",
+          "disabled": false,
+          "size": "30x30",
+          "fixed": true
+        },
+        {
+          "n": 23,
+          "kind": "button",
+          "name": "Thumbs up - Helpful",
+          "disabled": false,
+          "size": "29x19",
+          "fixed": true
+        },
+        {
+          "n": 24,
+          "kind": "button",
+          "name": "Thumbs down - Needs improvement",
+          "disabled": false,
+          "size": "29x19",
+          "fixed": true
+        },
+        {
+          "n": 25,
+          "kind": "form",
+          "name": "",
+          "disabled": false,
+          "size": "360x64",
+          "fixed": true
+        },
+        {
+          "n": 26,
+          "kind": "field",
+          "name": "Ask about rooms, rates, amenities, check-in…",
+          "disabled": false,
+          "size": "229x39",
+          "fixed": true
+        },
+        {
+          "n": 27,
+          "kind": "button",
+          "name": "SEND",
+          "disabled": true,
+          "size": "95x38",
+          "fixed": true
+        },
+        {
+          "n": 28,
+          "kind": "button",
+          "name": "Open 24/7 Resort Concierge Chat",
+          "disabled": false,
+          "size": "50x50",
+          "fixed": true
+        }
+      ]
+    },
+    {
+      "name": "18-mobile-guest-login",
+      "path": "/client/login",
+      "view": "mobile 390x844",
+      "file": "18-mobile-guest-login.jpg",
+      "finalUrl": "/client/login",
+      "title": "Rock View Beach Resort · Bolinao, Pangasinan · Room Reservations",
+      "height": 1172,
+      "actionResults": [],
+      "items": [
+        {
+          "n": 1,
+          "kind": "button",
+          "name": "Sign In",
+          "disabled": false,
+          "size": "152x35",
+          "fixed": false
+        },
+        {
+          "n": 2,
+          "kind": "button",
+          "name": "Create Account",
+          "disabled": false,
+          "size": "150x35",
+          "fixed": false
+        },
+        {
+          "n": 3,
+          "kind": "button",
+          "name": "Google",
+          "disabled": false,
+          "size": "316x42",
+          "fixed": false
+        },
+        {
+          "n": 4,
+          "kind": "button",
+          "name": "Facebook",
+          "disabled": false,
+          "size": "316x42",
+          "fixed": false
+        },
+        {
+          "n": 5,
+          "kind": "form",
+          "name": "",
+          "disabled": false,
+          "size": "316x253",
+          "fixed": false
+        },
+        {
+          "n": 6,
+          "kind": "field",
+          "name": "EMAIL ADDRESS",
+          "disabled": false,
+          "size": "316x42",
+          "fixed": false
+        },
+        {
+          "n": 7,
+          "kind": "field",
+          "name": "PASSWORD",
+          "disabled": false,
+          "size": "316x42",
+          "fixed": false
+        },
+        {
+          "n": 8,
+          "kind": "button",
+          "name": "Show password",
+          "disabled": false,
+          "size": "28x30",
+          "fixed": false
+        },
+        {
+          "n": 9,
+          "kind": "button",
+          "name": "Forgot account or password?",
+          "disabled": false,
+          "size": "177x16",
+          "fixed": false
+        },
+        {
+          "n": 10,
+          "kind": "button",
+          "name": "SIGN IN TO RESIDENT GUEST PORTAL",
+          "disabled": false,
+          "size": "316x62",
+          "fixed": false
+        },
+        {
+          "n": 11,
+          "kind": "link",
+          "name": "Return to Public Guest Website",
+          "href": "/",
+          "disabled": false,
+          "size": "209x20",
+          "fixed": false
+        },
+        {
+          "n": 12,
+          "kind": "button",
+          "name": "Open 24/7 Resort Concierge Chat",
+          "disabled": false,
+          "size": "50x50",
+          "fixed": true
+        }
+      ]
+    },
+    {
+      "name": "19-mobile-guest-create-account",
+      "path": "/client/login",
+      "view": "mobile 390x844",
+      "actions": [
+        {
+          "clickText": "Create Account",
+          "exact": true
+        }
+      ],
+      "file": "19-mobile-guest-create-account.jpg",
+      "finalUrl": "/client/login",
+      "title": "Rock View Beach Resort · Bolinao, Pangasinan · Room Reservations",
+      "height": 1382,
+      "actionResults": [
+        {
+          "action": {
+            "clickText": "Create Account",
+            "exact": true
+          },
+          "ok": true
+        }
+      ],
+      "items": [
+        {
+          "n": 1,
+          "kind": "button",
+          "name": "Sign In",
+          "disabled": false,
+          "size": "150x35",
+          "fixed": false
+        },
+        {
+          "n": 2,
+          "kind": "button",
+          "name": "Create Account",
+          "disabled": false,
+          "size": "152x35",
+          "fixed": false
+        },
+        {
+          "n": 3,
+          "kind": "button",
+          "name": "Google",
+          "disabled": false,
+          "size": "316x42",
+          "fixed": false
+        },
+        {
+          "n": 4,
+          "kind": "button",
+          "name": "Facebook",
+          "disabled": false,
+          "size": "316x42",
+          "fixed": false
+        },
+        {
+          "n": 5,
+          "kind": "form",
+          "name": "",
+          "disabled": false,
+          "size": "316x463",
+          "fixed": false
+        },
+        {
+          "n": 6,
+          "kind": "field",
+          "name": "FIRST NAME",
+          "disabled": false,
+          "size": "153x42",
+          "fixed": false
+        },
+        {
+          "n": 7,
+          "kind": "field",
+          "name": "LAST NAME",
+          "disabled": false,
+          "size": "153x42",
+          "fixed": false
+        },
+        {
+          "n": 8,
+          "kind": "field",
+          "name": "MOBILE PHONE (11 DIGITS, 09XXXXXXXXX)",
+          "disabled": false,
+          "size": "316x42",
+          "fixed": false
+        },
+        {
+          "n": 9,
+          "kind": "field",
+          "name": "EMAIL ADDRESS",
+          "disabled": false,
+          "size": "316x42",
+          "fixed": false
+        },
+        {
+          "n": 10,
+          "kind": "field",
+          "name": "PASSWORD (MIN 8 CHARACTERS WITH LETTERS & NUMBERS)",
+          "disabled": false,
+          "size": "316x42",
+          "fixed": false
+        },
+        {
+          "n": 11,
+          "kind": "button",
+          "name": "Show password",
+          "disabled": false,
+          "size": "28x30",
+          "fixed": false
+        },
+        {
+          "n": 12,
+          "kind": "checkbox",
+          "name": "I agree to the Resort Terms of Stay and Privacy Policy.",
+          "disabled": false,
+          "size": "15x16",
+          "fixed": false
+        },
+        {
+          "n": 13,
+          "kind": "button",
+          "name": "CREATE RESIDENT ACCOUNT",
+          "disabled": false,
+          "size": "316x44",
+          "fixed": false
+        },
+        {
+          "n": 14,
+          "kind": "link",
+          "name": "Return to Public Guest Website",
+          "href": "/",
+          "disabled": false,
+          "size": "209x20",
+          "fixed": false
+        },
+        {
+          "n": 15,
+          "kind": "button",
+          "name": "Open 24/7 Resort Concierge Chat",
+          "disabled": false,
+          "size": "50x50",
+          "fixed": true
+        }
+      ]
+    },
+    {
+      "name": "20-mobile-policy",
+      "path": "/policy",
+      "view": "mobile 390x844",
+      "file": "20-mobile-policy.jpg",
+      "finalUrl": "/policy",
+      "title": "Rock View Beach Resort · Bolinao, Pangasinan · Room Reservations",
+      "height": 9227,
+      "actionResults": [],
+      "items": [
+        {
+          "n": 1,
+          "kind": "link",
+          "name": "Back to Resort",
+          "href": "/",
+          "disabled": false,
+          "size": "112x62",
+          "fixed": true
+        },
+        {
+          "n": 2,
+          "kind": "link",
+          "name": "Book a Stay",
+          "href": "/#booking",
+          "disabled": false,
+          "size": "131x38",
+          "fixed": true
+        },
+        {
+          "n": 3,
+          "kind": "button",
+          "name": "50% Downpayment",
+          "disabled": false,
+          "size": "174x34",
+          "fixed": false
+        },
+        {
+          "n": 4,
+          "kind": "button",
+          "name": "Check-in / Check-out",
+          "disabled": false,
+          "size": "185x34",
+          "fixed": false
+        },
+        {
+          "n": 5,
+          "kind": "button",
+          "name": "Cancellation & Weather",
+          "disabled": false,
+          "size": "195x34",
+          "fixed": false
+        },
+        {
+          "n": 6,
+          "kind": "button",
+          "name": "House Rules & Quiet Hours",
+          "disabled": false,
+          "size": "208x34",
+          "fixed": false
+        },
+        {
+          "n": 7,
+          "kind": "button",
+          "name": "Pool & Beachfront",
+          "disabled": false,
+          "size": "162x34",
+          "fixed": false
+        },
+        {
+          "n": 8,
+          "kind": "button",
+          "name": "Dining & Zero Corkage",
+          "disabled": false,
+          "size": "184x34",
+          "fixed": false
+        },
+        {
+          "n": 9,
+          "kind": "button",
+          "name": "Pet Policy",
+          "disabled": false,
+          "size": "109x34",
+          "fixed": false
+        },
+        {
+          "n": 10,
+          "kind": "button",
+          "name": "Power, Wi-Fi & Safety",
+          "disabled": false,
+          "size": "182x34",
+          "fixed": false
+        },
+        {
+          "n": 11,
+          "kind": "button",
+          "name": "User Data Deletion",
+          "disabled": false,
+          "size": "165x34",
+          "fixed": false
+        },
+        {
+          "n": 12,
+          "kind": "link",
+          "name": "Resident Guest Portal",
+          "href": "/client/login",
+          "disabled": false,
+          "size": "138x17",
+          "fixed": false
+        },
+        {
+          "n": 13,
+          "kind": "form",
+          "name": "",
+          "disabled": false,
+          "size": "258x137",
+          "fixed": false
+        },
+        {
+          "n": 14,
+          "kind": "field",
+          "name": "Enter your Facebook / Google account email address...",
+          "disabled": false,
+          "size": "258x39",
+          "fixed": false
+        },
+        {
+          "n": 15,
+          "kind": "dropdown",
+          "name": "Deletion scope",
+          "disabled": false,
+          "size": "304x41",
+          "fixed": false
+        },
+        {
+          "n": 16,
+          "kind": "button",
+          "name": "Request Data Deletion",
+          "disabled": false,
+          "size": "189x37",
+          "fixed": false
+        },
+        {
+          "n": 17,
+          "kind": "link",
+          "name": "Reserve Your Stay Now",
+          "href": "/#booking",
+          "disabled": false,
+          "size": "200x43",
+          "fixed": false
+        },
+        {
+          "n": 18,
+          "kind": "link",
+          "name": "Home",
+          "href": "/",
+          "disabled": false,
+          "size": "40x26",
+          "fixed": false
+        },
+        {
+          "n": 19,
+          "kind": "link",
+          "name": "Rooms & Cottages",
+          "href": "/rooms",
+          "disabled": false,
+          "size": "124x26",
+          "fixed": false
+        },
+        {
+          "n": 20,
+          "kind": "link",
+          "name": "Guest Dashboard",
+          "href": "/client/bookings",
+          "disabled": false,
+          "size": "116x26",
+          "fixed": false
+        },
+        {
+          "n": 21,
+          "kind": "link",
+          "name": "Policies & 50% Deposit",
+          "href": "/policy",
+          "disabled": false,
+          "size": "156x26",
+          "fixed": false
+        },
+        {
+          "n": 22,
+          "kind": "link",
+          "name": "User Data Deletion",
+          "href": "/data-deletion",
+          "disabled": false,
+          "size": "124x26",
+          "fixed": false
+        },
+        {
+          "n": 23,
+          "kind": "button",
+          "name": "Open 24/7 Resort Concierge Chat",
+          "disabled": false,
+          "size": "50x50",
+          "fixed": true
+        }
+      ]
+    }
+  ]
+}
