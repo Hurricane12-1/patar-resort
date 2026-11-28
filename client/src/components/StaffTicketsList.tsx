@@ -124,12 +124,7 @@ export default function StaffTicketsList({ isLightMode, themeBg, themeText, them
         </select>
       </div>
 
-      {loading ? (
-        <p style={{ color: themeMuted, fontSize: '.84rem', margin: '12px 0' }}>Loading tickets…</p>
-      ) : tickets.length === 0 ? (
-        <p style={{ color: themeMuted, fontSize: '.84rem', margin: '12px 0' }}>No tickets for this filter yet.</p>
-      ) : (
-        <div style={{ overflowX: 'auto' }}>
+      <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', color: themeText }}>
             <thead>
               <tr>
@@ -144,7 +139,15 @@ export default function StaffTicketsList({ isLightMode, themeBg, themeText, them
               </tr>
             </thead>
             <tbody>
-              {tickets.map((t) => {
+              {loading ? (
+                <tr>
+                  <td colSpan={8} style={{ ...cell, color: themeMuted }}>Loading tickets…</td>
+                </tr>
+              ) : tickets.length === 0 ? (
+                <tr>
+                  <td colSpan={8} style={{ ...cell, color: themeMuted }}>No tickets for this filter yet.</td>
+                </tr>
+              ) : tickets.map((t) => {
                 const tone = STATUS_TONE[t.status] || STATUS_TONE.closed;
                 return (
                   <tr key={t.id}>
@@ -194,8 +197,7 @@ export default function StaffTicketsList({ isLightMode, themeBg, themeText, them
               })}
             </tbody>
           </table>
-        </div>
-      )}
+      </div>
     </section>
   );
 }
