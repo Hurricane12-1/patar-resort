@@ -917,10 +917,10 @@
 .pms-cell.is-reserved {
   background: repeating-linear-gradient(
     45deg,
-    rgba(244, 63, 94, 0.06),
-    rgba(244, 63, 94, 0.06) 6px,
-    rgba(244, 63, 94, 0.14) 6px,
-    rgba(244, 63, 94, 0.14) 12px
+    rgba(0, 102, 153, 0.06),
+    rgba(0, 102, 153, 0.06) 6px,
+    rgba(0, 102, 153, 0.14) 6px,
+    rgba(0, 102, 153, 0.14) 12px
   );
   cursor: not-allowed;
 }
@@ -928,10 +928,10 @@
 .dark-mode .pms-cell.is-reserved {
   background: repeating-linear-gradient(
     45deg,
-    rgba(244, 63, 94, 0.08),
-    rgba(244, 63, 94, 0.08) 6px,
-    rgba(244, 63, 94, 0.18) 6px,
-    rgba(244, 63, 94, 0.18) 12px
+    rgba(0, 102, 153, 0.08),
+    rgba(0, 102, 153, 0.08) 6px,
+    rgba(0, 102, 153, 0.18) 6px,
+    rgba(0, 102, 153, 0.18) 12px
   );
 }
 
@@ -1627,3 +1627,9 @@
   box-shadow: 0 0 0 2px var(--accent-2);
 }
 
+
+/* Reserved bars are solid blue, so their text is white */
+.pms-stay-pill .pms-stay-time,
+.pms-stay-pill .pms-stay-name {
+  color: #FFFFFF !important;
+}

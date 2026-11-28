@@ -857,7 +857,7 @@ export default function AvailabilityCalendar({
                 <span
                   className="pms-legend-dot reserved"
                   style={{
-                    backgroundColor: '#EF4444',
+                    backgroundColor: '#006699',
                     border: '1.5px solid #DC2626',
                   }}
                 />
@@ -989,8 +989,8 @@ export default function AvailabilityCalendar({
                           style={
                             isReserved
                               ? {
-                                  backgroundColor: isLightMode ? '#FEE2E2' : 'rgba(239, 68, 68, 0.25)',
-                                  borderColor: isLightMode ? '#FCA5A5' : 'rgba(239, 68, 68, 0.45)',
+                                  backgroundColor: isLightMode ? '#E0F2FE' : 'rgba(0, 102, 153, 0.35)',
+                                  borderColor: isLightMode ? '#7DD3FC' : 'rgba(0, 102, 153, 0.6)',
                                   cursor: 'not-allowed',
                                 }
                               : showStayRibbon
@@ -1050,8 +1050,8 @@ export default function AvailabilityCalendar({
                             style={{
                               left,
                               width,
-                              backgroundColor: '#EF4444',
-                              borderColor: '#DC2626',
+                              backgroundColor: '#006699',
+                              borderColor: '#005580',
                               color: '#FFFFFF',
                             }}
                             onClick={(e) => {
@@ -1149,8 +1149,8 @@ export default function AvailabilityCalendar({
                           style={{
                             left,
                             width,
-                            backgroundColor: '#EF4444',
-                            borderColor: '#DC2626',
+                            backgroundColor: '#006699',
+                            borderColor: '#005580',
                             color: '#FFFFFF',
                           }}
                           onClick={(e) => {
