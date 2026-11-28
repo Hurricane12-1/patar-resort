@@ -10,6 +10,19 @@ import { reservationRoomName, roomNameLookup } from '../../lib/reservationRoom';
 
 const MIN_LIST_ROWS = 8;
 
+/** Payment is shown on its own, apart from the stay status. Balance is what is still owed on a booking that is not fully paid. */
+function paymentSummary(b: any): { label: string; bg: string; color: string; balance: number } {
+  const status = String(b.payment_status || 'unpaid').toLowerCase().trim();
+  const total = Number(b.total_php) || 0;
+  const paid = status === 'paid' ? total : status === 'partially_paid' ? Math.min(total, Number(b.downpayment_php) || 0) : 0;
+  const balance = Math.max(0, total - paid);
+  if (status === 'paid') return { label: 'Paid', bg: '#D1FAE5', color: '#065F46', balance: 0 };
+  if (status === 'partially_paid') return { label: 'Partial', bg: '#FEF3C7', color: '#92400E', balance };
+  if (status === 'refund_pending') return { label: 'Refund due', bg: '#FFE4E6', color: '#9F1239', balance: 0 };
+  if (status === 'refunded') return { label: 'Refunded', bg: '#E2E8F0', color: '#334155', balance: 0 };
+  return { label: 'Unpaid', bg: '#FFE4E6', color: '#9F1239', balance };
+}
+
 export interface LedgerViewProps {
   ledgerSubView: 'stay_folios' | 'availability' | 'debit_credit';
   setLedgerSubView: (subView: 'stay_folios' | 'availability' | 'debit_credit') => void;
@@ -1404,6 +1417,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                     <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Party</th>
                     <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Total Amount</th>
                     <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Status</th>
+                    <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Payment</th>
                     <th style={{ color: isLightMode ? '#475569' : themeMuted }}>Actions</th>
                   </tr>
                 </thead>
@@ -1448,6 +1462,21 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                           paymentStatus={b.payment_status}
                           onClick={() => setTimelineBooking(b)}
                         />
+                      </td>
+                      <td>
+                        {(() => {
+                          const pay = paymentSummary(b);
+                          return (
+                            <>
+                              <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 8, fontSize: '.72rem', fontWeight: 800, background: pay.bg, color: pay.color }}>
+                                {pay.label}
+                              </span>
+                              {pay.balance > 0 && (
+                                <small style={{ display: 'block', color: themeMuted, fontSize: '.72rem', marginTop: 3 }}>Balance {money(pay.balance)}</small>
+                              )}
+                            </>
+                          );
+                        })()}
                       </td>
                       <td>
                         <select
@@ -1555,7 +1584,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                   ))}
                   {Array.from({ length: Math.max(0, MIN_LIST_ROWS - (folioViewLimit === 'all' ? filteredBookings.length : Math.min(folioViewLimit, filteredBookings.length))) }).map((_, emptyIndex) => (
                     <tr key={`empty_${emptyIndex}`} aria-hidden="true" style={{ borderBottom: `1px solid ${themeBorder}`, height: 64 }}>
-                      <td colSpan={7} />
+                      <td colSpan={8} />
                     </tr>
                   ))}
                 </tbody>

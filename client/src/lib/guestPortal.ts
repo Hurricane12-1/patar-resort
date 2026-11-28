@@ -369,7 +369,8 @@ export function applyReservationRow(booking: GuestBooking, row: any): GuestBooki
 export function stayPhase(booking: Pick<GuestBooking, 'status' | 'checkIn' | 'checkOut'>, today: string): StayPhase {
   if (booking.status === 'cancelled') return 'cancelled';
   if (booking.status === 'checked_out' || booking.checkOut < today) return 'past';
-  if (booking.status === 'checked_in' || booking.checkIn <= today) return 'current';
+  // Only the front desk's check-in makes a guest "staying"; a confirmed booking whose date has come still awaits arrival.
+  if (booking.status === 'checked_in') return 'current';
   return 'upcoming';
 }
 
